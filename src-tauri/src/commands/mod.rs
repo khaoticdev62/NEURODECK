@@ -9188,6 +9188,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::to_value(entries).map_err(|e| e.to_string())?)
         }
 
+        "academy_complete_lab" => {
+            let payload: academy::CompletionPayload = serde_json::from_value(args.clone())
+                .map_err(|e| format!("Invalid completion payload: {e}"))?;
+            let result = academy::complete_lab(payload)?;
+            Ok(serde_json::to_value(result).map_err(|e| e.to_string())?)
+        }
+
         // ────────────────────────────────────────────────────────────────────
         // Absolute final catch-all
         // ────────────────────────────────────────────────────────────────────

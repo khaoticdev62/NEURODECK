@@ -98,6 +98,78 @@ pub fn save_portfolio_entry(mut entry: PortfolioEntry) -> Result<String, String>
     Ok(id)
 }
 
+/// Payload sent by the frontend when a lab run is complete.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompletionPayload {
+    pub lab_id: String,
+    pub lab_title: String,
+    pub score: u32,
+    pub findings: Vec<String>,
+    pub commands_used: Vec<String>,
+    pub mitre_mappings: Vec<String>,
+    pub skills_earned: Vec<String>,
+    pub current_progress: LearnerProgress,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CompletionResult {
+    pub portfolio_id: String,
+    pub updated_progress: LearnerProgress,
+}
+
+/// Atomically saves a portfolio entry and updates learner progress in one call.
+///
+/// Skill score update uses diminishing returns: each lab contributes up to 25 points,
+/// scaled by the lab score and reduced as the existing score approaches 100.
+pub fn complete_lab(payload: CompletionPayload) -> Result<CompletionResult, String> {
+    let mut updated = payload.current_progress.clone();
+
+    // Mark lab as completed
+    if !updated.completed_labs.contains(&payload.lab_id) {
+        updated.completed_labs.push(payload.lab_id.clone());
+    }
+
+    // Apply diminishing-return skill gains
+    for skill in &payload.skills_earned {
+        let cur = updated.skill_scores.get(skill).copied().unwrap_or(0);
+        // Max gain per lab = 25 pts, reduced as current score increases
+        let gain = ((payload.score as f32 / 100.0) * 25.0 * (1.0 - cur as f32 / 100.0)) as u32;
+        updated.skill_scores.insert(skill.clone(), (cur + gain).min(100));
+    }
+
+    updated.last_active = chrono::Utc::now().to_rfc3339();
+
+    // Save updated progress first
+    save_progress(updated.clone())?;
+
+    // Build and save portfolio entry
+    let entry = PortfolioEntry {
+        id: String::new(),
+        lab_id: payload.lab_id.clone(),
+        lab_title: payload.lab_title,
+        summary: format!(
+            "Completed {} with a score of {}/100.",
+            payload.lab_id, payload.score
+        ),
+        commands_used: payload.commands_used,
+        findings: payload.findings,
+        mitre_mappings: payload.mitre_mappings,
+        skills_earned: payload.skills_earned,
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
+    let portfolio_id = save_portfolio_entry(entry)?;
+
+    // Record portfolio entry ID in progress
+    if !updated.portfolio_entry_ids.contains(&portfolio_id) {
+        updated.portfolio_entry_ids.push(portfolio_id.clone());
+    }
+    save_progress(updated.clone())?;
+
+    Ok(CompletionResult { portfolio_id, updated_progress: updated })
+}
+
 pub fn list_portfolio() -> Result<Vec<PortfolioEntry>, String> {
     let dir = portfolio_dir();
     if !dir.exists() {

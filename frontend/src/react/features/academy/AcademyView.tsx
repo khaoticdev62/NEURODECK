@@ -6,10 +6,12 @@ import { AcademyHome } from './views/AcademyHome';
 import { LearningPathsView } from './views/LearningPathsView';
 import { LabBrowserView } from './views/LabBrowserView';
 import { PortfolioView } from './views/PortfolioView';
+import { LabRunnerView } from './views/LabRunnerView';
 import { defaultProgress } from './types';
+import { getLabById } from './data/curricula';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { AcademyLearnerProgress } from '../../services/bridgeAdapter';
-import type { AcademyTab, LearnerProgress } from './types';
+import type { AcademyTab, Lab, LearnerProgress } from './types';
 
 const TABS: { id: AcademyTab; label: string; icon: React.ElementType }[] = [
   { id: 'home',      label: 'Home',      icon: Home         },
@@ -25,6 +27,7 @@ export function AcademyView() {
   const [progress, setProgress] = useState<LearnerProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeLab, setActiveLab] = useState<Lab | null>(null);
 
   const loadProgress = useCallback(async () => {
     setLoading(true);
@@ -33,7 +36,6 @@ export function AcademyView() {
       const data = await neurodeckApi.academy.getProgress();
       setProgress(data as LearnerProgress);
     } catch {
-      // Fall back to localStorage shim when sidecar isn't running
       try {
         const raw = localStorage.getItem(PROGRESS_LS_KEY);
         setProgress(raw ? (JSON.parse(raw) as LearnerProgress) : defaultProgress());
@@ -56,16 +58,19 @@ export function AcademyView() {
     }
   }, []);
 
-  const handleStartLab = useCallback(async (labId: string) => {
-    if (!progress) return;
-    if (progress.completedLabs.includes(labId)) return;
-    const next: LearnerProgress = {
-      ...progress,
-      completedLabs: [...progress.completedLabs, labId],
-      lastActive: new Date().toISOString(),
-    };
-    await saveProgress(next);
-  }, [progress, saveProgress]);
+  const handleStartLab = useCallback((labId: string) => {
+    const lab = getLabById(labId);
+    if (lab) setActiveLab(lab);
+  }, []);
+
+  const handleLabComplete = useCallback(async (updatedProgress: LearnerProgress) => {
+    await saveProgress(updatedProgress);
+    // stay in runner — LabRunnerView transitions to 'saved' phase before calling back
+  }, [saveProgress]);
+
+  const handleLabBack = useCallback(() => {
+    setActiveLab(null);
+  }, []);
 
   const handleNavigate = useCallback((tab: AcademyTab) => {
     setActiveTab(tab);
@@ -85,6 +90,18 @@ export function AcademyView() {
 
   const prog = progress ?? defaultProgress();
 
+  // Lab runner takes over the full view when active
+  if (activeLab) {
+    return (
+      <LabRunnerView
+        lab={activeLab}
+        progress={prog}
+        onBack={handleLabBack}
+        onLabComplete={handleLabComplete}
+      />
+    );
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
@@ -99,7 +116,6 @@ export function AcademyView() {
           </div>
         </div>
 
-        {/* Sub-nav tabs */}
         <nav
           className="mt-3 flex gap-1"
           role="tablist"
@@ -127,7 +143,6 @@ export function AcademyView() {
         </nav>
       </header>
 
-      {/* Content */}
       <main
         id={`academy-panel-${activeTab}`}
         role="tabpanel"

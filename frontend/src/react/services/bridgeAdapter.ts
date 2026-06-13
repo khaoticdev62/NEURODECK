@@ -2375,6 +2375,22 @@ export interface AcademyPortfolioEntry {
   timestamp: string;
 }
 
+export interface AcademyCompletionPayload {
+  labId: string;
+  labTitle: string;
+  score: number;
+  findings: string[];
+  commandsUsed: string[];
+  mitreMappings: string[];
+  skillsEarned: string[];
+  currentProgress: AcademyLearnerProgress;
+}
+
+export interface AcademyCompletionResult {
+  portfolioId: string;
+  updatedProgress: AcademyLearnerProgress;
+}
+
 const academy = {
   async getProgress(): Promise<AcademyLearnerProgress> {
     return bridgeInvoke<AcademyLearnerProgress>("academy_get_progress");
@@ -2387,6 +2403,9 @@ const academy = {
   },
   async listPortfolio(): Promise<AcademyPortfolioEntry[]> {
     return bridgeInvoke<AcademyPortfolioEntry[]>("academy_list_portfolio");
+  },
+  async completeLab(payload: AcademyCompletionPayload): Promise<AcademyCompletionResult> {
+    return bridgeInvoke<AcademyCompletionResult>("academy_complete_lab", payload);
   },
 };
 

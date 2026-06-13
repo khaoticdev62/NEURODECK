@@ -9,6 +9,9 @@ export interface LabTask {
   prompt: string;
   type: TaskKind;
   hint?: string;
+  gradingKeywords: string[];   // answer must contain ≥ half of these (case-insensitive)
+  gradingPatterns: string[];   // regex patterns for bonus credit
+  sampleAnswer: string;        // shown after submission
 }
 
 export interface Lab {
@@ -21,6 +24,8 @@ export interface Lab {
   objectives: string[];
   tasks: LabTask[];
   datasetStub: string;
+  mitreMappings: string[];    // pre-defined MITRE ATT&CK technique IDs shown on completion
+  skillsEarned: SkillKey[];   // skills awarded when lab is completed
 }
 
 export interface Module {
