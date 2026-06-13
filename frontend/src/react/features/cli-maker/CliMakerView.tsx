@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   TerminalSquare, Plus, Copy, Play, Trash2, Save, Upload, Code, Sparkles,
   Command, Settings, Folder, ArrowRight, HelpCircle, Check, AlertCircle,
@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { CliCommandDef, CliAction } from '../../types/neurodeck';
+import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 
 const LOCAL_STORAGE_KEY = 'neurodeck:cli_commands_fallback';
 
@@ -85,24 +86,25 @@ export function CliMakerView() {
 
   // Import State
   const [importPath, setImportPath] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   // Load commands from live API or fallback
-  const loadCommands = async () => {
+  const loadCommands = useCallback(async () => {
     setLoading(true);
     try {
       const list = await neurodeckApi.cliMaker.list();
       setCommands(list);
     } catch (_) {
-      // Offline fallback
+      // Offline fallback — bridge not yet available, use persisted local copy
       setCommands(getFallbackCommands());
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadCommands();
-  }, []);
+    void loadCommands();
+  }, [loadCommands]);
 
   const showStatus = (text: string, isErr = false) => {
     setStatusMessage(text);
@@ -233,16 +235,21 @@ export function CliMakerView() {
     }
   };
 
-  const handleDeleteCommand = async (id: string, e: React.MouseEvent) => {
+  const handleDeleteCommand = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('Are you sure you want to delete this command?')) return;
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDeleteCommand = async () => {
+    const id = confirmDeleteId;
+    if (!id) return;
+    setConfirmDeleteId(null);
     try {
       await neurodeckApi.cliMaker.delete(id);
       showStatus('Deleted command successfully');
       if (editingId === id) handleNewCommand();
       await loadCommands();
     } catch (_) {
-      // Local fallback delete
       const updatedFallback = getFallbackCommands().filter(c => c.id !== id);
       saveFallbackCommands(updatedFallback);
       setCommands(updatedFallback);
@@ -883,6 +890,16 @@ export function CliMakerView() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmDeleteId}
+        title="Delete command?"
+        message={`Remove '${confirmDeleteId ?? ''}' permanently. This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => void confirmDeleteCommand()}
+        onCancel={() => setConfirmDeleteId(null)}
+      />
     </div>
   );
 }

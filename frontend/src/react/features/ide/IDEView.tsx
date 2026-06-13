@@ -404,7 +404,7 @@ export function IDEView() {
           <p className="text-xs text-nd-text-muted">Integrated code workspace</p>
         </div>
         <div className="flex gap-1">
-          <IconBtn title="New file" onClick={newFile}><FilePlus className="h-4 w-4" /></IconBtn>
+          <IconBtn title="New file" onClick={() => setNewFileModalOpen(true)}><FilePlus className="h-4 w-4" aria-hidden="true" /></IconBtn>
           <IconBtn title="Save (Ctrl+S)" onClick={saveActiveFile}><Save className="h-4 w-4" /></IconBtn>
           <IconBtn title="Delete" onClick={deleteFile}><Trash2 className="h-4 w-4" /></IconBtn>
           <IconBtn title="Command wheel (Y)" onClick={() => setShowRadialWheel(true)}>

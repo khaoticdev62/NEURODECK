@@ -1,4 +1,4 @@
-import { useEffect, useState, type Dispatch } from 'react';
+import { useCallback, useEffect, useState, type Dispatch } from 'react';
 import {
   Plug, RefreshCw, ShieldCheck, ShieldAlert, Download, Trash2,
   ToggleLeft, ToggleRight, Tag, User, FileCode, AlertTriangle,
@@ -62,14 +62,14 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
     return 'external';
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await neurodeckApi.plugins.list();
       const list = res.plugins || [];
       setPlugins(list);
-      
+
       // Keep selection if it still exists
       if (list.length > 0) {
         setSelectedPlugin(prev => {
@@ -115,9 +115,11 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
           setSelectedPlugin(fallbackList[0]);
         }
       }
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch, state?.plugins]);
 
   const validateAll = async (list: PluginInfo[]) => {
     const results: Record<string, { passed: boolean; errors: string[]; warnings: string[] }> = {};
@@ -142,7 +144,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
 
   useEffect(() => {
     void load();
-  }, []);
+  }, [load]);
 
   // Run validation on a specific plugin (used when user selects a plugin or clicks Run Audit)
   const validatePlugin = async (fileName: string) => {
@@ -217,8 +219,9 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
       await load();
     } catch (e) {
       setError(`Install failed: ${e}`);
+    } finally {
+      setInstalling(false);
     }
-    setInstalling(false);
   };
 
   const reload = async () => {
@@ -284,7 +287,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
       {/* Title bar */}
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Plug className="h-5 w-5 text-nd-accent" />
+          <Plug className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-semibold text-nd-text">Plugins</h2>
@@ -440,8 +443,12 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                 return (
                   <div
                     key={p.file_name}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
                     onClick={() => handleSelectPlugin(p)}
-                    className={`rounded-xl border p-4 transition duration-200 cursor-pointer flex flex-col gap-2 ${
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectPlugin(p); } }}
+                    className={`rounded-xl border p-4 transition duration-200 cursor-pointer flex flex-col gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                       isSelected
                         ? 'border-nd-accent bg-nd-accent/[0.03]'
                         : 'border-nd-text-muted/15 bg-nd-surface/30 hover:border-nd-accent/25 hover:bg-nd-surface/40'
@@ -450,7 +457,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <FileCode className={`h-4 w-4 shrink-0 ${p.enabled ? 'text-nd-accent' : 'text-nd-text-muted'}`} />
+                          <FileCode className={`h-4 w-4 shrink-0 ${p.enabled ? 'text-nd-accent' : 'text-nd-text-muted'}`} aria-hidden="true" />
                           <h4 className="font-semibold text-xs text-nd-text truncate">{p.name}</h4>
                           {hasErrors && (
                             <span className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-nd-danger/10 px-1.5 py-0.5 text-[9px] font-bold text-nd-danger">

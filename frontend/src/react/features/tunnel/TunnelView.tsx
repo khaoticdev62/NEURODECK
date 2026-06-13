@@ -25,8 +25,9 @@ export function TunnelView() {
       }
     } catch (e) {
       addLog(`Error: ${String(e)}`);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const sendCmd = async () => {
@@ -59,12 +60,14 @@ export function TunnelView() {
           <ArrowLeftRight className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <div className="tunnel-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Tunnel</div>
           <h2 className="text-lg font-semibold text-nd-text">Tunnel</h2>
           <p className="text-xs text-nd-text-muted">SteamOS Game Mode to Desktop Mode bridge</p>
         </div>
         <div className="flex items-center gap-2">
-        <div id="tunnel-status-indicator" className={`h-2 w-2 rounded-full ${running ? 'bg-nd-success' : 'text-nd-text-muted/40'}`} />
+          <div
+            className={`h-2 w-2 rounded-full ${running ? 'bg-nd-success' : 'bg-nd-text-muted/40'}`}
+            aria-hidden="true"
+          />
           <span className="text-xs text-nd-text-muted">{running ? 'Active' : 'Offline'}</span>
         </div>
         <button type="button" onClick={toggle} disabled={loading} aria-label={running ? 'Stop tunnel' : 'Start tunnel'} className={`rounded-lg border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20' : 'border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20'}`}>

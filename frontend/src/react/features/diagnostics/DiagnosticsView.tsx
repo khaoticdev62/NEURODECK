@@ -26,6 +26,17 @@ import { neurodeckApi } from "../../services/bridgeAdapter";
 import type { ConnectionMatrixEntry } from "../../services/bridgeAdapter";
 import type { DiagnosticLog, NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
 
+interface EvidenceEntry {
+  requestId?: string;
+  timestamp: string;
+  summary: string;
+  status: string;
+  durationMs?: number;
+  bytesSent: number;
+  bytesReceived: number;
+  realTransportUsed?: boolean;
+}
+
 export function DiagnosticsView({
   state,
   actions,
@@ -38,6 +49,8 @@ export function DiagnosticsView({
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [isProbing, setIsProbing] = useState<Record<string, boolean>>({});
   const [globalProbing, setGlobalProbing] = useState(false);
+  const [matrixError, setMatrixError] = useState<string | null>(null);
+  const [probeErrors, setProbeErrors] = useState<Record<string, string>>({});
 
   // Sync with bridge-backed connection health matrix
   useEffect(() => {
@@ -49,7 +62,7 @@ export function DiagnosticsView({
           setMatrix(res.data || []);
         }
       } catch (err) {
-        console.error("Failed to get connection matrix:", err);
+        if (!cancelled) setMatrixError(String(err));
       }
     }
     void load();
@@ -87,9 +100,10 @@ export function DiagnosticsView({
       const res = await neurodeckApi.diagnostics.runHealthProbe(id);
       if (res.ok) {
         mergeProbeResults(res.data || []);
+        setProbeErrors((prev) => { const next = { ...prev }; delete next[id]; return next; });
       }
     } catch (err) {
-      console.error(`Probe run failed for ${id}:`, err);
+      setProbeErrors((prev) => ({ ...prev, [id]: String(err) }));
     } finally {
       setIsProbing((prev) => ({ ...prev, [id]: false }));
     }
@@ -108,7 +122,7 @@ export function DiagnosticsView({
         mergeProbeResults(res.data || []);
       }
     } catch (err) {
-      console.error("Running all health probes failed:", err);
+      setMatrixError(String(err));
     } finally {
       setIsProbing({});
       setGlobalProbing(false);
@@ -265,6 +279,12 @@ export function DiagnosticsView({
             connection to view its diagnostic timeline and raw evidence logs.
           </p>
 
+          {matrixError && (
+            <p role="alert" className="mx-4 mb-2 rounded-xl border border-nd-danger/20 bg-nd-danger/5 px-3 py-2 text-xs text-nd-danger">
+              {matrixError}
+            </p>
+          )}
+
           <div className="mt-4 space-y-2.5">
             {matrix.map((conn) => {
               const styles = getStatusStyles(conn.state);
@@ -274,8 +294,12 @@ export function DiagnosticsView({
               return (
                 <div
                   key={conn.id}
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={isSelected}
                   onClick={() => setSelectedConnectionId(isSelected ? null : conn.id)}
-                  className={`group flex items-center justify-between rounded-xl border p-3.5 transition cursor-pointer ${
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedConnectionId(isSelected ? null : conn.id); } }}
+                  className={`group flex items-center justify-between rounded-xl border p-3.5 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                     isSelected
                       ? "bg-nd-accent/5 border-nd-accent/30 shadow-sm"
                       : "bg-nd-surface/40 border-nd-text-muted/10 hover:border-nd-text-muted/20 hover:bg-nd-surface/60"
@@ -403,7 +427,7 @@ export function DiagnosticsView({
                 </div>
               ) : (
                 <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[1px] before:bg-nd-text-muted/10">
-                  {selectedConnection.evidence.map((ev: any, idx: number) => {
+                  {selectedConnection.evidence.map((ev: EvidenceEntry, idx: number) => {
                     const isSuccess = ev.status === "passed";
                     return (
                       <div key={idx} className="relative pl-7 text-xs">
