@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Strip Tauri references from Rust source files for pure Electron migration."""
+
 import os
 import re
-import sys
 
 ROOT = "src-tauri/src"
+
 
 def process_file(path):
     with open(path, "r", encoding="utf-8") as f:
@@ -47,7 +48,9 @@ def process_file(path):
     # Replace async runtime calls
     content = content.replace("tauri::async_runtime::spawn_blocking", "tokio::task::spawn_blocking")
     content = content.replace("tauri::async_runtime::spawn", "tokio::spawn")
-    content = content.replace("tauri::async_runtime::block_on", "tokio::runtime::Handle::current().block_on")
+    content = content.replace(
+        "tauri::async_runtime::block_on", "tokio::runtime::Handle::current().block_on"
+    )
 
     # Replace AppHandle and Emitter
     content = content.replace("tauri::AppHandle", "crate::bridge::WsBroadcaster")
@@ -56,12 +59,14 @@ def process_file(path):
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
+
 def main():
     for dirpath, _, filenames in os.walk(ROOT):
         for fname in filenames:
             if fname.endswith(".rs"):
                 process_file(os.path.join(dirpath, fname))
     print("Done stripping tauri references.")
+
 
 if __name__ == "__main__":
     main()

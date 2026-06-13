@@ -1,16 +1,18 @@
 import type { LucideIcon } from 'lucide-react';
 
+interface PlaceholderViewProps {
+  title: string;
+  description?: string;
+  icon: LucideIcon;
+  children?: React.ReactNode;
+}
+
 export function PlaceholderView({
   title,
   description,
   icon: Icon,
-  children
-}: {
-  title: string;
-  description: string;
-  icon: LucideIcon;
-  children?: React.ReactNode;
-}) {
+  children,
+}: PlaceholderViewProps) {
   return (
     <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
@@ -19,7 +21,7 @@ export function PlaceholderView({
         </div>
         <div>
           <h2 className="text-lg font-semibold text-nd-text">{title}</h2>
-          <p className="text-xs text-nd-text-muted">{description}</p>
+          {description && <p className="text-xs text-nd-text-muted">{description}</p>}
         </div>
       </div>
       <div className="flex-1 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-6">
@@ -29,9 +31,7 @@ export function PlaceholderView({
               <Icon className="h-8 w-8 text-nd-text-muted/70" />
             </div>
             <h3 className="text-sm font-medium text-nd-text-muted">{title}</h3>
-            <p className="mt-1 max-w-xs text-xs text-nd-text-muted/70">
-              This view is being integrated from the legacy UI. Full functionality coming in the next build.
-            </p>
+
           </div>
         )}
       </div>

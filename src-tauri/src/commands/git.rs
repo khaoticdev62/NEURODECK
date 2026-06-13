@@ -541,11 +541,7 @@ pub fn git_remote_remove(path: String, name: String) -> Result<(), String> {
 
 // ── Credentials ────────────────────────────────────────────────────────────
 
-pub fn git_credential_store(
-    host: String,
-    username: String,
-    token: String,
-) -> Result<(), String> {
+pub fn git_credential_store(host: String, username: String, token: String) -> Result<(), String> {
     let mut creds = load_git_creds();
     creds.insert(
         host.clone(),

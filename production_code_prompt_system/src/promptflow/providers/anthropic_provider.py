@@ -43,9 +43,7 @@ class AnthropicProvider(AIProvider):
             blocks = response.content
             content = ""
             if isinstance(blocks, list):
-                content = "".join(
-                    block.text for block in blocks if hasattr(block, "text")
-                )
+                content = "".join(block.text for block in blocks if hasattr(block, "text"))
             else:
                 content = str(blocks)
             return self._make_response(request, content)

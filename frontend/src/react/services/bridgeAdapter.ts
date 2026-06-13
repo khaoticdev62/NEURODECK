@@ -55,6 +55,9 @@ const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
 
 let _ws: WebSocket | null = null;
 let _wsListeners: Map<string, Set<(payload: unknown) => void>> = new Map();
+if (typeof window !== "undefined") {
+  (window as any).__wsListeners = _wsListeners;
+}
 let _wsOpenPromise: Promise<void> | null = null;
 let _wsOpenResolve: (() => void) | null = null;
 let _wsOpenReject: ((err: Error) => void) | null = null;

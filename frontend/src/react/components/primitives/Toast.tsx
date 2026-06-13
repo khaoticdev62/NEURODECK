@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 
 type ToastTone = 'info' | 'success' | 'warning' | 'error';
@@ -25,6 +25,7 @@ const toneConfig: Record<ToastTone, { icon: ReactNode; classes: string }> = {
 
 function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: string) => void }) {
   const { icon, classes } = toneConfig[item.tone];
+  const messageId = useId();
 
   useEffect(() => {
     const t = setTimeout(() => onDismiss(item.id), item.durationMs);
@@ -38,12 +39,13 @@ function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: strin
       className={['flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm shadow-panel', 'animate-view-enter', classes].join(' ')}
     >
       <span className="mt-0.5 shrink-0">{icon}</span>
-      <span className="flex-1 leading-relaxed">{item.message}</span>
+      <span id={messageId} className="flex-1 leading-relaxed">{item.message}</span>
       <button
         type="button"
         aria-label="Dismiss"
+        aria-describedby={messageId}
         onClick={() => onDismiss(item.id)}
-        className="ml-1 shrink-0 opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current rounded"
+        className="ml-1 inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current"
       >
         <X className="h-3.5 w-3.5" />
       </button>

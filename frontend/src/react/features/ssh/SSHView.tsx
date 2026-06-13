@@ -122,6 +122,7 @@ export function SSHView() {
         </div>
 
         <input
+          id="ssh-user-input"
           type="text"
           value={user}
           onChange={(e) => setUser(e.target.value)}
@@ -178,6 +179,7 @@ export function SSHView() {
 
         <div className="flex gap-2 pt-2">
           <button
+            id="ssh-connect-btn"
             type="button"
             onClick={connect}
             className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"

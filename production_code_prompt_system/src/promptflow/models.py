@@ -73,24 +73,28 @@ class PromptRequest:
             "",
         ]
         if self.previous_outputs:
-            lines.extend([
-                "# Previous Stage Outputs",
-                "",
-            ])
+            lines.extend(
+                [
+                    "# Previous Stage Outputs",
+                    "",
+                ]
+            )
             for sid, output in self.previous_outputs.items():
                 lines.extend([f"## {sid}", "", output, ""])
-        lines.extend([
-            "# Execution Rules",
-            "",
-            "- Do not invent commands.",
-            "- Do not invent files.",
-            "- Do not modify files unless explicitly instructed.",
-            "- Provide exact file paths.",
-            "- Provide verification commands only if real.",
-            "- Stop on blockers.",
-            "- Provide rollback steps.",
-            "",
-        ])
+        lines.extend(
+            [
+                "# Execution Rules",
+                "",
+                "- Do not invent commands.",
+                "- Do not invent files.",
+                "- Do not modify files unless explicitly instructed.",
+                "- Provide exact file paths.",
+                "- Provide verification commands only if real.",
+                "- Stop on blockers.",
+                "- Provide rollback steps.",
+                "",
+            ]
+        )
         return "\n".join(lines)
 
 

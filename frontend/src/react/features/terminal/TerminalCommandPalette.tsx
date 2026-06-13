@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Command } from "lucide-react";
+import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
 
 type ActionItem = {
   id: string;
@@ -24,8 +25,15 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-start justify-center bg-black/55 p-4 backdrop-blur-sm">
-      <div className="mt-24 w-full max-w-xl overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-bg/98 shadow-panel-elevated">
+    <div className="fixed inset-0 z-[var(--z-modal)] flex items-start justify-center bg-black/55 p-4 backdrop-blur-sm" onClick={onClose}>
+      <FocusTrapContainer
+        active={open}
+        onEscape={onClose}
+        className="mt-24 w-full max-w-xl overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-bg/98 shadow-panel-elevated"
+        role="dialog"
+        aria-label="Terminal command palette"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center gap-3 border-b border-nd-text-muted/15 px-4 py-3">
           <Command className="h-4 w-4 text-nd-accent" aria-hidden="true" />
           <div>
@@ -65,7 +73,7 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
             Close
           </button>
         </div>
-      </div>
+      </FocusTrapContainer>
     </div>
   );
 }

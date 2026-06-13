@@ -54,7 +54,9 @@ class ReportGenerator:
             for w in self.state.warnings:
                 lines.append(f"- {w}")
             lines.append("")
-        lines.extend(["## Next Actions", "", "1. Review stage outputs in the responses/ directory.", ""])
+        lines.extend(
+            ["## Next Actions", "", "1. Review stage outputs in the responses/ directory.", ""]
+        )
         path.write_text("\n".join(lines), encoding="utf-8")
         return path
 
@@ -64,7 +66,9 @@ class ReportGenerator:
         for stage_id in self.state.completed_stages:
             resp_path = self.run_dir / "responses" / f"{stage_id}_response.md"
             if resp_path.exists():
-                lines.extend([f"## Stage {stage_id}", "", resp_path.read_text(encoding="utf-8"), ""])
+                lines.extend(
+                    [f"## Stage {stage_id}", "", resp_path.read_text(encoding="utf-8"), ""]
+                )
         path.write_text("\n".join(lines), encoding="utf-8")
         return path
 

@@ -65,7 +65,7 @@ export function InputConsole({
         </Badge>
         <span className="ml-auto inline-flex items-center gap-1 text-nd-text-muted">
           <Keyboard className="h-3 w-3" />
-          Ctrl/Cmd + Enter to send
+          Enter to send
         </span>
       </div>
 
@@ -135,11 +135,15 @@ export function InputConsole({
         <textarea
           ref={textareaRef}
           id="user-input"
+          data-testid="chat-input"
           data-controller-default="true"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
             if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+              e.preventDefault();
+              handleSend();
+            } else if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
               handleSend();
             }
@@ -158,6 +162,7 @@ export function InputConsole({
           variant="accent"
           disabled={!value.trim()}
           onClick={handleSend}
+          data-testid="chat-send-btn"
         >
           <SendHorizontal className="h-4 w-4" />
         </IconButton>

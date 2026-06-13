@@ -22,7 +22,7 @@ type Props = {
 
 export function TerminalDiagnosticsPanel({ diagnostics, environment, activePane }: Props) {
   return (
-    <section className="flex min-h-0 flex-col gap-3 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
+    <section className="flex min-h-0 flex-col gap-3 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3" tabIndex={0} aria-label="Terminal diagnostics">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Diagnostics</p>
         <h3 className="text-sm font-semibold text-nd-text">Environment and session state</h3>
@@ -43,7 +43,7 @@ export function TerminalDiagnosticsPanel({ diagnostics, environment, activePane 
         </div>
         <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
           <div className="font-semibold text-nd-text">Warnings</div>
-          <div className="mt-1">{diagnostics?.warnings.length ? diagnostics.warnings[0] : "none"}</div>
+          <div className="mt-1">{diagnostics?.warnings?.length ? diagnostics.warnings[0] : "none"}</div>
         </div>
       </div>
 

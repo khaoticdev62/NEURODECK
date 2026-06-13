@@ -29,9 +29,19 @@
       "runtime_id": "ollama",
       "state": "blocked",
       "timestamp": "2026-06-13T01:51:18.911308700+00:00"
+    },
+    {
+      "action": "policy_block",
+      "allowed": false,
+      "id": "3d3f41b9-e5d0-4ff7-8701-d9cd4cae4c79",
+      "model_id": "llama3",
+      "reason": "Model not found in registry",
+      "runtime_id": "ollama",
+      "state": "blocked",
+      "timestamp": "2026-06-13T19:54:18.889204700+00:00"
     }
   ],
-  "generatedAt": "2026-06-13T01:51:18.911889500+00:00",
+  "generatedAt": "2026-06-13T19:54:18.889684300+00:00",
   "note": "Recovery events recorded by model_recovery_service.",
   "version": "1.0.0"
 }

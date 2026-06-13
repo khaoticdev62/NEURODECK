@@ -3,16 +3,41 @@ import {
   CheckCircle2,
   RotateCcw,
   Monitor,
-  Settings,
   Eye,
   Sliders,
   ShieldAlert,
   Sparkles,
   Layers,
 } from "lucide-react";
+
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
 import { Panel } from "../../components/primitives/Panel";
+import { Select } from "../../components/primitives/Select";
+import { TextInput } from "../../components/primitives/TextInput";
+import { Toggle } from "../../components/primitives/Toggle";
 import { useTheme } from "../../theme/useTheme";
 import type { AccessibilityProfile, ThemeDisplayTarget } from "../../../shared/theme/themeContracts";
+
+const THEME_SETTINGS_KEYS = [
+  "activeThemeId",
+  "activeWallpaperId",
+  "liveWallpaperEnabled",
+  "displayProfile",
+  "performanceTier",
+  "accessibilityProfile",
+  "wallpaperIntensity",
+  "wallpaperOpacity",
+  "glowIntensity",
+  "glassIntensity",
+  "motionIntensity",
+  "fontScale",
+  "compactMode",
+];
+
+function isPartialThemeSettings(value: unknown): value is Partial<Record<string, unknown>> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 
 export function ThemesView() {
   const {
@@ -41,6 +66,17 @@ export function ThemesView() {
   const handleImport = () => {
     try {
       const parsed = JSON.parse(importStr);
+      if (!isPartialThemeSettings(parsed)) {
+        setImportMessage({ text: "Invalid theme settings object.", ok: false });
+        setTimeout(() => setImportMessage(null), 3000);
+        return;
+      }
+      const unknownKeys = Object.keys(parsed).filter((k) => !THEME_SETTINGS_KEYS.includes(k));
+      if (unknownKeys.length > 0) {
+        setImportMessage({ text: `Unknown keys: ${unknownKeys.join(", ")}`, ok: false });
+        setTimeout(() => setImportMessage(null), 3000);
+        return;
+      }
       updateSettings(parsed);
       setImportMessage({ text: "Theme settings imported successfully.", ok: true });
     } catch (_) {
@@ -59,30 +95,27 @@ export function ThemesView() {
       <div className="flex items-center gap-2 border-b border-nd-text-muted/15 px-4 py-2 bg-nd-surface/30">
         <div role="tablist" aria-label="Theme settings sections" className="flex gap-2">
           {(["themes", "wallpapers", "settings", "diagnostics"] as const).map((tab) => (
-            <button
+            <Button
               key={tab}
-              type="button"
               role="tab"
               aria-selected={activeTab === tab}
               onClick={() => setActiveTab(tab)}
-              className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold uppercase tracking-wider transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                activeTab === tab
-                  ? "bg-nd-accent/15 text-nd-accent border border-nd-accent/30 shadow-glow"
-                  : "text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text"
-              }`}
+              variant={activeTab === tab ? "primary" : "ghost"}
+              size="sm"
             >
               {tab}
-            </button>
+            </Button>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={resetToDefaults}
+        <IconButton
+          className="ml-auto"
           aria-label="Reset settings to defaults"
-          className="ml-auto min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl border border-nd-text-muted/15 text-nd-text-muted hover:border-nd-accent/30 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          variant="outline"
+          size="md"
+          onClick={resetToDefaults}
         >
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
-        </button>
+        </IconButton>
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
@@ -157,25 +190,11 @@ export function ThemesView() {
                 <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 flex flex-col gap-3">
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-semibold text-nd-text">Live Wallpaper</label>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={settings.liveWallpaperEnabled}
-                      aria-label="Toggle live wallpaper"
-                      onClick={() =>
-                        updateSettings({ liveWallpaperEnabled: !settings.liveWallpaperEnabled })
-                      }
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                        settings.liveWallpaperEnabled ? "bg-nd-accent" : "bg-nd-surface"
-                      }`}
-                    >
-                      <span
-                        aria-hidden="true"
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          settings.liveWallpaperEnabled ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
+                    <Toggle
+                      checked={settings.liveWallpaperEnabled}
+                      onChange={() => updateSettings({ liveWallpaperEnabled: !settings.liveWallpaperEnabled })}
+                      label="Toggle live wallpaper"
+                    />
                   </div>
                   <p className="text-xs text-nd-text-muted">
                     Enable beautiful dynamic particles or CSS mesh gradients. Disabled on reduced
@@ -244,7 +263,7 @@ export function ThemesView() {
                       <div
                         className="h-20 w-full border-b border-nd-text-muted/10"
                         style={{
-                          background: `linear-gradient(135deg, ${wp.visuals.basePalette[0]}22 0%, #000 100%)`,
+                          background: `linear-gradient(135deg, ${wp.visuals.basePalette[0]}22 0%, ${resolvedTokens.color.surface.app} 100%)`,
                         }}
                       />
                       <div className="p-3">
@@ -276,19 +295,16 @@ export function ThemesView() {
                   >
                     <Monitor className="h-4 w-4 text-nd-accent" aria-hidden="true" /> Display Profile
                   </label>
-                  <select
-                    id="display-profile"
+                  <Select
                     value={settings.displayProfile}
-                    onChange={(e) =>
-                      updateSettings({ displayProfile: e.target.value as ThemeDisplayTarget })
-                    }
-                    className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
-                  >
-                    <option value="steamdeck_lcd">Steam Deck LCD (Contrast Boost)</option>
-                    <option value="steamdeck_oled">Steam Deck OLED (Absolute Black)</option>
-                    <option value="desktop_1080p">Desktop (1080p Standard)</option>
-                    <option value="docked_tv">Docked TV (Readable Boost)</option>
-                  </select>
+                    onChange={(e) => updateSettings({ displayProfile: e.target.value as ThemeDisplayTarget })}
+                    options={[
+                      { value: "steamdeck_lcd", label: "Steam Deck LCD (Contrast Boost)" },
+                      { value: "steamdeck_oled", label: "Steam Deck OLED (Absolute Black)" },
+                      { value: "desktop_1080p", label: "Desktop (1080p Standard)" },
+                      { value: "docked_tv", label: "Docked TV (Readable Boost)" },
+                    ]}
+                  />
                 </div>
 
                 <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 flex flex-col gap-2">
@@ -298,21 +314,20 @@ export function ThemesView() {
                   >
                     <Sliders className="h-4 w-4 text-nd-accent" aria-hidden="true" /> Accessibility Mode
                   </label>
-                  <select
-                    id="accessibility-profile"
+                  <Select
                     value={settings.accessibilityProfile}
                     onChange={(e) =>
                       updateSettings({ accessibilityProfile: e.target.value as AccessibilityProfile })
                     }
-                    className="min-h-[40px] px-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface text-sm text-nd-text focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
-                  >
-                    <option value="default">Default (Standard Styling)</option>
-                    <option value="high_contrast">High Contrast (AAA Black/Yellow)</option>
-                    <option value="low_vision">Low Vision (Large text assets)</option>
-                    <option value="colorblind_safe">Colorblind Safe (Blue/Orange tags)</option>
-                    <option value="reduced_motion">Reduced Motion (Zero animations)</option>
-                    <option value="dyslexia_focus">Dyslexia Focus (Warm sepia)</option>
-                  </select>
+                    options={[
+                      { value: "default", label: "Default (Standard Styling)" },
+                      { value: "high_contrast", label: "High Contrast (AAA Black/Yellow)" },
+                      { value: "low_vision", label: "Low Vision (Large text assets)" },
+                      { value: "colorblind_safe", label: "Colorblind Safe (Blue/Orange tags)" },
+                      { value: "reduced_motion", label: "Reduced Motion (Zero animations)" },
+                      { value: "dyslexia_focus", label: "Dyslexia Focus (Warm sepia)" },
+                    ]}
+                  />
                 </div>
               </div>
 
@@ -320,13 +335,9 @@ export function ThemesView() {
               <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 flex flex-col gap-4">
                 <h4 className="text-sm font-semibold text-nd-text">Import / Export Settings</h4>
                 <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={handleExport}
-                    className="min-h-[40px] px-4 rounded-xl border border-nd-accent/30 text-nd-accent bg-nd-accent/5 font-semibold text-xs transition hover:bg-nd-accent/10"
-                  >
+                  <Button variant="primary" size="sm" fullWidth onClick={handleExport}>
                     Generate Export JSON
-                  </button>
+                  </Button>
                   {exportStr && (
                     <textarea
                       readOnly
@@ -345,13 +356,9 @@ export function ThemesView() {
                     aria-label="Import theme JSON"
                     className="w-full h-24 rounded-xl p-3 border border-nd-text-muted/15 bg-nd-surface font-mono text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
                   />
-                  <button
-                    type="button"
-                    onClick={handleImport}
-                    className="min-h-[40px] px-4 rounded-xl bg-nd-accent text-nd-bg font-semibold text-xs transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                  >
+                  <Button variant="primary" size="sm" fullWidth onClick={handleImport}>
                     Apply Imported JSON
-                  </button>
+                  </Button>
                   {importMessage && (
                     <p
                       role="status"
@@ -375,15 +382,11 @@ export function ThemesView() {
                 <div className="mt-3 grid grid-cols-2 gap-4 text-xs font-mono">
                   <div className="rounded-lg bg-nd-surface/50 p-3">
                     <p className="text-nd-text-muted">Engine Status</p>
-                    <p className="mt-1 text-nd-success font-semibold">Active & Hydrated</p>
+                    <p className="mt-1 text-nd-success font-semibold">{resolvedTokens ? "Active" : "Fallback"}</p>
                   </div>
                   <div className="rounded-lg bg-nd-surface/50 p-3">
                     <p className="text-nd-text-muted">Display Target</p>
                     <p className="mt-1 text-nd-accent font-semibold">{settings.displayProfile}</p>
-                  </div>
-                  <div className="rounded-lg bg-nd-surface/50 p-3">
-                    <p className="text-nd-text-muted">Render FPS (Est)</p>
-                    <p className="mt-1 text-nd-text font-semibold">60.0 FPS</p>
                   </div>
                   <div className="rounded-lg bg-nd-surface/50 p-3">
                     <p className="text-nd-text-muted">Active Live Wallpaper</p>
@@ -394,14 +397,15 @@ export function ThemesView() {
 
               {/* Token Inspector Toggle */}
               <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 flex flex-col gap-3">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  fullWidth
                   onClick={() => setShowTokenInspector(!showTokenInspector)}
-                  className="min-h-[40px] px-4 rounded-xl border border-nd-text-muted/15 text-nd-text font-semibold text-xs flex items-center justify-between"
+                  icon={Eye}
                 >
-                  <span>Active Token CSS Custom Properties</span>
-                  <Eye className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
-                </button>
+                  Active Token CSS Custom Properties
+                </Button>
                 {showTokenInspector && (
                   <div className="max-h-60 overflow-y-auto p-3 rounded-xl border border-nd-text-muted/10 bg-nd-surface/50 font-mono text-[11px] text-nd-text-secondary flex flex-col gap-1.5 scrollbar-thin">
                     <p>

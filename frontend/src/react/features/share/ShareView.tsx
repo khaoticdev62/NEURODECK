@@ -608,6 +608,7 @@ export function ShareView() {
           <Share2 className="h-5 w-5 text-nd-accent" aria-hidden="true" />
         </div>
         <div className="flex-1">
+          <div className="share-view-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Share</div>
           <h2 className="text-lg font-semibold text-nd-text">Share & Transfer</h2>
           <p className="text-xs text-nd-text-muted">LAN P2P · Warpinator · Torrent</p>
         </div>
@@ -622,6 +623,7 @@ export function ShareView() {
             role="tab"
             aria-selected={activePanel === tab.id}
             onClick={() => setActivePanel(tab.id)}
+            data-panel={tab.id}
             className={`share-inner-tab ${activePanel === tab.id ? 'active' : ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40`}
           >
             {tab.label}
@@ -636,7 +638,7 @@ export function ShareView() {
       <div className={`flex min-h-0 flex-1 flex-col ${activePanel === 'warpinator' ? '' : 'hidden'}`}>
         <WarpinatorPanel />
       </div>
-      <div className={`flex min-h-0 flex-1 flex-col ${activePanel === 'torrent' ? '' : 'hidden'}`}>
+      <div id="share-panel-torrent" className={`flex min-h-0 flex-1 flex-col ${activePanel === 'torrent' ? '' : 'hidden'}`}>
         <TorrentView />
       </div>
     </div>

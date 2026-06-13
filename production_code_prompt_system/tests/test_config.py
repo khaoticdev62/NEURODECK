@@ -19,9 +19,7 @@ class TestConfig:
 
     def test_load_valid_config(self, tmp_path: Path) -> None:
         config_path = tmp_path / "promptflow.yaml"
-        config_path.write_text(
-            "prompt_pack: ./prompts\ntarget_repo: ./repo\noutput_dir: ./runs\n"
-        )
+        config_path.write_text("prompt_pack: ./prompts\ntarget_repo: ./repo\noutput_dir: ./runs\n")
         cfg = Config.load(config_path)
         assert cfg.prompt_pack == "./prompts"
         assert cfg.target_repo == "./repo"

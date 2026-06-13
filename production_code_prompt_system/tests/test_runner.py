@@ -13,9 +13,27 @@ class TestWorkflowRunner:
         cfg = Config.default()
         cfg._data["target_repo"] = str(tmp_path / "repo")
         cfg._data["output_dir"] = str(tmp_path / "runs")
-        cfg._data["provider"] = {"name": "manual", "model": None, "timeout_seconds": 120, "max_retries": 2}
-        cfg._data["workflow"] = {"sequence": "full", "stop_on_blocker": True, "mode": "report-only", "include_orchestration": True, "require_approval_for_patches": True}
-        cfg._data["context"] = {"max_context_files": 80, "max_file_bytes": 200_000, "include_git_status": False, "respect_gitignore": False, "redact_secrets": False, "exclude": []}
+        cfg._data["provider"] = {
+            "name": "manual",
+            "model": None,
+            "timeout_seconds": 120,
+            "max_retries": 2,
+        }
+        cfg._data["workflow"] = {
+            "sequence": "full",
+            "stop_on_blocker": True,
+            "mode": "report-only",
+            "include_orchestration": True,
+            "require_approval_for_patches": True,
+        }
+        cfg._data["context"] = {
+            "max_context_files": 80,
+            "max_file_bytes": 200_000,
+            "include_git_status": False,
+            "respect_gitignore": False,
+            "redact_secrets": False,
+            "exclude": [],
+        }
 
         repo = tmp_path / "repo"
         repo.mkdir()

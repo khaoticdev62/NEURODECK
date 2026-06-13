@@ -67,6 +67,7 @@ export async function invoke(command, args = {}) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(args),
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!res.ok) {

@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { STORE_KEY } from '../types/seed';
 import { neurodeckApi } from '../services/bridgeAdapter';
-import type { AgentStatus, LocalModel, NeuroDeckAction, NeuroDeckState, SessionNode, MemoryItem, Agent, PluginCard } from '../types/neurodeck';
+import type { AgentStatus, LocalModel, NeuroDeckAction, NeuroDeckState, PluginCard } from '../types/neurodeck';
 import { controllerDefaults } from '../input/controller/controllerStore';
+
+function getInitialShowOnboarding(): boolean {
+  try {
+    return localStorage.getItem('neurodeck_onboarding_complete') !== 'true';
+  } catch {
+    return true;
+  }
+}
 
 const initialState: NeuroDeckState = {
   hydrated: false,
@@ -16,7 +24,7 @@ const initialState: NeuroDeckState = {
   selectedModelId: '',
   activeAgentId: 'general',
   selectedFont: 'inter',
-  showOnboarding: true,
+  showOnboarding: getInitialShowOnboarding(),
   composerValue: '',
   busyLabel: null,
   toolStatus: null,

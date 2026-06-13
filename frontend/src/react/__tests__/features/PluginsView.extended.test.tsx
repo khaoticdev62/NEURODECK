@@ -123,7 +123,7 @@ describe('PluginsView — Extended Features', () => {
     await waitFor(() => screen.getByText('Dangerous JS Plugin'));
 
     // Enable the dangerous JS plugin (which has shell_execution)
-    const toggleBtn = screen.getByRole('button', { name: /enable dangerous js plugin/i });
+    const toggleBtn = screen.getByRole('switch', { name: /enable dangerous js plugin/i });
     await userEvent.click(toggleBtn);
 
     // It should render the security warning modal instead of toggling immediately

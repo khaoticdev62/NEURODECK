@@ -25,7 +25,7 @@ for f_name in files:
                 or "addEventListener" in line
                 or ".onclick =" in line
             ):
-                print(f"Line {idx+1:5d}: {line.strip()}")
+                print(f"Line {idx + 1:5d}: {line.strip()}")
 
         brace_count += stripped.count("{")
         brace_count -= stripped.count("}")

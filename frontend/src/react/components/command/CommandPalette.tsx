@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch } from 'react';
-import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileCode, FileDown, FileJson, FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers, Lock, Magnet, Network, Paintbrush, Palette, Plug, Radio, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
+import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileDown, FileJson, FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers, Lock, Magnet, Network, Paintbrush, Palette, Plug, Radio, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { starterPrompts } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
@@ -296,8 +296,8 @@ export function CommandPalette({
   );
 
   return (
-    <div id="command-palette-overlay" data-controller-overlay={isOpen ? 'true' : undefined} className={`${isOpen ? 'active' : 'hidden'} fixed inset-0 z-50 flex items-start justify-center bg-black/55 px-4 pt-20 backdrop-blur-sm`} onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}>
-      <div className="no-drag w-full max-w-2xl overflow-hidden rounded-3xl border border-nd-accent/25 bg-nd-bg/95 shadow-2xl shadow-nd-accent/10" onMouseDown={(event) => event.stopPropagation()}>
+    <div id="command-palette-overlay" data-controller-overlay={isOpen ? 'true' : undefined} className={`command-palette-overlay ${isOpen ? 'active' : ''} fixed inset-0 z-50 flex items-start justify-center`} onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}>
+      <div className="command-palette-card no-drag w-full max-w-2xl overflow-hidden" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-nd-text-muted/15 px-4 py-3">
           <Search className="h-5 w-5 text-nd-accent" />
           <input
@@ -346,7 +346,7 @@ export function CommandPalette({
           )}
 
           <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">{normalizedQuery ? `Results (${filteredCommands.length})` : 'All Commands'}</p>
-          <div className="space-y-1.5" role="listbox">
+          <div className="space-y-1.5" role="listbox" aria-label="Command results">
             {filteredCommands.map((command, index) => {
               const Icon = command.icon;
               const isSelected = index === selectedIndex;

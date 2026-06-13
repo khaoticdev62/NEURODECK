@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
+import { FocusTrap } from '../../../focus-trap.js';
 
 interface ModalProps {
   open: boolean;
@@ -19,15 +20,6 @@ const sizeClasses = {
   xl: 'max-w-2xl',
 };
 
-const FOCUSABLE = [
-  'a[href]',
-  'button:not(:disabled)',
-  'input:not(:disabled)',
-  'select:not(:disabled)',
-  'textarea:not(:disabled)',
-  '[tabindex]:not([tabindex="-1"])',
-].join(',');
-
 export function Modal({
   open,
   onClose,
@@ -39,65 +31,31 @@ export function Modal({
   closeOnBackdrop = true,
 }: ModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<Element | null>(null);
+  const trapRef = useRef<FocusTrap | null>(null);
 
-  // Save focus target before opening; restore it on close
-  useEffect(() => {
-    if (open) {
-      previousFocusRef.current = document.activeElement;
-    } else {
-      (previousFocusRef.current as HTMLElement | null)?.focus();
-    }
-  }, [open]);
-
-  // Focus first focusable element inside modal when it opens
-  useEffect(() => {
-    if (!open || !dialogRef.current) return;
-    const first = dialogRef.current.querySelector<HTMLElement>(FOCUSABLE);
-    (first ?? dialogRef.current).focus();
-  }, [open]);
-
-  // Escape to close + Tab/Shift+Tab focus trap
+  // Escape to close
   useEffect(() => {
     if (!open) return;
-
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
         onClose();
-        return;
-      }
-
-      if (e.key !== 'Tab' || !dialogRef.current) return;
-
-      const focusable = Array.from(
-        dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE)
-      ).filter((el) => !el.closest('[aria-hidden="true"]'));
-
-      if (focusable.length === 0) {
-        e.preventDefault();
-        return;
-      }
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
       }
     };
-
     document.addEventListener('keydown', onKey, true);
     return () => document.removeEventListener('keydown', onKey, true);
   }, [open, onClose]);
+
+  // Focus trap activation / deactivation (restores focus on close)
+  useEffect(() => {
+    if (!open || !dialogRef.current) return;
+    trapRef.current = new FocusTrap(dialogRef.current);
+    trapRef.current.activate();
+    return () => {
+      trapRef.current?.deactivate();
+      trapRef.current = null;
+    };
+  }, [open]);
 
   if (!open) return null;
 
@@ -136,7 +94,7 @@ export function Modal({
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="rounded-lg p-1 text-nd-text-muted transition-colors hover:bg-nd-surface-raised hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+              className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg p-1 text-nd-text-muted transition-colors hover:bg-nd-surface-raised hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
             >
               <X className="h-4 w-4" />
             </button>

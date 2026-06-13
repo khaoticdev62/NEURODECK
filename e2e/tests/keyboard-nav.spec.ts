@@ -127,9 +127,10 @@ test("? key opens shortcuts overlay (when no input focused)", async ({ page }) =
 
 test("Ctrl+Shift+P opens controller prompt overlay", async ({ page }) => {
   await page.keyboard.press("Control+Shift+P");
-  await expect(page.locator("#ctrl-prompt-overlay")).toHaveClass(/active/);
+  const overlay = page.locator("#ctrl-prompt-overlay");
+  await expect(overlay).toHaveClass(/active/);
   await page.keyboard.press("Escape");
-  await expect(page.locator("#ctrl-prompt-overlay")).not.toHaveClass(/active/);
+  await expect(overlay).toBeHidden();
 });
 
 // ── Quick switcher keyboard ───────────────────────────────────────────────────

@@ -132,9 +132,24 @@ export class AppPage {
   }
 
   async navigateTo(view: string) {
-    const tab = this.page.getByTestId(`nav-tab-${view}`);
-    await tab.scrollIntoViewIfNeeded();
-    await tab.click();
+    const tab = this.page.locator(`button[data-view="${view}"]:visible`).first();
+    const count = await tab.count();
+    if (count > 0) {
+      await tab.scrollIntoViewIfNeeded();
+      // Direct click dispatch avoids hover-expand sidebar shifting between
+      // mousedown/mouseup and works for both desktop and mobile bars.
+      await tab.evaluate((el) => (el as HTMLButtonElement).click());
+    } else {
+      // Narrow/mobile viewports only expose primary tabs; fall back to the
+      // command palette for the rest of the views.
+      await this.openCommandPalette();
+      const input = this.page.locator('#command-palette-input');
+      const label = view.charAt(0).toUpperCase() + view.slice(1);
+      await input.fill(`Open ${label}`);
+      const item = this.page.locator('.command-palette-item').filter({ hasText: new RegExp(`Open ${label}`, 'i') }).first();
+      await item.click();
+      await this.closeCommandPalette();
+    }
     await expect(this.page.getByTestId(`view-${view}`)).toHaveClass(/active/);
   }
 

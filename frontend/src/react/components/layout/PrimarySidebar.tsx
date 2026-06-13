@@ -14,7 +14,7 @@ type SidebarProps = {
   onOpenSettings?: () => void;
 };
 
-export function PrimarySidebar({ state, dispatch, onOpenSettings }: SidebarProps) {
+export function PrimarySidebar({ state, dispatch }: SidebarProps) {
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const expanded = pinned || hovered;
@@ -196,6 +196,7 @@ export function PrimarySidebar({ state, dispatch, onOpenSettings }: SidebarProps
               key={item.id}
               type="button"
               data-testid={`mobile-nav-tab-${item.id}`}
+              data-view={item.id}
               aria-current={active ? 'page' : undefined}
               aria-label={item.label}
               onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}

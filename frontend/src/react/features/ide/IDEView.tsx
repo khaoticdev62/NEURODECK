@@ -15,6 +15,8 @@ import { RadialCommandWheel } from './RadialCommandWheel';
 import { SafeCommandConfirmModal } from './SafeCommandConfirmModal';
 import { Modal } from '../../components/primitives/Modal';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
+import { Button } from '../../components/primitives/Button';
+import { TextInput } from '../../components/primitives/TextInput';
 import type { DiagnosticFix } from './DiagnosticFixPanel';
 import { DiagnosticFixPanel } from './DiagnosticFixPanel';
 
@@ -106,6 +108,7 @@ export function IDEView() {
   const [newFileName, setNewFileName] = useState('untitled.txt');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [pendingDeleteTab, setPendingDeleteTab] = useState<OpenTab | null>(null);
+  const [lineCount, setLineCount] = useState(1);
 
   // Debounce refs
   const lspChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -236,11 +239,9 @@ export function IDEView() {
   }, []);
 
   const updateLineNumbers = useCallback(() => {
-    if (!editorRef.current || !lineNumbersRef.current) return;
+    if (!editorRef.current) return;
     const lines = editorRef.current.value.split('\n').length;
-    lineNumbersRef.current.innerHTML = Array.from({ length: lines }, (_, i) =>
-      `<div class="px-2 text-right text-[11px] leading-5 text-nd-text-muted/40 select-none">${i + 1}</div>`
-    ).join('');
+    setLineCount(lines);
   }, []);
 
   // ── Cursor change → fetch predictions (debounced 200ms) ──────────────
@@ -513,7 +514,13 @@ export function IDEView() {
                   )}
                 </div>
                 <div className="relative flex min-h-0 flex-1">
-                  <div ref={lineNumbersRef} className="w-10 shrink-0 overflow-hidden py-3" aria-hidden="true" />
+                  <div ref={lineNumbersRef} className="w-10 shrink-0 overflow-hidden py-3" aria-hidden="true">
+                    {Array.from({ length: lineCount }, (_, i) => (
+                      <div key={i} className="px-2 text-right text-[11px] leading-5 text-nd-text-muted/40 select-none">
+                        {i + 1}
+                      </div>
+                    ))}
+                  </div>
                   <textarea
                     ref={editorRef}
                     onInput={onEditorInput}
@@ -632,29 +639,23 @@ export function IDEView() {
         size="sm"
         footer={
           <>
-            <button
-              type="button"
-              onClick={() => setNewFileModalOpen(false)}
-              className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted"
-            >
+            <Button variant="ghost" onClick={() => setNewFileModalOpen(false)}>
               Cancel
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="primary"
               onClick={() => void newFile()}
               disabled={!newFileName.trim()}
-              className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent disabled:opacity-50"
             >
               Create
-            </button>
+            </Button>
           </>
         }
       >
-        <input
+        <TextInput
           value={newFileName}
           onChange={(event) => setNewFileName(event.target.value)}
           placeholder="untitled.txt"
-          className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 px-3 py-2 text-sm text-nd-text outline-none"
         />
       </Modal>
 
@@ -676,7 +677,7 @@ function IconBtn({ children, title, onClick }: { children: React.ReactNode; titl
       type="button"
       title={title}
       onClick={onClick}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text/80 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+      className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-xl text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text/80 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
       aria-label={title}
     >
       {children}

@@ -10,7 +10,7 @@ interface CanvasWallpaperRendererProps {
 
 type Particle =
   | number
-  | { x: number; y: number; z: number; color: string }
+  | { x: number; y: number; z: number; isAccent: boolean }
   | { x: number; y: number; vx: number; vy: number; r: number }
   | { x: number; y: number; size: number; alpha: number; speed: number; label: string }
   | {
@@ -20,7 +20,7 @@ type Particle =
       growSpeed: number;
       stepsRemaining: number;
       alpha: number;
-      color: string;
+      isAccent: boolean;
     }
   | { text: string; y: number; speed: number; alpha: number };
 
@@ -97,7 +97,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
         x: Math.random() * w - w / 2,
         y: Math.random() * h - h / 2,
         z: Math.random() * w,
-        color: Math.random() > 0.5 ? "var(--nd-accent)" : "var(--nd-success)",
+        isAccent: Math.random() > 0.5,
       }));
     } else if (wallpaperId === "ghost_particles") {
       particlesRef.current = Array.from({ length: 45 }, () => ({
@@ -140,7 +140,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
       growSpeed: 1.5 + Math.random() * 1.5,
       stepsRemaining: Math.floor(Math.random() * 12) + 8,
       alpha: 1.0,
-      color: Math.random() > 0.4 ? "var(--nd-accent)" : "var(--nd-success)",
+      isAccent: Math.random() > 0.4,
     };
   };
 
@@ -190,7 +190,6 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
   const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
     const ac = resolvedTokens?.color?.accent?.primary ?? "#00F0FF";
     const sc = resolvedTokens?.color?.state?.success ?? "#00FF88";
-    const sec = resolvedTokens?.color?.accent?.secondary ?? "#7c3aed";
 
     if (wallpaperId === "terminal_rainfield") {
       drawMatrix(ctx, w, h, ac);
@@ -279,7 +278,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.fillStyle = grad2;
     ctx.fillRect(0, 0, w, h);
 
-    const ps = particlesRef.current as Array<{ x: number; y: number; z: number; color: string }>;
+    const ps = particlesRef.current as Array<{ x: number; y: number; z: number; isAccent: boolean }>;
     const mx = mouseRef.current.x;
     const my = mouseRef.current.y;
 
@@ -312,7 +311,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
 
       if (nx >= 0 && nx <= w && ny >= 0 && ny <= h) {
         const alpha = 1 - star.z / w;
-        ctx.strokeStyle = star.color.includes("accent") ? ac : rc;
+        ctx.strokeStyle = star.isAccent ? ac : rc;
         ctx.lineWidth = alpha * 2.2;
         ctx.globalAlpha = alpha;
         ctx.beginPath();
@@ -597,7 +596,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
       growSpeed: number;
       stepsRemaining: number;
       alpha: number;
-      color: string;
+      isAccent: boolean;
     }>;
 
     for (let i = 0; i < ps.length; i++) {
@@ -623,7 +622,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
       }
 
       if (line.points.length > 1) {
-        ctx.strokeStyle = line.color.includes("accent") ? ac : rc;
+        ctx.strokeStyle = line.isAccent ? ac : rc;
         ctx.globalAlpha = line.alpha * 0.16;
         ctx.lineWidth = 1.3;
         ctx.beginPath();
@@ -634,7 +633,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
         ctx.stroke();
 
         const head = line.points[line.points.length - 1];
-        ctx.fillStyle = line.color.includes("accent") ? ac : rc;
+        ctx.fillStyle = line.isAccent ? ac : rc;
         ctx.globalAlpha = line.alpha * 0.4;
         ctx.fillRect(head.x - 2, head.y - 2, 4, 4);
 

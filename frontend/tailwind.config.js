@@ -110,8 +110,41 @@ export default {
         slow:   'var(--nd-transition-slow, 400ms)',
       },
 
+      transitionTimingFunction: {
+        standard: 'var(--nd-ease-standard, cubic-bezier(0.4, 0, 0.2, 1))',
+        emphasis: 'var(--nd-ease-emphasis, cubic-bezier(0.34, 1.56, 0.64, 1))',
+      },
+
+      borderRadius: {
+        panel: 'var(--nd-radius-panel, 12px)',
+        modal: 'var(--nd-radius-modal, 16px)',
+        pill:  'var(--nd-radius-pill, 9999px)',
+      },
+
+      spacing: {
+        screen: 'var(--nd-spacing-screen, 16px)',
+        panel:  'var(--nd-spacing-panel, 12px)',
+        card:   'var(--nd-spacing-card, 12px)',
+        touch:  'var(--nd-spacing-touch-target, 40px)',
+      },
+
+      screens: {
+        compact: '1024px',
+        deck:    '1280px',
+        desktop: '1440px',
+        wide:    '1920px',
+      },
+
       boxShadow: {
-        'focus':             '0 0 0 2px rgba(94, 235, 255, 0.25)',
+        // Token-driven elevation scale (preferred). Legacy hard-coded shadows
+        // remain available for compatibility during the migration period.
+        'focus':             '0 0 0 2px var(--nd-border-focus, rgba(94, 235, 255, 0.25))',
+        'focus-token':       '0 0 0 2px var(--nd-border-focus)',
+        'raised-token':      'var(--nd-elevation-raised)',
+        'floating-token':    'var(--nd-elevation-floating)',
+        'overlay-token':     'var(--nd-elevation-overlay)',
+        'modal-token':       'var(--nd-elevation-modal)',
+        'critical-token':    'var(--nd-elevation-critical)',
         'glow-sm':           '0 0 8px var(--nd-glow)',
         'glow-md':           '0 0 16px var(--nd-glow)',
         'glow-lg':           '0 0 32px var(--nd-glow)',

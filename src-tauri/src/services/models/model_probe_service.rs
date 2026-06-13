@@ -119,7 +119,11 @@ pub async fn run_model_probe(
             (url, body)
         }
         "openai_compatible_local" | "openai_compatible_remote" | "llama_cpp_server" => {
-            let chat_path = runtime.endpoints.chat.as_deref().unwrap_or("/v1/chat/completions");
+            let chat_path = runtime
+                .endpoints
+                .chat
+                .as_deref()
+                .unwrap_or("/v1/chat/completions");
             let url = format!("{}{}", base_url.trim_end_matches('/'), chat_path);
             let body = json!({
                 "model": model_id,

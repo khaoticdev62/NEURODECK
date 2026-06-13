@@ -1,11 +1,11 @@
+use crate::bridge::WsBroadcaster;
+use crate::user_config_dir;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::sync::{Arc, Mutex};
 use uuid::Uuid;
-use crate::bridge::WsBroadcaster;
-use crate::user_config_dir;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -81,7 +81,8 @@ pub fn save_progress(progress: LearnerProgress) -> Result<(), String> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("Create academy dir: {e}"))?;
     }
-    let json = serde_json::to_string_pretty(&progress).map_err(|e| format!("Serialize progress: {e}"))?;
+    let json =
+        serde_json::to_string_pretty(&progress).map_err(|e| format!("Serialize progress: {e}"))?;
     fs::write(&path, json).map_err(|e| format!("Write progress: {e}"))
 }
 
@@ -139,7 +140,9 @@ pub fn complete_lab(payload: CompletionPayload) -> Result<CompletionResult, Stri
         let cur = updated.skill_scores.get(skill).copied().unwrap_or(0);
         // Max gain per lab = 25 pts, reduced as current score increases
         let gain = ((payload.score as f32 / 100.0) * 25.0 * (1.0 - cur as f32 / 100.0)) as u32;
-        updated.skill_scores.insert(skill.clone(), (cur + gain).min(100));
+        updated
+            .skill_scores
+            .insert(skill.clone(), (cur + gain).min(100));
     }
 
     updated.last_active = chrono::Utc::now().to_rfc3339();
@@ -170,7 +173,10 @@ pub fn complete_lab(payload: CompletionPayload) -> Result<CompletionResult, Stri
     }
     save_progress(updated.clone())?;
 
-    Ok(CompletionResult { portfolio_id, updated_progress: updated })
+    Ok(CompletionResult {
+        portfolio_id,
+        updated_progress: updated,
+    })
 }
 
 pub fn list_portfolio() -> Result<Vec<PortfolioEntry>, String> {
@@ -188,7 +194,10 @@ pub fn list_portfolio() -> Result<Vec<PortfolioEntry>, String> {
         match fs::read_to_string(&path) {
             Ok(raw) => match serde_json::from_str::<PortfolioEntry>(&raw) {
                 Ok(pe) => entries.push(pe),
-                Err(e) => eprintln!("[academy] Skipping malformed portfolio entry {:?}: {e}", path),
+                Err(e) => eprintln!(
+                    "[academy] Skipping malformed portfolio entry {:?}: {e}",
+                    path
+                ),
             },
             Err(e) => eprintln!("[academy] Could not read portfolio entry {:?}: {e}", path),
         }
@@ -203,7 +212,7 @@ pub fn list_portfolio() -> Result<Vec<PortfolioEntry>, String> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MentorMessage {
-    pub role: String,    // "student" | "mentor"
+    pub role: String, // "student" | "mentor"
     pub content: String,
 }
 
@@ -258,7 +267,11 @@ pub async fn mentor_query(
         if !payload.history.is_empty() {
             parts.push("Conversation so far:".to_string());
             for msg in &payload.history {
-                let label = if msg.role == "student" { "Student" } else { "Alex" };
+                let label = if msg.role == "student" {
+                    "Student"
+                } else {
+                    "Alex"
+                };
                 parts.push(format!("{}: {}", label, msg.content));
             }
             parts.push(String::new());

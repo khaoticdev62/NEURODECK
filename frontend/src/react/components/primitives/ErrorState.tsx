@@ -22,7 +22,7 @@ export function ErrorState({
       aria-live="assertive"
       className={[
         'flex flex-col items-center justify-center gap-3 text-center',
-        fullHeight ? 'h-full min-h-[200px]' : 'py-10',
+        fullHeight ? 'h-full min-h-48' : 'py-10',
       ].join(' ')}
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-nd-accent-error/20 bg-nd-accent-error/10">

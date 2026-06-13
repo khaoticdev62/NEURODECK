@@ -24,22 +24,22 @@ describe('IconButton', () => {
 
   it('applies md size classes by default', () => {
     const { container } = render(<IconButton aria-label="x"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('min-h-[40px]');
+    expect(container.querySelector('button')?.className).toContain('min-h-touch');
   });
 
   it('applies sm size classes', () => {
     const { container } = render(<IconButton aria-label="x" size="sm"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('min-h-[40px]');
+    expect(container.querySelector('button')?.className).toContain('min-h-touch');
   });
 
   it('applies lg size classes', () => {
     const { container } = render(<IconButton aria-label="x" size="lg"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('min-h-[44px]');
+    expect(container.querySelector('button')?.className).toContain('min-h-11');
   });
 
   it('applies xl size classes', () => {
     const { container } = render(<IconButton aria-label="x" size="xl"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('min-h-[48px]');
+    expect(container.querySelector('button')?.className).toContain('min-h-12');
   });
 
   it('applies subtle variant by default', () => {
@@ -66,5 +66,12 @@ describe('IconButton', () => {
   it('accepts custom className', () => {
     const { container } = render(<IconButton aria-label="x" className="custom-cls"><X /></IconButton>);
     expect(container.querySelector('button')?.className).toContain('custom-cls');
+  });
+
+  it('forwards ref to underlying button element', () => {
+    let ref: HTMLButtonElement | null = null;
+    render(<IconButton aria-label="x" ref={(el) => { ref = el; }}><X /></IconButton>);
+    expect(ref).not.toBeNull();
+    expect((ref as HTMLButtonElement | null)?.tagName).toBe('BUTTON');
   });
 });

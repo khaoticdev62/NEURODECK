@@ -1,5 +1,3 @@
-import re
-
 path = "C:/Users/thecr/Desktop/S-Term/frontend/src/app.css"
 with open(path, "r", encoding="utf-8") as f:
     css = f.read()
@@ -211,7 +209,7 @@ print(f"Remaining backdrop-filter lines: {remaining}")
 
 if remaining:
     for ln in remaining:
-        print(f"  Line {ln}: {css.split(chr(10))[ln-1]}")
+        print(f"  Line {ln}: {css.split(chr(10))[ln - 1]}")
 
 changed = sum(1 for a, b in zip(original.split("\n"), css.split("\n")) if a != b)
 print(f"Modified lines: {changed}")

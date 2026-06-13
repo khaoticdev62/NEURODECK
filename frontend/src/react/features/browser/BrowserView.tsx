@@ -36,6 +36,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { BrowserVpnPanel } from "../browser-vpn/BrowserVpnPanel";
+import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
 
 interface BrowserTab {
   id: string;
@@ -122,6 +123,20 @@ interface PermissionRequest {
   origin: string;
   permission: string;
   profileId: string;
+}
+
+const ALLOWED_NAVIGATION_SCHEMES = ["http:", "https:"];
+
+function isAllowedNavigationUrl(input: string): boolean {
+  const trimmed = input.trim();
+  if (!trimmed) return false;
+  try {
+    const url = new URL(trimmed);
+    return ALLOWED_NAVIGATION_SCHEMES.includes(url.protocol);
+  } catch {
+    // No scheme means a search query; let the sidecar normalize it.
+    return true;
+  }
 }
 
 export function BrowserView() {
@@ -216,6 +231,10 @@ export function BrowserView() {
 
   const createTab = async (urlStr: string = "https://example.com") => {
     if (!window.neurodeck?.browser) return;
+    if (!isAllowedNavigationUrl(urlStr)) {
+      showNotice("error", "Blocked: only http/https URLs can be opened.");
+      return;
+    }
     try {
       const activeTab = tabs.find((t) => t.id === activeTabId);
       const profileId = activeTab?.profileId || "default";
@@ -259,6 +278,10 @@ export function BrowserView() {
 
   const navigate = async (targetUrl: string) => {
     if (!targetUrl.trim() || !window.neurodeck?.browser) return;
+    if (!isAllowedNavigationUrl(targetUrl)) {
+      showNotice("error", "Blocked: only http/https URLs can be opened.");
+      return;
+    }
     try {
       let tabId = activeTabId;
       if (!tabId) {
@@ -913,7 +936,13 @@ export function BrowserView() {
             </button>
 
             {showProfilesMenu && (
-              <div className="absolute right-0 top-full z-[999] mt-1.5 w-64 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/98 p-3 shadow-2xl backdrop-blur-xl">
+              <FocusTrapContainer
+                active={showProfilesMenu}
+                onEscape={() => setShowProfilesMenu(false)}
+                className="absolute right-0 top-full z-[999] mt-1.5 w-64 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/98 p-3 shadow-2xl backdrop-blur-xl"
+                role="dialog"
+                aria-label="Switch browser profile"
+              >
                 <div className="mb-2 px-2 text-[10px] font-bold uppercase tracking-wider text-nd-text-muted">
                   Session Profile Isolation
                 </div>
@@ -958,7 +987,7 @@ export function BrowserView() {
                     <span>Clear Profile Storage</span>
                   </button>
                 )}
-              </div>
+              </FocusTrapContainer>
             )}
           </div>
 
@@ -1041,7 +1070,13 @@ export function BrowserView() {
 
       {/* Find Bar */}
       {findOpen && (
-        <div className="flex items-center gap-3 border-b border-nd-accent/20 bg-nd-accent/5 px-4 py-2 shrink-0">
+        <FocusTrapContainer
+          active={findOpen}
+          onEscape={() => setFindOpen(false)}
+          className="flex items-center gap-3 border-b border-nd-accent/20 bg-nd-accent/5 px-4 py-2 shrink-0"
+          role="dialog"
+          aria-label="Find in page"
+        >
           <Search className="h-4 w-4 text-nd-accent" />
           <input
             type="text"
@@ -1077,12 +1112,18 @@ export function BrowserView() {
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
-        </div>
+        </FocusTrapContainer>
       )}
 
       {/* Diagnostics Panel Overlay */}
       {showDiagnostics && (
-        <div className="absolute right-4 top-24 z-[999] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl">
+        <FocusTrapContainer
+          active={showDiagnostics}
+          onEscape={() => setShowDiagnostics(false)}
+          className="absolute right-4 top-24 z-[999] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl"
+          role="dialog"
+          aria-label="Browser diagnostics panel"
+        >
           <div className="flex items-center justify-between mb-3 border-b border-nd-text-muted/10 pb-2">
             <h4 className="text-sm font-semibold text-nd-text flex items-center gap-1.5">
               <Terminal className="h-4 w-4 text-nd-accent" />
@@ -1141,12 +1182,18 @@ export function BrowserView() {
               </div>
             )}
           </div>
-        </div>
+        </FocusTrapContainer>
       )}
 
       {/* Downloads Panel Overlay */}
       {showDownloadsMenu && (
-        <div className="absolute right-4 top-24 z-[999] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl">
+        <FocusTrapContainer
+          active={showDownloadsMenu}
+          onEscape={() => setShowDownloadsMenu(false)}
+          className="absolute right-4 top-24 z-[999] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl"
+          role="dialog"
+          aria-label="Downloads tracker"
+        >
           <div className="flex items-center justify-between mb-3 border-b border-nd-text-muted/10 pb-2">
             <h4 className="text-sm font-semibold text-nd-text flex items-center gap-1.5">
               <Download className="h-4 w-4 text-nd-accent" />
@@ -1236,10 +1283,20 @@ export function BrowserView() {
               })
             )}
           </div>
-        </div>
+        </FocusTrapContainer>
       )}
 
-      {showVpnPanel && <BrowserVpnPanel visible={showVpnPanel} onClose={() => setShowVpnPanel(false)} />}
+      {showVpnPanel && (
+        <FocusTrapContainer
+          active={showVpnPanel}
+          onEscape={() => setShowVpnPanel(false)}
+          className="absolute inset-0 z-[1200] flex items-start justify-end bg-nd-bg/60 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-label="Browser VPN"
+        >
+          <BrowserVpnPanel visible={showVpnPanel} onClose={() => setShowVpnPanel(false)} />
+        </FocusTrapContainer>
+      )}
 
       {/* Main Viewport & Collapsible Sidebar Drawer */}
       <div className="flex flex-1 min-h-0 relative">
@@ -1535,7 +1592,13 @@ export function BrowserView() {
 
         {/* Sidebar Drawer */}
         {showSidebar && (
-          <div className="w-80 border-l border-nd-text-muted/10 bg-nd-surface/20 flex flex-col shrink-0 animate-in slide-in-from-right duration-250 backdrop-blur-lg">
+          <FocusTrapContainer
+            active={Boolean(showSidebar)}
+            onEscape={() => setShowSidebar(null)}
+            className="w-80 border-l border-nd-text-muted/10 bg-nd-surface/20 flex flex-col shrink-0 animate-in slide-in-from-right duration-250 backdrop-blur-lg"
+            role="dialog"
+            aria-label={showSidebar === "history" ? "History Log" : "Saved Bookmarks"}
+          >
             <div className="flex items-center justify-between p-3 border-b border-nd-text-muted/10">
               <span className="text-xs font-bold uppercase tracking-wider text-nd-text">
                 {showSidebar === "history" ? "History Log" : "Saved Bookmarks"}
@@ -1630,7 +1693,7 @@ export function BrowserView() {
                 </>
               )}
             </div>
-          </div>
+          </FocusTrapContainer>
         )}
       </div>
 

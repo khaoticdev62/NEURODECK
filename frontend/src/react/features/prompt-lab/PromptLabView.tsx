@@ -435,7 +435,7 @@ export function PromptLabView() {
           <div className="grid min-h-[110px] grid-cols-2 gap-3">
             <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Saved Prompts</div>
-              <div id="pd-saved-list" className="grid max-h-28 gap-2 overflow-auto scrollbar-thin">
+              <div id="pd-saved-list" className="grid max-h-28 gap-2 overflow-auto scrollbar-thin" tabIndex={0} aria-label="Saved prompts">
                 {savedPrompts.length ? savedPrompts.map((prompt) => (
                   <button key={prompt.id} type="button" onClick={() => setPreviewText(prompt.prompt)} className="promptdrive-saved-item min-w-0 overflow-hidden rounded-lg border border-nd-text-muted/15 px-2.5 py-2 text-left text-xs text-nd-text/80 hover:border-nd-text-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
                     <span className="block truncate font-medium">{prompt.title}</span>
@@ -447,7 +447,7 @@ export function PromptLabView() {
 
             <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
               <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Macros</div>
-              <div id="pd-macro-list" className="grid max-h-28 gap-2 overflow-auto scrollbar-thin">
+              <div id="pd-macro-list" className="grid max-h-28 gap-2 overflow-auto scrollbar-thin" tabIndex={0} aria-label="Recorded macros">
                 {macros.length ? macros.map((macro) => (
                   <div key={macro.id} className="promptdrive-macro-item flex items-center justify-between gap-2 rounded-lg border border-nd-text-muted/15 px-2.5 py-2 text-xs text-nd-text/80">
                     <div className="min-w-0 overflow-hidden">

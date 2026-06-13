@@ -8,21 +8,20 @@ test.beforeEach(async ({ page }) => {
   await app.goto();
 });
 
-test("terminal view renders xterm container and toolbar", async ({ page }) => {
+test("terminal view renders container and toolbar", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("terminal");
-  await expect(page.locator(".term-topbar")).toBeVisible();
-  await expect(page.locator("#terminal-tabs-list")).toBeVisible();
-  await expect(page.locator("#terminal-add-tab-btn")).toBeVisible();
+  await expect(page.locator(".terminal-screen")).toBeVisible();
+  await expect(page.locator("#terminal-new-tab-btn")).toBeVisible();
 });
 
-test("canvas view renders editor, toolbar, and preview pane", async ({ page }) => {
+test("canvas view renders editor, toolbar, and output pane", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("canvas");
   await expect(page.locator("#canvas-lang-select")).toBeVisible();
   await expect(page.locator("#canvas-run-btn")).toBeVisible();
   await expect(page.locator("#canvas-monaco")).toBeVisible();
-  await expect(page.locator("#canvas-preview-frame")).toBeVisible();
+  await expect(page.locator(".canvas-output-pane, #canvas-preview-frame")).toBeVisible();
 });
 
 test("ssh view renders connection form", async ({ page }) => {
@@ -33,12 +32,10 @@ test("ssh view renders connection form", async ({ page }) => {
   await expect(page.locator("#ssh-connect-btn")).toBeVisible();
 });
 
-test("browser view renders address bar and home page", async ({ page }) => {
+test("browser view renders address bar", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("browser");
-  await expect(page.locator("#browser-url-input")).toBeVisible();
-  await expect(page.locator("#browser-go-btn")).toBeVisible();
-  await expect(page.locator(".browser-home-kicker")).toBeVisible();
+  await expect(page.locator("#browser-address-input")).toBeVisible();
 });
 
 test("agent view renders model indicator and action buttons", async ({ page }) => {
@@ -49,7 +46,7 @@ test("agent view renders model indicator and action buttons", async ({ page }) =
   await expect(page.locator("#agent-task-input")).toBeVisible();
 });
 
-test("memory view renders search and upload controls", async ({ page }) => {
+test("memory view renders search and save controls", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("memory");
   await expect(page.locator(".memory-search-shell")).toBeVisible();

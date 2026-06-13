@@ -12,7 +12,7 @@ export function Skeleton({
       {Array.from({ length: count }, (_, i) => (
         <div
           key={i}
-          className={`relative overflow-hidden rounded-xl bg-nd-surface/60 animate-pulse ${className}`}
+          className={`relative overflow-hidden rounded-xl bg-nd-surface/60 animate-pulse motion-reduce:animate-none ${className}`}
           style={{ animationDelay: `${i * 80 + delay}ms` }}
         >
           <span

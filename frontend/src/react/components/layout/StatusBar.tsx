@@ -1,4 +1,4 @@
-import type { NeuroDeckState, StatusBarState, ToolStatus } from "../../types/neurodeck";
+import type { NeuroDeckState, ToolStatus } from "../../types/neurodeck";
 import { StatusChip } from "../primitives/StatusChip";
 import { Skeleton } from "../primitives/Skeleton";
 import {
@@ -51,7 +51,7 @@ export function StatusBar({ state }: { state: NeuroDeckState }) {
     );
   }
 
-  if (!bar) {
+  if (!bar?.connection) {
     return (
       <div
         role="status"

@@ -246,7 +246,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(IPC.DIAGNOSTICS_PING_RENDERER, handler);
     return () => ipcRenderer.removeListener(IPC.DIAGNOSTICS_PING_RENDERER, handler);
   },
-  diagnosticsPong: (requestId) => ipcRenderer.invoke(IPC.DIAGNOSTICS_PONG_RENDERER, makeRequest({ requestId })),
+  diagnosticsPong: (request) => ipcRenderer.invoke(IPC.DIAGNOSTICS_PONG_RENDERER, makeRequest(request)),
 });
 
 // Expose the new typed window.neurodeck API for secure connection wiring

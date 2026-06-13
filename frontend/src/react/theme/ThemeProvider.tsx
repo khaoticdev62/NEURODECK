@@ -11,6 +11,8 @@ import { themePersistenceClient } from "./themePersistenceClient";
 import { injectThemeVariables } from "./cssVariableInjector";
 import { neurodeckApi } from "../services/bridgeAdapter";
 import { resolveThemeIdFromBackend } from "./themeIdMapper";
+import { validateThemeSettings } from "../../../../src/shared/theme/themeSchemas";
+import type { ThemeDisplayTarget, ThemePerformanceTier } from "../../shared/theme/themeContracts";
 
 interface ThemeContextType {
   settings: ThemeSettings;
@@ -61,6 +63,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         loaded = { ...loaded, activeThemeId: DEFAULT_SETTINGS_FALLBACK.activeThemeId };
       }
 
+      // Normalize legacy or corrupted settings values to the canonical schema.
+      // This prevents crashes when older persisted shapes differ from the current
+      // ThemeSettings contract.
+      loaded = normalizeThemeSettings(loaded);
+
       try {
         const init = await neurodeckApi.getInitialState();
         const backendName = init?.active_theme_name ?? null;
@@ -83,6 +90,16 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const availableThemes = useMemo(() => themeRegistry.listThemes(), []);
   const availableWallpapers = useMemo(() => wallpaperRegistry.listWallpapers(), []);
+
+  // Validate shape once on first load for diagnostics; invalid fields are
+  // already normalized above, but this surfaces missing keys in dev builds.
+  useEffect(() => {
+    const check = validateThemeSettings(settings);
+    if (!check.valid) {
+      // eslint-disable-next-line no-console
+      console.warn("[ThemeProvider] theme settings validation:", check.errors);
+    }
+  }, []);
 
   const activeTheme = useMemo(() => {
     return themeRegistry.getTheme(settings.activeThemeId) || availableThemes[0];
@@ -149,6 +166,62 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </ThemeContext.Provider>
   );
 };
+
+const CANONICAL_DISPLAY_TARGETS = new Set<string>([
+  "steamdeck_lcd",
+  "steamdeck_oled",
+  "desktop_1080p",
+  "desktop_1440p",
+  "desktop_4k",
+  "docked_tv",
+]);
+
+const CANONICAL_ACCESSIBILITY_PROFILES = new Set<string>([
+  "default",
+  "high_contrast",
+  "low_vision",
+  "colorblind_safe",
+  "reduced_motion",
+  "dyslexia_focus",
+]);
+
+const CANONICAL_PERFORMANCE_TIERS = new Set<string>([
+  "battery_saver",
+  "balanced",
+  "premium",
+  "showcase",
+]);
+
+function normalizeThemeSettings(loaded: ThemeSettings): ThemeSettings {
+  const normalized = { ...loaded };
+
+  const rawDisplay = String(loaded.displayProfile ?? "");
+  if (!CANONICAL_DISPLAY_TARGETS.has(rawDisplay)) {
+    const legacyMap: Record<string, ThemeDisplayTarget> = {
+      desktop_lcd: "desktop_1080p",
+      desktop_oled: "desktop_4k",
+      broadcast_monitor: "docked_tv",
+    };
+    normalized.displayProfile = legacyMap[rawDisplay] ?? DEFAULT_SETTINGS_FALLBACK.displayProfile;
+  }
+
+  const rawAccessibility = String(loaded.accessibilityProfile ?? "");
+  if (!CANONICAL_ACCESSIBILITY_PROFILES.has(rawAccessibility)) {
+    normalized.accessibilityProfile = DEFAULT_SETTINGS_FALLBACK.accessibilityProfile;
+  }
+
+  const rawPerformance = String(loaded.performanceTier ?? "");
+  if (!CANONICAL_PERFORMANCE_TIERS.has(rawPerformance)) {
+    const legacyPerformanceMap: Record<string, ThemePerformanceTier> = {
+      battery: "battery_saver",
+      performance: "premium",
+      quality: "showcase",
+    };
+    normalized.performanceTier = legacyPerformanceMap[rawPerformance] ?? DEFAULT_SETTINGS_FALLBACK.performanceTier;
+  }
+
+  return normalized;
+}
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);

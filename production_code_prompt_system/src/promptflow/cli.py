@@ -52,7 +52,9 @@ def _load_prompts(cfg: Config) -> list[Any]:
 @app.callback()
 def main(
     ctx: typer.Context,
-    config: Annotated[Path | None, typer.Option("--config", "-c", help="Path to config file")] = None,
+    config: Annotated[
+        Path | None, typer.Option("--config", "-c", help="Path to config file")
+    ] = None,
     debug: Annotated[bool, typer.Option("--debug", help="Enable debug output")] = False,
 ) -> None:
     """PromptFlow — run production code prompts against your repository."""
@@ -90,6 +92,7 @@ def doctor(
 
     # Python version
     import platform
+
     py_version = platform.python_version()
     console.print(f"Python version: {py_version}")
     checks_passed += 1
@@ -494,7 +497,9 @@ def export(
 def clean(
     ctx: typer.Context,
     older_than: Annotated[str | None, typer.Option("--older-than")] = None,
-    keep: Annotated[int | None, typer.Option("--keep", help="Number of recent runs to keep")] = None,
+    keep: Annotated[
+        int | None, typer.Option("--keep", help="Number of recent runs to keep")
+    ] = None,
     config: Annotated[Path | None, typer.Option("--config", "-c")] = None,
 ) -> None:
     """Safely remove old run outputs."""

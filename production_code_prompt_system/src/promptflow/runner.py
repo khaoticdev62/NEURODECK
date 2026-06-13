@@ -166,9 +166,7 @@ class WorkflowRunner:
             except PromptFlowError:
                 raise
             except Exception as exc:
-                raise PromptFlowError(
-                    f"Provider error in stage {prompt.stage_id}: {exc}"
-                ) from exc
+                raise PromptFlowError(f"Provider error in stage {prompt.stage_id}: {exc}") from exc
 
         # Save response
         response_path = self.run_dir / "responses" / f"{prompt.stage_id}_response.md"

@@ -60,7 +60,8 @@ export function TunnelView() {
           <ArrowLeftRight className="h-5 w-5 text-nd-accent" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-nd-text">Tunnel</h2>
+          <div className="tunnel-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Tunnel</div>
+          <h2 className="text-lg font-semibold text-nd-text">SteamOS Bridge</h2>
           <p className="text-xs text-nd-text-muted">SteamOS Game Mode to Desktop Mode bridge</p>
         </div>
         <div className="flex items-center gap-2">

@@ -287,7 +287,11 @@ impl LuaEngine {
                 match std::fs::read_to_string(&path) {
                     Ok(code) => {
                         if let Err(e) = self.run_script(&code) {
-                            eprintln!("[Lua Error] Failed to load plugin {}: {}", path.display(), e);
+                            eprintln!(
+                                "[Lua Error] Failed to load plugin {}: {}",
+                                path.display(),
+                                e
+                            );
                             continue;
                         }
                     }

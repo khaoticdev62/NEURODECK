@@ -1,123 +1,53 @@
-export type ThemeDisplayTarget =
-  | "steamdeck_lcd"
-  | "steamdeck_oled"
-  | "desktop_lcd"
-  | "desktop_oled"
-  | "broadcast_monitor";
+/**
+ * Frontend theme contracts.
+ *
+ * This module re-exports the canonical theme contracts from
+ * `src/shared/theme/themeContracts` so the React UI and the backend share the
+ * same token shape, display targets, accessibility profiles, and settings
+ * schema. Keeping a single source of truth prevents the frontend token facade
+ * from drifting out of sync with the canonical design system.
+ */
 
-export type AccessibilityProfile =
-  | "default"
-  | "high_contrast"
-  | "reduced_motion"
-  | "large_text"
-  | "colorblind_deuteranopia"
-  | "colorblind_protanopia"
-  | "colorblind_tritanopia";
+import type {
+  ThemeId,
+  ThemeDisplayTarget,
+  ThemePerformanceTier,
+  WallpaperRendererType,
+  ThemeTokenSet,
+  NeurodeckTheme,
+  ThemeSettings,
+} from "../../../../src/shared/theme/themeContracts";
 
-export type PerformanceTier = "battery" | "balanced" | "performance" | "quality";
+export type {
+  ThemeId,
+  ThemeDisplayTarget,
+  ThemePerformanceTier,
+  WallpaperRendererType,
+  ThemeTokenSet,
+  NeurodeckTheme,
+  ThemeSettings,
+};
 
-export interface ThemeTokenSet {
-  color: {
-    surface: {
-      app: string;
-      base: string;
-      raised: string;
-      sunken: string;
-      overlay: string;
-      modal: string;
-      glass: string;
-      sidebar: string;
-      panel: string;
-      card: string;
-      input: string;
-      tooltip: string;
-    };
-    text: {
-      primary: string;
-      secondary: string;
-      tertiary: string;
-      muted: string;
-      inverse: string;
-      link: string;
-      code: string;
-      command: string;
-      danger: string;
-      warning: string;
-      success: string;
-      info: string;
-    };
-    accent: {
-      primary: string;
-      secondary: string;
-      tertiary: string;
-      glow: string;
-      soft: string;
-      strong: string;
-    };
-    state: {
-      success: string;
-      warning: string;
-      error: string;
-      info: string;
-    };
-    border: {
-      subtle: string;
-      default: string;
-      strong: string;
-      focus: string;
-    };
-  };
-  typography: {
-    fontFamily: {
-      ui: string;
-      mono: string;
-      display: string;
-    };
-  };
-  glass: {
-    opacity: number;
-    blur: string;
-  };
-  motion: {
-    durationFast: string;
-    durationNormal: string;
-    durationSlow: string;
-  };
-}
+/** Alias kept for backward compatibility with existing component code. */
+export type PerformanceTier = ThemePerformanceTier;
 
-export interface NeurodeckTheme {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  steamDeck: {
-    oledTuned: boolean;
-  };
-  tokens: ThemeTokenSet;
-}
+/**
+ * The accessibility profile values are declared inline on the canonical
+ * `ThemeSettings.accessibilityProfile` field, so we derive the named union
+ * here for frontend components that need it directly.
+ */
+export type AccessibilityProfile = ThemeSettings["accessibilityProfile"];
 
+/**
+ * Slim frontend wallpaper profile. The canonical profile is richer, but the
+ * React UI only needs the fields used for selection and canvas rendering.
+ */
 export interface LiveWallpaperProfile {
   id: string;
   name: string;
   description?: string;
-  renderer: string;
+  renderer: WallpaperRendererType | string;
   visuals: {
     basePalette: string[];
   };
-}
-
-export interface ThemeSettings {
-  activeThemeId: string;
-  activeWallpaperId: string;
-  liveWallpaperEnabled: boolean;
-  displayProfile: ThemeDisplayTarget;
-  performanceTier: PerformanceTier;
-  accessibilityProfile: AccessibilityProfile;
-  wallpaperIntensity: number;
-  wallpaperOpacity: number;
-  glowIntensity: number;
-  glassIntensity: number;
-  motionIntensity: number;
-  fontScale: number;
-  compactMode: boolean;
 }

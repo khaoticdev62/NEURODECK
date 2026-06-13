@@ -2,8 +2,11 @@ import { useMemo, useState } from 'react';
 import type { Dispatch } from 'react';
 import { Database, Pin, Search, Trash2 } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
 import { EmptyState } from '../../components/primitives/EmptyState';
+import { IconButton } from '../../components/primitives/IconButton';
 import { Panel } from '../../components/primitives/Panel';
+import { TextInput } from '../../components/primitives/TextInput';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
 export function MemoryView({
@@ -36,47 +39,35 @@ export function MemoryView({
   return (
     <Panel eyebrow="Memory Vault" title="Local-First Recall" className="memory-shell !flex-col h-full overflow-hidden">
       <div className="memory-kicker px-4 pt-4 text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Memory</div>
-      
-      <div className="grid gap-4 md:grid-cols-2 px-4 pt-3">
-        <form onSubmit={handleAddFact} className="flex gap-2 items-end">
-          <div className="flex-1 min-w-0">
-            <label htmlFor="new-memory-fact" className="block text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted mb-1.5">
-              Add Fact to Memory
-            </label>
-            <input
+
+      <div className="grid gap-4 px-4 pt-3 md:grid-cols-2">
+        <form onSubmit={handleAddFact} className="flex items-end gap-2">
+          <div className="min-w-0 flex-1">
+            <TextInput
               id="new-memory-fact"
-              type="text"
+              className="memory-fact-input"
+              label="Add Fact to Memory"
               value={newFact}
               onChange={(e) => setNewFact(e.target.value)}
               placeholder="Type a new fact to persist..."
-              className="h-10 w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 hover:border-nd-text-muted/30"
             />
           </div>
-          <button
-            type="submit"
-            className="inline-flex h-10 items-center justify-center rounded-xl bg-nd-accent px-4 text-sm font-semibold text-nd-bg transition hover:bg-nd-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-          >
-            Add Fact
-          </button>
+          <Button type="submit" id="memory-fact-save-btn">Add Fact</Button>
         </form>
 
         <div className="memory-search-shell flex flex-col justify-end">
-          <label htmlFor="memory-search-input" className="block text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted mb-1.5">
-            Search Memory Vault
-          </label>
-          <input
+          <TextInput
             id="memory-search-input"
-            type="text"
+            className="memory-search-input"
+            label="Search Memory Vault"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search memory..."
-            aria-label="Search memories"
-            className="h-10 w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 hover:border-nd-text-muted/30"
           />
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-thin">
         {filtered.length === 0 && state.memories.length === 0 && (
           <EmptyState
             icon={Database}
@@ -99,23 +90,25 @@ export function MemoryView({
                 <Database className="h-5 w-5" />
               </div>
               <div className="flex items-center gap-2">
-                <button
+                <IconButton
                   type="button"
-                  onClick={() => void actions.toggleMemoryPin(memory.id, !memory.pinned)}
+                  size="sm"
+                  variant={memory.pinned ? 'accent' : 'outline'}
                   aria-label={memory.pinned ? 'Unpin memory' : 'Pin memory'}
                   aria-pressed={memory.pinned}
-                  className={`rounded-xl border px-2.5 py-2 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${memory.pinned ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted hover:text-nd-text'}`}
+                  onClick={() => void actions.toggleMemoryPin(memory.id, !memory.pinned)}
                 >
                   <Pin className="h-4 w-4" aria-hidden="true" />
-                </button>
-                <button
+                </IconButton>
+                <IconButton
                   type="button"
-                  onClick={() => void actions.deleteMemory(memory.id)}
+                  size="sm"
+                  variant="outline"
                   aria-label="Delete memory"
-                  className="rounded-xl border border-nd-text-muted/15 text-nd-text-muted hover:text-nd-danger hover:border-nd-danger/30 px-2.5 py-2 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40 bg-nd-surface/40"
+                  onClick={() => void actions.deleteMemory(memory.id)}
                 >
                   <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </button>
+                </IconButton>
               </div>
             </div>
             <h3 className="mt-4 font-semibold text-nd-text">{memory.title ?? '(untitled)'}</h3>

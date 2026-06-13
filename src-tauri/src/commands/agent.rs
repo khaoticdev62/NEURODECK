@@ -20,11 +20,20 @@ pub fn get_recommended_models() -> Vec<RecommendedModel> {
         .into_iter()
         .map(|profile| {
             let provider = crate::model_registry::provider_label(&profile).to_string();
-            let model = profile.provider_model_ids.first().cloned().unwrap_or_else(|| profile.id.clone());
+            let model = profile
+                .provider_model_ids
+                .first()
+                .cloned()
+                .unwrap_or_else(|| profile.id.clone());
             let tier = crate::model_registry::tier_label(&profile);
             let vram_mb = crate::model_registry::vram_mb_estimate(&profile);
             let steam_deck_ok = crate::model_registry::steam_deck_ok(&profile);
-            let description = profile.steam_deck_policy.notes.first().cloned().unwrap_or_else(|| "Curated model profile".to_string());
+            let description = profile
+                .steam_deck_policy
+                .notes
+                .first()
+                .cloned()
+                .unwrap_or_else(|| "Curated model profile".to_string());
             RecommendedModel {
                 provider,
                 model,
@@ -38,7 +47,6 @@ pub fn get_recommended_models() -> Vec<RecommendedModel> {
         })
         .collect()
 }
-
 
 /// Apply an AI-generated inline edit to code. Sends the code + instruction to
 /// the active LLM provider via generate_oneshot and returns the modified code.
@@ -164,4 +172,3 @@ pub async fn agent_exec_code(
         Err(_) => Err("Execution timed out (30s limit exceeded)".to_string()),
     }
 }
-

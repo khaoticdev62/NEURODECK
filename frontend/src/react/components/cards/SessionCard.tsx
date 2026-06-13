@@ -1,5 +1,4 @@
 import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
-import { Badge } from "../primitives/Badge";
 import { Modal } from "../primitives/Modal";
 import type { SessionNode } from "../../types/neurodeck";
 import { useState } from "react";

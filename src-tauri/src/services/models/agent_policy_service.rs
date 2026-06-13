@@ -44,7 +44,10 @@ pub fn evaluate_policy_for_model(
     policy: &AgentModelPolicy,
     profile: &crate::model_registry::SupportedModelProfile,
 ) -> AgentModelAllowance {
-    let tier_ok = is_tier_at_least(&profile.compatibility_tier, &policy.minimum_compatibility_tier);
+    let tier_ok = is_tier_at_least(
+        &profile.compatibility_tier,
+        &policy.minimum_compatibility_tier,
+    );
     let capabilities_ok = policy
         .allowed_model_capabilities
         .iter()
@@ -120,10 +123,13 @@ pub async fn rank_models_for_agent(
     config: &LlmConfig,
 ) -> Vec<AgentScoredModel> {
     let policy = get_policy_for_agent(agent_id);
-    let scored = super::model_compatibility_service::get_model_compatibility_scores(options, config).await;
+    let scored =
+        super::model_compatibility_service::get_model_compatibility_scores(options, config).await;
     let profiles = crate::model_registry::load_supported_models();
-    let profile_by_id: std::collections::HashMap<String, &crate::model_registry::SupportedModelProfile> =
-        profiles.iter().map(|p| (p.id.clone(), p)).collect();
+    let profile_by_id: std::collections::HashMap<
+        String,
+        &crate::model_registry::SupportedModelProfile,
+    > = profiles.iter().map(|p| (p.id.clone(), p)).collect();
 
     let preferred: std::collections::HashSet<String> = policy
         .as_ref()
@@ -210,7 +216,12 @@ mod tests {
         }
     }
 
-    fn make_profile(id: &str, tier: &str, family: &str, capabilities: &[&str]) -> crate::model_registry::SupportedModelProfile {
+    fn make_profile(
+        id: &str,
+        tier: &str,
+        family: &str,
+        capabilities: &[&str],
+    ) -> crate::model_registry::SupportedModelProfile {
         crate::model_registry::SupportedModelProfile {
             id: id.to_string(),
             family: family.to_string(),
@@ -242,7 +253,12 @@ mod tests {
     #[test]
     fn allows_compliant_model() {
         let policy = make_policy();
-        let profile = make_profile("llama32-1b", "deck_default", "llama", &["chat", "completion"]);
+        let profile = make_profile(
+            "llama32-1b",
+            "deck_default",
+            "llama",
+            &["chat", "completion"],
+        );
         let result = evaluate_policy_for_model(&policy, &profile);
         assert!(result.allowed);
     }
@@ -250,7 +266,12 @@ mod tests {
     #[test]
     fn rejects_insufficient_tier() {
         let policy = make_policy();
-        let profile = make_profile("x", "remote_or_docked_only", "llama", &["chat", "completion"]);
+        let profile = make_profile(
+            "x",
+            "remote_or_docked_only",
+            "llama",
+            &["chat", "completion"],
+        );
         let result = evaluate_policy_for_model(&policy, &profile);
         assert!(!result.allowed);
         assert!(!result.tier_ok);
@@ -277,7 +298,12 @@ mod tests {
     #[test]
     fn rejects_remote_without_fallback() {
         let policy = make_policy();
-        let profile = make_profile("x", "remote_or_docked_only", "llama", &["chat", "completion"]);
+        let profile = make_profile(
+            "x",
+            "remote_or_docked_only",
+            "llama",
+            &["chat", "completion"],
+        );
         let result = evaluate_policy_for_model(&policy, &profile);
         assert!(!result.allowed);
         assert!(!result.remote_ok);

@@ -27,10 +27,13 @@ class TestManualProvider:
             repo_context="Repo info",
         )
 
-        with patch(
-            "builtins.input",
-            side_effect=["Response line 1", "Response line 2", "", EOFError],
-        ), patch("promptflow.providers.manual.console"):
+        with (
+            patch(
+                "builtins.input",
+                side_effect=["Response line 1", "Response line 2", "", EOFError],
+            ),
+            patch("promptflow.providers.manual.console"),
+        ):
             response = provider.complete(request)
 
         assert response.stage_id == "01"
@@ -54,8 +57,9 @@ class TestManualProvider:
             repo_context="Repo info",
         )
 
-        with patch("builtins.input", side_effect=[str(response_file)]), patch(
-            "promptflow.providers.manual.console"
+        with (
+            patch("builtins.input", side_effect=[str(response_file)]),
+            patch("promptflow.providers.manual.console"),
         ):
             response = provider.complete(request)
 
@@ -73,7 +77,9 @@ class TestManualProvider:
             repo_context="Repo info",
         )
 
-        with patch("builtins.input", side_effect=[EOFError]), patch(
-            "promptflow.providers.manual.console"
-        ), pytest.raises(ProviderError, match="No response provided"):
+        with (
+            patch("builtins.input", side_effect=[EOFError]),
+            patch("promptflow.providers.manual.console"),
+            pytest.raises(ProviderError, match="No response provided"),
+        ):
             provider.complete(request)

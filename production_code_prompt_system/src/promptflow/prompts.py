@@ -69,9 +69,7 @@ def discover_prompts(prompt_pack_dir: Path | str) -> list[Prompt]:
     missing = set(EXPECTED_PROMPTS.keys()) - found_ids
     if missing:
         missing_names = [f"{m}_{EXPECTED_PROMPTS[m]}.md" for m in sorted(missing)]
-        raise PromptPackError(
-            f"Missing required prompt files: {', '.join(missing_names)}"
-        )
+        raise PromptPackError(f"Missing required prompt files: {', '.join(missing_names)}")
 
     return prompts
 

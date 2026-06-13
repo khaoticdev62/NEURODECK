@@ -1,10 +1,10 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from 'react';
 
 const sizeClasses = {
-  sm: 'h-7 w-7 min-h-[40px] min-w-[40px]',
-  md: 'h-8 w-8 min-h-[40px] min-w-[40px]',
-  lg: 'h-10 w-10 min-h-[44px] min-w-[44px]',
-  xl: 'h-11 w-11 min-h-[48px] min-w-[48px]',
+  sm: 'h-7 w-7 min-h-touch min-w-touch',
+  md: 'h-8 w-8 min-h-touch min-w-touch',
+  lg: 'h-10 w-10 min-h-11 min-w-11',
+  xl: 'h-11 w-11 min-h-12 min-w-12',
 };
 
 const variantClasses = {
@@ -15,20 +15,26 @@ const variantClasses = {
   danger:  'border-nd-accent-error/25 bg-nd-accent-error/10 text-nd-accent-error hover:bg-nd-accent-error/20',
 };
 
-export function IconButton({
-  children,
-  className = '',
-  size = 'md',
-  variant = 'subtle',
-  'aria-label': ariaLabel,
-  ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & {
+export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   size?: keyof typeof sizeClasses;
   variant?: keyof typeof variantClasses;
-}) {
+}
+
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
+  {
+    children,
+    className = '',
+    size = 'md',
+    variant = 'subtle',
+    'aria-label': ariaLabel,
+    ...props
+  },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       type="button"
       aria-label={ariaLabel}
       className={[
@@ -46,4 +52,4 @@ export function IconButton({
       {children}
     </button>
   );
-}
+});

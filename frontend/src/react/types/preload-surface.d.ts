@@ -50,7 +50,7 @@ interface RuntimeManifest {
   };
 }
 
-interface ElectronAPI {
+export interface ElectronAPI {
   /** Current platform string (e.g. 'win32', 'linux', 'darwin'). */
   readonly platform: NodeJS.Platform;
   /** Runtime version strings. */
@@ -125,7 +125,27 @@ interface ElectronAPI {
 
   // Diagnostics roundtrip
   onDiagnosticsPing(callback: (data: { requestId: string; timestamp: string }) => void): () => void;
-  diagnosticsPong(requestId: string): Promise<{ ok: boolean }>;
+  diagnosticsPong(request: Record<string, unknown>): Promise<Record<string, unknown>>;
+
+  /** Returns the current renderer security flags from the main process. */
+  getSecurityFlags(): Promise<{
+    contextIsolation: boolean;
+    nodeIntegration: boolean;
+    sandbox: boolean;
+    webSecurity: boolean;
+    allowRunningInsecureContent: boolean;
+    remoteModuleDisabled: boolean;
+    cspActive: boolean;
+  }>;
+
+  /** Returns the installation status of optional runtime dependencies. */
+  dependencyGetStatus(): Promise<{
+    ssh: boolean;
+    ollama: boolean;
+    tts: boolean;
+    openvpn: boolean;
+    wireguard: boolean;
+  }>;
 }
 
 declare global {

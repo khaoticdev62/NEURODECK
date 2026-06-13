@@ -51,7 +51,10 @@ fn sync_status_serializes_and_deserializes() {
     assert!(!loaded.sync_sessions);
     assert_eq!(loaded.api_base_url, "https://sync.example.com");
     assert_eq!(loaded.device_id, "device-123");
-    assert_eq!(loaded.last_sync_at, Some("2026-06-12T12:00:00Z".to_string()));
+    assert_eq!(
+        loaded.last_sync_at,
+        Some("2026-06-12T12:00:00Z".to_string())
+    );
     assert_eq!(loaded.last_error, Some("boom".to_string()));
     assert_eq!(loaded.pending_records, 7);
     assert_eq!(loaded.pushed_records, 5);

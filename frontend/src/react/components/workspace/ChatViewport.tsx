@@ -47,7 +47,7 @@ export function ChatViewport({
   }, [messages, showWelcome]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 scrollbar-thin" role="log" aria-label="Conversation">
+    <div id="chat-viewport" className="flex-1 overflow-y-auto p-4 scrollbar-thin" role="log" aria-label="Conversation" tabIndex={0}>
       {showWelcome ? (
         <div className="flex flex-col items-center py-6 text-center">
           {/* Hero logo with glow */}

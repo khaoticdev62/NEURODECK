@@ -1,4 +1,4 @@
-use super::provider_health_service::{ProviderConnectionState, check_all_provider_health};
+use super::provider_health_service::{check_all_provider_health, ProviderConnectionState};
 use crate::config::LlmConfig;
 use crate::model_registry::SupportedModelProfile;
 use serde::{Deserialize, Serialize};
@@ -41,13 +41,16 @@ fn fuzzy_match_profile<'a>(
         return Some(*profile);
     }
     // Substring match against registry ids and provider model ids.
-    index.values().find(|profile| {
-        model_id.contains(&profile.id)
-            || profile
-                .provider_model_ids
-                .iter()
-                .any(|m| model_id.contains(m))
-    }).copied()
+    index
+        .values()
+        .find(|profile| {
+            model_id.contains(&profile.id)
+                || profile
+                    .provider_model_ids
+                    .iter()
+                    .any(|m| model_id.contains(m))
+        })
+        .copied()
 }
 
 pub async fn discover_installed_models(config: &LlmConfig) -> Vec<DiscoveredModelEntry> {

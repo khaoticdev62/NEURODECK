@@ -125,7 +125,7 @@ function matchesTerm(event: SiemEvent, term: QueryTerm): boolean {
   }
 
   // Field term
-  const eventVal = (event as Record<string, unknown>)[term.field];
+  const eventVal = (event as unknown as Record<string, unknown>)[term.field];
   if (eventVal == null) return term.negated;
   const hit = matchesWildcard(term.value, String(eventVal));
   return term.negated ? !hit : hit;

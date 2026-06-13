@@ -23,7 +23,7 @@ export function ResponseCard({ message, style, onRegenerate }: ResponseCardProps
 
   return (
     <article
-      className={`message group ${message.role} flex animate-view-enter gap-3 ${isUser ? 'flex-row-reverse' : ''}`}
+      className={`msg-card message group ${message.role} flex animate-view-enter gap-3 ${isUser ? 'flex-row-reverse' : ''}`}
       aria-label={`${isUser ? 'Your message' : 'AI response'}`}
       style={style}
     >
@@ -54,7 +54,7 @@ export function ResponseCard({ message, style, onRegenerate }: ResponseCardProps
           )}
 
           {/* Header */}
-          <div className="mb-1.5 flex items-center justify-between gap-4">
+          <div className="msg-meta mb-1.5 flex items-center justify-between gap-4">
             <span className={`text-[10px] font-semibold uppercase tracking-wider ${isUser ? 'text-nd-accent' : 'text-nd-text-muted'}`}>
               {isUser ? 'You' : message.provider ?? 'AI'}
             </span>
@@ -65,7 +65,7 @@ export function ResponseCard({ message, style, onRegenerate }: ResponseCardProps
           </div>
 
           {/* Content */}
-          <p className="whitespace-pre-wrap text-sm leading-6 text-nd-text/90">{message.content}</p>
+          <p className={`msg-content whitespace-pre-wrap text-sm leading-6 text-nd-text/90 ${isUser ? 'msg-user-text' : ''}`}>{message.content}</p>
         </div>
 
         {/* Hover/focus actions */}

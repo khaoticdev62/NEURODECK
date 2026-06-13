@@ -19,7 +19,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   ghost:     'border-transparent bg-transparent text-nd-text-muted hover:bg-nd-surface-raised hover:text-nd-text-primary focus-visible:ring-nd-accent-primary/40',
   danger:    'border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error hover:bg-nd-accent-error/20 focus-visible:ring-nd-accent-error/40',
   success:   'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success hover:bg-nd-accent-success/20 focus-visible:ring-nd-accent-success/40',
-  premium:   'relative overflow-hidden border-nd-accent-primary/40 bg-gradient-to-b from-nd-accent-primary/15 to-nd-accent-primary/5 text-nd-accent-primary shadow-[0_0_16px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] hover:from-nd-accent-primary/25 hover:to-nd-accent-primary/10 focus-visible:ring-nd-accent-primary/60 active:scale-[0.96]',
+  premium:   'relative overflow-hidden border-nd-accent-primary/40 bg-gradient-to-b from-nd-accent-primary/15 to-nd-accent-primary/5 text-nd-accent-primary shadow-modal-token ring-1 ring-inset ring-white/10 hover:from-nd-accent-primary/25 hover:to-nd-accent-primary/10 focus-visible:ring-nd-accent-primary/60 active:scale-95',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -64,10 +64,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       aria-busy={loading || undefined}
       className={[
         'inline-flex items-center justify-center border font-medium',
-        'transition-all duration-fast',
+        'min-h-touch transition-all duration-fast',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-offset-nd-bg',
         'disabled:pointer-events-none disabled:opacity-50',
-        'active:scale-[0.97] active:brightness-110',
+        'active:scale-95 active:brightness-110',
         variantClasses[variant],
         sizeClasses[size],
         fullWidth ? 'w-full' : '',

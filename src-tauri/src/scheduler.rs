@@ -207,4 +207,3 @@ pub async fn unregister_task(
     }
     Ok(())
 }
-

@@ -40,7 +40,7 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 scrollbar-thin">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 scrollbar-thin" tabIndex={0} aria-label="Side panel">
         <Panel eyebrow="Mission" title="Control Stack">
           <div className="space-y-3 p-4">
             <div className="grid grid-cols-2 gap-2">

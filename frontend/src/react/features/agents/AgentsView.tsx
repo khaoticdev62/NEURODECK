@@ -42,6 +42,7 @@ export function AgentsView({
             className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           />
           <button
+            id="agent-run-btn"
             type="submit"
             disabled={!task.trim()}
             className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"

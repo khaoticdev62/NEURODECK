@@ -27,7 +27,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
         aria-invalid={!!error}
         aria-describedby={error ? `${inputId}-error` : hint ? `${inputId}-hint` : undefined}
         className={[
-          'w-full rounded-xl border bg-nd-bg/50 px-3 py-2 text-sm text-nd-text',
+          'w-full min-h-touch rounded-xl border bg-nd-bg/50 px-3 py-2 text-sm text-nd-text',
           'placeholder:text-nd-text-muted/50',
           'transition-colors duration-150',
           'focus:outline-none focus:ring-2 focus:ring-nd-accent/40',

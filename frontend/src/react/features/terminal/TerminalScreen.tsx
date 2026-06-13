@@ -14,6 +14,7 @@ import { TerminalDiagnosticsPanel } from "./TerminalDiagnosticsPanel";
 import { TerminalProfileSelector } from "./TerminalProfileSelector";
 import { TerminalSafetyConfirmModal } from "./TerminalSafetyConfirmModal";
 import { TerminalViewport } from "./TerminalViewport";
+import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
 
 type PaneRuntime = TerminalSession & {
   sessionId: string;
@@ -743,7 +744,7 @@ export function TerminalScreen() {
     : [];
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-nd-bg text-nd-text">
+    <div className="terminal-screen flex h-full min-h-0 flex-col overflow-hidden bg-nd-bg text-nd-text">
       <header className="flex items-start justify-between gap-4 border-b border-nd-text-muted/15 px-4 py-3">
         <div className="min-w-0 flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent/20 bg-nd-accent/10 text-nd-accent">
@@ -769,7 +770,7 @@ export function TerminalScreen() {
           <span className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-1 text-xs text-nd-text-muted">
             {activePane?.cwd || activeProjectPath || environment?.cwd || "cwd unavailable"}
           </span>
-          <button type="button" onClick={() => createTab()} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
+          <button id="terminal-new-tab-btn" type="button" onClick={() => createTab()} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
             <Plus className="h-3.5 w-3.5" aria-hidden="true" />
             New Tab
           </button>
@@ -821,7 +822,7 @@ export function TerminalScreen() {
 
           <TerminalDiagnosticsPanel diagnostics={diagnostics} environment={environment} activePane={activePane} />
 
-          <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
+          <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3" tabIndex={0} aria-label="Terminal output">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Session Manager</p>
@@ -1032,7 +1033,13 @@ export function TerminalScreen() {
       />
 
       {searchOpen && (
-        <div className="fixed inset-x-4 bottom-4 z-[var(--z-modal)] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated">
+        <FocusTrapContainer
+          active={searchOpen}
+          onEscape={() => setSearchOpen(false)}
+          className="fixed inset-x-4 bottom-4 z-[var(--z-modal)] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated"
+          role="dialog"
+          aria-label="Terminal output search"
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Search</div>
@@ -1065,11 +1072,17 @@ export function TerminalScreen() {
               ))
             )}
           </div>
-        </div>
+        </FocusTrapContainer>
       )}
 
       {sessionManagerOpen && (
-        <div className="fixed right-4 top-24 z-[var(--z-modal)] w-[28rem] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated">
+        <FocusTrapContainer
+          active={sessionManagerOpen}
+          onEscape={() => setSessionManagerOpen(false)}
+          className="fixed right-4 top-24 z-[var(--z-modal)] w-[28rem] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated"
+          role="dialog"
+          aria-label="Terminal session manager"
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Sessions</div>
@@ -1095,11 +1108,17 @@ export function TerminalScreen() {
               </button>
             ))}
           </div>
-        </div>
+        </FocusTrapContainer>
       )}
 
       {pluginPanelOpen && (
-        <div className="fixed left-4 top-24 z-[var(--z-modal)] w-[24rem] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated">
+        <FocusTrapContainer
+          active={pluginPanelOpen}
+          onEscape={() => setPluginPanelOpen(false)}
+          className="fixed left-4 top-24 z-[var(--z-modal)] w-[24rem] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated"
+          role="dialog"
+          aria-label="Terminal plugin hooks"
+        >
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Plugin Hooks</div>
@@ -1120,7 +1139,7 @@ export function TerminalScreen() {
               Check Lua runtime
             </button>
           </div>
-        </div>
+        </FocusTrapContainer>
       )}
     </div>
   );

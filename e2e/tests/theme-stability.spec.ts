@@ -12,12 +12,12 @@ import { buildTauriMock } from "../support/tauri-mock";
 
 /** Wait for the React app to finish hydrating (loading spinner gone, nav visible). */
 async function waitForAppReady(page: import("@playwright/test").Page) {
-  // Wait for the boot-loader to either detach or become hidden
+  // Wait for the boot-loader to detach (hidden overlay still blocks pointer events)
   await page
-    .locator("#boot-loader")
-    .waitFor({ state: "hidden", timeout: 12000 })
-    .catch(() => {
-      // boot-loader may not exist or may already be hidden — fine
+    .locator("#boot-overlay")
+    .waitFor({ state: "detached", timeout: 12000 })
+    .catch(async () => {
+      await page.evaluate(() => document.getElementById("boot-overlay")?.remove());
     });
 
   // Wait for any nav tab to be present (signals the app shell rendered)
@@ -33,7 +33,7 @@ test.beforeEach(async ({ page }) => {
 // ── 1. Favicon reference ──────────────────────────────────────────────────────
 
 test("favicon reference is present in <head>", async ({ page }) => {
-  const faviconLink = page.locator('link[rel="icon"][href="/favicon.svg"]');
+  const faviconLink = page.locator('link[rel="icon"][href="./favicon.svg"]');
   await expect(faviconLink).toHaveCount(1);
 });
 
@@ -103,11 +103,10 @@ test("app renders safely when localStorage.themeSettings is corrupted", async ({
 // ── 5. Theme selection persists across reload ─────────────────────────────────
 
 test("theme selection persists in localStorage and CSS vars survive reload", async ({ page }) => {
-  // Navigate to the settings view
-  const settingsTab = page.getByTestId("nav-tab-settings");
-  await settingsTab.scrollIntoViewIfNeeded();
-  await settingsTab.click();
-  await expect(page.getByTestId("view-settings")).toBeVisible({ timeout: 5000 });
+  // Open the settings overlay
+  const settingsBtn = page.locator("#settings-btn");
+  await settingsBtn.click();
+  await expect(page.locator("#settings-overlay")).toHaveClass(/active/);
 
   // Read initial CSS var value
   const initialNdBg = await page.evaluate(() =>

@@ -99,8 +99,7 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
   };
 
   return (
-    <div className="absolute inset-0 z-[1200] flex items-start justify-end bg-nd-bg/60 p-4 backdrop-blur-sm">
-      <div className="flex h-full w-full max-w-[1180px] flex-col overflow-hidden rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 shadow-2xl">
+    <div className="flex h-full w-full max-w-[1180px] flex-col overflow-hidden rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 shadow-2xl">
         <div className="flex items-center justify-between border-b border-nd-text-muted/10 px-4 py-3">
           <div>
             <div className="text-sm font-semibold text-nd-text">Browser VPN</div>
@@ -219,7 +218,6 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
             </div>
           </section>
         </div>
-      </div>
     </div>
   );
 }

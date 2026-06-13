@@ -72,8 +72,10 @@ class ManualProvider(AIProvider):
             while True:
                 line = input()
                 # If the first line looks like a path, check it
-                if len(lines) == 0 and not line.strip().startswith("-") and (
-                    line.strip().endswith(".md") or line.strip().endswith(".txt")
+                if (
+                    len(lines) == 0
+                    and not line.strip().startswith("-")
+                    and (line.strip().endswith(".md") or line.strip().endswith(".txt"))
                 ):
                     path = Path(line.strip())
                     if path.exists():

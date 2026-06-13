@@ -216,9 +216,7 @@ class Config:
 
     @property
     def commands_require_confirmation(self) -> bool:
-        return bool(
-            self._data.get("commands", {}).get("require_confirmation_for_commands", True)
-        )
+        return bool(self._data.get("commands", {}).get("require_confirmation_for_commands", True))
 
     @property
     def commands_timeout_seconds(self) -> int:

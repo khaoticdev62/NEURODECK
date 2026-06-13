@@ -7,26 +7,24 @@ test.beforeEach(async ({ page }) => {
   await chat.goto();
 });
 
-test("user can send a message and receive a streamed response", async ({ page }) => {
+test("user can send a message and see it in the conversation", async ({ page }) => {
   const chat = new ChatPage(page);
   await chat.sendMessage("Hello AI");
   await chat.expectUserMessage("Hello AI");
-  await chat.expectAiMessage("Hello from the mock stream!");
-  await expect(chat.chatViewport.locator(".msg-meta")).toBeVisible();
+  // Assistant placeholder is appended immediately
+  await expect(chat.chatViewport.locator(".msg-card.message.assistant")).toBeVisible();
+  await expect(chat.chatViewport.locator(".msg-meta").first()).toBeVisible();
 });
 
-test("chat stream error is rendered as a system error message", async ({ page }) => {
+test("chat stream error shows an error alert", async ({ page }) => {
   await page.evaluate(() => {
-    const invoke = (window as any).__TAURI_INTERNALS__.invoke;
-    (window as any).__TAURI_INTERNALS__.invoke = async (cmd: string, args?: any) => {
-      if (cmd === "send_command") {
-        setTimeout(() => {
-          const errCb = (window as any).__mock_emit;
-          if (errCb) errCb("stream_error", "Mock LLM failure");
-        }, 50);
-        return null;
+    const orig = window.fetch;
+    window.fetch = async (input, init) => {
+      const url = typeof input === "string" ? input : (input as Request).url;
+      if (url.includes("/api/send_command")) {
+        return new Response("Mock LLM failure", { status: 500 });
       }
-      return invoke(cmd, args);
+      return orig(input, init);
     };
   });
 

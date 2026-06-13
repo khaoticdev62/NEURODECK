@@ -79,7 +79,9 @@ pub fn registry_path(name: &str) -> PathBuf {
 
     // Workspace root layout (repo root / assets/model-registry).
     if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
-        let workspace = Path::new(&manifest_dir).join("../assets/model-registry").join(name);
+        let workspace = Path::new(&manifest_dir)
+            .join("../assets/model-registry")
+            .join(name);
         if workspace.exists() {
             return workspace;
         }
@@ -117,14 +119,20 @@ pub fn load_supported_models() -> Vec<SupportedModelProfile> {
     match std::fs::read_to_string(&path) {
         Ok(text) => match serde_json::from_str::<serde_json::Value>(&text) {
             Ok(val) => {
-                let entries = val.get("models").and_then(|m| m.as_array()).cloned().unwrap_or_default();
+                let entries = val
+                    .get("models")
+                    .and_then(|m| m.as_array())
+                    .cloned()
+                    .unwrap_or_default();
                 entries
                     .into_iter()
-                    .filter_map(|entry| match serde_json::from_value::<SupportedModelProfile>(entry) {
-                        Ok(p) => Some(p),
-                        Err(e) => {
-                            tracing::warn!("Dropping invalid model profile in registry: {}", e);
-                            None
+                    .filter_map(|entry| {
+                        match serde_json::from_value::<SupportedModelProfile>(entry) {
+                            Ok(p) => Some(p),
+                            Err(e) => {
+                                tracing::warn!("Dropping invalid model profile in registry: {}", e);
+                                None
+                            }
                         }
                     })
                     .collect()
@@ -150,16 +158,22 @@ pub fn load_agent_policies() -> Vec<AgentModelPolicy> {
     match std::fs::read_to_string(&path) {
         Ok(text) => match serde_json::from_str::<serde_json::Value>(&text) {
             Ok(val) => {
-                let entries = val.get("policies").and_then(|p| p.as_array()).cloned().unwrap_or_default();
+                let entries = val
+                    .get("policies")
+                    .and_then(|p| p.as_array())
+                    .cloned()
+                    .unwrap_or_default();
                 entries
                     .into_iter()
-                    .filter_map(|entry| match serde_json::from_value::<AgentModelPolicy>(entry) {
-                        Ok(p) => Some(p),
-                        Err(e) => {
-                            tracing::warn!("Dropping invalid agent policy in registry: {}", e);
-                            None
-                        }
-                    })
+                    .filter_map(
+                        |entry| match serde_json::from_value::<AgentModelPolicy>(entry) {
+                            Ok(p) => Some(p),
+                            Err(e) => {
+                                tracing::warn!("Dropping invalid agent policy in registry: {}", e);
+                                None
+                            }
+                        },
+                    )
                     .collect()
             }
             Err(e) => {

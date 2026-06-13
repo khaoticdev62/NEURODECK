@@ -20,7 +20,12 @@ describe('PlaceholderView', () => {
     render(<PlaceholderView {...defaults} />);
     // Placeholder shows an h3 with the title
     expect(screen.getByRole('heading', { level: 3, name: 'Orchestrator' })).toBeDefined();
-    expect(screen.getByText(/being integrated from the legacy UI/i)).toBeDefined();
+  });
+
+  it('does not ship mocked legacy-UI copy in fallback', () => {
+    render(<PlaceholderView {...defaults} />);
+    expect(screen.queryByText(/legacy UI/i)).toBeNull();
+    expect(screen.queryByText(/coming in the next build/i)).toBeNull();
   });
 
   it('renders children instead of placeholder when provided', () => {
@@ -30,16 +35,6 @@ describe('PlaceholderView', () => {
       </PlaceholderView>,
     );
     expect(screen.getByText('Custom content')).toBeDefined();
-    expect(screen.queryByText(/being integrated from the legacy UI/i)).toBeNull();
-  });
-
-  it('does not render h3 placeholder heading when children are provided', () => {
-    render(
-      <PlaceholderView {...defaults}>
-        <p>Real UI</p>
-      </PlaceholderView>,
-    );
-    // Only the h2 in the header should exist, not the h3 placeholder
     expect(screen.queryByRole('heading', { level: 3 })).toBeNull();
   });
 });

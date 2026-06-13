@@ -6,10 +6,15 @@ import {
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PluginInfo } from '../../services/bridgeAdapter';
+import { Button } from '../../components/primitives/Button';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import { EmptyState } from '../../components/primitives/EmptyState';
+import { IconButton } from '../../components/primitives/IconButton';
 import { LoadingState } from '../../components/primitives/LoadingState';
 import { Modal } from '../../components/primitives/Modal';
+import { Select } from '../../components/primitives/Select';
+import { TextInput } from '../../components/primitives/TextInput';
+import { Toggle } from '../../components/primitives/Toggle';
 import type { NeuroDeckAction, NeuroDeckState } from '../../types/neurodeck';
 
 export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispatch?: Dispatch<NeuroDeckAction> }) {
@@ -210,8 +215,23 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
     }
   };
 
+  const isValidPluginSource = (source: string): boolean => {
+    const trimmed = source.trim();
+    if (!trimmed) return false;
+    try {
+      const url = new URL(trimmed);
+      return ['http:', 'https:', 'file:'].includes(url.protocol);
+    } catch {
+      // Allow simple registry identifiers like "author/plugin-name"
+      return /^[A-Za-z0-9_.\-]+\/[A-Za-z0-9_.\-]+$/.test(trimmed);
+    }
+  };
+
   const installFromUrl = async () => {
-    if (!installUrl.trim()) return;
+    if (!isValidPluginSource(installUrl)) {
+      setError('Invalid plugin source. Enter an https/file URL or a registry ID (author/name).');
+      return;
+    }
     setInstalling(true);
     try {
       await neurodeckApi.plugins.installFromUrl(installUrl.trim());
@@ -294,22 +314,18 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
           <p className="text-xs text-nd-text-muted">Extension manager — loaded at sidecar startup</p>
         </div>
         <div className="flex gap-1.5">
-          <button
-            type="button"
-            onClick={reload}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-          >
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" /> Reload Runtime
-          </button>
-          <button
-            type="button"
+          <Button variant="secondary" size="sm" onClick={reload} icon={RefreshCw}>
+            Reload Runtime
+          </Button>
+          <IconButton
+            aria-label="Refresh plugin list"
+            size="md"
+            variant="outline"
             onClick={load}
             disabled={loading}
-            aria-label="Refresh plugin list"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-nd-text-muted/15 text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -337,71 +353,69 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
       <div className="flex flex-col gap-2.5 sm:flex-row mb-4">
         {/* Search */}
         <div className="relative flex-1">
-          <input
-            type="text"
+          <TextInput
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search plugins by name, desc, author..."
-            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 pl-3 pr-9 py-2 text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           />
         </div>
 
         {/* Status Filter */}
-        <select
+        <Select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as any)}
-          className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          <option value="all">All Statuses</option>
-          <option value="enabled">Enabled</option>
-          <option value="disabled">Disabled</option>
-          <option value="error">Validation Error</option>
-        </select>
+          onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+          options={[
+            { value: 'all', label: 'All Statuses' },
+            { value: 'enabled', label: 'Enabled' },
+            { value: 'disabled', label: 'Disabled' },
+            { value: 'error', label: 'Validation Error' },
+          ]}
+        />
 
         {/* Runtime Filter */}
-        <select
+        <Select
           value={runtimeFilter}
-          onChange={(e) => setRuntimeFilter(e.target.value as any)}
-          className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          <option value="all">All Runtimes</option>
-          <option value="lua">Lua Script</option>
-          <option value="javascript">JavaScript</option>
-          <option value="typescript">TypeScript</option>
-          <option value="external">External Runtime</option>
-        </select>
+          onChange={(e) => setRuntimeFilter(e.target.value as typeof runtimeFilter)}
+          options={[
+            { value: 'all', label: 'All Runtimes' },
+            { value: 'lua', label: 'Lua Script' },
+            { value: 'javascript', label: 'JavaScript' },
+            { value: 'typescript', label: 'TypeScript' },
+            { value: 'external', label: 'External Runtime' },
+          ]}
+        />
 
         {/* Permission Risk Filter */}
-        <select
+        <Select
           value={riskFilter}
-          onChange={(e) => setRiskFilter(e.target.value as any)}
-          className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          <option value="all">All Risk Levels</option>
-          <option value="high">High Risk</option>
-          <option value="medium">Medium Risk</option>
-          <option value="low">Low Risk</option>
-        </select>
+          onChange={(e) => setRiskFilter(e.target.value as typeof riskFilter)}
+          options={[
+            { value: 'all', label: 'All Risk Levels' },
+            { value: 'high', label: 'High Risk' },
+            { value: 'medium', label: 'Medium Risk' },
+            { value: 'low', label: 'Low Risk' },
+          ]}
+        />
       </div>
 
       {/* Install input */}
       <div className="mb-4 flex gap-2">
-        <input
-          type="text"
+        <TextInput
           value={installUrl}
           onChange={(e) => setInstallUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && installFromUrl()}
           placeholder="Install plugin from Git URL or Registry ID..."
-          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          className="flex-1"
         />
-        <button
-          type="button"
+        <Button
+          variant="success"
+          size="sm"
           onClick={installFromUrl}
           disabled={installing || !installUrl.trim()}
-          className="flex h-9 items-center gap-1.5 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 text-xs font-semibold text-nd-success hover:bg-nd-success/15 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-nd-success/40"
+          icon={Download}
         >
-          <Download className="h-3.5 w-3.5" /> {installing ? 'Installing...' : 'Install'}
-        </button>
+          {installing ? 'Installing...' : 'Install'}
+        </Button>
       </div>
 
       {error && (
@@ -410,13 +424,9 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setError(null)}
-            className="text-nd-text-muted hover:text-nd-text text-[10px] uppercase font-bold"
-          >
+          <Button variant="ghost" size="xs" onClick={() => setError(null)}>
             Dismiss
-          </button>
+          </Button>
         </div>
       )}
 
@@ -468,21 +478,13 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                         <p className="text-[10px] text-nd-text-muted mt-0.5 font-mono truncate">{p.file_name}</p>
                       </div>
                       
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleToggle(p);
-                        }}
-                        aria-label={p.enabled ? `Disable ${p.name}` : `Enable ${p.name}`}
-                        className="text-nd-accent hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded shrink-0"
-                      >
-                        {p.enabled ? (
-                          <ToggleRight className="h-6 w-6 text-nd-success" />
-                        ) : (
-                          <ToggleLeft className="h-6 w-6 text-nd-text-muted" />
-                        )}
-                      </button>
+                      <span onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <Toggle
+                          checked={p.enabled}
+                          onChange={() => void handleToggle(p)}
+                          label={p.enabled ? `Disable ${p.name}` : `Enable ${p.name}`}
+                        />
+                      </span>
                     </div>
 
                     <p className="text-xs text-nd-text-muted/80 line-clamp-1">{p.description || 'No description provided.'}</p>
@@ -495,18 +497,19 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                       </div>
                       
                       {p.id && (
-                        <button
+                        <IconButton
                           type="button"
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Uninstall ${p.name}`}
+                          title="Uninstall Plugin"
                           onClick={(e) => {
                             e.stopPropagation();
                             setConfirmUninstallId(p.id!);
                           }}
-                          aria-label={`Uninstall ${p.name}`}
-                          className="text-nd-text-muted hover:text-nd-danger p-0.5 rounded transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                          title="Uninstall Plugin"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+                        </IconButton>
                       )}
                     </div>
                   </div>
@@ -580,14 +583,15 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                 <div className="space-y-2 border-t border-nd-text-muted/10 pt-4">
                   <div className="flex items-center justify-between">
                     <h5 className="text-[10px] uppercase font-bold tracking-wider text-nd-text-muted">QA Validation Check</h5>
-                    <button
-                      type="button"
-                      onClick={() => validatePlugin(selectedPlugin.file_name)}
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => void validatePlugin(selectedPlugin.file_name)}
                       disabled={validating}
-                      className="text-[10px] font-bold text-nd-accent hover:brightness-110 flex items-center gap-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1 py-0.5"
+                      icon={RefreshCw}
                     >
-                      <RefreshCw className={`h-3 w-3 ${validating ? 'animate-spin' : ''}`} /> Run Audit
-                    </button>
+                      Run Audit
+                    </Button>
                   </div>
                   
                   {validating ? (
@@ -686,14 +690,14 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
 
               {/* Drawer Footer Actions */}
               <div className="px-5 py-4 border-t border-nd-text-muted/10 bg-nd-surface/30 flex items-center justify-between gap-2.5">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  fullWidth
                   onClick={copyDiagnostics}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 py-2 text-xs font-semibold text-nd-text transition hover:bg-nd-surface/60 focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:outline-none"
+                  icon={Copy}
                 >
-                  <Copy className="h-3.5 w-3.5" />
                   {copied ? 'Copied Details!' : 'Copy Diagnostics'}
-                </button>
+                </Button>
               </div>
 
             </div>
@@ -711,15 +715,12 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
         closeOnBackdrop={false}
         footer={
           <>
-            <button
-              type="button"
-              onClick={() => setShowPermissionWarning(null)}
-              className="inline-flex h-9 items-center rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-4 text-xs font-semibold text-nd-text transition hover:bg-nd-surface/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-            >
+            <Button variant="secondary" size="sm" onClick={() => setShowPermissionWarning(null)}>
               Cancel / Keep Disabled
-            </button>
-            <button
-              type="button"
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
               onClick={async () => {
                 if (showPermissionWarning) {
                   const p = showPermissionWarning;
@@ -727,10 +728,9 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                   await executeToggle(p.file_name, true);
                 }
               }}
-              className="inline-flex h-9 items-center rounded-xl bg-nd-danger px-4 text-xs font-bold text-nd-bg transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
             >
               Enable Anyway
-            </button>
+            </Button>
           </>
         }
       >

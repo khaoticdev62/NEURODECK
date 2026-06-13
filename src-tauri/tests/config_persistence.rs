@@ -96,7 +96,10 @@ fn config_persists_active_theme_name() {
     save_config(&path, &config).expect("save_config should succeed");
 
     let loaded = load_config(&path);
-    assert_eq!(loaded.theme.active_theme_name, Some("Blacksite".to_string()));
+    assert_eq!(
+        loaded.theme.active_theme_name,
+        Some("Blacksite".to_string())
+    );
 
     let _ = std::fs::remove_file(&path);
 }

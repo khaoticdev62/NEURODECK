@@ -34,9 +34,6 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
   const currentTask = lab.tasks[currentTaskIdx];
   const totalTasks = lab.tasks.length;
   const gradedCount = Object.keys(taskResults).length;
-  const allGraded = gradedCount === totalTasks;
-
-  const taskScores = lab.tasks.map((t) => taskResults[t.id]?.score ?? 0);
   const overallScore = labOverallScore(Object.values(taskResults).map((r) => r.score));
 
   const handleGraded = useCallback((taskId: string, result: GradeResult) => {

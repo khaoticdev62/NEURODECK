@@ -154,9 +154,7 @@ def _matches_gitignore(relative: Path, patterns: list[str]) -> bool:
         if pattern.startswith("!"):
             # Negation
             neg_pattern = pattern[1:]
-            if _match_pattern(path_str, neg_pattern) or _match_pattern(
-                path_str_dir, neg_pattern
-            ):
+            if _match_pattern(path_str, neg_pattern) or _match_pattern(path_str_dir, neg_pattern):
                 matched = False
         else:
             if _match_pattern(path_str, pattern) or _match_pattern(path_str_dir, pattern):
@@ -252,10 +250,26 @@ def inspect_repo(
             rel_dir = rel_root / d if str(rel_root) != "." else Path(d)
             rel_dir_str = rel_dir.as_posix()
             # Hardcoded excludes
-            if d in {".git", "node_modules", "__pycache__", ".venv", "venv", "dist", "build", "target", "coverage", ".pytest_cache", ".mypy_cache", ".ruff_cache"}:
+            if d in {
+                ".git",
+                "node_modules",
+                "__pycache__",
+                ".venv",
+                "venv",
+                "dist",
+                "build",
+                "target",
+                "coverage",
+                ".pytest_cache",
+                ".mypy_cache",
+                ".ruff_cache",
+            }:
                 dirs_to_remove.append(d)
                 continue
-            if extra_excludes and any(fnmatch.fnmatch(rel_dir_str, pat) or fnmatch.fnmatch(d, pat) for pat in extra_excludes):
+            if extra_excludes and any(
+                fnmatch.fnmatch(rel_dir_str, pat) or fnmatch.fnmatch(d, pat)
+                for pat in extra_excludes
+            ):
                 dirs_to_remove.append(d)
                 continue
             if respect_gitignore and _matches_gitignore(rel_dir, gitignore_patterns):
@@ -316,7 +330,12 @@ def inspect_repo(
                     break
 
             # Docs
-            if file_name.lower().startswith("readme") or file_name.lower().startswith("changelog") or file_name.lower().startswith("contributing") or file_name.lower().startswith("license"):
+            if (
+                file_name.lower().startswith("readme")
+                or file_name.lower().startswith("changelog")
+                or file_name.lower().startswith("contributing")
+                or file_name.lower().startswith("license")
+            ):
                 docs_found.append(rel_file_str)
             if rel_file_str.startswith("docs/") or rel_file_str.startswith("doc/"):
                 docs_found.append(rel_file_str)
@@ -338,12 +357,14 @@ def inspect_repo(
                     if size <= max_file_bytes and not _is_binary(file_path):
                         content = file_path.read_text(encoding="utf-8", errors="ignore")
                         lines = content.count("\n") + 1
-                        source_summaries.append({
-                            "path": rel_file_str,
-                            "size": size,
-                            "lines": lines,
-                            "preview": content[:500] if content else "",
-                        })
+                        source_summaries.append(
+                            {
+                                "path": rel_file_str,
+                                "size": size,
+                                "lines": lines,
+                                "preview": content[:500] if content else "",
+                            }
+                        )
                 except OSError:
                     pass
 
@@ -358,6 +379,7 @@ def inspect_repo(
     git_branch = ""
     try:
         import subprocess
+
         result = subprocess.run(
             ["git", "status", "--short"],
             cwd=repo,

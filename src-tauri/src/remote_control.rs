@@ -21,13 +21,11 @@ use serde_json::{json, Value};
 /// Format the LAN URL advertised to remote-control clients.
 /// Plain HTTP is intentional: the PIN is transmitted as a URL fragment
 /// (not sent to the server) and the LAN is the trust boundary.
-pub fn format_remote_control_url(
-    local_ip: &str,
-    port: u16,
-    pin: &str,
-    session: &str,
-) -> String {
-    format!("http://{}:{}/#pin={}&session={}", local_ip, port, pin, session)
+pub fn format_remote_control_url(local_ip: &str, port: u16, pin: &str, session: &str) -> String {
+    format!(
+        "http://{}:{}/#pin={}&session={}",
+        local_ip, port, pin, session
+    )
 }
 
 /// Unified emitter for Tauri (legacy) and bridge (Electron sidecar) modes.

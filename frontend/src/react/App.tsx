@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { AlertTriangle, Command, Loader2, Sparkles, X } from "lucide-react";
-import type { AIProvider } from "./types/neurodeck";
 import { CommandPalette } from "./components/command/CommandPalette";
 import { OnboardingModal } from "./components/onboarding/OnboardingModal";
 import { ControllerHintBar } from "./components/layout/ControllerHintBar";
@@ -1051,42 +1050,10 @@ export default function App() {
       >
         <input
           ref={shortcutSinkRef}
+          id="shortcut-sink"
           tabIndex={0}
           aria-label="Shortcut listener"
           className="pointer-events-none absolute left-0 top-0 h-2 w-2 opacity-0"
-          onKeyDown={(event) => {
-            const metaK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
-            if (metaK) {
-              event.preventDefault();
-              dispatch({ type: "toggle-command" });
-              return;
-            }
-            if (
-              (event.metaKey || event.ctrlKey) &&
-              event.shiftKey &&
-              event.key.toLowerCase() === "p"
-            ) {
-              event.preventDefault();
-              setCtrlPromptOpen(true);
-              return;
-            }
-            if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key === "?") {
-              event.preventDefault();
-              setShortcutsOpen(true);
-              return;
-            }
-            if ((event.metaKey || event.ctrlKey) && event.key === "Tab") {
-              event.preventDefault();
-              if (recentViews.length > 1) setQuickSwitcherOpen(true);
-            }
-          }}
-          onKeyUp={(event) => {
-            const metaK = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
-            if (metaK) {
-              event.preventDefault();
-              dispatch({ type: "toggle-command" });
-            }
-          }}
         />
         {/* Fixed background layers — registry-backed theme/wallpaper host */}
         <div className="app-background-container" aria-hidden="true">
@@ -1317,6 +1284,7 @@ export default function App() {
                   Notifications
                 </h2>
                 <button
+                  id="close-notif-x"
                   type="button"
                   onClick={() => setNotificationsOpen(false)}
                   className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-2xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
@@ -1386,8 +1354,9 @@ export default function App() {
         {/* Controller prompt overlay */}
         {ctrlPromptOpen && (
           <div
+            id="ctrl-prompt-overlay"
             data-controller-overlay="true"
-            className="fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm"
+            className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm ${ctrlPromptOpen ? "active" : ""}`}
             onMouseDown={() => setCtrlPromptOpen(false)}
           >
             <div
@@ -1402,11 +1371,11 @@ export default function App() {
               <div className="flex items-center justify-between mb-2">
                 <div
                   id="ctrlprompt-dialog-title"
-                  className="flex items-center gap-2 text-sm font-semibold text-nd-text"
+                  className="ctrl-prompt-title flex items-center gap-2 text-sm font-semibold text-nd-text"
                 >
-                  <Sparkles className="h-4 w-4 text-nd-accent" aria-hidden="true" />
+                  <Sparkles className="nd-icon-svg h-4 w-4 text-nd-accent" aria-hidden="true" />
                   <span className="inline-flex h-6 w-6 items-center justify-center rounded-lg border border-nd-text-muted/15 bg-nd-surface/50">
-                    <Command className="h-3.5 w-3.5 text-nd-text/90" aria-hidden="true" />
+                    <Command className="ctrl-prompt-cat-icon nd-icon-svg h-3.5 w-3.5 text-nd-text/90" aria-hidden="true" />
                   </span>
                   Controller Prompt
                 </div>
@@ -1447,7 +1416,7 @@ export default function App() {
               <h2 id="qs-dialog-title" className="text-sm font-semibold text-nd-text">
                 Quick Switcher
               </h2>
-              <div role="listbox" aria-label="Recent views" className="mt-3 space-y-1">
+              <div id="quick-switcher-list" role="listbox" aria-label="Recent views" className="mt-3 space-y-1">
                 {recentViews.slice(1).map((view, index) => (
                   <button
                     key={view}
@@ -1455,7 +1424,7 @@ export default function App() {
                     role="option"
                     aria-selected={index === quickSwitcherFocusIdx}
                     data-qs-item
-                    className={`flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${index === quickSwitcherFocusIdx ? "border-nd-accent/35 bg-nd-accent/10 text-nd-accent" : "border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60"}`}
+                    className={`quick-switcher-item flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${index === quickSwitcherFocusIdx ? "active border-nd-accent/35 bg-nd-accent/10 text-nd-accent" : "border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60"}`}
                     onClick={() => {
                       dispatch({ type: "set-view", view });
                       setQuickSwitcherOpen(false);

@@ -3,6 +3,7 @@ import os
 
 ROOT = "src-tauri/src"
 
+
 def process_file(path):
     with open(path, "r", encoding="utf-8") as f:
         content = f.read()
@@ -17,8 +18,10 @@ def process_file(path):
         return
 
     items = []
-    if needs_apphandle: items.append("AppHandle")
-    if needs_state: items.append("State")
+    if needs_apphandle:
+        items.append("AppHandle")
+    if needs_state:
+        items.append("State")
 
     import_line = f"use crate::{{{', '.join(items)}}};\n"
 
@@ -37,12 +40,14 @@ def process_file(path):
     with open(path, "w", encoding="utf-8") as f:
         f.writelines(lines)
 
+
 def main():
     for dirpath, _, filenames in os.walk(ROOT):
         for fname in filenames:
             if fname.endswith(".rs"):
                 process_file(os.path.join(dirpath, fname))
     print("Done adding compat imports.")
+
 
 if __name__ == "__main__":
     main()

@@ -211,12 +211,17 @@ impl PermissionRegistry {
     }
 
     /// Map an agent to a permission profile. Pass `profile_id: null` to remove the mapping.
-    pub fn set_agent_profile(&mut self, agent_id: &str, profile_id: Option<&str>) -> Result<(), String> {
+    pub fn set_agent_profile(
+        &mut self,
+        agent_id: &str,
+        profile_id: Option<&str>,
+    ) -> Result<(), String> {
         if let Some(id) = profile_id {
             if self.get(id).is_none() {
                 return Err(format!("Permission profile '{}' does not exist", id));
             }
-            self.agent_profile_map.insert(agent_id.to_string(), id.to_string());
+            self.agent_profile_map
+                .insert(agent_id.to_string(), id.to_string());
         } else {
             self.agent_profile_map.remove(agent_id);
         }
@@ -354,7 +359,8 @@ mod tests {
     #[test]
     fn test_profile_for_agent_mapping() {
         let mut reg = PermissionRegistry::default();
-        reg.set_agent_profile("agent-alpha", Some("restricted")).unwrap();
+        reg.set_agent_profile("agent-alpha", Some("restricted"))
+            .unwrap();
         let p = reg.profile_for_agent("agent-alpha");
         assert_eq!(p.id, "restricted");
         assert!(!p.can(Capability::ShellExec));

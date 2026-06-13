@@ -146,7 +146,11 @@ fn probe(name: &str, path: &str) -> TerminalEnvironmentProbe {
         name: name.to_string(),
         path: path.to_string(),
         exists,
-        status: if exists { "detected".into() } else { "missing".into() },
+        status: if exists {
+            "detected".into()
+        } else {
+            "missing".into()
+        },
     }
 }
 
@@ -209,7 +213,9 @@ pub fn detect_terminal_environment() -> TerminalEnvironmentReport {
     if missing_tools.iter().any(|tool| tool == "OpenVPN") {
         warnings.push("OpenVPN binary is missing".to_string());
     }
-    if missing_tools.iter().any(|tool| tool == "WireGuard") && missing_tools.iter().any(|tool| tool == "WG-Quick") {
+    if missing_tools.iter().any(|tool| tool == "WireGuard")
+        && missing_tools.iter().any(|tool| tool == "WG-Quick")
+    {
         warnings.push("WireGuard runtime is missing".to_string());
     }
 
@@ -240,7 +246,8 @@ pub fn detect_terminal_profiles() -> Vec<TerminalProfileAvailability> {
         )
     }
 
-    let profiles = vec![
+    let profiles =
+        vec![
         (
             "linux-bash",
             "Linux Bash",
@@ -452,23 +459,29 @@ pub fn detect_terminal_profiles() -> Vec<TerminalProfileAvailability> {
 
     profiles
         .into_iter()
-        .map(|(id, name, description, platform, shell_candidates, shell_args, cwd_strategy)| {
-            let (shell_path, shell_available, detected_path) =
-                resolve_profile_shell(&shell_candidates);
-            TerminalProfileAvailability {
-                id: id.to_string(),
-                name: name.to_string(),
-                description: description.to_string(),
-                platform: platform.to_string(),
-                shell_path: shell_path.to_string(),
-                shell_args,
-                cwd_strategy: cwd_strategy.to_string(),
-                shell_available,
-                shell_status: if shell_available { "ready".into() } else { "missing_shell_binary".into() },
-                detected_path,
-                production_ready: shell_available,
-            }
-        })
+        .map(
+            |(id, name, description, platform, shell_candidates, shell_args, cwd_strategy)| {
+                let (shell_path, shell_available, detected_path) =
+                    resolve_profile_shell(&shell_candidates);
+                TerminalProfileAvailability {
+                    id: id.to_string(),
+                    name: name.to_string(),
+                    description: description.to_string(),
+                    platform: platform.to_string(),
+                    shell_path: shell_path.to_string(),
+                    shell_args,
+                    cwd_strategy: cwd_strategy.to_string(),
+                    shell_available,
+                    shell_status: if shell_available {
+                        "ready".into()
+                    } else {
+                        "missing_shell_binary".into()
+                    },
+                    detected_path,
+                    production_ready: shell_available,
+                }
+            },
+        )
         .collect()
 }
 
@@ -511,11 +524,26 @@ pub fn classify_terminal_command(command: &str, source: &str) -> CommandSafetyVe
     }
 
     let blocked = [
-        (r"rm\s+-rf\s+/\s*$", "Refusing to remove the root filesystem."),
-        (r"sudo\s+rm\s+-rf\s+/\s*$", "Refusing to escalate destructive root removal."),
-        (r"\|\s*(bash|sh|zsh|fish)\b", "Pipes to a shell are blocked."),
-        (r"\$\([^\n]*\)", "Command substitution is blocked in reviewed commands."),
-        (r"`[^`]+`", "Backtick command substitution is blocked in reviewed commands."),
+        (
+            r"rm\s+-rf\s+/\s*$",
+            "Refusing to remove the root filesystem.",
+        ),
+        (
+            r"sudo\s+rm\s+-rf\s+/\s*$",
+            "Refusing to escalate destructive root removal.",
+        ),
+        (
+            r"\|\s*(bash|sh|zsh|fish)\b",
+            "Pipes to a shell are blocked.",
+        ),
+        (
+            r"\$\([^\n]*\)",
+            "Command substitution is blocked in reviewed commands.",
+        ),
+        (
+            r"`[^`]+`",
+            "Backtick command substitution is blocked in reviewed commands.",
+        ),
         (r"\bfork\s+bomb\b", "Fork bombs are blocked."),
     ];
     for (pattern, reason) in blocked {
@@ -534,12 +562,24 @@ pub fn classify_terminal_command(command: &str, source: &str) -> CommandSafetyVe
         (r"\brm\s+-rf\b", "Recursive deletion is dangerous."),
         (r"\bgit\s+reset\s+--hard\b", "Hard reset can destroy work."),
         (r"\bgit\s+clean\b", "Git clean can delete untracked files."),
-        (r"\bchmod\s+-R\s+777\b", "Recursive world-writable permissions are dangerous."),
+        (
+            r"\bchmod\s+-R\s+777\b",
+            "Recursive world-writable permissions are dangerous.",
+        ),
         (r"\bdd\s+if=", "Raw disk writes are dangerous."),
         (r"\bmkfs(\.\w+)?\b", "Filesystem formatting is dangerous."),
-        (r"\bcurl\s+.+\|\s*sh\b", "Piping remote scripts into a shell is dangerous."),
-        (r"\bwget\s+.+\|\s*sh\b", "Piping remote scripts into a shell is dangerous."),
-        (r"\bcat\s+~\/\.ssh\/id_rsa\b", "Private key reads are blocked."),
+        (
+            r"\bcurl\s+.+\|\s*sh\b",
+            "Piping remote scripts into a shell is dangerous.",
+        ),
+        (
+            r"\bwget\s+.+\|\s*sh\b",
+            "Piping remote scripts into a shell is dangerous.",
+        ),
+        (
+            r"\bcat\s+~\/\.ssh\/id_rsa\b",
+            "Private key reads are blocked.",
+        ),
         (r"\bcat\s+\.env\b", "Secret file reads are blocked."),
     ];
     for (pattern, reason) in dangerous {
@@ -555,13 +595,31 @@ pub fn classify_terminal_command(command: &str, source: &str) -> CommandSafetyVe
     }
 
     let confirm = [
-        (r"\b(npm|pnpm|yarn|bun)\s+(install|add)\b", "Package install requires confirmation."),
-        (r"\bpip(\d+)?\s+install\b", "Python package installation requires confirmation."),
-        (r"\bcargo\s+add\b", "Cargo dependency changes require confirmation."),
+        (
+            r"\b(npm|pnpm|yarn|bun)\s+(install|add)\b",
+            "Package install requires confirmation.",
+        ),
+        (
+            r"\bpip(\d+)?\s+install\b",
+            "Python package installation requires confirmation.",
+        ),
+        (
+            r"\bcargo\s+add\b",
+            "Cargo dependency changes require confirmation.",
+        ),
         (r"\bgo\s+get\b", "Go module changes require confirmation."),
-        (r"\bgit\s+(pull|checkout|merge)\b", "Git history-changing actions require confirmation."),
-        (r"\bchmod\s+\+x\b", "Executable bit changes require confirmation."),
-        (r"\b(openvpn|wg-quick|nmcli|systemctl)\b", "System network actions require confirmation."),
+        (
+            r"\bgit\s+(pull|checkout|merge)\b",
+            "Git history-changing actions require confirmation.",
+        ),
+        (
+            r"\bchmod\s+\+x\b",
+            "Executable bit changes require confirmation.",
+        ),
+        (
+            r"\b(openvpn|wg-quick|nmcli|systemctl)\b",
+            "System network actions require confirmation.",
+        ),
     ];
     for (pattern, reason) in confirm {
         let regex = regex::Regex::new(pattern).unwrap();
@@ -608,7 +666,10 @@ pub fn classify_terminal_command(command: &str, source: &str) -> CommandSafetyVe
         "npx eslint",
         "npx prettier",
     ];
-    if safe_prefixes.iter().any(|prefix| trimmed == *prefix || trimmed.starts_with(prefix)) {
+    if safe_prefixes
+        .iter()
+        .any(|prefix| trimmed == *prefix || trimmed.starts_with(prefix))
+    {
         return CommandSafetyVerdict {
             level: "safe".into(),
             reason: "Matched an allowlisted command prefix.".into(),

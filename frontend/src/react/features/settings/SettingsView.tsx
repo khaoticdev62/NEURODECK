@@ -19,6 +19,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
 import { LoadingState } from "../../components/primitives/LoadingState";
 import { Panel } from "../../components/primitives/Panel";
@@ -215,6 +216,8 @@ export function SettingsView({
             <button
               key={key}
               type="button"
+              data-testid={`settings-tab-${key}`}
+              data-panel={`sp-${key}`}
               aria-current={active ? "page" : undefined}
               onClick={() => selectPanel(key)}
               className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
@@ -235,7 +238,7 @@ export function SettingsView({
       <section className="min-h-0 overflow-y-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4 scrollbar-thin">
         {/* ── General ──────────────────────────────── */}
         {activePanel === "general" && (
-          <div className="space-y-4">
+          <div id="sp-general" className="settings-panel active space-y-4">
             <Panel eyebrow="Application" title="General Settings">
               <div className="space-y-2 p-4">
                 <SettingRow
@@ -282,7 +285,7 @@ export function SettingsView({
                   />
                 </div>
               ) : (
-                <div>
+                <div id="theme-cards-grid">
                   <div className="grid gap-2.5 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {availableThemes.map((theme) => {
                       const isActive = settings.activeThemeId === theme.id;
@@ -290,8 +293,9 @@ export function SettingsView({
                         <button
                           key={theme.id}
                           type="button"
+                          data-testid="theme-card"
                           onClick={() => void updateSettings({ activeThemeId: theme.id })}
-                          className={`relative rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                          className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                             isActive
                               ? "border-nd-accent/50 bg-nd-accent/[0.07] shadow-glow"
                               : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25"
@@ -342,7 +346,7 @@ export function SettingsView({
 
         {/* ── AI ───────────────────────────────────── */}
         {activePanel === "ai" && (
-          <div className="space-y-4">
+          <div id="sp-ai" className="settings-panel active space-y-4">
             <Panel eyebrow="AI Runtime" title="Provider Selection">
               <div className="space-y-2 p-4">
                 {providersLoading && (
@@ -425,7 +429,7 @@ export function SettingsView({
 
         {/* ── Appearance ───────────────────────────── */}
         {activePanel === "appearance" && (
-          <div className="space-y-4">
+          <div id="sp-appearance" className="settings-panel active space-y-4">
             <Panel eyebrow="Display" title="Font Scale">
               <div className="space-y-3 p-4">
                 <div className="flex items-center justify-between text-sm text-nd-text-muted">
@@ -476,7 +480,7 @@ export function SettingsView({
 
         {/* ── Input ────────────────────────────────── */}
         {activePanel === "input" && (
-          <div className="space-y-4">
+          <div id="sp-input" className="settings-panel active space-y-4">
             <Panel eyebrow="Controller" title="Full Application Controller Support">
               <div className="space-y-2 p-4">
                 <SettingRow
@@ -695,7 +699,7 @@ export function SettingsView({
 
         {/* ── Performance ──────────────────────────── */}
         {activePanel === "performance" && (
-          <div className="space-y-4">
+          <div id="sp-performance" className="settings-panel active space-y-4">
             <Panel eyebrow="Runtime" title="Performance Tier">
               <div className="space-y-2 p-4">
                 {(["battery", "balanced", "performance", "quality"] as const).map((tier) => {
@@ -762,7 +766,7 @@ export function SettingsView({
 
         {/* ── Extensions ───────────────────────────── */}
         {activePanel === "extensions" && (
-          <div className="space-y-4">
+          <div id="sp-extensions" className="settings-panel active space-y-4">
             <Panel eyebrow="Native Actions" title="Utilities">
               <div className="space-y-2 p-4">
                 <button
@@ -841,7 +845,7 @@ export function SettingsView({
 
         {/* ── Privacy ──────────────────────────────── */}
         {activePanel === "privacy" && (
-          <div className="space-y-4">
+          <div id="sp-privacy" className="settings-panel active space-y-4">
             <Panel eyebrow="Storage" title="Local Data">
               <div className="p-4 space-y-4">
                 <p className="text-xs leading-5 text-nd-text-muted">
@@ -872,24 +876,25 @@ export function SettingsView({
                   Clears stored UI preferences, active session, and cached context. Does not delete
                   sessions or exports from disk.
                 </p>
-                <button
-                  type="button"
+                <Button
+                  variant="danger"
+                  fullWidth
                   onClick={() => void actions.resetLocalState()}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2.5 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
+                  icon={RotateCcw}
                 >
-                  <RotateCcw className="h-4 w-4" aria-hidden="true" /> Reset Stored UI State
-                </button>
+                  Reset Stored UI State
+                </Button>
               </div>
             </Panel>
 
             <Panel eyebrow="About" title="NEURODECK">
               <div className="p-4 space-y-1.5 text-xs text-nd-text-muted">
                 {[
-                  ["Version", runtimeManifest ? `v${runtimeManifest.version}` : "v1.8.0 — Ptah"],
-                  ["Build", runtimeManifest?.buildId ?? "1.8.0-ptah"],
+                  ["Version", runtimeManifest ? `v${runtimeManifest.version}` : "Unknown"],
+                  ["Build", runtimeManifest?.buildId ?? "Unknown"],
                   ["Runtime", "Electron + axum"],
                   ["Bridge", "localhost:9477"],
-                  ["Targets", runtimeManifest?.supportedTargets?.join(", ") ?? "linux-appimage, steamdeck-game-mode"],
+                  ["Targets", runtimeManifest?.supportedTargets?.join(", ") ?? "Unknown"],
                   ["License", "UNLICENSED — Khaotic Labs"],
                 ].map(([label, value]) => (
                   <div

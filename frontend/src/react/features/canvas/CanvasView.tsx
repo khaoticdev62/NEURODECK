@@ -109,6 +109,7 @@ export function CanvasView() {
           <p className="text-xs text-nd-text-muted">Live code editor and execution</p>
         </div>
         <select
+          id="canvas-lang-select"
           value={lang}
           onChange={(e) => setLang(e.target.value as CodeLang)}
           aria-label="Select language"
@@ -193,6 +194,7 @@ export function CanvasView() {
           </div>
           {lang === 'html' ? (
             <iframe
+              id="canvas-preview-frame"
               key={previewKey}
               src={htmlBlob ?? undefined}
               title="Canvas Preview"

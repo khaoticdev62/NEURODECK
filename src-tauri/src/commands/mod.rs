@@ -309,12 +309,7 @@ fn compute_tool_status(state: &ServerState) -> Value {
     let canvas_exec_running = app.canvas_exec_cancel_tx.is_some();
     let mcp_running = app.mcp_abort.is_some();
 
-    let pty_session_count = state
-        .pty
-        .sessions
-        .lock()
-        .map(|s| s.len())
-        .unwrap_or(0);
+    let pty_session_count = state.pty.sessions.lock().map(|s| s.len()).unwrap_or(0);
 
     let active_transfer_count = state
         .transfer
@@ -413,12 +408,7 @@ fn build_status_bar_state(state: &ServerState) -> Result<Value, String> {
         )
     };
 
-    let pty_session_count = state
-        .pty
-        .sessions
-        .lock()
-        .map(|s| s.len())
-        .unwrap_or(0);
+    let pty_session_count = state.pty.sessions.lock().map(|s| s.len()).unwrap_or(0);
 
     let remote_server_running = state
         .remote
@@ -551,7 +541,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     app.config.llm.active_agent_id.clone(),
                     app.session_id.clone(),
                     app.active_persona.clone(),
-                    if app.mem_db.is_some() { "Stable".to_string() } else { "Offline".to_string() },
+                    if app.mem_db.is_some() {
+                        "Stable".to_string()
+                    } else {
+                        "Offline".to_string()
+                    },
                     app.boot_self_heal.status.clone(),
                     app.boot_self_heal.summary(),
                     app.boot_self_heal.recovered_count.to_string(),
@@ -2662,9 +2656,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'agent_id'")?
                 .to_string();
-            let profile_id = args
-                .get("profile_id")
-                .and_then(|v| v.as_str());
+            let profile_id = args.get("profile_id").and_then(|v| v.as_str());
 
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             let mut config = app_state.config.clone();
@@ -5132,17 +5124,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?;
             let t = crate::THEMES.iter().find(|t| t.name == name).cloned();
-            let fallback = t.unwrap_or_else(|| crate::THEMES.first().cloned().unwrap_or(crate::models::Theme {
-                name: "BLACKSITE".to_string(),
-                color: "#00F0FF".to_string(),
-                pulse: vec!["#00F0FF".to_string()],
-                background: "#050505".to_string(),
-                foreground: "#D9F7FF".to_string(),
-                accent: "#00F0FF".to_string(),
-                response: "#00FF88".to_string(),
-                warning: "#FFB000".to_string(),
-                error: "#FF3C5A".to_string(),
-            }));
+            let fallback = t.unwrap_or_else(|| {
+                crate::THEMES
+                    .first()
+                    .cloned()
+                    .unwrap_or(crate::models::Theme {
+                        name: "BLACKSITE".to_string(),
+                        color: "#00F0FF".to_string(),
+                        pulse: vec!["#00F0FF".to_string()],
+                        background: "#050505".to_string(),
+                        foreground: "#D9F7FF".to_string(),
+                        accent: "#00F0FF".to_string(),
+                        response: "#00FF88".to_string(),
+                        warning: "#FFB000".to_string(),
+                        error: "#FF3C5A".to_string(),
+                    })
+            });
             {
                 let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 app_state.config.theme.active_theme_name = Some(name.to_string());
@@ -5192,10 +5189,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
 
         "load_custom_themes" => {
             let data = tokio::task::spawn_blocking(|| {
-                std::fs::read_to_string(
-                    crate::user_config_dir().join("data/themes/custom.json"),
-                )
-                .unwrap_or_else(|_| "[]".to_string())
+                std::fs::read_to_string(crate::user_config_dir().join("data/themes/custom.json"))
+                    .unwrap_or_else(|_| "[]".to_string())
             })
             .await
             .unwrap_or_else(|_| "[]".to_string());
@@ -5712,7 +5707,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     let elapsed = h.started_at.elapsed().as_secs();
                     let ttl_rem = 900u64.saturating_sub(elapsed);
                     let url = crate::remote_control::format_remote_control_url(
-                        &h.local_ip, h.port, &h.pin, &h.access_token
+                        &h.local_ip,
+                        h.port,
+                        &h.pin,
+                        &h.access_token,
                     );
                     Ok(serde_json::json!({
                         "running":                true,
@@ -6201,7 +6199,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("app_id")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'app_id'")?;
-            if app_id.is_empty() || app_id.contains("..") || app_id.contains('/') || app_id.contains('\\') {
+            if app_id.is_empty()
+                || app_id.contains("..")
+                || app_id.contains('/')
+                || app_id.contains('\\')
+            {
                 return Err("Invalid app_id".to_string());
             }
             let path = crate::user_config_dir()
@@ -6216,7 +6218,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("app_id")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'app_id'")?;
-            if app_id.is_empty() || app_id.contains("..") || app_id.contains('/') || app_id.contains('\\') {
+            if app_id.is_empty()
+                || app_id.contains("..")
+                || app_id.contains('/')
+                || app_id.contains('\\')
+            {
                 return Err("Invalid app_id".to_string());
             }
             let content = args
@@ -6339,14 +6345,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .or_else(|| args.get("profile_name"))
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'host'")?;
-            let user = args
-                .get("user")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
-            let pass = args
-                .get("password")
-                .and_then(|v| v.as_str())
-                .unwrap_or("");
+            let user = args.get("user").and_then(|v| v.as_str()).unwrap_or("");
+            let pass = args.get("password").and_then(|v| v.as_str()).unwrap_or("");
             let key_path = args
                 .get("key_path")
                 .or_else(|| args.get("keyPath"))
@@ -6381,8 +6381,16 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     "key_path": "",
                 })
             });
-            let user = parsed.get("user").and_then(|v| v.as_str()).unwrap_or("").to_string();
-            let key_path = parsed.get("key_path").and_then(|v| v.as_str()).unwrap_or("").to_string();
+            let user = parsed
+                .get("user")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+            let key_path = parsed
+                .get("key_path")
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
             Ok(serde_json::json!({
                 "host": host,
                 "user": user,
@@ -8954,8 +8962,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let permission_registry_count = app.config.security.permission_registry.profiles.len();
             drop(app);
 
-            let keychain_ok =
-                neurodeck_infrastructure::secrets::test_keychain_access().is_ok();
+            let keychain_ok = neurodeck_infrastructure::secrets::test_keychain_access().is_ok();
             let safe_mode = std::env::var("NEURODECK_SAFE_MODE").is_ok();
 
             Ok(serde_json::json!({
@@ -9166,19 +9173,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "academy_save_progress" => {
-            let progress: academy::LearnerProgress = serde_json::from_value(
-                args.get("progress").cloned().unwrap_or_default(),
-            )
-            .map_err(|e| format!("Invalid progress payload: {e}"))?;
+            let progress: academy::LearnerProgress =
+                serde_json::from_value(args.get("progress").cloned().unwrap_or_default())
+                    .map_err(|e| format!("Invalid progress payload: {e}"))?;
             academy::save_progress(progress)?;
             Ok(serde_json::json!({ "status": "saved" }))
         }
 
         "academy_save_portfolio_entry" => {
-            let entry: academy::PortfolioEntry = serde_json::from_value(
-                args.get("entry").cloned().unwrap_or_default(),
-            )
-            .map_err(|e| format!("Invalid portfolio entry payload: {e}"))?;
+            let entry: academy::PortfolioEntry =
+                serde_json::from_value(args.get("entry").cloned().unwrap_or_default())
+                    .map_err(|e| format!("Invalid portfolio entry payload: {e}"))?;
             let id = academy::save_portfolio_entry(entry)?;
             Ok(serde_json::json!({ "id": id }))
         }
@@ -9201,7 +9206,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let app_state_clone = state.app_state.clone();
             let broadcaster_clone = state.broadcaster.clone();
             tokio::spawn(async move {
-                if let Err(e) = academy::mentor_query(payload, app_state_clone, broadcaster_clone).await {
+                if let Err(e) =
+                    academy::mentor_query(payload, app_state_clone, broadcaster_clone).await
+                {
                     eprintln!("[academy_mentor] Error: {e}");
                 }
             });

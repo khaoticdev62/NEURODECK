@@ -174,7 +174,7 @@ test.describe("Onboarding Wizard Dependency Installers", () => {
 
   test("Step 2 displays Install Subsystem button and handles progress state to success", async ({ page }) => {
     await page.goto("/");
-    await page.locator("#boot-loader").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+    await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
 
     // Ensure onboarding modal is visible
     const overlay = page.locator("#onboarding-overlay");

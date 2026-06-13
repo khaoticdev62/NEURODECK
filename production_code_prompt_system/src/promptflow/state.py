@@ -16,7 +16,9 @@ class StateManager:
     def __init__(self, output_dir: Path | str) -> None:
         self.output_dir = Path(output_dir)
 
-    def create_run(self, sequence: str, target_repo: str, prompt_pack: str, provider: str, model: str | None) -> tuple[RunState, Path]:
+    def create_run(
+        self, sequence: str, target_repo: str, prompt_pack: str, provider: str, model: str | None
+    ) -> tuple[RunState, Path]:
         """Create a new run directory and state file."""
         now = datetime.now()
         run_id = now.strftime("%Y-%m-%d_%H%M%S") + f"_{sequence}"

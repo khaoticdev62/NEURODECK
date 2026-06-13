@@ -23,7 +23,7 @@ export function LoadingState({
       aria-label={label}
       className={[
         'flex flex-col items-center justify-center gap-3 text-nd-text-muted',
-        fullHeight ? 'h-full min-h-[200px]' : 'py-10',
+        fullHeight ? 'h-full min-h-48' : 'py-10',
       ].join(' ')}
     >
       <Loader2

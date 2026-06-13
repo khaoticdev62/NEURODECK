@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { FileDown, FileJson, RefreshCw, Archive, History } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
 import { ErrorState } from "../../components/primitives/ErrorState";
 import { LoadingState } from "../../components/primitives/LoadingState";
@@ -45,31 +46,37 @@ export function SessionsView({
           <p className="mt-2 text-sm leading-6 text-nd-text-muted">
             A chronological trail of your interactions. View, export, or audit past sessions.
           </p>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            fullWidth
+            className="mt-5"
+            loading={loading}
             onClick={() => void fetchSessions()}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent disabled:opacity-50"
-            disabled={loading}
+            icon={loading ? undefined : RefreshCw}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" /> Refresh List
-          </button>
+            {loading ? 'Refreshing…' : 'Refresh List'}
+          </Button>
 
           <div className="mt-8 border-t border-nd-text-muted/15 pt-5">
             <h4 className="text-sm font-semibold text-nd-text">Active Session Actions</h4>
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              fullWidth
+              className="mt-3"
               onClick={() => void actions.exportSession()}
-              className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
+              icon={FileDown}
             >
-              <FileDown className="h-4 w-4" aria-hidden="true" /> Export Markdown
-            </button>
-            <button
-              type="button"
+              Export Markdown
+            </Button>
+            <Button
+              variant="secondary"
+              fullWidth
+              className="mt-2"
               onClick={() => void actions.saveSession()}
-              className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
+              icon={FileJson}
             >
-              <FileJson className="h-4 w-4" aria-hidden="true" /> Save JSON Session
-            </button>
+              Save JSON Session
+            </Button>
             {state.lastExportPath && (
               <p className="mt-3 break-all text-xs text-nd-text-muted">
                 Last export: {state.lastExportPath}

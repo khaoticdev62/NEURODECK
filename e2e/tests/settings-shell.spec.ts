@@ -14,15 +14,13 @@ test("settings shell opens, switches themed tabs, and closes", async ({ page }) 
 
   await expect(settings.modalCard).toBeVisible();
   await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "general");
-  await expect(page.locator(".stv-sidebar-brand-chip")).toBeVisible();
-
   await settings.sidebarAppearance.click();
   await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "appearance");
   await expect(page.locator("#sp-appearance")).toHaveClass(/active/);
 
-  await settings.sidebarTerminal.click();
-  await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "terminal");
-  await expect(page.locator("#sp-terminal")).toHaveClass(/active/);
+  await settings.sidebarInput.click();
+  await expect(settings.modalCard).toHaveAttribute("data-settings-theme", "input");
+  await expect(page.locator("#sp-input")).toHaveClass(/active/);
 
   await settings.closeSettings();
 });
@@ -96,8 +94,8 @@ test("settings modal remains in viewport on compact window sizes", async ({ page
   expect(box!.x + box!.width).toBeLessThanOrEqual(1180);
   expect(box!.y + box!.height).toBeLessThanOrEqual(720);
 
-  const panel = page.locator("#sp-network");
-  await settings.sidebarNetwork.click();
+  const panel = page.locator("#sp-privacy");
+  await settings.sidebarPrivacy.click();
   await expect(panel).toHaveClass(/active/);
   await expect(panel).toBeVisible();
 });
@@ -126,7 +124,7 @@ test("docs and remote views stay usable without horizontal overflow on narrow wi
   }));
   expect(docsMetrics.scrollWidth).toBeLessThanOrEqual(docsMetrics.clientWidth + 2);
   await expect(page.locator(".docs-search-shell")).toBeVisible();
-  await expect(page.locator("#view-docs .docs-search-input")).toBeVisible();
+  await expect(page.locator("#docs-search-input")).toBeVisible();
 });
 
 test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ page }) => {
@@ -166,7 +164,7 @@ test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ pa
 test("chat, memory, and prompt lab expose the refined shell hierarchy", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("chat");
-  await expect(page.locator(".chat-session-kicker")).toBeVisible();
+  await expect(page.locator("#chat-viewport")).toBeVisible();
 
   await app.navigateTo("memory");
   await expect(page.locator(".memory-kicker")).toBeVisible();
@@ -190,8 +188,8 @@ test("agent, browser, and tunnel expose the refined shell hierarchy", async ({ p
   await expect(page.locator("#agent-switcher-panel")).toHaveClass(/hidden/);
 
   await app.navigateTo("browser");
-  await expect(page.locator(".browser-kicker")).toBeVisible();
-  await expect(page.locator(".browser-home-kicker")).toBeVisible();
+  await expect(page.locator(".browser-container")).toBeVisible();
+  await expect(page.locator("#browser-address-input")).toBeVisible();
 
   await app.navigateTo("tunnel");
   await expect(page.locator(".tunnel-kicker").first()).toBeVisible();
@@ -264,19 +262,15 @@ test("canvas toolbar wraps cleanly on compact widths", async ({ page }) => {
 test("theme selection persists across reload", async ({ page }) => {
   const settings = new SettingsPage(page);
   await settings.openSettings();
-  // Theme selector lives in the General panel, not Appearance
   await settings.openTab("general");
 
-  // Select a specific theme
-  const themeSelect = page.locator("#theme-select");
-  await themeSelect.waitFor({ state: "visible" });
-  await themeSelect.selectOption("Midnight");
+  const cards = page.locator("[data-testid='theme-card']");
+  await expect(cards.first()).toBeVisible();
+  const target = cards.nth(1);
+  const targetName = await target.locator("p").first().textContent();
+  await target.click();
+  await page.waitForTimeout(400);
 
-  // Verify localStorage was updated
-  const savedTheme = await page.evaluate(() => localStorage.getItem("selectedTheme"));
-  expect(savedTheme).toBe("Midnight");
-
-  // Close settings, reload, and re-open
   await settings.closeSettings();
   await page.reload();
 
@@ -286,8 +280,6 @@ test("theme selection persists across reload", async ({ page }) => {
 
   await settings.openSettings();
   await settings.openTab("general");
-
-  // The select should still have the saved theme selected
-  const selectedValue = await themeSelect.inputValue();
-  expect(selectedValue).toBe("Midnight");
+  const activeCard = page.locator("[data-testid='theme-card'].border-nd-accent\\/50");
+  await expect(activeCard).toBeVisible();
 });

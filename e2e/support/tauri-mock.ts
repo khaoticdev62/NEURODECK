@@ -25,6 +25,14 @@ export interface TauriMockOptions {
 }
 
 export function buildTauriMock(options: TauriMockOptions = {}) {
+  // Polyfill the esbuild keepNames helper when this function is serialized
+  // into a browser context by Playwright/tsx (which injects __name calls
+  // but does not define the helper in the page).
+  (globalThis as any).__name =
+    typeof (globalThis as any).__name === "function"
+      ? (globalThis as any).__name
+      : (target: any, _value: string) => target;
+
   const {
     overrides = {},
     geminiApiKey = "",
@@ -150,6 +158,47 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
         return { rss_mb: 256 };
       case "get_context_stats":
         return { message_count: 0, total_tokens: 0 };
+      case "get_store": {
+        const key = args?.key;
+        if (key === "neurodeck:v6:state") {
+          return { showOnboarding: false, selectedProvider: "ollama", selectedTheme: "Neurodeck" };
+        }
+        if (key === "neurodeck_onboarding_state") {
+          return { status: "completed", completedAt: "2026-01-01T00:00:00Z" };
+        }
+        return null;
+      }
+      case "set_store":
+      case "reset_store":
+        return { ok: true, updatedAt: new Date().toISOString() };
+      case "get_status_bar_state":
+        return {
+          connection: { status: "healthy", issues: [] },
+          ai: { provider: "gemini", model: "gemini-1.5-flash", active_agent_id: "default", active_persona: "Default" },
+          session: { id: "test-session", message_count: 0 },
+          memory: { ready: true, count: 0 },
+          tools: { state: "idle", label: "Idle" },
+          pty: { session_count: 0 },
+          remote: { server_running: false },
+          transfer: { active_count: 0 },
+          mcp: { running: false },
+          sync: { enabled: false, syncing: false, last_sync_at: null, last_error: null, pending_records: 0 },
+          theme: { active_theme_name: "Neurodeck" },
+          safe_mode: false,
+        };
+      case "get_system_health":
+        return { status: "healthy", provider: "gemini", model: "gemini-1.5-flash", memory_doc_count: 0, plugin_count: 0, kfms_version: "1.8.0", issues: [] };
+      case "get_terminal_environment":
+        return {
+          environment: { platform: "Win32", arch: "x86_64", steamDeckHost: false, cwd: "/", shell: "bash", probes: [], missingTools: [], readyProfiles: [], warnings: [] },
+          profiles: [],
+        };
+      case "pty_spawn":
+        return { success: true, id: args?.id ?? "main_pty_session" };
+      case "pty_kill":
+      case "pty_write":
+      case "pty_resize":
+        return { success: true };
       case "start_recording":
         return "Recording started";
       case "stop_recording":
@@ -290,6 +339,23 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
           { id: "s1", label: "Rust ownership", source: "Topic", insert_text: "Rust ownership", score: 9 },
           { id: "s2", label: "SQLite migration", source: "Topic", insert_text: "SQLite migration", score: 7 },
         ];
+      case "get_allowed_models_for_agent":
+        if ((globalThis as any).__mockOverrideGetAllowedModels) {
+          throw new Error("Model service unavailable");
+        }
+        return [];
+      case "get_model_compatibility_scores":
+        return [];
+      case "security_report":
+        return { keychain_ok: true, safe_mode: false, agent_workspace_only: true, permission_registry_count: 0 };
+      case "get_credential_status":
+        return { gemini: false, huggingface: false, openai_compat: false };
+      case "list_permission_profiles":
+        return { profiles: [], default_profile_id: "default", agent_profile_map: {} };
+      case "list_agents":
+        return [];
+      case "validate_agent_model":
+        return { allowed: true, reason: "" };
       case "set_theme":
         return {
           Name: args?.name ?? "BLACKSITE",
@@ -324,14 +390,14 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
     // Default streaming mock for send_command
     if (cmd === "send_command") {
       setTimeout(() => {
-        const chunkCbs = listeners.get("stream_chunk") ?? [];
-        const doneCbs = listeners.get("stream_done") ?? [];
-        for (const cb of chunkCbs) {
-          cb({ payload: "Hello" });
-          cb({ payload: " from" });
-          cb({ payload: " the" });
-          cb({ payload: " mock" });
-          cb({ payload: " stream!" });
+        const tokenCbs = listeners.get("command_token") ?? [];
+        const doneCbs = listeners.get("command_done") ?? [];
+        for (const cb of tokenCbs) {
+          cb({ payload: { token: "Hello" } });
+          cb({ payload: { token: " from" } });
+          cb({ payload: { token: " the" } });
+          cb({ payload: { token: " mock" } });
+          cb({ payload: { token: " stream!" } });
         }
         for (const cb of doneCbs) cb({ payload: null });
       }, 100);
@@ -384,6 +450,19 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
   (window as any).__mock_emit = (event: string, payload: any) => {
     for (const cb of listeners.get(event) ?? []) {
       cb({ payload });
+    }
+    const wsListeners = (window as any).__wsListeners;
+    if (wsListeners && typeof wsListeners.get === "function") {
+      const handlers = wsListeners.get(event);
+      if (handlers && typeof handlers.forEach === "function") {
+        handlers.forEach((h: any) => {
+          try {
+            h(payload);
+          } catch (err) {
+            console.error("Error invoking WS mock listener:", err);
+          }
+        });
+      }
     }
   };
 

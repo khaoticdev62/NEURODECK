@@ -22,12 +22,14 @@ export function Badge({
   size = 'sm',
   variant = 'fill',
   dot = false,
+  className = '',
 }: {
   children: ReactNode;
   tone?: keyof typeof toneClasses;
   size?: 'sm' | 'md';
   variant?: 'fill' | 'outline';
   dot?: boolean;
+  className?: string;
 }) {
   const sizeCls = size === 'sm'
     ? 'px-2 py-0.5 text-2xs tracking-[0.18em]'
@@ -36,7 +38,7 @@ export function Badge({
   const variantCls = variant === 'fill' ? toneClasses[tone] : toneOutlineClasses[tone];
 
   return (
-    <span className={`inline-flex items-center rounded-full border ${sizeCls} ${variantCls}`}>
+    <span className={`inline-flex items-center rounded-full border ${sizeCls} ${variantCls} ${className}`}>
       {dot && <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${tone === 'accent' ? 'bg-nd-accent' : tone === 'success' ? 'bg-nd-success' : tone === 'warning' ? 'bg-nd-warning' : tone === 'danger' ? 'bg-nd-danger' : 'bg-nd-text-muted'}`} />}
       {children}
     </span>

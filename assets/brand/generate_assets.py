@@ -7,7 +7,6 @@ Run from the project root:
 """
 
 import math
-import os
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
@@ -217,9 +216,7 @@ def make_icon(size: int) -> Image.Image:
 
     # -- Node dots at corners of N --
     node_r = max(2, bar_w // 2)
-    nx1 = nx0 + bar_w  # right edge of left bar
     nx3 = nx0 + bar_w + gap  # left edge of right bar
-    nx4 = nx3 + bar_w  # right edge of right bar
     ncx_l = nx0 + bar_w // 2  # centre x of left bar
     ncx_r = nx3 + bar_w // 2  # centre x of right bar
     ny1 = ny0 + n_h
@@ -466,14 +463,13 @@ def make_logo_transparent(w: int = 600, h: int = 200) -> Image.Image:
     gd = ImageDraw.Draw(glow_img, "RGBA")
     tx = 30 + n_size
     tb = gd.textbbox((0, 0), title, font=f_title)
-    tw, th = tb[2] - tb[0], tb[3] - tb[1]
+    _tw, th = tb[2] - tb[0], tb[3] - tb[1]
     ty = h // 2 - (th + int(h * 0.18)) // 2
     gd.text((tx, ty), title, font=f_title, fill=CYAN[:3] + (180,))
     img = Image.alpha_composite(img, glow_img.filter(ImageFilter.GaussianBlur(title_size // 6)))
 
     draw = ImageDraw.Draw(img, "RGBA")
     draw.text((tx, ty), title, font=f_title, fill=CYAN)
-    tbb = draw.textbbox((0, 0), tag, font=f_tag)
     draw.text((tx, ty + th + 8), tag, font=f_tag, fill=TEAL)
 
     return img

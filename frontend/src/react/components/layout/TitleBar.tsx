@@ -1,4 +1,4 @@
-import { Bell, Gauge, Minus, Square, X, Zap, ChevronDown } from "lucide-react";
+import { Bell, Gauge, Minus, Square, X, Zap, ChevronDown, Volume2, VolumeX } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Badge } from "../primitives/Badge";
 import { IconButton } from "../primitives/IconButton";
@@ -34,6 +34,23 @@ export function TitleBar({
   const contextColor = contextUsed > 80 ? "danger" : contextUsed > 60 ? "warning" : "success";
   const usableModels = models.filter((m) => m.status !== "disabled" && m.status !== "missing");
   const [modelOpen, setModelOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    try {
+      setIsMuted(localStorage.getItem("isMuted") === "true");
+    } catch {
+      setIsMuted(false);
+    }
+  }, []);
+
+  const toggleMute = () => {
+    const next = !isMuted;
+    setIsMuted(next);
+    try {
+      localStorage.setItem("isMuted", String(next));
+    } catch {}
+  };
   const [focusedIdx, setFocusedIdx] = useState(-1);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
   const modelBtnRef = useRef<HTMLButtonElement>(null);
@@ -250,6 +267,13 @@ export function TitleBar({
             </span>
           </IconButton>
         )}
+        <IconButton
+          id="mute-btn"
+          aria-label={isMuted ? "Unmute" : "Mute"}
+          onClick={toggleMute}
+        >
+          {isMuted ? <VolumeX className="h-3.5 w-3.5" /> : <Volume2 className="h-3.5 w-3.5" />}
+        </IconButton>
         {onOpenNotifications && (
           <IconButton id="notif-btn" aria-label="Open notifications" onClick={onOpenNotifications}>
             <Bell className="h-3.5 w-3.5" />

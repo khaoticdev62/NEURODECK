@@ -95,8 +95,6 @@ def run_command(
             "returncode": result.returncode,
         }
     except subprocess.TimeoutExpired as exc:
-        raise CommandExecutionError(
-            f"Command timed out after {timeout}s: {command_str}"
-        ) from exc
+        raise CommandExecutionError(f"Command timed out after {timeout}s: {command_str}") from exc
     except Exception as exc:
         raise CommandExecutionError(f"Command failed: {exc}") from exc

@@ -316,7 +316,9 @@ pub fn pty_spawn<E: EventEmitter>(
                 reason: "exited".to_string(),
             },
         );
-        let mut sessions = sessions_for_thread.lock().unwrap_or_else(|e| e.into_inner());
+        let mut sessions = sessions_for_thread
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
         let should_remove = sessions
             .get(&id_for_cleanup)
             .map(|session| session.spawn_token == spawn_token_for_thread)
@@ -365,21 +367,14 @@ pub fn pty_write(id: String, data: String, state: Arc<PtyState>) -> Result<(), S
             .write_all(data.as_bytes())
             .map_err(to_string_err)?;
         session.writer.flush().map_err(to_string_err)?;
-        session
-            .bytes_in
-            .fetch_add(data.len(), Ordering::Relaxed);
+        session.bytes_in.fetch_add(data.len(), Ordering::Relaxed);
         Ok(())
     } else {
         Err(format!("PTY Session {} not found", id))
     }
 }
 
-pub fn pty_resize(
-    id: String,
-    cols: u16,
-    rows: u16,
-    state: Arc<PtyState>,
-) -> Result<(), String> {
+pub fn pty_resize(id: String, cols: u16, rows: u16, state: Arc<PtyState>) -> Result<(), String> {
     let sessions = state.sessions.lock().unwrap_or_else(|e| e.into_inner());
     if let Some(session) = sessions.get(&id) {
         if let Ok(mut size) = session.size.lock() {

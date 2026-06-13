@@ -37,7 +37,12 @@ pub fn seed_bundled_plugins() {
 
     // Skip seeding if there are already enabled plugins present.
     let already_populated = fs::read_dir(&dest)
-        .map(|mut d| d.any(|e| e.map(|e| e.path().extension().and_then(|x| x.to_str()) == Some("lua")).unwrap_or(false)))
+        .map(|mut d| {
+            d.any(|e| {
+                e.map(|e| e.path().extension().and_then(|x| x.to_str()) == Some("lua"))
+                    .unwrap_or(false)
+            })
+        })
         .unwrap_or(false);
 
     if already_populated {
@@ -54,9 +59,7 @@ pub fn seed_bundled_plugins() {
                 candidate.is_dir().then_some(candidate)
             })
         })
-        .or_else(|| {
-            std::env::current_dir().ok().map(|cwd| cwd.join("plugins"))
-        });
+        .or_else(|| std::env::current_dir().ok().map(|cwd| cwd.join("plugins")));
 
     let source = match source {
         Some(s) if s.is_dir() => s,
@@ -70,14 +73,20 @@ pub fn seed_bundled_plugins() {
     let entries = match fs::read_dir(&source) {
         Ok(e) => e,
         Err(e) => {
-            tracing::warn!("seed_bundled_plugins: cannot read source dir {}: {}", source.display(), e);
+            tracing::warn!(
+                "seed_bundled_plugins: cannot read source dir {}: {}",
+                source.display(),
+                e
+            );
             return;
         }
     };
 
     for entry in entries.flatten() {
         let path = entry.path();
-        let Some(name) = path.file_name() else { continue };
+        let Some(name) = path.file_name() else {
+            continue;
+        };
         let name_str = name.to_string_lossy();
         if !name_str.ends_with(".lua") {
             continue;
@@ -93,7 +102,11 @@ pub fn seed_bundled_plugins() {
     }
 
     if copied > 0 {
-        tracing::info!("seed_bundled_plugins: seeded {} plugin(s) from {}", copied, source.display());
+        tracing::info!(
+            "seed_bundled_plugins: seeded {} plugin(s) from {}",
+            copied,
+            source.display()
+        );
     }
 }
 
@@ -457,8 +470,6 @@ pub async fn reload_plugins_bridge(
     result
 }
 
-
-
 /// Scan the plugins directory and return metadata for every `.lua` / `.lua.disabled` file.
 /// Parses the plugin manifest header to populate name/version/author/description/permissions.
 pub fn list_local_plugins() -> Result<Vec<PluginInfo>, String> {
@@ -672,9 +683,17 @@ fn validate_safe_lua_file_name(file_name: &str, allow_disabled: bool) -> Result<
         || file_name.contains("..")
         || file_name.contains('/')
         || file_name.contains('\\')
-        || !file_name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.' || c == ' ' || c == '(' || c == ')' || c == '[' || c == ']')
+        || !file_name.chars().all(|c| {
+            c.is_ascii_alphanumeric()
+                || c == '_'
+                || c == '-'
+                || c == '.'
+                || c == ' '
+                || c == '('
+                || c == ')'
+                || c == '['
+                || c == ']'
+        })
     {
         return Err("Invalid plugin file name".to_string());
     }

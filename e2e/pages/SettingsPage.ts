@@ -6,31 +6,25 @@ export class SettingsPage extends AppPage {
   readonly sidebarGeneral: Locator;
   readonly sidebarAi: Locator;
   readonly sidebarAppearance: Locator;
-  readonly sidebarTerminal: Locator;
+  readonly sidebarInput: Locator;
+  readonly sidebarPerformance: Locator;
   readonly sidebarExtensions: Locator;
-  readonly sidebarMemory: Locator;
-  readonly sidebarNetwork: Locator;
-  readonly sidebarComputer: Locator;
-  readonly sidebarSync: Locator;
-  readonly sidebarVoice: Locator;
+  readonly sidebarPrivacy: Locator;
 
   constructor(page: Page) {
     super(page);
     this.modalCard = page.locator("#settings-overlay .settings-modal-card");
-    this.sidebarGeneral = page.locator(".stv-nav-item[data-panel='sp-general']");
-    this.sidebarAi = page.locator(".stv-nav-item[data-panel='sp-ai']");
-    this.sidebarAppearance = page.locator(".stv-nav-item[data-panel='sp-appearance']");
-    this.sidebarTerminal = page.locator(".stv-nav-item[data-panel='sp-terminal']");
-    this.sidebarExtensions = page.locator(".stv-nav-item[data-panel='sp-extensions']");
-    this.sidebarMemory = page.locator(".stv-nav-item[data-panel='sp-memory']");
-    this.sidebarNetwork = page.locator(".stv-nav-item[data-panel='sp-network']");
-    this.sidebarComputer = page.locator(".stv-nav-item[data-panel='sp-computer']");
-    this.sidebarSync = page.locator(".stv-nav-item[data-panel='sp-sync']");
-    this.sidebarVoice = page.locator(".stv-nav-item[data-panel='sp-voice']");
+    this.sidebarGeneral = page.getByTestId("settings-tab-general");
+    this.sidebarAi = page.getByTestId("settings-tab-ai");
+    this.sidebarAppearance = page.getByTestId("settings-tab-appearance");
+    this.sidebarInput = page.getByTestId("settings-tab-input");
+    this.sidebarPerformance = page.getByTestId("settings-tab-performance");
+    this.sidebarExtensions = page.getByTestId("settings-tab-extensions");
+    this.sidebarPrivacy = page.getByTestId("settings-tab-privacy");
   }
 
-  async openTab(name: "general" | "ai" | "appearance" | "terminal" | "extensions" | "memory" | "network" | "computer" | "sync" | "voice") {
-    const tab = this.page.locator(`.stv-nav-item[data-panel='sp-${name}']`);
+  async openTab(name: "general" | "ai" | "appearance" | "input" | "performance" | "extensions" | "privacy") {
+    const tab = this.page.getByTestId(`settings-tab-${name}`);
     await tab.click();
     await expect(this.page.locator(`#sp-${name}`)).toHaveClass(/active/);
     await expect(this.modalCard).toHaveAttribute("data-settings-theme", name);

@@ -1,9 +1,9 @@
 import {
   Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock,
-  Code, Code2, Command, Database, Download, FileCode, FileText, FlaskConical,
-  FolderOpen, Gauge, GitBranch, Globe, GraduationCap, HardDrive, History, Layers,
-  LayoutDashboard, Lightbulb, Lock, Magnet, Network, Paintbrush, Palette,
-  Plug, Radio, RotateCcw, Server, Settings, Share2, ShieldCheck, Sparkles,
+  Code, Database, Download, FlaskConical,
+  FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers,
+  LayoutDashboard, Lock, Magnet, Network, Paintbrush, Palette,
+  Plug, Radio, RotateCcw, Settings, Share2, ShieldCheck,
   Terminal, TerminalSquare, Type, Webhook, Wrench, Workflow
 } from 'lucide-react';
 import type { FontOption, NavItem, ThemeTokenSet } from '../types/neurodeck';

@@ -88,6 +88,8 @@ export function injectThemeVariables(tokens: ThemeTokenSet) {
   root.style.setProperty("--nd-transition-fast", tokens.motion.durationFast);
   root.style.setProperty("--nd-transition-normal", tokens.motion.durationNormal);
   root.style.setProperty("--nd-transition-slow", tokens.motion.durationSlow);
+  root.style.setProperty("--nd-ease-standard", tokens.motion.easingStandard ?? "cubic-bezier(0.4, 0, 0.2, 1)");
+  root.style.setProperty("--nd-ease-emphasis", tokens.motion.easingEmphasis ?? "cubic-bezier(0.34, 1.56, 0.64, 1)");
 
   // Semantic token layer (surface.base, text.primary, accent.error, etc.)
   const semantic = resolveSemanticTokens(tokens);

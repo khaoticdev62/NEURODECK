@@ -24,16 +24,16 @@ test.beforeEach(async ({ page }) => {
 const VIEWS = [
   { id: "chat", name: "Chat", selector: "#user-input" },
   { id: "canvas", name: "Canvas", selector: "#canvas-monaco" },
-  { id: "terminal", name: "Terminal", selector: "#terminal-tabs-list" },
+  { id: "terminal", name: "Terminal", selector: "#terminal-new-tab-btn" },
   { id: "ssh", name: "SSH", selector: "#ssh-host-input" },
-  { id: "tunnel", name: "Tunnel", selector: "#tunnel-status-indicator" },
-  { id: "share", name: "Share", selector: "#share-panel-lan" },
-  { id: "browser", name: "Browser", selector: "#browser-url-input" },
+  { id: "tunnel", name: "Tunnel", selector: ".tunnel-kicker" },
+  { id: "share", name: "Share", selector: ".share-view-kicker" },
+  { id: "browser", name: "Browser", selector: "#browser-address-input" },
   { id: "agent", name: "Agent", selector: "#agent-task-input" },
   { id: "memory", name: "Memory", selector: "#memory-search-input" },
   { id: "prompt-lab", name: "Prompt Lab", selector: ".prompt-lab-container" },
-  { id: "remote", name: "Remote", selector: "#remote-status-badge" },
-  { id: "docs", name: "Docs", selector: "#docs-search-input" },
+  { id: "remote", name: "Remote", selector: ".remote-status-badge" },
+  { id: "docs", name: "Docs", selector: "#docs-search-input" }
 ] as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -58,19 +58,19 @@ for (const view of VIEWS) {
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. Command palette can drive view navigation
 // ─────────────────────────────────────────────────────────────────────────────
-const COMMAND_PALETTE_QUERIES: Record<string, string> = {
-  chat: "chat",
-  canvas: "canvas",
-  terminal: "terminal",
-  ssh: "ssh",
-  tunnel: "tunnel",
-  share: "share",
-  browser: "browser",
-  agent: "agent",
-  memory: "memory",
-  "prompt-lab": "prompt lab",
-  remote: "remote",
-  docs: "docs",
+const COMMAND_PALETTE_COMMANDS: Record<string, string> = {
+  chat: "Open Workspace",
+  canvas: "Open Canvas",
+  terminal: "Open Terminal",
+  ssh: "Open SSH",
+  tunnel: "Open Tunnel",
+  share: "Open Share",
+  browser: "Open Browser",
+  agent: "Open Agent Dock",
+  memory: "Open Memory Vault",
+  "prompt-lab": "Open Prompt Lab",
+  remote: "Open Remote",
+  docs: "Open Docs",
 };
 
 for (const view of VIEWS) {
@@ -78,9 +78,10 @@ for (const view of VIEWS) {
     const app = new AppPage(page);
     await app.openCommandPalette();
 
-    const query = COMMAND_PALETTE_QUERIES[view.id];
-    await page.locator("#command-palette-input").fill(query);
-    await page.locator("#command-palette-list .command-palette-item").first().click();
+    const label = COMMAND_PALETTE_COMMANDS[view.id];
+    await page.locator("#command-palette-input").fill(label);
+    const item = page.locator("#command-palette-list .command-palette-item").filter({ hasText: new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") }).first();
+    await item.click();
 
     await expect(page.getByTestId(`nav-tab-${view.id}`)).toHaveClass(/active/);
     await expect(page.getByTestId(`view-${view.id}`)).toHaveClass(/active/);

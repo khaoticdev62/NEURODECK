@@ -133,7 +133,7 @@ export function RemoteView() {
           <Radio className={`h-5 w-5 ${status.running ? 'text-nd-success' : 'text-nd-accent'}`} />
         </div>
         <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Remote</div>
+          <div className="remote-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Remote</div>
           <h2 className="text-lg font-semibold text-nd-text">Remote Control</h2>
           <p className="text-xs text-nd-text-muted">Mobile-friendly web remote server</p>
         </div>
@@ -143,7 +143,7 @@ export function RemoteView() {
         {/* Main panel */}
         <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5">
           {/* Status badge */}
-          <div className="flex items-center gap-4 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-4">
+          <div className="remote-status-badge flex items-center gap-4 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-4">
             <div className={`h-3 w-3 rounded-full ${status.running ? 'bg-nd-success shadow-[0_0_8px_rgba(124,255,178,0.5)]' : 'bg-nd-text-muted/40'}`} />
             <span className="text-sm font-medium text-nd-text/90">
               {status.running ? 'Server Running' : 'Server Offline'}
