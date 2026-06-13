@@ -2537,6 +2537,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({
                 "profiles": registry.profiles,
                 "default_profile_id": registry.default_profile_id,
+                "agent_profile_map": registry.agent_profile_map,
             }))
         }
 
@@ -2637,6 +2638,49 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             app_state.config = config;
 
             Ok(serde_json::json!({ "status": "updated", "default_profile_id": id }))
+        }
+
+        "get_agent_permission_profile" => {
+            let agent_id = args
+                .get("agent_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'agent_id'")?;
+            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let registry = &app_state.config.security.permission_registry;
+            let profile = registry.profile_for_agent(agent_id);
+            Ok(serde_json::json!({
+                "agent_id": agent_id,
+                "profile_id": profile.id,
+                "explicit": registry.agent_profile_map.contains_key(agent_id),
+            }))
+        }
+
+        "set_agent_permission_profile" => {
+            let agent_id = args
+                .get("agent_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'agent_id'")?
+                .to_string();
+            let profile_id = args
+                .get("profile_id")
+                .and_then(|v| v.as_str());
+
+            let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+            let mut config = app_state.config.clone();
+            let registry = &mut config.security.permission_registry;
+            registry.set_agent_profile(&agent_id, profile_id)?;
+            registry.validate()?;
+
+            let path = crate::get_config_path();
+            crate::config::save_config(&path, &config)
+                .map_err(|e| format!("Failed to save config: {}", e))?;
+            app_state.config = config;
+
+            Ok(serde_json::json!({
+                "status": "updated",
+                "agent_id": agent_id,
+                "profile_id": profile_id,
+            }))
         }
 
         "set_model" => {

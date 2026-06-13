@@ -1288,6 +1288,8 @@ export interface DependencyStatus {
   ssh: boolean;
   ollama: boolean;
   tts: boolean;
+  openvpn: boolean;
+  wireguard: boolean;
 }
 
 export interface DependencyProgress {
@@ -1305,9 +1307,9 @@ const dependency = {
   async getStatus(): Promise<DependencyStatus> {
     if ((window as any).neurodeck?.dependency) {
       const res = await (window as any).neurodeck.dependency.getStatus();
-      return res?.payload || { ssh: false, ollama: false, tts: false };
+      return res?.payload || { ssh: false, ollama: false, tts: false, openvpn: false, wireguard: false };
     }
-    return { ssh: false, ollama: false, tts: false };
+    return { ssh: false, ollama: false, tts: false, openvpn: false, wireguard: false };
   },
   async install(id: string): Promise<{ success: boolean }> {
     if ((window as any).neurodeck?.dependency) {

@@ -33,6 +33,7 @@ async function callSidecar(bridgePort, command, args = {}) {
 const { detectProject } = require('./services/ide/projectDetectionService');
 const { safeCommandExecutionService } = require('./services/ide/safeCommandExecutionService');
 const { rankPredictions } = require('./services/ide/predictiveCodingService');
+const { dependencyInstallerService } = require('./services/dependencyInstallerService');
 const { randomUUID } = require('crypto');
 
 function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthProbeRunner, bridgePort, isDev) {
@@ -141,6 +142,10 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
     });
   });
 
+  guard(IPC.MODELS_CANCEL, {}, async () => {
+    return callSidecar(bridgePort, 'cancel_generation');
+  });
+
   // ── Sessions Handlers ──────────────────────────────────────────────
 
   guard(IPC.SESSIONS_CREATE, {}, async () => {
@@ -186,6 +191,30 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
       await healthProbeRunner.runAllProbes();
     }
     return connectionRegistry.getConnectionMatrix();
+  });
+
+  // ── Dependency Installer Handlers ──────────────────────────────────
+
+  guard(IPC.DEPENDENCY_GET_STATUS, {}, async () => {
+    return {
+      ssh: await dependencyInstallerService.checkInstalledStatus('ssh'),
+      ollama: await dependencyInstallerService.checkInstalledStatus('ollama'),
+      tts: await dependencyInstallerService.checkInstalledStatus('tts'),
+      openvpn: await dependencyInstallerService.checkInstalledStatus('openvpn'),
+      wireguard: await dependencyInstallerService.checkInstalledStatus('wireguard'),
+    };
+  });
+
+  guard(IPC.DEPENDENCY_INSTALL, {
+    id: { type: 'string', required: true }
+  }, async (payload) => {
+    return dependencyInstallerService.install(payload.id, mainWindow);
+  });
+
+  guard(IPC.DEPENDENCY_CANCEL, {
+    id: { type: 'string', required: true }
+  }, async (payload) => {
+    return dependencyInstallerService.cancel(payload.id);
   });
 
   // ── Settings Handlers ──────────────────────────────────────────────
@@ -252,6 +281,45 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
       return { success: true };
     }
     return { success: false, error: `Key "${payload.key}" is not configurable via this channel.` };
+  });
+
+  guard(IPC.SETTINGS_VALIDATE, {
+    key: { type: 'string', required: true },
+    value: { required: true }
+  }, async (payload) => {
+    const { key, value } = payload;
+    const validProviders = new Set(['ollama', 'lmstudio', 'llama_cpp', 'openai_compat', 'gemini', 'huggingface', 'kimi', 'openai']);
+
+    if (key === 'llm.provider') {
+      if (typeof value !== 'string' || !validProviders.has(value)) {
+        return { valid: false, error: `Provider must be one of: ${Array.from(validProviders).join(', ')}` };
+      }
+      return { valid: true };
+    }
+
+    if (key === 'llm.model') {
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        return { valid: false, error: 'Model must be a non-empty string.' };
+      }
+      return { valid: true };
+    }
+
+    if (key === 'llm.gemini_key') {
+      if (typeof value !== 'string' || value.trim().length === 0) {
+        return { valid: false, error: 'API key must be a non-empty string.' };
+      }
+      return { valid: true };
+    }
+
+    if (key === 'themeSettings') {
+      if (value !== null && (typeof value !== 'object' || Array.isArray(value))) {
+        return { valid: false, error: 'themeSettings must be an object.' };
+      }
+      return { valid: true };
+    }
+
+    // Unknown keys are accepted; the backend will reject unsupported ones during set.
+    return { valid: true };
   });
 
   // ── IDE Predictive Coding Handlers ────────────────────────────────
@@ -361,81 +429,47 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
 
   // ── Theme Overhaul Handlers ───────────────────────────────────────
 
+  const { themeSettingsService } = require('./dist/main/services/theme/themeSettingsService');
+  const { themePresets } = require('./dist/shared/theme/themePresets');
+  const { wallpaperRegistry } = require('./dist/shared/theme/wallpaperRegistry');
+
   guard(IPC.THEME_GET, {}, async () => {
-    const fs = require('fs');
-    const path = require('path');
-    const { app } = require('electron');
-    const filePath = path.join(app.getPath('userData'), 'theme-settings.json');
-    if (fs.existsSync(filePath)) {
-      try {
-        return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      } catch (_) {}
-    }
-    return { activeThemeId: 'blacksite_prime' };
+    return themeSettingsService.getSettings();
   });
 
   guard(IPC.THEME_SET, {
     settings: { type: 'object', required: true }
   }, async (payload) => {
-    const fs = require('fs');
-    const path = require('path');
-    const { app } = require('electron');
-    const filePath = path.join(app.getPath('userData'), 'theme-settings.json');
-    try {
-      fs.writeFileSync(filePath, JSON.stringify(payload.settings, null, 2));
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
+    return themeSettingsService.setSettings(payload.settings);
   });
 
   guard(IPC.THEME_LIST, {}, async () => {
-    return [
-      { id: 'blacksite_prime', name: 'Blacksite Prime' },
-      { id: 'tactical_glass_ultra', name: 'Tactical Glass Ultra' },
-      { id: 'ghost_terminal_pro', name: 'Ghost Terminal Pro' }
-    ];
+    return themePresets.map((theme) => ({
+      id: theme.id,
+      name: theme.name,
+      category: theme.category,
+      description: theme.description,
+    }));
   });
 
   guard(IPC.WALLPAPER_GET, {}, async () => {
-    const fs = require('fs');
-    const path = require('path');
-    const { app } = require('electron');
-    const filePath = path.join(app.getPath('userData'), 'theme-settings.json');
-    if (fs.existsSync(filePath)) {
-      try {
-        const settings = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        return { id: settings.activeWallpaperId || 'neural_aurora' };
-      } catch (_) {}
-    }
-    return { id: 'neural_aurora' };
+    const settings = themeSettingsService.getSettings();
+    return { id: settings.activeWallpaperId };
   });
 
   guard(IPC.WALLPAPER_SET, {
     id: { type: 'string', required: true }
   }, async (payload) => {
-    const fs = require('fs');
-    const path = require('path');
-    const { app } = require('electron');
-    const filePath = path.join(app.getPath('userData'), 'theme-settings.json');
-    try {
-      let settings = {};
-      if (fs.existsSync(filePath)) {
-        settings = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-      }
-      settings.activeWallpaperId = payload.id;
-      fs.writeFileSync(filePath, JSON.stringify(settings, null, 2));
-      return { ok: true };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
+    return themeSettingsService.setSettings({ activeWallpaperId: payload.id });
   });
 
   guard(IPC.WALLPAPER_LIST, {}, async () => {
-    return [
-      { id: 'neural_aurora', name: 'Neural Aurora' },
-      { id: 'tactical_signal_grid', name: 'Tactical Signal Grid' }
-    ];
+    return wallpaperRegistry.listWallpapers().map((wp) => ({
+      id: wp.id,
+      name: wp.name,
+      renderer: wp.renderer,
+      category: wp.category,
+    }));
   });
 
   // ── NeuroBrowse Handlers ───────────────────────────────────────────
@@ -830,6 +864,35 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
   guard(IPC.VPN_CLEAR_BROWSER_PROXY, { profileId: { type: 'string', required: true }, browserProfileId: { type: 'string', required: false } }, async (payload) => vpnRouteManager.clearBrowserProxy(payload.profileId, payload.browserProfileId));
   guard(IPC.VPN_GET_PROVIDER_MATRIX, {}, async () => vpnRouteManager.getProviderMatrix());
   guard(IPC.VPN_EXPORT_REDACTED_PROFILE, { profileId: { type: 'string', required: true } }, async (payload) => vpnRouteManager.exportRedactedProfile(payload.profileId));
+
+  // ── Window Control Handlers ────────────────────────────────────────
+  guard(IPC.WINDOW_MINIMIZE, {}, async () => {
+    if (mainWindow) {
+      mainWindow.minimize();
+      return true;
+    }
+    return false;
+  });
+
+  guard(IPC.WINDOW_MAXIMIZE_TOGGLE, {}, async () => {
+    if (mainWindow) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+      } else {
+        mainWindow.maximize();
+      }
+      return true;
+    }
+    return false;
+  });
+
+  guard(IPC.WINDOW_CLOSE, {}, async () => {
+    if (mainWindow) {
+      mainWindow.close();
+      return true;
+    }
+    return false;
+  });
 }
 
 module.exports = { registerIpcHandlers };

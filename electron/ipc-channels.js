@@ -28,6 +28,9 @@ const IPC = Object.freeze({
   // Window control
   SET_KIOSK: 'set-kiosk',
   GET_IS_KIOSK: 'get-is-kiosk',
+  WINDOW_MINIMIZE: 'window:minimize',
+  WINDOW_MAXIMIZE_TOGGLE: 'window:maximize-toggle',
+  WINDOW_CLOSE: 'window:close',
 
   // Notifications
   REQUEST_NOTIFICATION_PERMISSION: 'request-notification-permission',
@@ -127,6 +130,24 @@ const IPC = Object.freeze({
   VPN_CLEAR_BROWSER_PROXY: 'vpn:clear-browser-proxy',
   VPN_GET_PROVIDER_MATRIX: 'vpn:get-provider-matrix',
   VPN_EXPORT_REDACTED_PROFILE: 'vpn:export-redacted-profile',
+
+  // Diagnostics
+  DIAGNOSTICS_PING_RENDERER: "diagnostics:ping-renderer",
+  DIAGNOSTICS_PONG_RENDERER: "diagnostics:pong-renderer",
+
+  // Models & Settings
+  MODELS_LIST: "models:list",
+  MODELS_STATUS: "models:status",
+  MODELS_RUN_PROMPT: "models:run-prompt",
+  MODELS_CANCEL: "models:cancel",
+  SETTINGS_GET: "settings:get",
+  SETTINGS_SET: "settings:set",
+  SETTINGS_VALIDATE: "settings:validate",
+
+  // Dependency Installer
+  DEPENDENCY_GET_STATUS: 'dependency:get-status',
+  DEPENDENCY_INSTALL: 'dependency:install',
+  DEPENDENCY_CANCEL: 'dependency:cancel',
 
   // Theme & Wallpaper Overhaul (New)
   THEME_GET: "theme:get",

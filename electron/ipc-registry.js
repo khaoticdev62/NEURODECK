@@ -15,6 +15,9 @@ const IPC_CHANNELS = Object.freeze({
   SAFE_STORAGE_DECRYPT: 'safe-storage-decrypt',
   SET_KIOSK: 'set-kiosk',
   GET_IS_KIOSK: 'get-is-kiosk',
+  WINDOW_MINIMIZE: 'window:minimize',
+  WINDOW_MAXIMIZE_TOGGLE: 'window:maximize-toggle',
+  WINDOW_CLOSE: 'window:close',
   REQUEST_NOTIFICATION_PERMISSION: 'request-notification-permission',
   
   // Browser WebContentsView (Existing)
@@ -121,6 +124,7 @@ const IPC_CHANNELS = Object.freeze({
   MODELS_LIST: "models:list",
   MODELS_STATUS: "models:status",
   MODELS_RUN_PROMPT: "models:run-prompt",
+  MODELS_CANCEL: "models:cancel",
 
   // Chat Sessions (New Target)
   SESSIONS_CREATE: "sessions:create",
@@ -134,10 +138,13 @@ const IPC_CHANNELS = Object.freeze({
   // Diagnostics & Telemetry (New Target)
   DIAGNOSTICS_CONNECTION_MATRIX: "diagnostics:connection-matrix",
   DIAGNOSTICS_RUN_PROBE: "diagnostics:run-probe",
+  DIAGNOSTICS_PING_RENDERER: "diagnostics:ping-renderer",
+  DIAGNOSTICS_PONG_RENDERER: "diagnostics:pong-renderer",
 
   // Settings (New Target)
   SETTINGS_GET: "settings:get",
   SETTINGS_SET: "settings:set",
+  SETTINGS_VALIDATE: "settings:validate",
 
   // IDE Predictive Coding (New)
   IDE_DETECT_PROJECT: "ide:detect-project",
@@ -150,6 +157,11 @@ const IPC_CHANNELS = Object.freeze({
   // Controller IDE (New)
   CONTROLLER_GET_IDE_ACTION_MAP: "controller:get-ide-action-map",
   CONTROLLER_SET_IDE_MODE: "controller:set-ide-mode",
+
+  // Dependency Installer
+  DEPENDENCY_GET_STATUS: 'dependency:get-status',
+  DEPENDENCY_INSTALL: 'dependency:install',
+  DEPENDENCY_CANCEL: 'dependency:cancel',
 
   // Theme & Wallpaper Overhaul (New)
   THEME_GET: "theme:get",

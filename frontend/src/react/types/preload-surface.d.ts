@@ -122,6 +122,10 @@ interface ElectronAPI {
   browserAdblockStatus(): Promise<{ enabled: boolean }>;
 
   onBrowserEvent(callback: (data: { event: string; payload: Record<string, unknown> }) => void): () => void;
+
+  // Diagnostics roundtrip
+  onDiagnosticsPing(callback: (data: { requestId: string; timestamp: string }) => void): () => void;
+  diagnosticsPong(requestId: string): Promise<{ ok: boolean }>;
 }
 
 declare global {

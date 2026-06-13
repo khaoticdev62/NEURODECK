@@ -4,7 +4,7 @@
 //! Deny-by-default model with named permission profiles.
 
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 // ──────────────────────────────────────────────────────────────────────────
 // Capability
@@ -143,6 +143,9 @@ pub struct PermissionRegistry {
     pub default_profile_id: String,
     /// All permission profiles.
     pub profiles: Vec<PermissionProfile>,
+    /// Optional agent_id → profile_id overrides.
+    #[serde(default)]
+    pub agent_profile_map: HashMap<String, String>,
 }
 
 impl Default for PermissionRegistry {
@@ -169,6 +172,7 @@ impl Default for PermissionRegistry {
         Self {
             default_profile_id: "default".to_string(),
             profiles: vec![default, restricted, privileged],
+            agent_profile_map: HashMap::new(),
         }
     }
 }
@@ -195,12 +199,28 @@ impl PermissionRegistry {
 
     /// Get the effective profile for an agent ID.
     /// Falls back to the default profile if no explicit mapping exists.
-    pub fn profile_for_agent(&self, _agent_id: &str) -> &PermissionProfile {
-        // TODO: In the future, maintain an agent_id → profile_id mapping.
-        // For now, every agent uses the default profile.
+    pub fn profile_for_agent(&self, agent_id: &str) -> &PermissionProfile {
+        if let Some(profile_id) = self.agent_profile_map.get(agent_id) {
+            if let Some(profile) = self.get(profile_id) {
+                return profile;
+            }
+        }
         self.get(&self.default_profile_id)
             .or_else(|| self.profiles.first())
             .expect("PermissionRegistry always has at least one profile")
+    }
+
+    /// Map an agent to a permission profile. Pass `profile_id: null` to remove the mapping.
+    pub fn set_agent_profile(&mut self, agent_id: &str, profile_id: Option<&str>) -> Result<(), String> {
+        if let Some(id) = profile_id {
+            if self.get(id).is_none() {
+                return Err(format!("Permission profile '{}' does not exist", id));
+            }
+            self.agent_profile_map.insert(agent_id.to_string(), id.to_string());
+        } else {
+            self.agent_profile_map.remove(agent_id);
+        }
+        Ok(())
     }
 
     /// Add or update a profile. If a profile with the same ID exists, it is replaced.
@@ -332,6 +352,26 @@ mod tests {
     }
 
     #[test]
+    fn test_profile_for_agent_mapping() {
+        let mut reg = PermissionRegistry::default();
+        reg.set_agent_profile("agent-alpha", Some("restricted")).unwrap();
+        let p = reg.profile_for_agent("agent-alpha");
+        assert_eq!(p.id, "restricted");
+        assert!(!p.can(Capability::ShellExec));
+
+        reg.set_agent_profile("agent-alpha", None).unwrap();
+        let p2 = reg.profile_for_agent("agent-alpha");
+        assert_eq!(p2.id, "default");
+    }
+
+    #[test]
+    fn test_set_agent_profile_missing_fails() {
+        let mut reg = PermissionRegistry::default();
+        let result = reg.set_agent_profile("agent-x", Some("ghost"));
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn test_upsert_create_and_update() {
         let mut reg = PermissionRegistry::default();
         let mut custom = PermissionProfile::new("custom", "Custom");
@@ -387,6 +427,7 @@ mod tests {
         let reg = PermissionRegistry {
             default_profile_id: "default".to_string(),
             profiles: vec![],
+            agent_profile_map: HashMap::new(),
         };
         assert!(reg.validate().is_err());
     }
@@ -396,6 +437,7 @@ mod tests {
         let reg = PermissionRegistry {
             default_profile_id: "missing".to_string(),
             profiles: vec![PermissionProfile::new("other", "Other")],
+            agent_profile_map: HashMap::new(),
         };
         assert!(reg.validate().is_err());
     }

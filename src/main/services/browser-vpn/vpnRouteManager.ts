@@ -7,6 +7,7 @@ import { vpnProfileService } from "./vpnProfileService";
 import { vpnConfigImportService } from "./vpnConfigImportService";
 import { vpnConnectionVerifier } from "./vpnConnectionVerifier";
 import { vpnKillSwitchService } from "./vpnKillSwitchService";
+import { vpnKillSwitchEnforcer } from "./vpnKillSwitchEnforcer";
 import { vpnSelfHealingService, type VpnRecoveryEvent } from "./vpnSelfHealingService";
 import { vpnProviderAdapterRegistry } from "./vpnProviderAdapterRegistry";
 import { proxyRuntimeAdapter } from "./proxyRuntimeAdapter";
@@ -42,6 +43,34 @@ export class VpnRouteManager {
         console.error("[vpn] listener error:", err);
       }
     }
+  }
+
+  private async enforceKillSwitch(profileId: string) {
+    const profile = vpnProfileService.getProfile(profileId);
+    if (!profile) return;
+    const browserProfileIds = this.getBrowserProfilesForVpn(profileId);
+    let proxyProfile: BrowserProxyProfile | undefined;
+    if (profile.routeMode === "browser_proxy") {
+      proxyProfile = {
+        id: profile.id,
+        name: profile.name,
+        protocol: profile.config.proxyUrl && !profile.config.endpointHost && !profile.config.endpointPort
+          ? "pac"
+          : profile.protocol === "socks5_proxy"
+            ? "socks5"
+            : profile.protocol === "https_proxy"
+              ? "https"
+              : "http",
+        host: profile.config.endpointHost,
+        port: profile.config.endpointPort,
+        usernameRequired: profile.auth.requiresUsername,
+        passwordStored: profile.auth.credentialsStored,
+        bypassRules: ["localhost", "127.0.0.1", "<local>"],
+        dnsMode: profile.config.splitTunnel ? "system" : "proxy_dns",
+        pacUrl: profile.config.proxyUrl,
+      };
+    }
+    await vpnKillSwitchEnforcer.enforce(profileId, browserProfileIds, profile.routeMode, proxyProfile).catch(() => {});
   }
 
   private touch(profile: VpnProfile, state: Partial<VpnProfile["diagnostics"]> & { lastState?: VpnProfile["diagnostics"]["lastState"] }, warnings?: string[], security?: VpnProfile["security"]): VpnProfile {
@@ -165,7 +194,7 @@ export class VpnRouteManager {
           return { ok: false, error: applied.error, evidence };
         }
       }
-      const verify = await vpnConnectionVerifier.verify(profileId, "public_ip_check", "main", proxyProfile.host ?? "proxy");
+      const verify = await vpnConnectionVerifier.verify(profileId, "public_ip_check", "main", proxyProfile.host ?? "proxy", "connecting");
       evidence.push(verify);
       const nextState = verify.status === "passed" ? "connected" : "degraded";
       this.touch(profile, {
@@ -174,6 +203,7 @@ export class VpnRouteManager {
         lastPublicIp: verify.redactedSummary,
       }, profile.warnings, verify.status === "passed" ? "safe" : "warning");
       vpnKillSwitchService.setState(profileId, nextState, profile.policy.killSwitchEnabled, nextState === "connected" ? "proxy connected" : "verification failed");
+      await this.enforceKillSwitch(profileId);
       this.emit(profileId);
       return { ok: true, evidence };
     }
@@ -189,6 +219,7 @@ export class VpnRouteManager {
         lastDnsCheckStatus: ext.find((item) => item.probe === "dns_check")?.status,
       }, connected ? profile.warnings : [...profile.warnings, "External verification failed."], connected ? "safe" : "warning");
       vpnKillSwitchService.setState(profileId, nextState, profile.policy.killSwitchEnabled, connected ? "external verification passed" : "external verification failed");
+      await this.enforceKillSwitch(profileId);
       this.emit(profileId);
       return connected ? { ok: true, evidence } : { ok: false, error: "external_verification_failed", evidence };
     }
@@ -213,6 +244,7 @@ export class VpnRouteManager {
         lastErrorMessage: undefined,
       }, profile.warnings, "warning");
       vpnKillSwitchService.setState(profileId, "verifying", profile.policy.killSwitchEnabled, "openvpn process started");
+      await this.enforceKillSwitch(profileId);
       this.emit(profileId);
       return { ok: true, evidence };
     }
@@ -233,6 +265,7 @@ export class VpnRouteManager {
         lastVerifiedAt: new Date().toISOString(),
       }, profile.warnings, "warning");
       vpnKillSwitchService.setState(profileId, "verifying", profile.policy.killSwitchEnabled, "wireguard process started");
+      await this.enforceKillSwitch(profileId);
       this.emit(profileId);
       return { ok: true, evidence };
     }
@@ -243,6 +276,7 @@ export class VpnRouteManager {
       if (!hasNm) {
         this.touch(profile, { lastState: "blocked", lastErrorCode: "PRIVILEGES_REQUIRED", lastErrorMessage: "NetworkManager/nmcli is unavailable on this host." }, [...profile.warnings, "System tunnel runtime not detected."], "warning");
         vpnKillSwitchService.setState(profileId, "blocked", profile.policy.killSwitchEnabled, "system tunnel runtime unavailable");
+        await this.enforceKillSwitch(profileId);
         this.emit(profileId);
         return { ok: false, error: "blocked_privileges_required" };
       }
@@ -257,6 +291,7 @@ export class VpnRouteManager {
       if (!importedConn.ok || !importedConn.connectionId) {
         this.touch(profile, { lastState: "error", lastErrorCode: "NMCLI_IMPORT_FAILED", lastErrorMessage: importedConn.error }, undefined, "danger");
         vpnKillSwitchService.setState(profileId, "error", profile.policy.killSwitchEnabled, "NetworkManager import failed");
+        await this.enforceKillSwitch(profileId);
         this.emit(profileId);
         return { ok: false, error: importedConn.error, evidence };
       }
@@ -264,22 +299,25 @@ export class VpnRouteManager {
       if (!up.ok) {
         this.touch(profile, { lastState: "error", lastErrorCode: "NMCLI_UP_FAILED", lastErrorMessage: up.error }, undefined, "danger");
         vpnKillSwitchService.setState(profileId, "error", profile.policy.killSwitchEnabled, "NetworkManager connection failed");
+        await this.enforceKillSwitch(profileId);
         this.emit(profileId);
         return { ok: false, error: up.error, evidence };
       }
-      const verify = await vpnConnectionVerifier.verify(profileId, "route_check", "main", importedConn.connectionId,);
+      const verify = await vpnConnectionVerifier.verify(profileId, "route_check", "main", importedConn.connectionId, "connecting");
       evidence.push(verify);
       this.touch(profile, {
         lastState: verify.status === "passed" ? "connected" : "degraded",
         lastVerifiedAt: verify.timestamp,
       }, profile.warnings, verify.status === "passed" ? "safe" : "warning");
       vpnKillSwitchService.setState(profileId, verify.status === "passed" ? "connected" : "degraded", profile.policy.killSwitchEnabled, "system tunnel verified");
+      await this.enforceKillSwitch(profileId);
       this.emit(profileId);
       return { ok: true, evidence };
     }
 
     this.touch(profile, { lastState: "unsupported", lastErrorCode: "UNSUPPORTED_PROVIDER", lastErrorMessage: "This provider does not expose a supported config or runtime." }, [...profile.warnings, "Unsupported provider."], "warning");
     vpnKillSwitchService.setState(profileId, "unsupported", profile.policy.killSwitchEnabled, "unsupported provider");
+    await this.enforceKillSwitch(profileId);
     this.emit(profileId);
     return { ok: false, error: "unsupported_provider_locked_client" };
   }
@@ -299,6 +337,7 @@ export class VpnRouteManager {
       updatedAt: new Date().toISOString(),
     });
     vpnKillSwitchService.setState(profileId, "disconnected", profile.policy.killSwitchEnabled, "manual disconnect");
+    await this.enforceKillSwitch(profileId);
     this.emit(next.id);
     return { ok: true };
   }
@@ -306,17 +345,19 @@ export class VpnRouteManager {
   async verify(profileId: string): Promise<{ ok: boolean; evidence: VpnConnectionEvidence[]; state: VpnProfile["diagnostics"]["lastState"] }> {
     const profile = vpnProfileService.getProfile(profileId);
     if (!profile) return { ok: false, evidence: [], state: "not_configured" };
+    const state = profile.diagnostics.lastState;
     const evidence: VpnConnectionEvidence[] = [];
     if (profile.routeMode === "browser_proxy") {
-      evidence.push(await vpnConnectionVerifier.verify(profileId, "proxy_apply", "main", profile.config.proxyUrl ?? "proxy"));
-      evidence.push(await vpnConnectionVerifier.verify(profileId, "public_ip_check", "main", profile.config.endpointHost ?? "proxy"));
-      evidence.push(await vpnConnectionVerifier.verify(profileId, "dns_check", "main", profile.config.endpointHost ?? "proxy"));
+      evidence.push(await vpnConnectionVerifier.verify(profileId, "proxy_apply", "main", `${profile.config.endpointHost ?? "proxy"}:${profile.config.endpointPort ?? 0}`, state));
+      evidence.push(await vpnConnectionVerifier.verify(profileId, "public_ip_check", "main", profile.config.endpointHost ?? "proxy", state));
+      evidence.push(await vpnConnectionVerifier.verify(profileId, "dns_check", "main", profile.config.endpointHost ?? "proxy", state));
     } else if (profile.routeMode === "external_verified") {
       evidence.push(...await vpnExternalVerificationService.verify(profileId));
     } else {
-      evidence.push(await vpnConnectionVerifier.verify(profileId, "process_status", "main", profile.config.endpointHost ?? "runtime"));
-      evidence.push(await vpnConnectionVerifier.verify(profileId, "public_ip_check", "main", profile.config.endpointHost ?? "runtime"));
-      evidence.push(await vpnConnectionVerifier.verify(profileId, "dns_check", "main", profile.config.endpointHost ?? "runtime"));
+      evidence.push(await vpnConnectionVerifier.verify(profileId, "process_status", "main", profile.config.endpointHost ?? "runtime", state));
+      evidence.push(await vpnConnectionVerifier.verify(profileId, "public_ip_check", "main", profile.config.endpointHost ?? "runtime", state));
+      evidence.push(await vpnConnectionVerifier.verify(profileId, "dns_check", "main", profile.config.endpointHost ?? "runtime", state));
+      evidence.push(await vpnConnectionVerifier.verify(profileId, "route_check", "main", profile.config.endpointHost ?? "runtime", state));
     }
     this.evidence.push(...evidence);
     const passed = evidence.every((item) => item.status === "passed");
@@ -335,6 +376,7 @@ export class VpnRouteManager {
       updatedAt: new Date().toISOString(),
     });
     vpnKillSwitchService.setState(profileId, nextState, profile.policy.killSwitchEnabled, passed ? "verification passed" : "verification warnings");
+    await this.enforceKillSwitch(profileId);
     this.emit(next.id);
     return { ok: true, evidence, state: nextState };
   }
@@ -364,6 +406,7 @@ export class VpnRouteManager {
       updatedAt: new Date().toISOString(),
     });
     vpnKillSwitchService.setState(profileId, updated.diagnostics.lastState, enabled, enabled ? "kill switch enabled" : "kill switch disabled");
+    void this.enforceKillSwitch(profileId).catch(() => {});
     this.emit(profileId);
     return { ok: true, profile: updated };
   }
@@ -393,6 +436,7 @@ export class VpnRouteManager {
     const result = await proxyRuntimeAdapter.apply(targetProfileId, proxyProfile);
     if (result.ok) {
       vpnKillSwitchService.setState(profileId, "connected", profile.policy.killSwitchEnabled, "browser proxy applied");
+      await this.enforceKillSwitch(profileId);
     }
     return result;
   }
@@ -407,6 +451,7 @@ export class VpnRouteManager {
       const profile = vpnProfileService.getProfile(profileId);
       if (profile) {
         vpnKillSwitchService.setState(profileId, "disconnected", profile.policy.killSwitchEnabled, "proxy cleared");
+        await this.enforceKillSwitch(profileId);
       }
     }
     return last;

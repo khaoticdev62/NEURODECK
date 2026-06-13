@@ -121,6 +121,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **Dialog options sanitized**: `show-save-dialog` and `show-open-dialog` IPC handlers pass only allowlisted keys (title, defaultPath, filters, properties, etc.) — raw renderer objects are never forwarded
 - **`neurodeck://` protocol**: path traversal protection via `path.relative()` check ensuring resolved file path stays inside `frontend/dist`
 - **`set_kiosk_mode`** bridge command returns `"unavailable"` — kiosk is managed by `window.electronAPI.setKiosk()` from the preload, not the bridge
+- **Windows GPU/network sandbox workaround** — on `win32`, `electron/main.js` appends `disable-gpu-sandbox`, `disable-network-service-sandbox`, `disable-features=IsolateOrigins,site-per-process,SpareRendererForSitePerProcess`, `disable-background-timer-throttling`, and `disable-renderer-backgrounding` before `app.whenReady()`. The same flags are passed by `electron/scripts/dev-launcher.js` and `e2e/support/electron-fixture.ts`. This prevents the long-running dev smoke-test crashes (`GPU process exited unexpectedly: exit_code=143` / `Network service crashed`) while keeping the renderer sandbox enabled.
 
 ---
 
@@ -132,6 +133,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **New Context Pack commands**: `create_pack`, `list_packs`, `get_pack`, `update_pack`, `delete_pack`, `set_memory_pack`, `get_pack_memory`.
 - **New Privacy commands**: `set_memory_privacy`, `unlock_sealed_records`, `lock_all_sealed`.
 - **New Dashboard command**: `get_dashboard_stats`.
+- **Permission commands**: `list_permission_profiles` (returns `profiles`, `default_profile_id`, `agent_profile_map`), `get_agent_permission_profile`, `set_agent_permission_profile`. The registry supports an `agent_profile_map` so individual agents can be assigned to specific profiles; it falls back to `default_profile_id` only when no mapping exists.
 - **Observability commands**: `generate_support_bundle` (redacted archive), `get_system_health` (structured JSON with status/provider/model/memory_doc_count/plugin_count/kfms_version/issues).
 - **Do not use `std::sync::Mutex` across `.await` points** in bridge command handlers — `MutexGuard` is not `Send` and will break axum's `Handler` trait. Use `tokio::sync::Mutex` or rely on `SqlitePool`'s internal thread-safety.
 - **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Electron's WebView doesn't always pick up the change without a rebuild.

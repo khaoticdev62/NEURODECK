@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useRef, type Dispatch } from 'react';
 import {
   CheckCircle2, Circle, Loader2, Rocket, Terminal, Wifi, KeyRound, ShieldCheck, X,
   Volume2, HardDrive, ArrowLeft, ArrowRight, Save, Play, RefreshCw, Palette,
-  Eye, EyeOff, Check, AlertTriangle, ShieldAlert
+  Eye, EyeOff, Check, AlertTriangle, ShieldAlert, Shield, Network
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import { useControllerAction } from '../../input/controller/useControllerAction';
@@ -63,6 +63,23 @@ export function OnboardingModal({
   const [diagnosticsErrors, setDiagnosticsErrors] = useState<SetupError[]>([]);
   const [diagnosticsWarnings, setDiagnosticsWarnings] = useState<SetupWarning[]>([]);
 
+  // Installer progress and status
+  const [ollamaInstalled, setOllamaInstalled] = useState(false);
+  const [openvpnInstalled, setOpenvpnInstalled] = useState(false);
+  const [wireguardInstalled, setWireguardInstalled] = useState(false);
+  const [installerProgress, setInstallerProgress] = useState<Record<string, {
+    state: 'idle' | 'downloading' | 'installing' | 'verifying' | 'completed' | 'failed';
+    percent?: number;
+    speed?: number;
+    error?: string;
+  }>>({
+    ssh: { state: 'idle' },
+    tts: { state: 'idle' },
+    ollama: { state: 'idle' },
+    openvpn: { state: 'idle' },
+    wireguard: { state: 'idle' },
+  });
+
   // model setup step
   const [providerType, setProviderType] = useState<AIProvider | 'lmstudio' | 'skip'>('ollama');
   const [endpointUrl, setEndpointUrl] = useState('http://127.0.0.1:11434');
@@ -122,6 +139,16 @@ export function OnboardingModal({
       const res = await neurodeckApi.diagnostics.runOnboardingDiagnostics();
       setDiagnosticResult(res);
 
+      let status = { ssh: false, ollama: false, tts: false, openvpn: false, wireguard: false };
+      if (neurodeckApi.dependency?.getStatus) {
+        try {
+          status = await neurodeckApi.dependency.getStatus();
+          setOllamaInstalled(status.ollama);
+          setOpenvpnInstalled(status.openvpn);
+          setWireguardInstalled(status.wireguard);
+        } catch (_) {}
+      }
+
       const errors: SetupError[] = [];
       const warnings: SetupWarning[] = [];
 
@@ -178,6 +205,20 @@ export function OnboardingModal({
           code: 'TTS_MISSING',
           message: 'No supported Speech Synthesis TTS engine discovered.',
           fix: 'Voice responses require espeak-ng (Linux) or Windows SAPI.'
+        });
+      }
+      if (!status.openvpn) {
+        warnings.push({
+          code: 'OPENVPN_MISSING',
+          message: 'OpenVPN client binary was not found in system PATH.',
+          fix: 'VPN connections via OpenVPN require the OpenVPN client binary.'
+        });
+      }
+      if (!status.wireguard) {
+        warnings.push({
+          code: 'WIREGUARD_MISSING',
+          message: 'WireGuard client binary was not found in system PATH.',
+          fix: 'VPN connections via WireGuard require the WireGuard client binary.'
         });
       }
 
@@ -278,6 +319,27 @@ export function OnboardingModal({
   useEffect(() => {
     void runPrecheck();
   }, [runPrecheck]);
+
+  // Listen to installation progress updates
+  useEffect(() => {
+    if (neurodeckApi.dependency?.onProgress) {
+      const unsub = neurodeckApi.dependency.onProgress((data: any) => {
+        setInstallerProgress((prev) => ({
+          ...prev,
+          [data.id]: {
+            state: data.state,
+            percent: data.percent,
+            speed: data.speed,
+            error: data.error
+          }
+        }));
+        if (data.state === 'completed') {
+          void runDiagnostics();
+        }
+      });
+      return unsub;
+    }
+  }, [runDiagnostics]);
 
   // Load steps diagnostics or plugins dynamically when step changes
   useEffect(() => {
@@ -533,8 +595,98 @@ export function OnboardingModal({
     true,
   );
 
+  const handleInstall = async (id: string) => {
+    try {
+      setInstallerProgress(prev => ({
+        ...prev,
+        [id]: { state: 'downloading', percent: 0 }
+      }));
+      await neurodeckApi.dependency.install(id);
+      void runDiagnostics();
+    } catch (e: any) {
+      setInstallerProgress(prev => ({
+        ...prev,
+        [id]: { state: 'failed', error: e.message || String(e) }
+      }));
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    try {
+      await neurodeckApi.dependency.cancel(id);
+      setInstallerProgress(prev => ({
+        ...prev,
+        [id]: { state: 'idle' }
+      }));
+    } catch (_) {}
+  };
+
+  const renderInstallerControls = (id: string, isInstalled: boolean) => {
+    if (isInstalled) return null;
+
+    const prog = installerProgress[id] || { state: 'idle' };
+
+    if (prog.state === 'idle') {
+      return (
+        <button
+          type="button"
+          onClick={() => handleInstall(id)}
+          className="mt-2 inline-flex h-7 items-center gap-1 rounded-lg bg-nd-accent/10 border border-nd-accent/30 px-3 text-[10px] font-semibold text-nd-accent transition hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+        >
+          Install Subsystem
+        </button>
+      );
+    }
+
+    if (prog.state === 'downloading' || prog.state === 'installing' || prog.state === 'verifying') {
+      const speedMb = prog.speed ? (prog.speed / (1024 * 1024)).toFixed(1) : '0.0';
+      return (
+        <div className="mt-2.5 space-y-1.5 p-2 rounded-lg bg-nd-accent/[0.03] border border-nd-accent/15">
+          <div className="flex items-center justify-between text-[9px] text-nd-text-muted">
+            <span className="capitalize">{prog.state}...</span>
+            <span>{prog.state === 'downloading' ? `${prog.percent || 0}% (${speedMb} MB/s)` : ''}</span>
+          </div>
+          <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-nd-accent/10">
+            <div
+              className="h-full bg-nd-accent transition-all duration-300"
+              style={{ width: `${prog.state === 'downloading' ? (prog.percent || 0) : 100}%` }}
+            />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => handleCancel(id)}
+              className="text-[9px] text-nd-danger hover:underline font-semibold"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    if (prog.state === 'failed') {
+      return (
+        <div className="mt-2.5 space-y-1.5">
+          <p className="text-[10px] text-nd-danger font-medium">Failed: {prog.error}</p>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => handleInstall(id)}
+              className="inline-flex h-6 items-center gap-1 rounded bg-nd-danger/10 border border-nd-danger/35 px-2.5 text-[9px] font-semibold text-nd-danger transition hover:bg-nd-danger/20"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
+  };
+
   return (
-    <div data-controller-overlay="true" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md">
+    <div id="onboarding-overlay" data-controller-overlay="true" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md">
       <div
         ref={wizardRef}
         data-controller-zone="modal"
@@ -762,8 +914,78 @@ export function OnboardingModal({
                             </div>
                             <p className="text-[11px] text-nd-text-muted mt-0.5">{diagnosticResult.ssh_details}</p>
                             {!diagnosticResult.ssh_ok && (
-                              <p className="text-[10px] text-nd-warning mt-1"><strong>Fix:</strong> Install openSSH or ensure ssh.exe is in system environment PATH.</p>
+                              <p className="text-[10px] text-nd-warning mt-1"><strong>Fix:</strong> Install OpenSSH or ensure ssh.exe is in system environment PATH.</p>
                             )}
+                            {renderInstallerControls('ssh', diagnosticResult.ssh_ok)}
+                          </div>
+                        </div>
+
+                        {/* TTS (Speech Synthesis) */}
+                        <div className="flex items-start gap-3 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-3">
+                          <Volume2 className={`h-4.5 w-4.5 shrink-0 mt-0.5 ${diagnosticResult.tts_ok ? 'text-nd-success' : 'text-nd-warning'}`} aria-hidden="true" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold text-nd-text">TTS Speech Subsystem</span>
+                              <span className={`text-[10px] font-bold uppercase ${diagnosticResult.tts_ok ? 'text-nd-success' : 'text-nd-warning'}`}>
+                                {diagnosticResult.tts_ok ? 'Ready' : 'Missing'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-nd-text-muted mt-0.5">{diagnosticResult.tts_details}</p>
+                            {!diagnosticResult.tts_ok && (
+                              <p className="text-[10px] text-nd-warning mt-1"><strong>Fix:</strong> Install espeak-ng for local voice capabilities.</p>
+                            )}
+                            {renderInstallerControls('tts', diagnosticResult.tts_ok)}
+                          </div>
+                        </div>
+
+                        {/* Ollama (Local AI Runtime) */}
+                        <div className="flex items-start gap-3 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-3">
+                          <Rocket className={`h-4.5 w-4.5 shrink-0 mt-0.5 ${ollamaInstalled ? 'text-nd-success' : 'text-nd-warning'}`} aria-hidden="true" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold text-nd-text">Ollama AI Runtime</span>
+                              <span className={`text-[10px] font-bold uppercase ${ollamaInstalled ? 'text-nd-success' : 'text-nd-warning'}`}>
+                                {ollamaInstalled ? 'Detected' : 'Missing'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-nd-text-muted mt-0.5">
+                              {ollamaInstalled ? 'Local LLM runtime is available.' : 'Install Ollama to run high-performance models locally offline.'}
+                            </p>
+                            {renderInstallerControls('ollama', ollamaInstalled)}
+                          </div>
+                        </div>
+
+                        {/* OpenVPN Client Subsystem */}
+                        <div className="flex items-start gap-3 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-3">
+                          <Shield className={`h-4.5 w-4.5 shrink-0 mt-0.5 ${openvpnInstalled ? 'text-nd-success' : 'text-nd-warning'}`} aria-hidden="true" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold text-nd-text">OpenVPN Client Subsystem</span>
+                              <span className={`text-[10px] font-bold uppercase ${openvpnInstalled ? 'text-nd-success' : 'text-nd-warning'}`}>
+                                {openvpnInstalled ? 'Detected' : 'Missing'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-nd-text-muted mt-0.5">
+                              {openvpnInstalled ? 'OpenVPN client binary is active.' : 'Install OpenVPN to run secure tunnels using OpenVPN profiles.'}
+                            </p>
+                            {renderInstallerControls('openvpn', openvpnInstalled)}
+                          </div>
+                        </div>
+
+                        {/* WireGuard Client Subsystem */}
+                        <div className="flex items-start gap-3 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-3">
+                          <Network className={`h-4.5 w-4.5 shrink-0 mt-0.5 ${wireguardInstalled ? 'text-nd-success' : 'text-nd-warning'}`} aria-hidden="true" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-xs font-semibold text-nd-text">WireGuard Client Subsystem</span>
+                              <span className={`text-[10px] font-bold uppercase ${wireguardInstalled ? 'text-nd-success' : 'text-nd-warning'}`}>
+                                {wireguardInstalled ? 'Detected' : 'Missing'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-nd-text-muted mt-0.5">
+                              {wireguardInstalled ? 'WireGuard client (wg) binary is active.' : 'Install WireGuard to run secure tunnels using WireGuard profiles.'}
+                            </p>
+                            {renderInstallerControls('wireguard', wireguardInstalled)}
                           </div>
                         </div>
                       </>

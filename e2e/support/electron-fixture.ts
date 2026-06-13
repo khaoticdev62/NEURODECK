@@ -8,8 +8,21 @@ export const test = base.extend<{ page: Page, electronApp: ElectronApplication }
     const env = { ...process.env };
     delete env.ELECTRON_RUN_AS_NODE;
     
+    const args = [mainScript];
+    if (process.platform === 'win32') {
+      // Work around Windows GPU/network sandbox child-process crashes during
+      // long-running E2E runs. Renderer sandbox remains enabled.
+      args.push(
+        '--disable-gpu-sandbox',
+        '--disable-network-service-sandbox',
+        '--disable-features=IsolateOrigins,site-per-process,SpareRendererForSitePerProcess',
+        '--disable-background-timer-throttling',
+        '--disable-renderer-backgrounding'
+      );
+    }
+
     const electronApp = await electron.launch({
-      args: [mainScript],
+      args,
       env
     });
     

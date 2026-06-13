@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, KeyRound, RefreshCcw, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react';
+import { CheckCircle2, KeyRound, RefreshCcw, Shield, ShieldAlert, ShieldCheck, Trash2, Users } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
 import { Panel } from '../../components/primitives/Panel';
 import { neurodeckApi } from '../../services/bridgeAdapter';
+import type { PermissionRegistry } from '../../services/bridgeAdapter';
 import type { NeuroDeckAppActions, NeuroDeckState, SecurityReport, CredentialStatus } from '../../types/neurodeck';
 
 function getElectronAPI() {
@@ -24,16 +25,23 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
   const [securityReport, setSecurityReport] = useState<SecurityReport | null>(null);
   const [credentialStatus, setCredentialStatus] = useState<CredentialStatus | null>(null);
   const [electronFlags, setElectronFlags] = useState<ElectronSecurityFlags | null>(null);
+  const [permissionRegistry, setPermissionRegistry] = useState<PermissionRegistry | null>(null);
+  const [agents, setAgents] = useState<Array<{ id: string; name: string; description: string }>>([]);
+  const [agentMapSaving, setAgentMapSaving] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
   const refresh = async () => {
     setLoading(true);
-    const [nextSecurity, nextCredentials] = await Promise.all([
+    const [nextSecurity, nextCredentials, nextPermissions, nextAgents] = await Promise.all([
       neurodeckApi.diagnostics.securityReport(),
       neurodeckApi.diagnostics.getCredentialStatus(),
+      neurodeckApi.permissions.listProfiles().catch(() => null),
+      neurodeckApi.agents.list().catch(() => [] as Array<{ id: string; name: string; description: string }>),
     ]);
     setSecurityReport(nextSecurity);
     setCredentialStatus(nextCredentials);
+    setPermissionRegistry(nextPermissions);
+    setAgents(nextAgents);
 
     const electronApi = getElectronAPI();
     if (electronApi?.getSecurityFlags) {
@@ -98,6 +106,27 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
 
   const allPass = hardeningRows.every((row) => row.ok);
 
+  function formatCapability(cap: string): string {
+    return cap
+      .split('_')
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(' ');
+  }
+
+  const handleAgentProfileChange = async (agentId: string, value: string) => {
+    setAgentMapSaving((prev) => ({ ...prev, [agentId]: true }));
+    try {
+      await neurodeckApi.permissions.setAgentProfile(
+        agentId,
+        value === '__default__' ? null : value
+      );
+      const next = await neurodeckApi.permissions.listProfiles();
+      setPermissionRegistry(next);
+    } finally {
+      setAgentMapSaving((prev) => ({ ...prev, [agentId]: false }));
+    }
+  };
+
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
@@ -139,6 +168,82 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
             <p className="text-[11px] leading-5 text-nd-text-muted/70">
               All API keys are stored exclusively in the OS keychain. They are never written to disk files, localStorage, or log output.
             </p>
+          </div>
+        </Panel>
+
+        {/* Permission Profiles */}
+        <Panel eyebrow="Permissions" title="Permission Profiles">
+          <div className="space-y-3 p-4">
+            {permissionRegistry ? (
+              <>
+                <div className="space-y-2">
+                  {permissionRegistry.profiles.map((profile) => (
+                    <div
+                      key={profile.id}
+                      className={`rounded-xl border px-3 py-2.5 ${profile.id === permissionRegistry.default_profile_id ? 'border-nd-accent/30 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/30'}`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-xs font-semibold text-nd-text/90">{profile.name}</span>
+                        {profile.id === permissionRegistry.default_profile_id && (
+                          <Badge tone="accent">default</Badge>
+                        )}
+                      </div>
+                      <p className="mt-1 text-[11px] text-nd-text-muted/80">{profile.description}</p>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {profile.granted.length === 0 && (
+                          <span className="text-[10px] text-nd-text-muted/60">No capabilities granted</span>
+                        )}
+                        {profile.granted.map((cap) => (
+                          <Badge key={cap} tone="success">{formatCapability(cap)}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {agents.length > 0 && (
+                  <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/20 p-3">
+                    <div className="mb-2 flex items-center gap-2">
+                      <Users className="h-3.5 w-3.5 text-nd-accent" aria-hidden="true" />
+                      <span className="text-xs font-semibold text-nd-text/90">Agent Profile Mapping</span>
+                    </div>
+                    <div className="space-y-2">
+                      {agents.map((agent) => {
+                        const mappedProfileId = permissionRegistry.agent_profile_map[agent.id];
+                        const value = mappedProfileId ?? '__default__';
+                        return (
+                          <div
+                            key={agent.id}
+                            className="flex items-center justify-between gap-2 rounded-lg border border-nd-text-muted/10 bg-nd-surface/30 px-2.5 py-2"
+                          >
+                            <div className="min-w-0">
+                              <p className="truncate text-xs font-medium text-nd-text/90">{agent.name || agent.id}</p>
+                              <p className="truncate text-[10px] text-nd-text-muted/70">{agent.description}</p>
+                            </div>
+                            <select
+                              value={value}
+                              disabled={agentMapSaving[agent.id]}
+                              onChange={(e) => void handleAgentProfileChange(agent.id, e.target.value)}
+                              className="min-w-[120px] rounded-lg border border-nd-text-muted/20 bg-nd-surface px-2 py-1 text-xs text-nd-text/80 focus:border-nd-accent focus:outline-none disabled:opacity-50"
+                            >
+                              <option value="__default__">Default ({permissionRegistry.default_profile_id})</option>
+                              {permissionRegistry.profiles.map((p) => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-xs text-nd-text-muted">
+                <Shield className="mb-1 h-4 w-4" aria-hidden="true" />
+                Permission registry unavailable.
+              </div>
+            )}
           </div>
         </Panel>
 

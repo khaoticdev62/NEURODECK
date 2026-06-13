@@ -11,6 +11,7 @@ import { spawn } from 'child_process';
 
 import type { BackendProbeResult, BackendEvidence } from '../../shared/contracts/backendHealth.contracts';
 import { normalizeError } from '../errors/errorNormalizer';
+import { waitForPong } from './rendererPingService';
 
 const BRIDGE_PORT = parseInt(process.env.NEURODECK_PORT ?? '9477', 10);
 const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
@@ -425,9 +426,60 @@ export async function probeTelemetry(): Promise<BackendProbeResult> {
   };
 }
 
+/** Probe: Main → Renderer → Main IPC roundtrip */
+export async function probeRendererRoundtrip(mainWindow: any | null): Promise<BackendProbeResult> {
+  const id = 'renderer-roundtrip';
+  const requestId = reqId();
+  const startedAt = now();
+  const t0 = Date.now();
+
+  if (!mainWindow || typeof mainWindow.webContents?.send !== 'function') {
+    const durationMs = Date.now() - t0;
+    return {
+      id, ok: false, status: 'not_configured', requestId, startedAt, completedAt: now(), durationMs,
+      realTransportUsed: false, realDataObserved: false, mockDataDetected: false,
+      source: 'backend-probe-runner', target: 'renderer', bytesSent: 0, bytesReceived: 0,
+      evidence: [{
+        timestamp: now(), probeId: id, requestId, evidenceType: 'ipc_roundtrip',
+        passed: false, summary: 'No main window available for renderer ping', durationMs,
+        bytesSent: 0, bytesReceived: 0,
+      }],
+    };
+  }
+
+  try {
+    mainWindow.webContents.send('diagnostics:ping-renderer', { requestId, timestamp: now() });
+    await waitForPong(requestId, 5000);
+    const durationMs = Date.now() - t0;
+    return {
+      id, ok: true, status: 'production_ready', requestId, startedAt, completedAt: now(), durationMs,
+      realTransportUsed: true, realDataObserved: true, mockDataDetected: false,
+      source: 'backend-probe-runner', target: 'renderer', bytesSent: 64, bytesReceived: 64,
+      evidence: [{
+        timestamp: now(), probeId: id, requestId, evidenceType: 'ipc_roundtrip',
+        passed: true, summary: `Renderer pong received in ${durationMs}ms`, durationMs,
+        bytesSent: 64, bytesReceived: 64,
+      }],
+    };
+  } catch (err) {
+    const durationMs = Date.now() - t0;
+    return {
+      id, ok: false, status: 'offline', requestId, startedAt, completedAt: now(), durationMs,
+      realTransportUsed: true, realDataObserved: false, mockDataDetected: false,
+      source: 'backend-probe-runner', target: 'renderer', bytesSent: 64, bytesReceived: 0,
+      evidence: [{
+        timestamp: now(), probeId: id, requestId, evidenceType: 'ipc_roundtrip',
+        passed: false, summary: `Renderer roundtrip failed: ${err}`, durationMs,
+        bytesSent: 64, bytesReceived: 0,
+      }],
+      error: normalizeError(err, { requestId, source: id }),
+    };
+  }
+}
+
 /** Run all probes sequentially, return all results */
-export async function runAllProbes(): Promise<BackendProbeResult[]> {
-  const probes = [
+export async function runAllProbes(mainWindow?: any | null): Promise<BackendProbeResult[]> {
+  const probes: (() => Promise<BackendProbeResult>)[] = [
     probeSidecarHealth,
     probeStorage,
     probeSettings,
@@ -438,6 +490,10 @@ export async function runAllProbes(): Promise<BackendProbeResult[]> {
     probePlugins,
     probeTelemetry,
   ];
+
+  if (mainWindow) {
+    probes.push(() => probeRendererRoundtrip(mainWindow));
+  }
 
   const results: BackendProbeResult[] = [];
   for (const probe of probes) {

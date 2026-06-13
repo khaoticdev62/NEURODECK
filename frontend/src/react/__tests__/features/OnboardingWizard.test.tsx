@@ -16,6 +16,10 @@ const mockSaveOpenAiCompatApiKey = vi.fn();
 const mockStoreSet = vi.fn();
 const mockPluginsList = vi.fn();
 const mockPluginsValidate = vi.fn();
+const mockGetDependencyStatus = vi.fn();
+const mockInstallDependency = vi.fn();
+const mockCancelDependency = vi.fn();
+const mockDependencyOnProgress = vi.fn().mockReturnValue(() => {});
 
 vi.mock('../../services/bridgeAdapter', () => ({
   neurodeckApi: {
@@ -40,6 +44,12 @@ vi.mock('../../services/bridgeAdapter', () => ({
     plugins: {
       list: () => mockPluginsList(),
       validate: (file: string) => mockPluginsValidate(file),
+    },
+    dependency: {
+      getStatus: () => mockGetDependencyStatus(),
+      install: (id: string) => mockInstallDependency(id),
+      cancel: (id: string) => mockCancelDependency(id),
+      onProgress: (cb: any) => mockDependencyOnProgress(cb),
     },
   },
   listenBridge: vi.fn().mockReturnValue(() => {}),
@@ -97,6 +107,7 @@ describe('OnboardingWizard Component', () => {
       { runtime_type: 'ollama', state: 'connected', models: ['llama3'] },
     ]);
     mockPluginsList.mockResolvedValue({ plugins: [] });
+    mockGetDependencyStatus.mockResolvedValue({ ssh: true, ollama: true, tts: true, openvpn: true, wireguard: true });
   });
 
   it('performs precheck and shows Skip for Now button if diagnostics are healthy', async () => {
@@ -185,5 +196,39 @@ describe('OnboardingWizard Component', () => {
       status: 'completed',
     }));
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'toggle-onboarding' });
+  });
+
+  it('renders installer controls for missing dependencies and starts install', async () => {
+    mockRunDiagnostics.mockResolvedValue({
+      pty_ok: true,
+      network_ok: true,
+      network_details: 'Internet connected',
+      keychain_ok: true,
+      keychain_details: 'Keychain ready',
+      audio_ok: true,
+      audio_details: 'Microphone found',
+      ssh_ok: false,
+      ssh_details: 'OpenSSH not found',
+      tts_ok: true,
+      tts_details: 'TTS ready',
+    });
+    mockGetDependencyStatus.mockResolvedValue({ ssh: false, ollama: false, tts: true, openvpn: false, wireguard: false });
+
+    render(<OnboardingModal state={mockState} dispatch={mockDispatch} />);
+
+    await waitFor(() => screen.getByRole('button', { name: /next/i }));
+    await userEvent.click(screen.getByRole('button', { name: /next/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Environment Integrity Check')).toBeDefined();
+    });
+
+    const installButtons = screen.getAllByRole('button', { name: /install subsystem/i });
+    expect(installButtons.length).toBeGreaterThanOrEqual(1);
+
+    mockInstallDependency.mockResolvedValue({ success: true });
+    await userEvent.click(installButtons[0]);
+
+    expect(mockInstallDependency).toHaveBeenCalledWith('ssh');
   });
 });

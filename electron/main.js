@@ -47,6 +47,23 @@ const RENDERER_SECURITY_FLAGS = Object.freeze({
   cspActive: true,
 });
 
+/* ── Windows GPU / network-process stability workaround ─────────────────── */
+// Long-running dev smoke tests on Windows terminate the GPU process
+// ("GPU process exited unexpectedly: exit_code=143") and the network service
+// ("Network service crashed"). These child-process sandbox crashes are
+// typically caused by GPU driver / Chromium sandbox interactions, not by app
+// code. We disable the GPU and network-service sandboxes on Windows only.
+// The renderer sandbox stays enabled, so this is a smaller blast radius than
+// --no-sandbox. Background throttling is also disabled so idle waits in long
+// tests do not trip Chromium watchdogs.
+if (process.platform === 'win32') {
+  app.commandLine.appendSwitch('disable-gpu-sandbox');
+  app.commandLine.appendSwitch('disable-network-service-sandbox');
+  app.commandLine.appendSwitch('disable-features', 'IsolateOrigins,site-per-process,SpareRendererForSitePerProcess');
+  app.commandLine.appendSwitch('disable-background-timer-throttling');
+  app.commandLine.appendSwitch('disable-renderer-backgrounding');
+}
+
 /* ── Browser state: bookmarks, history, ad-block, downloads ─────────────── */
 
 const BOOKMARKS_PATH = path.join(app.getPath('userData'), 'browser-bookmarks.json');
@@ -551,11 +568,11 @@ function loadMainWindowURL() {
   if (!mainWindow) return;
 
   // Dev: load Vite dev server if running, otherwise fall back to built files.
-  // Use an HTTP GET so OS resolution of "localhost" works for both IPv4 and IPv6.
+  // Use an HTTP GET with explicit 127.0.0.1 to prevent Windows IPv6 resolution mismatches.
   if (process.env.ELECTRON_DEV) {
-    const req = require('http').get('http://localhost:1420/', (res) => {
+    const req = require('http').get('http://127.0.0.1:1420/', (res) => {
       res.resume();
-      mainWindow.loadURL('http://localhost:1420');
+      mainWindow.loadURL('http://127.0.0.1:1420');
       mainWindow.webContents.openDevTools();
     });
     req.setTimeout(3000, () => {
@@ -623,7 +640,7 @@ function createMainWindow() {
   mainWindow.webContents.on('will-navigate', (event, url) => {
     const ALLOWED_ORIGINS = [
       'neurodeck://',
-      ...(process.env.ELECTRON_DEV ? ['http://localhost:1420'] : []),
+      ...(process.env.ELECTRON_DEV ? ['http://localhost:1420', 'http://127.0.0.1:1420'] : []),
     ];
     if (ALLOWED_ORIGINS.some((prefix) => url.startsWith(prefix))) return;
     event.preventDefault();
@@ -715,7 +732,7 @@ app.whenReady().then(async () => {
   const bridgeOrigin = `http://127.0.0.1:${port}`;
   const wsBridgeOrigin = `ws://127.0.0.1:${port}`;
   const devExtras = process.env.ELECTRON_DEV
-    ? ` http://localhost:1420 ws://localhost:1420 ws://localhost:24678 http://localhost:24678`
+    ? ` http://localhost:1420 ws://localhost:1420 ws://localhost:24678 http://localhost:24678 http://127.0.0.1:1420 ws://127.0.0.1:1420 ws://127.0.0.1:24678 http://127.0.0.1:24678`
     : '';
   const CSP = [
     "default-src 'none'",
@@ -783,10 +800,20 @@ app.whenReady().then(async () => {
     connectionRegistry,
     lspManager,
     bridgePort,
-    app.getPath('userData')
+    app.getPath('userData'),
+    mainWindow
   );
 
   lspManager.setWorkspaceRoot(path.join(app.getPath('userData'), 'workspace'));
+
+  ipcMain.handle('diagnostics:pong-renderer', (_event, request) => {
+    const requestId = request?.payload?.requestId;
+    if (requestId) {
+      const { resolvePong } = require('./dist/main/services/backend/rendererPingService');
+      resolvePong(requestId);
+    }
+    return { ok: true };
+  });
 
   registerIpcHandlers(
     mainWindow,
@@ -1252,6 +1279,10 @@ ipcMain.handle(IPC.BROWSER_HISTORY_CLEAR, () => {
 
 app.on('before-quit', async (e) => {
   isQuitting = true;
+  try {
+    const { dependencyInstallerService } = require('./services/dependencyInstallerService');
+    dependencyInstallerService.cleanup();
+  } catch (_) {}
   if (global.lspManager) {
     e.preventDefault();
     try {

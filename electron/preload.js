@@ -21,6 +21,9 @@ const IPC = Object.freeze({
   // Window control
   SET_KIOSK: 'set-kiosk',
   GET_IS_KIOSK: 'get-is-kiosk',
+  WINDOW_MINIMIZE: 'window:minimize',
+  WINDOW_MAXIMIZE_TOGGLE: 'window:maximize-toggle',
+  WINDOW_CLOSE: 'window:close',
 
   // Notifications
   REQUEST_NOTIFICATION_PERMISSION: 'request-notification-permission',
@@ -121,6 +124,19 @@ const IPC = Object.freeze({
   VPN_GET_PROVIDER_MATRIX: 'vpn:get-provider-matrix',
   VPN_EXPORT_REDACTED_PROFILE: 'vpn:export-redacted-profile',
 
+  // Diagnostics
+  DIAGNOSTICS_PING_RENDERER: 'diagnostics:ping-renderer',
+  DIAGNOSTICS_PONG_RENDERER: 'diagnostics:pong-renderer',
+
+  // Models & Settings
+  MODELS_LIST: 'models:list',
+  MODELS_STATUS: 'models:status',
+  MODELS_RUN_PROMPT: 'models:run-prompt',
+  MODELS_CANCEL: 'models:cancel',
+  SETTINGS_GET: 'settings:get',
+  SETTINGS_SET: 'settings:set',
+  SETTINGS_VALIDATE: 'settings:validate',
+
   // Theme & Wallpaper Overhaul (New)
   THEME_GET: "theme:get",
   THEME_SET: "theme:set",
@@ -208,6 +224,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('browser-event', handler);
     return () => ipcRenderer.removeListener('browser-event', handler);
   },
+
+  // Diagnostics roundtrip: renderer replies to main-process pings
+  onDiagnosticsPing: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on(IPC.DIAGNOSTICS_PING_RENDERER, handler);
+    return () => ipcRenderer.removeListener(IPC.DIAGNOSTICS_PING_RENDERER, handler);
+  },
+  diagnosticsPong: (requestId) => ipcRenderer.invoke(IPC.DIAGNOSTICS_PONG_RENDERER, makeRequest({ requestId })),
 });
 
 // Expose the new typed window.neurodeck API for secure connection wiring
@@ -250,7 +274,7 @@ contextBridge.exposeInMainWorld('neurodeck', {
     list: () => ipcRenderer.invoke('models:list', makeRequest({})),
     status: () => ipcRenderer.invoke('models:status', makeRequest({})),
     runPrompt: (prompt, provider, model) => ipcRenderer.invoke('models:run-prompt', makeRequest({ prompt, provider, model })),
-    cancel: () => Promise.resolve({ ok: true })
+    cancel: () => ipcRenderer.invoke(IPC.MODELS_CANCEL, makeRequest({}))
   },
   
   sessions: {
@@ -280,7 +304,7 @@ contextBridge.exposeInMainWorld('neurodeck', {
   settings: {
     get: (key) => ipcRenderer.invoke('settings:get', makeRequest({ key })),
     set: (key, value) => ipcRenderer.invoke('settings:set', makeRequest({ key, value })),
-    validate: (key, value) => Promise.resolve({ valid: true })
+    validate: (key, value) => ipcRenderer.invoke(IPC.SETTINGS_VALIDATE, makeRequest({ key, value }))
   },
 
   ide: {
@@ -408,6 +432,21 @@ contextBridge.exposeInMainWorld('neurodeck', {
     getProviderMatrix: () => ipcRenderer.invoke(IPC.VPN_GET_PROVIDER_MATRIX, makeRequest({})).then(r => r.ok ? r.data : []),
     exportRedactedProfile: (profileId) => ipcRenderer.invoke(IPC.VPN_EXPORT_REDACTED_PROFILE, makeRequest({ profileId })).then(r => r.ok ? r.data : null),
   },
+  window: {
+    minimize: () => ipcRenderer.invoke(IPC.WINDOW_MINIMIZE),
+    maximizeToggle: () => ipcRenderer.invoke(IPC.WINDOW_MAXIMIZE_TOGGLE),
+    close: () => ipcRenderer.invoke(IPC.WINDOW_CLOSE),
+  },
+  dependency: {
+    getStatus: () => ipcRenderer.invoke('dependency:get-status', makeRequest({})),
+    install: (id) => ipcRenderer.invoke('dependency:install', makeRequest({ id })),
+    cancel: (id) => ipcRenderer.invoke('dependency:cancel', makeRequest({ id })),
+    onProgress: (callback) => {
+      const handler = (_event, data) => callback(data);
+      ipcRenderer.on('dependency:progress', handler);
+      return () => ipcRenderer.removeListener('dependency:progress', handler);
+    }
+  }
 });
 
 // Also expose NEURODECK_PORT synchronously for neurobridge.js bootstrap

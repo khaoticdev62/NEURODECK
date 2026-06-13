@@ -8,13 +8,15 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const LspTransport = require('../lsp/lsp-transport');
+const { waitForPong, resolvePong } = require('../../dist/main/services/backend/rendererPingService');
 
 class HealthProbeRunner {
-  constructor(registry, lspManager, bridgePort, appUserDataPath) {
+  constructor(registry, lspManager, bridgePort, appUserDataPath, mainWindow = null) {
     this.registry = registry;
     this.lspManager = lspManager;
     this.bridgePort = bridgePort;
     this.appUserDataPath = appUserDataPath;
+    this.mainWindow = mainWindow;
   }
 
   /**
@@ -67,28 +69,37 @@ class HealthProbeRunner {
 
   async _probeIpcRoundtrip(requestId) {
     const start = Date.now();
-    const mockPayload = { clientTime: start };
-    // Simulated main process roundtrip processing
-    const mainProcessInfo = {
-      platform: process.platform,
-      arch: process.arch,
-      pid: process.pid,
-      memoryUsage: process.memoryUsage().rss
-    };
-    const latencyMs = Date.now() - start;
-    const bytesSent = JSON.stringify(mockPayload).length;
-    const bytesReceived = JSON.stringify(mainProcessInfo).length;
 
-    this.registry.updateHealth('ipc_roundtrip', 'passed', {
-      latencyMs,
-      bytesSent,
-      bytesReceived
-    }, {
-      requestId,
-      probeType: 'ipc_probe',
-      realTransportUsed: true,
-      summary: `IPC round trip completed in ${latencyMs}ms. Node.js RSS memory: ${(mainProcessInfo.memoryUsage / 1024 / 1024).toFixed(2)} MB.`
-    });
+    if (!this.mainWindow || this.mainWindow.isDestroyed()) {
+      const latencyMs = Date.now() - start;
+      this.registry.updateHealth('ipc_roundtrip', 'degraded', { latencyMs }, {
+        requestId,
+        probeType: 'ipc_probe',
+        realTransportUsed: false,
+        summary: 'Main window not available; renderer roundtrip skipped.'
+      });
+      return;
+    }
+
+    try {
+      this.mainWindow.webContents.send('diagnostics:ping-renderer', { requestId, timestamp: new Date().toISOString() });
+      await waitForPong(requestId, 5000);
+      const latencyMs = Date.now() - start;
+      this.registry.updateHealth('ipc_roundtrip', 'passed', { latencyMs, bytesSent: 64, bytesReceived: 64 }, {
+        requestId,
+        probeType: 'ipc_probe',
+        realTransportUsed: true,
+        summary: `Real renderer IPC roundtrip completed in ${latencyMs}ms.`
+      });
+    } catch (err) {
+      const latencyMs = Date.now() - start;
+      this.registry.updateHealth('ipc_roundtrip', 'failed', { latencyMs }, {
+        requestId,
+        probeType: 'ipc_probe',
+        realTransportUsed: true,
+        summary: `Renderer IPC roundtrip failed: ${err.message}`
+      });
+    }
   }
 
   async _probeSidecarApi(requestId) {

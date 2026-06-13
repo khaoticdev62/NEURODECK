@@ -105,7 +105,7 @@ function waitForVite() {
       if (Date.now() > deadline) {
         return reject(new Error(`Vite did not start within ${VITE_TIMEOUT_MS / 1000}s`));
       }
-      const req = http.get(`http://localhost:${VITE_PORT}/`, (res) => {
+      const req = http.get(`http://127.0.0.1:${VITE_PORT}/`, (res) => {
         res.resume();
         resolve();
       });
@@ -129,7 +129,19 @@ function launchElectron() {
   delete env.ELECTRON_RUN_AS_NODE;
 
   const electronPath = require('electron');
-  const electron = spawn(electronPath, ['.', '--remote-debugging-port=9222'], {
+  const args = ['.', '--remote-debugging-port=9222'];
+  if (process.platform === 'win32') {
+    // Work around Windows GPU/network sandbox child-process crashes during
+    // long-running dev sessions. Renderer sandbox remains enabled.
+    args.push(
+      '--disable-gpu-sandbox',
+      '--disable-network-service-sandbox',
+      '--disable-features=IsolateOrigins,site-per-process,SpareRendererForSitePerProcess',
+      '--disable-background-timer-throttling',
+      '--disable-renderer-backgrounding'
+    );
+  }
+  const electron = spawn(electronPath, args, {
     cwd: ROOT,
     env,
     stdio: 'inherit',

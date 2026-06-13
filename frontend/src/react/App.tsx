@@ -107,6 +107,16 @@ export default function App() {
       };
     }
   }, []);
+
+  useEffect(() => {
+    const api = window.electronAPI;
+    if (!api?.onDiagnosticsPing) return;
+    const unsubscribe = api.onDiagnosticsPing((data) => {
+      api.diagnosticsPong(data.requestId).catch(() => {});
+    });
+    return unsubscribe;
+  }, []);
+
   const selectedModel =
     state.models.find((model) => model.id === state.selectedModelId) ??
     state.models.find((model) => model.backendModel === state.selectedModelId) ??
