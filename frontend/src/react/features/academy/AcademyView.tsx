@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GraduationCap, Home, BookOpen, FlaskConical, FolderOpen } from 'lucide-react';
+import { GraduationCap, Home, BookOpen, FlaskConical, FolderOpen, ShieldAlert } from 'lucide-react';
 import { LoadingState } from '../../components/primitives/LoadingState';
 import { ErrorState } from '../../components/primitives/ErrorState';
 import { AcademyHome } from './views/AcademyHome';
@@ -7,6 +7,7 @@ import { LearningPathsView } from './views/LearningPathsView';
 import { LabBrowserView } from './views/LabBrowserView';
 import { PortfolioView } from './views/PortfolioView';
 import { LabRunnerView } from './views/LabRunnerView';
+import { SOCConsoleView } from './views/SOCConsoleView';
 import { defaultProgress } from './types';
 import { getLabById } from './data/curricula';
 import { neurodeckApi } from '../../services/bridgeAdapter';
@@ -18,6 +19,7 @@ const TABS: { id: AcademyTab; label: string; icon: React.ElementType }[] = [
   { id: 'paths',     label: 'Paths',     icon: BookOpen     },
   { id: 'labs',      label: 'Labs',      icon: FlaskConical },
   { id: 'portfolio', label: 'Portfolio', icon: FolderOpen   },
+  { id: 'soc',       label: 'SOC',       icon: ShieldAlert  },
 ];
 
 const PROGRESS_LS_KEY = 'neurodeck_academy_progress';
@@ -147,7 +149,7 @@ export function AcademyView() {
         id={`academy-panel-${activeTab}`}
         role="tabpanel"
         aria-labelledby={`academy-tab-${activeTab}`}
-        className="flex-1 overflow-y-auto p-4"
+        className={`flex-1 ${activeTab === 'soc' ? 'overflow-hidden' : 'overflow-y-auto p-4'}`}
         tabIndex={0}
       >
         {activeTab === 'home' && (
@@ -171,6 +173,12 @@ export function AcademyView() {
         )}
         {activeTab === 'portfolio' && (
           <PortfolioView />
+        )}
+        {activeTab === 'soc' && (
+          <SOCConsoleView
+            progress={prog}
+            onProgressUpdate={saveProgress}
+          />
         )}
       </main>
     </div>

@@ -2,7 +2,45 @@ export type LabType = 'log-analysis' | 'terminal' | 'soc-alert' | 'ticket' | 'pa
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
 export type PathLevel = 'beginner' | 'intermediate' | 'advanced';
 export type TaskKind = 'identify' | 'classify' | 'write' | 'command';
-export type AcademyTab = 'home' | 'paths' | 'labs' | 'portfolio';
+export type AcademyTab = 'home' | 'paths' | 'labs' | 'portfolio' | 'soc';
+
+// ── SOC Console types ────────────────────────────────────────────────────────
+
+export type AlertSeverity = 'critical' | 'high' | 'medium' | 'low';
+export type AlertDisposition = 'true-positive' | 'false-positive' | 'benign';
+export type AlertSource = 'edr' | 'siem' | 'ids' | 'firewall' | 'av' | 'email-gw';
+
+export interface SocAlert {
+  id: string;
+  title: string;
+  severity: AlertSeverity;
+  source: AlertSource;
+  timestamp: string;
+  description: string;
+  context: string;             // analyst background notes
+  rawLogs: string;
+  correctDisposition: AlertDisposition;
+  correctMitreTechniques: string[];  // base IDs — e.g. ['T1059', 'T1059.001']
+  escalationKeywords: string[];      // grading: must-contain terms for escalation note
+}
+
+export interface AlertGradeResult {
+  score: number;
+  dispositionScore: number;   // 0 or 50
+  mitreScore: number;         // 0–25
+  escalationScore: number;    // 0–25
+  dispositionCorrect: boolean;
+  mitreMapped: boolean;
+  feedback: string;
+}
+
+export interface AlertAnalysisState {
+  mitreTags: string[];
+  disposition: AlertDisposition | '';
+  escalationNote: string;
+  graded: boolean;
+  gradeResult?: AlertGradeResult;
+}
 
 export interface LabTask {
   id: string;
