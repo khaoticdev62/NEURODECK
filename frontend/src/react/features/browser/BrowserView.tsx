@@ -145,9 +145,16 @@ export function BrowserView() {
   const [activeDownloadCount, setActiveDownloadCount] = useState(0);
   const [showDownloadsMenu, setShowDownloadsMenu] = useState(false);
   const [errorDetailsOpen, setErrorDetailsOpen] = useState(false);
+  const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [zoomLevels, setZoomLevels] = useState<Record<string, number>>({});
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
+
+  const showNotice = (kind: 'ok' | 'error', text: string) => {
+    setNotice({ kind, text });
+    setTimeout(() => setNotice(null), 4000);
+  };
 
   const reportBounds = useCallback(() => {
     const el = viewportRef.current;
@@ -303,9 +310,9 @@ export function BrowserView() {
     if (window.neurodeck?.browser) {
       try {
         await window.neurodeck.browser.saveToMemory();
-        alert("Page content captured and injected into universal vector memory.");
-      } catch (err: any) {
-        alert(`Failed to save: ${err.message || err}`);
+        showNotice('ok', 'Page content captured and injected into vector memory.');
+      } catch (err: unknown) {
+        showNotice('error', `Failed to save: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   };
@@ -313,22 +320,26 @@ export function BrowserView() {
   const handleZoomIn = () => {
     const tab = tabs.find((t) => t.id === activeTabId);
     if (tab && window.neurodeck?.browser) {
-      // Zoom levels: 1.0 -> 1.1 -> 1.25 -> 1.5 etc
-      const current = 1.0;
-      window.neurodeck.browser.setZoom(tab.id, current + 0.15);
+      const current = zoomLevels[tab.id] ?? 1.0;
+      const next = Math.min(3.0, parseFloat((current + 0.15).toFixed(2)));
+      setZoomLevels((prev) => ({ ...prev, [tab.id]: next }));
+      window.neurodeck.browser.setZoom(tab.id, next);
     }
   };
 
   const handleZoomOut = () => {
     const tab = tabs.find((t) => t.id === activeTabId);
     if (tab && window.neurodeck?.browser) {
-      const current = 1.0;
-      window.neurodeck.browser.setZoom(tab.id, Math.max(0.5, current - 0.15));
+      const current = zoomLevels[tab.id] ?? 1.0;
+      const next = Math.max(0.5, parseFloat((current - 0.15).toFixed(2)));
+      setZoomLevels((prev) => ({ ...prev, [tab.id]: next }));
+      window.neurodeck.browser.setZoom(tab.id, next);
     }
   };
 
   const handleZoomReset = () => {
     if (activeTabId && window.neurodeck?.browser) {
+      setZoomLevels((prev) => ({ ...prev, [activeTabId]: 1.0 }));
       window.neurodeck.browser.setZoom(activeTabId, 1.0);
     }
   };
@@ -415,13 +426,13 @@ export function BrowserView() {
 
   const clearProfileData = async (profileId: string) => {
     if (window.neurodeck?.browser) {
-      await window.neurodeck.browser.clearData(profileId, {
+      await (window.neurodeck.browser as any).clearData(profileId, {
         cookies: true,
         cache: true,
         localStorage: true,
       });
       setShowProfilesMenu(false);
-      alert(`Partition data purged for profile: ${profileId}`);
+      showNotice('ok', `Partition data purged for profile: ${profileId}`);
     }
   };
 
@@ -430,12 +441,12 @@ export function BrowserView() {
       try {
         const res = await window.neurodeck.browser.clearBrowserData(scope);
         if (res?.success) {
-          alert(scope === "currentTab" ? "Current session data cleared successfully." : "All profile storage data purged successfully.");
+          showNotice('ok', scope === "currentTab" ? "Current session data cleared." : "All profile storage purged.");
         } else {
-          alert("Failed to clear data.");
+          showNotice('error', "Failed to clear data.");
         }
-      } catch (err: any) {
-        alert(`Failed to clear data: ${err.message || err}`);
+      } catch (err: unknown) {
+        showNotice('error', `Failed to clear data: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   };
@@ -619,6 +630,20 @@ export function BrowserView() {
 
   return (
     <div className="browser-container flex h-full flex-col bg-nd-bg text-nd-text select-none" data-controller-zone="browser">
+      {/* Inline notice (replaces alert() calls) */}
+      {notice && (
+        <div
+          role="status"
+          aria-live="polite"
+          className={`absolute bottom-4 left-1/2 z-[9999] -translate-x-1/2 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-md ${
+            notice.kind === 'ok'
+              ? 'border-nd-success/30 bg-nd-success/10 text-nd-success'
+              : 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger'
+          }`}
+        >
+          {notice.text}
+        </div>
+      )}
       {/* Permission Prompts Overlay */}
       {permissions.length > 0 && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[9999] w-96 rounded-2xl border border-nd-accent/30 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-md flex flex-col gap-3">

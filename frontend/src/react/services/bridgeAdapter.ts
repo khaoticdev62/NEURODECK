@@ -204,6 +204,39 @@ export type ProjectContextResponse =
   | { ok: true; context: ProjectContextSnapshot }
   | { ok: false; error: string };
 
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  color?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DashboardStats {
+  sessions_total: number;
+  messages_total: number;
+  memory_total: number;
+  memory_pinned: number;
+  projects_total: number;
+  packs_total: number;
+  provider: string;
+  model: string;
+  db_size_bytes: number;
+  privacy_breakdown: {
+    standard: number;
+    private: number;
+    sensitive: number;
+    sealed: number;
+  };
+  recent_sessions: {
+    id: string;
+    name?: string;
+    created_at: string;
+    message_count: number;
+  }[];
+}
+
 const unsupportedProjectScan: ProjectScanResponse = {
   canceled: false,
   error: "Project scanning requires the NEURODECK bridge server.",
@@ -227,6 +260,12 @@ const projects = {
     } catch (e) {
       return { ok: false, error: String(e) };
     }
+  },
+  async list(): Promise<Project[]> {
+    return bridgeInvoke<Project[]>("list_projects");
+  },
+  async getMemory(id: string): Promise<MemoryRecord[]> {
+    return bridgeInvoke<MemoryRecord[]>("get_project_memory", { id });
   },
 };
 
@@ -844,6 +883,43 @@ const agents = {
   },
 };
 
+/* ── Permissions ─────────────────────────────────────────────────────────── */
+
+export type PermissionProfile = {
+  id: string;
+  name: string;
+  description: string;
+  granted: string[];
+  created_at: string;
+};
+
+export type PermissionRegistry = {
+  profiles: PermissionProfile[];
+  default_profile_id: string;
+  agent_profile_map: Record<string, string>;
+};
+
+export type AgentPermissionProfile = {
+  agent_id: string;
+  profile_id: string;
+  explicit: boolean;
+};
+
+const permissions = {
+  async listProfiles(): Promise<PermissionRegistry> {
+    return bridgeInvoke<PermissionRegistry>("list_permission_profiles");
+  },
+  async getAgentProfile(agentId: string): Promise<AgentPermissionProfile> {
+    return bridgeInvoke<AgentPermissionProfile>("get_agent_permission_profile", { agent_id: agentId });
+  },
+  async setAgentProfile(agentId: string, profileId: string | null): Promise<{ status: string }> {
+    return bridgeInvoke<{ status: string }>("set_agent_permission_profile", {
+      agent_id: agentId,
+      profile_id: profileId,
+    });
+  },
+};
+
 /* ── Sessions ────────────────────────────────────────────────────────────── */
 
 const sessions = {
@@ -1203,6 +1279,65 @@ const diagnostics = {
     } catch (_) {
       return { message_count: 0, total_tokens: 0 };
     }
+  },
+};
+
+/* ── Dependency Installer ────────────────────────────────────────────────── */
+
+export interface DependencyStatus {
+  ssh: boolean;
+  ollama: boolean;
+  tts: boolean;
+}
+
+export interface DependencyProgress {
+  id: string;
+  state: 'downloading' | 'installing' | 'verifying' | 'completed' | 'failed';
+  percent?: number;
+  downloadedBytes?: number;
+  totalBytes?: number;
+  speed?: number;
+  details?: string;
+  error?: string;
+}
+
+const dependency = {
+  async getStatus(): Promise<DependencyStatus> {
+    if ((window as any).neurodeck?.dependency) {
+      const res = await (window as any).neurodeck.dependency.getStatus();
+      return res?.payload || { ssh: false, ollama: false, tts: false };
+    }
+    return { ssh: false, ollama: false, tts: false };
+  },
+  async install(id: string): Promise<{ success: boolean }> {
+    if ((window as any).neurodeck?.dependency) {
+      const res = await (window as any).neurodeck.dependency.install(id);
+      return res?.payload || { success: false };
+    }
+    return { success: false };
+  },
+  async cancel(id: string): Promise<boolean> {
+    if ((window as any).neurodeck?.dependency) {
+      const res = await (window as any).neurodeck.dependency.cancel(id);
+      return res?.payload || false;
+    }
+    return false;
+  },
+  onProgress(callback: (data: DependencyProgress) => void): () => void {
+    if ((window as any).neurodeck?.dependency) {
+      return (window as any).neurodeck.dependency.onProgress((data: any) => {
+        callback(data);
+      });
+    }
+    return () => {};
+  }
+};
+
+/* ── Dashboard ───────────────────────────────────────────────────────────── */
+
+const dashboard = {
+  async stats(): Promise<DashboardStats> {
+    return bridgeInvoke<DashboardStats>("get_dashboard_stats");
   },
 };
 
@@ -2225,10 +2360,12 @@ export const neurodeckApi = {
   setTheme,
   store,
   projects,
+  dashboard,
   models,
   ai,
   voice,
   agents,
+  permissions,
   sessions,
   memory,
   diagnostics,
@@ -2251,4 +2388,5 @@ export const neurodeckApi = {
   ssh,
   torrent,
   cliMaker,
+  dependency,
 };

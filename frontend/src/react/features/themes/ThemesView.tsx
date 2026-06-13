@@ -56,26 +56,30 @@ export function ThemesView() {
       className="h-full overflow-hidden flex flex-col"
     >
       {/* Tabs Row */}
-      <div className="flex gap-2 border-b border-nd-text-muted/15 px-4 py-2 bg-nd-surface/30">
-        {(["themes", "wallpapers", "settings", "diagnostics"] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold uppercase tracking-wider transition ${
-              activeTab === tab
-                ? "bg-nd-accent/15 text-nd-accent border border-nd-accent/30 shadow-glow"
-                : "text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text"
-            }`}
-          >
-            {tab}
-          </button>
-        ))}
+      <div className="flex items-center gap-2 border-b border-nd-text-muted/15 px-4 py-2 bg-nd-surface/30">
+        <div role="tablist" aria-label="Theme settings sections" className="flex gap-2">
+          {(["themes", "wallpapers", "settings", "diagnostics"] as const).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab}
+              onClick={() => setActiveTab(tab)}
+              className={`min-h-[40px] px-4 rounded-xl text-xs font-semibold uppercase tracking-wider transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                activeTab === tab
+                  ? "bg-nd-accent/15 text-nd-accent border border-nd-accent/30 shadow-glow"
+                  : "text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
         <button
           type="button"
           onClick={resetToDefaults}
           aria-label="Reset settings to defaults"
-          className="ml-auto min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl border border-nd-text-muted/15 text-nd-text-muted hover:border-nd-accent/30 hover:text-nd-text"
+          className="ml-auto min-h-[40px] min-w-[40px] flex items-center justify-center rounded-xl border border-nd-text-muted/15 text-nd-text-muted hover:border-nd-accent/30 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         >
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
         </button>
@@ -92,6 +96,8 @@ export function ThemesView() {
                   <button
                     key={theme.id}
                     type="button"
+                    aria-pressed={active}
+                    aria-label={`${theme.name}${active ? ' (active)' : ''}`}
                     onClick={() => updateSettings({ activeThemeId: theme.id })}
                     className={`group relative rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent ${
                       active
@@ -100,7 +106,7 @@ export function ThemesView() {
                     }`}
                   >
                     {active && (
-                      <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-nd-accent" />
+                      <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-nd-accent" aria-hidden="true" />
                     )}
 
                     {/* Color Swatch Strip */}

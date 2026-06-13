@@ -61,11 +61,15 @@ export function PromptLabView() {
   }, [recordingId]);
 
   const refreshSaved = useCallback(async () => {
-    setSavedPrompts(await neurodeckApi.promptDrive.listSavedPrompts());
+    try {
+      setSavedPrompts(await neurodeckApi.promptDrive.listSavedPrompts());
+    } catch (_) {}
   }, []);
 
   const refreshMacros = useCallback(async () => {
-    setMacros(await neurodeckApi.promptDrive.listMacros());
+    try {
+      setMacros(await neurodeckApi.promptDrive.listMacros());
+    } catch (_) {}
   }, []);
 
   const renderPreview = useCallback(async (template: PromptTemplate | null, values: SlotValues) => {
@@ -162,14 +166,19 @@ export function PromptLabView() {
       return;
     }
     setBusy(true);
-    await neurodeckApi.promptDrive.executePrompt(selectedTemplate.id, slotValues, previewText);
-    recordStep(macroStep('execute_prompt', {
-      template_id: selectedTemplate.id,
-      slot_values: slotValues,
-      prompt: previewText,
-    }));
-    setBusy(false);
-    setStatus('Prompt execution routed through bridge.');
+    try {
+      await neurodeckApi.promptDrive.executePrompt(selectedTemplate.id, slotValues, previewText);
+      recordStep(macroStep('execute_prompt', {
+        template_id: selectedTemplate.id,
+        slot_values: slotValues,
+        prompt: previewText,
+      }));
+      setStatus('Prompt execution routed through bridge.');
+    } catch (e) {
+      setStatus(`Execution failed: ${e}`);
+    } finally {
+      setBusy(false);
+    }
   };
 
   const savePrompt = async () => {
@@ -177,63 +186,80 @@ export function PromptLabView() {
       setStatus('Preview a valid prompt before saving.');
       return;
     }
-    await neurodeckApi.promptDrive.savePrompt({
-      title: selectedTemplate.title,
-      template_id: selectedTemplate.id,
-      pack_id: selectedTemplate.pack_id,
-      slot_values: slotValues,
-      prompt: previewText,
-    });
-    await refreshSaved();
-    setStatus('Prompt saved.');
+    try {
+      await neurodeckApi.promptDrive.savePrompt({
+        title: selectedTemplate.title,
+        template_id: selectedTemplate.id,
+        pack_id: selectedTemplate.pack_id,
+        slot_values: slotValues,
+        prompt: previewText,
+      });
+      await refreshSaved();
+      setStatus('Prompt saved.');
+    } catch (e) {
+      setStatus(`Save failed: ${e}`);
+    }
   };
 
   const toggleMacro = async () => {
-    if (!recordingId) {
-      const result = await neurodeckApi.promptDrive.macroStart();
-      setRecordingId(result.recording_id);
+    try {
+      if (!recordingId) {
+        const result = await neurodeckApi.promptDrive.macroStart();
+        setRecordingId(result.recording_id);
+        setRecordedSteps([]);
+        setStatus('Macro recording started.');
+        return;
+      }
+      const macro = await neurodeckApi.promptDrive.macroStop(
+        recordingId,
+        `PromptDrive Macro ${new Date().toLocaleTimeString()}`,
+        recordedSteps,
+      );
+      setRecordingId(null);
       setRecordedSteps([]);
-      setStatus('Macro recording started.');
-      return;
+      await refreshMacros();
+      setStatus(`Saved macro: ${macro.name}`);
+    } catch (e) {
+      setRecordingId(null);
+      setStatus(`Macro failed: ${e}`);
     }
-    const macro = await neurodeckApi.promptDrive.macroStop(
-      recordingId,
-      `PromptDrive Macro ${new Date().toLocaleTimeString()}`,
-      recordedSteps,
-    );
-    setRecordingId(null);
-    setRecordedSteps([]);
-    await refreshMacros();
-    setStatus(`Saved macro: ${macro.name}`);
   };
 
   const replayMacro = async (macroId: string) => {
-    const result = await neurodeckApi.promptDrive.macroExecute(macroId);
-    for (const step of result.macro.steps) {
-      const payload = step.payload;
-      if (step.kind === 'select_template' && typeof payload.template_id === 'string') {
-        await selectTemplate(payload.template_id, false);
+    try {
+      const result = await neurodeckApi.promptDrive.macroExecute(macroId);
+      for (const step of result.macro.steps) {
+        const payload = step.payload;
+        if (step.kind === 'select_template' && typeof payload.template_id === 'string') {
+          await selectTemplate(payload.template_id, false);
+        }
+        if (step.kind === 'update_slot' && typeof payload.slot_id === 'string') {
+          await updateSlot(payload.slot_id, String(payload.value ?? ''), false);
+        }
+        if (step.kind === 'accept_suggestion' && typeof payload.slot_id === 'string') {
+          await updateSlot(payload.slot_id, String(payload.insert_text ?? ''), false);
+        }
+        if (step.kind === 'insert_saved_prompt') {
+          setPreviewText(String(payload.prompt ?? ''));
+        }
+        if (step.kind === 'execute_prompt') {
+          await executePrompt();
+        }
       }
-      if (step.kind === 'update_slot' && typeof payload.slot_id === 'string') {
-        await updateSlot(payload.slot_id, String(payload.value ?? ''), false);
-      }
-      if (step.kind === 'accept_suggestion' && typeof payload.slot_id === 'string') {
-        await updateSlot(payload.slot_id, String(payload.insert_text ?? ''), false);
-      }
-      if (step.kind === 'insert_saved_prompt') {
-        setPreviewText(String(payload.prompt ?? ''));
-      }
-      if (step.kind === 'execute_prompt') {
-        await executePrompt();
-      }
+      setStatus('Macro replay complete.');
+    } catch (e) {
+      setStatus(`Macro replay failed: ${e}`);
     }
-    setStatus('Macro replay complete.');
   };
 
   const deleteMacro = async (macroId: string) => {
-    await neurodeckApi.promptDrive.deleteMacro(macroId);
-    await refreshMacros();
-    setStatus('Macro deleted.');
+    try {
+      await neurodeckApi.promptDrive.deleteMacro(macroId);
+      await refreshMacros();
+      setStatus('Macro deleted.');
+    } catch (e) {
+      setStatus(`Delete failed: ${e}`);
+    }
   };
 
   useEffect(() => {
