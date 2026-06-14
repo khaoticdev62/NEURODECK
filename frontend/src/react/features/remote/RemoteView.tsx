@@ -41,7 +41,9 @@ export function RemoteView() {
 
   useEffect(() => {
     if (status.running && status.url) {
-      QRCode.toDataURL(status.url, { width: 160, margin: 1, color: { dark: '#5EEBFF', light: '#0A0D10' } })
+      const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--nd-accent-primary').trim() || '#5EEBFF';
+      const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--nd-surface-app').trim() || '#0A0D10';
+      QRCode.toDataURL(status.url, { width: 160, margin: 1, color: { dark: accentColor, light: bgColor } })
         .then(setQrDataUrl)
         .catch(() => setQrDataUrl(''));
     } else {

@@ -53,7 +53,7 @@ export function LiveWallpaperPanel() {
           }`}
           aria-pressed={settings.activeWallpaperId === "none" || !settings.liveWallpaperEnabled}
         >
-          <div className="flex h-20 w-full items-center justify-center rounded-t-xl bg-[#050505]">
+          <div className="flex h-20 w-full items-center justify-center rounded-t-xl bg-nd-surface-app">
             <ImageIcon className="h-5 w-5 text-nd-text-muted/70" aria-hidden="true" />
           </div>
           <div className="px-2 pb-2">

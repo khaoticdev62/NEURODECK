@@ -234,7 +234,7 @@ export function ThemesView() {
                       : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/30"
                   }`}
                 >
-                  <div className="h-20 w-full bg-[#000000] flex items-center justify-center border-b border-nd-text-muted/10">
+                  <div className="h-20 w-full bg-black flex items-center justify-center border-b border-nd-text-muted/10">
                     <Layers className="h-6 w-6 text-nd-text-muted/50" />
                   </div>
                   <div className="p-3">

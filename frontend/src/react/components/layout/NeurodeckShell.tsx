@@ -126,6 +126,12 @@ export function NeurodeckShell(props: NeurodeckShellProps): React.ReactNode {
 
   return (
     <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-surface-primary text-text-primary">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[9999] focus:rounded-lg focus:bg-nd-accent focus:px-4 focus:py-2 focus:text-nd-bg focus:font-semibold focus:shadow-glow-md"
+      >
+        Skip to main content
+      </a>
       <TitleBar subtitle={subtitle} />
       <div className="flex min-h-0 flex-1">
         <PrimarySidebar state={state} dispatch={dispatch} />

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Webhook, Send, Copy, Plus, Trash2 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { ApiResponse } from '../../services/bridgeAdapter';
+import { EmptyState } from '../../components/primitives/EmptyState';
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
 
@@ -147,7 +148,7 @@ export function ApiLabView() {
                 <pre className="overflow-auto rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-3 font-mono text-xs text-nd-text/80">{response.body}</pre>
               </>
             ) : (
-              <p className="text-sm text-nd-text-muted/70">Send a request to see the response here.</p>
+              <EmptyState icon={Send} title="No response yet" description="Configure your request and press Send to see the response here." />
             )}
           </div>
         )}

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import {
   RefreshCcw, LayoutDashboard, Laptop, Send as SendIcon, Inbox, Clock, Activity, Settings, ListChecks, IdCard, Network,
 } from 'lucide-react';
@@ -34,6 +35,24 @@ const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
 
 export function SyncView() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const tabListRef = useRef<HTMLDivElement>(null);
+
+  const handleTabKeyDown = useCallback((e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const tabs = Array.from(
+      tabListRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []
+    );
+    const idx = tabs.indexOf(document.activeElement as HTMLButtonElement);
+    if (idx === -1) return;
+    let next = -1;
+    if (e.key === 'ArrowRight') next = (idx + 1) % tabs.length;
+    else if (e.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = tabs.length - 1;
+    else return;
+    e.preventDefault();
+    tabs[next]?.focus();
+    tabs[next]?.click();
+  }, []);
   const [transfers, setTransfers] = useState<FileTransfer[]>([]);
   const [peers, setPeers] = useState<TransferPeer[]>([]);
   const [trustedPeers, setTrustedPeers] = useState<TrustedPeer[]>([]);
@@ -242,8 +261,10 @@ export function SyncView() {
 
       {/* Tab bar */}
       <div
+        ref={tabListRef}
         role="tablist"
         aria-label="Sync sections"
+        onKeyDown={handleTabKeyDown}
         className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-nd-text-muted/10 bg-nd-surface/20 p-1"
       >
         {TABS.map((tab) => {

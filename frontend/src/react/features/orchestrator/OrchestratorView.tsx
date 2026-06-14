@@ -396,14 +396,14 @@ export function OrchestratorView() {
                         height="40"
                         rx="8"
                         fill={style.fill}
-                        stroke={isActive ? '#5EEBFF' : style.stroke}
+                        style={{ stroke: isActive ? 'var(--nd-accent-primary)' : style.stroke }}
                         strokeWidth={isActive ? 3 : 1}
                         className={isActive ? 'animate-pulse' : ''}
                       />
-                      <text x="60" y="17" textAnchor="middle" fill="#E8F4FF" fontSize="10" fontWeight="500">
+                      <text x="60" y="17" textAnchor="middle" style={{ fill: 'var(--nd-text-primary)' }} fontSize="10" fontWeight="500">
                         {node.type}
                       </text>
-                      <text x="60" y="30" textAnchor="middle" fill="#9CA3AF" fontSize="9">
+                      <text x="60" y="30" textAnchor="middle" style={{ fill: 'var(--nd-text-muted)' }} fontSize="9">
                         {node.label.length > 16 ? `${node.label.slice(0, 16)}…` : node.label}
                       </text>
                     </g>

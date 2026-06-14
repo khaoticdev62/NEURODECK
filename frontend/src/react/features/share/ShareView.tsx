@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Share2, Users, ArrowUpDown, Send, Radio,
   CheckCircle2, XCircle, X, Download, Upload, Loader2,
-  Wifi, AlertTriangle, KeyRound
+  Wifi, AlertTriangle, KeyRound, ArrowLeftRight
 } from 'lucide-react';
 import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
 import type { DiscoveredPeer, FileTransfer } from '../../services/bridgeAdapter';
 import { TorrentView } from '../torrent/TorrentView';
+import { EmptyState } from '../../components/primitives/EmptyState';
 
 // ── LAN P2P Panel ─────────────────────────────────────────────────────────────
 
@@ -109,7 +110,7 @@ function LanPanel() {
               </div>
             ))}
             {!peers.length && (
-              <p className="py-4 text-center text-xs text-nd-text-muted/70">No peers discovered</p>
+              <EmptyState icon={Wifi} title="No peers discovered" description="Ensure devices are on the same network with NEURODECK running." />
             )}
           </div>
         </div>
@@ -131,7 +132,7 @@ function LanPanel() {
               </div>
             ))}
             {!transfers.length && (
-              <p className="py-4 text-center text-xs text-nd-text-muted/70">No active transfers</p>
+              <EmptyState icon={ArrowLeftRight} title="No active transfers" description="Select a discovered peer and send a file to begin." />
             )}
           </div>
         </div>

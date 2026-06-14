@@ -203,16 +203,14 @@ export function DiagnosticsView({
             <button
               type="button"
               onClick={() => void actions.refreshDiagnostics()}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2.5 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
-              style={{ minHeight: "40px" }}
+              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2.5 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
             >
               <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Refresh System
             </button>
             <button
               type="button"
               onClick={() => void actions.exportDiagnosticsBundle()}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
-              style={{ minHeight: "40px" }}
+              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
             >
               <FileArchive className="h-4 w-4" aria-hidden="true" /> Export Bundle
             </button>
@@ -264,8 +262,7 @@ export function DiagnosticsView({
             type="button"
             onClick={runAllProbes}
             disabled={globalProbing}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-nd-accent/20 bg-nd-accent/10 px-2.5 py-1 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:opacity-50"
-            style={{ minHeight: "30px" }}
+            className="inline-flex min-h-[30px] items-center gap-1.5 rounded-lg border border-nd-accent/20 bg-nd-accent/10 px-2.5 py-1 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:opacity-50"
           >
             <Zap className={`h-3 w-3 ${globalProbing ? "animate-pulse" : ""}`} aria-hidden="true" />
             {globalProbing ? "Probing..." : "Probe All"}

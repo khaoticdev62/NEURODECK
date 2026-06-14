@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BookOpen, Search, FolderOpen, Trash2, RefreshCw, FileText } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
+import { EmptyState } from '../../components/primitives/EmptyState';
 
 interface DocItem {
   id: string;
@@ -210,7 +211,9 @@ export function DocsView() {
                 <span className="truncate">{doc.title || doc.path}</span>
               </div>
             ))}
-            {!docs.length && !loading && <p className="py-4 text-center text-xs text-nd-text-muted/70">No documents indexed</p>}
+            {!docs.length && !loading && (
+              <EmptyState icon={BookOpen} title="No documents indexed" description="Add a folder path above to start indexing your documentation." />
+            )}
             {!docs.length && loading && <p className="py-4 text-center text-xs text-nd-text-muted/70">Refreshing index…</p>}
           </div>
         </div>
