@@ -35,7 +35,7 @@
     "ci:security": "bash scripts/kfms/kfms-ci.sh security",
     "ci:watch": "bash scripts/kfms/kfms-ci.sh watch",
     "ci:status": "bash scripts/kfms/kfms-ci.sh status",
-     "assets": "python assets/brand/generate_assets.py",
+    "assets": "python assets/brand/generate_assets.py",
     "brand:generate": "node scripts/generate-brand-assets.mjs",
     "brand:validate": "node scripts/validate-brand-assets.mjs",
     "brand:build": "npm run brand:generate && npm run brand:validate",
@@ -139,8 +139,8 @@
     "check:controller-actions": "node scripts/check-controller-actions.cjs"
   },
   "devDependencies": {
-    "electron": "^36.0.0",
-    "electron-builder": "^25.0.0",
+    "electron": "39.8.5",
+    "electron-builder": "26.15.3",
     "sharp": "^0.35.1",
     "tsx": "^4.19.0",
     "vitest": "^4.1.7"

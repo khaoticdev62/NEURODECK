@@ -28,7 +28,7 @@ export function OnboardingAnimationPanel({ animation, motionMode, fidelityMode }
     let lottieInstance: { destroy: () => void; pause?: () => void; play?: () => void } | null = null;
     if (!animation || animation.type !== "lottie" || !rich || !lottieRef.current) return;
 
-    void import("lottie-web")
+    void import("lottie-web/build/player/esm/lottie_light.min.js")
       .then((module) => {
         if (destroyed || !lottieRef.current) return;
         lottieInstance = module.default.loadAnimation({
