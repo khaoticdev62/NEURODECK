@@ -89,6 +89,8 @@ count_loose_root_files() {
     -not -name "uv.lock" \
     -not -name ".fallowrc.json" \
     -not -name "electron-builder.yml" \
+    -not -name "tsconfig.json" \
+    -not -name "vitest.config.ts" \
     | wc -l | tr -d ' ')
   echo "${count:-0}"
 }
