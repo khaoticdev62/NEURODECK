@@ -202,8 +202,8 @@ export function SettingsView({
   return (
     <div className="grid h-full min-h-0 gap-3 overflow-hidden p-3 xl:grid-cols-[220px_1fr]">
       {/* Sidebar */}
-      <aside className="flex min-h-0 flex-col rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-2.5 gap-1">
-        <div className="flex items-center gap-2 rounded-xl border border-nd-accent/20 bg-nd-accent/10 px-3 py-2 mb-1">
+      <aside className="stv-sidebar flex min-h-0 flex-col rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-2.5 gap-1">
+        <div className="stv-sidebar-brand-chip flex items-center gap-2 rounded-xl border border-nd-accent/20 bg-nd-accent/10 px-3 py-2 mb-1">
           <Settings className="h-4 w-4 text-nd-accent" />
           <span className="text-xs font-bold uppercase tracking-[0.22em] text-nd-accent">
             Settings
@@ -219,9 +219,9 @@ export function SettingsView({
               data-panel={`sp-${key}`}
               aria-current={active ? "page" : undefined}
               onClick={() => selectPanel(key)}
-              className={`flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+              className={`stv-nav-item flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                 active
-                  ? "border-nd-accent/35 bg-nd-accent/10 text-nd-accent font-semibold"
+                  ? "active border-nd-accent/35 bg-nd-accent/10 text-nd-accent font-semibold"
                   : "border-transparent text-nd-text/70 hover:border-nd-text-muted/15 hover:bg-nd-surface/60 hover:text-nd-text"
               }`}
             >
