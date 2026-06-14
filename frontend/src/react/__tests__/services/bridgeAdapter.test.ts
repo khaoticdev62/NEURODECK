@@ -189,6 +189,84 @@ describe("bridgeAdapter — model support API surface", () => {
   });
 });
 
+describe("bridgeAdapter — sync profile fallback", () => {
+  let fetchSpy: any;
+
+  beforeEach(() => {
+    localStorage.clear();
+    fetchSpy = vi.spyOn(global, "fetch").mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ status: "ok", profiles: [] }),
+        text: () => Promise.resolve("ok"),
+      } as Response)
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    localStorage.clear();
+  });
+
+  it("uses the live transfer_profiles command when the bridge supports it", async () => {
+    const profile = {
+      id: "profile-1",
+      name: "Home LAN",
+      mode: "lan" as const,
+      enabled: true,
+      preferred_interface: "auto",
+      incoming_folder: "C:\\Transfers",
+      auto_accept_trusted: false,
+      compression: "auto" as const,
+      vpn_only: false,
+      created_at: "2026-06-14T00:00:00Z",
+      updated_at: "2026-06-14T00:00:00Z",
+    };
+    fetchSpy.mockResolvedValueOnce({
+      ok: true,
+      json: () => Promise.resolve({ status: "ok", profiles: [profile] }),
+      text: () => Promise.resolve("ok"),
+    } as Response);
+
+    const res = await neurodeckApi.transfer.profiles("list");
+
+    expect(fetchSpy).toHaveBeenCalledOnce();
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(url).toContain("/api/transfer_profiles");
+    expect(JSON.parse(init.body)).toEqual({ action: "list" });
+    expect(res.profiles).toEqual([profile]);
+  });
+
+  it("falls back to localStorage when an older sidecar lacks transfer_profiles", async () => {
+    fetchSpy.mockResolvedValue({
+      ok: false,
+      text: () =>
+        Promise.resolve(
+          JSON.stringify({
+            error: {
+              code: "command_error",
+              message:
+                "Command 'transfer_profiles' not found in bridge dispatch table. Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
+            },
+          }),
+        ),
+    } as Response);
+
+    const added = await neurodeckApi.transfer.profiles("add", {
+      name: "Lab VPN",
+      mode: "vpn_manual",
+      incoming_folder: "C:\\Transfers",
+      vpn_only: true,
+    });
+    const listed = await neurodeckApi.transfer.profiles("list");
+
+    expect(added.profile?.name).toBe("Lab VPN");
+    expect(added.profile?.vpn_only).toBe(true);
+    expect(listed.profiles).toHaveLength(1);
+    expect(listed.profiles?.[0].name).toBe("Lab VPN");
+  });
+});
+
 describe("bridgeAdapter — diagnostics connection matrix", () => {
   let fetchSpy: any;
 

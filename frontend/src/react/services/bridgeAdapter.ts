@@ -1861,6 +1861,67 @@ export interface TransferDiagnostics {
   download_dir: string;
 }
 
+const SYNC_PROFILES_STORAGE_KEY = 'neurodeck:sync_profiles_fallback';
+
+function isBridgeCommandMissing(error: unknown, command: string): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes(`Command '${command}' not found in bridge dispatch table`);
+}
+
+function readLocalSyncProfiles(): SyncProfile[] {
+  if (typeof localStorage === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SYNC_PROFILES_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? (parsed as SyncProfile[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalSyncProfiles(profiles: SyncProfile[]): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(SYNC_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
+}
+
+function applyLocalSyncProfileAction(
+  action: 'list' | 'add' | 'update' | 'remove',
+  profile?: Partial<SyncProfile> & { id?: string },
+): { status: string; profiles?: SyncProfile[]; profile?: SyncProfile } {
+  const profiles = readLocalSyncProfiles();
+  if (action === 'list') return { status: 'ok', profiles };
+
+  if (action === 'remove') {
+    const id = profile?.id;
+    if (!id) return { status: 'error', profiles };
+    const next = profiles.filter((p) => p.id !== id);
+    writeLocalSyncProfiles(next);
+    return { status: 'ok', profiles: next };
+  }
+
+  const now = new Date().toISOString();
+  const id = profile?.id || `sync-profile-${Date.now()}`;
+  const existing = profiles.find((p) => p.id === id);
+  const nextProfile: SyncProfile = {
+    id,
+    name: profile?.name || existing?.name || 'Sync Profile',
+    mode: profile?.mode || existing?.mode || 'lan',
+    enabled: profile?.enabled ?? existing?.enabled ?? true,
+    preferred_interface: profile?.preferred_interface || existing?.preferred_interface || 'auto',
+    incoming_folder: profile?.incoming_folder || existing?.incoming_folder || '',
+    auto_accept_trusted: profile?.auto_accept_trusted ?? existing?.auto_accept_trusted ?? false,
+    compression: profile?.compression || existing?.compression || 'auto',
+    vpn_only: profile?.vpn_only ?? existing?.vpn_only ?? false,
+    created_at: existing?.created_at || now,
+    updated_at: now,
+  };
+
+  const next = profiles.filter((p) => p.id !== id);
+  next.push(nextProfile);
+  writeLocalSyncProfiles(next);
+  return { status: 'ok', profile: nextProfile, profiles: next };
+}
+
 const transfer = {
   async listPeers(): Promise<TransferPeer[]> {
     return bridgeInvoke<TransferPeer[]>('get_discovered_peers');
@@ -1890,10 +1951,17 @@ const transfer = {
     return bridgeInvoke<{ status: string; peers?: TrustedPeer[] }>('transfer_trusted_peers', { action, ip, label });
   },
   async profiles(action: 'list' | 'add' | 'update' | 'remove', profile?: Partial<SyncProfile> & { id?: string }) {
-    return bridgeInvoke<{ status: string; profiles?: SyncProfile[]; profile?: SyncProfile }>('transfer_profiles', {
-      action,
-      profile,
-    });
+    try {
+      return await bridgeInvoke<{ status: string; profiles?: SyncProfile[]; profile?: SyncProfile }>('transfer_profiles', {
+        action,
+        profile,
+      });
+    } catch (e) {
+      if (isBridgeCommandMissing(e, 'transfer_profiles')) {
+        return applyLocalSyncProfileAction(action, profile);
+      }
+      throw e;
+    }
   },
   async diagnostics() {
     return bridgeInvoke<{ status: string; diagnostics: TransferDiagnostics }>('transfer_diagnostics');
