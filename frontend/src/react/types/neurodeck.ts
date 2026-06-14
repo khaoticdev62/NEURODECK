@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import type { ControllerSettings } from '../../shared/types/controller';
+import type { OnboardingMode } from '../onboarding/onboarding.types';
 
 export type ViewId =
   | 'chat' | 'workspace' | 'execution' | 'agent' | 'agents' | 'memory'
@@ -434,6 +435,7 @@ export interface NeuroDeckState {
   activeAgentId: string;
   selectedFont: string;
   showOnboarding: boolean;
+  onboardingMode: OnboardingMode;
   composerValue: string;
   busyLabel: string | null;
   activeProject: ProjectScanResult | null;
@@ -540,6 +542,8 @@ export type NeuroDeckAction =
   | { type: 'set-selected-model'; id: string }
   | { type: 'set-font'; font: string }
   | { type: 'toggle-onboarding' }
+  | { type: 'open-onboarding'; mode?: OnboardingMode }
+  | { type: 'close-onboarding' }
   | { type: 'set-composer'; value: string }
   | { type: 'run-starter'; prompt: string }
   | { type: 'toggle-agent'; id: string }

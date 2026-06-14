@@ -25,6 +25,7 @@ const initialState: NeuroDeckState = {
   activeAgentId: 'general',
   selectedFont: 'inter',
   showOnboarding: getInitialShowOnboarding(),
+  onboardingMode: 'setup',
   composerValue: '',
   busyLabel: null,
   toolStatus: null,
@@ -81,6 +82,7 @@ function sanitizeHydrate(payload: Partial<NeuroDeckState> | null): Partial<Neuro
     diagnosticLogs: _diagnosticLogs,
     lastError: _lastError,
     showOnboarding: _showOnboarding,
+    onboardingMode: _onboardingMode,
     ...persistable
   } = payload;
   return persistable;
@@ -126,7 +128,20 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
     case 'set-font':
       return { ...state, selectedFont: action.font };
     case 'toggle-onboarding':
-      return { ...state, showOnboarding: !state.showOnboarding };
+      return {
+        ...state,
+        showOnboarding: !state.showOnboarding,
+        onboardingMode: state.showOnboarding ? state.onboardingMode : 'setup',
+      };
+    case 'open-onboarding':
+      return {
+        ...state,
+        showOnboarding: true,
+        onboardingMode: action.mode ?? 'tour',
+        commandOpen: false,
+      };
+    case 'close-onboarding':
+      return { ...state, showOnboarding: false };
     case 'set-composer':
       return { ...state, composerValue: action.value };
     case 'run-starter':
@@ -330,7 +345,7 @@ export function useNeuroDeckState() {
 
   useEffect(() => {
     if (!state.hydrated) return;
-    const { commandOpen, hydrated, busyLabel, diagnostics, diagnosticLogs, lastError, ...persistable } = state;
+    const { commandOpen, hydrated, busyLabel, diagnostics, diagnosticLogs, lastError, showOnboarding, onboardingMode, ...persistable } = state;
     const handle = window.setTimeout(() => {
       neurodeckApi.store.set(STORE_KEY, {
         ...persistable,

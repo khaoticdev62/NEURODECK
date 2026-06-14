@@ -138,7 +138,7 @@ describe('OnboardingWizard Component', () => {
     expect(mockStoreSet).toHaveBeenCalledWith('neurodeck_onboarding_state', expect.objectContaining({
       status: 'skipped',
     }));
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'toggle-onboarding' });
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'close-onboarding' });
   });
 
   it('still offers Skip for Now button even if precheck fails', async () => {
@@ -213,7 +213,7 @@ describe('OnboardingWizard Component', () => {
     expect(mockStoreSet).toHaveBeenCalledWith('neurodeck_onboarding_state', expect.objectContaining({
       status: 'completed',
     }));
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'toggle-onboarding' });
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'close-onboarding' });
   });
 
   it('renders installer controls for missing dependencies and starts install', async () => {

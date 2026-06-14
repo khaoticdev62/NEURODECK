@@ -17,6 +17,7 @@ import {
   Check,
   AlertTriangle,
   Package,
+  MonitorPlay,
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
@@ -254,6 +255,24 @@ export function SettingsView({
                     label="Toggle onboarding wizard"
                   />
                 </SettingRow>
+                <div className="grid gap-2 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: "open-onboarding", mode: "tour" })}
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                  >
+                    <MonitorPlay className="h-4 w-4" aria-hidden="true" />
+                    Replay Tour
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: "open-onboarding", mode: "contextual" })}
+                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                  >
+                    <Rocket className="h-4 w-4" aria-hidden="true" />
+                    Show Current Tool
+                  </button>
+                </div>
                 <SettingRow
                   icon={Gamepad2}
                   title="Deck Mode"

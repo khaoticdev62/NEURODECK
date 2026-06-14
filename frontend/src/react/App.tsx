@@ -812,7 +812,7 @@ export default function App() {
       const numberToView: Record<string, ViewId> = {
         "1": "chat",
         "2": "execution",
-        "3": "agents",
+        "3": "agent",
         "4": "memory",
         "5": "project",
         "6": "models",
@@ -1001,6 +1001,7 @@ export default function App() {
         ref={shellRef}
         tabIndex={0}
         data-controller-screen="app-shell"
+        data-onboarding-anchor="app-shell"
         data-density={state.deckMode ? "deck" : "comfortable"}
         className={`flex h-full flex-col overflow-hidden tactical-grid outline-none ${state.deckMode ? "text-[15px]" : ""}`}
         style={{ color: "var(--nd-text)" }}
@@ -1065,8 +1066,9 @@ export default function App() {
             state={state}
             dispatch={dispatch}
             onOpenSettings={() => openSettings("general")}
+            onOpenNotifications={() => setNotificationsOpen(true)}
           />
-          <main id="main-content" className="min-w-0 flex-1 overflow-hidden p-3 md:p-4">
+          <main id="main-content" data-onboarding-anchor="main-content" className="min-w-0 flex-1 overflow-hidden p-3 md:p-4">
             <div className="view-container h-full min-h-0">
               <Suspense fallback={<ViewLoader />}>
                 {(state.activeView === "chat" || state.activeView === "workspace") &&

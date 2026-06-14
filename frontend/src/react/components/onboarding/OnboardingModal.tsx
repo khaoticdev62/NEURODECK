@@ -12,6 +12,7 @@ import { StepPreferences } from './steps/StepPreferences';
 import { StepPlugins } from './steps/StepPlugins';
 import { StepPackages } from './steps/StepPackages';
 import { StepFinish } from './steps/StepFinish';
+import { OnboardingOverlay } from '../../onboarding/OnboardingOverlay';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -73,13 +74,23 @@ function wizardReducer(state: WizardNav, action: WizardNavAction): WizardNav {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function OnboardingModal({
-  state,
-  dispatch,
-}: {
+type OnboardingModalProps = {
   state: NeuroDeckState;
   dispatch: Dispatch<NeuroDeckAction>;
-}) {
+};
+
+export function OnboardingModal({ state, dispatch }: OnboardingModalProps) {
+  if (state.onboardingMode && state.onboardingMode !== 'setup') {
+    return <OnboardingOverlay mode={state.onboardingMode} state={state} dispatch={dispatch} />;
+  }
+
+  return <SetupOnboardingModal state={state} dispatch={dispatch} />;
+}
+
+function SetupOnboardingModal({
+  state,
+  dispatch,
+}: OnboardingModalProps) {
   const { availableThemes, settings, updateSettings } = useTheme();
 
   const [wizard, wizardDispatch] = useReducer(wizardReducer, {
@@ -296,7 +307,7 @@ export function OnboardingModal({
       await neurodeckApi.store.set(ONBOARDING_STORE_KEY, statePayload);
       localStorage.setItem(LEGACY_COMPLETE_KEY, 'true');
     } catch (_) {}
-    dispatch({ type: 'toggle-onboarding' });
+    dispatch({ type: 'close-onboarding' });
   };
 
   const handleNext = async () => {

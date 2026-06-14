@@ -412,3 +412,153 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* Guided onboarding overlay */
+.onboarding-tour-root {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 16px;
+  pointer-events: auto;
+}
+
+.onboarding-tour-root.rich {
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.36), rgba(0, 0, 0, 0.08)),
+    color-mix(in srgb, var(--nd-bg) 22%, transparent);
+}
+
+.onboarding-tour-root.deck-safe {
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.onboarding-tour-card {
+  position: relative;
+  z-index: calc(var(--z-modal) + 2);
+  display: flex;
+  width: min(760px, calc(100vw - 32px));
+  max-height: min(620px, calc(100vh - 32px));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--nd-accent) 26%, transparent);
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--nd-bg) 94%, transparent);
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.45),
+    0 0 42px color-mix(in srgb, var(--nd-accent) 12%, transparent);
+}
+
+.onboarding-tour-root.rich .onboarding-tour-card {
+  background: color-mix(in srgb, var(--nd-bg) 78%, transparent);
+  backdrop-filter: blur(18px) saturate(135%);
+}
+
+.onboarding-viewfinder-layer {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-modal) + 1);
+  pointer-events: none;
+}
+
+.onboarding-viewfinder-dim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.onboarding-viewfinder-frame {
+  position: absolute;
+  border: 1px solid color-mix(in srgb, var(--nd-accent) 72%, white 8%);
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 9999px rgba(0, 0, 0, 0.22),
+    0 0 0 4px color-mix(in srgb, var(--nd-accent) 13%, transparent),
+    0 0 28px color-mix(in srgb, var(--nd-accent) 35%, transparent);
+  transition: left 150ms ease, top 150ms ease, width 150ms ease, height 150ms ease;
+}
+
+.onboarding-viewfinder-fallback {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: calc(var(--z-modal) + 1);
+  max-width: 280px;
+  border: 1px solid color-mix(in srgb, var(--nd-warning) 30%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--nd-bg) 92%, transparent);
+  padding: 10px 12px;
+  color: var(--nd-text-muted);
+  font-size: 12px;
+}
+
+.onboarding-media-panel img,
+.onboarding-media-panel video,
+.onboarding-media-panel canvas {
+  background: color-mix(in srgb, var(--nd-surface) 65%, transparent);
+}
+
+.onboarding-css-demo {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--nd-accent) 18%, transparent);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--nd-accent) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--nd-accent) 14%, transparent) 1px, transparent 1px),
+    radial-gradient(circle at 30% 40%, color-mix(in srgb, var(--nd-accent) 28%, transparent), transparent 34%),
+    color-mix(in srgb, var(--nd-bg) 82%, black 18%);
+  background-size: 18px 18px, 18px 18px, 100% 100%, 100% 100%;
+}
+
+.onboarding-css-demo span {
+  position: absolute;
+  left: 14%;
+  top: 45%;
+  height: 10px;
+  width: 72%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--nd-accent), transparent);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--nd-accent) 54%, transparent);
+  animation: onboarding-scan 2.2s ease-in-out infinite;
+}
+
+.onboarding-shader-sample {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--nd-accent) 18%, transparent);
+  background:
+    conic-gradient(from 210deg at 50% 50%, rgba(0, 0, 0, 0), color-mix(in srgb, var(--nd-accent) 34%, transparent), rgba(0, 0, 0, 0)),
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--nd-accent) 28%, transparent), transparent 54%),
+    color-mix(in srgb, var(--nd-bg) 84%, black 16%);
+  animation: onboarding-orbit 5s linear infinite;
+}
+
+@keyframes onboarding-scan {
+  0%, 100% { transform: translateY(-32px); opacity: 0.35; }
+  50% { transform: translateY(32px); opacity: 1; }
+}
+
+@keyframes onboarding-orbit {
+  0% { filter: hue-rotate(0deg); transform: scale(1); }
+  50% { filter: hue-rotate(18deg); transform: scale(1.03); }
+  100% { filter: hue-rotate(0deg); transform: scale(1); }
+}
+
+.onboarding-tour-root.motion-off .onboarding-css-demo span,
+.onboarding-tour-root.motion-off .onboarding-shader-sample {
+  animation: none;
+}
+
+@media (max-width: 820px) {
+  .onboarding-tour-root {
+    align-items: stretch;
+    padding: 10px;
+  }
+
+  .onboarding-tour-card {
+    width: 100%;
+    max-height: calc(100vh - 20px);
+  }
+}

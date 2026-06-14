@@ -99,6 +99,10 @@ test.describe("Onboarding Wizard", () => {
               tts_ok: true,
               tts_details: "espeak-ng TTS available",
             };
+          case "npm_get_status":
+            return { node: true, npm: true, nodeVersion: "v20.0.0", npmVersion: "10.0.0" };
+          case "npm_get_recommended":
+            return [];
           case "start_recording":
             return "Recording started";
           case "stop_recording":
@@ -251,19 +255,17 @@ test.describe("Onboarding Wizard", () => {
     await expect(page.getByRole("heading", { name: "Script Automation & Plugins" })).toBeVisible();
     await nextBtn.click();
 
-    // Step 6: Finish
+    // Step 6: Packages
+    await expect(page.getByRole("heading", { name: "Recommended Packages" })).toBeVisible();
+    await page.getByRole("button", { name: /Skip Packages/i }).click();
+
+    // Step 7: Finish
     await expect(page.getByRole("heading", { name: "Setup Finalization" })).toBeVisible();
-    
+
     // Click Enter Workspace
     await page.getByRole("button", { name: /Enter Workspace/i }).click();
 
-    // Overlay should disappear
+    // Overlay should disappear (React uses bridge store, not localStorage)
     await expect(overlay).not.toBeVisible({ timeout: 5000 });
-
-    // Verify completion flag is set
-    const completed = await page.evaluate(() =>
-      localStorage.getItem("neurodeck_onboarding_complete")
-    );
-    expect(completed).toBe("true");
   });
 });

@@ -38,6 +38,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.2",
     "autoprefixer": "^10.5.0",
+    "lottie-web": "^5.13.0",
     "lucide-react": "^1.17.0",
     "marked": "^18.0.3",
     "postcss": "^8.5.15",

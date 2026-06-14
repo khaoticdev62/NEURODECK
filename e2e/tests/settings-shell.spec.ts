@@ -182,12 +182,9 @@ test("agent, browser, and tunnel expose the refined shell hierarchy", async ({ p
   const app = new AppPage(page);
   await app.navigateTo("agent");
   await expect(page.locator(".agent-kicker")).toBeVisible();
-  await page.locator("#model-name").click();
-  await expect(page.locator("#agent-switcher-panel")).not.toHaveClass(/hidden/);
-  await expect(page.locator(".agent-switcher-title .nd-icon-svg")).toBeVisible();
-  await expect(page.locator(".agent-switcher-close .nd-icon-svg")).toBeVisible();
-  await page.locator(".agent-switcher-close").click();
-  await expect(page.locator("#agent-switcher-panel")).toHaveClass(/hidden/);
+  await expect(page.locator(".agent-shell")).toBeVisible();
+  await expect(page.locator("#agent-task-input")).toBeVisible();
+  await expect(page.locator("#agent-run-btn")).toBeVisible();
 
   await app.navigateTo("browser");
   await expect(page.locator(".browser-container")).toBeVisible();

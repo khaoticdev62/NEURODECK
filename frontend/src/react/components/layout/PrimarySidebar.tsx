@@ -1,11 +1,21 @@
 import { useState } from 'react';
 import type { Dispatch } from 'react';
-import { ChevronRight, Command, Gamepad2, WifiOff } from 'lucide-react';
+import { Bell, ChevronRight, Command, Gamepad2, Settings, WifiOff } from 'lucide-react';
 import { navItems } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckState, ViewId } from '../../types/neurodeck';
 import { Badge } from '../primitives/Badge';
 
-export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction>; onOpenSettings?: () => void }) {
+export function PrimarySidebar({
+  state,
+  dispatch,
+  onOpenSettings,
+  onOpenNotifications,
+}: {
+  state: NeuroDeckState;
+  dispatch: Dispatch<NeuroDeckAction>;
+  onOpenSettings?: () => void;
+  onOpenNotifications?: () => void;
+}) {
   const [hovered, setHovered] = useState(false);
   const [pinned, setPinned] = useState(false);
   const expanded = pinned || hovered;
@@ -29,7 +39,9 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
       {/* Command button + pin toggle */}
       <div className="shrink-0 space-y-1 p-2">
         <button
+          id="command-palette-btn"
           type="button"
+          data-onboarding-anchor="command-palette-trigger"
           className="no-drag flex w-full items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/[0.06] px-2 py-2.5 text-left transition hover:border-nd-accent/40 hover:bg-nd-accent/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           onClick={() => dispatch({ type: 'toggle-command', open: true })}
           aria-label="Open command palette"
@@ -76,6 +88,7 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
                       key={item.id}
                       type="button"
                       data-testid={`nav-tab-${item.id}`}
+                      data-onboarding-anchor={`nav-${item.id}`}
                       data-view={item.id}
                       aria-current={active ? 'page' : undefined}
                       aria-label={item.label}
@@ -83,7 +96,7 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
                       onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}
                       className={`no-drag flex w-full items-center rounded-lg px-2 py-2 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                         active
-                          ? 'bg-nd-accent/10 text-nd-accent font-semibold'
+                          ? 'active bg-nd-accent/10 text-nd-accent font-semibold'
                           : 'text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text'
                       } ${expanded ? '' : 'justify-center'}`}
                     >
@@ -106,7 +119,7 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
       </nav>
 
       {/* Footer */}
-      <div className="shrink-0 space-y-2 rounded-2xl border-t border-nd-text-muted/15 bg-nd-surface/30 p-2">
+      <div className="shrink-0 space-y-1.5 rounded-2xl border-t border-nd-text-muted/15 bg-nd-surface/30 p-2">
         <div className="flex items-center justify-center">
           {expanded ? (
             <div className="flex w-full items-center justify-between px-1">
@@ -116,6 +129,30 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
           ) : (
             <WifiOff className="h-4 w-4 text-nd-success" />
           )}
+        </div>
+        <div className={`flex gap-1 ${expanded ? '' : 'flex-col'}`}>
+          <button
+            id="settings-btn"
+            type="button"
+            onClick={() => onOpenSettings?.()}
+            aria-label="Open settings"
+            title="Settings"
+            className="flex flex-1 items-center justify-center rounded-lg border border-transparent px-2 py-1.5 text-xs text-nd-text-muted transition hover:border-nd-text-muted/15 hover:text-nd-text/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          >
+            <Settings className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {expanded && <span className="ml-1.5 whitespace-nowrap">Settings</span>}
+          </button>
+          <button
+            id="notif-btn"
+            type="button"
+            onClick={() => onOpenNotifications?.()}
+            aria-label="Notifications"
+            title="Notifications"
+            className="flex flex-1 items-center justify-center rounded-lg border border-transparent px-2 py-1.5 text-xs text-nd-text-muted transition hover:border-nd-text-muted/15 hover:text-nd-text/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          >
+            <Bell className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {expanded && <span className="ml-1.5 whitespace-nowrap">Alerts</span>}
+          </button>
         </div>
         <button
           type="button"

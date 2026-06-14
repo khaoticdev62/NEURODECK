@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch } from 'react';
-import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileDown, FileJson, FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers, Lock, Magnet, Network, Paintbrush, Palette, Plug, Radio, RefreshCcw, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
+import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileDown, FileJson, FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers, Lock, Magnet, MonitorPlay, Network, Paintbrush, Palette, Plug, Radio, RefreshCcw, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { starterPrompts } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
+import type { OnboardingMode } from '../../onboarding/onboarding.types';
 import { useControllerAction } from '../../input/controller/useControllerAction';
 import { Badge } from '../primitives/Badge';
 
@@ -62,6 +63,7 @@ type CommandItem = {
   action?: ActionName;
   prompt?: string;
   runPrompt?: boolean;
+  onboardingMode?: Exclude<OnboardingMode, 'setup'>;
 };
 
 const commands: CommandItem[] = [
@@ -102,6 +104,9 @@ const commands: CommandItem[] = [
   { label: 'Export Session Markdown', hint: 'Write a local markdown export through the main process', icon: FileDown, action: 'exportSession' },
   { label: 'Save Session JSON', hint: 'Persist messages, context, and agent run history', icon: FileJson, action: 'saveSession' },
   { label: 'Refresh Diagnostics', hint: 'Read runtime info and recent IPC logs', icon: Activity, action: 'refreshDiagnostics' },
+  { label: 'Replay Onboarding Tour', hint: 'Walk through the main NEURODECK workspace again', icon: MonitorPlay, onboardingMode: 'tour' },
+  { label: 'Show Me This Screen', hint: 'Open contextual help for the current view', icon: Sparkles, onboardingMode: 'contextual' },
+  { label: 'Open Rich Media Onboarding', hint: 'Launch the tour with optional Lottie, WebM, audio, and shader previews', icon: MonitorPlay, onboardingMode: 'tour' },
   { label: 'Open Settings', hint: 'Theme, Deck Mode, provider, privacy', view: 'settings', icon: Settings },
   { label: 'Appearance', hint: 'Open settings on the appearance panel', settingsPanel: 'appearance', icon: Settings },
   { label: 'Run Security Audit Starter', hint: 'Preload, IPC, secrets, renderer boundaries', icon: ShieldCheck, prompt: 'Audit this Electron app for preload safety, IPC validation, secrets exposure, and renderer privilege risk.', runPrompt: true },
@@ -178,6 +183,10 @@ export function CommandPalette({
       return;
     }
     dispatch({ type: 'toggle-command', open: false });
+    if (command.onboardingMode) {
+      dispatch({ type: 'open-onboarding', mode: command.onboardingMode });
+      return;
+    }
     if (command.view) dispatch({ type: 'set-view', view: command.view });
     if (command.prompt && !command.runPrompt) dispatch({ type: 'run-starter', prompt: command.prompt });
     if (command.prompt && command.runPrompt) {
@@ -305,6 +314,7 @@ export function CommandPalette({
             ref={inputRef}
             id="command-palette-input"
             data-controller-default="true"
+            data-onboarding-anchor="command-palette-input"
             placeholder="Run command, open panel, execute local AI workflow..."
             className="h-10 flex-1 bg-transparent text-sm text-nd-text outline-none placeholder:text-nd-text-muted/70"
             value={query}

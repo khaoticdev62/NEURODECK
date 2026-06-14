@@ -40,6 +40,7 @@ const initialState: NeuroDeckState = {
   selectedModelId: '',
   selectedFont: 'inter',
   showOnboarding: true,
+  onboardingMode: 'setup',
   composerValue: '',
   busyLabel: null,
   toolStatus: null,
@@ -130,7 +131,20 @@ function reduce(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState 
     case 'set-font':
       return { ...state, selectedFont: action.font };
     case 'toggle-onboarding':
-      return { ...state, showOnboarding: !state.showOnboarding };
+      return {
+        ...state,
+        showOnboarding: !state.showOnboarding,
+        onboardingMode: state.showOnboarding ? state.onboardingMode : 'setup',
+      };
+    case 'open-onboarding':
+      return {
+        ...state,
+        showOnboarding: true,
+        onboardingMode: action.mode ?? 'tour',
+        commandOpen: false,
+      };
+    case 'close-onboarding':
+      return { ...state, showOnboarding: false };
     case 'set-composer':
       return { ...state, composerValue: action.value };
     case 'run-starter':
