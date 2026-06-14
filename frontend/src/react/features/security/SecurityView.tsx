@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, KeyRound, RefreshCcw, Shield, ShieldAlert, ShieldCheck, Trash2, Users } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
+import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import { Panel } from '../../components/primitives/Panel';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PermissionRegistry } from '../../services/bridgeAdapter';
@@ -29,32 +30,36 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
   const [agents, setAgents] = useState<Array<{ id: string; name: string; description: string }>>([]);
   const [agentMapSaving, setAgentMapSaving] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
-    const [nextSecurity, nextCredentials, nextPermissions, nextAgents] = await Promise.all([
-      neurodeckApi.diagnostics.securityReport(),
-      neurodeckApi.diagnostics.getCredentialStatus(),
-      neurodeckApi.permissions.listProfiles().catch(() => null),
-      neurodeckApi.agents.list().catch(() => [] as Array<{ id: string; name: string; description: string }>),
-    ]);
-    setSecurityReport(nextSecurity);
-    setCredentialStatus(nextCredentials);
-    setPermissionRegistry(nextPermissions);
-    setAgents(nextAgents);
+    try {
+      const [nextSecurity, nextCredentials, nextPermissions, nextAgents] = await Promise.all([
+        neurodeckApi.diagnostics.securityReport(),
+        neurodeckApi.diagnostics.getCredentialStatus(),
+        neurodeckApi.permissions.listProfiles().catch(() => null),
+        neurodeckApi.agents.list().catch(() => [] as Array<{ id: string; name: string; description: string }>),
+      ]);
+      setSecurityReport(nextSecurity);
+      setCredentialStatus(nextCredentials);
+      setPermissionRegistry(nextPermissions);
+      setAgents(nextAgents);
 
-    const electronApi = getElectronAPI();
-    if (electronApi?.getSecurityFlags) {
-      try {
-        const flags = await electronApi.getSecurityFlags();
-        setElectronFlags(flags);
-      } catch (_) {
+      const electronApi = getElectronAPI();
+      if (electronApi?.getSecurityFlags) {
+        try {
+          const flags = await electronApi.getSecurityFlags();
+          setElectronFlags(flags);
+        } catch (_) {
+          setElectronFlags(null);
+        }
+      } else {
         setElectronFlags(null);
       }
-    } else {
-      setElectronFlags(null);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -128,7 +133,7 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
   };
 
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
+    <div data-testid="security-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Hardening Status */}
         <Panel eyebrow="Security" title="Hardening Status">
@@ -223,6 +228,7 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                             <select
                               value={value}
                               disabled={agentMapSaving[agent.id]}
+                              aria-label={`Permission profile for ${agent.name || agent.id}`}
                               onChange={(e) => void handleAgentProfileChange(agent.id, e.target.value)}
                               className="min-w-[120px] rounded-lg border border-nd-text-muted/20 bg-nd-surface px-2 py-1 text-xs text-nd-text/80 focus:border-nd-accent focus:outline-none disabled:opacity-50"
                             >
@@ -260,7 +266,7 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
               </button>
               <button
                 type="button"
-                onClick={() => void actions.resetLocalState()}
+                onClick={() => setConfirmReset(true)}
                 className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2.5 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
               >
                 <Trash2 className="h-4 w-4" aria-hidden="true" /> Clear All Local State
@@ -310,6 +316,17 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
           )}
         </div>
       </Panel>
+
+      <ConfirmDialog
+        open={confirmReset}
+        onCancel={() => setConfirmReset(false)}
+        onConfirm={() => { setConfirmReset(false); void actions.resetLocalState(); }}
+        title="Clear all local state?"
+        message="This will permanently remove all session history, memories, and preferences. Keys stored in the OS keychain are preserved. This action cannot be undone."
+        confirmLabel="Clear State"
+        cancelLabel="Cancel"
+        destructive
+      />
     </div>
   );
 }

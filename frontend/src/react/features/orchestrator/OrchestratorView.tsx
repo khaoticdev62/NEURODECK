@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Layers, Play, Square, Plus, Trash2, Upload, Download, AlertTriangle, CheckCircle2, TerminalSquare } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Layers, Play, Square, Plus, Trash2, Upload, Download, AlertTriangle, CheckCircle2, TerminalSquare, X } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import { listenBridge } from '../../services/bridgeAdapter';
 import type { WorkflowDoc, WorkflowSummary } from '../../services/bridgeAdapter';
@@ -116,6 +116,9 @@ export function OrchestratorView() {
   const [editorError, setEditorError] = useState<string | null>(null);
   const [runState, setRunState] = useState<RunState>({ status: 'idle' });
   const [logs, setLogs] = useState<string[]>([]);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importJson, setImportJson] = useState('');
+  const importTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const layout = useMemo(() => (doc ? computeLayout(doc) : []), [doc]);
   const activeNodeId = runState.status === 'running' ? runState.nodeId : undefined;
@@ -243,12 +246,19 @@ export function OrchestratorView() {
     }
   };
 
-  const handleImport = async () => {
-    const raw = window.prompt('Paste workflow JSON to import:');
-    if (!raw) return;
+  const handleImport = () => {
+    setImportJson('');
+    setImportModalOpen(true);
+    setTimeout(() => importTextareaRef.current?.focus(), 50);
+  };
+
+  const confirmImport = async () => {
+    if (!importJson.trim()) return;
+    setImportModalOpen(false);
     try {
-      const res = await neurodeckApi.workflow.importJson(raw);
+      const res = await neurodeckApi.workflow.importJson(importJson.trim());
       setLogs((prev) => [...prev, `Imported workflow: ${res.name}`]);
+      setImportJson('');
       void loadList().then(() => setSelectedName(res.name));
     } catch (e) {
       setLogs((prev) => [...prev, `Import failed: ${String(e)}`]);
@@ -269,7 +279,7 @@ export function OrchestratorView() {
   const running = runState.status === 'running';
 
   return (
-    <div className="flex h-full flex-col">
+    <div data-testid="orchestrator-view" className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
           <Layers className="h-5 w-5 text-nd-accent" aria-hidden="true" />
@@ -318,8 +328,10 @@ export function OrchestratorView() {
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-nd-text-muted">Workflows</div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
             {workflows.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-nd-text-muted/15 bg-nd-surface/20 p-3 text-xs text-nd-text-muted">
-                No workflows yet.
+              <div className="flex flex-col items-center py-6 text-center">
+                <Layers className="h-8 w-8 text-nd-text-muted/30" aria-hidden="true" />
+                <p className="mt-2 text-xs font-semibold text-nd-text-muted">No workflows yet</p>
+                <p className="mt-0.5 text-[11px] text-nd-text-muted/60">Create a sample or import via JSON.</p>
               </div>
             ) : (
               workflows.map((wf) => (
@@ -353,6 +365,8 @@ export function OrchestratorView() {
           {doc ? (
             <div className="h-full w-full overflow-auto p-4">
               <svg
+                role="img"
+                aria-label={doc ? `Workflow graph for ${doc.name}` : 'Workflow graph'}
                 className="min-h-[20rem] min-w-[20rem]"
                 viewBox={`0 0 ${Math.max(300, layout.length ? Math.max(...layout.map((n) => n.x)) + 140 : 300)} ${Math.max(300, layout.length ? Math.max(...layout.map((n) => n.y)) + 80 : 300)}`}
               >
@@ -454,6 +468,60 @@ export function OrchestratorView() {
           </div>
         </section>
       </div>
+
+      {/* Import JSON modal */}
+      {importModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="import-modal-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onKeyDown={(e) => { if (e.key === 'Escape') setImportModalOpen(false); }}
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-nd-text-muted/20 bg-nd-surface p-6 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 id="import-modal-title" className="text-sm font-semibold text-nd-text">Import Workflow JSON</h2>
+              <button
+                type="button"
+                onClick={() => setImportModalOpen(false)}
+                aria-label="Close import dialog"
+                className="rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+              >
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+            <label htmlFor="workflow-import-json" className="mb-1.5 block text-xs font-medium text-nd-text-muted">
+              Paste workflow JSON below
+            </label>
+            <textarea
+              id="workflow-import-json"
+              ref={importTextareaRef}
+              value={importJson}
+              onChange={(e) => setImportJson(e.target.value)}
+              rows={10}
+              placeholder='{ "name": "my-workflow", "steps": [...], "edges": [...] }'
+              className="w-full resize-y rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 py-2 font-mono text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setImportModalOpen(false)}
+                className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmImport()}
+                disabled={!importJson.trim()}
+                className="rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:pointer-events-none disabled:opacity-40"
+              >
+                Import
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -176,6 +176,31 @@ test.describe("Onboarding Wizard", () => {
         },
       };
 
+      const _originalFetch = window.fetch.bind(window);
+      window.fetch = async (input, init) => {
+        const url = typeof input === "string" ? input : (input as any).url;
+        if (url.includes("/api/")) {
+          const match = url.match(/\/api\/([^?#/]+)/);
+          const cmd = match?.[1];
+          if (cmd) {
+            try {
+              let args = {};
+              if (init?.body) {
+                try { args = JSON.parse(init.body as string); } catch {}
+              }
+              const result = await invoke(cmd, args);
+              return new Response(JSON.stringify(result), {
+                status: 200,
+                headers: { "Content-Type": "application/json" }
+              });
+            } catch (error) {
+              return new Response(String(error), { status: 500 });
+            }
+          }
+        }
+        return _originalFetch(input, init);
+      };
+
       const hideBg = () => {
         const bg = document.getElementById("app-background-container");
         if (bg) bg.style.display = "none";
@@ -196,162 +221,46 @@ test.describe("Onboarding Wizard", () => {
     await expect(overlay).toBeVisible();
   });
 
-  test("slide 1: welcome renders with typing animation", async ({ page }) => {
+  test("can navigate through all steps and complete onboarding", async ({ page }) => {
     await page.goto("/");
     await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
 
     const overlay = page.locator("#onboarding-overlay");
     await expect(overlay).toBeVisible();
 
-    const slide1 = page.locator("#slide-1");
-    await expect(slide1).toHaveClass(/active/);
-    await expect(page.locator("#onboarding-title")).toContainText("INITIAL_BOOT_SETUP");
-  });
-
-  test("slide 2: feature tour has 12 cards", async ({ page }) => {
-    await page.goto("/");
-    await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
-
-    const nextBtn = page.locator("#ob-btn-next");
-    await nextBtn.click(); // slide 1 -> 2
-
-    const slide2 = page.locator("#slide-2");
-    await expect(slide2).toHaveClass(/active/);
-
-    const cards = slide2.locator(".ob-feature-card");
-    await expect(cards).toHaveCount(12);
-  });
-
-  test("slide 3: provider selection and verification flow", async ({ page }) => {
-    await page.goto("/");
-    await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
-
-    const nextBtn = page.locator("#ob-btn-next");
-    await nextBtn.click(); // 1 -> 2
-    await nextBtn.click(); // 2 -> 3
-
-    const slide3 = page.locator("#slide-3");
-    await expect(slide3).toHaveClass(/active/);
-
-    // Default provider is gemini-key
-    const keyInput = page.locator("#ob-gemini-key");
-    await expect(keyInput).toBeVisible();
-
-    // Enter a fake key
-    await keyInput.fill("AIzaSy-test-key-12345");
-
-    // Click verify
-    const verifyBtn = page.locator("#ob-btn-verify");
-    await verifyBtn.click();
-
-    // Wait for log to show success
-    const log = page.locator("#ob-validation-log");
-    await expect(log).toContainText("Success!");
-
-    // Next should now be enabled
-    await expect(nextBtn).toBeEnabled();
-  });
-
-  test("slide 4: persona and theme selection", async ({ page }) => {
-    await page.goto("/");
-    await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
-
-    const nextBtn = page.locator("#ob-btn-next");
-    await nextBtn.click(); // 1 -> 2
-    await nextBtn.click(); // 2 -> 3
-
-    // Skip provider verification for speed
-    await page.locator("#ob-btn-skip-setup").click();
-
-    const slide4 = page.locator("#slide-4");
-    await expect(slide4).toHaveClass(/active/);
-
-    // Persona cards should be present
-    const personaCards = slide4.locator(".onboarding-persona-card");
-    await expect(personaCards).toHaveCount(3);
-
-    // Theme cards should be present
-    const themeCards = slide4.locator(".onboarding-theme-card");
-    await expect(themeCards).toHaveCount(3);
-  });
-
-  test("slide 11: diagnostics run and complete", async ({ page }) => {
-    await page.goto("/");
-    await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
-
-    const nextBtn = page.locator("#ob-btn-next");
-
-    // Explicitly navigate through each slide with validation
-    await expect(page.locator("#slide-1")).toHaveClass(/active/);
-    await nextBtn.click(); // 1 -> 2
-    await expect(page.locator("#slide-2")).toHaveClass(/active/);
-    await nextBtn.click(); // 2 -> 3
-    await expect(page.locator("#slide-3")).toHaveClass(/active/);
-    await page.locator("#ob-btn-skip-setup").click(); // skip provider -> 4
-    await expect(page.locator("#slide-4")).toHaveClass(/active/);
-    await nextBtn.click(); // 4 -> 5
-    await expect(page.locator("#slide-5")).toHaveClass(/active/);
-    await nextBtn.click(); // 5 -> 6
-    await expect(page.locator("#slide-6")).toHaveClass(/active/);
-    await nextBtn.click(); // 6 -> 7
-    await expect(page.locator("#slide-7")).toHaveClass(/active/);
-    await nextBtn.click(); // 7 -> 8
-    await expect(page.locator("#slide-8")).toHaveClass(/active/);
-    await nextBtn.click(); // 8 -> 9
-    await expect(page.locator("#slide-9")).toHaveClass(/active/);
-    await nextBtn.click(); // 9 -> 10
-    await expect(page.locator("#slide-10")).toHaveClass(/active/);
-    await nextBtn.click(); // 10 -> 11
-
-    const slide11 = page.locator("#slide-11");
-    await expect(slide11).toHaveClass(/active/);
-
-    // Wait for diagnostics to complete
-    const diagLog = page.locator("#ob-diagnostic-log");
-    await expect(diagLog).toContainText("NOMINAL", { timeout: 15000 });
-
-    // All 6 checks should show OK
-    const statuses = slide11.locator(".onboarding-diagnostic-status");
-    const count = await statuses.count();
-    expect(count).toBe(6);
-    for (let i = 0; i < count; i++) {
-      await expect(statuses.nth(i)).toContainText("OK", { timeout: 15000 });
-    }
-
-    // Launch button should be enabled
-    await expect(nextBtn).toBeEnabled();
-    await expect(nextBtn).toContainText("Launch");
-  });
-
-  test("completing onboarding sets localStorage flag", async ({ page }) => {
-    await page.goto("/");
-    await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
-
-    const nextBtn = page.locator("#ob-btn-next");
-
-    // Navigate through slides
-    await nextBtn.click(); // 1 -> 2
-    await nextBtn.click(); // 2 -> 3
-    await page.locator("#ob-btn-skip-setup").click(); // skip -> 4
-    await nextBtn.click(); // 4 -> 5
-    await nextBtn.click(); // 5 -> 6
-    await nextBtn.click(); // 6 -> 7
-    await nextBtn.click(); // 7 -> 8
-    await nextBtn.click(); // 8 -> 9
-    await nextBtn.click(); // 9 -> 10
-    await nextBtn.click(); // 10 -> 11
-
-    // Wait for diagnostics
-    await expect(page.locator("#ob-diagnostic-log")).toContainText("NOMINAL", { timeout: 15000 });
-
-    // Click Launch
+    // Step 1: Welcome
+    await expect(page.getByRole("heading", { name: "Welcome to NEURODECK" })).toBeVisible();
+    const nextBtn = page.getByRole("button", { name: /Next/i });
     await nextBtn.click();
 
-    // Overlay should disappear
-    const overlay = page.locator("#onboarding-overlay");
-    await expect(overlay).not.toBeVisible({ timeout: 3000 });
+    // Step 2: Environment
+    await expect(page.getByRole("heading", { name: "Environment Integrity Check" })).toBeVisible();
+    await nextBtn.click();
 
-    // Verify localStorage flag
+    // Step 3: AI Provider Setup
+    await expect(page.getByRole("heading", { name: "AI Provider Setup" })).toBeVisible();
+    // Select "Skip / Offline planning engine" to avoid required validation checks
+    await page.locator("select").first().selectOption("skip");
+    await nextBtn.click();
+
+    // Step 4: Preferences
+    await expect(page.getByRole("heading", { name: "Preferences & Styling" })).toBeVisible();
+    await nextBtn.click();
+
+    // Step 5: Plugins
+    await expect(page.getByRole("heading", { name: "Script Automation & Plugins" })).toBeVisible();
+    await nextBtn.click();
+
+    // Step 6: Finish
+    await expect(page.getByRole("heading", { name: "Setup Finalization" })).toBeVisible();
+    
+    // Click Enter Workspace
+    await page.getByRole("button", { name: /Enter Workspace/i }).click();
+
+    // Overlay should disappear
+    await expect(overlay).not.toBeVisible({ timeout: 5000 });
+
+    // Verify completion flag is set
     const completed = await page.evaluate(() =>
       localStorage.getItem("neurodeck_onboarding_complete")
     );

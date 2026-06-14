@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Dispatch } from "react";
 import {
   AlertTriangle,
@@ -9,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
 import { Panel } from "../../components/primitives/Panel";
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
 
@@ -22,9 +24,10 @@ export function RecoveryView({
   actions: NeuroDeckAppActions;
 }) {
   const hasError = !!state.lastError;
+  const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
+    <div data-testid="recovery-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Active Error */}
         <Panel eyebrow="Recovery" title="Current Error State">
@@ -107,7 +110,7 @@ export function RecoveryView({
               description="Wipe all session history, memories, and preferences. OS keychain keys are preserved."
               badge="Destructive"
               badgeTone="danger"
-              onClick={() => void actions.resetLocalState()}
+              onClick={() => setConfirmReset(true)}
             />
           </div>
         </Panel>
@@ -115,14 +118,19 @@ export function RecoveryView({
 
       {/* Recovery Event Log */}
       <Panel eyebrow="Event Log" title="Self-Healing Events" className="min-h-0 overflow-hidden">
-        <div className="h-full overflow-y-auto p-4 scrollbar-thin">
+        <div
+          role="log"
+          aria-live="polite"
+          aria-label="Self-healing recovery events"
+          className="h-full overflow-y-auto p-4 scrollbar-thin"
+        >
           {state.recoveryEvents.length > 0 ? (
-            <div className="space-y-2">
+            <ul role="list" className="space-y-2">
               {state.recoveryEvents
                 .slice()
                 .reverse()
                 .map((event) => (
-                  <div
+                  <li
                     key={event.id}
                     className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2"
                   >
@@ -142,17 +150,31 @@ export function RecoveryView({
                     <p className="mt-0.5 text-[10px] uppercase tracking-wide text-nd-text-muted/50">
                       state: {event.state}
                     </p>
-                  </div>
+                  </li>
                 ))}
-            </div>
+            </ul>
           ) : (
             <div className="flex flex-col items-center py-10 text-center">
-              <ShieldAlert className="h-8 w-8 text-nd-text-muted/40" />
-              <p className="mt-3 text-sm text-nd-text-muted">No recovery events logged yet.</p>
+              <ShieldAlert className="h-8 w-8 text-nd-text-muted/40" aria-hidden="true" />
+              <p className="mt-3 text-sm font-semibold text-nd-text-muted">No recovery events logged yet</p>
+              <p className="mt-1 text-xs text-nd-text-muted/70">
+                Events will appear here when the self-healing engine activates.
+              </p>
             </div>
           )}
         </div>
       </Panel>
+
+      <ConfirmDialog
+        open={confirmReset}
+        onCancel={() => setConfirmReset(false)}
+        onConfirm={() => { setConfirmReset(false); void actions.resetLocalState(); }}
+        title="Clear all local state?"
+        message="This will permanently remove all session history, memories, and preferences. Keys stored in the OS keychain are preserved. This action cannot be undone."
+        confirmLabel="Clear State"
+        cancelLabel="Cancel"
+        destructive
+      />
     </div>
   );
 }

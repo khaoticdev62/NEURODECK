@@ -127,7 +127,7 @@ export function RemoteView() {
   };
 
   return (
-    <div className="remote-container flex h-full flex-col">
+    <div data-testid="remote-view" className="remote-container flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${status.running ? 'border-nd-success/30 bg-nd-success/10' : 'border-nd-accent/20 bg-nd-accent/10'}`}>
           <Radio className={`h-5 w-5 ${status.running ? 'text-nd-success' : 'text-nd-accent'}`} />
@@ -222,7 +222,7 @@ export function RemoteView() {
               <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Event Log</span>
               <button type="button" onClick={() => setLogs([])} className="text-[11px] text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">Clear</button>
             </div>
-            <div className="min-h-0 flex-1 overflow-auto space-y-1">
+            <div role="log" aria-live="polite" aria-label="Remote control event log" className="min-h-0 flex-1 overflow-auto space-y-1">
               {logs.length === 0 && <p className="text-xs text-nd-text-muted/50 italic">No events yet</p>}
               {logs.map((l, i) => (
                 <div key={i} className={`text-[11px] font-mono ${

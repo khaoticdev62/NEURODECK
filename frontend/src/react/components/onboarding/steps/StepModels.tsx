@@ -87,9 +87,10 @@ export function StepModels({
 
           {providerType === 'openai_compat' && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-semibold text-nd-text">API Token / key</label>
+              <label htmlFor="step-models-api-key" className="text-xs font-semibold text-nd-text">API Token / key</label>
               <div className="relative">
                 <input
+                  id="step-models-api-key"
                   type={showApiKey ? 'text' : 'password'}
                   value={apiKey}
                   onChange={(e) => onApiKeyChange(e.target.value)}

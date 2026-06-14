@@ -148,15 +148,17 @@ test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ pa
 
     const metrics = await page.locator(shellSelector).evaluate((el) => {
       const rect = el.getBoundingClientRect();
+      const mainEl = document.getElementById("main-content");
+      const mainRect = mainEl ? mainEl.getBoundingClientRect() : { left: 0, width: window.innerWidth };
       return {
         left: rect.left,
         width: rect.width,
         centerX: rect.left + rect.width / 2,
-        viewportCenterX: window.innerWidth / 2,
+        mainCenterX: mainRect.left + mainRect.width / 2,
       };
     });
 
-    expect(Math.abs(metrics.centerX - metrics.viewportCenterX)).toBeLessThanOrEqual(2);
+    expect(Math.abs(metrics.centerX - metrics.mainCenterX)).toBeLessThanOrEqual(2);
     expect(metrics.left).toBeGreaterThanOrEqual(0);
   }
 });
@@ -220,16 +222,17 @@ test("controller prompt picker and history search expose refined utility chrome"
   const app = new AppPage(page);
   await page.keyboard.press("Control+Shift+P");
   await expect(page.locator("#ctrl-prompt-overlay")).toHaveClass(/active/);
-  await expect(page.locator(".ctrl-prompt-title .nd-icon-svg")).toBeVisible();
+  await expect(page.locator(".ctrl-prompt-title > .nd-icon-svg")).toBeVisible();
   await expect(page.locator(".ctrl-prompt-cat-icon .nd-icon-svg").first()).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(page.locator("#ctrl-prompt-overlay")).not.toHaveClass(/active/);
+  await expect(page.locator("#ctrl-prompt-overlay")).toBeHidden();
 
-  await page.evaluate(() => {
-    document.getElementById("history-search-overlay")?.classList.remove("hidden");
-  });
-  await expect(page.locator(".history-search-title .nd-icon-svg")).toBeVisible();
-  await expect(page.locator(".history-empty-icon .nd-icon-svg")).toBeVisible();
+  await app.navigateTo("terminal");
+  await page.locator('button[aria-label="Search terminal output"]').click();
+  await expect(page.locator('div[aria-label="Terminal output search"]')).toBeVisible();
+  await expect(page.locator('input[placeholder="Search output or session id..."]')).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.locator('div[aria-label="Terminal output search"]')).toBeHidden();
 });
 
 test("canvas toolbar exposes shared icon actions", async ({ page }) => {

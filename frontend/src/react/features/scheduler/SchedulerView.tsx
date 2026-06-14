@@ -81,7 +81,7 @@ export function SchedulerView() {
   };
 
   return (
-    <div className="flex h-full flex-col">
+    <div data-testid="scheduler-view" className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
           <CalendarClock className="h-5 w-5 text-nd-accent" aria-hidden="true" />
@@ -125,7 +125,8 @@ export function SchedulerView() {
         <button
           type="button"
           onClick={addTask}
-          className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          disabled={!name.trim() || !cron.trim()}
+          className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:pointer-events-none disabled:opacity-40"
         >
           <Plus className="h-4 w-4" aria-hidden="true" /> Add Task
         </button>
@@ -171,7 +172,7 @@ export function SchedulerView() {
             <button type="button" onClick={() => runNow(task.id)} aria-label="Run task now" className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-success focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
               <Play className="h-4 w-4" aria-hidden="true" />
             </button>
-            <button type="button" onClick={() => toggleTask(task.id)} aria-label={task.enabled ? 'Pause task' : 'Resume task'} aria-pressed={!task.enabled} className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+            <button type="button" onClick={() => toggleTask(task.id)} aria-label={task.enabled ? 'Pause task (currently enabled)' : 'Resume task (currently paused)'} aria-pressed={task.enabled} className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
               {task.enabled ? <Pause className="h-4 w-4" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
             </button>
             <button type="button" onClick={() => deleteTask(task.id)} aria-label="Delete task" className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">

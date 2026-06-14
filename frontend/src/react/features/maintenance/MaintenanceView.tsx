@@ -1,13 +1,16 @@
+import { useState } from 'react';
 import { Activity, CheckCircle2, RefreshCcw, Trash2, Wrench } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
+import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import { Panel } from '../../components/primitives/Panel';
 import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
 export function MaintenanceView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
   const diagnostics = state.diagnostics;
+  const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
+    <div data-testid="maintenance-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Version Info */}
         <Panel eyebrow="Build" title="Application Version">
@@ -49,7 +52,7 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
               label="Clear Local State"
               description="Reset all session history, memories, and preferences. Keys in the OS keychain are preserved."
               variant="danger"
-              onClick={() => void actions.resetLocalState()}
+              onClick={() => setConfirmReset(true)}
             />
           </div>
         </Panel>
@@ -92,6 +95,17 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
           </div>
         </div>
       </Panel>
+
+      <ConfirmDialog
+        open={confirmReset}
+        onCancel={() => setConfirmReset(false)}
+        onConfirm={() => { setConfirmReset(false); void actions.resetLocalState(); }}
+        title="Clear all local state?"
+        message="This will permanently remove all session history, memories, and preferences. Keys stored in the OS keychain are preserved. This action cannot be undone."
+        confirmLabel="Clear State"
+        cancelLabel="Cancel"
+        destructive
+      />
     </div>
   );
 }

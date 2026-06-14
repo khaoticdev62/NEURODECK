@@ -34,9 +34,9 @@ test.describe("Core System Views — Phase 10 Integration", () => {
     const app = new AppPage(page);
     await app.navigateTo("plugins");
     const view = page.getByTestId("view-plugins");
-    await expect(view.getByRole("heading", { name: "Plugins" })).toBeVisible();
-    await expect(view.getByText("No plugins found")).toBeVisible();
-    await expect(view.getByPlaceholder("Plugin URL or registry ID...")).toBeVisible();
+    await expect(view.getByRole("heading", { name: "Plugins", exact: true })).toBeVisible();
+    await expect(view.getByRole("heading", { name: "No Plugins Match", exact: true })).toBeVisible();
+    await expect(view.getByPlaceholder("Install plugin from Git URL or Registry ID...")).toBeVisible();
   });
 
   test("Plugins view has install button disabled when input is empty", async ({ page }) => {
@@ -53,15 +53,15 @@ test.describe("Core System Views — Phase 10 Integration", () => {
     const view = page.getByTestId("view-remote");
     await expect(view.getByRole("heading", { name: "Remote Control" })).toBeVisible();
     await expect(view.getByText("Server Offline")).toBeVisible();
-    await expect(view.getByRole("button", { name: /Start Server/i })).toBeVisible();
+    await expect(view.getByRole("button", { name: /Start remote server/i })).toBeVisible();
   });
 
   test("navigates to Torrent view and shows empty state", async ({ page }) => {
     const app = new AppPage(page);
     await app.navigateTo("torrent");
     const view = page.getByTestId("view-torrent");
-    await expect(view.getByRole("heading", { name: "Torrent" })).toBeVisible();
-    await expect(view.getByText("No torrents active")).toBeVisible();
+    await expect(view.getByRole("heading", { name: "Torrent Client", exact: true })).toBeVisible();
+    await expect(view.getByRole("heading", { name: "No torrents", exact: true })).toBeVisible();
   });
 
   test("Workspace view shows TelemetryWidget on load", async ({ page }) => {

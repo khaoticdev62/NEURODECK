@@ -4,7 +4,7 @@ import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck'
 
 export function ExportsView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
+    <div data-testid="exports-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel eyebrow="Export Manager" title="Session Exports" className="h-full overflow-hidden">
         <div className="space-y-3 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
