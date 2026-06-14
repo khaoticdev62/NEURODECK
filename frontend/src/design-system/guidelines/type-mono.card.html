@@ -1,0 +1,25 @@
+<!-- @dsCard group="Type" viewport="700x170" name="Mono & Code — JetBrains Mono / Fira Code" subtitle="Terminal, code, dense metadata · syntax-tinted" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-app); color:var(--nd-text-primary);
+         padding:18px; display:flex; flex-direction:column; gap:12px; justify-content:center; }
+  .term { background:var(--nd-surface-input); border:1px solid var(--nd-border-subtle);
+          border-radius:var(--nd-radius-md); padding:12px 14px; font-family:var(--nd-font-code);
+          font-size:13px; line-height:20px; }
+  .p { color:var(--nd-cyan-400); }
+  .str { color:var(--nd-green-400); }
+  .num { color:var(--nd-yellow-400); }
+  .com { color:var(--nd-text-muted); }
+  .meta { font-family:var(--nd-font-mono); font-size:11px; color:var(--nd-text-muted); }
+</style>
+</head>
+<body>
+  <div class="term"><span class="com"># load local model · 13px / 20px</span><br>
+  <span class="p">neurodeck</span> run <span class="str">"llama-3.1-8b"</span> --ctx <span class="num">8192</span> --gpu <span class="num">0</span></div>
+  <div class="meta">JetBrains Mono (UI mono) · Fira Code (code, ligatures) · keyword cyan / string green / number amber</div>
+</body>
+</html>

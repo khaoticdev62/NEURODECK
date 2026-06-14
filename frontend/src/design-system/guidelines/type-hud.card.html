@@ -1,0 +1,29 @@
+<!-- @dsCard group="Type" viewport="700x140" name="HUD Labels — Rajdhani" subtitle="Uppercase, wide-tracked nav & status micro-labels" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-primary); color:var(--nd-text-primary);
+         padding:20px; display:flex; flex-direction:column; gap:14px; justify-content:center; }
+  .row { display:flex; gap:22px; align-items:center; flex-wrap:wrap; }
+  .hud { font-family:var(--nd-font-hud); text-transform:uppercase; letter-spacing:.18em;
+         font-size:13px; font-weight:600; color:var(--nd-text-secondary); }
+  .hud.active { color:var(--nd-cyan-400); }
+  .micro { font-family:var(--nd-font-hud); text-transform:uppercase; letter-spacing:.16em;
+           font-size:10px; color:var(--nd-text-muted); }
+  .meta { font-family:var(--nd-font-mono); font-size:11px; color:var(--nd-text-muted); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <span class="hud active">WORKSPACE</span><span class="hud">MODELS</span><span class="hud">AGENTS</span>
+    <span class="hud">MEMORY</span><span class="hud">DIAGNOSTICS</span>
+  </div>
+  <div class="row">
+    <span class="micro">OFFLINE</span><span class="micro">VRAM 6.2 GB</span><span class="micro">42 TOK/S</span><span class="micro">LATENCY 180 MS</span>
+  </div>
+  <div class="meta">Rajdhani / Space Grotesk · uppercase · tracking 0.16–0.18em · active = cyan</div>
+</body>
+</html>

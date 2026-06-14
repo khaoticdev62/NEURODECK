@@ -1,0 +1,35 @@
+/* ============================================================
+   NEURODECK — Typography System
+   Mono-forward tactical workstation. Orbitron for the wordmark &
+   startup moments, Inter for UI, JetBrains Mono / Fira Code for
+   terminal + code. Tuned for Steam Deck readability at 1280x800.
+   ============================================================ */
+:root {
+  /* ---- Font families ---- */
+  --nd-font-display: "Orbitron", "Rajdhani", sans-serif;   /* wordmark / titles */
+  --nd-font-hud:     "Rajdhani", "Space Grotesk", sans-serif; /* HUD labels */
+  --nd-font-ui:      "Inter", system-ui, sans-serif;        /* body / UI */
+  --nd-font-mono:    "JetBrains Mono", "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  --nd-font-code:    "Fira Code", "JetBrains Mono", monospace;
+
+  /* ---- Type scale (size / line-height / weight) ---- */
+  --nd-text-display-size: 28px;  --nd-text-display-lh: 36px;  --nd-text-display-weight: 700;
+  --nd-text-h1-size: 24px;       --nd-text-h1-lh: 32px;       --nd-text-h1-weight: 700;
+  --nd-text-h2-size: 20px;       --nd-text-h2-lh: 28px;       --nd-text-h2-weight: 650;
+  --nd-text-h3-size: 17px;       --nd-text-h3-lh: 24px;       --nd-text-h3-weight: 650;
+  --nd-text-body-size: 15px;     --nd-text-body-lh: 22px;     --nd-text-body-weight: 400;
+  --nd-text-body-sm-size: 14px;  --nd-text-body-sm-lh: 20px;  --nd-text-body-sm-weight: 400;
+  --nd-text-caption-size: 12px;  --nd-text-caption-lh: 16px;  --nd-text-caption-weight: 500;
+  --nd-text-micro-size: 11px;    --nd-text-micro-lh: 14px;    --nd-text-micro-weight: 500;
+  --nd-text-code-size: 13px;     --nd-text-code-lh: 20px;     --nd-text-code-weight: 400;
+
+  /* ---- Weights ---- */
+  --nd-weight-normal: 400;
+  --nd-weight-medium: 500;
+  --nd-weight-semibold: 600;
+  --nd-weight-bold: 700;
+
+  /* ---- HUD label tracking (uppercase tactical labels) ---- */
+  --nd-tracking-hud: 0.18em;
+  --nd-tracking-wordmark: 0.22em;
+}

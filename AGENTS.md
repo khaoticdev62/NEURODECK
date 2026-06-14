@@ -30,6 +30,41 @@ NEURODECK is an Electron desktop app with a Rust sidecar that turns a Steam Deck
 
 ---
 
+## Design System (v7)
+
+The NEURODECK Design System is fully wired into the React frontend and blended with the canonical **NEURODECK Design Tokens + Component Library v1.0** package.
+
+### Location
+- Source of truth: `frontend/src/design-system/`
+- Canonical unified tokens: `frontend/src/design-system/tokens/tokens.css`
+- Canonical token JSON: `frontend/src/design-system/tokens.json`
+- Legacy split tokens: `frontend/src/design-system/tokens/{colors,fonts,spacing,typography}.css`
+- v1.0 theme modifiers: `frontend/src/design-system/themes/{blacksite,tactical-glass,high-contrast,colorblind-safe}.css`
+- Components: `frontend/src/design-system/components/{core,feedback,systems}/`
+- Workstation UI kit: `frontend/src/design-system/ui-kits/workstation/`
+- Blended component registry: `frontend/src/design-system/component-registry.json`
+- Barrel export: `frontend/src/design-system/index.ts`
+
+### Integration rules
+- **DS tokens are canonical.** `frontend/src/react/index.css` imports the unified DS token file (`tokens/tokens.css`) and the v1.0 theme modifiers. The runtime theme injector in `frontend/src/react/theme/cssVariableInjector.ts` emits the full DS token namespace (`--nd-*`) so every theme participates.
+- **Default theme is Tactical Glass Ultra.** `ThemeProvider` defaults to `tactical_glass_ultra` so the v1.0 Tactical Glass theme is visible out of the box (cyan-tinted glass borders `#68F1FF`, brighter accent, translucent surfaces).
+- **v1.0 theme classes are applied to the body.** `ThemeProvider` maps active theme IDs to the bundled v1.0 CSS theme classes (`theme-blacksite`, `theme-tactical-glass`, `theme-high-contrast`, `theme-colorblind-safe`). JS-injected variables remain authoritative; the CSS classes provide a fallback layer and make the v1.0 theme files active.
+- **Tailwind exposes v1.0 semantic aliases.** `frontend/tailwind.config.js` extends the theme with `surface`, `text`, `accent`, and `border` color aliases mapped to the `--nd-*` variables, plus v1.0 font sizes, radius, elevation, and motion tokens. Prefer `bg-surface-primary`, `text-text-primary`, `border-border-subtle`, `shadow-card`, etc.
+- **Production build validates the design system first.** The root `npm run build` now runs `node scripts/validate-design-system.js` before bundling. It checks that `tokens.json`, `tokens/tokens.css`, the four v1.0 theme files, `component-registry.json`, and the `index.css` imports all exist and contain the expected token categories/variables.
+- **Existing primitives delegate to DS.** Files in `frontend/src/react/components/primitives/` are adapters that preserve the legacy prop API while using DS token classes and DS components internally. Backups live in `frontend/src/react/components/primitives/_legacy/`.
+- **System cards delegate to DS.** Files in `frontend/src/react/components/cards/` use DS `Panel`, `Badge`, `Button`, `IconButton`, `StatusChip`, `Modal`, and `TextInput`. Backups live in `frontend/src/react/components/cards/_legacy/`.
+- **App shell now uses the v6 workspace layout.** `frontend/src/react/components/layout/NeurodeckShell.tsx` composes v6-style `TitleBar`, `PrimarySidebar`, and `SecondaryRail` with the live app state. The DS workstation `StatusBar`/`NavRail`/`ControllerHints` are no longer used by the shell; `ChatWorkspace` and `InputConsole` remain for the chat view.
+- **Legacy `_legacy/` directories are excluded from TypeScript** via `tsconfig.json` (`"exclude": ["src/**/_legacy"]`).
+
+### Adding or modifying components
+1. Add new DS components under `frontend/src/design-system/components/`.
+2. Export them from `frontend/src/design-system/index.ts`.
+3. If a component replaces an existing primitive or card, update the adapter in `frontend/src/react/components/primitives/` or `frontend/src/react/components/cards/` while keeping the public prop interface unchanged.
+4. Do not redefine `--nd-*` CSS variables inconsistently; extend `tokens/tokens.css` or the runtime injector instead.
+5. When adding a new theme, create a CSS modifier in `frontend/src/design-system/themes/` and add the theme-ID-to-class mapping in `frontend/src/react/theme/cssVariableInjector.ts`.
+
+---
+
 ## Architecture Map
 
 ### IPC Flow

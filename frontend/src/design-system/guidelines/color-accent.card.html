@@ -1,0 +1,30 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Primary Accent — Cyan" subtitle="#5EEBFF · focus, primary CTA, active route, caret" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-primary); font-family:var(--nd-font-ui);
+         color:var(--nd-text-primary); padding:20px; display:flex; gap:14px; align-items:stretch; }
+  .swatch { flex:1.4; border-radius:var(--nd-radius-md); background:var(--nd-cyan-400);
+            box-shadow:0 0 24px rgba(var(--nd-cyan-rgb),0.35); display:flex; align-items:flex-end; padding:12px; }
+  .swatch .hex { font-family:var(--nd-font-mono); font-size:13px; color:#04181d; font-weight:600; }
+  .alphas { flex:2; display:flex; flex-direction:column; gap:8px; justify-content:center; }
+  .row { display:flex; gap:8px; align-items:center; }
+  .chip { height:34px; border-radius:var(--nd-radius-sm); border:1px solid var(--nd-border-subtle);
+          flex:1; display:flex; align-items:center; padding:0 10px;
+          font-family:var(--nd-font-mono); font-size:11px; color:var(--nd-text-secondary); }
+  .label { font-family:var(--nd-font-hud); text-transform:uppercase; letter-spacing:.16em;
+           font-size:10px; color:var(--nd-text-muted); width:70px; }
+</style>
+</head>
+<body>
+  <div class="swatch"><span class="hex">#5EEBFF</span></div>
+  <div class="alphas">
+    <div class="row"><span class="label">Solid</span><div class="chip" style="background:var(--nd-cyan-400);color:#04181d">accent.primary</div></div>
+    <div class="row"><span class="label">Fill /10</span><div class="chip" style="background:rgba(var(--nd-cyan-rgb),0.10);color:var(--nd-cyan-400)">accent.soft</div></div>
+    <div class="row"><span class="label">Glow /18</span><div class="chip" style="background:rgba(var(--nd-cyan-rgb),0.18);color:var(--nd-cyan-400)">focus glow</div></div>
+  </div>
+</body>
+</html>

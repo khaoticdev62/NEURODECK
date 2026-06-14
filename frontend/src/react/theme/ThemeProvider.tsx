@@ -8,7 +8,7 @@ import type {
 import { themeRegistry } from "../../shared/theme/themeRegistry";
 import { wallpaperRegistry } from "../../shared/theme/wallpaperRegistry";
 import { themePersistenceClient } from "./themePersistenceClient";
-import { injectThemeVariables } from "./cssVariableInjector";
+import { injectThemeVariables, applyDsThemeClass } from "./cssVariableInjector";
 import { neurodeckApi } from "../services/bridgeAdapter";
 import { resolveThemeIdFromBackend } from "./themeIdMapper";
 import { validateThemeSettings } from "../../../../src/shared/theme/themeSchemas";
@@ -27,7 +27,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 const DEFAULT_SETTINGS_FALLBACK: ThemeSettings = {
-  activeThemeId: "blacksite_prime",
+  activeThemeId: "tactical_glass_ultra",
   activeWallpaperId: "neural_aurora",
   liveWallpaperEnabled: true,
   displayProfile: "steamdeck_lcd",
@@ -96,9 +96,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   useEffect(() => {
     const check = validateThemeSettings(settings);
     if (!check.valid) {
-      // eslint-disable-next-line no-console
       console.warn("[ThemeProvider] theme settings validation:", check.errors);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- validate once on mount
   }, []);
 
   const activeTheme = useMemo(() => {
@@ -127,6 +127,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       injectThemeVariables(resolvedTokens);
     }
   }, [resolvedTokens]);
+
+  // Apply the bundled Design Tokens v1.0 theme class to the body so CSS-only
+  // theme modifiers (blacksite, tactical-glass, high-contrast, colorblind-safe)
+  // participate alongside the JS-injected variables.
+  useEffect(() => {
+    applyDsThemeClass(settings.activeThemeId);
+  }, [settings.activeThemeId]);
 
   // Persist active theme changes back to the backend config
   useEffect(() => {

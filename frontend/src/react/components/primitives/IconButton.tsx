@@ -1,25 +1,34 @@
 import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from 'react';
+import '../../../design-system/components/core/IconButton';
 
-const sizeClasses = {
-  sm: 'h-7 w-7 min-h-touch min-w-touch',
-  md: 'h-8 w-8 min-h-touch min-w-touch',
-  lg: 'h-10 w-10 min-h-11 min-w-11',
-  xl: 'h-11 w-11 min-h-12 min-w-12',
-};
+type IconButtonSize = 'sm' | 'md' | 'lg' | 'xl';
+type IconButtonVariant = 'ghost' | 'subtle' | 'outline' | 'accent' | 'danger';
 
-const variantClasses = {
-  ghost:   'border-transparent bg-transparent text-nd-text-primary/80 hover:bg-nd-surface-raised/50 hover:text-nd-text-primary',
-  subtle:  'border-nd-border-subtle bg-nd-surface-base/50 text-nd-text-primary/80 hover:border-nd-accent-primary/40 hover:bg-nd-accent-primary/10 hover:text-nd-accent-primary',
-  outline: 'border-nd-border-subtle bg-transparent text-nd-text-primary/80 hover:border-nd-accent-primary/40 hover:text-nd-accent-primary',
-  accent:  'border-nd-accent-primary/25 bg-nd-accent-primary/10 text-nd-accent-primary hover:bg-nd-accent-primary/20',
-  danger:  'border-nd-accent-error/25 bg-nd-accent-error/10 text-nd-accent-error hover:bg-nd-accent-error/20',
-};
-
-export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  size?: keyof typeof sizeClasses;
-  variant?: keyof typeof variantClasses;
+  size?: IconButtonSize;
+  variant?: IconButtonVariant;
 }
+
+const legacyVariantClasses: Record<IconButtonVariant, string> = {
+  ghost:
+    'border-transparent bg-transparent text-nd-text-primary/80 hover:bg-nd-surface-raised/50 hover:text-nd-text-primary',
+  subtle:
+    'border-nd-border-subtle bg-nd-surface-base/50 text-nd-text-primary/80 hover:border-nd-accent-primary/40 hover:bg-nd-accent-primary/10 hover:text-nd-accent-primary',
+  outline:
+    'border-nd-border-subtle bg-transparent text-nd-text-primary/80 hover:border-nd-accent-primary/40 hover:text-nd-accent-primary',
+  accent:
+    'border-nd-accent-primary/25 bg-nd-accent-primary/10 text-nd-accent-primary hover:bg-nd-accent-primary/20',
+  danger:
+    'border-nd-accent-error/25 bg-nd-accent-error/10 text-nd-accent-error hover:bg-nd-accent-error/20',
+};
+
+const legacySizeClasses: Record<IconButtonSize, string> = {
+  sm: 'min-h-touch min-w-touch',
+  md: 'min-h-touch min-w-touch',
+  lg: 'min-h-11 min-w-11',
+  xl: 'min-h-12 min-w-12',
+};
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
   {
@@ -28,28 +37,33 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     size = 'md',
     variant = 'subtle',
     'aria-label': ariaLabel,
+    type = 'button',
     ...props
   },
   ref,
 ) {
+  const dsVariant = variant === 'accent' ? 'primary' : variant === 'danger' ? 'danger' : 'default';
+  const dsSize = size === 'xl' ? 'lg' : size;
+
+  const cls = [
+    'nd-iconbtn',
+    `nd-iconbtn--${dsVariant}`,
+    `nd-iconbtn--${dsSize}`,
+    legacyVariantClasses[variant],
+    legacySizeClasses[size],
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <button
-      ref={ref}
-      type="button"
-      aria-label={ariaLabel}
-      className={[
-        'no-drag inline-flex shrink-0 items-center justify-center rounded-lg border',
-        'transition-all duration-fast',
-        'active:scale-95 active:brightness-110',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40',
-        'disabled:pointer-events-none disabled:opacity-50',
-        sizeClasses[size],
-        variantClasses[variant],
-        className,
-      ].join(' ')}
-      {...props}
-    >
+    <button ref={ref} type={type} aria-label={ariaLabel} className={cls} {...props}>
       {children}
+      {ariaLabel ? (
+        <span className="nd-iconbtn__tip" role="tooltip">
+          {ariaLabel}
+        </span>
+      ) : null}
     </button>
   );
 });

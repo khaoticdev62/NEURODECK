@@ -455,6 +455,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                     role="button"
                     tabIndex={0}
                     aria-pressed={isSelected}
+                    aria-label={p.name}
                     onClick={() => handleSelectPlugin(p)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectPlugin(p); } }}
                     className={`rounded-xl border p-4 transition duration-200 cursor-pointer flex flex-col gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
