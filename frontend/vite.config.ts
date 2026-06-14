@@ -38,7 +38,7 @@ export default defineConfig({
           if (id.includes("xterm")) return "xterm";
           if (id.includes("marked")) return "marked";
           if (id.includes("qrcode")) return "qrcode";
-          // Group all academy sub-modules to avoid 15+ micro-chunks
+          // Group all academy sub-modules to avoid micro-chunks
           if (id.includes("/features/academy/")) return "view-academy";
           // Group canvas + monaco into one editor chunk
           if (id.includes("/features/canvas/") || id.includes("monaco-editor")) return "view-canvas";
@@ -46,6 +46,18 @@ export default defineConfig({
           if (id.includes("/features/ide/") || id.includes("/lsp_client")) return "view-ide";
           // Browser feature group
           if (id.includes("/features/browser/")) return "view-browser";
+          // Terminal group (xterm dep already split above)
+          if (id.includes("/features/terminal/") || id.includes("/features/ssh/")) return "view-terminal";
+          // Settings (sizeable standalone view)
+          if (id.includes("/features/settings/")) return "view-settings";
+          // AI/agent intelligence cluster
+          if (id.includes("/features/agents/") || id.includes("/features/memory/") || id.includes("/features/project/")) return "view-intel";
+          // Dev tools cluster
+          if (id.includes("/features/api-lab/") || id.includes("/features/cli-maker/") || id.includes("/features/git/")) return "view-devtools";
+          // System/admin cluster
+          if (id.includes("/features/diagnostics/") || id.includes("/features/execution/") || id.includes("/features/cache/") || id.includes("/features/plugins/") || id.includes("/features/sessions/")) return "view-system";
+          // Models view
+          if (id.includes("/features/models/")) return "view-models";
         },
       },
     },

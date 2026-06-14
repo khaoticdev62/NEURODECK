@@ -11,23 +11,25 @@ import { SecondaryRail } from "./components/layout/SecondaryRail";
 import { TitleBar } from "./components/layout/TitleBar";
 import { Badge } from "./components/primitives/Badge";
 import { ToastProvider } from "./components/primitives/Toast";
-// ─── Eager imports — default view, overlay views, and lightweight core views ──
-import { AgentsView } from "./features/agents/AgentsView";
-import { ApiLabView } from "./features/api-lab/ApiLabView";
-import { CacheView } from "./features/cache/CacheView";
-import { CliMakerView } from "./features/cli-maker/CliMakerView";
-import { DiagnosticsView } from "./features/diagnostics/DiagnosticsView";
-import { ExecutionView } from "./features/execution/ExecutionView";
-import { GitView } from "./features/git/GitView";
-import { MemoryView } from "./features/memory/MemoryView";
-import { ModelsView } from "./features/models/ModelsView";
-import { PluginsView } from "./features/plugins/PluginsView";
-import { ProjectView } from "./features/project/ProjectView";
-import { SessionsView } from "./features/sessions/SessionsView";
-import { SettingsView } from "./features/settings/SettingsView";
-import { SSHView } from "./features/ssh/SSHView";
-import { TerminalView } from "./features/terminal/TerminalView";
+// ─── Eager imports — only the default landing view (chat/workspace) ──────────
 import { WorkspaceView } from "./features/workspace/WorkspaceView";
+
+// ─── Lazy imports — all non-default views; split at the chunk boundary ────────
+const AgentsView      = lazy(() => import("./features/agents/AgentsView").then((m) => ({ default: m.AgentsView })));
+const ApiLabView      = lazy(() => import("./features/api-lab/ApiLabView").then((m) => ({ default: m.ApiLabView })));
+const CacheView       = lazy(() => import("./features/cache/CacheView").then((m) => ({ default: m.CacheView })));
+const CliMakerView    = lazy(() => import("./features/cli-maker/CliMakerView").then((m) => ({ default: m.CliMakerView })));
+const DiagnosticsView = lazy(() => import("./features/diagnostics/DiagnosticsView").then((m) => ({ default: m.DiagnosticsView })));
+const ExecutionView   = lazy(() => import("./features/execution/ExecutionView").then((m) => ({ default: m.ExecutionView })));
+const GitView         = lazy(() => import("./features/git/GitView").then((m) => ({ default: m.GitView })));
+const MemoryView      = lazy(() => import("./features/memory/MemoryView").then((m) => ({ default: m.MemoryView })));
+const ModelsView      = lazy(() => import("./features/models/ModelsView").then((m) => ({ default: m.ModelsView })));
+const PluginsView     = lazy(() => import("./features/plugins/PluginsView").then((m) => ({ default: m.PluginsView })));
+const ProjectView     = lazy(() => import("./features/project/ProjectView").then((m) => ({ default: m.ProjectView })));
+const SessionsView    = lazy(() => import("./features/sessions/SessionsView").then((m) => ({ default: m.SessionsView })));
+const SettingsView    = lazy(() => import("./features/settings/SettingsView").then((m) => ({ default: m.SettingsView })));
+const SSHView         = lazy(() => import("./features/ssh/SSHView").then((m) => ({ default: m.SSHView })));
+const TerminalView    = lazy(() => import("./features/terminal/TerminalView").then((m) => ({ default: m.TerminalView })));
 
 // ─── Lazy imports — heavy or infrequently-visited feature modules ─────────────
 const AcademyView    = lazy(() => import("./features/academy/AcademyView").then((m) => ({ default: m.AcademyView })));
@@ -1188,14 +1190,16 @@ export default function App() {
                 Settings
               </span>
               <div className="h-full min-h-0">
-                <SettingsView
-                  key={settingsPanel}
-                  state={state}
-                  dispatch={dispatch}
-                  actions={appActions}
-                  onPanelChange={setSettingsPanel}
-                  onClose={() => setSettingsOpen(false)}
-                />
+                <Suspense fallback={<ViewLoader />}>
+                  <SettingsView
+                    key={settingsPanel}
+                    state={state}
+                    dispatch={dispatch}
+                    actions={appActions}
+                    onPanelChange={setSettingsPanel}
+                    onClose={() => setSettingsOpen(false)}
+                  />
+                </Suspense>
               </div>
             </div>
           )}
