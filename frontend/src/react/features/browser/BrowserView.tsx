@@ -644,7 +644,7 @@ export function BrowserView() {
         <div
           role="status"
           aria-live="polite"
-          className={`absolute bottom-4 left-1/2 z-[9999] -translate-x-1/2 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-md ${
+          className={`absolute bottom-4 left-1/2 z-[var(--z-toast)] -translate-x-1/2 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-md ${
             notice.kind === 'ok'
               ? 'border-nd-success/30 bg-nd-success/10 text-nd-success'
               : 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger'
@@ -655,7 +655,7 @@ export function BrowserView() {
       )}
       {/* Permission Prompts Overlay */}
       {permissions.length > 0 && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[9999] w-96 rounded-2xl border border-nd-accent/30 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-md flex flex-col gap-3">
+        <div className="absolute top-4 left-1/2 z-[var(--z-toast)] w-96 -translate-x-1/2 rounded-2xl border border-nd-accent/30 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-md flex flex-col gap-3">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-nd-warning shrink-0 mt-0.5" />
             <div>
@@ -925,7 +925,7 @@ export function BrowserView() {
               <FocusTrapContainer
                 active={showProfilesMenu}
                 onEscape={() => setShowProfilesMenu(false)}
-                className="absolute right-0 top-full z-[999] mt-1.5 w-64 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/98 p-3 shadow-2xl backdrop-blur-xl"
+                className="absolute right-0 top-full z-[var(--z-dropdown)] mt-1.5 w-64 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/98 p-3 shadow-2xl backdrop-blur-xl"
                 role="dialog"
                 aria-label="Switch browser profile"
               >
@@ -1106,7 +1106,7 @@ export function BrowserView() {
         <FocusTrapContainer
           active={showDiagnostics}
           onEscape={() => setShowDiagnostics(false)}
-          className="absolute right-4 top-24 z-[999] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl"
+          className="absolute right-4 top-24 z-[var(--z-dropdown)] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl"
           role="dialog"
           aria-label="Browser diagnostics panel"
         >
@@ -1176,7 +1176,7 @@ export function BrowserView() {
         <FocusTrapContainer
           active={showDownloadsMenu}
           onEscape={() => setShowDownloadsMenu(false)}
-          className="absolute right-4 top-24 z-[999] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl"
+          className="absolute right-4 top-24 z-[var(--z-dropdown)] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl"
           role="dialog"
           aria-label="Downloads tracker"
         >
@@ -1276,7 +1276,7 @@ export function BrowserView() {
         <FocusTrapContainer
           active={showVpnPanel}
           onEscape={() => setShowVpnPanel(false)}
-          className="absolute inset-0 z-[1200] flex items-start justify-end bg-nd-bg/60 p-4 backdrop-blur-sm"
+          className="absolute inset-0 z-[var(--z-modal)] flex items-start justify-end bg-nd-bg/60 p-4 backdrop-blur-sm"
           role="dialog"
           aria-label="Browser VPN"
         >

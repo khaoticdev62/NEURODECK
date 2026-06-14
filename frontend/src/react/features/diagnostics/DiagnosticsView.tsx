@@ -18,6 +18,7 @@ import {
   Server,
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
+import { EmptyState } from "../../components/primitives/EmptyState";
 import { Panel } from "../../components/primitives/Panel";
 import { DiagnosticsPanel } from "../../components/systems/DiagnosticsPanel";
 import type { DiagnosticsCheck } from "../../components/systems/DiagnosticsPanel";
@@ -139,7 +140,7 @@ export function DiagnosticsView({
           bg: "bg-nd-success/10",
           border: "border-nd-success/20",
           text: "text-nd-success",
-          dot: "bg-nd-success shadow-[0_0_8px_rgba(var(--color-success-rgb),0.5)]",
+          dot: "bg-nd-success shadow-[0_0_8px_rgba(var(--nd-green-rgb),0.5)]",
           label: "ONLINE",
         };
       case "error":
@@ -148,7 +149,7 @@ export function DiagnosticsView({
           bg: "bg-nd-danger/10",
           border: "border-nd-danger/20",
           text: "text-nd-danger",
-          dot: "bg-nd-danger shadow-[0_0_8px_rgba(var(--color-danger-rgb),0.5)]",
+          dot: "bg-nd-danger shadow-[0_0_8px_rgba(var(--nd-red-rgb),0.5)]",
           label: "OFFLINE",
         };
       case "warning":
@@ -156,7 +157,7 @@ export function DiagnosticsView({
           bg: "bg-nd-warning/10",
           border: "border-nd-warning/20",
           text: "text-nd-warning",
-          dot: "bg-nd-warning shadow-[0_0_8px_rgba(var(--color-warning-rgb),0.5)]",
+          dot: "bg-nd-warning shadow-[0_0_8px_rgba(var(--nd-yellow-rgb),0.5)]",
           label: "WARN",
         };
       default:
@@ -241,13 +242,13 @@ export function DiagnosticsView({
               />
             </div>
           ) : (
-            <div className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-5 text-center">
-              <Activity className="mx-auto h-10 w-10 text-nd-accent" />
-              <h3 className="mt-4 font-semibold text-nd-text">No diagnostics loaded</h3>
-              <p className="mt-2 text-sm leading-6 text-nd-text-muted">
-                Refresh to read Electron runtime data and recent main-process events.
-              </p>
-            </div>
+            <EmptyState
+              icon={Activity}
+              title="No diagnostics loaded"
+              description="Refresh to read Electron runtime data and recent main-process events."
+              compact
+              className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40"
+            />
           )}
         </div>
       </Panel>
@@ -418,9 +419,13 @@ export function DiagnosticsView({
               </h3>
 
               {!selectedConnection.evidence || selectedConnection.evidence.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-nd-text-muted/20 p-4 text-center text-xs text-nd-text-muted">
-                  No probe runs registered. Click the play button to execute this probe.
-                </div>
+                <EmptyState
+                  icon={Play}
+                  title="No probe runs registered"
+                  description="Click the play button to execute this probe."
+                  compact
+                  className="rounded-xl border border-dashed border-nd-text-muted/20"
+                />
               ) : (
                 <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[1px] before:bg-nd-text-muted/10">
                   {selectedConnection.evidence.map((ev: EvidenceEntry, idx: number) => {
@@ -474,14 +479,11 @@ export function DiagnosticsView({
           <div className="h-full overflow-y-auto p-4 scrollbar-thin">
             {!state.diagnosticLogs.length && (
               <div className="flex h-full items-center justify-center">
-                <div className="max-w-md text-center">
-                  <TerminalSquare className="mx-auto h-12 w-12 text-nd-accent" />
-                  <h3 className="mt-4 text-xl font-semibold text-nd-text">Logs are quiet</h3>
-                  <p className="mt-2 text-sm leading-6 text-nd-text-muted">
-                    Run a project scan, model detection, export, or diagnostics refresh to populate
-                    the event trail.
-                  </p>
-                </div>
+                <EmptyState
+                  icon={TerminalSquare}
+                  title="Logs are quiet"
+                  description="Run a project scan, model detection, export, or diagnostics refresh to populate the event trail."
+                />
               </div>
             )}
             <div className="space-y-3">

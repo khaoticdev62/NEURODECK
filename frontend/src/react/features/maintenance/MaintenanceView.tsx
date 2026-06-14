@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Activity, CheckCircle2, RefreshCcw, Trash2, Wrench } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
+import { EmptyState } from '../../components/primitives/EmptyState';
 import { Panel } from '../../components/primitives/Panel';
 import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
@@ -86,7 +87,13 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
               ))}
             </div>
           ) : (
-            <p className="text-sm text-nd-text-muted">No health data yet. Check AI health to populate.</p>
+            <EmptyState
+              icon={Activity}
+              title="No health data yet"
+              description="Check AI health to populate provider availability and latency."
+              compact
+              className="rounded-2xl border border-dashed border-nd-text-muted/15 bg-nd-surface/30"
+            />
           )}
 
           <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">

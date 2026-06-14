@@ -306,7 +306,7 @@ export function CommandPalette({
   );
 
   return (
-    <div id="command-palette-overlay" data-controller-overlay={isOpen ? 'true' : undefined} className={`command-palette-overlay ${isOpen ? 'active' : ''} fixed inset-0 z-50 flex items-start justify-center`} onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}>
+    <div id="command-palette-overlay" data-controller-overlay={isOpen ? 'true' : undefined} className={`command-palette-overlay ${isOpen ? 'active' : ''} fixed inset-0 z-[var(--z-modal)] flex items-start justify-center`} onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}>
       <div className="command-palette-card no-drag w-full max-w-2xl overflow-hidden" onMouseDown={(event) => event.stopPropagation()}>
         <div className="flex items-center gap-3 border-b border-nd-text-muted/15 px-4 py-3">
           <Search className="h-5 w-5 text-nd-accent" />

@@ -520,7 +520,7 @@ export function TorrentView() {
 
       {/* Remove confirmation modal */}
       {confirmRemove && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-nd-bg/70 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-nd-bg/70 backdrop-blur-sm">
           <div className="w-[360px] rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-5 shadow-2xl">
             <h3 className="text-sm font-semibold text-nd-text">Remove torrent{confirmRemove.ids ? 's' : ''}?</h3>
             <p className="mt-2 text-xs leading-5 text-nd-text-muted">

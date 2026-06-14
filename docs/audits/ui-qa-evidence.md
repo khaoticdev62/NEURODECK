@@ -98,3 +98,51 @@ The following should be verified manually in the running app:
 | `docs/design-system/ui-design-system-delta.md` | Created |
 | `docs/design-system/component-inventory.md` | Created |
 | `docs/audits/ui-qa-evidence.md` | Created |
+
+---
+
+## Bounded Full-Prompt Cleanup Pass
+
+**Date:** 2026-06-14
+
+### Commands Run
+
+| Command | Result |
+|---|---|
+| `npm run typecheck -w frontend` | Passed, 0 errors |
+| `npm run build -w frontend` | Passed |
+| `npm run test -w frontend -- EmptyState DiagnosticsView ExecutionView MaintenanceView BrowserVpnPanel` | Passed, 2 files / 13 tests |
+| `npm run test -w frontend` | Passed, 58 files / 581 tests |
+
+### Changes Verified by Typecheck
+
+- `DiagnosticsView.tsx`: status glow shadows now use `--nd-green-rgb`, `--nd-yellow-rgb`, and `--nd-red-rgb` instead of non-design-system `--color-*` RGB aliases.
+- `DiagnosticsView.tsx`: no runtime diagnostics, no probe evidence, and quiet IPC logs now use `EmptyState`.
+- `ExecutionView.tsx`: empty agent run list now uses `EmptyState` with an action slot.
+- `MaintenanceView.tsx`: empty AI health panel now uses compact `EmptyState`.
+- `BrowserVpnPanel.tsx`: empty profile list and unselected detail pane now uses compact `EmptyState`.
+- App overlays, command palette, browser popovers, IDE overlays, orchestrator modal, torrent modal, and skip links now use React z-index CSS variables.
+
+### Manual Verification Added
+
+- [ ] Diagnostics view empty states retain tactical-glass framing at 1280x800.
+- [ ] Browser VPN panel empty states fit in the 3-column layout at 1280x800.
+- [ ] Command palette, quick switcher, notifications, browser popovers, and IDE hints stack above content without hardcoded z-index utilities.
+
+### Additional Files Changed
+
+| File | Type |
+|---|---|
+| `frontend/src/react/App.tsx` | Modified |
+| `frontend/src/react/components/command/CommandPalette.tsx` | Modified |
+| `frontend/src/react/components/layout/NeurodeckShell.tsx` | Modified |
+| `frontend/src/react/features/browser/BrowserView.tsx` | Modified |
+| `frontend/src/react/features/browser-vpn/BrowserVpnPanel.tsx` | Modified |
+| `frontend/src/react/features/diagnostics/DiagnosticsView.tsx` | Modified |
+| `frontend/src/react/features/execution/ExecutionView.tsx` | Modified |
+| `frontend/src/react/features/ide/IDEView.tsx` | Modified |
+| `frontend/src/react/features/ide/RadialCommandWheel.tsx` | Modified |
+| `frontend/src/react/features/ide/SafeCommandConfirmModal.tsx` | Modified |
+| `frontend/src/react/features/maintenance/MaintenanceView.tsx` | Modified |
+| `frontend/src/react/features/orchestrator/OrchestratorView.tsx` | Modified |
+| `frontend/src/react/features/torrent/TorrentView.tsx` | Modified |

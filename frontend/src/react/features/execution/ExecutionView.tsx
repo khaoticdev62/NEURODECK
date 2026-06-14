@@ -1,5 +1,6 @@
 import { BrainCircuit, CheckCircle2, Clock3, FileText, XCircle } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
+import { EmptyState } from '../../components/primitives/EmptyState';
 import { Panel } from '../../components/primitives/Panel';
 import type { AgentRun, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
@@ -9,16 +10,21 @@ export function ExecutionView({ state, actions }: { state: NeuroDeckState; actio
       <Panel eyebrow="Execution Layer" title="AI Runs & Tool Audit" className="min-h-0 overflow-hidden">
         <div className="h-full overflow-y-auto p-4 scrollbar-thin">
           {!state.aiRuns.length && (
-            <div className="rounded-3xl border border-dashed border-nd-text-muted/15 bg-nd-surface/35 p-8 text-center">
-              <BrainCircuit className="mx-auto h-10 w-10 text-nd-accent" />
-              <h3 className="mt-4 text-lg font-semibold text-nd-text">No agent runs yet</h3>
-              <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-nd-text-muted">
-                Run an agent from the Agent Dock or use a prompt template. Runs are recorded here with provider, model, status, prompt, result, and context usage.
-              </p>
-              <button type="button" onClick={() => void actions.runAgent('architect')} className="mt-5 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15">
-                Run Architect Agent
-              </button>
-            </div>
+            <EmptyState
+              icon={BrainCircuit}
+              title="No agent runs yet"
+              description="Run an agent from the Agent Dock or use a prompt template. Runs are recorded here with provider, model, status, prompt, result, and context usage."
+              className="rounded-3xl border border-dashed border-nd-text-muted/15 bg-nd-surface/35"
+              action={
+                <button
+                  type="button"
+                  onClick={() => void actions.runAgent('architect')}
+                  className="min-h-10 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                >
+                  Run Architect Agent
+                </button>
+              }
+            />
           )}
           <div className="space-y-3">
             {state.aiRuns.map((run) => <RunCard key={run.id} run={run} />)}

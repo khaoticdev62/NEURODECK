@@ -77,19 +77,36 @@ Classes defined in `app.css` using the `nd-*` utility pattern.
 
 ## Z-Index Scale
 
-Defined as CSS variables in `tokens.css`:
+Defined as CSS variables in the active React shell (`frontend/src/react/index.css`). Legacy `app.css` has a broader historic scale, but new React work should use the active shell tokens below:
 
 | Variable | Value | Layer |
 |---|---|---|
-| `--z-base` | 0 | Default stacking |
-| `--z-raised` | 10 | Raised cards |
-| `--z-dropdown` | 100 | Dropdowns, tooltips |
-| `--z-overlay` | 200 | Modal backdrops |
-| `--z-modal` | 300 | Modals |
-| `--z-toast` | 400 | Toast notifications |
-| `--z-critical` | 9999 | Skip-to-content, emergency overlays |
+| `--z-wallpaper` | 0 | Wallpaper/background host |
+| `--z-base` | 1 | Default stacking |
+| `--z-sticky` | 10 | Sticky chrome |
+| `--z-dropdown` | 20 | Menus and popovers |
+| `--z-overlay` | 30 | Backdrops |
+| `--z-modal` | 40 | Modals and full-screen overlays |
+| `--z-toast` | 50 | Toasts, notices, skip links |
+| `--z-tooltip` | 60 | Tooltips and transient command hints |
 
 Use `z-[var(--z-modal)]` in Tailwind or `z-index: var(--z-modal)` in CSS.
+
+2026-06-14 cleanup note: React overlays were normalized away from hardcoded `z-40`, `z-50`, `z-[999]`, `z-[1200]`, and `z-[9999]` where the fix was mechanical. Remaining negative background layering in the wallpaper host is intentional.
+
+## Empty State Primitive
+
+Use `EmptyState` for panel-level empty data, quiet logs, unselected detail panes, and first-run states instead of one-off centered icon markup. It supports:
+
+- `compact` for side panels and dense split views.
+- `action` for a primary next step.
+- `className` for local panel framing while preserving the primitive's typography and icon treatment.
+
+Recent aligned surfaces:
+- Execution run list
+- Diagnostics runtime, probe timeline, and IPC log states
+- Maintenance AI health state
+- Browser VPN profile and detail placeholders
 
 ---
 

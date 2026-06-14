@@ -13,7 +13,7 @@ All reusable primitives live in `frontend/src/react/components/primitives/`.
 | `ConfirmDialog` | `ConfirmDialog.tsx` | Active | Accessible confirmation modal with focus trap |
 | `DeckButtonHint` | `DeckButtonHint.tsx` | Active | Steam Deck gamepad button hint overlay |
 | `Divider` | `Divider.tsx` | Active | Horizontal rule with optional label |
-| `EmptyState` | `EmptyState.tsx` | Active | Centered icon + title + description for empty views |
+| `EmptyState` | `EmptyState.tsx` | Active | Centered icon + title + description for empty views; supports `compact`, `action`, and `className` for panel-contained states |
 | `ErrorState` | `ErrorState.tsx` | Active | Error display with retry action |
 | `FocusTrapContainer` | `FocusTrapContainer.tsx` | Active | Traps focus for modals/drawers |
 | `FormRow` | `FormRow.tsx` | Active | Label + input row with error slot |
@@ -90,6 +90,20 @@ import { BookOpen } from 'lucide-react';
 ```
 
 The icon receives `aria-hidden="true"` automatically. Title renders as a heading, description as muted paragraph.
+
+Compact panel usage:
+
+```tsx
+<EmptyState
+  icon={Activity}
+  title="No health data yet"
+  description="Check AI health to populate provider availability and latency."
+  compact
+  className="rounded-2xl border border-dashed border-nd-text-muted/15 bg-nd-surface/30"
+/>
+```
+
+Use `compact` inside side panels, drawers, and split-column surfaces so the empty state does not compete with the panel heading.
 
 ---
 

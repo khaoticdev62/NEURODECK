@@ -6,6 +6,41 @@
 
 ---
 
+## 2026-06-14 Bounded Full-Prompt Implementation Pass
+
+**Prompt source:** `NEURODECK_E2E_UI_UX_Audit_Cleanup_Refactor_Prompt.md`  
+**Implementation stance:** full active-frontend cleanup within explicit guardrails.
+
+### Guardrails Applied
+
+- `_legacy/` components remain deprecated but untouched.
+- Mobile breakpoints below 1024px remain outside NEURODECK's supported targets.
+- Rust sidecar and `bridge.rs` were not changed.
+- No stack, framework, package, or dependency changes were made.
+- BrowserView and TerminalScreen deep refactors remain deferred; only safe token/overlay fixes were applied.
+
+### Active Fixes Landed
+
+| Area | Fix |
+|---|---|
+| Shared empty states | Execution, Diagnostics, Maintenance, and Browser VPN now use `EmptyState` instead of one-off empty markup |
+| Status token drift | Diagnostics connection glows now reference `--nd-green-rgb`, `--nd-yellow-rgb`, and `--nd-red-rgb` |
+| Overlay layering | App overlays, command palette, browser popovers, IDE overlays, orchestrator modal, torrent modal, and skip links now use React z-index CSS variables |
+| Design docs | Component inventory, token delta, and QA evidence updated with the active implementation details |
+
+### Verification
+
+```
+npm run typecheck -w frontend
+npm run build -w frontend
+npm run test -w frontend -- EmptyState DiagnosticsView ExecutionView MaintenanceView BrowserVpnPanel
+npm run test -w frontend
+```
+
+Result: passed. Full frontend suite: 58 files / 581 tests.
+
+---
+
 ## Audit Methodology
 
 Three parallel exploration agents analyzed the live codebase:

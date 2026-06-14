@@ -995,7 +995,7 @@ export default function App() {
       {/* Skip to main content — visible on first Tab press */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[9999] focus:rounded-lg focus:bg-nd-accent focus:px-3 focus:py-2 focus:text-nd-bg focus:text-sm focus:font-semibold"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[var(--z-toast)] focus:rounded-lg focus:bg-nd-accent focus:px-3 focus:py-2 focus:text-nd-bg focus:text-sm focus:font-semibold"
       >
         Skip to main content
       </a>
@@ -1205,7 +1205,7 @@ export default function App() {
         <div
           id="notif-modal"
           data-controller-overlay={notificationsOpen ? "true" : undefined}
-          className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-200 ${notificationsOpen ? "active" : "pointer-events-none opacity-0"}`}
+          className={`fixed inset-0 z-[var(--z-modal)] bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-200 ${notificationsOpen ? "active" : "pointer-events-none opacity-0"}`}
           onMouseDown={() => setNotificationsOpen(false)}
         >
           {notificationsOpen && (
@@ -1240,7 +1240,7 @@ export default function App() {
         <div
           id="shortcuts-overlay"
           data-controller-overlay={shortcutsOpen ? "true" : undefined}
-          className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm ${shortcutsOpen ? "" : "hidden"}`}
+          className={`fixed inset-0 z-[var(--z-modal)] bg-nd-bg/55 backdrop-blur-sm ${shortcutsOpen ? "" : "hidden"}`}
           onMouseDown={() => setShortcutsOpen(false)}
         >
           {shortcutsOpen && (
@@ -1295,7 +1295,7 @@ export default function App() {
           <div
             id="ctrl-prompt-overlay"
             data-controller-overlay="true"
-            className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm ${ctrlPromptOpen ? "active" : ""}`}
+            className={`fixed inset-0 z-[var(--z-modal)] bg-nd-bg/55 backdrop-blur-sm ${ctrlPromptOpen ? "active" : ""}`}
             onMouseDown={() => setCtrlPromptOpen(false)}
           >
             <div
@@ -1339,7 +1339,7 @@ export default function App() {
         <div
           id="quick-switcher-overlay"
           data-controller-overlay={quickSwitcherOpen ? "true" : undefined}
-          className={`fixed inset-0 z-40 bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-150 ${quickSwitcherOpen ? "active" : "pointer-events-none opacity-0"}`}
+          className={`fixed inset-0 z-[var(--z-modal)] bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-150 ${quickSwitcherOpen ? "active" : "pointer-events-none opacity-0"}`}
           onMouseDown={() => setQuickSwitcherOpen(false)}
         >
           {quickSwitcherOpen && (

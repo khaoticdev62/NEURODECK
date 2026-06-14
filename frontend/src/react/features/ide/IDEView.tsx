@@ -700,7 +700,7 @@ export function IDEView() {
                   <div
                     role="listbox"
                     aria-label="LSP completions"
-                    className="absolute bottom-2 left-12 z-50 max-h-48 w-72 overflow-auto rounded-xl border border-nd-accent/20 bg-nd-surface shadow-glow-sm"
+                    className="absolute bottom-2 left-12 z-[var(--z-tooltip)] max-h-48 w-72 overflow-auto rounded-xl border border-nd-accent/20 bg-nd-surface shadow-glow-sm"
                   >
                     <div className="flex items-center justify-between border-b border-nd-text-muted/10 px-3 py-1.5">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Completions</span>
@@ -751,7 +751,7 @@ export function IDEView() {
                 {hoverInfo && hoverPos && (
                   <div
                     role="tooltip"
-                    className="pointer-events-none fixed z-50 max-w-sm rounded-xl border border-nd-accent/15 bg-nd-surface px-3 py-2 shadow-glow-sm"
+                    className="pointer-events-none fixed z-[var(--z-tooltip)] max-w-sm rounded-xl border border-nd-accent/15 bg-nd-surface px-3 py-2 shadow-glow-sm"
                     style={{ left: hoverPos.x + 12, top: hoverPos.y - 8 }}
                   >
                     <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-nd-text/90">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, RefreshCcw, X } from "lucide-react";
+import { AlertTriangle, RefreshCcw, Shield, X } from "lucide-react";
+import { EmptyState } from "../../components/primitives/EmptyState";
 import type { VpnConfigTemplate } from "../../../../../src/shared/browser-vpn/vpnConfigTemplates";
 import type { VpnConnectionEvidence, VpnDiagnosticsReport, VpnProviderSupport } from "../../../../../src/shared/browser-vpn/vpnDiagnosticsTypes";
 import type { VpnProfile } from "../../../../../src/shared/browser-vpn/vpnProfileTypes";
@@ -119,7 +120,13 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
         <div className="grid min-h-0 flex-1 gap-3 overflow-hidden p-4 xl:grid-cols-[260px_1fr_320px]">
           <section className="flex min-h-0 flex-col gap-2 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
             {profiles.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-nd-text-muted/15 bg-nd-surface/20 p-3 text-sm text-nd-text-muted">No VPN profiles yet.</div>
+              <EmptyState
+                icon={Shield}
+                title="No VPN profiles yet"
+                description="Import a route template to create the first browser VPN profile."
+                compact
+                className="rounded-xl border border-dashed border-nd-text-muted/15 bg-nd-surface/20"
+              />
             ) : (
               profiles.map((profile) => (
                 <button
@@ -172,7 +179,13 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
                 </label>
               </>
             ) : (
-              <div className="rounded-xl border border-dashed border-nd-text-muted/15 bg-nd-surface/20 p-3 text-sm text-nd-text-muted">Select a profile to inspect it.</div>
+              <EmptyState
+                icon={Shield}
+                title="Select a profile"
+                description="Choose a VPN profile to inspect route mode, protocol, security, and diagnostics."
+                compact
+                className="rounded-xl border border-dashed border-nd-text-muted/15 bg-nd-surface/20"
+              />
             )}
           </section>
 
