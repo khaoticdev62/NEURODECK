@@ -281,7 +281,9 @@ export function useNeuroDeckState() {
             body: r.content,
             scope: (r.metadata?.scope as any) || 'Global',
             pinned: r.metadata?.pinned === 'true',
-            updatedAt: r.metadata?.updatedAt || 'local cache'
+            updatedAt: r.metadata?.updatedAt || 'local cache',
+            sourceFile: r.metadata?.path || undefined,
+            namespace: r.metadata?.namespace || r.metadata?.source || undefined,
           }));
         }
       } catch (_) {

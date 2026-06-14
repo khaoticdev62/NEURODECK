@@ -1,8 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { Dispatch } from 'react';
 import {
-  Archive, Database, Download, Pin, RefreshCw, RotateCcw,
-  Search, Trash2, Upload,
+  Archive, Database, Download, FileText, Pin, RefreshCw, RotateCcw,
+  Search, Sparkles, Trash2, Upload,
 } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
 import { Button } from '../../components/primitives/Button';
@@ -32,6 +32,7 @@ export function MemoryView({
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
   const [backups, setBackups] = useState<BackupEntry[] | null>(null);
   const [showBackups, setShowBackups] = useState(false);
+  const [semanticMode, setSemanticMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = useCallback((text: string, ok = true) => {
@@ -39,13 +40,42 @@ export function MemoryView({
     setTimeout(() => setToast(null), 3500);
   }, []);
 
+  const [semanticResults, setSemanticResults] = useState<typeof state.memories | null>(null);
+
   const filtered = useMemo(() => {
+    if (semanticMode && semanticResults) return semanticResults;
     const q = query.trim().toLowerCase();
     if (!q) return state.memories;
     return state.memories.filter((memory) =>
       `${memory.title} ${memory.body}`.toLowerCase().includes(q)
     );
-  }, [query, state.memories]);
+  }, [query, state.memories, semanticMode, semanticResults]);
+
+  const handleSemanticSearch = useCallback(async () => {
+    const q = query.trim();
+    if (!q) { setSemanticMode(false); setSemanticResults(null); return; }
+    setBusy('semantic');
+    try {
+      const res = await neurodeckApi.memory.searchSemantic(q, 10, 0.5);
+      const items = res.results.map((r) => ({
+        id: r.id,
+        title: r.metadata?.title || r.content.slice(0, 40),
+        body: r.content,
+        scope: (r.metadata?.scope as any) || 'Global',
+        pinned: r.metadata?.pinned === 'true',
+        updatedAt: r.metadata?.updatedAt || 'local cache',
+        sourceFile: r.source_file || r.metadata?.path || undefined,
+        namespace: r.metadata?.namespace || r.metadata?.source || undefined,
+      }));
+      setSemanticResults(items);
+      setSemanticMode(true);
+      showToast(`${res.method === 'mmr' ? 'MMR' : 'Keyword'} search — ${items.length} results`);
+    } catch (e) {
+      showToast(`Semantic search failed: ${e}`, false);
+    } finally {
+      setBusy(null);
+    }
+  }, [query, showToast]);
 
   const handleAddFact = (e: React.FormEvent) => {
     e.preventDefault();
@@ -242,6 +272,29 @@ export function MemoryView({
           Backups
         </button>
 
+        <button
+          type="button"
+          onClick={() => {
+            if (semanticMode) { setSemanticMode(false); setSemanticResults(null); }
+            else void handleSemanticSearch();
+          }}
+          disabled={busy === 'semantic' || (!semanticMode && !query.trim())}
+          aria-pressed={semanticMode}
+          aria-label={semanticMode ? 'Exit semantic search mode' : 'Run MMR semantic search on current query'}
+          className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+            semanticMode
+              ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent'
+              : 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-text'
+          }`}
+        >
+          {busy === 'semantic' ? (
+            <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
+          ) : (
+            <Sparkles className="h-3 w-3" aria-hidden="true" />
+          )}
+          {semanticMode ? 'MMR Active' : 'Semantic'}
+        </button>
+
         {toast && (
           <span
             role="status"
@@ -308,8 +361,11 @@ export function MemoryView({
             className="memory-search-input"
             label="Search Memory Vault"
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search memory..."
+            onChange={(event) => {
+              setQuery(event.target.value);
+              if (semanticMode) { setSemanticMode(false); setSemanticResults(null); }
+            }}
+            placeholder="Search memory... (use Semantic button for MMR)"
           />
         </div>
       </div>
@@ -367,6 +423,17 @@ export function MemoryView({
               </div>
               <h3 className="mt-4 font-semibold text-nd-text">{memory.title ?? '(untitled)'}</h3>
               <p className="mt-2 text-sm leading-6 text-nd-text-muted">{memory.body}</p>
+              {memory.sourceFile && (
+                <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-nd-text-muted/10 bg-nd-bg/40 px-2 py-1">
+                  <FileText className="h-3 w-3 shrink-0 text-nd-text-muted/60" aria-hidden="true" />
+                  <span
+                    className="truncate font-mono text-[10px] text-nd-text-muted/75"
+                    title={memory.sourceFile}
+                  >
+                    {memory.sourceFile.split(/[\\/]/).pop() ?? memory.sourceFile}
+                  </span>
+                </div>
+              )}
               <div className="mt-4 flex items-center justify-between">
                 <Badge tone={memory.scope === 'Global' ? 'accent' : memory.scope === 'Project' ? 'success' : 'neutral'}>
                   {memory.scope}

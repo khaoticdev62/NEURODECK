@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import type { Dispatch } from "react";
 import {
   BrainCircuit,
+  BookOpen,
   FileArchive,
   FileDown,
   Gamepad2,
+  FolderOpen,
   Palette,
   RefreshCcw,
   Rocket,
@@ -18,6 +20,7 @@ import {
   AlertTriangle,
   Package,
   MonitorPlay,
+  Trash2,
   Volume2,
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
@@ -57,6 +60,7 @@ const NAV_PANELS = [
   { key: "voice", label: "Voice", icon: Volume2 },
   { key: "input", label: "Input", icon: Gamepad2 },
   { key: "performance", label: "Performance", icon: Cpu },
+  { key: "knowledge", label: "Knowledge", icon: BookOpen },
   { key: "extensions", label: "Extensions", icon: Sliders },
   { key: "packages", label: "Packages", icon: Package },
   { key: "privacy", label: "Privacy", icon: Shield },
@@ -198,6 +202,9 @@ export function SettingsView({
   const [ttsTesting, setTtsTesting] = useState(false);
   const [pendingThemeId, setPendingThemeId] = useState<string | null>(null);
   const [hoveredThemeId, setHoveredThemeId] = useState<string | null>(null);
+  const [indexedDirs, setIndexedDirs] = useState<Array<{ path: string; doc_count: number }> | null>(null);
+  const [kbBusy, setKbBusy] = useState<string | null>(null);
+  const [kbStatus, setKbStatus] = useState<{ text: string; ok: boolean } | null>(null);
 
   const handleTtsModeChange = (mode: "off" | "complete" | "stream") => {
     setTtsMode(mode);
@@ -647,6 +654,138 @@ export function SettingsView({
             </Panel>
           </div>
         )}
+
+        {/* ── Knowledge Base ───────────────────────── */}
+        {activePanel === "knowledge" && (() => {
+          const loadDirs = async () => {
+            setKbBusy("load");
+            try {
+              const res = await neurodeckApi.memory.getIndexedDirs();
+              setIndexedDirs(res.dirs);
+            } catch (e) {
+              setKbStatus({ text: `Failed to load: ${e}`, ok: false });
+            } finally {
+              setKbBusy(null);
+            }
+          };
+          if (indexedDirs === null && kbBusy === null) void loadDirs();
+
+          const handleRemoveDir = async (path: string) => {
+            setKbBusy(path);
+            try {
+              await neurodeckApi.memory.removeIndexedDir(path);
+              setIndexedDirs((prev) => prev?.filter((d) => d.path !== path) ?? null);
+              setKbStatus({ text: "Directory removed from index list", ok: true });
+            } catch (e) {
+              setKbStatus({ text: `Remove failed: ${e}`, ok: false });
+            } finally {
+              setKbBusy(null);
+            }
+          };
+
+          const handleReindexAll = async () => {
+            if (!indexedDirs?.length) return;
+            setKbBusy("reindex");
+            setKbStatus({ text: "Re-indexing all directories…", ok: true });
+            try {
+              for (const d of indexedDirs) {
+                await neurodeckApi.memory.indexDirectory(d.path);
+              }
+              setKbStatus({ text: `Queued ${indexedDirs.length} director${indexedDirs.length === 1 ? 'y' : 'ies'} for re-indexing`, ok: true });
+            } catch (e) {
+              setKbStatus({ text: `Re-index failed: ${e}`, ok: false });
+            } finally {
+              setKbBusy(null);
+            }
+          };
+
+          return (
+            <div id="sp-knowledge" className="settings-panel active space-y-4">
+              <Panel eyebrow="Knowledge Base" title="Indexed Directories">
+                <div className="space-y-3 p-4">
+                  <p className="text-xs text-nd-text-muted leading-5">
+                    Directories indexed into the vector memory via the Docs tab. Click{" "}
+                    <strong className="text-nd-text">Re-index All</strong> to re-chunk all directories
+                    with fresh embeddings (monitors via WebSocket{" "}
+                    <code className="font-mono text-nd-accent">doc_index_done</code> event).
+                  </p>
+
+                  {kbStatus && (
+                    <div className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
+                      kbStatus.ok
+                        ? "border-nd-success/30 bg-nd-success/10 text-nd-success"
+                        : "border-nd-danger/30 bg-nd-danger/10 text-nd-danger"
+                    }`}>
+                      {kbStatus.text}
+                    </div>
+                  )}
+
+                  {kbBusy === "load" ? (
+                    <div className="flex items-center gap-2 py-4 text-xs text-nd-text-muted">
+                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" aria-hidden="true" />
+                      Loading indexed directories…
+                    </div>
+                  ) : !indexedDirs || indexedDirs.length === 0 ? (
+                    <EmptyState
+                      icon={BookOpen}
+                      title="No indexed directories"
+                      description="Use Settings → Docs or the index_directory command to add directories to the vector memory."
+                    />
+                  ) : (
+                    <ul className="divide-y divide-nd-text-muted/10 rounded-xl border border-nd-text-muted/15 overflow-hidden">
+                      {indexedDirs.map((d) => (
+                        <li key={d.path} className="flex items-center gap-3 bg-nd-surface/30 px-4 py-3">
+                          <FolderOpen className="h-4 w-4 shrink-0 text-nd-accent/70" aria-hidden="true" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-mono text-xs text-nd-text" title={d.path}>
+                              {d.path}
+                            </p>
+                            <p className="text-[10px] text-nd-text-muted mt-0.5">
+                              {d.doc_count} chunk{d.doc_count !== 1 ? "s" : ""} indexed
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => void handleRemoveDir(d.path)}
+                            disabled={kbBusy !== null}
+                            aria-label={`Remove ${d.path} from index list`}
+                            className="shrink-0 rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-1.5 text-nd-danger hover:bg-nd-danger/20 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => void loadDirs()}
+                      disabled={kbBusy !== null}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                    >
+                      <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" /> Refresh
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleReindexAll()}
+                      disabled={kbBusy !== null || !indexedDirs?.length}
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 transition disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                    >
+                      {kbBusy === "reindex" ? (
+                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" aria-hidden="true" />
+                      ) : (
+                        <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+                      )}
+                      Re-index All
+                    </button>
+                  </div>
+                </div>
+              </Panel>
+            </div>
+          );
+        })()}
 
         {/* ── Voice ────────────────────────────────── */}
         {activePanel === "voice" && (

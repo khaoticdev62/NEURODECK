@@ -146,6 +146,10 @@ export interface MemoryItem {
   scope: MemoryScope;
   pinned: boolean;
   updatedAt: string;
+  /** Absolute path of the source file when this record came from doc indexing. */
+  sourceFile?: string;
+  /** Raw metadata namespace tag (e.g. "docs", "chat"). */
+  namespace?: string;
 }
 
 export interface SessionNode {

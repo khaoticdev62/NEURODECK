@@ -1068,6 +1068,22 @@ const memory = {
   async restoreBackup(name: string): Promise<{ status: string; name: string }> {
     return bridgeInvoke<{ status: string; name: string }>("memory_restore_backup", { name });
   },
+  async searchSemantic(query: string, limit = 5, lambda = 0.5) {
+    return bridgeInvoke<{
+      query: string;
+      results: Array<{ id: string; content: string; metadata: Record<string, string>; source_file: string; score?: number }>;
+      method: string;
+    }>("memory_search_semantic", { query, limit, lambda });
+  },
+  async getIndexedDirs() {
+    return bridgeInvoke<{ dirs: Array<{ path: string; doc_count: number }> }>("get_indexed_dirs");
+  },
+  async removeIndexedDir(path: string) {
+    return bridgeInvoke<{ removed: number; remaining: number }>("remove_indexed_dir", { path });
+  },
+  async indexDirectory(path: string) {
+    return bridgeInvoke<{ status: string; path: string }>("index_directory", { path });
+  },
 };
 
 /* ── Diagnostics ─────────────────────────────────────────────────────────── */

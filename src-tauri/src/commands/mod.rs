@@ -6325,49 +6325,114 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "memory_search_semantic" => {
-            // Semantic search requires embeddings — fall back to keyword search in bridge mode
             let query = args
                 .get("query")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'query'")?;
+                .ok_or("Missing 'query'")?
+                .to_string();
             if query.len() > 512 {
                 return Err("Query too long (max 512 characters)".to_string());
             }
-            let app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
-            if let Some(ref db) = app_state.mem_db {
-                let all = db.list_all().map_err(|e| e.to_string())?;
-                let qwords: Vec<_> = query.split_whitespace().collect();
-                let mut results: Vec<_> = all
-                    .into_iter()
-                    .filter_map(|r| {
+            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(5).min(20) as usize;
+            let lambda = args
+                .get("lambda")
+                .and_then(|v| v.as_f64())
+                .map(|v| v.clamp(0.0, 1.0) as f32)
+                .unwrap_or(0.5);
+
+            // Clone provider + db under lock so we can await embedding outside the lock.
+            let (provider, db) = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                (app.provider.clone(), app.mem_db.clone())
+            };
+            let db = db.ok_or("Memory database not initialized")?;
+
+            // Attempt real embedding → MMR search; fall back to keyword on failure.
+            match provider.generate_embedding(&query).await {
+                Ok(embedding) if !embedding.is_empty() => {
+                    let fetch = (limit * 4).max(10);
+                    let results = db.search_mmr(&embedding, limit, lambda, fetch)
+                        .map_err(|e| e.to_string())?;
+                    let top: Vec<_> = results.iter().map(|r| serde_json::json!({
+                        "id": r.id,
+                        "content": r.content,
+                        "metadata": r.metadata,
+                        "source_file": r.metadata.get("path").cloned().unwrap_or_default()
+                    })).collect();
+                    Ok(serde_json::json!({ "query": query, "results": top, "method": "mmr" }))
+                }
+                _ => {
+                    // Keyword fallback when embedding unavailable (Ollama / offline mode).
+                    let all = db.list_all().map_err(|e| e.to_string())?;
+                    let qwords: Vec<_> = query.split_whitespace().collect();
+                    let mut hits: Vec<_> = all.into_iter().filter_map(|r| {
                         let lower = r.content.to_lowercase();
-                        let hits = qwords
-                            .iter()
-                            .filter(|w| lower.contains(&w.to_lowercase()[..]))
-                            .count();
-                        if hits > 0 {
-                            Some((hits, r))
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
-                results.sort_by(|a, b| b.0.cmp(&a.0));
-                let top: Vec<_> = results
-                    .into_iter()
-                    .take(5)
-                    .map(|(score, r)| {
-                        serde_json::json!({
-                            "id": r.id, "content": r.content, "metadata": r.metadata, "score": score
-                        })
-                    })
-                    .collect();
-                Ok(
-                    serde_json::json!({ "query": query, "results": top, "method": "keyword_fallback" }),
-                )
-            } else {
-                Err("Memory database not initialized".to_string())
+                        let n = qwords.iter().filter(|w| lower.contains(&w.to_lowercase()[..])).count();
+                        if n > 0 { Some((n, r)) } else { None }
+                    }).collect();
+                    hits.sort_by(|a, b| b.0.cmp(&a.0));
+                    let top: Vec<_> = hits.into_iter().take(limit).map(|(score, r)| serde_json::json!({
+                        "id": r.id,
+                        "content": r.content,
+                        "metadata": r.metadata,
+                        "source_file": r.metadata.get("path").cloned().unwrap_or_default(),
+                        "score": score
+                    })).collect();
+                    Ok(serde_json::json!({ "query": query, "results": top, "method": "keyword_fallback" }))
+                }
             }
+        }
+
+        "get_indexed_dirs" => {
+            let dirs_path = crate::user_config_dir().join("data").join("indexed_dirs.json");
+            let dirs: Vec<serde_json::Value> = if dirs_path.exists() {
+                std::fs::read_to_string(&dirs_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default()
+            } else {
+                vec![]
+            };
+            // Enrich with live doc counts from the memory DB
+            let doc_counts: std::collections::HashMap<String, usize> = {
+                let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                if let Some(ref db) = app.mem_db {
+                    db.list_all().unwrap_or_default().into_iter()
+                        .filter_map(|r| r.metadata.get("path").cloned().map(|p| p))
+                        .fold(std::collections::HashMap::new(), |mut map, path| {
+                            // Find which indexed dir this path belongs to
+                            *map.entry(path).or_insert(0) += 1;
+                            map
+                        })
+                } else {
+                    std::collections::HashMap::new()
+                }
+            };
+            let enriched: Vec<_> = dirs.iter().map(|d| {
+                let dir_path = d.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                let count = doc_counts.iter()
+                    .filter(|(p, _)| p.starts_with(dir_path))
+                    .map(|(_, n)| n)
+                    .sum::<usize>();
+                serde_json::json!({ "path": dir_path, "doc_count": count })
+            }).collect();
+            Ok(serde_json::json!({ "dirs": enriched }))
+        }
+
+        "remove_indexed_dir" => {
+            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
+            let dirs_path = crate::user_config_dir().join("data").join("indexed_dirs.json");
+            let mut dirs: Vec<serde_json::Value> = if dirs_path.exists() {
+                std::fs::read_to_string(&dirs_path).ok()
+                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default()
+            } else { vec![] };
+            let before = dirs.len();
+            dirs.retain(|d| d.get("path").and_then(|v| v.as_str()) != Some(&path));
+            if let Some(parent) = dirs_path.parent() {
+                let _ = std::fs::create_dir_all(parent);
+            }
+            let _ = std::fs::write(&dirs_path, serde_json::to_string_pretty(&dirs).unwrap_or_default());
+            Ok(serde_json::json!({ "removed": before - dirs.len(), "remaining": dirs.len() }))
         }
 
         // ────────────────────────────────────────────────────────────────────
@@ -8349,6 +8414,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             if !dir.is_dir() {
                 return Err(format!("'{}' is not a directory", path));
             }
+            let path_for_response = path.clone();
 
             tokio::spawn(async move {
                 let mut files: Vec<std::path::PathBuf> = Vec::new();
@@ -8420,10 +8486,25 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     "doc_index_done",
                     serde_json::json!({ "indexed": indexed, "total": total }),
                 );
+
+                // Persist this directory to the indexed-dirs list so get_indexed_dirs can show it.
+                let dirs_path = crate::user_config_dir().join("data").join("indexed_dirs.json");
+                let mut dirs: Vec<serde_json::Value> = if dirs_path.exists() {
+                    std::fs::read_to_string(&dirs_path).ok()
+                        .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default()
+                } else { vec![] };
+                let already = dirs.iter().any(|d| d.get("path").and_then(|v| v.as_str()) == Some(&path));
+                if !already {
+                    dirs.push(serde_json::json!({ "path": path }));
+                    if let Some(parent) = dirs_path.parent() {
+                        let _ = std::fs::create_dir_all(parent);
+                    }
+                    let _ = std::fs::write(&dirs_path, serde_json::to_string_pretty(&dirs).unwrap_or_default());
+                }
             });
 
             Ok(
-                serde_json::json!({ "status": "indexing", "path": path, "note": "Monitor WebSocket for doc_index_progress events" }),
+                serde_json::json!({ "status": "indexing", "path": path_for_response, "note": "Monitor WebSocket for doc_index_progress events" }),
             )
         }
 
