@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Package,
   MonitorPlay,
+  Volume2,
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
@@ -28,7 +29,7 @@ import { Toggle } from "../../components/primitives/Toggle";
 import { useController } from "../../input/controller/ControllerProvider";
 import { LiveWallpaperPanel } from "./LiveWallpaperPanel";
 import { PackagesPanel } from "./PackagesPanel";
-import { neurodeckApi, runtimeTypeToProvider } from "../../services/bridgeAdapter";
+import { bridgeInvoke, neurodeckApi, runtimeTypeToProvider } from "../../services/bridgeAdapter";
 import { useTheme } from "../../theme/useTheme";
 import type {
   AIProvider,
@@ -52,6 +53,7 @@ const NAV_PANELS = [
   { key: "general", label: "General", icon: Settings },
   { key: "ai", label: "AI", icon: BrainCircuit },
   { key: "appearance", label: "Appearance", icon: Palette },
+  { key: "voice", label: "Voice", icon: Volume2 },
   { key: "input", label: "Input", icon: Gamepad2 },
   { key: "performance", label: "Performance", icon: Cpu },
   { key: "extensions", label: "Extensions", icon: Sliders },
@@ -123,6 +125,27 @@ export function SettingsView({
   const [runtimeManifest, setRuntimeManifest] = useState<RuntimeManifest | null>(null);
   const [fontScale, setFontScale] = useState(100);
   const [compactMode, setCompactMode] = useState(false);
+  const [ttsMode, setTtsMode] = useState<"off" | "complete" | "stream">(() => {
+    const saved = localStorage.getItem("neurodeck_tts_mode");
+    return (saved === "complete" || saved === "stream" ? saved : "off") as "off" | "complete" | "stream";
+  });
+  const [ttsTesting, setTtsTesting] = useState(false);
+
+  const handleTtsModeChange = (mode: "off" | "complete" | "stream") => {
+    setTtsMode(mode);
+    localStorage.setItem("neurodeck_tts_mode", mode);
+  };
+
+  const handleTtsTest = async () => {
+    setTtsTesting(true);
+    try {
+      await bridgeInvoke("speak_text", { text: "NEURODECK voice output test. Text-to-speech is working." });
+    } catch (_) {
+      // Ignore — TTS may not be available on this platform
+    } finally {
+      setTtsTesting(false);
+    }
+  };
 
   useEffect(() => {
     setFontScale(settings.fontScale);
@@ -494,6 +517,69 @@ export function SettingsView({
             <Panel eyebrow="Appearance" title="Live Wallpaper">
               <div className="p-4">
                 <LiveWallpaperPanel />
+              </div>
+            </Panel>
+          </div>
+        )}
+
+        {/* ── Voice ────────────────────────────────── */}
+        {activePanel === "voice" && (
+          <div id="sp-voice" className="settings-panel active space-y-4">
+            <Panel eyebrow="Text-to-Speech" title="TTS Mode">
+              <div className="space-y-3 p-4">
+                <p className="text-xs text-nd-text-muted leading-5">
+                  Choose when NEURODECK speaks AI responses aloud. Requires espeak-ng (Linux),
+                  say (macOS), or Windows Speech API.
+                </p>
+                {(
+                  [
+                    { value: "off", label: "Off", desc: "No voice output." },
+                    { value: "complete", label: "After Response", desc: "Speaks the full response once generation finishes." },
+                    { value: "stream", label: "Stream Sentences", desc: "Speaks each sentence as it arrives — minimum latency." },
+                  ] as const
+                ).map(({ value, label, desc }) => (
+                  <label
+                    key={value}
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${
+                      ttsMode === value
+                        ? "border-nd-accent/40 bg-nd-accent/[0.07]"
+                        : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/20"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="tts-mode"
+                      value={value}
+                      checked={ttsMode === value}
+                      onChange={() => handleTtsModeChange(value)}
+                      className="mt-0.5 accent-[var(--nd-accent)]"
+                    />
+                    <div>
+                      <p className="font-semibold text-sm text-nd-text">{label}</p>
+                      <p className="text-xs text-nd-text-muted mt-0.5">{desc}</p>
+                    </div>
+                    {ttsMode === value && (
+                      <Check className="ml-auto h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            </Panel>
+
+            <Panel eyebrow="Test" title="Voice Output Test">
+              <div className="p-4 space-y-3">
+                <p className="text-xs text-nd-text-muted">
+                  Plays a short sample phrase through the TTS engine to verify it is working.
+                </p>
+                <button
+                  type="button"
+                  disabled={ttsTesting}
+                  onClick={() => void handleTtsTest()}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Volume2 className="h-4 w-4" aria-hidden="true" />
+                  {ttsTesting ? "Speaking…" : "Test Voice Output"}
+                </button>
               </div>
             </Panel>
           </div>

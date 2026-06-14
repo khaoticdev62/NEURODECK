@@ -67,6 +67,75 @@ fn promptdrive_macro_steps(args: &Value) -> Result<Vec<crate::promptdrive::Macro
     .map_err(|e| format!("Invalid macro steps: {}", e))
 }
 
+/// Strip markdown syntax and code blocks so TTS engines receive plain prose.
+fn clean_for_tts(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut in_code_block = false;
+    for line in text.lines() {
+        if line.starts_with("```") {
+            in_code_block = !in_code_block;
+            continue;
+        }
+        if in_code_block {
+            continue;
+        }
+        // Strip inline code, bold/italic markers, heading hashes, bullet markers
+        let cleaned = line
+            .trim_start_matches('#')
+            .trim_start_matches(['*', '-', '+'])
+            .replace('`', "")
+            .replace("**", "")
+            .replace("__", "");
+        let trimmed = cleaned.trim();
+        if !trimmed.is_empty() {
+            out.push_str(trimmed);
+            out.push(' ');
+        }
+    }
+    out.trim().to_string()
+}
+
+/// Extract one complete sentence from the front of `buf`, removing it in place.
+/// A sentence ends at `.`, `!`, or `?` followed by whitespace or end-of-buffer,
+/// or at a paragraph break (`\n\n`).
+fn drain_tts_sentence(buf: &mut String) -> Option<String> {
+    // Paragraph break has highest priority
+    if let Some(pos) = buf.find("\n\n") {
+        let sentence = buf[..pos].trim().to_string();
+        *buf = buf[pos + 2..].trim_start().to_string();
+        if !sentence.is_empty() {
+            return Some(clean_for_tts(&sentence));
+        }
+        // Empty paragraph — recurse to find next content
+        return drain_tts_sentence(buf);
+    }
+
+    // Sentence-ending punctuation followed by whitespace or at end
+    let bytes = buf.as_bytes();
+    for (i, &b) in bytes.iter().enumerate() {
+        if matches!(b, b'.' | b'!' | b'?') {
+            let after = i + 1;
+            let at_end = after >= bytes.len();
+            let followed_by_space = !at_end && (bytes[after] == b' ' || bytes[after] == b'\n');
+            if at_end || followed_by_space {
+                let sentence = buf[..=i].trim().to_string();
+                *buf = if after < buf.len() {
+                    buf[after..].trim_start().to_string()
+                } else {
+                    String::new()
+                };
+                let cleaned = clean_for_tts(&sentence);
+                if !cleaned.is_empty() {
+                    return Some(cleaned);
+                }
+                return drain_tts_sentence(buf);
+            }
+        }
+    }
+
+    None
+}
+
 pub async fn dispatch_send_command(
     state: ServerState,
     message: String,
@@ -225,6 +294,7 @@ pub async fn dispatch_send_command(
         }
 
         let mut full_response = String::new();
+        let mut tts_buf = String::new();
 
         if let Some(ref b64) = image_base64 {
             let mime_str = image_mime.as_deref().unwrap_or("image/png");
@@ -234,7 +304,12 @@ pub async fn dispatch_send_command(
             {
                 Ok(response) => {
                     full_response = response.clone();
-                    broadcaster.emit("command_token", serde_json::json!({ "token": response }));
+                    broadcaster.emit("command_token", serde_json::json!({ "token": response.clone() }));
+                    // Single-shot image response — emit as one TTS chunk
+                    let clean = clean_for_tts(&response);
+                    if !clean.is_empty() {
+                        broadcaster.emit("tts_chunk", serde_json::json!({ "text": clean }));
+                    }
                 }
                 Err(e) => {
                     broadcaster.emit(
@@ -250,7 +325,11 @@ pub async fn dispatch_send_command(
                 match chunk_res {
                     Ok(chunk) => {
                         full_response.push_str(&chunk);
-                        broadcaster.emit("command_token", serde_json::json!({ "token": chunk }));
+                        broadcaster.emit("command_token", serde_json::json!({ "token": chunk.clone() }));
+                        tts_buf.push_str(&chunk);
+                        while let Some(sentence) = drain_tts_sentence(&mut tts_buf) {
+                            broadcaster.emit("tts_chunk", serde_json::json!({ "text": sentence }));
+                        }
                     }
                     Err(e) => {
                         broadcaster.emit(
@@ -261,6 +340,11 @@ pub async fn dispatch_send_command(
                     }
                 }
             }
+            // Flush any remaining partial sentence
+            let trailing = tts_buf.trim().to_string();
+            if !trailing.is_empty() {
+                broadcaster.emit("tts_chunk", serde_json::json!({ "text": trailing }));
+            }
         }
 
         {
@@ -268,7 +352,7 @@ pub async fn dispatch_send_command(
             app.messages.push(format!("AI: {}", full_response));
         }
 
-        broadcaster.emit("command_done", serde_json::json!({ "status": "complete" }));
+        broadcaster.emit("command_done", serde_json::json!({ "status": "complete", "full_text": full_response }));
     });
 
     Ok(serde_json::json!({
@@ -2087,24 +2171,22 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // File Transfer & Peer Discovery
         // ────────────────────────────────────────────────────────────────────
-        "transfer_list_peers" => {
+        "transfer_list_peers" | "get_discovered_peers" => {
             let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-            let peer_count = transfer_state.peers.len();
+            let peers: Vec<_> = transfer_state
+                .peers
+                .values()
+                .map(|(p, _)| p.clone())
+                .collect();
 
-            Ok(serde_json::json!({
-                "count": peer_count,
-                "status": "ok"
-            }))
+            Ok(serde_json::to_value(&peers).map_err(|e| e.to_string())?)
         }
 
-        "transfer_list_active" => {
+        "transfer_list_active" | "get_active_transfers" => {
             let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-            let transfer_count = transfer_state.transfers.len();
+            let transfers: Vec<_> = transfer_state.transfers.values().cloned().collect();
 
-            Ok(serde_json::json!({
-                "count": transfer_count,
-                "status": "ok"
-            }))
+            Ok(serde_json::to_value(&transfers).map_err(|e| e.to_string())?)
         }
 
         "transfer_cancel" => {
@@ -4753,6 +4835,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "spoken", "text": text }))
         }
 
+        "tts_interrupt" => {
+            // Best-effort: kill running TTS processes by name so the next sentence can
+            // start immediately without waiting for the previous one to finish.
+            #[cfg(target_os = "linux")]
+            {
+                let _ = std::process::Command::new("pkill").args(["-f", "espeak"]).spawn();
+            }
+            #[cfg(target_os = "macos")]
+            {
+                let _ = std::process::Command::new("pkill").arg("say").spawn();
+            }
+            // Windows SAPI runs inside PowerShell; killing arbitrary powershell.exe
+            // processes is unsafe — skip platform interrupt, rely on frontend gating.
+            state.broadcaster.emit("tts_interrupted", serde_json::json!({}));
+            Ok(serde_json::json!({ "status": "interrupted" }))
+        }
+
         "start_recording" => match system::start_recording(state.app_state.clone()) {
             Ok(msg) => Ok(serde_json::Value::String(msg)),
             Err(e) => Err(e),
@@ -7209,21 +7308,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
-        "get_discovered_peers" => {
-            let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-            let peers: Vec<_> = transfer_state
-                .peers
-                .values()
-                .map(|(p, _)| p.clone())
-                .collect();
-            Ok(serde_json::json!(peers))
-        }
 
-        "get_active_transfers" => {
-            let transfer_state = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-            let transfers: Vec<_> = transfer_state.transfers.values().cloned().collect();
-            Ok(serde_json::json!(transfers))
-        }
+
 
         "set_group_code" => {
             let code = args
@@ -7545,8 +7631,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     "mdns_active": ts.mdns_daemon.is_some(),
                     "peer_count": ts.peers.len(),
                     "active_transfers": active_count,
-                    "tcp_port": 18338u16,
-                    "grpc_port": 42000u16,
+                    "tcp_port": std::env::var("NEURODECK_SYNC_PORT").ok().and_then(|s| s.parse::<u16>().ok()).unwrap_or(18338),
+                    "grpc_port": std::env::var("NEURODECK_WARPINATOR_PORT").ok().and_then(|s| s.parse::<u16>().ok()).unwrap_or(42000),
                     "group_code_set": !ts.group_code.is_empty(),
                     "download_dir": download_dir
                 }
