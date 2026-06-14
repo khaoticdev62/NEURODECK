@@ -831,11 +831,13 @@ export function TerminalScreen() {
               {tabs.map((tab) => {
                 const pane = panes[tab.activePaneId];
                 return (
-                  <button
+                  <div
                     key={tab.id}
-                    type="button"
+                    role="button"
+                    tabIndex={0}
                     onClick={() => switchTab(tab.id)}
-                    className={`w-full rounded-2xl border px-3 py-2 text-left transition ${tab.id === activeTabId ? "border-nd-accent/30 bg-nd-accent/[0.08]" : "border-nd-text-muted/15 bg-nd-surface/40 hover:bg-nd-surface/60"}`}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') switchTab(tab.id); }}
+                    className={`w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition ${tab.id === activeTabId ? "border-nd-accent/30 bg-nd-accent/[0.08]" : "border-nd-text-muted/15 bg-nd-surface/40 hover:bg-nd-surface/60"}`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
@@ -856,7 +858,7 @@ export function TerminalScreen() {
                       <span>•</span>
                       <span>{tab.cwd || "workspace"}</span>
                     </div>
-                  </button>
+                  </div>
                 );
               })}
               {tabs.length === 0 && (

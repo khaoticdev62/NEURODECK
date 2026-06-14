@@ -3042,8 +3042,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let path = args
                 .get("path")
                 .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| crate::user_config_dir().join("workspace").to_string_lossy().to_string());
 
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path)
@@ -3054,7 +3054,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     .renames_index_to_workdir(true);
 
                 let statuses = repo.statuses(Some(&mut opts)).map_err(|e| e.to_string())?;
-                let mut files = Vec::new();
+                let mut staged = Vec::new();
+                let mut unstaged = Vec::new();
+                let mut untracked = Vec::new();
 
                 for entry in statuses.iter() {
                     let st = entry.status();
@@ -3064,36 +3066,32 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         .and_then(|d| d.old_file().path())
                         .map(|p| p.to_string_lossy().to_string());
 
-                    let status_str = if st.contains(git2::Status::CONFLICTED) {
-                        "conflict"
-                    } else if st.contains(git2::Status::INDEX_NEW)
+                    if st.contains(git2::Status::INDEX_NEW)
                         || st.contains(git2::Status::INDEX_MODIFIED)
                         || st.contains(git2::Status::INDEX_DELETED)
                         || st.contains(git2::Status::INDEX_RENAMED)
+                        || st.contains(git2::Status::CONFLICTED)
                     {
-                        "staged"
+                        let label = if st.contains(git2::Status::INDEX_NEW) { "added" }
+                            else if st.contains(git2::Status::INDEX_DELETED) { "deleted" }
+                            else if st.contains(git2::Status::INDEX_RENAMED) { "renamed" }
+                            else if st.contains(git2::Status::CONFLICTED) { "conflict" }
+                            else { "modified" };
+                        staged.push(serde_json::json!({ "path": fpath, "status": label, "old_path": old_path }));
                     } else if st.contains(git2::Status::WT_NEW) {
-                        "untracked"
-                    } else if st.contains(git2::Status::WT_DELETED) {
-                        "deleted"
-                    } else if st.contains(git2::Status::WT_RENAMED) {
-                        "renamed"
-                    } else if st.contains(git2::Status::WT_MODIFIED) {
-                        "modified"
-                    } else {
-                        continue;
-                    };
-
-                    files.push(serde_json::json!({
-                        "path":     fpath,
-                        "status":   status_str,
-                        "old_path": old_path
-                    }));
+                        untracked.push(serde_json::json!({ "path": fpath, "status": "untracked", "old_path": null }));
+                    } else if st.intersects(git2::Status::WT_MODIFIED | git2::Status::WT_DELETED | git2::Status::WT_RENAMED) {
+                        let label = if st.contains(git2::Status::WT_DELETED) { "deleted" }
+                            else if st.contains(git2::Status::WT_RENAMED) { "renamed" }
+                            else { "modified" };
+                        unstaged.push(serde_json::json!({ "path": fpath, "status": label, "old_path": old_path }));
+                    }
                 }
 
                 Ok(serde_json::json!({
-                    "files": files,
-                    "count": files.len()
+                    "staged":   staged,
+                    "unstaged": unstaged,
+                    "untracked": untracked
                 }))
             })
             .await
@@ -7751,6 +7749,78 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .await
                 .map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "uninstalled", "plugin_id": plugin_id }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
+        // npm Package Manager
+        // ────────────────────────────────────────────────────────────────────
+        "npm_get_status" => {
+            let status = crate::npm_packages::get_npm_status().await;
+            Ok(serde_json::to_value(status).map_err(|e| e.to_string())?)
+        }
+
+        "npm_list_packages" => {
+            let packages = crate::npm_packages::list_packages()?;
+            Ok(serde_json::json!({ "packages": packages }))
+        }
+
+        "npm_install_package" => {
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .to_string();
+            let version = args
+                .get("version")
+                .and_then(|v| v.as_str())
+                .filter(|s| !s.is_empty())
+                .map(|s| s.to_string());
+            let package = crate::npm_packages::install_package(
+                name,
+                version,
+                Some(state.broadcaster.clone()),
+            )
+            .await?;
+            Ok(serde_json::to_value(package).map_err(|e| e.to_string())?)
+        }
+
+        "npm_uninstall_package" => {
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .to_string();
+            crate::npm_packages::uninstall_package(name.clone()).await?;
+            Ok(serde_json::json!({ "status": "uninstalled", "name": name }))
+        }
+
+        "npm_update_package" => {
+            let name = args
+                .get("name")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'name'")?
+                .to_string();
+            let package = crate::npm_packages::update_package(
+                name,
+                Some(state.broadcaster.clone()),
+            )
+            .await?;
+            Ok(serde_json::to_value(package).map_err(|e| e.to_string())?)
+        }
+
+        "npm_get_recommended" => {
+            let packages = crate::npm_packages::get_recommended_packages();
+            Ok(serde_json::json!({ "packages": packages }))
+        }
+
+        "npm_resolve_binary_path" => {
+            let binary = args
+                .get("binary")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'binary'")?
+                .to_string();
+            let path = crate::npm_packages::resolve_binary_path(&binary)?;
+            Ok(serde_json::json!({ "path": path }))
         }
 
         // ────────────────────────────────────────────────────────────────────
