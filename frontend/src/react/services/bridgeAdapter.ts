@@ -1837,6 +1837,20 @@ export interface TrustedPeer {
   added_at: string;
 }
 
+export interface SyncProfile {
+  id: string;
+  name: string;
+  mode: 'lan' | 'vpn_manual' | 'vpn_mesh' | 'hybrid' | 'receive_only' | 'send_only';
+  enabled: boolean;
+  preferred_interface: string;
+  incoming_folder: string;
+  auto_accept_trusted: boolean;
+  compression: 'auto' | 'off';
+  vpn_only: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TransferDiagnostics {
   mdns_active: boolean;
   peer_count: number;
@@ -1874,6 +1888,12 @@ const transfer = {
   },
   async trustedPeers(action: 'list' | 'add' | 'remove', ip?: string, label?: string) {
     return bridgeInvoke<{ status: string; peers?: TrustedPeer[] }>('transfer_trusted_peers', { action, ip, label });
+  },
+  async profiles(action: 'list' | 'add' | 'update' | 'remove', profile?: Partial<SyncProfile> & { id?: string }) {
+    return bridgeInvoke<{ status: string; profiles?: SyncProfile[]; profile?: SyncProfile }>('transfer_profiles', {
+      action,
+      profile,
+    });
   },
   async diagnostics() {
     return bridgeInvoke<{ status: string; diagnostics: TransferDiagnostics }>('transfer_diagnostics');

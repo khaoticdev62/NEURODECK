@@ -7258,6 +7258,168 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
+        "transfer_profiles" => {
+            #[derive(serde::Serialize, serde::Deserialize, Clone)]
+            struct SyncProfile {
+                id: String,
+                name: String,
+                mode: String,
+                enabled: bool,
+                preferred_interface: String,
+                incoming_folder: String,
+                auto_accept_trusted: bool,
+                compression: String,
+                vpn_only: bool,
+                created_at: String,
+                updated_at: String,
+            }
+
+            let data_dir = crate::user_config_dir().join("data");
+            std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+            let profiles_path = data_dir.join("sync_profiles.json");
+
+            let mut profiles: Vec<SyncProfile> = if profiles_path.exists() {
+                std::fs::read_to_string(&profiles_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default()
+            } else {
+                Vec::new()
+            };
+
+            let persist_profiles = |profiles: &Vec<SyncProfile>| -> Result<(), String> {
+                let json = serde_json::to_string_pretty(profiles).map_err(|e| e.to_string())?;
+                std::fs::write(&profiles_path, json).map_err(|e| e.to_string())
+            };
+
+            let action = args.get("action").and_then(|v| v.as_str()).unwrap_or("list");
+            match action {
+                "add" => {
+                    let profile = args
+                        .get("profile")
+                        .and_then(|v| v.as_object())
+                        .ok_or("Missing 'profile'")?;
+                    let now = chrono::Utc::now().to_rfc3339();
+                    let id = profile
+                        .get("id")
+                        .and_then(|v| v.as_str())
+                        .filter(|s| !s.trim().is_empty())
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| format!("sync-profile-{}", chrono::Utc::now().timestamp_millis()));
+                    let name = profile
+                        .get("name")
+                        .and_then(|v| v.as_str())
+                        .filter(|s| !s.trim().is_empty())
+                        .unwrap_or("Sync Profile")
+                        .to_string();
+                    let incoming_folder = profile
+                        .get("incoming_folder")
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| {
+                            crate::user_config_dir()
+                                .join("neurodeck_transfers")
+                                .to_string_lossy()
+                                .to_string()
+                        });
+                    let new_profile = SyncProfile {
+                        id: id.clone(),
+                        name,
+                        mode: profile
+                            .get("mode")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("lan")
+                            .to_string(),
+                        enabled: profile
+                            .get("enabled")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(true),
+                        preferred_interface: profile
+                            .get("preferred_interface")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("auto")
+                            .to_string(),
+                        incoming_folder,
+                        auto_accept_trusted: profile
+                            .get("auto_accept_trusted")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false),
+                        compression: profile
+                            .get("compression")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("auto")
+                            .to_string(),
+                        vpn_only: profile
+                            .get("vpn_only")
+                            .and_then(|v| v.as_bool())
+                            .unwrap_or(false),
+                        created_at: now.clone(),
+                        updated_at: now,
+                    };
+                    profiles.retain(|p| p.id != id);
+                    profiles.push(new_profile.clone());
+                    persist_profiles(&profiles)?;
+                    Ok(serde_json::json!({ "status": "ok", "profile": new_profile, "profiles": profiles }))
+                }
+                "update" => {
+                    let profile = args
+                        .get("profile")
+                        .and_then(|v| v.as_object())
+                        .ok_or("Missing 'profile'")?;
+                    let id = profile
+                        .get("id")
+                        .and_then(|v| v.as_str())
+                        .ok_or("Missing profile id")?;
+                    let Some(existing) = profiles.iter_mut().find(|p| p.id == id) else {
+                        return Err("Profile not found".to_string());
+                    };
+                    if let Some(name) = profile.get("name").and_then(|v| v.as_str()) {
+                        existing.name = name.to_string();
+                    }
+                    if let Some(mode) = profile.get("mode").and_then(|v| v.as_str()) {
+                        existing.mode = mode.to_string();
+                    }
+                    if let Some(enabled) = profile.get("enabled").and_then(|v| v.as_bool()) {
+                        existing.enabled = enabled;
+                    }
+                    if let Some(interface) = profile.get("preferred_interface").and_then(|v| v.as_str()) {
+                        existing.preferred_interface = interface.to_string();
+                    }
+                    if let Some(folder) = profile.get("incoming_folder").and_then(|v| v.as_str()) {
+                        existing.incoming_folder = folder.to_string();
+                    }
+                    if let Some(auto_accept) = profile.get("auto_accept_trusted").and_then(|v| v.as_bool()) {
+                        existing.auto_accept_trusted = auto_accept;
+                    }
+                    if let Some(compression) = profile.get("compression").and_then(|v| v.as_str()) {
+                        existing.compression = compression.to_string();
+                    }
+                    if let Some(vpn_only) = profile.get("vpn_only").and_then(|v| v.as_bool()) {
+                        existing.vpn_only = vpn_only;
+                    }
+                    existing.updated_at = chrono::Utc::now().to_rfc3339();
+                    let updated = existing.clone();
+                    persist_profiles(&profiles)?;
+                    Ok(serde_json::json!({ "status": "ok", "profile": updated, "profiles": profiles }))
+                }
+                "remove" => {
+                    let id = args
+                        .get("profile")
+                        .and_then(|v| v.get("id"))
+                        .and_then(|v| v.as_str())
+                        .ok_or("Missing profile id")?;
+                    let before = profiles.len();
+                    profiles.retain(|p| p.id != id);
+                    if profiles.len() == before {
+                        return Err("Profile not found".to_string());
+                    }
+                    persist_profiles(&profiles)?;
+                    Ok(serde_json::json!({ "status": "ok", "profiles": profiles }))
+                }
+                _ => Ok(serde_json::json!({ "status": "ok", "profiles": profiles })),
+            }
+        }
+
         "transfer_diagnostics" => {
             let ts = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
             let active_count = ts

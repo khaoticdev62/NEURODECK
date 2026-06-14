@@ -14,6 +14,7 @@ const {
   mockGroupCode,
   mockAddManualPeer,
   mockTrustedPeers,
+  mockProfiles,
   mockDiagnostics,
   mockClearHistory,
   mockGetInboxPath,
@@ -29,6 +30,7 @@ const {
   mockGroupCode: vi.fn(),
   mockAddManualPeer: vi.fn(),
   mockTrustedPeers: vi.fn(),
+  mockProfiles: vi.fn(),
   mockDiagnostics: vi.fn(),
   mockClearHistory: vi.fn(),
   mockGetInboxPath: vi.fn(),
@@ -48,6 +50,7 @@ vi.mock('../../services/bridgeAdapter', () => ({
       groupCode: mockGroupCode,
       addManualPeer: mockAddManualPeer,
       trustedPeers: mockTrustedPeers,
+      profiles: mockProfiles,
       diagnostics: mockDiagnostics,
       clearHistory: mockClearHistory,
       getInboxPath: mockGetInboxPath,
@@ -104,6 +107,7 @@ describe('SyncView', () => {
     mockGroupCode.mockResolvedValue({ status: 'ok', code: 'team-code' });
     mockAddManualPeer.mockResolvedValue({ status: 'ok', peer_ip: '10.0.0.4' });
     mockTrustedPeers.mockResolvedValue({ status: 'ok', peers: [] });
+    mockProfiles.mockResolvedValue({ status: 'ok', profiles: [] });
     mockDiagnostics.mockResolvedValue({
       status: 'ok',
       diagnostics: {
@@ -190,5 +194,39 @@ describe('SyncView', () => {
 
     await userEvent.click(within(dialog).getByRole('button', { name: /clear history/i }));
     expect(mockClearHistory).toHaveBeenCalledWith();
+  });
+
+  it('renders the queue tab for retryable transfers', async () => {
+    mockListActive.mockResolvedValue([FAILED_TRANSFER]);
+
+    render(<SyncView />);
+    await userEvent.click(screen.getByRole('tab', { name: /queue/i }));
+    await waitFor(() => expect(screen.getByText('build.zip')).toBeDefined());
+
+    await userEvent.click(screen.getByRole('button', { name: /retry build\.zip/i }));
+    expect(mockRetry).toHaveBeenCalledWith('tx-failed');
+  });
+
+  it('loads profiles tab and saves a profile', async () => {
+    render(<SyncView />);
+    await userEvent.click(screen.getByRole('tab', { name: /profiles/i }));
+    await waitFor(() => expect(mockProfiles).toHaveBeenCalledWith('list'));
+
+    await userEvent.clear(screen.getByRole('textbox', { name: /profile name/i }));
+    await userEvent.type(screen.getByRole('textbox', { name: /profile name/i }), 'Lab VPN');
+    await userEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(mockProfiles).toHaveBeenCalledWith('add', expect.objectContaining({ name: 'Lab VPN' }));
+  });
+
+  it('adds a manual VPN peer from the VPN/WAN tab', async () => {
+    render(<SyncView />);
+    await userEvent.click(screen.getByRole('tab', { name: /vpn\/wan/i }));
+
+    await userEvent.type(screen.getByRole('textbox', { name: /vpn peer host/i }), '10.8.0.2');
+    await userEvent.type(screen.getByRole('textbox', { name: /vpn peer alias/i }), 'WireGuard PC');
+    await userEvent.click(screen.getByRole('button', { name: /add/i }));
+
+    expect(mockAddManualPeer).toHaveBeenCalledWith('10.8.0.2', 42000, 'WireGuard PC');
   });
 });

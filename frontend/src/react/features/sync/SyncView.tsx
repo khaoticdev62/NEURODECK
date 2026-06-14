@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  RefreshCcw, LayoutDashboard, Laptop, Send as SendIcon, Inbox, Clock, Activity, Settings,
+  RefreshCcw, LayoutDashboard, Laptop, Send as SendIcon, Inbox, Clock, Activity, Settings, ListChecks, IdCard, Network,
 } from 'lucide-react';
 import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
 import type { FileTransfer, TransferPeer, TrustedPeer } from '../../services/bridgeAdapter';
@@ -10,18 +10,24 @@ import { DashboardTab } from './tabs/DashboardTab';
 import { DevicesTab } from './tabs/DevicesTab';
 import { SendTab } from './tabs/SendTab';
 import { InboxTab } from './tabs/InboxTab';
+import { QueueTab } from './tabs/QueueTab';
 import { HistoryTab } from './tabs/HistoryTab';
+import { ProfilesTab } from './tabs/ProfilesTab';
+import { VpnWanTab } from './tabs/VpnWanTab';
 import { DiagnosticsTab } from './tabs/DiagnosticsTab';
 import { SettingsTab } from './tabs/SettingsTab';
 
-type TabId = 'dashboard' | 'devices' | 'send' | 'inbox' | 'history' | 'diagnostics' | 'settings';
+type TabId = 'dashboard' | 'devices' | 'send' | 'inbox' | 'queue' | 'history' | 'profiles' | 'vpn' | 'diagnostics' | 'settings';
 
 const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'devices', label: 'Devices', icon: Laptop },
   { id: 'send', label: 'Send', icon: SendIcon },
   { id: 'inbox', label: 'Inbox', icon: Inbox },
+  { id: 'queue', label: 'Queue', icon: ListChecks },
   { id: 'history', label: 'History', icon: Clock },
+  { id: 'profiles', label: 'Profiles', icon: IdCard },
+  { id: 'vpn', label: 'VPN/WAN', icon: Network },
   { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
   { id: 'settings', label: 'Settings', icon: Settings },
 ];
@@ -305,11 +311,36 @@ export function SyncView() {
           {activeTab === 'inbox' && (
             <InboxTab transfers={transfers} inboxPath={inboxPath} />
           )}
+          {activeTab === 'queue' && (
+            <QueueTab
+              transfers={transfers}
+              onCancel={(id) => void handleCancel(id)}
+              onRetry={(id) => void handleRetry(id)}
+              onClearDone={() => void refreshTransfers()}
+              onError={setMutateError}
+            />
+          )}
           {activeTab === 'history' && (
             <HistoryTab
               transfers={transfers}
               onRetry={(id) => void handleRetry(id)}
               onClearDone={() => void refreshTransfers()}
+            />
+          )}
+          {activeTab === 'profiles' && (
+            <ProfilesTab
+              groupCode={groupCode}
+              inboxPath={inboxPath}
+              trustedPeers={trustedPeers}
+              onError={setMutateError}
+            />
+          )}
+          {activeTab === 'vpn' && (
+            <VpnWanTab
+              peers={peers}
+              onSendToPeer={handleSendToPeer}
+              onPeerAdded={() => void refreshPeers()}
+              onError={setMutateError}
             />
           )}
           {activeTab === 'diagnostics' && <DiagnosticsTab />}
