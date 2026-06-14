@@ -1,0 +1,28 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Spacing Scale — 4px Grid" subtitle="space.1–12 · the only allowed gaps & padding" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-primary); color:var(--nd-text-primary);
+         font-family:var(--nd-font-ui); padding:20px; display:flex; align-items:flex-end; gap:14px; }
+  .item { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .bar { background:var(--nd-cyan-400); width:100%; border-radius:2px; box-shadow:0 0 12px rgba(var(--nd-cyan-rgb),0.3); }
+  .wrap { width:34px; display:flex; justify-content:center; }
+  .tok { font-family:var(--nd-font-mono); font-size:10px; color:var(--nd-text-secondary); }
+  .px { font-family:var(--nd-font-mono); font-size:10px; color:var(--nd-text-muted); }
+</style>
+</head>
+<body>
+  <div class="item"><div class="wrap"><div class="bar" style="height:4px"></div></div><span class="tok">1</span><span class="px">4</span></div>
+  <div class="item"><div class="wrap"><div class="bar" style="height:8px"></div></div><span class="tok">2</span><span class="px">8</span></div>
+  <div class="item"><div class="wrap"><div class="bar" style="height:12px"></div></div><span class="tok">3</span><span class="px">12</span></div>
+  <div class="item"><div class="wrap"><div class="bar" style="height:16px"></div></div><span class="tok">4</span><span class="px">16</span></div>
+  <div class="item"><div class="wrap"><div class="bar" style="height:20px"></div></div><span class="tok">5</span><span class="px">20</span></div>
+  <div class="item"><div class="wrap"><div class="bar" style="height:24px"></div></div><span class="tok">6</span><span class="px">24</span></div>
+  <div class="item"><div class="wrap"><div class="bar" style="height:32px"></div></div><span class="tok">8</span><span class="px">32</span></div>
+  <div class="item"><div class="wrap"><div class="bar" style="height:40px"></div></div><span class="tok">10</span><span class="px">40</span></div>
+  <div class="item"><div class="wrap"><div class="bar" style="height:48px"></div></div><span class="tok">12</span><span class="px">48</span></div>
+</body>
+</html>

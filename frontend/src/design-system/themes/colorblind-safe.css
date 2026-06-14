@@ -1,0 +1,8 @@
+/* NEURODECK v1.0 — Colorblind-Safe Status Theme */
+.theme-colorblind-safe {
+  --nd-accent-info: #56B4E9;
+  --nd-accent-success: #009E73;
+  --nd-accent-warning: #F0E442;
+  --nd-accent-error: #D55E00;
+  --nd-accent-agent: #CC79A7;
+}

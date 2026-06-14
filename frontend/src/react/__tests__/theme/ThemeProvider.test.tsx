@@ -97,7 +97,7 @@ describe("ThemeProvider", () => {
       </ThemeProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId("theme-id").textContent).toBe("blacksite_prime"));
+    await waitFor(() => expect(screen.getByTestId("theme-id").textContent).toBe("tactical_glass_ultra"));
   });
 
   it("normalizes legacy display/accessibility/performance values", async () => {

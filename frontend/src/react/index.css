@@ -1,12 +1,19 @@
 @import "../app.css";
+@import "../design-system/tokens/fonts.css";
+@import "../design-system/tokens/tokens.css";
+@import "../design-system/themes/blacksite.css";
+@import "../design-system/themes/tactical-glass.css";
+@import "../design-system/themes/high-contrast.css";
+@import "../design-system/themes/colorblind-safe.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   NEURODECK v6 — Design Token System
-   All theme-aware colors flow through CSS custom properties injected at
-   runtime by App.tsx. No hardcoded theme colors below the :root defaults.
+   NEURODECK v6/v7 — Design Token System
+   Canonical token base imported from the NEURODECK Design System.
+   Runtime theme injection in cssVariableInjector.ts overrides these values
+   so every theme still participates in the DS token namespace.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
@@ -16,75 +23,12 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Typography */
-  --font-body: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "Fira Code", monospace;
-
-  /* Runtime theme tokens — overwritten by App.tsx on theme change */
-  --nd-bg: #0A0D10;
-  --nd-surface: #11161C;
-  --nd-surface-raised: #161D25;
-  --nd-accent: #5EEBFF;
-  --nd-accent-rgb: 94, 235, 255;
-  --nd-success: #7CFFB2;
-  --nd-warning: #FFC857;
-  --nd-danger: #FF5A6A;
-  --nd-text: #E8F4FF;
-  --nd-text-muted: #8DA1B3;
-  --nd-glow: rgba(94, 235, 255, 0.18);
-
   /* Response color for wallpapers / legacy compatibility */
   --response-color: #7CFFB2;
-
-  /* Semantic border tokens */
-  --nd-border-subtle: color-mix(in srgb, var(--nd-text-muted) 10%, transparent);
-  --nd-border-default: color-mix(in srgb, var(--nd-text-muted) 16%, transparent);
-  --nd-border-focus: color-mix(in srgb, var(--nd-accent) 60%, transparent);
 
   /* Density mode tokens — overridden by [data-density] selectors below */
   --nd-target-min: 44px;
   --nd-spacing-item: 8px;
-  --nd-font-ui: 14px;
-
-  /* Motion — theme injector overrides these at runtime */
-  --nd-transition-fast: 150ms;
-  --nd-transition-normal: 250ms;
-  --nd-transition-slow: 400ms;
-  --nd-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --nd-ease-out: cubic-bezier(0.25, 1, 0.5, 1);
-  --nd-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-
-  /* Extended surface tokens — defaults before injector fires */
-  --nd-surface-sunken: #07090C;
-  --nd-surface-overlay: rgba(10,13,16,0.85);
-  --nd-surface-modal: #0F1419;
-  --nd-surface-glass: rgba(17,22,28,0.72);
-  --nd-surface-sidebar: #0D1117;
-  --nd-surface-panel: #11161C;
-  --nd-surface-card: #131A22;
-  --nd-surface-input: #0A0D10;
-  --nd-surface-tooltip: #1C242E;
-
-  /* Extended text tokens */
-  --nd-text-secondary: #B8CCE0;
-  --nd-text-tertiary: #6E8499;
-  --nd-text-inverse: #0A0D10;
-  --nd-text-link: #5EEBFF;
-  --nd-text-code: #A6E3A1;
-  --nd-text-command: #CBA6F7;
-  --nd-text-danger: #FF5A6A;
-  --nd-text-warning: #FFC857;
-  --nd-text-success: #7CFFB2;
-  --nd-text-info: #89DCEB;
-
-  /* Extended accent tokens */
-  --nd-accent-secondary: #89DCEB;
-  --nd-accent-tertiary: #CBA6F7;
-  --nd-accent-soft: rgba(94, 235, 255, 0.08);
-  --nd-accent-strong: #0ACFD8;
-
-  /* Extended border tokens */
-  --nd-border-strong: color-mix(in srgb, var(--nd-text-muted) 28%, transparent);
 
   /* Z-index scale */
   --z-wallpaper: 0;

@@ -1,0 +1,226 @@
+/* ============================================================
+   NEURODECK Design Tokens v1.0 — Unified Canonical Token Layer
+   Source: NEURODECK Design Tokens + Component Library v1.0
+   ============================================================
+   This file is the single source of truth for the CSS custom
+   property namespace used by components in
+   frontend/src/design-system/ and the wider React UI.
+
+   It merges the canonical v1.0 token set with the extended
+   semantic aliases required by the existing workstation shell
+   and legacy components during the transition period.
+   ============================================================ */
+
+:root {
+  color-scheme: dark;
+
+  /* ---- Primitive: Void / Slate surfaces ---- */
+  --nd-void-950: #05070A;   /* deepest background */
+  --nd-void-900: #0A0D10;   /* app shell */
+  --nd-void-850: #0D1117;   /* panel base */
+  --nd-slate-800: #11161C;  /* secondary surface */
+  --nd-slate-700: #18212B;  /* raised surface */
+  --nd-slate-600: #22303D;  /* hard borders */
+
+  /* ---- Primitive: Text ---- */
+  --nd-text-100: #E8F4FF;   /* primary */
+  --nd-text-300: #B9CAD8;   /* secondary */
+  --nd-text-500: #8DA1B3;   /* muted */
+
+  /* ---- Primitive: Accents ---- */
+  --nd-cyan-400:   #5EEBFF; /* primary accent */
+  --nd-blue-500:   #4F8CFF; /* info */
+  --nd-green-400:  #7CFFB2; /* success */
+  --nd-yellow-400: #FFC857; /* warning */
+  --nd-red-400:    #FF5A6A; /* error / destructive */
+  --nd-purple-400: #B28CFF; /* agent / memory */
+
+  /* RGB channels for alpha composition (glow, focus, fills) */
+  --nd-cyan-rgb:   94, 235, 255;
+  --nd-green-rgb:  124, 255, 178;
+  --nd-yellow-rgb: 255, 200, 87;
+  --nd-red-rgb:    255, 90, 106;
+  --nd-purple-rgb: 178, 140, 255;
+  --nd-blue-rgb:   79, 140, 255;
+
+  /* ============================================================
+     Semantic surfaces
+     ============================================================ */
+  --nd-surface-app:       var(--nd-void-950);
+  --nd-surface-primary:   var(--nd-void-900);
+  --nd-surface-secondary: var(--nd-slate-800);
+  --nd-surface-tertiary:  var(--nd-slate-700);
+  --nd-surface-sidebar:   #0D1115;
+  --nd-surface-input:     #080A0E;
+  --nd-surface-overlay:   rgba(5, 7, 10, 0.88);
+  --nd-surface-glass:     rgba(17, 22, 28, 0.82);
+
+  /* Legacy surface aliases kept for compatibility */
+  --nd-bg:                var(--nd-surface-app);
+  --nd-surface:           var(--nd-surface-secondary);
+  --nd-surface-raised:    var(--nd-surface-tertiary);
+  --nd-surface-sunken:    #080A0E;
+  --nd-surface-panel:     var(--nd-slate-800);
+  --nd-surface-card:      #131A22;
+  --nd-surface-modal:     #0F1419;
+  --nd-surface-tooltip:   #1C242E;
+
+  /* ---- Semantic borders ---- */
+  --nd-border-subtle:  rgba(141, 161, 179, 0.16);
+  --nd-border-default: rgba(141, 161, 179, 0.28);
+  --nd-border-strong:  rgba(232, 244, 255, 0.42);
+  --nd-border-focus:   var(--nd-cyan-400);
+  --nd-border:         var(--nd-border-default);
+  --nd-border-danger:  var(--nd-red-400);
+  --nd-border-warning: var(--nd-yellow-400);
+  --nd-border-success: var(--nd-green-400);
+
+  /* ---- Semantic text ---- */
+  --nd-text-primary:   var(--nd-text-100);
+  --nd-text-secondary: var(--nd-text-300);
+  --nd-text-muted:     var(--nd-text-500);
+  --nd-text-disabled:  rgba(141, 161, 179, 0.45);
+  --nd-text-code:      var(--nd-green-400);
+  --nd-text-link:      var(--nd-cyan-400);
+
+  /* Legacy text aliases */
+  --nd-text:           var(--nd-text-primary);
+  --nd-text-tertiary:  #8DA1B3;
+  --nd-text-inverse:   #0A0D10;
+  --nd-text-command:   var(--nd-purple-400);
+  --nd-text-danger:    var(--nd-red-400);
+  --nd-text-warning:   var(--nd-yellow-400);
+  --nd-text-success:   var(--nd-green-400);
+  --nd-text-info:      var(--nd-blue-500);
+
+  /* ---- Semantic accents (interaction + status) ---- */
+  --nd-accent-primary: var(--nd-cyan-400);
+  --nd-accent-info:    var(--nd-blue-500);
+  --nd-accent-success: var(--nd-green-400);
+  --nd-accent-warning: var(--nd-yellow-400);
+  --nd-accent-error:   var(--nd-red-400);
+  --nd-accent-agent:   var(--nd-purple-400);
+
+  /* Legacy accent aliases */
+  --nd-accent:           var(--nd-accent-primary);
+  --nd-accent-rgb:       var(--nd-cyan-rgb);
+  --nd-accent-secondary: #89DCEB;
+  --nd-accent-tertiary:  var(--nd-purple-400);
+  --nd-accent-strong:    #0ACFD8;
+  --nd-accent-glow:      rgba(var(--nd-cyan-rgb), 0.18);
+  --nd-accent-soft:      rgba(var(--nd-cyan-rgb), 0.10);
+
+  /* ---- Semantic state shortcuts ---- */
+  --nd-success: var(--nd-green-400);
+  --nd-warning: var(--nd-yellow-400);
+  --nd-danger:  var(--nd-red-400);
+  --nd-info:    var(--nd-blue-500);
+  --nd-glow:    var(--nd-accent-glow);
+
+  /* ---- Focus ring ---- */
+  --nd-focus-ring: var(--nd-accent-primary);
+
+  /* ---- Tactical glow ---- */
+  --nd-glow-cyan: rgba(var(--nd-cyan-rgb), 0.18);
+
+  /* ============================================================
+     Spacing, radius, elevation, motion
+     ============================================================ */
+  --nd-space-0: 0px;
+  --nd-space-1: 4px;
+  --nd-space-2: 8px;
+  --nd-space-3: 12px;
+  --nd-space-4: 16px;
+  --nd-space-5: 20px;
+  --nd-space-6: 24px;
+  --nd-space-8: 32px;
+  --nd-space-10: 40px;
+  --nd-space-12: 48px;
+
+  /* Layout shell dimensions (1280x800 Steam Deck) */
+  --nd-shell-statusbar: 40px;
+  --nd-shell-navrail: 72px;
+  --nd-shell-context: 280px;
+  --nd-shell-input-min: 96px;
+  --nd-shell-input-max: 148px;
+
+  /* Radius */
+  --nd-radius-none: 0px;
+  --nd-radius-sm: 6px;
+  --nd-radius-md: 10px;
+  --nd-radius-lg: 14px;
+  --nd-radius-xl: 20px;
+  --nd-radius-full: 999px;
+
+  /* Elevation */
+  --nd-elevation-none: none;
+  --nd-elevation-panel: 0 1px 0 rgba(255, 255, 255, 0.04);
+  --nd-elevation-card: 0 8px 24px rgba(0, 0, 0, 0.24);
+  --nd-elevation-overlay: 0 24px 80px rgba(0, 0, 0, 0.55);
+  --nd-elevation-focus: 0 0 0 2px var(--nd-focus-ring), 0 0 24px rgba(var(--nd-cyan-rgb), 0.18);
+  --nd-elevation-glow: 0 0 16px rgba(var(--nd-cyan-rgb), 0.18);
+
+  /* Motion */
+  --nd-motion-instant: 0ms;
+  --nd-motion-fast: 90ms;
+  --nd-motion-normal: 140ms;
+  --nd-motion-slow: 220ms;
+
+  --nd-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --nd-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --nd-ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Glass */
+  --nd-glass-blur: 8px;
+
+  /* ============================================================
+     Typography
+     ============================================================ */
+  --nd-font-display: "Orbitron", "Rajdhani", sans-serif;
+  --nd-font-hud:     "Rajdhani", "Space Grotesk", sans-serif;
+  --nd-font-ui:      "Inter", system-ui, sans-serif;
+  --nd-font-mono:    "JetBrains Mono", "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  --nd-font-code:    "Fira Code", "JetBrains Mono", monospace;
+
+  /* Type scale */
+  --nd-text-display-size: 28px;  --nd-text-display-lh: 36px;  --nd-text-display-weight: 700;
+  --nd-text-h1-size: 24px;       --nd-text-h1-lh: 32px;       --nd-text-h1-weight: 700;
+  --nd-text-h2-size: 20px;       --nd-text-h2-lh: 28px;       --nd-text-h2-weight: 650;
+  --nd-text-h3-size: 17px;       --nd-text-h3-lh: 24px;       --nd-text-h3-weight: 650;
+  --nd-text-body-size: 15px;     --nd-text-body-lh: 22px;     --nd-text-body-weight: 400;
+  --nd-text-body-sm-size: 14px;  --nd-text-body-sm-lh: 20px;  --nd-text-body-sm-weight: 400;
+  --nd-text-caption-size: 12px;  --nd-text-caption-lh: 16px;  --nd-text-caption-weight: 500;
+  --nd-text-micro-size: 11px;    --nd-text-micro-lh: 14px;    --nd-text-micro-weight: 500;
+  --nd-text-code-size: 13px;     --nd-text-code-lh: 20px;     --nd-text-code-weight: 400;
+
+  /* Weights */
+  --nd-weight-normal:   400;
+  --nd-weight-medium:   500;
+  --nd-weight-semibold: 600;
+  --nd-weight-bold:     700;
+
+  /* HUD label tracking */
+  --nd-tracking-hud:      0.18em;
+  --nd-tracking-wordmark: 0.22em;
+}
+
+/* v1.0 focus utility */
+.nd-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--nd-elevation-focus);
+  border-color: var(--nd-accent-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --nd-motion-fast: 0ms;
+    --nd-motion-normal: 0ms;
+    --nd-motion-slow: 0ms;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

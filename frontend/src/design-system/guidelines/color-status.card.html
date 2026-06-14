@@ -1,0 +1,28 @@
+<!-- @dsCard group="Colors" viewport="700x160" name="Semantic Status Accents" subtitle="Used sparingly, always with icon + label — never color alone" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-primary); font-family:var(--nd-font-ui);
+         color:var(--nd-text-primary); padding:18px; display:flex; flex-direction:column; gap:10px; justify-content:center; }
+  .row { display:flex; gap:10px; }
+  .chip { flex:1; display:flex; align-items:center; gap:8px; height:42px; padding:0 12px;
+          border-radius:var(--nd-radius-full); border:1px solid; font-size:12px; font-weight:600; }
+  .glyph { font-family:var(--nd-font-mono); font-size:14px; width:16px; text-align:center; }
+  .hex { margin-left:auto; font-family:var(--nd-font-mono); font-size:10px; opacity:.8; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="chip" style="color:var(--nd-blue-500);border-color:rgba(var(--nd-blue-rgb),0.3);background:rgba(var(--nd-blue-rgb),0.1)"><span class="glyph">…</span>Info<span class="hex">#4F8CFF</span></div>
+    <div class="chip" style="color:var(--nd-green-400);border-color:rgba(var(--nd-green-rgb),0.3);background:rgba(var(--nd-green-rgb),0.1)"><span class="glyph">✓</span>Connected<span class="hex">#7CFFB2</span></div>
+    <div class="chip" style="color:var(--nd-yellow-400);border-color:rgba(var(--nd-yellow-rgb),0.3);background:rgba(var(--nd-yellow-rgb),0.1)"><span class="glyph">!</span>Degraded<span class="hex">#FFC857</span></div>
+  </div>
+  <div class="row">
+    <div class="chip" style="color:var(--nd-red-400);border-color:rgba(var(--nd-red-rgb),0.3);background:rgba(var(--nd-red-rgb),0.1)"><span class="glyph">×</span>Failed<span class="hex">#FF5A6A</span></div>
+    <div class="chip" style="color:var(--nd-purple-400);border-color:rgba(var(--nd-purple-rgb),0.3);background:rgba(var(--nd-purple-rgb),0.1)"><span class="glyph">◆</span>Agent<span class="hex">#B28CFF</span></div>
+  </div>
+</body>
+</html>

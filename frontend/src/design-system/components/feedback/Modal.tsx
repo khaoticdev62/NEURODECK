@@ -1,0 +1,94 @@
+import * as React from 'react';
+
+if (typeof document !== 'undefined' && !document.getElementById('nd-modal-css')) {
+  const s = document.createElement('style');
+  s.id = 'nd-modal-css';
+  s.textContent = `
+  .nd-modal__overlay{position:fixed;inset:0;background:var(--nd-surface-overlay);backdrop-filter:blur(2px);
+    display:flex;align-items:center;justify-content:center;padding:24px;z-index:1000;
+    animation:nd-modal-fade var(--nd-motion-normal) var(--nd-ease-out);}
+  .nd-modal{background:var(--nd-surface-tertiary);border:1px solid var(--nd-border-default);
+    border-radius:var(--nd-radius-xl);box-shadow:var(--nd-elevation-overlay);width:100%;max-width:460px;
+    max-height:700px;display:flex;flex-direction:column;font-family:var(--nd-font-ui);color:var(--nd-text-primary);
+    animation:nd-modal-rise var(--nd-motion-normal) var(--nd-ease-out);overflow:hidden;}
+  .nd-modal--critical{border-color:rgba(var(--nd-red-rgb),0.4);box-shadow:var(--nd-elevation-overlay),0 0 40px rgba(var(--nd-red-rgb),0.12);}
+  .nd-modal__head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 20px 12px;}
+  .nd-modal__title{font-size:18px;font-weight:700;line-height:24px;margin:0;}
+  .nd-modal__close{background:transparent;border:none;color:var(--nd-text-muted);cursor:pointer;font-size:18px;
+    line-height:1;padding:4px;border-radius:var(--nd-radius-sm);outline:none;}
+  .nd-modal__close:hover{color:var(--nd-text-primary);background:var(--nd-surface-secondary);}
+  .nd-modal__close:focus-visible{box-shadow:var(--nd-elevation-focus);}
+  .nd-modal__body{padding:0 20px 18px;font-size:14px;line-height:21px;color:var(--nd-text-secondary);overflow:auto;}
+  .nd-modal__foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 20px;
+    border-top:1px solid var(--nd-border-subtle);background:var(--nd-surface-secondary);}
+  @keyframes nd-modal-fade{from{opacity:0;}to{opacity:1;}}
+  @keyframes nd-modal-rise{from{opacity:0;transform:translateY(8px) scale(0.98);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){.nd-modal,.nd-modal__overlay{animation:none;}}`;
+  document.head.appendChild(s);
+}
+
+/**
+ * Focus-trapping overlay for critical decisions. B / Escape closes when
+ * cancellable. Fits within Deck safe area.
+ */
+export interface ModalProps {
+  /** Mount + show the modal. */
+  open: boolean;
+  /** Close handler (Escape, backdrop, close button). */
+  onClose?: () => void;
+  title?: React.ReactNode;
+  children: React.ReactNode;
+  /** Right-aligned footer actions (Buttons). */
+  footer?: React.ReactNode;
+  /** 'critical' adds a red glow for destructive/security dialogs. @default 'default' */
+  emphasis?: 'default' | 'critical';
+  /** Show close affordance + allow Escape/backdrop dismiss. @default true */
+  closable?: boolean;
+  className?: string;
+}
+
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  footer,
+  emphasis = 'default',
+  closable = true,
+  className = '',
+}: ModalProps): React.ReactNode {
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && closable && onClose) onClose(); };
+    document.addEventListener('keydown', onKey);
+    const t = setTimeout(() => {
+      const el = ref.current && ref.current.querySelector('button, [href], input, select, textarea, [tabindex]');
+      if (el) (el as HTMLElement).focus();
+    }, 0);
+    return () => { document.removeEventListener('keydown', onKey); clearTimeout(t); };
+  }, [open, closable, onClose]);
+
+  if (!open) return null;
+  return (
+    <div className="nd-modal__overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && closable && onClose) onClose(); }}>
+      <div
+        ref={ref}
+        className={['nd-modal', emphasis === 'critical' ? 'nd-modal--critical' : '', className].filter(Boolean).join(' ')}
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof title === 'string' ? title : undefined}
+      >
+        {(title || closable) ? (
+          <div className="nd-modal__head">
+            {title ? <h2 className="nd-modal__title">{title}</h2> : <span />}
+            {closable ? <button className="nd-modal__close" aria-label="Close" onClick={onClose}>×</button> : null}
+          </div>
+        ) : null}
+        <div className="nd-modal__body">{children}</div>
+        {footer ? <div className="nd-modal__foot">{footer}</div> : null}
+      </div>
+    </div>
+  );
+}

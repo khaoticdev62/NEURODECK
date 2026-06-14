@@ -16,6 +16,15 @@ export default {
   theme: {
     extend: {
       colors: {
+        // NEURODECK v6 workspace UI palette (hardcoded design reference)
+        blacksite: '#0A0D10',
+        panel: '#11161C',
+        panel2: '#161D25',
+        neuro: '#5EEBFF',
+        success: '#7CFFB2',
+        warning: '#FFC857',
+        danger: '#FF5A6A',
+
         // NEURODECK design tokens — all mapped to runtime CSS custom properties
         nd: {
           // ── Semantic surfaces ──────────────────────────────────────────
@@ -126,6 +135,74 @@ export default {
         panel:  'var(--nd-spacing-panel, 12px)',
         card:   'var(--nd-spacing-card, 12px)',
         touch:  'var(--nd-spacing-touch-target, 40px)',
+      },
+
+      // NEURODECK Design Tokens v1.0 — semantic aliases for use in JSX
+      // e.g. className="bg-surface-primary text-text-primary border-border-subtle"
+      colors: {
+        surface: {
+          app:       withOpacity('var(--nd-surface-app)'),
+          primary:   withOpacity('var(--nd-surface-primary)'),
+          secondary: withOpacity('var(--nd-surface-secondary)'),
+          tertiary:  withOpacity('var(--nd-surface-tertiary)'),
+          overlay:   withOpacity('var(--nd-surface-overlay)'),
+          glass:     withOpacity('var(--nd-surface-glass)'),
+        },
+        border: {
+          subtle:  withOpacity('var(--nd-border-subtle)'),
+          DEFAULT: withOpacity('var(--nd-border-default)'),
+          strong:  withOpacity('var(--nd-border-strong)'),
+        },
+        text: {
+          primary:  withOpacity('var(--nd-text-primary)'),
+          secondary:withOpacity('var(--nd-text-secondary)'),
+          muted:    withOpacity('var(--nd-text-muted)'),
+          disabled: withOpacity('var(--nd-text-disabled)'),
+        },
+        accent: {
+          primary: withOpacity('var(--nd-accent-primary)'),
+          info:    withOpacity('var(--nd-accent-info)'),
+          success: withOpacity('var(--nd-accent-success)'),
+          warning: withOpacity('var(--nd-accent-warning)'),
+          error:   withOpacity('var(--nd-accent-error)'),
+          agent:   withOpacity('var(--nd-accent-agent)'),
+        },
+      },
+
+      fontSize: {
+        display: ['28px', { lineHeight: '36px', fontWeight: '700' }],
+        h1:      ['24px', { lineHeight: '32px', fontWeight: '700' }],
+        h2:      ['20px', { lineHeight: '28px', fontWeight: '650' }],
+        h3:      ['17px', { lineHeight: '24px', fontWeight: '650' }],
+        body:    ['15px', { lineHeight: '22px', fontWeight: '400' }],
+        'body-sm': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        caption: ['12px', { lineHeight: '16px', fontWeight: '500' }],
+        micro:   ['11px', { lineHeight: '14px', fontWeight: '500' }],
+        code:    ['13px', { lineHeight: '20px', fontWeight: '400' }],
+      },
+
+      borderRadius: {
+        sm: 'var(--nd-radius-sm)',
+        md: 'var(--nd-radius-md)',
+        lg: 'var(--nd-radius-lg)',
+        xl: 'var(--nd-radius-xl)',
+      },
+
+      boxShadow: {
+        panel:   'var(--nd-elevation-panel)',
+        card:    'var(--nd-elevation-card)',
+        overlay: 'var(--nd-elevation-overlay)',
+        focus:   'var(--nd-elevation-focus)',
+      },
+
+      transitionDuration: {
+        fast:   'var(--nd-motion-fast)',
+        normal: 'var(--nd-motion-normal)',
+        slow:   'var(--nd-motion-slow)',
+      },
+
+      transitionTimingFunction: {
+        standard: 'var(--nd-ease-standard)',
       },
 
       screens: {
