@@ -1028,6 +1028,21 @@ const memory = {
     }
     return bridgeInvoke<{ status: string; id: string }>("memory_add_fact", { content });
   },
+  async exportAll(): Promise<{ data: string; count: number }> {
+    return bridgeInvoke<{ data: string; count: number }>("memory_export");
+  },
+  async importData(data: string): Promise<{ status: string; imported: number; total: number }> {
+    return bridgeInvoke<{ status: string; imported: number; total: number }>("memory_import_data", { data });
+  },
+  async backup(): Promise<{ status: string }> {
+    return bridgeInvoke<{ status: string }>("memory_backup_auto");
+  },
+  async listBackups(): Promise<{ backups: Array<{ name: string; size_bytes: number }>; count: number }> {
+    return bridgeInvoke<{ backups: Array<{ name: string; size_bytes: number }>; count: number }>("memory_list_backups");
+  },
+  async restoreBackup(name: string): Promise<{ status: string; name: string }> {
+    return bridgeInvoke<{ status: string; name: string }>("memory_restore_backup", { name });
+  },
 };
 
 /* ── Diagnostics ─────────────────────────────────────────────────────────── */
