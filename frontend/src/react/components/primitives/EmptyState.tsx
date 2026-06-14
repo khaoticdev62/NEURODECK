@@ -6,19 +6,37 @@ export function EmptyState({
   title,
   description,
   action,
+  compact = false,
+  className = '',
 }: {
   icon: LucideIcon;
   title: string;
   description: string;
   action?: ReactNode;
+  compact?: boolean;
+  className?: string;
 }) {
+  const rootClass = [
+    'flex flex-col items-center justify-center text-center',
+    compact ? 'px-3 py-6' : 'px-4 py-12',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-nd-border-subtle bg-nd-surface-base shadow-panel">
-        <Icon className="h-7 w-7 text-nd-accent-primary/70" aria-hidden="true" />
+    <div className={rootClass}>
+      <div
+        className={`mb-4 flex items-center justify-center border border-nd-text-muted/15 bg-nd-surface/40 shadow-panel ${
+          compact ? 'h-10 w-10 rounded-xl' : 'h-14 w-14 rounded-2xl'
+        }`}
+      >
+        <Icon className={`${compact ? 'h-5 w-5' : 'h-7 w-7'} text-nd-accent`} aria-hidden="true" />
       </div>
-      <h3 className="text-base font-semibold text-nd-text-primary">{title}</h3>
-      <p className="mt-1 max-w-xs text-sm leading-relaxed text-nd-text-secondary">{description}</p>
+      <h3 className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-nd-text`}>{title}</h3>
+      <p className={`${compact ? 'max-w-[14rem] text-xs' : 'max-w-xs text-sm'} mt-1 leading-relaxed text-nd-text-muted`}>
+        {description}
+      </p>
       {action && <div className="mt-5">{action}</div>}
     </div>
   );

@@ -110,7 +110,12 @@ function LanPanel() {
               </div>
             ))}
             {!peers.length && (
-              <EmptyState icon={Wifi} title="No peers discovered" description="Ensure devices are on the same network with NEURODECK running." />
+              <EmptyState
+                compact
+                icon={Wifi}
+                title="No peers discovered"
+                description="Ensure devices are on the same network with NEURODECK running."
+              />
             )}
           </div>
         </div>
@@ -132,7 +137,12 @@ function LanPanel() {
               </div>
             ))}
             {!transfers.length && (
-              <EmptyState icon={ArrowLeftRight} title="No active transfers" description="Select a discovered peer and send a file to begin." />
+              <EmptyState
+                compact
+                icon={ArrowLeftRight}
+                title="No active transfers"
+                description="Select a discovered peer and send a file to begin."
+              />
             )}
           </div>
         </div>

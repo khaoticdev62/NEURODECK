@@ -212,7 +212,12 @@ export function DocsView() {
               </div>
             ))}
             {!docs.length && !loading && (
-              <EmptyState icon={BookOpen} title="No documents indexed" description="Add a folder path above to start indexing your documentation." />
+              <EmptyState
+                compact
+                icon={BookOpen}
+                title="No documents indexed"
+                description="Add a folder path above to start indexing your documentation."
+              />
             )}
             {!docs.length && loading && <p className="py-4 text-center text-xs text-nd-text-muted/70">Refreshing index…</p>}
           </div>
@@ -237,10 +242,12 @@ export function DocsView() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center text-nd-text-muted/70">
-              <Search className="h-8 w-8 mb-2" />
-              <p className="text-sm">Search indexed documents</p>
-            </div>
+            <EmptyState
+              className="h-full"
+              icon={Search}
+              title="Search indexed documents"
+              description="Enter a query above to search the local documentation index."
+            />
           )}
         </div>
       </div>

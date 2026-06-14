@@ -3,6 +3,7 @@ import { Layers, Play, Square, Plus, Trash2, Upload, Download, AlertTriangle, Ch
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import { listenBridge } from '../../services/bridgeAdapter';
 import type { WorkflowDoc, WorkflowSummary } from '../../services/bridgeAdapter';
+import { EmptyState } from '../../components/primitives/EmptyState';
 
 type LayoutNode = {
   id: string;
@@ -19,12 +20,30 @@ type RunState =
   | { status: 'complete'; outputs: Record<string, string>; finalOutput?: string };
 
 const NODE_COLORS: Record<string, { fill: string; stroke: string }> = {
-  trigger: { fill: 'rgba(94,235,255,0.12)', stroke: 'rgba(94,235,255,0.4)' },
-  prompt: { fill: 'rgba(139,92,246,0.12)', stroke: 'rgba(139,92,246,0.4)' },
-  shell: { fill: 'rgba(245,158,11,0.12)', stroke: 'rgba(245,158,11,0.4)' },
-  condition: { fill: 'rgba(16,185,129,0.12)', stroke: 'rgba(16,185,129,0.4)' },
-  output: { fill: 'rgba(94,235,255,0.12)', stroke: 'rgba(94,235,255,0.4)' },
-  default: { fill: 'rgba(255,255,255,0.05)', stroke: 'rgba(255,255,255,0.15)' },
+  trigger: {
+    fill: 'color-mix(in srgb, var(--nd-accent) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-accent) 42%, transparent)',
+  },
+  prompt: {
+    fill: 'color-mix(in srgb, var(--nd-accent-tertiary) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-accent-tertiary) 42%, transparent)',
+  },
+  shell: {
+    fill: 'color-mix(in srgb, var(--nd-warning) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-warning) 42%, transparent)',
+  },
+  condition: {
+    fill: 'color-mix(in srgb, var(--nd-success) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-success) 42%, transparent)',
+  },
+  output: {
+    fill: 'color-mix(in srgb, var(--nd-accent) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-accent) 42%, transparent)',
+  },
+  default: {
+    fill: 'color-mix(in srgb, var(--nd-text-muted) 8%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-text-muted) 20%, transparent)',
+  },
 };
 
 const SAMPLE_WORKFLOW: WorkflowDoc = {
@@ -328,11 +347,12 @@ export function OrchestratorView() {
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-nd-text-muted">Workflows</div>
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
             {workflows.length === 0 ? (
-              <div className="flex flex-col items-center py-6 text-center">
-                <Layers className="h-8 w-8 text-nd-text-muted/30" aria-hidden="true" />
-                <p className="mt-2 text-xs font-semibold text-nd-text-muted">No workflows yet</p>
-                <p className="mt-0.5 text-[11px] text-nd-text-muted/60">Create a sample or import via JSON.</p>
-              </div>
+              <EmptyState
+                compact
+                icon={Layers}
+                title="No workflows yet"
+                description="Create a sample or import workflow JSON."
+              />
             ) : (
               workflows.map((wf) => (
                 <div
@@ -381,7 +401,7 @@ export function OrchestratorView() {
                       y1={from.y}
                       x2={to.x}
                       y2={to.y}
-                      stroke="rgba(141,161,179,0.25)"
+                      style={{ stroke: 'color-mix(in srgb, var(--nd-text-muted) 25%, transparent)' }}
                       strokeWidth="2"
                     />
                   );
@@ -412,9 +432,12 @@ export function OrchestratorView() {
               </svg>
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-nd-text-muted">
-              Select or create a workflow to preview.
-            </div>
+            <EmptyState
+              className="h-full"
+              icon={Layers}
+              title="No workflow selected"
+              description="Select an existing workflow, create a sample, or import workflow JSON to preview the graph."
+            />
           )}
           {runState.status === 'error' && (
             <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-nd-danger/25 bg-nd-danger/10 p-3 text-xs text-nd-danger">
@@ -460,7 +483,12 @@ export function OrchestratorView() {
             </div>
             <div className="h-full space-y-1 overflow-y-auto text-[11px] text-nd-text-muted">
               {logs.length === 0 ? (
-                <span>No activity yet.</span>
+                <EmptyState
+                  compact
+                  icon={TerminalSquare}
+                  title="No run activity"
+                  description="Run, save, import, or delete a workflow to populate this log."
+                />
               ) : (
                 logs.slice(-50).map((line, i) => <div key={i}>{line}</div>)
               )}
