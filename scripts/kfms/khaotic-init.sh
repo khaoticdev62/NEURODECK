@@ -154,6 +154,8 @@ PRESERVE=(
   "LICENSE"
   "clippy.toml"
   ".prettierrc"
+  "tsconfig.json"
+  "vitest.config.ts"
   "neurodeck_win_release.zip"
   "neurodeck_installer.exe"
   "neurodeck_1.3.0_amd64.AppImage"
