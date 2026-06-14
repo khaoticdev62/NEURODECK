@@ -1,12 +1,21 @@
 import type { ReactNode } from 'react';
+import '../../../design-system/components/core/Panel';
 
 type PanelVariant = 'glass' | 'flat' | 'elevated' | 'surface';
+type PanelEmphasis = 'default' | 'raised' | 'active' | 'critical';
 
-const variantClasses: Record<PanelVariant, string> = {
-  glass:    'glass-panel',
+const emphasisMap: Record<PanelVariant, PanelEmphasis> = {
+  glass: 'default',
+  flat: 'default',
+  elevated: 'raised',
+  surface: 'default',
+};
+
+const variantLegacyClasses: Record<PanelVariant, string> = {
+  glass: 'glass-panel',
+  flat: 'glass-panel-flat',
   elevated: 'glass-panel-elevated',
-  flat:     'glass-panel-flat',
-  surface:  'bg-nd-surface-base border border-nd-border-subtle',
+  surface: 'bg-nd-surface-base border border-nd-border-subtle',
 };
 
 export function Panel({
@@ -24,26 +33,32 @@ export function Panel({
   children: ReactNode;
   className?: string;
 }) {
+  const emphasis = emphasisMap[variant];
+  const cls = [
+    'nd-panel',
+    emphasis !== 'default' ? `nd-panel--${emphasis}` : '',
+    variantLegacyClasses[variant],
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
-    <section className={`rounded-2xl ${variantClasses[variant]} ${className}`}>
+    <section className={cls}>
       {(title || eyebrow || action) && (
-        <header className="flex items-start justify-between gap-3 border-b border-nd-border-subtle px-4 py-3">
-          <div>
+        <header className="nd-panel__head">
+          <div className="nd-panel__titles">
             {eyebrow && (
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-accent-primary/80">
                 {eyebrow}
               </p>
             )}
-            {title && (
-              <h3 className="mt-1 text-sm font-semibold text-nd-text-primary">
-                {title}
-              </h3>
-            )}
+            {title && <h3 className="nd-panel__title">{title}</h3>}
           </div>
-          {action}
+          {action && <div className="nd-panel__actions">{action}</div>}
         </header>
       )}
-      {children}
+      <div className="nd-panel__body nd-panel__body--normal">{children}</div>
     </section>
   );
 }

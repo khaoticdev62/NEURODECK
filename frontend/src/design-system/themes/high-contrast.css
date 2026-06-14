@@ -1,0 +1,14 @@
+/* NEURODECK v1.0 — High Contrast Theme */
+.theme-high-contrast {
+  --nd-surface-app: #000000;
+  --nd-surface-primary: #050505;
+  --nd-surface-secondary: #101010;
+  --nd-text-primary: #FFFFFF;
+  --nd-text-secondary: #E6E6E6;
+  --nd-text-muted: #CFCFCF;
+  --nd-accent-primary: #00E5FF;
+  --nd-accent-success: #00FF88;
+  --nd-accent-warning: #FFD400;
+  --nd-accent-error: #FF3355;
+  --nd-border-default: rgba(255, 255, 255, 0.48);
+}

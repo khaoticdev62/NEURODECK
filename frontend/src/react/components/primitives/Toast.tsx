@@ -1,5 +1,5 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
-import { AlertCircle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { Toast as DSToast } from '../../../design-system/components/feedback/Toast';
 
 type ToastTone = 'info' | 'success' | 'warning' | 'error';
 
@@ -16,40 +16,27 @@ interface ToastContextValue {
 
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-const toneConfig: Record<ToastTone, { icon: ReactNode; classes: string }> = {
-  info:    { icon: <Info className="h-4 w-4" />,         classes: 'border-nd-accent/25 bg-nd-accent/10 text-nd-accent' },
-  success: { icon: <CheckCircle2 className="h-4 w-4" />, classes: 'border-nd-success/25 bg-nd-success/10 text-nd-success' },
-  warning: { icon: <AlertCircle className="h-4 w-4" />,  classes: 'border-nd-warning/25 bg-nd-warning/10 text-nd-warning' },
-  error:   { icon: <XCircle className="h-4 w-4" />,      classes: 'border-nd-danger/25 bg-nd-danger/10 text-nd-danger' },
+const toneClasses: Record<ToastTone, string> = {
+  info: 'border-nd-accent/25 bg-nd-accent/10 text-nd-accent',
+  success: 'border-nd-success/25 bg-nd-success/10 text-nd-success',
+  warning: 'border-nd-warning/25 bg-nd-warning/10 text-nd-warning',
+  error: 'border-nd-danger/25 bg-nd-danger/10 text-nd-danger',
 };
 
 function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: string) => void }) {
-  const { icon, classes } = toneConfig[item.tone];
-  const messageId = useId();
-
   useEffect(() => {
     const t = setTimeout(() => onDismiss(item.id), item.durationMs);
     return () => clearTimeout(t);
   }, [item.id, item.durationMs, onDismiss]);
 
   return (
-    <div
+    <DSToast
+      tone={item.tone}
+      message={item.message}
+      onClose={() => onDismiss(item.id)}
       role="status"
-      aria-live="polite"
-      className={['flex items-start gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm shadow-panel', 'animate-view-enter', classes].join(' ')}
-    >
-      <span className="mt-0.5 shrink-0">{icon}</span>
-      <span id={messageId} className="flex-1 leading-relaxed">{item.message}</span>
-      <button
-        type="button"
-        aria-label="Dismiss"
-        aria-describedby={messageId}
-        onClick={() => onDismiss(item.id)}
-        className="ml-1 inline-flex min-h-touch min-w-touch shrink-0 items-center justify-center rounded opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current"
-      >
-        <X className="h-3.5 w-3.5" />
-      </button>
-    </div>
+      className={toneClasses[item.tone]}
+    />
   );
 }
 

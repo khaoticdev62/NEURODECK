@@ -1,0 +1,23 @@
+<!-- @dsCard group="Colors" viewport="700x150" name="Text Ramp" subtitle="Cool off-white stepping down to muted — on dark only" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-primary); font-family:var(--nd-font-ui);
+         padding:20px; display:flex; flex-direction:column; gap:6px; justify-content:center; }
+  .row { display:flex; align-items:baseline; gap:14px; }
+  .sample { font-size:20px; font-weight:600; width:200px; }
+  .meta { font-family:var(--nd-font-mono); font-size:11px; color:var(--nd-text-muted); }
+  .tag { font-family:var(--nd-font-hud); text-transform:uppercase; letter-spacing:.14em;
+         font-size:10px; color:var(--nd-text-muted); width:90px; }
+</style>
+</head>
+<body>
+  <div class="row"><span class="tag">Primary</span><span class="sample" style="color:#E8F4FF">Local layer online</span><span class="meta">#E8F4FF · text.primary</span></div>
+  <div class="row"><span class="tag">Secondary</span><span class="sample" style="color:#B9CAD8">Supporting copy</span><span class="meta">#B9CAD8 · text.secondary</span></div>
+  <div class="row"><span class="tag">Muted</span><span class="sample" style="color:#8DA1B3">Labels & metadata</span><span class="meta">#8DA1B3 · text.muted</span></div>
+  <div class="row"><span class="tag">Disabled</span><span class="sample" style="color:rgba(141,161,179,0.45)">Unavailable</span><span class="meta">muted @ 45%</span></div>
+</body>
+</html>

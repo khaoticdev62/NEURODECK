@@ -15,7 +15,7 @@
     "build:main": "npx esbuild \"src/**/*.ts\" --platform=node --format=cjs --outdir=electron/dist --outbase=src",
     "dev": "npm run build:main && npm run dev:autokill && node electron/scripts/dev-launcher.js",
     "dev:no-sidecar": "node electron/scripts/dev-launcher.js",
-    "build": "npm run frontend:build && npm run sidecar:build && npm run build:main && npx electron-builder --config electron-builder.yml --projectDir .",
+    "build": "node scripts/validate-design-system.js && npm run frontend:build && npm run sidecar:build && npm run build:main && npx electron-builder --config electron-builder.yml --projectDir .",
     "build:linux": "bash scripts/steamdeck/package-steamdeck.sh --target linux",
     "sidecar:build": "cd src-tauri && cargo build --release",
     "frontend:dev": "npm -w frontend run dev",

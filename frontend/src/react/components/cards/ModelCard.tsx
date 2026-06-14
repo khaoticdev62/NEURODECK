@@ -1,5 +1,7 @@
 import { BrainCircuit, CheckCircle2, DownloadCloud, Power } from "lucide-react";
-import { Badge } from "../primitives/Badge";
+import { Badge } from "../../../design-system";
+import { Button } from "../../../design-system";
+import { Panel } from "../../../design-system";
 import type { LocalModel, ModelStatus } from "../../types/neurodeck";
 
 interface ModelCardProps {
@@ -14,9 +16,9 @@ interface ModelCardProps {
   onSelect: (id: string) => void;
 }
 
-const statusTone: Record<ModelStatus, "accent" | "success" | "warning" | "neutral" | "danger"> = {
+const statusTone: Record<ModelStatus, "neutral" | "info" | "success" | "warning"> = {
   ready: "success",
-  indexed: "accent",
+  indexed: "info",
   missing: "warning",
   disabled: "neutral",
 };
@@ -32,39 +34,41 @@ export function ModelCard({
   onDisable,
   onSelect,
 }: ModelCardProps) {
+  const emphasis = selected
+    ? "active"
+    : policyAllowed === false
+      ? "critical"
+      : "default";
+
   return (
-    <article
-      className={`rounded-3xl border p-4 transition hover:border-nd-accent/30 ${
-        selected
-          ? "border-nd-accent/40 bg-nd-accent/[0.07]"
-          : policyAllowed === false
-            ? "border-nd-danger/25 bg-nd-danger/[0.04]"
-            : "border-nd-text-muted/15 bg-nd-surface/40"
-      }`}
-    >
+    <Panel emphasis={emphasis} className="transition hover:border-[rgba(var(--nd-cyan-rgb),0.3)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-3">
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-2xl border text-nd-accent ${policyAllowed === false ? "border-nd-danger/25 bg-nd-danger/10 text-nd-danger" : "border-nd-accent/25 bg-nd-accent/10"}`}
+            className={`flex h-12 w-12 items-center justify-center rounded-[var(--nd-radius-md)] border text-[var(--nd-accent-agent)] ${
+              policyAllowed === false
+                ? "border-[rgba(var(--nd-red-rgb),0.3)] bg-[rgba(var(--nd-red-rgb),0.12)] text-[var(--nd-accent-error)]"
+                : "border-[rgba(var(--nd-purple-rgb),0.3)] bg-[rgba(var(--nd-purple-rgb),0.12)]"
+            }`}
           >
             <BrainCircuit className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="font-semibold text-nd-text">{model.name}</h3>
-            <p className="text-xs text-nd-text-muted">
+            <h3 className="font-semibold text-[var(--nd-text-primary)]">{model.name}</h3>
+            <p className="text-xs text-[var(--nd-text-muted)]">
               {model.provider} · {model.size} · {model.quantization}
             </p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <Badge tone={statusTone[model.status]}>{model.status}</Badge>
-          {agentPreferred && <Badge tone="accent">Preferred</Badge>}
-          {policyAllowed === false && <Badge tone="danger">Blocked</Badge>}
-          {selected && <Badge tone="accent">Selected</Badge>}
+          {agentPreferred && <Badge tone="agent">Preferred</Badge>}
+          {policyAllowed === false && <Badge tone="error">Blocked</Badge>}
+          {selected && <Badge tone="info">Selected</Badge>}
         </div>
       </div>
 
-      <div className="mt-4 grid gap-2 text-xs text-nd-text-muted sm:grid-cols-3">
+      <div className="mt-4 grid gap-2 text-xs text-[var(--nd-text-muted)] sm:grid-cols-3">
         <ModelSpec
           label="Context"
           value={model.context ? model.context.toLocaleString() : "runtime"}
@@ -74,49 +78,54 @@ export function ModelCard({
       </div>
 
       {policyAllowed === false && policyReason && (
-        <p className="mt-3 rounded-xl border border-nd-danger/20 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger/90">
+        <p className="mt-3 rounded-[var(--nd-radius-md)] border border-[rgba(var(--nd-red-rgb),0.2)] bg-[rgba(var(--nd-red-rgb),0.1)] px-3 py-2 text-xs text-[var(--nd-accent-error)]">
           {policyReason}
         </p>
       )}
       <div className="mt-4 flex flex-wrap gap-2">
-        <button
-          type="button"
+        <Button
+          variant="success"
+          size="sm"
           disabled={policyAllowed === false}
+          icon={<CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
           onClick={() => {
             onMarkReady(model.id);
             onSelect(model.id);
           }}
-          className="inline-flex items-center gap-2 rounded-xl border border-nd-success/25 bg-nd-success/10 px-3 py-2 text-xs font-semibold text-nd-success transition hover:bg-nd-success/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40 disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Mark Ready
-        </button>
-        <button
-          type="button"
+          Mark Ready
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<DownloadCloud className="h-4 w-4" aria-hidden="true" />}
           onClick={() => {
             onMarkIndexed(model.id);
             onSelect(model.id);
           }}
-          className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         >
-          <DownloadCloud className="h-4 w-4" aria-hidden="true" /> Indexed
-        </button>
-        <button
-          type="button"
+          Indexed
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<Power className="h-4 w-4" aria-hidden="true" />}
           onClick={() => onDisable(model.id)}
-          className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-2 text-xs font-semibold text-nd-text-muted transition hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-text-muted/40"
         >
-          <Power className="h-4 w-4" aria-hidden="true" /> Disable
-        </button>
+          Disable
+        </Button>
       </div>
-    </article>
+    </Panel>
   );
 }
 
 function ModelSpec({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-      <p className="text-[10px] uppercase tracking-[0.2em] text-nd-text-muted/70">{label}</p>
-      <p className="mt-1 text-nd-text/80">{value}</p>
+    <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-tertiary)] p-3">
+      <p className="text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]">
+        {label}
+      </p>
+      <p className="mt-1 text-[var(--nd-text-secondary)]">{value}</p>
     </div>
   );
 }
