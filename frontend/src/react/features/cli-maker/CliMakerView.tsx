@@ -330,19 +330,41 @@ export function CliMakerView() {
     }
   };
 
-  const handleImportLua = async () => {
-    if (!importPath.trim()) {
+  const handleImportLua = async (overridePath?: string) => {
+    const path = (overridePath ?? importPath).trim();
+    if (!path) {
       showStatus('Please enter a file path', true);
       return;
     }
     try {
-      const imported = await neurodeckApi.cliMaker.importLua(importPath.trim());
+      const imported = await neurodeckApi.cliMaker.importLua(path);
       showStatus(`Successfully imported ${imported.length} command(s)`);
       setImportPath('');
       await loadCommands();
+      if (imported.length > 0) handleEditCommand(imported[0]);
     } catch (err) {
       showStatus(`Import failed: ${err}`, true);
     }
+  };
+
+  const handleBrowseImport = async () => {
+    const api = (window as unknown as {
+      electronAPI?: { showOpenDialog?: (opts: unknown) => Promise<{ canceled: boolean; filePaths: string[] }> };
+    }).electronAPI;
+    if (!api?.showOpenDialog) {
+      showStatus('File picker unavailable — enter path manually', true);
+      return;
+    }
+    const result = await api.showOpenDialog({
+      title: 'Import Lua Plugin',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Lua Scripts', extensions: ['lua'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+    if (result.canceled || !result.filePaths?.[0]) return;
+    await handleImportLua(result.filePaths[0]);
   };
 
   // Filter & Search
@@ -842,24 +864,32 @@ export function CliMakerView() {
               </div>
 
               {/* Import Lua */}
-              <div className="space-y-1.5 pt-2 border-t border-nd-text-muted/10 flex gap-2 items-end">
-                <div className="flex-1 space-y-1">
-                  <label className="text-[10px] font-medium text-nd-text-muted">Import from Lua File</label>
+              <div className="space-y-2 pt-2 border-t border-nd-text-muted/10">
+                <label className="text-[10px] font-medium text-nd-text-muted">Import from Lua File</label>
+                <button
+                  type="button"
+                  onClick={() => void handleBrowseImport()}
+                  className="w-full inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                >
+                  <Upload className="h-3.5 w-3.5" aria-hidden="true" /> Browse &amp; Import Lua
+                </button>
+                <div className="flex gap-2 items-center">
                   <input
                     type="text"
                     value={importPath}
                     onChange={(e) => setImportPath(e.target.value)}
-                    placeholder="Absolute file path on host..."
-                    className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
+                    placeholder="Or paste absolute file path..."
+                    aria-label="Lua file path for import"
+                    className="flex-1 h-9 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[36px]"
                   />
+                  <button
+                    type="button"
+                    onClick={() => void handleImportLua()}
+                    className="inline-flex h-9 items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                  >
+                    Import
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleImportLua}
-                  className="inline-flex h-10 items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  <Upload className="h-3.5 w-3.5" aria-hidden="true" /> Import
-                </button>
               </div>
             </div>
           </div>
