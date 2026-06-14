@@ -10,7 +10,7 @@ export type ViewId =
   | 'scheduler' | 'orchestrator' | 'sync'
   | 'models' | 'cache' | 'plugins' | 'diagnostics' | 'settings'
   | 'security' | 'themes' | 'exports' | 'maintenance' | 'recovery'
-  | 'fonts';
+  | 'fonts' | 'mcp';
 export type ThemeName = 'Blacksite' | 'Tactical Glass' | 'Ghost Terminal' | 'Hologrid' | 'Minimal Ops' | 'Night Watch' | 'Broadcast';
 export type AgentStatus = 'idle' | 'thinking' | 'blocked' | 'complete';
 export type ModelStatus = 'ready' | 'indexed' | 'missing' | 'disabled';

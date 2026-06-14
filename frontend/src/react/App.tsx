@@ -50,6 +50,7 @@ const ShareView      = lazy(() => import("./features/share/ShareView").then((m) 
 const ThemesView     = lazy(() => import("./features/themes/ThemesView").then((m) => ({ default: m.ThemesView })));
 const TorrentView    = lazy(() => import("./features/torrent/TorrentView").then((m) => ({ default: m.TorrentView })));
 const TunnelView     = lazy(() => import("./features/tunnel/TunnelView").then((m) => ({ default: m.TunnelView })));
+const MCPView        = lazy(() => import("./features/mcp/MCPView").then((m) => ({ default: m.MCPView })));
 
 import { LiveWallpaperHost } from "./features/wallpapers/LiveWallpaperHost";
 import { ControllerDebugOverlay } from "./input/controller/ControllerDebugOverlay";
@@ -1148,6 +1149,7 @@ export default function App() {
                   )}
                 {state.activeView === "fonts" &&
                   renderView("fonts", <FontManagerView state={state} dispatch={dispatch} />)}
+                {state.activeView === "mcp" && renderView("mcp", <MCPView />)}
               </Suspense>
             </div>
           </main>

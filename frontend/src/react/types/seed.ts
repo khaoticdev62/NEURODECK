@@ -4,7 +4,7 @@ import {
   FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers,
   LayoutDashboard, Lock, Magnet, Network, Paintbrush, Palette,
   Plug, Radio, RotateCcw, Settings, Share2, ShieldCheck,
-  Terminal, TerminalSquare, Type, Webhook, Wrench, Workflow, RefreshCcw
+  Terminal, TerminalSquare, Type, Webhook, Wrench, Workflow, RefreshCcw, Cpu
 } from 'lucide-react';
 import type { FontOption, NavItem, ThemeTokenSet } from '../types/neurodeck';
 
@@ -53,6 +53,9 @@ export const navItems: NavItem[] = [
   { id: 'diagnostics',  label: 'Diagnostics',  description: 'IPC logs and runtime health',         icon: Activity,    shortcut: 'D', section: 'System' },
   { id: 'settings',     label: 'Settings',     description: 'Theme, Deck mode, privacy',            icon: Settings,    shortcut: '0', section: 'System' },
   { id: 'fonts',        label: 'Fonts',        description: 'Typography and font manager',           icon: Type,        shortcut: '',  section: 'System' },
+
+  // ── Integrations ──
+  { id: 'mcp',          label: 'MCP Server',   description: 'External agent API — MCP 2024-11',     icon: Cpu,         shortcut: '',  section: 'Integrations' },
 
   // ── Security & Operations ──
   { id: 'security',     label: 'Security',     description: 'Hardening, credentials, audit log',    icon: ShieldCheck, shortcut: '',  section: 'Security & Ops' },

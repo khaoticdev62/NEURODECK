@@ -7,7 +7,11 @@
 //!   initialize, initialized, ping,
 //!   tools/list, tools/call,
 //!   resources/list, resources/read,
-//!   prompts/list
+//!   prompts/list, prompts/get,
+//!   sampling/createMessage,
+//!   roots/list,
+//!   completion/complete,
+//!   notifications/* (no-ops)
 //!
 //! HTTP extras:
 //!   GET /.well-known/mcp   → server discovery metadata
@@ -36,10 +40,12 @@ pub const ALL_TOOLS: &[&str] = &[
     "get_status",
     "memory_add_fact",
     "memory_list_all",
+    "memory_search",
     "read_file",
     "write_file",
     "run_shell",
     "run_code",
+    "run_lua",
 ];
 
 /// Default whitelisted tools (safe, no file/exec access).
@@ -49,6 +55,7 @@ pub fn default_tool_whitelist() -> Vec<String> {
         "get_status".into(),
         "memory_add_fact".into(),
         "memory_list_all".into(),
+        "memory_search".into(),
     ]
 }
 
@@ -134,6 +141,18 @@ fn build_tool_list(whitelist: &[String]) -> Value {
             "inputSchema": { "type": "object", "properties": {}, "required": [] }
         }),
         json!({
+            "name": "memory_search",
+            "description": "Search NEURODECK's long-term vector memory for records relevant to a query string.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": { "type": "string", "description": "Natural-language search query." },
+                    "limit": { "type": "integer", "description": "Max results to return (default 5).", "default": 5 }
+                },
+                "required": ["query"]
+            }
+        }),
+        json!({
             "name": "read_file",
             "description": "Read the text contents of a file on the NEURODECK host filesystem.",
             "inputSchema": {
@@ -177,6 +196,17 @@ fn build_tool_list(whitelist: &[String]) -> Value {
                     "lang": { "type": "string", "enum": ["python", "bash", "javascript"], "description": "The programming language." }
                 },
                 "required": ["code", "lang"]
+            }
+        }),
+        json!({
+            "name": "run_lua",
+            "description": "Execute a Lua 5.4 script in NEURODECK's embedded Lua runtime and return its print output. Requires NEURODECK_ENABLE_MCP_EXEC=true.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "script": { "type": "string", "description": "The Lua script to execute." }
+                },
+                "required": ["script"]
             }
         }),
     ];
@@ -328,6 +358,60 @@ async fn call_tool(
             }))
         }
 
+        "memory_search" => {
+            let query = args["query"]
+                .as_str()
+                .ok_or("Missing required arg: 'query'")?;
+            let limit = args["limit"].as_u64().unwrap_or(5) as usize;
+            let db = mem_db
+                .as_ref()
+                .ok_or("Memory database not available in this MCP session")?;
+
+            // Generate embedding for the query, then similarity-search.
+            // Falls back to substring keyword search if the provider can't embed.
+            let results = match provider.generate_embedding(query).await {
+                Ok(embedding) if !embedding.is_empty() => {
+                    db.search(&embedding, limit).unwrap_or_default()
+                }
+                _ => {
+                    // Keyword fallback: filter records by query substring
+                    let q_lower = query.to_lowercase();
+                    db.list_all()
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter(|r| r.content.to_lowercase().contains(&q_lower))
+                        .take(limit)
+                        .collect::<Vec<_>>()
+                }
+            };
+
+            if results.is_empty() {
+                return Ok(json!({
+                    "content": [{ "type": "text", "text": format!("No memory records matched '{}'.", query) }]
+                }));
+            }
+
+            let lines: Vec<String> = results
+                .iter()
+                .enumerate()
+                .map(|(i, r)| {
+                    format!(
+                        "[{}] {} — {}",
+                        i + 1,
+                        &r.id,
+                        r.content.chars().take(200).collect::<String>()
+                    )
+                })
+                .collect();
+
+            Ok(json!({
+                "content": [{
+                    "type": "text",
+                    "text": format!("{} result(s) for '{}':\n\n{}", results.len(), query, lines.join("\n"))
+                }]
+            }))
+        }
+
         "run_shell" => {
             if !mcp_exec_tools_enabled() {
                 return Err("MCP execution tools are disabled. Set NEURODECK_ENABLE_MCP_EXEC=true to enable run_shell.".to_string());
@@ -436,6 +520,52 @@ async fn call_tool(
             Ok(json!({ "content": [{ "type": "text", "text": output }] }))
         }
 
+        "run_lua" => {
+            if !mcp_exec_tools_enabled() {
+                return Err("MCP execution tools are disabled. Set NEURODECK_ENABLE_MCP_EXEC=true to enable run_lua.".to_string());
+            }
+            let script = args["script"]
+                .as_str()
+                .ok_or("Missing required arg: 'script'")?;
+            crate::security::validate_script_payload(script, "lua", "mcp-run-lua", None)?;
+            let script_owned = script.to_string();
+            let result = tokio::task::spawn_blocking(move || -> String {
+                // Spin up a fresh Lua VM for sandbox isolation — no AppState access.
+                let lua = mlua::Lua::new();
+                let output = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
+                let output_clone = output.clone();
+                if let Ok(print_fn) = lua.create_function(move |_, args: mlua::MultiValue| {
+                    let parts: Vec<String> = args.iter().map(|v| match v {
+                        mlua::Value::String(s) => s.to_str().unwrap_or("").to_string(),
+                        mlua::Value::Integer(i) => i.to_string(),
+                        mlua::Value::Number(n) => n.to_string(),
+                        mlua::Value::Boolean(b) => b.to_string(),
+                        mlua::Value::Nil => "nil".to_string(),
+                        _ => String::new(),
+                    }).collect();
+                    output_clone.lock().unwrap().push(parts.join("\t"));
+                    Ok(())
+                }) {
+                    let _ = lua.globals().set("print", print_fn);
+                }
+                match lua.load(&script_owned).exec() {
+                    Ok(()) => {
+                        let lines = output.lock().unwrap();
+                        if lines.is_empty() {
+                            "(no output)".to_string()
+                        } else {
+                            lines.join("\n")
+                        }
+                    }
+                    Err(e) => format!("[Lua Error] {}", e),
+                }
+            })
+            .await
+            .unwrap_or_else(|e| format!("Thread panic: {}", e));
+
+            Ok(json!({ "content": [{ "type": "text", "text": result }] }))
+        }
+
         "read_file" => {
             let path_str = args["path"]
                 .as_str()
@@ -516,7 +646,7 @@ fn resources_read(uri: &str, mem_db: &Option<crate::memory::MemoryDB>) -> Result
             "contents": [{
                 "uri": uri,
                 "mimeType": "text/plain",
-                "text": format!("NEURODECK v1.5.0 (Horus)\nMCP Protocol: 2024-11\nStatus: Online")
+                "text": "NEURODECK v1.5.0 (Horus)\nMCP Protocol: 2024-11\nStatus: Online"
             }]
         })),
         "neurodeck://memory" => {
@@ -555,20 +685,21 @@ fn resources_read(uri: &str, mem_db: &Option<crate::memory::MemoryDB>) -> Result
 // Prompts
 // ──────────────────────────────────────────────
 
-fn prompts_list() -> Value {
+fn load_prompt_presets() -> std::collections::HashMap<String, String> {
     let path = crate::user_config_dir().join("data/prompt_presets.json");
-    let presets: std::collections::HashMap<String, String> = path
-        .exists()
+    path.exists()
         .then(|| std::fs::read_to_string(&path).ok())
         .flatten()
         .and_then(|s| serde_json::from_str(&s).ok())
-        .unwrap_or_default();
+        .unwrap_or_default()
+}
+
+fn prompts_list() -> Value {
+    let presets = load_prompt_presets();
 
     let prompts: Vec<Value> = presets
         .iter()
         .map(|(name, schema_json)| {
-            // Presets are stored as JSON strings of {name, description, steps, ...}
-            // We surface just the name and a description for MCP clients
             let desc = serde_json::from_str::<Value>(schema_json)
                 .ok()
                 .and_then(|v| {
@@ -589,6 +720,168 @@ fn prompts_list() -> Value {
     json!({ "prompts": prompts })
 }
 
+/// `prompts/get` — return a single prompt with its messages array.
+/// MCP 2024-11 §4.3.2: arguments are interpolated into the template text.
+fn prompts_get(params: &Value) -> Result<Value, String> {
+    let name = params["name"]
+        .as_str()
+        .ok_or("Missing required param: 'name'")?;
+    let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
+    let presets = load_prompt_presets();
+
+    let raw = presets
+        .get(name)
+        .ok_or_else(|| format!("Prompt '{}' not found", name))?;
+
+    // Try to parse the stored value as a schema object; fall back to treating
+    // it as a raw prompt string so legacy presets still work.
+    let (description, template) = serde_json::from_str::<Value>(raw)
+        .ok()
+        .map(|v| {
+            let desc = v["description"]
+                .as_str()
+                .or_else(|| v["system_prompt"].as_str())
+                .unwrap_or("Saved prompt preset")
+                .to_string();
+            let tmpl = v["template"]
+                .as_str()
+                .or_else(|| v["system_prompt"].as_str())
+                .unwrap_or(raw.as_str())
+                .to_string();
+            (desc, tmpl)
+        })
+        .unwrap_or_else(|| ("Saved prompt preset".to_string(), raw.clone()));
+
+    // Simple argument interpolation: replace {{key}} with arguments.key
+    let mut text = template;
+    if let Some(obj) = arguments.as_object() {
+        for (k, v) in obj {
+            let placeholder = format!("{{{{{}}}}}", k);
+            let replacement = v.as_str().unwrap_or_default();
+            text = text.replace(&placeholder, replacement);
+        }
+    }
+
+    Ok(json!({
+        "description": description,
+        "messages": [
+            { "role": "user", "content": { "type": "text", "text": text } }
+        ]
+    }))
+}
+
+// ──────────────────────────────────────────────
+// Roots (MCP 2024-11 §5)
+// ──────────────────────────────────────────────
+
+fn roots_list() -> Value {
+    let workspace = crate::user_config_dir().join("workspace");
+    let workspace_uri = format!("file://{}", workspace.display()).replace('\\', "/");
+
+    let data_dir = crate::user_config_dir();
+    let data_uri = format!("file://{}", data_dir.display()).replace('\\', "/");
+
+    json!({
+        "roots": [
+            {
+                "uri": workspace_uri,
+                "name": "NEURODECK Workspace"
+            },
+            {
+                "uri": data_uri,
+                "name": "NEURODECK Data Directory"
+            }
+        ]
+    })
+}
+
+// ──────────────────────────────────────────────
+// Sampling — MCP 2024-11 §6
+// ──────────────────────────────────────────────
+
+/// `sampling/createMessage` — allows external MCP clients to request LLM
+/// completions through NEURODECK's configured provider.
+async fn sampling_create_message(
+    params: &Value,
+    provider: Arc<dyn LlmProvider>,
+) -> Result<Value, String> {
+    let max_tokens = params["maxTokens"].as_u64().unwrap_or(1024);
+    if max_tokens > 8192 {
+        return Err("maxTokens exceeds server limit of 8192".into());
+    }
+
+    let system_prompt = params["systemPrompt"]
+        .as_str()
+        .unwrap_or("You are a helpful assistant.");
+
+    // Build a single concatenated prompt from the messages array.
+    // MCP messages have { role, content: { type, text } } shape.
+    let messages = params["messages"]
+        .as_array()
+        .ok_or("Missing required param: 'messages'")?;
+
+    if messages.is_empty() {
+        return Err("'messages' array cannot be empty".into());
+    }
+
+    let prompt = messages
+        .iter()
+        .map(|m| {
+            let role = m["role"].as_str().unwrap_or("user");
+            let text = m["content"]["text"]
+                .as_str()
+                .or_else(|| m["content"].as_str())
+                .unwrap_or("");
+            format!("{}: {}", role, text)
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    let response = provider
+        .chat_with_image(&prompt, system_prompt, None, None)
+        .await?;
+
+    Ok(json!({
+        "role": "assistant",
+        "content": { "type": "text", "text": response },
+        "model": "neurodeck-active",
+        "stopReason": "endTurn"
+    }))
+}
+
+// ──────────────────────────────────────────────
+// Completion — MCP 2024-11 §7 (argument completion)
+// ──────────────────────────────────────────────
+
+fn completion_complete(params: &Value) -> Value {
+    // For prompts: offer known prompt names as completions for the `name` argument.
+    let ref_type = params["ref"]["type"].as_str().unwrap_or("");
+    let argument_name = params["argument"]["name"].as_str().unwrap_or("");
+    let argument_value = params["argument"]["value"].as_str().unwrap_or("");
+
+    let values: Vec<String> = if ref_type == "ref/prompt" && argument_name == "name" {
+        let presets = load_prompt_presets();
+        let prefix = argument_value.to_lowercase();
+        presets
+            .keys()
+            .filter(|k| k.to_lowercase().starts_with(&prefix))
+            .take(10)
+            .cloned()
+            .collect()
+    } else {
+        vec![]
+    };
+
+    let has_more = false;
+    json!({
+        "completion": {
+            "values": values,
+            "total": values.len(),
+            "hasMore": has_more
+        }
+    })
+}
+
 // ──────────────────────────────────────────────
 // Discovery endpoint body
 // ──────────────────────────────────────────────
@@ -601,9 +894,11 @@ fn well_known_mcp_body(port: u16) -> String {
         "description": "NEURODECK AI Terminal — MCP server for LLM chat, memory, and file access.",
         "endpoint": format!("http://127.0.0.1:{}/", port),
         "capabilities": {
-            "tools": true,
-            "resources": true,
-            "prompts": true
+            "tools": {},
+            "resources": {},
+            "prompts": {},
+            "roots": { "listChanged": false },
+            "sampling": {}
         },
         "auth": {
             "type": "bearer",
@@ -614,7 +909,73 @@ fn well_known_mcp_body(port: u16) -> String {
 }
 
 // ──────────────────────────────────────────────
-// Per-connection HTTP handler
+// HTTP body reader — Content-Length aware
+// ──────────────────────────────────────────────
+
+/// Read a full HTTP request from `stream`. Honours Content-Length so large
+/// bodies (e.g. write_file with a big payload) are not silently truncated.
+/// Hard cap at 4 MiB to protect against DoS.
+async fn read_http_request(stream: &mut tokio::net::TcpStream) -> Option<String> {
+    const MAX_BODY: usize = 4 * 1024 * 1024; // 4 MiB
+    const HEADER_BUF: usize = 16 * 1024;     // 16 KiB header buffer
+
+    // Read until we have a complete header section (\r\n\r\n).
+    let mut header_buf = vec![0u8; HEADER_BUF];
+    let mut header_len = 0usize;
+
+    loop {
+        match stream.read(&mut header_buf[header_len..]).await {
+            Ok(0) | Err(_) => return None,
+            Ok(n) => {
+                header_len += n;
+                if header_buf[..header_len].windows(4).any(|w| w == b"\r\n\r\n") {
+                    break;
+                }
+                if header_len >= HEADER_BUF {
+                    return None; // Header too large
+                }
+            }
+        }
+    }
+
+    // Split at \r\n\r\n to separate headers from any body bytes already read.
+    let header_str = String::from_utf8_lossy(&header_buf[..header_len]);
+    let body_offset = header_str.find("\r\n\r\n").map(|i| i + 4)?;
+    let already_read_body = header_buf[body_offset..header_len].to_vec();
+
+    // Parse Content-Length.
+    let content_length: usize = {
+        let lower = header_str[..body_offset].to_lowercase();
+        lower
+            .lines()
+            .find(|l| l.starts_with("content-length:"))
+            .and_then(|l| l.split(':').nth(1)?.trim().parse().ok())
+            .unwrap_or(0)
+    };
+
+    if content_length > MAX_BODY {
+        return None;
+    }
+
+    // Read remaining body bytes.
+    let mut body = already_read_body;
+    body.reserve(content_length.saturating_sub(body.len()));
+    while body.len() < content_length {
+        let mut chunk = vec![0u8; 8192];
+        match stream.read(&mut chunk).await {
+            Ok(0) | Err(_) => break,
+            Ok(n) => body.extend_from_slice(&chunk[..n]),
+        }
+    }
+
+    // Reassemble the full raw request for existing parsing code.
+    let mut full = header_buf[..body_offset].to_vec();
+    full.extend_from_slice(&body);
+    String::from_utf8(full).ok()
+}
+
+// ──────────────────────────────────────────────
+// Header / request-line helpers
 // ──────────────────────────────────────────────
 
 fn extract_header_value<'a>(headers: &'a str, name: &str) -> Option<&'a str> {
@@ -635,6 +996,10 @@ fn extract_request_line(raw: &str) -> (&str, &str) {
     (method, path)
 }
 
+// ──────────────────────────────────────────────
+// Per-connection HTTP handler
+// ──────────────────────────────────────────────
+
 async fn handle_connection(
     mut stream: tokio::net::TcpStream,
     provider: Arc<dyn LlmProvider>,
@@ -643,13 +1008,11 @@ async fn handle_connection(
     mem_db: Arc<Option<crate::memory::MemoryDB>>,
     port: u16,
 ) {
-    let mut buf = vec![0u8; 131_072]; // 128 KiB — enough for any reasonable tool call
-    let n = match stream.read(&mut buf).await {
-        Ok(n) if n > 0 => n,
-        _ => return,
+    let raw = match read_http_request(&mut stream).await {
+        Some(r) => r,
+        None => return,
     };
 
-    let raw = String::from_utf8_lossy(&buf[..n]);
     let body_start = match raw.find("\r\n\r\n") {
         Some(i) => i + 4,
         None => return,
@@ -657,7 +1020,7 @@ async fn handle_connection(
     let header_section = &raw[..body_start];
     let body_str = raw[body_start..].trim_end_matches('\0');
 
-    let (method, path) = extract_request_line(raw.as_ref());
+    let (method, path) = extract_request_line(raw.as_str());
 
     // ── Discovery endpoint (no auth required) ────────────────────────────
     if method == "GET" && path == "/.well-known/mcp" {
@@ -718,19 +1081,29 @@ async fn handle_connection(
             &req.id,
             json!({
                 "protocolVersion": "2024-11-05",
-                "capabilities": { "tools": {}, "resources": {}, "prompts": {} },
+                "capabilities": {
+                    "tools": {},
+                    "resources": {},
+                    "prompts": {},
+                    "roots": { "listChanged": false },
+                    "sampling": {}
+                },
                 "serverInfo": { "name": "neurodeck", "version": "1.5.0" }
             }),
         ),
+
         "initialized" | "notifications/initialized" => rpc_ok(&req.id, json!({})),
         "ping" => rpc_ok(&req.id, json!({})),
+
+        // Notification methods — clients send these fire-and-forget; always ack.
+        m if m.starts_with("notifications/") => rpc_ok(&req.id, json!({})),
 
         "tools/list" => rpc_ok(&req.id, build_tool_list(&whitelist)),
 
         "tools/call" => {
             let name = req.params["name"].as_str().unwrap_or("");
             let args = &req.params["arguments"];
-            match call_tool(name, args, provider, &whitelist, &mem_db).await {
+            match call_tool(name, args, provider.clone(), &whitelist, &mem_db).await {
                 Ok(result) => rpc_ok(&req.id, result),
                 Err(e) => rpc_ok(
                     &req.id,
@@ -752,7 +1125,26 @@ async fn handle_connection(
             }
         }
 
+        // resource subscriptions are optional in 2024-11 — acknowledge without side-effects
+        "resources/subscribe" | "resources/unsubscribe" => rpc_ok(&req.id, json!({})),
+
         "prompts/list" => rpc_ok(&req.id, prompts_list()),
+
+        "prompts/get" => match prompts_get(&req.params) {
+            Ok(result) => rpc_ok(&req.id, result),
+            Err(e) => rpc_err(&req.id, -32602, &e),
+        },
+
+        "roots/list" => rpc_ok(&req.id, roots_list()),
+
+        "sampling/createMessage" => {
+            match sampling_create_message(&req.params, provider.clone()).await {
+                Ok(result) => rpc_ok(&req.id, result),
+                Err(e) => rpc_err(&req.id, -32603, &e),
+            }
+        }
+
+        "completion/complete" => rpc_ok(&req.id, completion_complete(&req.params)),
 
         _ => rpc_err(&req.id, -32601, "Method not found"),
     };
