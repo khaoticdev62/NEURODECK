@@ -4071,6 +4071,116 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!({ "status": "started" }))
         }
 
+        "lsp_open_document" => {
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?
+                .to_string();
+            let uri = args
+                .get("uri")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'uri'")?
+                .to_string();
+            let content = args
+                .get("content")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'content'")?
+                .to_string();
+            crate::lsp::lsp_open_document(language, uri, content, state.lsp.clone()).await?;
+            Ok(serde_json::json!({ "ok": true }))
+        }
+
+        "lsp_close_document" => {
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?
+                .to_string();
+            let uri = args
+                .get("uri")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'uri'")?
+                .to_string();
+            crate::lsp::lsp_close_document(language, uri, state.lsp.clone()).await?;
+            Ok(serde_json::json!({ "ok": true }))
+        }
+
+        "lsp_change_document" => {
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?
+                .to_string();
+            let uri = args
+                .get("uri")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'uri'")?
+                .to_string();
+            let content = args
+                .get("content")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'content'")?
+                .to_string();
+            let version = args
+                .get("version")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(1) as u32;
+            crate::lsp::lsp_change_document(language, uri, content, version, state.lsp.clone()).await?;
+            Ok(serde_json::json!({ "ok": true }))
+        }
+
+        "lsp_get_completions" => {
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?
+                .to_string();
+            let uri = args
+                .get("uri")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'uri'")?
+                .to_string();
+            let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let items = crate::lsp::lsp_get_completions(language, uri, line, character, state.lsp.clone()).await?;
+            Ok(serde_json::json!(items))
+        }
+
+        "lsp_get_hover" => {
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?
+                .to_string();
+            let uri = args
+                .get("uri")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'uri'")?
+                .to_string();
+            let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let hover = crate::lsp::lsp_get_hover(language, uri, line, character, state.lsp.clone()).await?;
+            Ok(serde_json::json!(hover))
+        }
+
+        "lsp_get_definitions" => {
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?
+                .to_string();
+            let uri = args
+                .get("uri")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'uri'")?
+                .to_string();
+            let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let locs = crate::lsp::lsp_get_definitions(language, uri, line, character, state.lsp.clone()).await?;
+            Ok(serde_json::json!(locs))
+        }
+
         // ────────────────────────────────────────────────────────────────────
         // Browser Extended
         // ────────────────────────────────────────────────────────────────────

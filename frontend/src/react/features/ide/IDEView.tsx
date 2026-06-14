@@ -4,6 +4,7 @@ import {
   X, FilePlus, AlertCircle
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
+import type { LspDiagnostic, LspCompletionItem, LspHover } from '../../services/bridgeAdapter';
 import type { PredictionResult, CommandTemplate, IdeMode } from '../../../shared/ide/ideContracts';
 import { getProfileForFile } from '../../../shared/ide/languageProfiles';
 import { getTopCommands } from '../../../shared/ide/languageCommands';
@@ -34,13 +35,6 @@ interface OpenTab {
   dirty: boolean;
   lang: string;
   lspVersion: number;
-}
-
-interface LspDiagnostic {
-  message: string;
-  severity: number;
-  line: number;
-  character: number;
 }
 
 interface PendingCommand {
@@ -104,6 +98,15 @@ export function IDEView() {
   const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
   const [activeDiagnosticMsg, setActiveDiagnosticMsg] = useState('');
   const [, setCommandOutput] = useState<{ type: string; data: string }[]>([]);
+
+  // LSP state
+  const [lspStatus, setLspStatus] = useState<'off' | 'starting' | 'ready' | 'error'>('off');
+  const [hoverInfo, setHoverInfo] = useState<LspHover | null>(null);
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+  const [lspCompletions, setLspCompletions] = useState<LspCompletionItem[]>([]);
+  const [showLspCompletions, setShowLspCompletions] = useState(false);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startedLspLanguages = useRef(new Set<string>());
   const [newFileModalOpen, setNewFileModalOpen] = useState(false);
   const [newFileName, setNewFileName] = useState('untitled.txt');
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
@@ -135,15 +138,25 @@ export function IDEView() {
     log('Mini IDE ready. Workspace loaded.', 'ok');
   }, [loadFiles, log]);
 
-  // ── LSP: subscribe to diagnostics & controller mode changes ──────────
+  // ── LSP: subscribe to diagnostics, ready, error events ───────────────
   useEffect(() => {
-    const nd = (window as any).neurodeck;
-    const unsubDiagnostics = nd?.lsp?.onDiagnostics?.((data: { uri: string; diagnostics: LspDiagnostic[] }) => {
+    const unsubDiagnostics = neurodeckApi.lsp.onDiagnostics((data) => {
       if (activeTab && data.uri === fileUri(activeTab)) {
         setDiagnostics(data.diagnostics ?? []);
       }
     });
 
+    const unsubReady = neurodeckApi.lsp.onReady((data) => {
+      setLspStatus('ready');
+      log(`LSP ready: ${data.language}`, 'ok');
+    });
+
+    const unsubError = neurodeckApi.lsp.onError((data) => {
+      setLspStatus('error');
+      log(`LSP error (${data.language}): ${data.message}`, 'error');
+    });
+
+    const nd = (window as any).neurodeck;
     const unsubMode = nd?.controller?.onIdeModeChanged?.((data: { mode: IdeMode }) => {
       if (data?.mode) setIdeMode(data.mode);
     });
@@ -154,13 +167,15 @@ export function IDEView() {
     });
 
     return () => {
-      unsubDiagnostics?.();
+      unsubDiagnostics();
+      unsubReady();
+      unsubError();
       unsubMode?.();
       unsubOutput?.();
     };
   }, [activeTab, log]);
 
-  // ── Open file: notify LSP ─────────────────────────────────────────────
+  // ── Open file: auto-start LSP server and notify it ───────────────────
   const openFile = useCallback(async (path: string, name: string) => {
     const existing = openTabs.find((t) => t.path === path);
     if (existing) {
@@ -175,10 +190,27 @@ export function IDEView() {
       setActiveTab(path);
       setDiagnostics([]);
       setPredictions([]);
+      setHoverInfo(null);
+      setLspCompletions([]);
 
-      const nd = (window as any).neurodeck;
       if (supportsLspLanguage(lang)) {
-        nd?.lsp?.openDocument?.(lang, fileUri(path), res.content).catch(() => {});
+        // Auto-start the LSP server for this language if not already running.
+        if (!startedLspLanguages.current.has(lang)) {
+          const known = await neurodeckApi.lsp.knownServers();
+          const server = known.find((s) => s.language === lang);
+          if (server) {
+            startedLspLanguages.current.add(lang);
+            setLspStatus('starting');
+            neurodeckApi.lsp
+              .start(server.language, server.command, server.args)
+              .catch(() => {
+                startedLspLanguages.current.delete(lang);
+                setLspStatus('error');
+              });
+          }
+        }
+        // Notify LSP of the opened document (non-fatal if server not up yet).
+        neurodeckApi.lsp.openDocument(lang, fileUri(path), res.content).catch(() => {});
       }
     } catch (e) {
       log(`Cannot open ${name}: ${e}`, 'error');
@@ -189,8 +221,7 @@ export function IDEView() {
   const closeTab = useCallback((path: string) => {
     const tab = openTabs.find((t) => t.path === path);
     if (tab && supportsLspLanguage(tab.lang)) {
-      const nd = (window as any).neurodeck;
-      nd?.lsp?.closeDocument?.(tab.lang, fileUri(path)).catch(() => {});
+      neurodeckApi.lsp.closeDocument(tab.lang, fileUri(path)).catch(() => {});
     }
     setOpenTabs((prev) => {
       const idx = prev.findIndex((t) => t.path === path);
@@ -227,8 +258,9 @@ export function IDEView() {
     lspChangeTimer.current = setTimeout(() => {
       const tab = openTabs.find((t) => t.path === activeTab);
       if (!tab || !supportsLspLanguage(tab.lang)) return;
-      const nd = (window as any).neurodeck;
-      nd?.lsp?.changeDocument?.(tab.lang, fileUri(activeTab), value, tab.lspVersion + 1).catch(() => {});
+      neurodeckApi.lsp
+        .changeDocument(tab.lang, fileUri(activeTab), value, tab.lspVersion + 1)
+        .catch(() => {});
     }, 300);
   }, [activeTab, openTabs]);
 
@@ -375,6 +407,95 @@ export function IDEView() {
     setShowPredictions(false);
   }, [onEditorInput, diagnostics, log]);
 
+  // ── LSP: Ctrl+Space completions ───────────────────────────────────────
+  const triggerLspCompletions = useCallback(async () => {
+    if (!activeTab || !editorRef.current) return;
+    const tab = openTabs.find((t) => t.path === activeTab);
+    if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== 'ready') return;
+    const el = editorRef.current;
+    const textBefore = el.value.slice(0, el.selectionStart);
+    const lines = textBefore.split('\n');
+    const line = lines.length - 1;
+    const character = lines[line]?.length ?? 0;
+    try {
+      const items = await neurodeckApi.lsp.getCompletions(tab.lang, fileUri(activeTab), line, character);
+      if (items.length > 0) {
+        setLspCompletions(items);
+        setShowLspCompletions(true);
+      }
+    } catch {
+      // non-fatal
+    }
+  }, [activeTab, openTabs, lspStatus]);
+
+  // ── LSP: F12 go-to-definition ─────────────────────────────────────────
+  const goToDefinition = useCallback(async () => {
+    if (!activeTab || !editorRef.current) return;
+    const tab = openTabs.find((t) => t.path === activeTab);
+    if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== 'ready') return;
+    const el = editorRef.current;
+    const textBefore = el.value.slice(0, el.selectionStart);
+    const lines = textBefore.split('\n');
+    const line = lines.length - 1;
+    const character = lines[line]?.length ?? 0;
+    try {
+      const locs = await neurodeckApi.lsp.getDefinitions(tab.lang, fileUri(activeTab), line, character);
+      if (locs.length > 0) {
+        const first = locs[0];
+        // Strip file:// prefix and open the file
+        const path = first.uri.replace(/^file:\/\/\//, '').replace(/^file:\/\//, '');
+        const name = path.split(/[/\\]/).pop() ?? path;
+        await openFile(path, name);
+        log(`Go to definition: ${name}:${first.range.start.line + 1}`, 'ok');
+      } else {
+        log('No definition found', 'warn');
+      }
+    } catch (e) {
+      log(`Go to definition failed: ${e}`, 'warn');
+    }
+  }, [activeTab, openTabs, lspStatus, openFile, log]);
+
+  // ── LSP: hover on mouse move (500ms debounce) ─────────────────────────
+  const onEditorMouseMove = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
+    if (!activeTab) return;
+    const tab = openTabs.find((t) => t.path === activeTab);
+    if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== 'ready') return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    hoverTimer.current = setTimeout(async () => {
+      if (!editorRef.current) return;
+      const el = editorRef.current;
+      // Approximate line/char from mouse position over the textarea
+      const lineHeight = 20; // matches leading-5
+      const charWidth = 8.4; // approximate monospace char width at text-sm
+      const scrollTop = el.scrollTop;
+      const scrollLeft = el.scrollLeft;
+      const offsetY = y - rect.top + scrollTop;
+      const offsetX = x - rect.left + scrollLeft - 40; // 40px = line number gutter
+      const approxLine = Math.max(0, Math.floor(offsetY / lineHeight));
+      const approxChar = Math.max(0, Math.floor(offsetX / charWidth));
+      try {
+        const hover = await neurodeckApi.lsp.getHover(tab.lang, fileUri(activeTab), approxLine, approxChar);
+        if (hover?.contents) {
+          setHoverInfo(hover);
+          setHoverPos({ x, y });
+        } else {
+          setHoverInfo(null);
+        }
+      } catch {
+        setHoverInfo(null);
+      }
+    }, 500);
+  }, [activeTab, openTabs, lspStatus]);
+
+  const onEditorMouseLeave = useCallback(() => {
+    if (hoverTimer.current) clearTimeout(hoverTimer.current);
+    setHoverInfo(null);
+    setHoverPos(null);
+  }, []);
+
   // ── Active language profile ───────────────────────────────────────────
   const activeProfile = activeTabData ? getProfileForFile(activeTabData.name) : null;
   const activeCommands: CommandTemplate[] = activeProfile
@@ -397,7 +518,7 @@ export function IDEView() {
               <LanguageModeBadge
                 languageId={activeProfile?.id ?? activeTabData.lang}
                 displayName={activeProfile?.displayName ?? activeTabData.lang}
-                lspStatus="ready"
+                lspStatus={lspStatus === 'off' ? 'missing' : lspStatus}
                 ideMode={ideMode}
               />
             )}
@@ -527,12 +648,26 @@ export function IDEView() {
                     onScroll={onEditorScroll}
                     onClick={onEditorCursorChange}
                     onKeyUp={onEditorCursorChange}
+                    onMouseMove={onEditorMouseMove}
+                    onMouseLeave={onEditorMouseLeave}
                     onKeyDown={(e) => {
                       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
                         saveActiveFile();
                       }
-                      if (e.key === 'Tab' && !showPredictions) {
+                      if (e.ctrlKey && e.key === ' ') {
+                        e.preventDefault();
+                        void triggerLspCompletions();
+                      }
+                      if (e.key === 'F12') {
+                        e.preventDefault();
+                        void goToDefinition();
+                      }
+                      if (e.key === 'Escape') {
+                        setShowLspCompletions(false);
+                        setHoverInfo(null);
+                      }
+                      if (e.key === 'Tab' && !showPredictions && !showLspCompletions) {
                         e.preventDefault();
                         const el = e.currentTarget;
                         const start = el.selectionStart;
@@ -559,6 +694,71 @@ export function IDEView() {
                     visible={showDiagnosticPanel}
                   />
                 </div>
+
+                {/* LSP completions popup (Ctrl+Space) */}
+                {showLspCompletions && lspCompletions.length > 0 && (
+                  <div
+                    role="listbox"
+                    aria-label="LSP completions"
+                    className="absolute bottom-2 left-12 z-50 max-h-48 w-72 overflow-auto rounded-xl border border-nd-accent/20 bg-nd-surface shadow-glow-sm"
+                  >
+                    <div className="flex items-center justify-between border-b border-nd-text-muted/10 px-3 py-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Completions</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowLspCompletions(false)}
+                        aria-label="Close completions"
+                        className="text-nd-text-muted hover:text-nd-text rounded"
+                      >
+                        <X className="h-3 w-3" aria-hidden="true" />
+                      </button>
+                    </div>
+                    {lspCompletions.slice(0, 20).map((item, i) => (
+                      <button
+                        key={i}
+                        role="option"
+                        aria-selected={false}
+                        type="button"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-nd-text hover:bg-nd-accent/10 focus-visible:bg-nd-accent/10 focus-visible:outline-none"
+                        onClick={() => {
+                          const el = editorRef.current;
+                          if (!el) return;
+                          const insertText = item.insert_text ?? item.label;
+                          const start = el.selectionStart;
+                          const end = el.selectionEnd;
+                          el.value = el.value.slice(0, start) + insertText + el.value.slice(end);
+                          el.selectionStart = el.selectionEnd = start + insertText.length;
+                          onEditorInput();
+                          setShowLspCompletions(false);
+                          log(`Inserted: ${item.label}`, 'ok');
+                        }}
+                      >
+                        <span className="shrink-0 text-[10px] text-nd-text-muted/60 w-4 text-center">
+                          {item.kind === 2 ? 'M' : item.kind === 6 ? 'V' : item.kind === 5 ? 'F' : '·'}
+                        </span>
+                        <span className="truncate font-mono">{item.label}</span>
+                        {item.detail && (
+                          <span className="ml-auto shrink-0 truncate max-w-[80px] text-nd-text-muted/60 text-[10px]">
+                            {item.detail}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* LSP hover tooltip */}
+                {hoverInfo && hoverPos && (
+                  <div
+                    role="tooltip"
+                    className="pointer-events-none fixed z-50 max-w-sm rounded-xl border border-nd-accent/15 bg-nd-surface px-3 py-2 shadow-glow-sm"
+                    style={{ left: hoverPos.x + 12, top: hoverPos.y - 8 }}
+                  >
+                    <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-nd-text/90">
+                      {hoverInfo.contents.slice(0, 400)}
+                    </pre>
+                  </div>
+                )}
               </>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-nd-text-muted/50">
