@@ -20,6 +20,10 @@ const mockGetDependencyStatus = vi.fn();
 const mockInstallDependency = vi.fn();
 const mockCancelDependency = vi.fn();
 const mockDependencyOnProgress = vi.fn().mockReturnValue(() => {});
+const mockNpmGetStatus = vi.fn();
+const mockNpmGetRecommended = vi.fn();
+const mockNpmInstall = vi.fn();
+const mockNpmOnProgress = vi.fn().mockReturnValue(() => {});
 
 vi.mock('../../services/bridgeAdapter', () => ({
   neurodeckApi: {
@@ -50,6 +54,12 @@ vi.mock('../../services/bridgeAdapter', () => ({
       install: (id: string) => mockInstallDependency(id),
       cancel: (id: string) => mockCancelDependency(id),
       onProgress: (cb: any) => mockDependencyOnProgress(cb),
+    },
+    npm: {
+      getStatus: () => mockNpmGetStatus(),
+      getRecommended: () => mockNpmGetRecommended(),
+      install: (name: string) => mockNpmInstall(name),
+      onProgress: (cb: any) => mockNpmOnProgress(cb),
     },
   },
   listenBridge: vi.fn().mockReturnValue(() => {}),
@@ -108,6 +118,8 @@ describe('OnboardingWizard Component', () => {
     ]);
     mockPluginsList.mockResolvedValue({ plugins: [] });
     mockGetDependencyStatus.mockResolvedValue({ ssh: true, ollama: true, tts: true, openvpn: true, wireguard: true });
+    mockNpmGetStatus.mockResolvedValue({ node: true, npm: true, nodeVersion: 'v20.0.0', npmVersion: '10.0.0' });
+    mockNpmGetRecommended.mockResolvedValue([]);
   });
 
   it('performs precheck and shows Skip for Now button if diagnostics are healthy', async () => {
@@ -184,8 +196,14 @@ describe('OnboardingWizard Component', () => {
       expect(screen.getByText('Script Automation & Plugins')).toBeDefined();
     });
 
-    // --- STEP 5 -> STEP 6 (Finish) ---
+    // --- STEP 5 -> STEP 6 (Packages) ---
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByText('Recommended Packages')).toBeDefined();
+    });
+
+    // --- STEP 6 -> STEP 7 (Finish) ---
+    await userEvent.click(screen.getByRole('button', { name: /skip packages/i }));
     await waitFor(() => {
       expect(screen.getByText('Setup Finalization')).toBeDefined();
     });
