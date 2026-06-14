@@ -57,7 +57,7 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
       </div>
 
       {/* Nav sections */}
-      <nav className="nav-tab-bar min-h-0 flex-1 overflow-y-auto px-1.5 pb-2 scrollbar-thin">
+      <nav className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2 scrollbar-thin" aria-label="Main navigation">
         {sectionOrder.map((section) => {
           const items = grouped[section];
           if (!items?.length) return null;
@@ -81,11 +81,11 @@ export function PrimarySidebar({ state, dispatch }: { state: NeuroDeckState; dis
                       aria-label={item.label}
                       title={item.label}
                       onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}
-                      className={`nav-tab no-drag flex w-full items-center rounded-lg border px-2 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                      className={`no-drag flex w-full items-center rounded-lg px-2 py-2 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                         active
-                          ? 'border-nd-accent/35 bg-nd-accent/10 text-nd-accent shadow-focus'
-                          : 'border-transparent text-nd-text-muted hover:border-nd-text-muted/15 hover:bg-nd-surface/50 hover:text-nd-text'
-                      } ${active ? 'active' : ''}`}
+                          ? 'bg-nd-accent/10 text-nd-accent font-semibold'
+                          : 'text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text'
+                      } ${expanded ? '' : 'justify-center'}`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
                       <span className={`ml-2.5 overflow-hidden whitespace-nowrap text-[13px] font-medium transition-opacity duration-150 ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>
