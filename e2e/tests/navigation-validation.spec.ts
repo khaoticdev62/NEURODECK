@@ -32,7 +32,7 @@ const VIEWS = [
   { id: "agent", name: "Agent", selector: "#agent-task-input" },
   { id: "memory", name: "Memory", selector: "#memory-search-input" },
   { id: "prompt-lab", name: "Prompt Lab", selector: ".prompt-lab-container" },
-  { id: "remote", name: "Remote", selector: ".remote-status-badge" },
+  { id: "remote", name: "Remote", selector: "[data-testid='remote-status-badge']" },
   { id: "docs", name: "Docs", selector: "#docs-search-input" }
 ] as const;
 

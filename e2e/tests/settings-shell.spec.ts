@@ -108,13 +108,13 @@ test("docs and remote views stay usable without horizontal overflow on narrow wi
   await app.goto();
 
   await app.navigateTo("remote");
-  await expect(page.locator(".remote-kicker")).toBeVisible();
-  const remoteMetrics = await page.locator(".remote-container").evaluate((el) => ({
+  await expect(page.getByRole('heading', { name: 'Remote Control' })).toBeVisible();
+  const remoteMetrics = await page.locator("[data-testid='remote-view']").evaluate((el) => ({
     clientWidth: el.clientWidth,
     scrollWidth: el.scrollWidth,
   }));
   expect(remoteMetrics.scrollWidth).toBeLessThanOrEqual(remoteMetrics.clientWidth + 2);
-  await expect(page.locator("#view-remote .remote-status-badge")).toBeVisible();
+  await expect(page.locator("[data-testid='remote-status-badge']")).toBeVisible();
 
   await app.navigateTo("docs");
   await expect(page.locator(".docs-kicker")).toBeVisible();
@@ -138,7 +138,7 @@ test("tool-heavy tabs stay horizontally centered on wide viewports", async ({ pa
     ["browser", ".browser-container"],
     ["agent", ".agent-shell"],
     ["memory", ".memory-shell"],
-    ["remote", ".remote-container"],
+    ["remote", "[data-testid='remote-view']"],
     ["docs", ".docs-container"],
   ] as const;
 
