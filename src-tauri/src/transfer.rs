@@ -238,9 +238,7 @@ impl<E: crate::bridge::EventEmitter> WarpinatorCallbacks for STermWarpinatorCall
         file_type: i32,
         chunk: &[u8],
     ) -> Result<(), String> {
-        let download_dir = std::env::current_dir()
-            .unwrap_or_default()
-            .join("neurodeck_transfers");
+        let download_dir = crate::user_config_dir().join("neurodeck_transfers");
 
         tokio::fs::create_dir_all(&download_dir)
             .await
@@ -373,7 +371,15 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
     let service_type = "_neurodeck._tcp.local.";
     let instance_name = format!("neurodeck-{}", hostname);
     let host_name = format!("{}.local.", hostname.replace(" ", "-"));
-    let port = 18338;
+    // Allow port override via env var for testing two instances on the same machine
+    let port: u16 = std::env::var("NEURODECK_SYNC_PORT")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(18338);
+    let warpinator_port: u16 = std::env::var("NEURODECK_WARPINATOR_PORT")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(42000);
 
     let group_code = {
         let s = state.lock().unwrap_or_else(|e| e.into_inner());
@@ -462,7 +468,7 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
                                     ip: ip.clone(),
                                     hostname: hostname.clone(),
                                     os,
-                                    port: 18338,
+                                    port,
                                     is_warpinator: false,
                                 };
                                 let is_new = !s.peers.contains_key(&ip);
@@ -627,10 +633,10 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
     let callbacks_clone = callbacks.clone();
     tokio::spawn(async move {
         if let Err(e) =
-            neurodeck_infrastructure::warpinator::start_warpinator_service(callbacks_clone, 42000)
+            neurodeck_infrastructure::warpinator::start_warpinator_service(callbacks_clone, warpinator_port)
                 .await
         {
-            println!("Failed to start Warpinator service: {}", e);
+            println!("Failed to start Warpinator service on port {}: {}", warpinator_port, e);
         }
     });
 
@@ -639,7 +645,8 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
     let state_server = state.clone();
     let download_dir_server = download_dir.clone();
     tokio::spawn(async move {
-        let listener = match TcpListener::bind("0.0.0.0:18338").await {
+        let bind_addr = format!("0.0.0.0:{}", port);
+        let listener = match TcpListener::bind(&bind_addr).await {
             Ok(l) => l,
             Err(e) => {
                 println!("Failed to bind TCP transfer server: {}", e);
@@ -898,7 +905,20 @@ async fn run_outgoing_transfer<E: crate::bridge::EventEmitter>(
     state: Arc<Mutex<TransferState>>,
     is_temp: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let peer_addr = format!("{}:18338", peer_ip);
+    // Use port from peer registry if available, otherwise fall back to env var / default
+    let peer_port: u16 = {
+        let s = state.lock().unwrap_or_else(|e| e.into_inner());
+        s.peers
+            .get(&peer_ip)
+            .map(|(p, _)| p.port)
+            .unwrap_or_else(|| {
+                std::env::var("NEURODECK_SYNC_PORT")
+                    .ok()
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or(18338)
+            })
+    };
+    let peer_addr = format!("{}:{}", peer_ip, peer_port);
 
     let socket = match TcpStream::connect(&peer_addr).await {
         Ok(s) => s,

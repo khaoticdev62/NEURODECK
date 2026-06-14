@@ -585,7 +585,7 @@ pub async fn run_bridge_server(
 
     // ── Transfer services ──────────────────────────────────────────────────
     let transfer_state = Arc::new(Mutex::new(crate::transfer::TransferState::new()));
-    let download_dir = config_root.join("data/transfers");
+    let download_dir = config_root.join("neurodeck_transfers");
     let _ = std::fs::create_dir_all(&download_dir);
     crate::transfer::start_transfer_services(
         broadcaster.clone(),
