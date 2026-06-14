@@ -121,11 +121,11 @@ export function PrimarySidebar({ state, dispatch }: SidebarProps) {
                         aria-label={item.label}
                         title={item.label}
                         onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}
-                        className={`nav-tab no-drag flex w-full items-center rounded-lg border px-2 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                        className={`nav-tab no-drag relative flex w-full items-center rounded-xl px-2 py-2 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
                           active
-                            ? 'active border-nd-accent/35 bg-nd-accent/10 text-nd-accent shadow-focus'
-                            : 'border-transparent text-nd-text-muted hover:border-nd-text-muted/15 hover:bg-nd-surface/50 hover:text-nd-text'
-                        }`}
+                            ? 'active bg-nd-accent/10 text-nd-accent font-semibold before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-[3px] before:h-3/5 before:bg-nd-accent before:rounded-r-sm before:shadow-[0_0_8px_var(--accent-color)]'
+                            : 'text-nd-text-muted hover:bg-white/5 hover:text-nd-text-primary'
+                        } ${expanded ? "" : "justify-center"}`}
                       >
                         <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
                         <span
