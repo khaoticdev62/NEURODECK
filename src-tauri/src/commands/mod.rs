@@ -7133,6 +7133,180 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // Transfer — Extended commands (Sync UI surface)
+        // ────────────────────────────────────────────────────────────────────
+
+        "transfer_manual_add_peer" => {
+            let ip = args
+                .get("ip")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'ip'")?
+                .to_string();
+            let port = args
+                .get("port")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(42000) as u16;
+            let hostname = args
+                .get("hostname")
+                .and_then(|v| v.as_str())
+                .unwrap_or("manual-peer")
+                .to_string();
+            let mut ts = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+            let peer = crate::transfer::Peer {
+                ip: ip.clone(),
+                hostname,
+                os: "unknown".to_string(),
+                port,
+                is_warpinator: true,
+            };
+            ts.peers.insert(ip.clone(), (peer, std::time::Instant::now()));
+            state.broadcaster.emit("peers_updated", serde_json::json!({ "reason": "manual_add" }));
+            Ok(serde_json::json!({ "status": "ok", "peer_ip": ip }))
+        }
+
+        "transfer_retry" => {
+            let transfer_id = args
+                .get("transfer_id")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'transfer_id'")?
+                .to_string();
+            let (peer_ip, file_path) = {
+                let ts = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+                let xfer = ts
+                    .transfers
+                    .get(&transfer_id)
+                    .ok_or("Transfer not found")?;
+                if xfer.direction != "Outgoing" {
+                    return Err("Can only retry outgoing transfers".to_string());
+                }
+                let peer_ip = xfer.peer_ip.clone();
+                let path = ts
+                    .outgoing_paths
+                    .get(&transfer_id)
+                    .cloned()
+                    .ok_or("Original path not found for retry")?;
+                (peer_ip, path.to_string_lossy().to_string())
+            };
+            let new_id = crate::transfer::start_file_transfer_impl(
+                peer_ip,
+                file_path,
+                state.broadcaster.clone(),
+                state.transfer.clone(),
+            )
+            .await?;
+            Ok(serde_json::json!({ "status": "ok", "new_transfer_id": new_id }))
+        }
+
+        "transfer_trusted_peers" => {
+            #[derive(serde::Serialize, serde::Deserialize, Clone)]
+            struct TrustedPeer {
+                ip: String,
+                label: String,
+                group_code_hash: String,
+                added_at: String,
+            }
+            let data_dir = crate::user_config_dir().join("data");
+            let _ = std::fs::create_dir_all(&data_dir);
+            let peers_path = data_dir.join("trusted_peers.json");
+
+            let mut trusted: Vec<TrustedPeer> = if peers_path.exists() {
+                std::fs::read_to_string(&peers_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default()
+            } else {
+                Vec::new()
+            };
+
+            let action = args.get("action").and_then(|v| v.as_str()).unwrap_or("list");
+            match action {
+                "add" => {
+                    let ip = args
+                        .get("ip")
+                        .and_then(|v| v.as_str())
+                        .ok_or("Missing 'ip'")?
+                        .to_string();
+                    let label = args
+                        .get("label")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or(&ip)
+                        .to_string();
+                    trusted.retain(|p| p.ip != ip);
+                    trusted.push(TrustedPeer {
+                        ip,
+                        label,
+                        group_code_hash: String::new(),
+                        added_at: chrono::Utc::now().to_rfc3339(),
+                    });
+                    let json = serde_json::to_string_pretty(&trusted)
+                        .map_err(|e| e.to_string())?;
+                    std::fs::write(&peers_path, json).map_err(|e| e.to_string())?;
+                    Ok(serde_json::json!({ "status": "ok", "peers": trusted }))
+                }
+                "remove" => {
+                    let ip = args
+                        .get("ip")
+                        .and_then(|v| v.as_str())
+                        .ok_or("Missing 'ip'")?;
+                    trusted.retain(|p| p.ip != ip);
+                    let json = serde_json::to_string_pretty(&trusted)
+                        .map_err(|e| e.to_string())?;
+                    std::fs::write(&peers_path, json).map_err(|e| e.to_string())?;
+                    Ok(serde_json::json!({ "status": "ok", "peers": trusted }))
+                }
+                _ => Ok(serde_json::json!({ "status": "ok", "peers": trusted })),
+            }
+        }
+
+        "transfer_diagnostics" => {
+            let ts = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+            let active_count = ts
+                .transfers
+                .values()
+                .filter(|t| t.status == "Transferring")
+                .count();
+            let download_dir = crate::user_config_dir()
+                .join("neurodeck_transfers")
+                .to_string_lossy()
+                .to_string();
+            Ok(serde_json::json!({
+                "status": "ok",
+                "diagnostics": {
+                    "mdns_active": ts.mdns_daemon.is_some(),
+                    "peer_count": ts.peers.len(),
+                    "active_transfers": active_count,
+                    "tcp_port": 18338u16,
+                    "grpc_port": 42000u16,
+                    "group_code_set": !ts.group_code.is_empty(),
+                    "download_dir": download_dir
+                }
+            }))
+        }
+
+        "transfer_clear_history" => {
+            let include_active = args
+                .get("include_active")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let mut ts = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
+            let terminal_statuses = ["Completed", "Failed", "Cancelled", "Rejected"];
+            let all_statuses = ["Completed", "Failed", "Cancelled", "Pending", "Rejected", "Accepted", "Transferring"];
+            let remove_statuses = if include_active { &all_statuses[..] } else { &terminal_statuses[..] };
+            let before = ts.transfers.len();
+            ts.transfers.retain(|_, t| !remove_statuses.contains(&t.status.as_str()));
+            let cleared = before - ts.transfers.len();
+            Ok(serde_json::json!({ "status": "ok", "cleared": cleared }))
+        }
+
+        "transfer_get_inbox_path" => {
+            let path = crate::user_config_dir()
+                .join("neurodeck_transfers")
+                .to_string_lossy()
+                .to_string();
+            Ok(serde_json::json!({ "status": "ok", "path": path }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
         // SFTP (calls public async fns — no AppHandle needed)
         // ────────────────────────────────────────────────────────────────────
         "sftp_test_connection" => {

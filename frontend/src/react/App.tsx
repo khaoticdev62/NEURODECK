@@ -44,6 +44,7 @@ const PromptLabView  = lazy(() => import("./features/prompt-lab/PromptLabView").
 const RecoveryView   = lazy(() => import("./features/recovery/RecoveryView").then((m) => ({ default: m.RecoveryView })));
 const RemoteView     = lazy(() => import("./features/remote/RemoteView").then((m) => ({ default: m.RemoteView })));
 const SchedulerView  = lazy(() => import("./features/scheduler/SchedulerView").then((m) => ({ default: m.SchedulerView })));
+const SyncView       = lazy(() => import("./features/sync/SyncView").then((m) => ({ default: m.SyncView })));
 const SecurityView   = lazy(() => import("./features/security/SecurityView").then((m) => ({ default: m.SecurityView })));
 const ShareView      = lazy(() => import("./features/share/ShareView").then((m) => ({ default: m.ShareView })));
 const ThemesView     = lazy(() => import("./features/themes/ThemesView").then((m) => ({ default: m.ThemesView })));
@@ -1140,6 +1141,7 @@ export default function App() {
               {state.activeView === "academy" && renderView("academy", <AcademyView />)}
               {state.activeView === "graph" && renderView("graph", <GraphView />)}
               {state.activeView === "scheduler" && renderView("scheduler", <SchedulerView />)}
+              {state.activeView === "sync" && renderView("sync", <SyncView />)}
               {state.activeView === "orchestrator" &&
                 renderView("orchestrator", <OrchestratorView />)}
               {state.activeView === "settings" &&

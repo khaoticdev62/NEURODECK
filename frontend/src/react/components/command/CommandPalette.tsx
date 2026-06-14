@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Dispatch } from 'react';
-import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileDown, FileJson, FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers, Lock, Magnet, Network, Paintbrush, Palette, Plug, Radio, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
+import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileDown, FileJson, FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers, Lock, Magnet, Network, Paintbrush, Palette, Plug, Radio, RefreshCcw, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { starterPrompts } from '../../types/seed';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
@@ -87,6 +87,7 @@ const commands: CommandItem[] = [
   { label: 'Open Project', hint: 'Project folder scan, stack detection, and context', view: 'project', icon: FolderOpen },
   { label: 'Open Graph', hint: 'Knowledge and memory relationship visualizer', view: 'graph', icon: Network },
   { label: 'Open Scheduler', hint: 'Cron job management and timed automation', view: 'scheduler', icon: CalendarClock },
+  { label: 'Open Sync', hint: 'LAN file transfer — Warpinator/Winpinator compatible', view: 'sync', icon: RefreshCcw },
   { label: 'Open Orchestrator', hint: 'Multi-step LLM pipeline builder', view: 'orchestrator', icon: Layers },
   { label: 'Open Plugins', hint: 'Lua plugin manager and extension tools', view: 'plugins', icon: Plug },
   { label: 'Open Diagnostics', hint: 'IPC logs, runtime health, and connection matrix', view: 'diagnostics', icon: Activity },

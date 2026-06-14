@@ -1809,6 +1809,83 @@ const scheduler = {
   },
 };
 
+/* ── Transfer (LAN / Warpinator) ────────────────────────────────────────── */
+
+export interface TransferPeer {
+  ip: string;
+  hostname: string;
+  os: string;
+  port: number;
+  is_warpinator: boolean;
+}
+
+export interface FileTransfer {
+  id: string;
+  filename: string;
+  size: number;
+  progress: number;
+  status: 'Pending' | 'Accepted' | 'Rejected' | 'Transferring' | 'Completed' | 'Failed' | 'Cancelled';
+  direction: 'Incoming' | 'Outgoing';
+  peer_ip: string;
+  peer_name: string;
+}
+
+export interface TrustedPeer {
+  ip: string;
+  label: string;
+  group_code_hash: string;
+  added_at: string;
+}
+
+export interface TransferDiagnostics {
+  mdns_active: boolean;
+  peer_count: number;
+  active_transfers: number;
+  tcp_port: number;
+  grpc_port: number;
+  group_code_set: boolean;
+  download_dir: string;
+}
+
+const transfer = {
+  async listPeers(): Promise<TransferPeer[]> {
+    return bridgeInvoke<TransferPeer[]>('get_discovered_peers');
+  },
+  async listActive(): Promise<FileTransfer[]> {
+    return bridgeInvoke<FileTransfer[]>('get_active_transfers');
+  },
+  async sendFile(peer_ip: string, file_path: string) {
+    return bridgeInvoke<{ status: string; transfer_id: string }>('start_file_transfer', { peer_ip, file_path });
+  },
+  async respond(transfer_id: string, accept: boolean) {
+    return bridgeInvoke<{ status: string }>('respond_to_transfer', { transfer_id, accept });
+  },
+  async cancel(id: string) {
+    return bridgeInvoke<{ status: string }>('transfer_cancel', { id });
+  },
+  async retry(transfer_id: string) {
+    return bridgeInvoke<{ status: string; new_transfer_id: string }>('transfer_retry', { transfer_id });
+  },
+  async groupCode(action: 'get' | 'set' | 'clear', code?: string) {
+    return bridgeInvoke<{ status: string; code?: string; has_code?: boolean }>('transfer_group_code', { action, code });
+  },
+  async addManualPeer(ip: string, port: number, hostname: string) {
+    return bridgeInvoke<{ status: string; peer_ip: string }>('transfer_manual_add_peer', { ip, port, hostname });
+  },
+  async trustedPeers(action: 'list' | 'add' | 'remove', ip?: string, label?: string) {
+    return bridgeInvoke<{ status: string; peers?: TrustedPeer[] }>('transfer_trusted_peers', { action, ip, label });
+  },
+  async diagnostics() {
+    return bridgeInvoke<{ status: string; diagnostics: TransferDiagnostics }>('transfer_diagnostics');
+  },
+  async clearHistory(include_active?: boolean) {
+    return bridgeInvoke<{ status: string; cleared: number }>('transfer_clear_history', { include_active });
+  },
+  async getInboxPath() {
+    return bridgeInvoke<{ status: string; path: string }>('transfer_get_inbox_path');
+  },
+};
+
 /* ── Git ─────────────────────────────────────────────────────────────────── */
 
 export interface GitRepo {
@@ -2090,8 +2167,8 @@ export interface FileTransfer {
   filename: string;
   size: number;
   progress: number;
-  status: string; // "Pending" | "Accepted" | "Rejected" | "Transferring" | "Completed" | "Failed" | "Cancelled"
-  direction: string; // "Incoming" | "Outgoing"
+  status: 'Pending' | 'Accepted' | 'Rejected' | 'Transferring' | 'Completed' | 'Failed' | 'Cancelled';
+  direction: 'Incoming' | 'Outgoing';
   peer_ip: string;
   peer_name: string;
 }
@@ -2464,6 +2541,7 @@ export const neurodeckApi = {
   remote,
   canvas,
   scheduler,
+  transfer,
   git,
   promptLab,
   promptDrive,

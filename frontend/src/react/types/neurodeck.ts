@@ -6,7 +6,7 @@ export type ViewId =
   | 'canvas' | 'terminal' | 'ssh' | 'ide' | 'git' | 'api-lab' | 'cli-maker'
   | 'browser' | 'tunnel' | 'share' | 'remote' | 'torrent'
   | 'project' | 'docs' | 'prompt-lab' | 'academy' | 'graph' | 'sessions'
-  | 'scheduler' | 'orchestrator'
+  | 'scheduler' | 'orchestrator' | 'sync'
   | 'models' | 'cache' | 'plugins' | 'diagnostics' | 'settings'
   | 'security' | 'themes' | 'exports' | 'maintenance' | 'recovery'
   | 'fonts';

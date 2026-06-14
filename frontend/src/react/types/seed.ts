@@ -4,7 +4,7 @@ import {
   FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers,
   LayoutDashboard, Lock, Magnet, Network, Paintbrush, Palette,
   Plug, Radio, RotateCcw, Settings, Share2, ShieldCheck,
-  Terminal, TerminalSquare, Type, Webhook, Wrench, Workflow
+  Terminal, TerminalSquare, Type, Webhook, Wrench, Workflow, RefreshCcw
 } from 'lucide-react';
 import type { FontOption, NavItem, ThemeTokenSet } from '../types/neurodeck';
 
@@ -44,6 +44,7 @@ export const navItems: NavItem[] = [
   // ── Automation ──
   { id: 'scheduler', label: 'Scheduler', description: 'Task scheduling and cron', icon: CalendarClock, shortcut: '', section: 'Automation' },
   { id: 'orchestrator', label: 'Orchestrator', description: 'Workflow automation builder', icon: Layers, shortcut: '', section: 'Automation' },
+  { id: 'sync', label: 'Sync', description: 'LAN file transfer — Warpinator/Winpinator', icon: RefreshCcw, shortcut: '', section: 'Automation' },
 
   // ── System ──
   { id: 'models', label: 'Models', description: 'Local model inventory', icon: BrainCircuit, shortcut: '6', section: 'System' },
