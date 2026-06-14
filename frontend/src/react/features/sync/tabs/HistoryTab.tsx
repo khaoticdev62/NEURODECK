@@ -3,6 +3,9 @@ import { Clock, RotateCcw, Trash2 } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
 import { ConfirmDialog } from '../../../components/primitives/ConfirmDialog';
 import { StatusChip } from '../../../components/primitives/StatusChip';
+import { IconButton } from '../../../components/primitives/IconButton';
+import { Panel } from '../../../components/primitives/Panel';
+import { Button } from '../../../components/primitives/Button';
 import { neurodeckApi } from '../../../services/bridgeAdapter';
 import type { FileTransfer } from '../../../services/bridgeAdapter';
 
@@ -39,50 +42,64 @@ export function HistoryTab({ transfers, onRetry, onClearDone }: Props) {
   };
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto p-1">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-widest text-nd-text-muted">Transfer History</h3>
-        {history.length > 0 && (
-          <button
+    <Panel
+      eyebrow="History"
+      title="Transfer History"
+      action={
+        history.length > 0 ? (
+          <Button
             type="button"
+            size="xs"
+            variant="danger"
+            icon={Trash2}
             onClick={() => setConfirmClear(true)}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-danger/10 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-danger/40"
           >
-            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Clear history
-          </button>
+            Clear
+          </Button>
+        ) : undefined
+      }
+      className="h-full"
+    >
+      <div className="flex h-full flex-col gap-3 overflow-y-auto">
+        {history.length === 0 ? (
+          <EmptyState
+            icon={Clock}
+            title="No history yet"
+            description="Completed, failed, and cancelled transfers appear here."
+            compact
+          />
+        ) : (
+          <ul role="list" className="flex flex-col gap-2">
+            {history.map((t) => (
+              <li
+                key={t.id}
+                className="flex items-center gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-3 transition-colors duration-fast hover:border-nd-accent-primary/25"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-nd-text-primary">{t.filename}</p>
+                  <p className="text-xs text-nd-text-muted">
+                    {t.direction} · {t.peer_name || t.peer_ip} · {formatBytes(t.size)}
+                  </p>
+                </div>
+                <StatusChip tone={transferTone(t.status)} size="sm">
+                  {t.status}
+                </StatusChip>
+                {(t.status === 'Failed' || t.status === 'Cancelled') && t.direction === 'Outgoing' && (
+                  <IconButton
+                    type="button"
+                    size="md"
+                    variant="subtle"
+                    aria-label={`Retry ${t.filename}`}
+                    onClick={() => onRetry(t.id)}
+                  >
+                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                  </IconButton>
+                )}
+              </li>
+            ))}
+          </ul>
         )}
       </div>
-
-      {history.length === 0 ? (
-        <EmptyState icon={Clock} title="No history yet" description="Completed, failed, and cancelled transfers appear here." />
-      ) : (
-        <ul role="list" className="flex flex-col gap-2">
-          {history.map((t) => (
-            <li
-              key={t.id}
-              className="flex items-center gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-4 py-3"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-nd-text">{t.filename}</p>
-                <p className="text-xs text-nd-text-muted">
-                  {t.direction} · {t.peer_name || t.peer_ip} · {formatBytes(t.size)}
-                </p>
-              </div>
-              <StatusChip tone={transferTone(t.status)} size="sm">{t.status}</StatusChip>
-              {(t.status === 'Failed' || t.status === 'Cancelled') && t.direction === 'Outgoing' && (
-                <button
-                  type="button"
-                  onClick={() => onRetry(t.id)}
-                  aria-label={`Retry ${t.filename}`}
-                  className="rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-accent/10 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-                >
-                  <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
 
       <ConfirmDialog
         open={confirmClear}
@@ -94,6 +111,6 @@ export function HistoryTab({ transfers, onRetry, onClearDone }: Props) {
         onConfirm={() => void handleClear()}
         onCancel={() => setConfirmClear(false)}
       />
-    </div>
+    </Panel>
   );
 }

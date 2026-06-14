@@ -17,7 +17,11 @@ import { SafeCommandConfirmModal } from './SafeCommandConfirmModal';
 import { Modal } from '../../components/primitives/Modal';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
 import { TextInput } from '../../components/primitives/TextInput';
+import { Badge } from '../../components/primitives/Badge';
+import { EmptyState } from '../../components/primitives/EmptyState';
+import { Panel } from '../../components/primitives/Panel';
 import type { DiagnosticFix } from './DiagnosticFixPanel';
 import { DiagnosticFixPanel } from './DiagnosticFixPanel';
 
@@ -86,7 +90,6 @@ export function IDEView() {
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
 
-  // IDE controller state
   const [ideMode, setIdeMode] = useState<IdeMode>('IDE_NAVIGATION');
   const [showHintBar, setShowHintBar] = useState(true);
   const [showRadialWheel, setShowRadialWheel] = useState(false);
@@ -99,7 +102,6 @@ export function IDEView() {
   const [activeDiagnosticMsg, setActiveDiagnosticMsg] = useState('');
   const [, setCommandOutput] = useState<{ type: string; data: string }[]>([]);
 
-  // LSP state
   const [lspStatus, setLspStatus] = useState<'off' | 'starting' | 'ready' | 'error'>('off');
   const [hoverInfo, setHoverInfo] = useState<LspHover | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
@@ -113,7 +115,6 @@ export function IDEView() {
   const [pendingDeleteTab, setPendingDeleteTab] = useState<OpenTab | null>(null);
   const [lineCount, setLineCount] = useState(1);
 
-  // Debounce refs
   const lspChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const predictionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -138,7 +139,6 @@ export function IDEView() {
     log('Mini IDE ready. Workspace loaded.', 'ok');
   }, [loadFiles, log]);
 
-  // ── LSP: subscribe to diagnostics, ready, error events ───────────────
   useEffect(() => {
     const unsubDiagnostics = neurodeckApi.lsp.onDiagnostics((data) => {
       if (activeTab && data.uri === fileUri(activeTab)) {
@@ -175,7 +175,6 @@ export function IDEView() {
     };
   }, [activeTab, log]);
 
-  // ── Open file: auto-start LSP server and notify it ───────────────────
   const openFile = useCallback(async (path: string, name: string) => {
     const existing = openTabs.find((t) => t.path === path);
     if (existing) {
@@ -194,7 +193,6 @@ export function IDEView() {
       setLspCompletions([]);
 
       if (supportsLspLanguage(lang)) {
-        // Auto-start the LSP server for this language if not already running.
         if (!startedLspLanguages.current.has(lang)) {
           const known = await neurodeckApi.lsp.knownServers();
           const server = known.find((s) => s.language === lang);
@@ -209,7 +207,6 @@ export function IDEView() {
               });
           }
         }
-        // Notify LSP of the opened document (non-fatal if server not up yet).
         neurodeckApi.lsp.openDocument(lang, fileUri(path), res.content).catch(() => {});
       }
     } catch (e) {
@@ -217,7 +214,6 @@ export function IDEView() {
     }
   }, [openTabs, log]);
 
-  // ── Close tab: notify LSP ─────────────────────────────────────────────
   const closeTab = useCallback((path: string) => {
     const tab = openTabs.find((t) => t.path === path);
     if (tab && supportsLspLanguage(tab.lang)) {
@@ -253,7 +249,6 @@ export function IDEView() {
     ));
     updateLineNumbers();
 
-    // LSP changeDocument (debounced 300ms)
     if (lspChangeTimer.current) clearTimeout(lspChangeTimer.current);
     lspChangeTimer.current = setTimeout(() => {
       const tab = openTabs.find((t) => t.path === activeTab);
@@ -276,7 +271,6 @@ export function IDEView() {
     setLineCount(lines);
   }, []);
 
-  // ── Cursor change → fetch predictions (debounced 200ms) ──────────────
   const onEditorCursorChange = useCallback(() => {
     if (!activeTab || !editorRef.current) return;
     const tab = openTabs.find((t) => t.path === activeTab);
@@ -303,7 +297,7 @@ export function IDEView() {
           if (results.length > 0) setShowPredictions(true);
         }
       } catch {
-        // Non-fatal — predictions are best-effort
+        // Non-fatal
       }
     }, 200);
   }, [activeTab, openTabs, diagnostics.length]);
@@ -356,7 +350,6 @@ export function IDEView() {
     }
   }, [pendingDeleteTab, closeTab, currentPath, loadFiles, log]);
 
-  // ── Command execution ─────────────────────────────────────────────────
   const executeCommand = useCallback(async (cmd: CommandTemplate) => {
     if (cmd.safety === 'blocked') {
       log(`[BLOCKED] ${cmd.label} is not permitted`, 'error');
@@ -381,13 +374,11 @@ export function IDEView() {
     }
   }, [activeTab, log]);
 
-  // ── Radial wheel command handler ──────────────────────────────────────
   const handleRadialCommand = useCallback((cmd: CommandTemplate) => {
     setShowRadialWheel(false);
     executeCommand(cmd);
   }, [executeCommand]);
 
-  // ── Prediction accept ─────────────────────────────────────────────────
   const acceptPrediction = useCallback((p: PredictionResult) => {
     if (p.type === 'snippet' || p.type === 'lsp_completion') {
       if (p.insertText && editorRef.current) {
@@ -407,7 +398,6 @@ export function IDEView() {
     setShowPredictions(false);
   }, [onEditorInput, diagnostics, log]);
 
-  // ── LSP: Ctrl+Space completions ───────────────────────────────────────
   const triggerLspCompletions = useCallback(async () => {
     if (!activeTab || !editorRef.current) return;
     const tab = openTabs.find((t) => t.path === activeTab);
@@ -428,7 +418,6 @@ export function IDEView() {
     }
   }, [activeTab, openTabs, lspStatus]);
 
-  // ── LSP: F12 go-to-definition ─────────────────────────────────────────
   const goToDefinition = useCallback(async () => {
     if (!activeTab || !editorRef.current) return;
     const tab = openTabs.find((t) => t.path === activeTab);
@@ -442,8 +431,7 @@ export function IDEView() {
       const locs = await neurodeckApi.lsp.getDefinitions(tab.lang, fileUri(activeTab), line, character);
       if (locs.length > 0) {
         const first = locs[0];
-        // Strip file:// prefix and open the file
-        const path = first.uri.replace(/^file:\/\/\//, '').replace(/^file:\/\//, '');
+        const path = first.uri.replace(/^file:\/\//, '').replace(/^file:\/\//, '');
         const name = path.split(/[/\\]/).pop() ?? path;
         await openFile(path, name);
         log(`Go to definition: ${name}:${first.range.start.line + 1}`, 'ok');
@@ -455,7 +443,6 @@ export function IDEView() {
     }
   }, [activeTab, openTabs, lspStatus, openFile, log]);
 
-  // ── LSP: hover on mouse move (500ms debounce) ─────────────────────────
   const onEditorMouseMove = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
     if (!activeTab) return;
     const tab = openTabs.find((t) => t.path === activeTab);
@@ -467,13 +454,12 @@ export function IDEView() {
     hoverTimer.current = setTimeout(async () => {
       if (!editorRef.current) return;
       const el = editorRef.current;
-      // Approximate line/char from mouse position over the textarea
-      const lineHeight = 20; // matches leading-5
-      const charWidth = 8.4; // approximate monospace char width at text-sm
+      const lineHeight = 20;
+      const charWidth = 8.4;
       const scrollTop = el.scrollTop;
       const scrollLeft = el.scrollLeft;
       const offsetY = y - rect.top + scrollTop;
-      const offsetX = x - rect.left + scrollLeft - 40; // 40px = line number gutter
+      const offsetX = x - rect.left + scrollLeft - 40;
       const approxLine = Math.max(0, Math.floor(offsetY / lineHeight));
       const approxChar = Math.max(0, Math.floor(offsetX / charWidth));
       try {
@@ -496,7 +482,6 @@ export function IDEView() {
     setHoverPos(null);
   }, []);
 
-  // ── Active language profile ───────────────────────────────────────────
   const activeProfile = activeTabData ? getProfileForFile(activeTabData.name) : null;
   const activeCommands: CommandTemplate[] = activeProfile
     ? getTopCommands(activeProfile, { rootPath: currentPath, detectedLanguages: [activeProfile.id], packageManager: 'none', hasGit: false, configFiles: [], availableScripts: {}, detectedAt: '' }, 8)
@@ -504,16 +489,15 @@ export function IDEView() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Controller hint bar */}
       <ControllerHintBar ideMode={ideMode} visible={showHintBar} />
 
-      <div className="mb-3 mt-2 flex items-center gap-3 px-1">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Code className="h-5 w-5 text-nd-accent" />
+      <header className="mb-3 mt-2 flex items-center gap-3 px-1">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
+          <Code className="h-5 w-5 text-accent-primary" aria-hidden="true" />
         </div>
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-nd-text">IDE</h2>
+            <h2 className="text-lg font-semibold text-text-primary">IDE</h2>
             {activeTabData && (
               <LanguageModeBadge
                 languageId={activeProfile?.id ?? activeTabData.lang}
@@ -523,30 +507,37 @@ export function IDEView() {
               />
             )}
           </div>
-          <p className="text-xs text-nd-text-muted">Integrated code workspace</p>
+          <p className="text-xs text-text-muted">Integrated code workspace</p>
         </div>
-        <div className="flex gap-1">
-          <IconBtn title="New file" onClick={() => setNewFileModalOpen(true)}><FilePlus className="h-4 w-4" aria-hidden="true" /></IconBtn>
-          <IconBtn title="Save (Ctrl+S)" onClick={saveActiveFile}><Save className="h-4 w-4" /></IconBtn>
-          <IconBtn title="Delete" onClick={deleteFile}><Trash2 className="h-4 w-4" /></IconBtn>
-          <IconBtn title="Command wheel (Y)" onClick={() => setShowRadialWheel(true)}>
+        <div className="flex items-center gap-1">
+          <IconButton aria-label="New file" title="New file" variant="subtle" onClick={() => setNewFileModalOpen(true)}>
+            <FilePlus className="h-4 w-4" aria-hidden="true" />
+          </IconButton>
+          <IconButton aria-label="Save (Ctrl+S)" title="Save (Ctrl+S)" variant="subtle" onClick={saveActiveFile}>
+            <Save className="h-4 w-4" aria-hidden="true" />
+          </IconButton>
+          <IconButton aria-label="Delete" title="Delete" variant="subtle" onClick={deleteFile}>
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </IconButton>
+          <IconButton aria-label="Command wheel (Y)" title="Command wheel (Y)" variant="subtle" onClick={() => setShowRadialWheel(true)}>
             <span className="text-xs font-bold">⊕</span>
-          </IconBtn>
-          <IconBtn title="Toggle hints" onClick={() => setShowHintBar((v) => !v)}>
+          </IconButton>
+          <IconButton aria-label="Toggle hints" title="Toggle hints" variant="subtle" onClick={() => setShowHintBar((v) => !v)}>
             <span className="text-[10px] font-bold">HB</span>
-          </IconBtn>
-          <IconBtn title="Refresh" onClick={() => loadFiles(currentPath)}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </IconBtn>
+          </IconButton>
+          <IconButton aria-label="Refresh" title="Refresh" variant="subtle" onClick={() => loadFiles(currentPath)}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+          </IconButton>
         </div>
-      </div>
+      </header>
 
       <div className="flex min-h-0 flex-1 gap-3">
-        {/* File tree */}
-        <div className="flex w-52 flex-col rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
-            <FolderOpen className="h-3.5 w-3.5" /> Explorer
-          </div>
+        <Panel
+          className="flex w-52 flex-col"
+          eyebrow="Explorer"
+          title="Workspace"
+         
+        >
           <div className="min-h-0 flex-1 overflow-auto space-y-0.5">
             {currentPath && (
               <button
@@ -555,34 +546,32 @@ export function IDEView() {
                   const parts = currentPath.split(/[/\\]/).filter(Boolean);
                   loadFiles(parts.slice(0, -1).join('/'));
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-text-muted hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40"
               >
-                <FolderOpen className="h-3.5 w-3.5" /> ..
+                <FolderOpen className="h-3.5 w-3.5" aria-hidden="true" /> ..
               </button>
             )}
-            <div className="px-2 py-1 text-[10px] text-nd-text-muted/60 truncate">{currentPath || 'workspace'}</div>
+            <div className="px-2 py-1 text-[10px] text-text-muted/60 truncate">{currentPath || 'workspace'}</div>
             {files.length === 0 && (
-              <div className="px-2 py-1.5 text-xs text-nd-text-muted/50 italic">No files</div>
+              <div className="px-2 py-1.5 text-xs text-text-muted/50 italic">No files</div>
             )}
             {files.map((f) => (
               <button
                 key={f.path}
                 type="button"
                 onClick={() => f.is_dir ? loadFiles(f.path) : openFile(f.path, f.name)}
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 ${
-                  activeTab === f.path ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:bg-nd-surface/50'
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40 ${
+                  activeTab === f.path ? 'bg-accent-primary/10 text-accent-primary' : 'text-text-muted hover:bg-surface-secondary'
                 }`}
               >
-                {f.is_dir ? <FolderOpen className="h-3.5 w-3.5 shrink-0" /> : <span className="shrink-0 text-xs">{getLangIcon(getLanguage(f.name))}</span>}
+                {f.is_dir ? <FolderOpen className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : <span className="shrink-0 text-xs">{getLangIcon(getLanguage(f.name))}</span>}
                 <span className="truncate">{f.name}</span>
               </button>
             ))}
           </div>
-        </div>
+        </Panel>
 
-        {/* Editor area */}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          {/* Tabs */}
           {openTabs.length > 0 && (
             <div className="flex gap-1 overflow-x-auto">
               {openTabs.map((tab) => (
@@ -590,10 +579,10 @@ export function IDEView() {
                   key={tab.path}
                   type="button"
                   onClick={() => setActiveTab(tab.path)}
-                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                     activeTab === tab.path
-                      ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent'
-                      : 'border-nd-text-muted/15 bg-nd-surface/30 text-nd-text-muted hover:bg-nd-surface/50'
+                      ? 'border-accent-primary/30 bg-accent-primary/10 text-accent-primary'
+                      : 'border-border-subtle bg-surface-secondary text-text-muted hover:bg-surface-tertiary'
                   }`}
                 >
                   <span>{getLangIcon(tab.lang)}</span>
@@ -602,7 +591,7 @@ export function IDEView() {
                     type="button"
                     onClick={(e) => { e.stopPropagation(); closeTab(tab.path); }}
                     aria-label={`Close ${tab.name}`}
-                    className="ml-1 rounded p-0.5 hover:bg-nd-surface/60 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/50"
+                    className="ml-1 rounded p-0.5 hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/50"
                   >
                     <X className="h-3 w-3" aria-hidden="true" />
                   </button>
@@ -611,14 +600,16 @@ export function IDEView() {
             </div>
           )}
 
-          {/* Editor */}
-          <div className="relative flex min-h-0 flex-1 flex-col rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40">
+          <Panel
+            className="relative flex min-h-0 flex-1 flex-col"
+           
+          >
             {activeTabData ? (
               <>
-                <div className="flex items-center gap-2 border-b border-nd-text-muted/15 px-3 py-2">
-                  <FileCode className="h-3.5 w-3.5 text-nd-text-muted" />
-                  <span className="text-xs text-nd-text-muted">{activeTabData.name}</span>
-                  {activeTabData.dirty && <span className="text-[10px] text-nd-accent">modified</span>}
+                <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2">
+                  <FileCode className="h-3.5 w-3.5 text-text-muted" aria-hidden="true" />
+                  <span className="text-xs text-text-muted">{activeTabData.name}</span>
+                  {activeTabData.dirty && <Badge tone="accent" size="sm" variant="outline">modified</Badge>}
                   {diagnostics.length > 0 && (
                     <button
                       type="button"
@@ -627,7 +618,7 @@ export function IDEView() {
                         setActiveDiagnosticMsg(diagnostics[0]?.message ?? '');
                         setDiagnosticFixes([]);
                       }}
-                      className="ml-auto flex items-center gap-1 text-[11px] text-nd-danger hover:text-nd-danger/80 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-danger/40 rounded px-1"
+                      className="ml-auto flex items-center gap-1 rounded px-1 text-[11px] text-accent-error hover:bg-accent-error/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-error/40"
                     >
                       <AlertCircle className="h-3 w-3" aria-hidden="true" />
                       <span>{diagnostics.length} issue{diagnostics.length !== 1 ? 's' : ''}</span>
@@ -637,7 +628,7 @@ export function IDEView() {
                 <div className="relative flex min-h-0 flex-1">
                   <div ref={lineNumbersRef} className="w-10 shrink-0 overflow-hidden py-3" aria-hidden="true">
                     {Array.from({ length: lineCount }, (_, i) => (
-                      <div key={i} className="px-2 text-right text-[11px] leading-5 text-nd-text-muted/40 select-none">
+                      <div key={i} className="px-2 text-right text-[11px] leading-5 text-text-muted/40 select-none">
                         {i + 1}
                       </div>
                     ))}
@@ -677,12 +668,11 @@ export function IDEView() {
                         onEditorInput();
                       }
                     }}
-                    className="min-h-0 flex-1 resize-none bg-transparent py-3 pr-3 font-mono text-sm leading-5 text-nd-text/90 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-nd-accent/40"
+                    className="min-h-0 flex-1 resize-none bg-transparent py-3 pr-3 font-mono text-sm leading-5 text-text-primary/90 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent-primary/40"
                     spellCheck={false}
                     aria-label="Code editor"
                   />
 
-                  {/* Diagnostic fix panel */}
                   <DiagnosticFixPanel
                     fixes={diagnosticFixes}
                     diagnosticMessage={activeDiagnosticMsg}
@@ -695,20 +685,19 @@ export function IDEView() {
                   />
                 </div>
 
-                {/* LSP completions popup (Ctrl+Space) */}
                 {showLspCompletions && lspCompletions.length > 0 && (
                   <div
                     role="listbox"
                     aria-label="LSP completions"
-                    className="absolute bottom-2 left-12 z-[var(--z-tooltip)] max-h-48 w-72 overflow-auto rounded-xl border border-nd-accent/20 bg-nd-surface shadow-glow-sm"
+                    className="absolute bottom-2 left-12 z-tooltip max-h-48 w-72 overflow-auto rounded-xl border border-accent-primary/20 bg-surface-secondary shadow-glow-sm"
                   >
-                    <div className="flex items-center justify-between border-b border-nd-text-muted/10 px-3 py-1.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Completions</span>
+                    <div className="flex items-center justify-between border-b border-border-subtle px-3 py-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Completions</span>
                       <button
                         type="button"
                         onClick={() => setShowLspCompletions(false)}
                         aria-label="Close completions"
-                        className="text-nd-text-muted hover:text-nd-text rounded"
+                        className="text-text-muted hover:text-text-primary rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40"
                       >
                         <X className="h-3 w-3" aria-hidden="true" />
                       </button>
@@ -719,7 +708,7 @@ export function IDEView() {
                         role="option"
                         aria-selected={false}
                         type="button"
-                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-nd-text hover:bg-nd-accent/10 focus-visible:bg-nd-accent/10 focus-visible:outline-none"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-text-primary hover:bg-accent-primary/10 focus-visible:bg-accent-primary/10 focus-visible:outline-none"
                         onClick={() => {
                           const el = editorRef.current;
                           if (!el) return;
@@ -733,12 +722,12 @@ export function IDEView() {
                           log(`Inserted: ${item.label}`, 'ok');
                         }}
                       >
-                        <span className="shrink-0 text-[10px] text-nd-text-muted/60 w-4 text-center">
+                        <span className="shrink-0 text-[10px] text-text-muted/60 w-4 text-center">
                           {item.kind === 2 ? 'M' : item.kind === 6 ? 'V' : item.kind === 5 ? 'F' : '·'}
                         </span>
                         <span className="truncate font-mono">{item.label}</span>
                         {item.detail && (
-                          <span className="ml-auto shrink-0 truncate max-w-[80px] text-nd-text-muted/60 text-[10px]">
+                          <span className="ml-auto shrink-0 truncate max-w-[80px] text-text-muted/60 text-[10px]">
                             {item.detail}
                           </span>
                         )}
@@ -747,33 +736,33 @@ export function IDEView() {
                   </div>
                 )}
 
-                {/* LSP hover tooltip */}
                 {hoverInfo && hoverPos && (
                   <div
                     role="tooltip"
-                    className="pointer-events-none fixed z-[var(--z-tooltip)] max-w-sm rounded-xl border border-nd-accent/15 bg-nd-surface px-3 py-2 shadow-glow-sm"
+                    className="pointer-events-none fixed z-tooltip max-w-sm rounded-xl border border-accent-primary/15 bg-surface-secondary px-3 py-2 shadow-glow-sm"
                     style={{ left: hoverPos.x + 12, top: hoverPos.y - 8 }}
                   >
-                    <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-nd-text/90">
+                    <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-text-primary/90">
                       {hoverInfo.contents.slice(0, 400)}
                     </pre>
                   </div>
                 )}
               </>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-nd-text-muted/50">
-                <Code className="h-10 w-10" />
-                <p className="text-sm">Select a file from the explorer to start editing</p>
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setNewFileModalOpen(true)} className="flex items-center gap-1.5 rounded-lg border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-xs text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-                    <FilePlus className="h-3.5 w-3.5" /> New File
-                  </button>
-                </div>
-              </div>
+              <EmptyState
+                icon={Code}
+                title="Open a file"
+                description="Select a file from the explorer to start editing, or create a new workspace file."
+                action={
+                  <Button variant="primary" size="sm" onClick={() => setNewFileModalOpen(true)} icon={FilePlus}>
+                    New File
+                  </Button>
+                }
+                className="h-full"
+              />
             )}
-          </div>
+          </Panel>
 
-          {/* Predictive bar */}
           <PredictiveBar
             predictions={predictions}
             languageId={activeTabData?.lang ?? null}
@@ -782,27 +771,31 @@ export function IDEView() {
             visible={showPredictions && predictions.length > 0}
           />
 
-          {/* Output log */}
-          <div className="h-28 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-2">
-            <div className="mb-1 flex items-center justify-between px-1">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Output</span>
-              <button type="button" onClick={() => setLogs([])} className="text-[11px] text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded px-1">Clear</button>
-            </div>
-            <div className="h-[calc(100%-1.25rem)] overflow-auto space-y-0.5 px-1">
-              {logs.length === 0 && <p className="text-[11px] text-nd-text-muted/40 italic">No output yet</p>}
+          <Panel
+            className="h-28 shrink-0"
+            eyebrow="Output"
+            title="Command Log"
+           
+            action={
+              <Button variant="ghost" size="xs" onClick={() => setLogs([])}>
+                Clear
+              </Button>
+            }
+          >
+            <div className="h-[calc(100%-2.5rem)] overflow-auto space-y-0.5 px-1">
+              {logs.length === 0 && <p className="text-[11px] text-text-muted/40 italic">No output yet</p>}
               {logs.map((l, i) => (
                 <div key={i} className={`text-[11px] font-mono ${
-                  l.tone === 'error' ? 'text-nd-danger' : l.tone === 'ok' ? 'text-nd-success' : l.tone === 'warn' ? 'text-nd-warning' : 'text-nd-text-muted'
+                  l.tone === 'error' ? 'text-accent-error' : l.tone === 'ok' ? 'text-accent-success' : l.tone === 'warn' ? 'text-accent-warning' : 'text-text-muted'
                 }`}>
                   [{new Date().toLocaleTimeString('en-US', { hour12: false })}] {l.text}
                 </div>
               ))}
             </div>
-          </div>
+          </Panel>
         </div>
       </div>
 
-      {/* Radial command wheel overlay */}
       <RadialCommandWheel
         visible={showRadialWheel}
         languageId={activeTabData?.lang ?? null}
@@ -811,7 +804,6 @@ export function IDEView() {
         onClose={() => setShowRadialWheel(false)}
       />
 
-      {/* Safe command confirmation modal */}
       {pendingCommand && (
         <SafeCommandConfirmModal
           command={pendingCommand.cmd.command}
@@ -868,19 +860,5 @@ export function IDEView() {
         onCancel={() => { setConfirmDeleteOpen(false); setPendingDeleteTab(null); }}
       />
     </div>
-  );
-}
-
-function IconBtn({ children, title, onClick }: { children: React.ReactNode; title: string; onClick?: () => void }) {
-  return (
-    <button
-      type="button"
-      title={title}
-      onClick={onClick}
-      className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-xl text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text/80 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-      aria-label={title}
-    >
-      {children}
-    </button>
   );
 }

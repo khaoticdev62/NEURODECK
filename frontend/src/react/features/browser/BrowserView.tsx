@@ -32,6 +32,10 @@ import {
 } from "lucide-react";
 import { BrowserVpnPanel } from "../browser-vpn/BrowserVpnPanel";
 import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
+import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { StatusChip } from "../../components/primitives/StatusChip";
 
 interface BrowserTab {
   id: string;
@@ -638,16 +642,16 @@ export function BrowserView() {
   const activeProfile = profiles.find((p) => p.id === activeTab?.profileId);
 
   return (
-    <div className="browser-container flex h-full flex-col bg-nd-bg text-nd-text select-none" data-controller-zone="browser">
+    <div className="browser-container flex h-full flex-col bg-nd-surface-app text-nd-text-primary select-none" data-controller-zone="browser">
       {/* Inline notice (replaces alert() calls) */}
       {notice && (
         <div
           role="status"
           aria-live="polite"
-          className={`absolute bottom-4 left-1/2 z-[var(--z-toast)] -translate-x-1/2 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium shadow-lg backdrop-blur-md ${
+          className={`absolute bottom-4 left-1/2 z-[var(--z-toast)] -translate-x-1/2 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium shadow-lg ${
             notice.kind === 'ok'
-              ? 'border-nd-success/30 bg-nd-success/10 text-nd-success'
-              : 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger'
+              ? 'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success'
+              : 'border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error'
           }`}
         >
           {notice.text}
@@ -655,52 +659,36 @@ export function BrowserView() {
       )}
       {/* Permission Prompts Overlay */}
       {permissions.length > 0 && (
-        <div className="absolute top-4 left-1/2 z-[var(--z-toast)] w-96 -translate-x-1/2 rounded-2xl border border-nd-accent/30 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-md flex flex-col gap-3">
+        <div className="absolute top-4 left-1/2 z-[var(--z-toast)] w-96 -translate-x-1/2 rounded-2xl border border-nd-accent-primary/30 bg-nd-surface-app/95 p-4 shadow-2xl flex flex-col gap-3">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-nd-warning shrink-0 mt-0.5" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-accent-warning" aria-hidden="true" />
             <div>
-              <h4 className="text-sm font-semibold text-nd-text">Permission Request</h4>
-              <p className="text-xs text-nd-text-muted mt-1 leading-relaxed">
-                The site <code className="text-nd-accent">{permissions[0].origin}</code> requests
-                access to <code className="text-nd-accent">{permissions[0].permission}</code>.
+              <h4 className="text-sm font-semibold text-nd-text-primary">Permission Request</h4>
+              <p className="mt-1 text-xs leading-relaxed text-nd-text-muted">
+                The site <code className="text-nd-accent-primary">{permissions[0].origin}</code> requests
+                access to <code className="text-nd-accent-primary">{permissions[0].permission}</code>.
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <button
-              type="button"
-              onClick={() => respondToPermission(permissions[0].requestId, "allow_once")}
-              className="px-3 py-1.5 rounded-lg bg-nd-accent/10 border border-nd-accent/20 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 transition text-center"
-            >
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Button variant="primary" size="xs" fullWidth onClick={() => respondToPermission(permissions[0].requestId, "allow_once")}>
               Allow Once
-            </button>
-            <button
-              type="button"
-              onClick={() => respondToPermission(permissions[0].requestId, "allow_always")}
-              className="px-3 py-1.5 rounded-lg bg-nd-accent text-xs font-semibold text-nd-bg hover:opacity-90 transition text-center"
-            >
+            </Button>
+            <Button variant="success" size="xs" fullWidth onClick={() => respondToPermission(permissions[0].requestId, "allow_always")}>
               Allow Always
-            </button>
-            <button
-              type="button"
-              onClick={() => respondToPermission(permissions[0].requestId, "block_once")}
-              className="px-3 py-1.5 rounded-lg bg-nd-surface border border-nd-text-muted/15 text-xs text-nd-text-muted hover:text-nd-text transition text-center"
-            >
+            </Button>
+            <Button variant="secondary" size="xs" fullWidth onClick={() => respondToPermission(permissions[0].requestId, "block_once")}>
               Block Once
-            </button>
-            <button
-              type="button"
-              onClick={() => respondToPermission(permissions[0].requestId, "block_always")}
-              className="px-3 py-1.5 rounded-lg bg-nd-danger/10 border border-nd-danger/20 text-xs font-semibold text-nd-danger hover:bg-nd-danger/20 transition text-center"
-            >
+            </Button>
+            <Button variant="danger" size="xs" fullWidth onClick={() => respondToPermission(permissions[0].requestId, "block_always")}>
               Block Always
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {/* Title / Tab Strip */}
-      <div className="flex items-center justify-between border-b border-nd-text-muted/10 bg-nd-surface/10 px-4 py-2 shrink-0" data-controller-zone="toolbar">
+      <div className="flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-secondary/30 px-4 py-2 shrink-0" data-controller-zone="toolbar">
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 max-w-[80%] pr-4">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
@@ -708,149 +696,140 @@ export function BrowserView() {
               <div
                 key={tab.id}
                 onClick={() => switchTab(tab.id)}
-                className={`group relative flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs transition cursor-pointer shrink-0 border ${
+                className={`group relative flex min-h-[40px] items-center gap-2 rounded-xl px-3 py-1.5 text-xs transition cursor-pointer shrink-0 border ${
                   isActive
-                    ? "bg-nd-accent/10 border-nd-accent/30 text-nd-text font-semibold"
-                    : "bg-nd-surface/30 border-transparent text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-text"
+                    ? "bg-nd-surface-selected border-nd-accent-primary/40 text-nd-text-primary font-semibold"
+                    : "bg-nd-surface-secondary/40 border-transparent text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary"
                 }`}
               >
                 {tab.isPrivate ? (
-                  <Lock className="h-3.5 w-3.5 text-nd-warning shrink-0" />
+                  <Lock className="h-3.5 w-3.5 text-nd-accent-warning shrink-0" />
                 ) : (
                   <Globe
-                    className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-nd-accent" : "text-nd-text-muted"}`}
+                    className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-nd-accent-primary" : "text-nd-text-muted"}`}
                   />
                 )}
                 <span className="max-w-[120px] truncate">{tab.title || "New Tab"}</span>
                 {tab.isLoading && (
-                  <RefreshCw className="h-3 w-3 animate-spin text-nd-accent shrink-0" />
+                  <RefreshCw className="h-3 w-3 animate-spin text-nd-accent-primary shrink-0" />
                 )}
-                {tab.isMuted && <VolumeX className="h-3 w-3 text-nd-danger shrink-0" />}
-                {tab.isPinned && <Pin className="h-3 w-3 text-nd-accent shrink-0 rotate-45" />}
-                <button
-                  type="button"
-                  onClick={(e) => closeTab(tab.id, e)}
+                {tab.isMuted && <VolumeX className="h-3 w-3 text-nd-accent-error shrink-0" />}
+                {tab.isPinned && <Pin className="h-3 w-3 text-nd-accent-primary shrink-0 rotate-45" />}
+                <IconButton
                   aria-label={`Close tab: ${tab.title || "New Tab"}`}
-                  className="rounded p-0.5 opacity-0 group-hover:opacity-100 hover:bg-nd-surface text-nd-text-muted hover:text-nd-text shrink-0"
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => closeTab(tab.id, e)}
+                  className="opacity-0 group-hover:opacity-100"
                 >
                   <X className="h-3 w-3" aria-hidden="true" />
-                </button>
+                </IconButton>
               </div>
             );
           })}
-          <button
-            type="button"
-            onClick={() => createTab()}
+          <IconButton
             aria-label="Open new tab"
-            className="flex h-7 w-7 items-center justify-center rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-text transition"
+            variant="subtle"
+            size="md"
+            onClick={() => createTab()}
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Global Toolbar Options */}
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowDownloadsMenu((v) => !v)}
-            aria-label="Downloads"
-            aria-expanded={showDownloadsMenu}
-            className={`relative rounded-xl border p-2 text-nd-text transition ${
-              showDownloadsMenu || activeDownloadCount > 0
-                ? "bg-nd-accent/15 border-nd-accent/30 text-nd-accent"
-                : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
-            }`}
-          >
-            <Download className="h-4 w-4" aria-hidden="true" />
+          <div className="relative">
+            <IconButton
+              aria-label="Downloads"
+              variant={showDownloadsMenu || activeDownloadCount > 0 ? "accent" : "subtle"}
+              size="md"
+              onClick={() => setShowDownloadsMenu((v) => !v)}
+              aria-expanded={showDownloadsMenu}
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+            </IconButton>
             {activeDownloadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-nd-accent text-[9px] font-bold text-nd-bg">
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-nd-accent-primary text-[9px] font-bold text-nd-surface-app">
                 {activeDownloadCount}
               </span>
             )}
-          </button>
+          </div>
 
-          <button
-            type="button"
+          <IconButton
+            aria-label="Session diagnostics"
+            variant={showDiagnostics ? "accent" : "subtle"}
+            size="md"
             onClick={() => {
               setShowDiagnostics((v) => !v);
               if (!showDiagnostics) loadDiagnostics();
             }}
-            aria-label="Session diagnostics"
             aria-expanded={showDiagnostics}
-            className={`rounded-xl border p-2 text-nd-text transition ${
-              showDiagnostics
-                ? "bg-nd-accent/15 border-nd-accent/30 text-nd-accent"
-                : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
-            }`}
           >
             <Terminal className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
-            onClick={() => setShowVpnPanel((v) => !v)}
+          <IconButton
             aria-label="Browser VPN"
+            variant={showVpnPanel ? "danger" : "subtle"}
+            size="md"
+            onClick={() => setShowVpnPanel((v) => !v)}
             aria-expanded={showVpnPanel}
-            className={`rounded-xl border p-2 text-nd-text transition ${
-              showVpnPanel
-                ? "bg-nd-warning/15 border-nd-warning/30 text-nd-warning"
-                : "bg-nd-surface/30 border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
-            }`}
           >
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       </div>
 
       {/* Navigation & Address Bar Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-nd-text-muted/10 bg-nd-surface/5 px-4 py-2 shrink-0" data-controller-zone="browser">
+      <div className="flex flex-wrap items-center gap-2 border-b border-nd-border-subtle bg-nd-surface-app/60 px-4 py-2 shrink-0" data-controller-zone="browser">
         <div className="flex items-center gap-1">
-          <button
-            type="button"
+          <IconButton
+            aria-label="Back"
+            variant="ghost"
+            size="md"
             onClick={goBack}
             disabled={!activeTab?.canGoBack}
-            aria-label="Back"
-            className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
+          </IconButton>
+          <IconButton
+            aria-label="Forward"
+            variant="ghost"
+            size="md"
             onClick={goForward}
             disabled={!activeTab?.canGoForward}
-            aria-label="Forward"
-            className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text disabled:opacity-30 disabled:hover:bg-transparent"
           >
             <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            onClick={activeTab?.isLoading ? stop : refresh}
+          </IconButton>
+          <IconButton
             aria-label={activeTab?.isLoading ? "Stop loading" : "Reload page"}
-            className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text"
+            variant="ghost"
+            size="md"
+            onClick={activeTab?.isLoading ? stop : refresh}
           >
             {activeTab?.isLoading ? <X className="h-4 w-4" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate("https://example.com")}
+          </IconButton>
+          <IconButton
             aria-label="Home"
-            className="rounded-xl p-2 text-nd-text-muted transition hover:bg-nd-surface hover:text-nd-text"
+            variant="ghost"
+            size="md"
+            onClick={() => navigate("https://example.com")}
           >
             <Home className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
 
         {/* Address Bar */}
-        <div className="flex flex-1 min-w-[240px] items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/20 px-3 py-1.5 focus-within:border-nd-accent/40 focus-within:ring-2 focus-within:ring-nd-accent/25 transition">
+        <div className="flex flex-1 min-w-[240px] items-center gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-1.5 focus-within:border-nd-accent-primary/40 focus-within:ring-2 focus-within:ring-nd-accent-primary/25 transition">
           {activeTab?.security === "secure" ? (
-            <span aria-label="Secure HTTPS connection" role="img">
-              <Lock className="h-3.5 w-3.5 text-nd-success" aria-hidden="true" />
-            </span>
+            <StatusChip tone="success" size="sm" icon={Lock}>
+              Secure
+            </StatusChip>
           ) : (
-            <span aria-label="Insecure HTTP connection" role="img">
-              <Unlock className="h-3.5 w-3.5 text-nd-warning" aria-hidden="true" />
-            </span>
+            <StatusChip tone="warning" size="sm" icon={Unlock}>
+              Insecure
+            </StatusChip>
           )}
           <input
             ref={urlInputRef}
@@ -861,47 +840,35 @@ export function BrowserView() {
             onChange={(e) => setUrlInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && navigate(urlInput)}
             aria-label="Address bar"
-            className="flex-1 bg-transparent text-xs text-nd-text outline-none"
+            className="flex-1 bg-transparent text-xs text-nd-text-primary outline-none"
             placeholder="Search or enter web URL..."
           />
-          <button
-            type="button"
-            onClick={() => navigate(urlInput)}
-            className="rounded px-2 py-0.5 text-xs font-semibold text-nd-accent hover:bg-nd-accent/15 transition"
-          >
+          <Button variant="primary" size="xs" onClick={() => navigate(urlInput)}>
             Go
-          </button>
+          </Button>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={toggleBookmark}
+          <IconButton
             aria-label={isBookmarked ? "Remove bookmark" : "Add bookmark"}
+            variant={isBookmarked ? "accent" : "subtle"}
+            size="md"
+            onClick={toggleBookmark}
             aria-pressed={isBookmarked}
-            className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
-              isBookmarked
-                ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
-                : "border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
-            }`}
           >
             <Star className="h-4 w-4" fill={isBookmarked ? "currentColor" : "none"} aria-hidden="true" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
-            onClick={handleToggleAdBlock}
+          <IconButton
             aria-label={adBlockEnabled ? "Disable ad blocker" : "Enable ad blocker"}
+            variant={adBlockEnabled ? "accent" : "subtle"}
+            size="md"
+            onClick={handleToggleAdBlock}
             aria-pressed={adBlockEnabled}
-            className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
-              adBlockEnabled
-                ? "border-nd-success/30 bg-nd-success/10 text-nd-success"
-                : "border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text"
-            }`}
           >
             {adBlockEnabled ? <ShieldCheck className="h-4 w-4" aria-hidden="true" /> : <Shield className="h-4 w-4" aria-hidden="true" />}
-          </button>
+          </IconButton>
 
           {/* Profile Switcher */}
           <div className="relative">
@@ -914,7 +881,7 @@ export function BrowserView() {
               }}
               aria-label="Switch browser profile"
               aria-expanded={showProfilesMenu}
-              className="flex items-center gap-1.5 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 px-3 py-2 text-xs font-semibold text-nd-text-muted hover:text-nd-text hover:bg-nd-surface transition"
+              className="flex min-h-[40px] items-center gap-1.5 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2 text-xs font-semibold text-nd-text-muted transition hover:bg-nd-surface-hover hover:text-nd-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60"
             >
               <Settings className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{activeProfile?.name || "Profile"}</span>
@@ -925,7 +892,7 @@ export function BrowserView() {
               <FocusTrapContainer
                 active={showProfilesMenu}
                 onEscape={() => setShowProfilesMenu(false)}
-                className="absolute right-0 top-full z-[var(--z-dropdown)] mt-1.5 w-64 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/98 p-3 shadow-2xl backdrop-blur-xl"
+                className="absolute right-0 top-full z-[var(--z-dropdown)] mt-1.5 w-64 rounded-2xl border border-nd-border-subtle bg-nd-surface-app/98 p-3 shadow-2xl"
                 role="dialog"
                 aria-label="Switch browser profile"
               >
@@ -939,10 +906,10 @@ export function BrowserView() {
                       key={p.id}
                       type="button"
                       onClick={() => changeProfile(p.id)}
-                      className={`flex w-full items-center justify-between rounded-xl px-2.5 py-2 text-left text-xs transition ${
+                      className={`flex w-full min-h-[40px] items-center justify-between rounded-xl px-2.5 py-2 text-left text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
                         isCurrent
-                          ? "bg-nd-accent/10 text-nd-accent font-semibold"
-                          : "hover:bg-nd-surface/50 text-nd-text/80 hover:text-nd-text"
+                          ? "bg-nd-surface-selected text-nd-accent-primary font-semibold"
+                          : "hover:bg-nd-surface-hover text-nd-text-primary/80 hover:text-nd-text-primary"
                       }`}
                     >
                       <div className="flex flex-col">
@@ -954,20 +921,20 @@ export function BrowserView() {
                       <div className="flex gap-1.5">
                         {!p.persistent && (
                           <span role="img" aria-label="Private mode">
-                            <Lock className="h-3 w-3 text-nd-warning" aria-hidden="true" />
+                            <Lock className="h-3 w-3 text-nd-accent-warning" aria-hidden="true" />
                           </span>
                         )}
-                        {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-nd-accent" />}
+                        {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-nd-accent-primary" />}
                       </div>
                     </button>
                   );
                 })}
-                <div className="my-2 border-t border-nd-text-muted/10" />
+                <div className="my-2 border-t border-nd-border-subtle" />
                 {activeProfile && (
                   <button
                     type="button"
                     onClick={() => clearProfileData(activeProfile.id)}
-                    className="flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-xs text-nd-danger hover:bg-nd-danger/10 transition"
+                    className="flex w-full min-h-[40px] items-center gap-2 rounded-xl px-2.5 py-2 text-xs text-nd-accent-error transition hover:bg-nd-accent-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-error/40"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     <span>Clear Profile Storage</span>
@@ -977,80 +944,68 @@ export function BrowserView() {
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={handleFind}
+          <IconButton
             aria-label="Find in page"
+            variant={findOpen ? "accent" : "subtle"}
+            size="md"
+            onClick={handleFind}
             aria-pressed={findOpen}
-            className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
-              findOpen
-                ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
-                : "border-nd-text-muted/10 text-nd-text-muted"
-            }`}
           >
             <Search className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
+          <IconButton
+            aria-label="History"
+            variant={showSidebar === "history" ? "accent" : "subtle"}
+            size="md"
             onClick={() => {
               if (showSidebar === "history") setShowSidebar(null);
               else setShowSidebar("history");
             }}
-            aria-label="History"
             aria-pressed={showSidebar === "history"}
-            className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
-              showSidebar === "history"
-                ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
-                : "border-nd-text-muted/10 text-nd-text-muted"
-            }`}
           >
             <Clock className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
+          <IconButton
+            aria-label="Bookmarks"
+            variant={showSidebar === "bookmarks" ? "accent" : "subtle"}
+            size="md"
             onClick={() => {
               if (showSidebar === "bookmarks") setShowSidebar(null);
               else setShowSidebar("bookmarks");
             }}
-            aria-label="Bookmarks"
             aria-pressed={showSidebar === "bookmarks"}
-            className={`rounded-xl border p-2 transition hover:bg-nd-surface ${
-              showSidebar === "bookmarks"
-                ? "border-nd-accent/30 bg-nd-accent/10 text-nd-accent"
-                : "border-nd-text-muted/10 text-nd-text-muted"
-            }`}
           >
             <BookMarked className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
-            onClick={openDevTools}
+          <IconButton
             aria-label="Inspect (DevTools)"
-            className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-2 text-nd-text-muted hover:bg-nd-surface hover:text-nd-text transition"
+            variant="subtle"
+            size="md"
+            onClick={openDevTools}
           >
             <Terminal className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
-            onClick={saveToMemory}
+          <IconButton
             aria-label="Save page to memory fact"
-            className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-2 text-nd-text-muted hover:bg-nd-surface hover:text-nd-text transition"
+            variant="subtle"
+            size="md"
+            onClick={saveToMemory}
           >
             <Save className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
 
-          <button
-            type="button"
-            onClick={toggleVisibility}
+          <IconButton
             aria-label={visible ? "Hide viewport" : "Show viewport"}
-            className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 p-2 text-nd-text-muted hover:bg-nd-surface hover:text-nd-text transition"
+            variant="subtle"
+            size="md"
+            onClick={toggleVisibility}
           >
             {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -1059,11 +1014,11 @@ export function BrowserView() {
         <FocusTrapContainer
           active={findOpen}
           onEscape={() => setFindOpen(false)}
-          className="flex items-center gap-3 border-b border-nd-accent/20 bg-nd-accent/5 px-4 py-2 shrink-0"
+          className="flex items-center gap-3 border-b border-nd-accent-primary/20 bg-nd-accent-primary/5 px-4 py-2 shrink-0"
           role="dialog"
           aria-label="Find in page"
         >
-          <Search className="h-4 w-4 text-nd-accent" />
+          <Search className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
           <input
             type="text"
             value={findText}
@@ -1071,32 +1026,19 @@ export function BrowserView() {
             onKeyDown={(e) => e.key === "Enter" && submitFind(true)}
             placeholder="Search text in page..."
             aria-label="Find text in page"
-            className="flex-1 bg-transparent text-xs text-nd-text outline-none"
+            className="flex-1 bg-transparent text-xs text-nd-text-primary outline-none"
             autoFocus
           />
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => submitFind(false)}
-              className="rounded px-2.5 py-1 bg-nd-surface border border-nd-text-muted/15 text-xs text-nd-text-muted hover:text-nd-text transition"
-            >
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" size="xs" onClick={() => submitFind(false)}>
               Find Previous
-            </button>
-            <button
-              type="button"
-              onClick={() => submitFind(true)}
-              className="rounded px-2.5 py-1 bg-nd-accent text-xs font-semibold text-nd-bg hover:opacity-90 transition"
-            >
+            </Button>
+            <Button variant="primary" size="xs" onClick={() => submitFind(true)}>
               Find Next
-            </button>
-            <button
-              type="button"
-              onClick={() => setFindOpen(false)}
-              aria-label="Close find bar"
-              className="rounded p-1 text-nd-text-muted hover:text-nd-text hover:bg-nd-surface transition"
-            >
+            </Button>
+            <IconButton aria-label="Close find bar" variant="ghost" size="md" onClick={() => setFindOpen(false)}>
               <X className="h-4 w-4" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
         </FocusTrapContainer>
       )}
@@ -1106,32 +1048,23 @@ export function BrowserView() {
         <FocusTrapContainer
           active={showDiagnostics}
           onEscape={() => setShowDiagnostics(false)}
-          className="absolute right-4 top-24 z-[var(--z-dropdown)] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl"
+          className="absolute right-4 top-24 z-[var(--z-dropdown)] w-96 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/95 p-4 shadow-2xl"
           role="dialog"
           aria-label="Browser diagnostics panel"
         >
-          <div className="flex items-center justify-between mb-3 border-b border-nd-text-muted/10 pb-2">
-            <h4 className="text-sm font-semibold text-nd-text flex items-center gap-1.5">
-              <Terminal className="h-4 w-4 text-nd-accent" />
+          <div className="flex items-center justify-between mb-3 border-b border-nd-border-subtle pb-2">
+            <h4 className="text-sm font-semibold text-nd-text-primary flex items-center gap-1.5">
+              <Terminal className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
               <span>Diagnostics / Process Monitor</span>
             </h4>
-            <button
-              type="button"
-              onClick={() => setShowDiagnostics(false)}
-              aria-label="Close diagnostics panel"
-              className="text-nd-text-muted hover:text-nd-text"
-            >
+            <IconButton aria-label="Close diagnostics panel" variant="ghost" size="sm" onClick={() => setShowDiagnostics(false)}>
               <X className="h-4 w-4" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
           <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto scrollbar-thin text-xs">
-            <button
-              type="button"
-              onClick={loadDiagnostics}
-              className="px-2.5 py-1.5 rounded-lg bg-nd-surface text-nd-text hover:bg-nd-surface/80 transition text-center mb-1.5 font-semibold"
-            >
+            <Button variant="secondary" size="sm" fullWidth onClick={loadDiagnostics}>
               Refresh Diagnostics Report
-            </button>
+            </Button>
             {diagnosticsReport ? (
               <div className="flex flex-col gap-2.5">
                 <div className="flex justify-between">
@@ -1146,16 +1079,16 @@ export function BrowserView() {
                   diagnosticsReport.tabs.map((t: any) => (
                     <div
                       key={t.id}
-                      className="p-2 rounded-lg bg-nd-surface/30 border border-nd-text-muted/10"
+                      className="p-2 rounded-lg bg-nd-surface-secondary/40 border border-nd-border-subtle"
                     >
-                      <div className="font-semibold text-nd-accent truncate">{t.title}</div>
+                      <div className="font-semibold text-nd-accent-primary truncate">{t.title}</div>
                       <div className="text-[10px] text-nd-text-muted mt-1 truncate">ID: {t.id}</div>
                       <div className="text-[10px] text-nd-text-muted truncate">
                         Profile: {t.profileId}
                       </div>
                       <div className="text-[10px] text-nd-text-muted">State: {t.state}</div>
                       {t.pid && (
-                        <div className="text-[10px] text-nd-success font-mono">
+                        <div className="text-[10px] text-nd-accent-success font-mono">
                           Process PID: {t.pid}
                         </div>
                       )}
@@ -1176,23 +1109,18 @@ export function BrowserView() {
         <FocusTrapContainer
           active={showDownloadsMenu}
           onEscape={() => setShowDownloadsMenu(false)}
-          className="absolute right-4 top-24 z-[var(--z-dropdown)] w-96 rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-2xl backdrop-blur-xl"
+          className="absolute right-4 top-24 z-[var(--z-dropdown)] w-96 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/95 p-4 shadow-2xl"
           role="dialog"
           aria-label="Downloads tracker"
         >
-          <div className="flex items-center justify-between mb-3 border-b border-nd-text-muted/10 pb-2">
-            <h4 className="text-sm font-semibold text-nd-text flex items-center gap-1.5">
-              <Download className="h-4 w-4 text-nd-accent" />
+          <div className="flex items-center justify-between mb-3 border-b border-nd-border-subtle pb-2">
+            <h4 className="text-sm font-semibold text-nd-text-primary flex items-center gap-1.5">
+              <Download className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
               <span>Downloads Tracker</span>
             </h4>
-            <button
-              type="button"
-              onClick={() => setShowDownloadsMenu(false)}
-              aria-label="Close downloads panel"
-              className="text-nd-text-muted hover:text-nd-text"
-            >
+            <IconButton aria-label="Close downloads panel" variant="ghost" size="sm" onClick={() => setShowDownloadsMenu(false)}>
               <X className="h-4 w-4" aria-hidden="true" />
-            </button>
+            </IconButton>
           </div>
           <div className="flex flex-col gap-2.5 max-h-[300px] overflow-y-auto scrollbar-thin">
             {downloads.length === 0 ? (
@@ -1206,19 +1134,19 @@ export function BrowserView() {
                 return (
                   <div
                     key={d.id}
-                    className="p-2.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 text-xs flex flex-col gap-2"
+                    className="p-2.5 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 text-xs flex flex-col gap-2"
                   >
                     <div className="flex justify-between gap-2">
-                      <span className="font-semibold truncate text-nd-text">{d.filename}</span>
-                      <span className="text-[10px] uppercase font-bold text-nd-accent shrink-0">
+                      <span className="font-semibold truncate text-nd-text-primary">{d.filename}</span>
+                      <Badge tone={d.state === "completed" ? "success" : d.state === "progressing" ? "accent" : "neutral"} size="sm">
                         {d.state}
-                      </span>
+                      </Badge>
                     </div>
                     {d.state === "progressing" && (
                       <div className="flex flex-col gap-1">
-                        <div className="h-1.5 w-full bg-nd-surface rounded-full overflow-hidden">
+                        <div className="h-1.5 w-full bg-nd-surface-secondary rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-nd-accent transition-all duration-300"
+                            className="h-full bg-nd-accent-primary transition-all duration-300"
                             style={{ width: `${percent}%` }}
                           />
                         </div>
@@ -1233,34 +1161,34 @@ export function BrowserView() {
                     )}
                     <div className="flex gap-2 justify-end mt-1">
                       {d.state === "progressing" && (
-                        <button
-                          type="button"
+                        <Button
+                          variant="danger"
+                          size="xs"
                           onClick={() =>
                             window.neurodeck?.browser
                               ?.cancelDownload(d.id)
                               .then(() => loadDownloads())
                           }
-                          className="px-2 py-1 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20 rounded text-[10px] font-semibold transition"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       )}
                       {d.state === "completed" && (
                         <>
-                          <button
-                            type="button"
+                          <Button
+                            variant="primary"
+                            size="xs"
                             onClick={() => window.neurodeck?.browser?.openDownload(d.id)}
-                            className="px-2 py-1 bg-nd-accent/10 text-nd-accent hover:bg-nd-accent/20 rounded text-[10px] font-semibold transition"
                           >
                             Open File
-                          </button>
-                          <button
-                            type="button"
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="xs"
                             onClick={() => window.neurodeck?.browser?.showDownload(d.id)}
-                            className="px-2 py-1 bg-nd-surface border border-nd-text-muted/15 text-nd-text-muted hover:text-nd-text rounded text-[10px] transition"
                           >
                             Show in Folder
-                          </button>
+                          </Button>
                         </>
                       )}
                     </div>
@@ -1302,21 +1230,17 @@ export function BrowserView() {
           style={{ background: "transparent" }}
         />
         {!visible && (
-          <div className="flex flex-1 items-center justify-center bg-nd-surface/10 border border-nd-text-muted/10 m-4 rounded-2xl">
+          <div className="flex flex-1 items-center justify-center rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/20 m-4">
             <div className="text-center p-6 flex flex-col items-center gap-3">
-              <Globe className="h-10 w-10 text-nd-text-muted animate-pulse" />
-              <p className="text-sm font-semibold text-nd-text">Viewport Suspended</p>
+              <Globe className="h-10 w-10 text-nd-text-muted animate-pulse" aria-hidden="true" />
+              <p className="text-sm font-semibold text-nd-text-primary">Viewport Suspended</p>
               <p className="text-xs text-nd-text-muted max-w-xs leading-relaxed">
                 Guest frame process detached to save Steam Deck CPU / GPU / Battery resource. Tap
                 the eye icon in toolbar to resume.
               </p>
-              <button
-                type="button"
-                onClick={toggleVisibility}
-                className="mt-2 px-4 py-2 bg-nd-accent text-xs font-semibold text-nd-bg rounded-xl hover:opacity-90 transition"
-              >
+              <Button variant="primary" size="sm" onClick={toggleVisibility} className="mt-2">
                 Resume Session View
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -1324,19 +1248,19 @@ export function BrowserView() {
         {visible && activeTab && (
           <>
             {activeTab.state === "new" && (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-bg text-center select-none overflow-y-auto scrollbar-thin">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-surface-app text-center select-none overflow-y-auto scrollbar-thin">
                 <div className="max-w-md w-full flex flex-col items-center gap-6">
-                  <Globe className="h-12 w-12 text-nd-accent animate-pulse" />
+                  <Globe className="h-12 w-12 text-nd-accent-primary animate-pulse" aria-hidden="true" />
                   <div>
-                    <h3 className="text-lg font-bold text-nd-text">New Session Tab</h3>
+                    <h3 className="text-lg font-bold text-nd-text-primary">New Session Tab</h3>
                     <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
                       Start browsing by typing a URL or searching Google. Your session is fully isolated.
                     </p>
                   </div>
 
                   {/* Search / Navigate Bar */}
-                  <div className="flex w-full items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2 focus-within:border-nd-accent/40 focus-within:ring-2 focus-within:ring-nd-accent/25 transition">
-                    <Search className="h-4 w-4 text-nd-text-muted" />
+                  <div className="flex w-full items-center gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2 focus-within:border-nd-accent-primary/40 focus-within:ring-2 focus-within:ring-nd-accent-primary/25 transition">
+                    <Search className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
                     <input
                       id="new-tab-search-input"
                       type="text"
@@ -1347,18 +1271,18 @@ export function BrowserView() {
                           if (val.trim()) navigate(val.trim());
                         }
                       }}
-                      className="flex-1 bg-transparent text-xs text-nd-text outline-none animate-none"
+                      className="flex-1 bg-transparent text-xs text-nd-text-primary outline-none animate-none"
                     />
-                    <button
-                      type="button"
+                    <Button
+                      variant="primary"
+                      size="xs"
                       onClick={() => {
                         const input = document.getElementById("new-tab-search-input") as HTMLInputElement;
                         if (input && input.value.trim()) navigate(input.value.trim());
                       }}
-                      className="rounded px-2.5 py-1 bg-nd-accent text-xs font-semibold text-nd-bg hover:opacity-90 transition"
                     >
                       Search
-                    </button>
+                    </Button>
                   </div>
 
                   {/* Quick Links */}
@@ -1370,25 +1294,25 @@ export function BrowserView() {
                       <button
                         type="button"
                         onClick={() => navigate("https://github.com")}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 p-3 hover:bg-nd-accent/10 hover:border-nd-accent/30 text-nd-text transition"
+                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 text-nd-text-primary transition hover:border-nd-accent-primary/30 hover:bg-nd-accent-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60"
                       >
-                        <Globe className="h-5 w-5 text-nd-accent" />
+                        <Globe className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
                         <span className="text-[10px] font-semibold">GitHub</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => navigate("https://stackoverflow.com")}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 p-3 hover:bg-nd-accent/10 hover:border-nd-accent/30 text-nd-text transition"
+                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 text-nd-text-primary transition hover:border-nd-accent-primary/30 hover:bg-nd-accent-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60"
                       >
-                        <BookOpen className="h-5 w-5 text-nd-accent" />
+                        <BookOpen className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
                         <span className="text-[10px] font-semibold">StackOverflow</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => navigate("https://github.com/khaoticdev62/NEURODECK")}
-                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 p-3 hover:bg-nd-accent/10 hover:border-nd-accent/30 text-nd-text transition"
+                        className="flex flex-col items-center gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 text-nd-text-primary transition hover:border-nd-accent-primary/30 hover:bg-nd-accent-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60"
                       >
-                        <Terminal className="h-5 w-5 text-nd-accent" />
+                        <Terminal className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
                         <span className="text-[10px] font-semibold">Repository</span>
                       </button>
                     </div>
@@ -1400,20 +1324,12 @@ export function BrowserView() {
                       Privacy Actions
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleClearData("currentTab")}
-                        className="px-3 py-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 text-[10px] font-semibold text-nd-text hover:bg-nd-warning/10 hover:border-nd-warning/30 hover:text-nd-warning transition"
-                      >
+                      <Button variant="secondary" size="xs" fullWidth onClick={() => handleClearData("currentTab")}>
                         Clear Current Tab Data
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleClearData("all")}
-                        className="px-3 py-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/25 text-[10px] font-semibold text-nd-text hover:bg-nd-danger/10 hover:border-nd-danger/30 hover:text-nd-danger transition"
-                      >
+                      </Button>
+                      <Button variant="danger" size="xs" fullWidth onClick={() => handleClearData("all")}>
                         Purge All Sessions Data
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -1421,154 +1337,117 @@ export function BrowserView() {
             )}
 
             {activeTab.state === "error" && (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-bg text-center select-none overflow-y-auto scrollbar-thin">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-surface-app text-center select-none overflow-y-auto scrollbar-thin">
                 <div className="max-w-md w-full flex flex-col items-center gap-6">
-                  <div className="h-12 w-12 rounded-full bg-nd-danger/10 flex items-center justify-center border border-nd-danger/25">
-                    <AlertTriangle className="h-6 w-6 text-nd-danger" />
+                  <div className="h-12 w-12 rounded-full bg-nd-accent-error/10 flex items-center justify-center border border-nd-accent-error/25">
+                    <AlertTriangle className="h-6 w-6 text-nd-accent-error" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-nd-text">Failed to Load Page</h3>
+                    <h3 className="text-lg font-bold text-nd-text-primary">Failed to Load Page</h3>
                     <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed truncate max-w-sm">
-                      Could not establish connection to <code className="text-nd-accent font-mono text-[10px]">{activeTab.url}</code>
+                      Could not establish connection to <code className="text-nd-accent-primary font-mono text-[10px]">{activeTab.url}</code>
                     </p>
                   </div>
 
                   {/* Diagnostic Details */}
-                  <div className="w-full border border-nd-text-muted/10 bg-nd-surface/10 rounded-xl overflow-hidden">
+                  <div className="w-full rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 overflow-hidden">
                     <button
                       type="button"
                       onClick={() => setErrorDetailsOpen(!errorDetailsOpen)}
-                      className="w-full px-4 py-2.5 flex items-center justify-between text-xs text-nd-text font-semibold hover:bg-nd-surface/20 transition"
+                      className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-nd-text-primary transition hover:bg-nd-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60"
                     >
                       <span>Diagnostic Information</span>
-                      <ChevronDown className={`h-4 w-4 text-nd-text-muted transition-transform ${errorDetailsOpen ? "rotate-180" : ""}`} />
+                      <ChevronDown className={`h-4 w-4 text-nd-text-muted transition-transform ${errorDetailsOpen ? "rotate-180" : ""}`} aria-hidden="true" />
                     </button>
                     {errorDetailsOpen && (
-                      <div className="border-t border-nd-text-muted/10 p-3 text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1.5 bg-nd-surface/5 max-h-40 overflow-y-auto scrollbar-thin">
-                        <div><span className="text-nd-accent">Error Code:</span> {activeTab.diagnostics?.lastErrorCode || "ERR_CONNECTION_REFUSED"}</div>
-                        <div><span className="text-nd-accent">Description:</span> {activeTab.diagnostics?.lastErrorMessage || "The server at the destination address refused the connection or DNS resolution failed."}</div>
-                        <div><span className="text-nd-accent">Target:</span> {activeTab.url}</div>
+                      <div className="border-t border-nd-border-subtle bg-nd-surface-app/50 p-3 text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1.5 max-h-40 overflow-y-auto scrollbar-thin">
+                        <div><span className="text-nd-accent-primary">Error Code:</span> {activeTab.diagnostics?.lastErrorCode || "ERR_CONNECTION_REFUSED"}</div>
+                        <div><span className="text-nd-accent-primary">Description:</span> {activeTab.diagnostics?.lastErrorMessage || "The server at the destination address refused the connection or DNS resolution failed."}</div>
+                        <div><span className="text-nd-accent-primary">Target:</span> {activeTab.url}</div>
                       </div>
                     )}
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      disabled={!activeTab?.canGoBack}
-                      className="px-4 py-2 bg-nd-surface border border-nd-text-muted/15 text-xs font-semibold text-nd-text rounded-xl hover:bg-nd-surface/80 transition disabled:opacity-40"
-                    >
+                    <Button variant="secondary" size="sm" onClick={goBack} disabled={!activeTab?.canGoBack}>
                       Go Back
-                    </button>
-                    <button
-                      type="button"
-                      onClick={refresh}
-                      className="px-4 py-2 bg-nd-accent text-xs font-semibold text-nd-bg rounded-xl hover:opacity-90 transition"
-                    >
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={refresh}>
                       Retry Connection
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
-                      className="px-4 py-2 bg-nd-surface/30 border border-nd-text-muted/10 text-xs font-semibold text-nd-text-muted hover:text-nd-text rounded-xl transition flex items-center gap-1.5"
-                    >
-                      <span>Open Externally</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
+                    <Button variant="ghost" size="sm" icon={ExternalLink} iconPosition="right" onClick={() => window.electronAPI?.openExternal(activeTab.url)}>
+                      Open Externally
+                    </Button>
                   </div>
                 </div>
               </div>
             )}
 
             {activeTab.state === "crashed" && (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-bg text-center select-none overflow-y-auto scrollbar-thin">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-surface-app text-center select-none overflow-y-auto scrollbar-thin">
                 <div className="max-w-md w-full flex flex-col items-center gap-6">
-                  <div className="h-12 w-12 rounded-full bg-nd-warning/10 flex items-center justify-center border border-nd-warning/25 animate-pulse">
-                    <Terminal className="h-6 w-6 text-nd-warning" />
+                  <div className="h-12 w-12 rounded-full bg-nd-accent-warning/10 flex items-center justify-center border border-nd-accent-warning/25 animate-pulse">
+                    <Terminal className="h-6 w-6 text-nd-accent-warning" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-nd-text">Renderer Process Crashed</h3>
+                    <h3 className="text-lg font-bold text-nd-text-primary">Renderer Process Crashed</h3>
                     <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
                       The sandboxed web page process has crashed. This can happen if the site uses excessive memory resources.
                     </p>
                   </div>
 
                   {/* Diagnostic Details */}
-                  <div className="w-full p-3 border border-nd-warning/20 bg-nd-warning/5 rounded-xl text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1">
-                    <div><span className="text-nd-warning">Status:</span> PROCESS_CRASHED</div>
-                    <div><span className="text-nd-warning">Consecutive Crashes:</span> {activeTab.crashCount || 1}</div>
-                    <div><span className="text-nd-warning">Location:</span> {activeTab.url}</div>
+                  <div className="w-full rounded-xl border border-nd-accent-warning/20 bg-nd-accent-warning/5 p-3 text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1">
+                    <div><span className="text-nd-accent-warning">Status:</span> PROCESS_CRASHED</div>
+                    <div><span className="text-nd-accent-warning">Consecutive Crashes:</span> {activeTab.crashCount || 1}</div>
+                    <div><span className="text-nd-accent-warning">Location:</span> {activeTab.url}</div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={(e) => closeTab(activeTab.id, e)}
-                      className="px-4 py-2 bg-nd-surface border border-nd-text-muted/15 text-xs font-semibold text-nd-text rounded-xl hover:bg-nd-surface/80 transition"
-                    >
+                    <Button variant="secondary" size="sm" onClick={(e) => closeTab(activeTab.id, e)}>
                       Close Tab
-                    </button>
-                    <button
-                      type="button"
-                      onClick={refresh}
-                      className="px-4 py-2 bg-nd-accent text-xs font-semibold text-nd-bg rounded-xl hover:opacity-90 transition"
-                    >
+                    </Button>
+                    <Button variant="primary" size="sm" onClick={refresh}>
                       Recover Tab
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
-                      className="px-4 py-2 bg-nd-surface/30 border border-nd-text-muted/10 text-xs font-semibold text-nd-text-muted hover:text-nd-text rounded-xl transition flex items-center gap-1.5"
-                    >
-                      <span>Open Externally</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
+                    <Button variant="ghost" size="sm" icon={ExternalLink} iconPosition="right" onClick={() => window.electronAPI?.openExternal(activeTab.url)}>
+                      Open Externally
+                    </Button>
                   </div>
                 </div>
               </div>
             )}
 
             {activeTab.state === "blocked" && (
-              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-bg text-center select-none overflow-y-auto scrollbar-thin">
+              <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-surface-app text-center select-none overflow-y-auto scrollbar-thin">
                 <div className="max-w-md w-full flex flex-col items-center gap-6">
-                  <div className="h-12 w-12 rounded-full bg-nd-danger/10 flex items-center justify-center border border-nd-danger/25">
-                    <Lock className="h-6 w-6 text-nd-danger" />
+                  <div className="h-12 w-12 rounded-full bg-nd-accent-error/10 flex items-center justify-center border border-nd-accent-error/25">
+                    <Lock className="h-6 w-6 text-nd-accent-error" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-nd-text">Website Access Blocked</h3>
+                    <h3 className="text-lg font-bold text-nd-text-primary">Website Access Blocked</h3>
                     <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
                       Access to this URL has been blocked in accordance with your security settings or local file access restrictions.
                     </p>
                   </div>
 
                   {/* Policy details */}
-                  <div className="w-full p-3 border border-nd-text-muted/10 bg-nd-surface/10 rounded-xl text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1">
-                    <div><span className="text-nd-accent">Policy Rule:</span> LOCAL_FILE_SYSTEM_ISOLATION</div>
-                    <div><span className="text-nd-accent">Detail:</span> Accessing local machine files (file://) or system settings is disabled for browser security.</div>
-                    <div><span className="text-nd-accent">Attempted URL:</span> {activeTab.url}</div>
+                  <div className="w-full rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 p-3 text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1">
+                    <div><span className="text-nd-accent-primary">Policy Rule:</span> LOCAL_FILE_SYSTEM_ISOLATION</div>
+                    <div><span className="text-nd-accent-primary">Detail:</span> Accessing local machine files (file://) or system settings is disabled for browser security.</div>
+                    <div><span className="text-nd-accent-primary">Attempted URL:</span> {activeTab.url}</div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={goBack}
-                      disabled={!activeTab?.canGoBack}
-                      className="px-4 py-2 bg-nd-surface border border-nd-text-muted/15 text-xs font-semibold text-nd-text rounded-xl hover:bg-nd-surface/80 transition disabled:opacity-40"
-                    >
+                    <Button variant="secondary" size="sm" onClick={goBack} disabled={!activeTab?.canGoBack}>
                       Go Back
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
-                      className="px-4 py-2 bg-nd-accent text-xs font-semibold text-nd-bg rounded-xl hover:opacity-90 transition flex items-center gap-1.5"
-                    >
-                      <span>Open in External Browser</span>
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </button>
+                    </Button>
+                    <Button variant="primary" size="sm" icon={ExternalLink} iconPosition="right" onClick={() => window.electronAPI?.openExternal(activeTab.url)}>
+                      Open in External Browser
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -1581,37 +1460,27 @@ export function BrowserView() {
           <FocusTrapContainer
             active={Boolean(showSidebar)}
             onEscape={() => setShowSidebar(null)}
-            className="w-80 border-l border-nd-text-muted/10 bg-nd-surface/20 flex flex-col shrink-0 animate-in slide-in-from-right duration-250 backdrop-blur-lg"
+            className="flex w-80 shrink-0 flex-col border-l border-nd-border-subtle bg-nd-surface-secondary/20 animate-in slide-in-from-right duration-250"
             role="dialog"
             aria-label={showSidebar === "history" ? "History Log" : "Saved Bookmarks"}
           >
-            <div className="flex items-center justify-between p-3 border-b border-nd-text-muted/10">
-              <span className="text-xs font-bold uppercase tracking-wider text-nd-text">
+            <div className="flex items-center justify-between border-b border-nd-border-subtle p-3">
+              <span className="text-xs font-bold uppercase tracking-wider text-nd-text-primary">
                 {showSidebar === "history" ? "History Log" : "Saved Bookmarks"}
               </span>
-              <button
-                type="button"
-                onClick={() => setShowSidebar(null)}
-                aria-label="Close sidebar"
-                className="rounded p-1 text-nd-text-muted hover:text-nd-text hover:bg-nd-surface transition"
-              >
+              <IconButton aria-label="Close sidebar" variant="ghost" size="sm" onClick={() => setShowSidebar(null)}>
                 <X className="h-4 w-4" aria-hidden="true" />
-              </button>
+              </IconButton>
             </div>
 
             {/* Sidebar content list */}
             <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2 scrollbar-thin">
               {showSidebar === "history" ? (
                 <>
-                  <div className="flex gap-2 mb-2">
-                    <button
-                      type="button"
-                      onClick={clearHistory}
-                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 bg-nd-danger/10 border border-nd-danger/20 text-nd-danger hover:bg-nd-danger/20 rounded-xl text-xs font-semibold transition"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span>Purge History</span>
-                    </button>
+                  <div className="mb-2 flex gap-2">
+                    <Button variant="danger" size="sm" fullWidth icon={Trash2} onClick={clearHistory}>
+                      Purge History
+                    </Button>
                   </div>
                   {history.length === 0 ? (
                     <div className="text-xs text-nd-text-muted text-center py-8">
@@ -1622,24 +1491,25 @@ export function BrowserView() {
                       <div
                         key={h.id}
                         onDoubleClick={() => navigate(h.url)}
-                        className="group p-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 hover:border-nd-accent/20 cursor-pointer flex justify-between items-start gap-2 text-xs"
+                        className="group flex cursor-pointer items-start justify-between gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-2 text-xs transition hover:border-nd-accent-primary/30"
                       >
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-medium truncate text-nd-text group-hover:text-nd-accent transition">
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate font-medium text-nd-text-primary transition group-hover:text-nd-accent-primary">
                             {h.title || h.url}
                           </span>
-                          <span className="text-[10px] text-nd-text-muted truncate mt-0.5">
+                          <span className="mt-0.5 truncate text-[10px] text-nd-text-muted">
                             {h.url}
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => deleteHistoryEntry(h.id)}
+                        <IconButton
                           aria-label={`Delete history entry: ${h.title || h.url}`}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-nd-text-muted hover:text-nd-danger transition"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteHistoryEntry(h.id)}
+                          className="opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
+                        </IconButton>
                       </div>
                     ))
                   )}
@@ -1655,24 +1525,25 @@ export function BrowserView() {
                       <div
                         key={b.id}
                         onDoubleClick={() => navigate(b.url)}
-                        className="group p-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/30 hover:border-nd-accent/20 cursor-pointer flex justify-between items-start gap-2 text-xs"
+                        className="group flex cursor-pointer items-start justify-between gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-2 text-xs transition hover:border-nd-accent-primary/30"
                       >
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-medium truncate text-nd-text group-hover:text-nd-accent transition">
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate font-medium text-nd-text-primary transition group-hover:text-nd-accent-primary">
                             {b.title || b.url}
                           </span>
-                          <span className="text-[10px] text-nd-text-muted truncate mt-0.5">
+                          <span className="mt-0.5 truncate text-[10px] text-nd-text-muted">
                             {b.url}
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => deleteBookmark(b.id)}
+                        <IconButton
                           aria-label={`Remove bookmark: ${b.title || b.url}`}
-                          className="opacity-0 group-hover:opacity-100 p-1 text-nd-text-muted hover:text-nd-danger transition"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteBookmark(b.id)}
+                          className="opacity-0 group-hover:opacity-100"
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
+                        </IconButton>
                       </div>
                     ))
                   )}
@@ -1684,28 +1555,28 @@ export function BrowserView() {
       </div>
 
       {/* Gamepad / Navigation Hints Footer */}
-      <div className="flex items-center justify-between border-t border-nd-text-muted/10 bg-nd-surface/10 px-4 py-2 text-[10px] font-semibold text-nd-text-muted shrink-0">
+      <div className="flex items-center justify-between border-t border-nd-border-subtle bg-nd-surface-secondary/30 px-4 py-2 text-[10px] font-semibold text-nd-text-muted shrink-0">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1">
-            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">
+            <span className="rounded border border-nd-border-subtle bg-nd-surface-secondary px-1.5 py-0.5 font-mono text-[9px]">
               L2
             </span>{" "}
             Navigate Back
           </span>
           <span className="flex items-center gap-1">
-            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">
+            <span className="rounded border border-nd-border-subtle bg-nd-surface-secondary px-1.5 py-0.5 font-mono text-[9px]">
               R2
             </span>{" "}
             Navigate Forward
           </span>
           <span className="flex items-center gap-1">
-            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">
+            <span className="rounded border border-nd-border-subtle bg-nd-surface-secondary px-1.5 py-0.5 font-mono text-[9px]">
               Y
             </span>{" "}
             Focus Address Bar
           </span>
           <span className="flex items-center gap-1">
-            <span className="rounded bg-nd-surface px-1.5 py-0.5 border border-nd-text-muted/20 font-mono text-[9px]">
+            <span className="rounded border border-nd-border-subtle bg-nd-surface-secondary px-1.5 py-0.5 font-mono text-[9px]">
               X
             </span>{" "}
             Toggle Tab Strip

@@ -3,32 +3,32 @@ import { alertScoreTone } from '../utils/socGrading';
 import type { SocAlert, AlertAnalysisState } from '../types';
 
 const SEVERITY_DOT: Record<string, string> = {
-  critical: 'bg-nd-danger',
-  high:     'bg-nd-warning',
-  medium:   'bg-nd-accent',
-  low:      'bg-nd-text-muted/40',
+  critical: 'bg-nd-accent-error',
+  high: 'bg-nd-accent-warning',
+  medium: 'bg-nd-accent-primary',
+  low: 'bg-nd-text-muted/40',
 };
 
 const SEVERITY_LABEL: Record<string, string> = {
   critical: 'CRIT',
-  high:     'HIGH',
-  medium:   'MED',
-  low:      'LOW',
+  high: 'HIGH',
+  medium: 'MED',
+  low: 'LOW',
 };
 
 const SEVERITY_TONE: Record<string, 'danger' | 'warning' | 'accent' | 'neutral'> = {
   critical: 'danger',
-  high:     'warning',
-  medium:   'accent',
-  low:      'neutral',
+  high: 'warning',
+  medium: 'accent',
+  low: 'neutral',
 };
 
 const SOURCE_LABEL: Record<string, string> = {
-  edr:       'EDR',
-  siem:      'SIEM',
-  ids:       'IDS',
-  firewall:  'FW',
-  av:        'AV',
+  edr: 'EDR',
+  siem: 'SIEM',
+  ids: 'IDS',
+  firewall: 'FW',
+  av: 'AV',
   'email-gw': 'Email',
 };
 
@@ -48,11 +48,11 @@ export function AlertQueuePanel({ alerts, selectedId, analyses, onSelect }: Aler
       aria-label="Alert queue"
     >
       {/* Queue header */}
-      <div className="border-b border-nd-border-subtle px-3 py-2.5">
-        <p className="text-[11px] font-semibold uppercase tracking-widest text-nd-text-muted/60">
+      <div className="border-b border-nd-border-subtle px-3 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-nd-text-muted/70">
           Alert Queue
         </p>
-        <p className="mt-0.5 text-[11px] text-nd-text-muted/50">
+        <p className="mt-0.5 text-[11px] text-nd-text-muted/60">
           {completedCount} of {alerts.length} analysed
         </p>
       </div>
@@ -70,31 +70,47 @@ export function AlertQueuePanel({ alerts, selectedId, analyses, onSelect }: Aler
               <button
                 type="button"
                 onClick={() => onSelect(alert.id)}
-                className={`w-full px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 focus-visible:ring-inset ${
+                className={`w-full px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/50 focus-visible:ring-inset ${
                   isSelected
-                    ? 'bg-nd-accent/10 border-l-2 border-nd-accent'
+                    ? 'border-l-2 border-nd-accent-primary bg-nd-accent/10'
                     : 'border-l-2 border-transparent hover:bg-nd-surface/40'
                 }`}
               >
                 {/* Severity + source row */}
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${SEVERITY_DOT[alert.severity]}`} aria-hidden="true" />
-                  <Badge tone={SEVERITY_TONE[alert.severity]}>{SEVERITY_LABEL[alert.severity]}</Badge>
-                  <span className="text-[10px] text-nd-text-muted/50 ml-auto">{SOURCE_LABEL[alert.source]}</span>
+                <div className="mb-1 flex items-center gap-2">
+                  <div
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${SEVERITY_DOT[alert.severity]}`}
+                    aria-hidden="true"
+                  />
+                  <Badge tone={SEVERITY_TONE[alert.severity]} size="sm">
+                    {SEVERITY_LABEL[alert.severity]}
+                  </Badge>
+                  <span className="ml-auto text-[10px] text-nd-text-muted/60">
+                    {SOURCE_LABEL[alert.source]}
+                  </span>
                 </div>
 
                 {/* Title */}
-                <p className={`text-[11px] leading-4 ${isSelected ? 'font-semibold text-nd-text-primary' : 'text-nd-text-secondary'}`}>
+                <p
+                  className={`text-[11px] leading-4 ${
+                    isSelected ? 'font-semibold text-nd-text-primary' : 'text-nd-text-secondary'
+                  }`}
+                >
                   {alert.title}
                 </p>
 
                 {/* Score or timestamp */}
                 <div className="mt-1 flex items-center justify-between">
-                  <span className="text-[10px] text-nd-text-muted/40">
-                    {new Date(alert.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <span className="text-[10px] text-nd-text-muted/50">
+                    {new Date(alert.timestamp).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                   {isGraded && score !== null && (
-                    <Badge tone={alertScoreTone(score)}>{score}</Badge>
+                    <Badge tone={alertScoreTone(score)} size="sm">
+                      {score}
+                    </Badge>
                   )}
                 </div>
               </button>

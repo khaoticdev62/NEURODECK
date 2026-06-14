@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, Plus, Trash2, Play, Pause, RefreshCw } from 'lucide-react';
+import { CalendarClock, Plus, Trash2, Play, Pause } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { ScheduledTask } from '../../services/bridgeAdapter';
+import { Button } from '../../components/primitives/Button';
 import { EmptyState } from '../../components/primitives/EmptyState';
-import { LoadingState } from '../../components/primitives/LoadingState';
 import { ErrorState } from '../../components/primitives/ErrorState';
+import { IconButton } from '../../components/primitives/IconButton';
+import { LoadingState } from '../../components/primitives/LoadingState';
+import { Panel } from '../../components/primitives/Panel';
+import { StatusChip } from '../../components/primitives/StatusChip';
+import { TextInput } from '../../components/primitives/TextInput';
 
 export function SchedulerView() {
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
@@ -81,106 +86,121 @@ export function SchedulerView() {
   };
 
   return (
-    <div data-testid="scheduler-view" className="flex h-full flex-col">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <CalendarClock className="h-5 w-5 text-nd-accent" aria-hidden="true" />
-        </div>
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-nd-text">Scheduler</h2>
-          <p className="text-xs text-nd-text-muted">Task scheduling with cron expressions</p>
-        </div>
-        <button type="button" onClick={load} disabled={loading} aria-label="Refresh tasks" className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-        </button>
-      </div>
-
-      <div className="mb-4 space-y-2 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Task name..."
-            aria-label="Task name"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+    <Panel eyebrow="Task Scheduler" title="Scheduler" className="flex h-full flex-col overflow-hidden">
+      <div data-testid="scheduler-view" className="flex h-full flex-col">
+        <div className="space-y-4 p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TextInput
+              id="task-name"
+              label="Task name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Task name..."
+            />
+            <TextInput
+              id="cron-expression"
+              label="Cron expression"
+              value={cron}
+              onChange={(e) => setCron(e.target.value)}
+              placeholder="Cron: 0 9 * * MON"
+            />
+          </div>
+          <textarea
+            value={goal}
+            onChange={(e) => setGoal(e.target.value)}
+            placeholder="Task description or Lua script..."
+            aria-label="Task description or Lua script"
+            rows={2}
+            className="w-full resize-none rounded-xl border border-border-subtle bg-surface-primary px-3 py-2 text-sm text-text-primary outline-none transition duration-fast placeholder:text-text-muted focus:border-accent-primary/40 focus-visible:ring-2 focus-visible:ring-accent-primary/30"
           />
-          <input
-            type="text"
-            value={cron}
-            onChange={(e) => setCron(e.target.value)}
-            placeholder="Cron: 0 9 * * MON"
-            aria-label="Cron expression"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-          />
-        </div>
-        <textarea
-          value={goal}
-          onChange={(e) => setGoal(e.target.value)}
-          placeholder="Task description or Lua script..."
-          aria-label="Task description or Lua script"
-          rows={2}
-          className="w-full resize-none rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-        />
-        <button
-          type="button"
-          onClick={addTask}
-          disabled={!name.trim() || !cron.trim()}
-          className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:pointer-events-none disabled:opacity-40"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" /> Add Task
-        </button>
-      </div>
-
-      {mutateError && (
-        <div
-          role="alert"
-          className="mb-3 flex items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger"
-        >
-          {mutateError}
-          <button
-            type="button"
-            onClick={() => setMutateError(null)}
-            aria-label="Dismiss error"
-            className="ml-auto text-nd-danger/70 hover:text-nd-danger"
+          <Button
+            variant="primary"
+            size="sm"
+            icon={Plus}
+            onClick={addTask}
+            disabled={!name.trim() || !cron.trim()}
           >
-            ×
-          </button>
+            Add Task
+          </Button>
         </div>
-      )}
 
-      <div className="flex-1 overflow-auto space-y-2">
-        {loading && <LoadingState label="Loading tasks…" />}
-        {!loading && loadError && (
-          <ErrorState
-            title="Failed to load tasks"
-            message={loadError}
-            onRetry={() => void load()}
-          />
-        )}
-        {!loading && !loadError && tasks.length === 0 && (
-          <EmptyState icon={CalendarClock} title="No scheduled tasks" description="Add a task using the form above." />
-        )}
-        {!loading && !loadError && tasks.map((task) => (
-          <div key={task.id} className="flex items-center gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
-            <div className={`h-2 w-2 rounded-full ${task.enabled ? 'bg-nd-success' : 'bg-nd-text-muted/40'}`} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-nd-text/90">{task.name}</p>
-              <p className="text-xs text-nd-text-muted font-mono">{task.cron}</p>
-              {task.goal && <p className="text-xs text-nd-text-muted/70 truncate">{task.goal}</p>}
-            </div>
-            <button type="button" onClick={() => runNow(task.id)} aria-label="Run task now" className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-success focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-              <Play className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button type="button" onClick={() => toggleTask(task.id)} aria-label={task.enabled ? 'Pause task (currently enabled)' : 'Resume task (currently paused)'} aria-pressed={task.enabled} className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-              {task.enabled ? <Pause className="h-4 w-4" aria-hidden="true" /> : <Play className="h-4 w-4" aria-hidden="true" />}
-            </button>
-            <button type="button" onClick={() => deleteTask(task.id)} aria-label="Delete task" className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
-              <Trash2 className="h-4 w-4" aria-hidden="true" />
+        {mutateError && (
+          <div
+            role="alert"
+            className="mx-4 mb-3 flex items-center gap-2 rounded-xl border border-accent-error/25 bg-accent-error/10 px-3 py-2 text-xs text-accent-error"
+          >
+            {mutateError}
+            <button
+              type="button"
+              onClick={() => setMutateError(null)}
+              aria-label="Dismiss error"
+              className="ml-auto text-accent-error/70 hover:text-accent-error"
+            >
+              ×
             </button>
           </div>
-        ))}
+        )}
+
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-4 scrollbar-thin">
+          {loading && <LoadingState label="Loading tasks…" />}
+          {!loading && loadError && (
+            <ErrorState title="Failed to load tasks" message={loadError} onRetry={() => void load()} />
+          )}
+          {!loading && !loadError && tasks.length === 0 && (
+            <EmptyState
+              icon={CalendarClock}
+              title="No scheduled tasks"
+              description="Add a task using the form above."
+            />
+          )}
+          {!loading &&
+            !loadError &&
+            tasks.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 p-3 transition duration-fast hover:bg-surface-tertiary/30"
+              >
+                <StatusChip tone={task.enabled ? 'success' : 'info'} size="sm">
+                  {task.enabled ? 'Enabled' : 'Paused'}
+                </StatusChip>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-text-primary">{task.name}</p>
+                  <p className="font-mono text-xs text-text-muted">{task.cron}</p>
+                  {task.goal && <p className="truncate text-xs text-text-muted/70">{task.goal}</p>}
+                </div>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Run task now"
+                  onClick={() => runNow(task.id)}
+                >
+                  <Play className="h-4 w-4" aria-hidden="true" />
+                </IconButton>
+                <IconButton
+                  variant="ghost"
+                  size="sm"
+                  aria-pressed={task.enabled}
+                  aria-label={task.enabled ? 'Pause task (currently enabled)' : 'Resume task (currently paused)'}
+                  onClick={() => toggleTask(task.id)}
+                >
+                  {task.enabled ? (
+                    <Pause className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Play className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </IconButton>
+                <IconButton
+                  variant="danger"
+                  size="sm"
+                  aria-label="Delete task"
+                  onClick={() => deleteTask(task.id)}
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                </IconButton>
+              </div>
+            ))}
+        </div>
       </div>
-    </div>
+    </Panel>
   );
 }

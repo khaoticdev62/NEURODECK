@@ -1,7 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GraduationCap, Home, BookOpen, FlaskConical, FolderOpen, ShieldAlert, Database, ClipboardList, Map } from 'lucide-react';
+import {
+  GraduationCap,
+  Home,
+  BookOpen,
+  FlaskConical,
+  FolderOpen,
+  ShieldAlert,
+  Database,
+  ClipboardList,
+  Map,
+} from 'lucide-react';
 import { LoadingState } from '../../components/primitives/LoadingState';
 import { ErrorState } from '../../components/primitives/ErrorState';
+import { TabGroup, TabList, Tab } from '../../components/primitives/Tabs';
 import { AcademyHome } from './views/AcademyHome';
 import { LearningPathsView } from './views/LearningPathsView';
 import { LabBrowserView } from './views/LabBrowserView';
@@ -18,14 +29,14 @@ import type { AcademyLearnerProgress } from '../../services/bridgeAdapter';
 import type { AcademyTab, Lab, LearnerProgress } from './types';
 
 const TABS: { id: AcademyTab; label: string; icon: React.ElementType }[] = [
-  { id: 'home',      label: 'Home',      icon: Home          },
-  { id: 'paths',     label: 'Paths',     icon: BookOpen      },
-  { id: 'labs',      label: 'Labs',      icon: FlaskConical  },
-  { id: 'portfolio', label: 'Portfolio', icon: FolderOpen    },
-  { id: 'soc',       label: 'SOC',       icon: ShieldAlert   },
-  { id: 'query',     label: 'SIEM',      icon: Database      },
-  { id: 'exam',      label: 'Exam',      icon: ClipboardList },
-  { id: 'roadmap',   label: 'Roadmap',   icon: Map           },
+  { id: 'home', label: 'Home', icon: Home },
+  { id: 'paths', label: 'Paths', icon: BookOpen },
+  { id: 'labs', label: 'Labs', icon: FlaskConical },
+  { id: 'portfolio', label: 'Portfolio', icon: FolderOpen },
+  { id: 'soc', label: 'SOC', icon: ShieldAlert },
+  { id: 'query', label: 'SIEM', icon: Database },
+  { id: 'exam', label: 'Exam', icon: ClipboardList },
+  { id: 'roadmap', label: 'Roadmap', icon: Map },
 ];
 
 const PROGRESS_LS_KEY = 'neurodeck_academy_progress';
@@ -55,7 +66,9 @@ export function AcademyView() {
     }
   }, []);
 
-  useEffect(() => { loadProgress(); }, [loadProgress]);
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
 
   const saveProgress = useCallback(async (next: LearnerProgress) => {
     setProgress(next);
@@ -71,10 +84,13 @@ export function AcademyView() {
     if (lab) setActiveLab(lab);
   }, []);
 
-  const handleLabComplete = useCallback(async (updatedProgress: LearnerProgress) => {
-    await saveProgress(updatedProgress);
-    // stay in runner — LabRunnerView transitions to 'saved' phase before calling back
-  }, [saveProgress]);
+  const handleLabComplete = useCallback(
+    async (updatedProgress: LearnerProgress) => {
+      await saveProgress(updatedProgress);
+      // stay in runner — LabRunnerView transitions to 'saved' phase before calling back
+    },
+    [saveProgress]
+  );
 
   const handleLabBack = useCallback(() => {
     setActiveLab(null);
@@ -84,17 +100,19 @@ export function AcademyView() {
     setActiveTab(tab);
   }, []);
 
-  if (loading) return (
-    <div className="flex h-full items-center justify-center">
-      <LoadingState label="Loading Academy…" />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex h-full items-center justify-center">
+        <LoadingState label="Loading Academy…" />
+      </div>
+    );
 
-  if (error) return (
-    <div className="flex h-full items-center justify-center">
-      <ErrorState message={error} onRetry={loadProgress} />
-    </div>
-  );
+  if (error)
+    return (
+      <div className="flex h-full items-center justify-center">
+        <ErrorState message={error} onRetry={loadProgress} />
+      </div>
+    );
 
   const prog = progress ?? defaultProgress();
 
@@ -110,13 +128,15 @@ export function AcademyView() {
     );
   }
 
+  const isFullBleedTab = activeTab === 'soc' || activeTab === 'query' || activeTab === 'exam';
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <header className="shrink-0 border-b border-nd-border-subtle bg-nd-surface-base/50 px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-            <GraduationCap className="h-4 w-4 text-nd-accent" aria-hidden="true" />
+            <GraduationCap className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
           </div>
           <div>
             <h2 className="text-sm font-bold tracking-tight text-nd-text-primary">SOC Forge</h2>
@@ -124,77 +144,41 @@ export function AcademyView() {
           </div>
         </div>
 
-        <nav
-          className="mt-3 flex gap-1 overflow-x-auto pb-0.5 scrollbar-none"
-          role="tablist"
-          aria-label="Academy navigation"
-        >
-          {TABS.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              id={`academy-tab-${id}`}
-              aria-selected={activeTab === id}
-              aria-controls={`academy-panel-${id}`}
-              onClick={() => setActiveTab(id)}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                activeTab === id
-                  ? 'bg-nd-accent/15 text-nd-accent'
-                  : 'text-nd-text-secondary hover:bg-nd-surface/40 hover:text-nd-text-primary'
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-              {label}
-            </button>
-          ))}
-        </nav>
+        <TabGroup value={activeTab} onChange={(v) => setActiveTab(v as AcademyTab)} className="mt-3">
+          <TabList aria-label="Academy navigation" className="overflow-x-auto scrollbar-none">
+            {TABS.map(({ id, label, icon: Icon }) => (
+              <Tab key={id} value={id} className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs">
+                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                {label}
+              </Tab>
+            ))}
+          </TabList>
+        </TabGroup>
       </header>
 
       <main
         id={`academy-panel-${activeTab}`}
         role="tabpanel"
         aria-labelledby={`academy-tab-${activeTab}`}
-        className={`flex-1 ${activeTab === 'soc' || activeTab === 'query' || activeTab === 'exam' ? 'overflow-hidden' : 'overflow-y-auto p-4'}`}
+        className={`flex-1 ${isFullBleedTab ? 'overflow-hidden' : 'overflow-y-auto p-4'}`}
         tabIndex={0}
       >
         {activeTab === 'home' && (
-          <AcademyHome
-            progress={prog}
-            onNavigate={handleNavigate}
-            onStartLab={handleStartLab}
-          />
+          <AcademyHome progress={prog} onNavigate={handleNavigate} onStartLab={handleStartLab} />
         )}
         {activeTab === 'paths' && (
-          <LearningPathsView
-            progress={prog}
-            onStartLab={handleStartLab}
-          />
+          <LearningPathsView progress={prog} onStartLab={handleStartLab} />
         )}
         {activeTab === 'labs' && (
-          <LabBrowserView
-            progress={prog}
-            onStartLab={handleStartLab}
-          />
+          <LabBrowserView progress={prog} onStartLab={handleStartLab} />
         )}
-        {activeTab === 'portfolio' && (
-          <PortfolioView />
-        )}
+        {activeTab === 'portfolio' && <PortfolioView />}
         {activeTab === 'soc' && (
-          <SOCConsoleView
-            progress={prog}
-            onProgressUpdate={saveProgress}
-          />
+          <SOCConsoleView progress={prog} onProgressUpdate={saveProgress} />
         )}
-        {activeTab === 'query' && (
-          <SIEMQueryView />
-        )}
-        {activeTab === 'exam' && (
-          <PracticeExamView />
-        )}
-        {activeTab === 'roadmap' && (
-          <CertRoadmapView progress={prog} />
-        )}
+        {activeTab === 'query' && <SIEMQueryView />}
+        {activeTab === 'exam' && <PracticeExamView />}
+        {activeTab === 'roadmap' && <CertRoadmapView progress={prog} />}
       </main>
     </div>
   );

@@ -1,6 +1,12 @@
 import type { Dispatch } from 'react';
 import { useMemo, useState } from 'react';
-import { Type, Search, Check, X } from 'lucide-react';
+import { Type, Check, X } from 'lucide-react';
+import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
+import { EmptyState } from '../../components/primitives/EmptyState';
+import { IconButton } from '../../components/primitives/IconButton';
+import { Panel } from '../../components/primitives/Panel';
+import { TextInput } from '../../components/primitives/TextInput';
 import { fontOptions } from '../../types/seed';
 import type { FontCategory, NeuroDeckAction, NeuroDeckState } from '../../types/neurodeck';
 
@@ -24,120 +30,116 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
     dispatch({ type: 'set-font', font: fontId });
   };
 
-  return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Type className="h-5 w-5 text-nd-accent" aria-hidden="true" />
-        </div>
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-nd-text">Font Manager</h2>
-          <p className="text-xs text-nd-text-muted">
-            {fontOptions.length} typefaces available • Active: <span style={{ fontFamily: fontOptions.find((f) => f.id === state.selectedFont)?.family }}>{fontOptions.find((f) => f.id === state.selectedFont)?.name}</span>
-          </p>
-        </div>
-      </div>
+  const activeFont = fontOptions.find((f) => f.id === state.selectedFont);
 
-      {/* Toolbar */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
-          <Search className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
-          <input
-            type="text"
+  return (
+    <Panel eyebrow="Typography" title="Font Manager" className="flex h-full flex-col overflow-hidden">
+      <div className="flex flex-col gap-4 p-4">
+        <p className="text-sm text-text-secondary">
+          {fontOptions.length} typefaces available • Active:{' '}
+          <span className="font-medium text-text-primary" style={{ fontFamily: activeFont?.family }}>
+            {activeFont?.name}
+          </span>
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3">
+          <TextInput
+            id="font-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search fonts..."
             aria-label="Search fonts"
-            className="flex-1 bg-transparent text-sm text-nd-text outline-none placeholder:text-nd-text-muted/70"
+            className="flex-1 min-w-[12rem]"
           />
           {search && (
-            <button type="button" onClick={() => setSearch('')} aria-label="Clear search" className="text-nd-text-muted hover:text-nd-text/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
-              <X className="h-3.5 w-3.5" aria-hidden="true" />
-            </button>
+            <IconButton variant="ghost" size="sm" aria-label="Clear search" onClick={() => setSearch('')}>
+              <X className="h-4 w-4" aria-hidden="true" />
+            </IconButton>
           )}
-        </div>
 
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => setCategory('All')}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${category === 'All' ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
-          >
-            All
-          </button>
-          {CATEGORIES.map((c) => (
-            <button
-              key={c}
+          <div className="flex flex-wrap gap-1">
+            <Button
               type="button"
-              onClick={() => setCategory(c)}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${category === c ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
+              size="xs"
+              variant={category === 'All' ? 'primary' : 'ghost'}
+              onClick={() => setCategory('All')}
             >
-              {c}
-            </button>
-          ))}
+              All
+            </Button>
+            {CATEGORIES.map((c) => (
+              <Button
+                key={c}
+                type="button"
+                size="xs"
+                variant={category === c ? 'primary' : 'ghost'}
+                onClick={() => setCategory(c)}
+              >
+                {c}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Font Grid */}
-      <div className="grid flex-1 grid-cols-1 gap-3 overflow-auto pb-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 scrollbar-thin">
-        {filtered.map((font) => {
-          const isActive = state.selectedFont === font.id;
-          const preview = font.category === 'Monospace' ? MONO_SAMPLE : SAMPLE_TEXT;
-          return (
-            <button
-              key={font.id}
-              type="button"
-              onClick={() => applyFont(font.id)}
-              className={`relative flex flex-col rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                isActive
-                  ? 'border-nd-accent/40 bg-nd-accent/[0.08] shadow-focus'
-                  : 'border-nd-text-muted/15 bg-nd-surface/30 hover:border-nd-text-muted/20 hover:bg-nd-surface/50'
-              }`}
-            >
-              {isActive && (
-                <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent text-nd-bg">
-                  <Check className="h-3.5 w-3.5" aria-hidden="true" />
-                </div>
-              )}
-
-              <div className="mb-3 flex items-center gap-2">
-                <span className="rounded-md border border-nd-text-muted/15 bg-nd-surface/50 px-1.5 py-0.5 text-[10px] text-nd-text-muted">
-                  {font.category}
-                </span>
-                <span className="text-[10px] text-nd-text-muted/70">{font.weights.length} weights</span>
-              </div>
-
-              <p className="text-sm font-semibold text-nd-text/90">{font.name}</p>
-
-              <div className="mt-3 flex-1 rounded-xl border border-nd-text-muted/8 bg-nd-surface/40 p-3">
-                <p
-                  className="text-lg leading-relaxed text-nd-text/80"
-                  style={{ fontFamily: font.family }}
-                >
-                  {preview}
-                </p>
-              </div>
-
-              <div className="mt-3 flex items-center justify-between">
-                <span className="text-[10px] text-nd-text-muted/70">{font.family.split(',')[0].replace(/"/g, '')}</span>
-                {isActive ? (
-                  <span className="text-xs font-medium text-nd-accent">Active</span>
-                ) : (
-                  <span className="text-xs text-nd-text-muted/70">Click to apply</span>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4 scrollbar-thin">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((font) => {
+            const isActive = state.selectedFont === font.id;
+            const preview = font.category === 'Monospace' ? MONO_SAMPLE : SAMPLE_TEXT;
+            return (
+              <button
+                key={font.id}
+                type="button"
+                onClick={() => applyFont(font.id)}
+                aria-pressed={isActive}
+                aria-label={`${font.name}${isActive ? ' (active)' : ''}`}
+                className={`group relative flex flex-col rounded-2xl border p-4 text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/60 ${
+                  isActive
+                    ? 'border-accent-primary/50 bg-accent-primary/[0.07] shadow-glow-sm'
+                    : 'border-border-subtle bg-surface-secondary/30 hover:border-accent-primary/30 hover:bg-surface-tertiary/30'
+                }`}
+              >
+                {isActive && (
+                  <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-accent-primary text-surface-primary">
+                    <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                  </div>
                 )}
-              </div>
-            </button>
-          );
-        })}
+
+                <div className="mb-3 flex items-center gap-2">
+                  <Badge tone="neutral" size="sm">
+                    {font.category}
+                  </Badge>
+                  <span className="text-2xs text-text-muted">{font.weights.length} weights</span>
+                </div>
+
+                <p className="text-sm font-semibold text-text-primary">{font.name}</p>
+
+                <div className="mt-3 flex-1 rounded-xl border border-border-subtle bg-surface-primary/60 p-3">
+                  <p
+                    className="text-lg leading-relaxed text-text-secondary"
+                    style={{ fontFamily: font.family }}
+                  >
+                    {preview}
+                  </p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-2xs text-text-muted">{font.family.split(',')[0].replace(/"/g, '')}</span>
+                  {isActive ? (
+                    <span className="text-xs font-medium text-accent-primary">Active</span>
+                  ) : (
+                    <span className="text-xs text-text-muted">Click to apply</span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
 
         {filtered.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center py-16 text-nd-text-muted/70">
-            <Type className="h-10 w-10 mb-3" />
-            <p className="text-sm">No fonts match your search</p>
-          </div>
+          <EmptyState icon={Type} title="No fonts match your search" description="Try a different query or category." />
         )}
       </div>
-    </div>
+    </Panel>
   );
 }

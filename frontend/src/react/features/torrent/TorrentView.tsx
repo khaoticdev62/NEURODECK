@@ -2,13 +2,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Magnet, Plus, Pause, Play, Trash2, RefreshCw, ArrowDown, ArrowUp,
   FolderOpen, ArrowUpRight, Copy, Search, CheckSquare, Square as SquareIcon,
-  PauseCircle, PlayCircle, Trash, Filter, ArrowDownUp
+  PauseCircle, PlayCircle, Trash
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { TorrentItem } from '../../services/bridgeAdapter';
 import { useToast } from '../../components/primitives/Toast';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { LoadingState } from '../../components/primitives/LoadingState';
+import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
+import { Panel } from '../../components/primitives/Panel';
+import { Modal } from '../../components/primitives/Modal';
+import { Select } from '../../components/primitives/Select';
+import { StatusChip } from '../../components/primitives/StatusChip';
+import { TextInput } from '../../components/primitives/TextInput';
 
 function formatBytes(bytes?: number) {
   const value = Number(bytes || 0);
@@ -68,16 +75,33 @@ function torrentStatusLabel(entry: TorrentItem) {
   }
 }
 
-function torrentStatusColor(entry: TorrentItem) {
+function torrentStatusTone(entry: TorrentItem): 'info' | 'success' | 'warning' | 'error' {
   const key = torrentStatusKey(entry);
-  if (key === 'completed') return 'text-nd-success';
-  if (key === 'paused' || key === 'paused-complete') return 'text-nd-text-muted';
-  if (key === 'stalled' || key === 'metadata') return 'text-nd-warning';
-  return 'text-nd-accent';
+  if (key === 'completed') return 'success';
+  if (key === 'paused' || key === 'paused-complete') return 'warning';
+  if (key === 'stalled' || key === 'metadata') return 'warning';
+  return 'info';
 }
 
 type FilterKey = 'all' | 'running' | 'paused' | 'completed' | 'metadata' | 'stalled';
 type SortKey = 'recent' | 'progress' | 'name' | 'peers' | 'status';
+
+const FILTER_OPTIONS: { value: FilterKey; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'running', label: 'Running' },
+  { value: 'paused', label: 'Paused' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'metadata', label: 'Metadata' },
+  { value: 'stalled', label: 'Stalled' },
+];
+
+const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+  { value: 'recent', label: 'Recent' },
+  { value: 'progress', label: 'Progress' },
+  { value: 'name', label: 'Name' },
+  { value: 'peers', label: 'Peers' },
+  { value: 'status', label: 'Status' },
+];
 
 export function TorrentView() {
   const { toast } = useToast();
@@ -193,7 +217,6 @@ export function TorrentView() {
     });
   };
 
-
   const deselectAll = () => {
     setSelectedIds(new Set());
   };
@@ -285,283 +308,314 @@ export function TorrentView() {
   };
 
   return (
-    <div
-      ref={containerRef}
-      className={`flex h-full flex-col ${isDragging ? 'ring-2 ring-nd-accent/50' : ''}`}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
+    <Panel
+      eyebrow="BitTorrent"
+      title="Torrent Client"
+      className={`h-full ${isDragging ? 'ring-2 ring-nd-accent-primary/50' : ''}`}
     >
-      {/* Header */}
-      <div className="mb-3 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Magnet className="h-5 w-5 text-nd-accent" aria-hidden="true" />
+      <div
+        ref={containerRef}
+        className="flex h-full flex-col"
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+      >
+        {/* Header stats */}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3 text-xs text-nd-text-muted">
+            <span className="flex items-center gap-1">
+              <ArrowDown className="h-3.5 w-3.5 text-nd-success" aria-hidden="true" />
+              {formatRate(torrents.reduce((sum, t) => sum + (t.download_rate_bps || 0), 0))}
+            </span>
+            <span className="flex items-center gap-1">
+              <ArrowUp className="h-3.5 w-3.5 text-nd-accent-primary" aria-hidden="true" />
+              {formatRate(torrents.reduce((sum, t) => sum + (t.upload_rate_bps || 0), 0))}
+            </span>
+            <span>{counts.running}/{counts.total} active</span>
+          </div>
+          <IconButton
+            type="button"
+            size="md"
+            variant="subtle"
+            aria-label="Refresh torrent list"
+            onClick={load}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin motion-reduce:animate-none' : ''}`} aria-hidden="true" />
+          </IconButton>
         </div>
-        <div className="flex-1">
-          <div className="torrent-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Torrent</div>
-          <h2 className="text-lg font-semibold text-nd-text">Torrent Client</h2>
-          <p className="text-xs text-nd-text-muted">BitTorrent downloads</p>
-        </div>
-        <div className="flex items-center gap-3 text-xs text-nd-text-muted">
-          <span className="flex items-center gap-1"><ArrowDown className="h-3.5 w-3.5 text-nd-success" /> {formatRate(torrents.reduce((sum, t) => sum + (t.download_rate_bps || 0), 0))}</span>
-          <span className="flex items-center gap-1"><ArrowUp className="h-3.5 w-3.5 text-nd-accent" /> {formatRate(torrents.reduce((sum, t) => sum + (t.upload_rate_bps || 0), 0))}</span>
-          <span>{counts.running}/{counts.total} active</span>
-        </div>
-        <button type="button" aria-label="Refresh torrent list" onClick={load} disabled={loading} className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
-        </button>
-      </div>
 
-      {/* Add bar */}
-      <div className="mb-3 flex gap-2">
-        <input
-          id="torrent-source-input"
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addTorrent()}
-          placeholder="Magnet link or .torrent file path..."
-          aria-label="Magnet link or torrent file path"
-          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-        />
-        <button type="button" onClick={() => addTorrent()} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          <Plus className="h-4 w-4" aria-hidden="true" /> Add
-        </button>
-      </div>
-
-      {/* Search / Filter / Sort / Batch toolbar */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex flex-1 items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
-          <Search className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search torrents..."
-            aria-label="Search torrents"
-            className="flex-1 bg-transparent text-sm text-nd-text outline-none"
+        {/* Add bar */}
+        <div className="mb-3 flex gap-2">
+          <TextInput
+            id="torrent-source-input"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addTorrent()}
+            placeholder="Magnet link or .torrent file path..."
+            aria-label="Magnet link or torrent file path"
+            fullWidth
           />
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            icon={Plus}
+            loading={loading}
+            disabled={loading}
+            onClick={() => addTorrent()}
+          >
+            Add
+          </Button>
         </div>
-        <div className="flex items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
-          <Filter className="h-3.5 w-3.5 text-nd-text-muted" />
-          <select
+
+        {/* Search / Filter / Sort toolbar */}
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2 focus-within:border-nd-accent-primary/40 focus-within:ring-2 focus-within:ring-nd-accent-primary/20 transition-shadow">
+            <Search className="h-4 w-4 text-nd-text-muted" aria-hidden="true" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search torrents..."
+              aria-label="Search torrents"
+              className="min-w-0 flex-1 bg-transparent text-sm text-nd-text-primary outline-none placeholder:text-nd-text-muted"
+            />
+          </div>
+          <Select
+            aria-label="Filter torrents"
             value={filter}
             onChange={(e) => setFilter(e.target.value as FilterKey)}
-            className="bg-transparent text-xs text-nd-text outline-none"
-          >
-            <option value="all">All</option>
-            <option value="running">Running</option>
-            <option value="paused">Paused</option>
-            <option value="completed">Completed</option>
-            <option value="metadata">Metadata</option>
-            <option value="stalled">Stalled</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 focus-within:border-nd-accent/40 focus-within:ring-1 focus-within:ring-nd-accent/40 transition-shadow">
-          <ArrowDownUp className="h-3.5 w-3.5 text-nd-text-muted" />
-          <select
+            options={FILTER_OPTIONS}
+            className="w-32"
+          />
+          <Select
+            aria-label="Sort torrents"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="bg-transparent text-xs text-nd-text outline-none"
-          >
-            <option value="recent">Recent</option>
-            <option value="progress">Progress</option>
-            <option value="name">Name</option>
-            <option value="peers">Peers</option>
-            <option value="status">Status</option>
-          </select>
+            options={SORT_OPTIONS}
+            className="w-32"
+          />
         </div>
-      </div>
 
-      {/* Batch actions */}
-      {selectedIds.size > 0 && (
-        <div className="mb-3 flex items-center gap-2 rounded-xl border border-nd-accent/20 bg-nd-accent/5 px-3 py-2">
-          <span className="text-xs text-nd-text-muted">{selectedIds.size} selected</span>
-          <button type="button" onClick={pauseAll} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <PauseCircle className="h-3.5 w-3.5" /> Pause All
-          </button>
-          <button type="button" onClick={resumeAll} className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 px-2 py-1 text-xs text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <PlayCircle className="h-3.5 w-3.5" /> Resume All
-          </button>
-          <button type="button" onClick={() => setConfirmRemove({ ids: Array.from(selectedIds) })} className="flex items-center gap-1 rounded-lg border border-nd-danger/25 px-2 py-1 text-xs text-nd-danger hover:bg-nd-danger/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
-            <Trash className="h-3.5 w-3.5" /> Remove Selected
-          </button>
-          <button type="button" onClick={deselectAll} className="ml-auto text-xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
-            Clear
-          </button>
-        </div>
-      )}
-
-      <div className="flex min-h-0 flex-1 gap-3">
-        {/* Torrent list */}
-        <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-auto">
-          {loading && <LoadingState label="Loading torrents…" />}
-          {!loading && filteredTorrents.length === 0 && (
-            <EmptyState
-              icon={Magnet}
-              title="No torrents"
-              description="Add a magnet link, paste a torrent URL, or drag &amp; drop a .torrent file."
-            />
-          )}
-          {filteredTorrents.map((t) => (
-            <button
-              key={t.id}
+        {/* Batch actions */}
+        {selectedIds.size > 0 && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/5 px-3 py-2">
+            <span className="text-xs text-nd-text-muted">{selectedIds.size} selected</span>
+            <Button type="button" size="xs" variant="secondary" icon={PauseCircle} onClick={pauseAll}>
+              Pause All
+            </Button>
+            <Button type="button" size="xs" variant="secondary" icon={PlayCircle} onClick={resumeAll}>
+              Resume All
+            </Button>
+            <Button
               type="button"
-              onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
-              className={`rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                selectedId === t.id
-                  ? 'border-nd-accent/30 bg-nd-accent/[0.04]'
-                  : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/20'
-              }`}
+              size="xs"
+              variant="danger"
+              icon={Trash}
+              onClick={() => setConfirmRemove({ ids: Array.from(selectedIds) })}
             >
-              <div className="flex items-center gap-2">
-                {/* Checkbox for batch selection */}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); toggleSelection(t.id); }}
-                  aria-label={selectedIds.has(t.id) ? `Deselect ${t.name || t.id}` : `Select ${t.name || t.id}`}
-                  aria-pressed={selectedIds.has(t.id)}
-                  className="shrink-0 text-nd-text-muted hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded"
-                >
-                  {selectedIds.has(t.id) ? <CheckSquare className="h-4 w-4 text-nd-accent" aria-hidden="true" /> : <SquareIcon className="h-4 w-4" aria-hidden="true" />}
-                </button>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-nd-text/90">{t.name || t.id}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-nd-text-muted">
-                    <span className={torrentStatusColor(t)}>{torrentStatusLabel(t)}</span>
-                    <span>{t.peers} peers · {t.trackers} trackers</span>
-                    <span>{formatRate(t.download_rate_bps)} ↓ · {formatRate(t.upload_rate_bps)} ↑</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleTorrent(t); }}
-                    aria-label={t.paused ? 'Resume torrent' : 'Pause torrent'}
-                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                  >
-                    {t.paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setConfirmRemove({ id: t.id }); }}
-                    aria-label="Remove torrent"
-                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </div>
-              </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-nd-text/10">
-                <div
-                  className={`h-full rounded-full transition-all ${t.completed ? 'bg-nd-success' : 'bg-nd-accent'}`}
-                  style={{ width: `${Math.min(100, Math.max(0, t.progress_pct || 0))}%` }}
-                />
-              </div>
-              <div className="mt-1 flex justify-between text-[10px] text-nd-text-muted/60">
-                <span>{t.progress_pct?.toFixed(1) ?? 0}% · {t.pieces_done}/{t.pieces_total} pieces</span>
-                <span>ETA {formatEta(t.eta_seconds)}</span>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* Inspector */}
-        {selected && (
-          <div className="hidden w-80 shrink-0 flex-col gap-3 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4 lg:flex">
-            <h3 className="text-sm font-semibold text-nd-text">Torrent Inspector</h3>
-            <div className="space-y-3">
-              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
-                <p className="truncate text-xs font-medium text-nd-text/90">{selected.name || selected.id}</p>
-                <p className="text-[10px] text-nd-text-muted">{selected.source_kind?.toUpperCase()} · {selected.source_display || selected.source_value}</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <span className={`text-xs ${torrentStatusColor(selected)}`}>{torrentStatusLabel(selected)}</span>
-                  <span className="text-xs font-semibold text-nd-text">{(selected.progress_pct || 0).toFixed(1)}%</span>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <InspectorRow label="Progress" value={`${(selected.progress_pct || 0).toFixed(1)}%`} />
-                <InspectorRow label="Pieces" value={`${selected.pieces_done}/${selected.pieces_total}`} />
-                <InspectorRow label="Peers" value={String(selected.peers)} />
-                <InspectorRow label="Trackers" value={String(selected.trackers)} />
-                <InspectorRow label="Downloaded" value={formatBytes(selected.downloaded_bytes)} />
-                <InspectorRow label="Uploaded" value={formatBytes(selected.uploaded_bytes)} />
-                <InspectorRow label="Remaining" value={formatBytes(selected.bytes_remaining)} />
-                <InspectorRow label="ETA" value={formatEta(selected.eta_seconds)} />
-                <InspectorRow label="Info Hash" value={selected.info_hash || '—'} />
-              </div>
-
-              <div className="flex flex-wrap gap-1">
-                <MiniBtn icon={Copy} label="Copy Hash" onClick={() => navigator.clipboard.writeText(selected.info_hash || '')} />
-                <MiniBtn icon={FolderOpen} label="Open Root" onClick={() => neurodeckApi.torrent.openDownloadRoot().catch(() => {})} />
-                <MiniBtn icon={ArrowUpRight} label="Reveal" onClick={() => neurodeckApi.torrent.openSavePath(selected.id).catch(() => {})} />
-              </div>
-            </div>
+              Remove Selected
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              onClick={deselectAll}
+              className="ml-auto"
+            >
+              Clear
+            </Button>
           </div>
         )}
-      </div>
 
-      {/* Count summary bar */}
-      <div className="mt-3 flex items-center gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2 text-[11px] text-nd-text-muted">
-        <span>Total <strong className="text-nd-text">{counts.total}</strong></span>
-        <span className="text-nd-text-muted/30">·</span>
-        <span className="text-nd-accent">Running <strong>{counts.running}</strong></span>
-        <span className="text-nd-text-muted/30">·</span>
-        <span className="text-nd-text-muted">Paused <strong>{counts.paused}</strong></span>
-        <span className="text-nd-text-muted/30">·</span>
-        <span className="text-nd-success">Completed <strong>{counts.completed}</strong></span>
-        {downloadRoot && (
-          <>
+        <div className="flex min-h-0 flex-1 gap-3">
+          {/* Torrent list */}
+          <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-auto">
+            {loading && <LoadingState label="Loading torrents…" />}
+            {!loading && filteredTorrents.length === 0 && (
+              <EmptyState
+                icon={Magnet}
+                title="No torrents"
+                description="Add a magnet link, paste a torrent URL, or drag & drop a .torrent file."
+                compact
+              />
+            )}
+            {filteredTorrents.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
+                className={`rounded-xl border p-3 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                  selectedId === t.id
+                    ? 'border-nd-accent-primary/30 bg-nd-accent-primary/[0.05]'
+                    : 'border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/25'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {/* Checkbox for batch selection */}
+                  <IconButton
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    aria-label={selectedIds.has(t.id) ? `Deselect ${t.name || t.id}` : `Select ${t.name || t.id}`}
+                    aria-pressed={selectedIds.has(t.id)}
+                    onClick={(e) => { e.stopPropagation(); toggleSelection(t.id); }}
+                  >
+                    {selectedIds.has(t.id)
+                      ? <CheckSquare className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+                      : <SquareIcon className="h-4 w-4" aria-hidden="true" />}
+                  </IconButton>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-nd-text-primary">{t.name || t.id}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-nd-text-muted">
+                      <StatusChip size="sm" tone={torrentStatusTone(t)}>
+                        {torrentStatusLabel(t)}
+                      </StatusChip>
+                      <span>{t.peers} peers · {t.trackers} trackers</span>
+                      <span>{formatRate(t.download_rate_bps)} ↓ · {formatRate(t.upload_rate_bps)} ↑</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <IconButton
+                      type="button"
+                      size="md"
+                      variant="subtle"
+                      aria-label={t.paused ? 'Resume torrent' : 'Pause torrent'}
+                      onClick={(e) => { e.stopPropagation(); toggleTorrent(t); }}
+                    >
+                      {t.paused
+                        ? <Play className="h-4 w-4" aria-hidden="true" />
+                        : <Pause className="h-4 w-4" aria-hidden="true" />}
+                    </IconButton>
+                    <IconButton
+                      type="button"
+                      size="md"
+                      variant="danger"
+                      aria-label="Remove torrent"
+                      onClick={(e) => { e.stopPropagation(); setConfirmRemove({ id: t.id }); }}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </IconButton>
+                  </div>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-nd-surface-tertiary/60">
+                  <div
+                    className={`h-full rounded-full transition-all duration-normal motion-reduce:transition-none ${t.completed ? 'bg-nd-success' : 'bg-nd-accent-primary'}`}
+                    style={{ width: `${Math.min(100, Math.max(0, t.progress_pct || 0))}%` }}
+                  />
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] text-nd-text-muted">
+                  <span>{t.progress_pct?.toFixed(1) ?? 0}% · {t.pieces_done}/{t.pieces_total} pieces</span>
+                  <span>ETA {formatEta(t.eta_seconds)}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* Inspector */}
+          {selected && (
+            <div className="hidden w-80 shrink-0 flex-col gap-3 overflow-auto rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 lg:flex">
+              <h3 className="text-sm font-semibold text-nd-text-primary">Torrent Inspector</h3>
+              <div className="space-y-3">
+                <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3">
+                  <p className="truncate text-xs font-medium text-nd-text-primary">{selected.name || selected.id}</p>
+                  <p className="text-[10px] text-nd-text-muted">{selected.source_kind?.toUpperCase()} · {selected.source_display || selected.source_value}</p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <StatusChip size="sm" tone={torrentStatusTone(selected)}>
+                      {torrentStatusLabel(selected)}
+                    </StatusChip>
+                    <span className="text-xs font-semibold text-nd-text-primary">{(selected.progress_pct || 0).toFixed(1)}%</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <InspectorRow label="Progress" value={`${(selected.progress_pct || 0).toFixed(1)}%`} />
+                  <InspectorRow label="Pieces" value={`${selected.pieces_done}/${selected.pieces_total}`} />
+                  <InspectorRow label="Peers" value={String(selected.peers)} />
+                  <InspectorRow label="Trackers" value={String(selected.trackers)} />
+                  <InspectorRow label="Downloaded" value={formatBytes(selected.downloaded_bytes)} />
+                  <InspectorRow label="Uploaded" value={formatBytes(selected.uploaded_bytes)} />
+                  <InspectorRow label="Remaining" value={formatBytes(selected.bytes_remaining)} />
+                  <InspectorRow label="ETA" value={formatEta(selected.eta_seconds)} />
+                  <InspectorRow label="Info Hash" value={selected.info_hash || '—'} />
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  <MiniBtn icon={Copy} label="Copy Hash" onClick={() => navigator.clipboard.writeText(selected.info_hash || '')} />
+                  <MiniBtn icon={FolderOpen} label="Open Root" onClick={() => neurodeckApi.torrent.openDownloadRoot().catch(() => {})} />
+                  <MiniBtn icon={ArrowUpRight} label="Reveal" onClick={() => neurodeckApi.torrent.openSavePath(selected.id).catch(() => {})} />
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Count summary bar */}
+        <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2 text-[11px] text-nd-text-muted">
+          <span>Total <strong className="text-nd-text-primary">{counts.total}</strong></span>
+          <span className="text-nd-text-muted/30">·</span>
+          <span className="text-nd-accent-primary">Running <strong>{counts.running}</strong></span>
+          <span className="text-nd-text-muted/30">·</span>
+          <span className="text-nd-text-muted">Paused <strong>{counts.paused}</strong></span>
+          <span className="text-nd-text-muted/30">·</span>
+          <span className="text-nd-success">Completed <strong>{counts.completed}</strong></span>
+          {downloadRoot && (
             <span className="ml-auto truncate text-nd-text-muted/60">{downloadRoot}</span>
-          </>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Remove confirmation modal */}
-      {confirmRemove && (
-        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-nd-bg/70 backdrop-blur-sm">
-          <div className="w-[360px] rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-5 shadow-2xl">
-            <h3 className="text-sm font-semibold text-nd-text">Remove torrent{confirmRemove.ids ? 's' : ''}?</h3>
-            <p className="mt-2 text-xs leading-5 text-nd-text-muted">
-              {confirmRemove.id
-                ? `Remove "${torrents.find((t) => t.id === confirmRemove.id)?.name || confirmRemove.id}"?`
-                : `Remove ${confirmRemove.ids?.length} selected torrents?`}
-            </p>
-            <label className="mt-3 flex items-center gap-2 text-xs text-nd-text-muted">
-              <input
-                type="checkbox"
-                checked={deleteData}
-                onChange={(e) => setDeleteData(e.target.checked)}
-                className="rounded border-nd-text-muted/30"
-              />
-              Also delete downloaded files
-            </label>
-            <div className="mt-4 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => { setConfirmRemove(null); setDeleteData(false); }}
-                className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-xs font-medium text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (confirmRemove.id) await removeTorrent(confirmRemove.id, deleteData);
-                  else if (confirmRemove.ids) await batchRemove(confirmRemove.ids, deleteData);
-                  setConfirmRemove(null);
-                  setDeleteData(false);
-                }}
-                className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-4 py-2 text-xs font-medium text-nd-danger hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-              >
-                Remove
-              </button>
-            </div>
+      <Modal
+        open={confirmRemove !== null}
+        onClose={() => { setConfirmRemove(null); setDeleteData(false); }}
+        title={`Remove torrent${confirmRemove?.ids ? 's' : ''}?`}
+        size="sm"
+        footer={
+          <div className="flex w-full justify-end gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => { setConfirmRemove(null); setDeleteData(false); }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={async () => {
+                if (confirmRemove?.id) await removeTorrent(confirmRemove.id, deleteData);
+                else if (confirmRemove?.ids) await batchRemove(confirmRemove.ids, deleteData);
+                setConfirmRemove(null);
+                setDeleteData(false);
+              }}
+            >
+              Remove
+            </Button>
           </div>
+        }
+      >
+        <div className="space-y-3 text-sm text-nd-text-secondary">
+          <p>
+            {confirmRemove?.id
+              ? `Remove "${torrents.find((t) => t.id === confirmRemove.id)?.name || confirmRemove.id}"?`
+              : `Remove ${confirmRemove?.ids?.length} selected torrents?`}
+          </p>
+          <label className="flex items-center gap-2 text-xs text-nd-text-muted">
+            <input
+              type="checkbox"
+              checked={deleteData}
+              onChange={(e) => setDeleteData(e.target.checked)}
+              className="rounded border-nd-border-subtle bg-nd-surface-secondary accent-nd-accent-primary"
+            />
+            Also delete downloaded files
+          </label>
         </div>
-      )}
-    </div>
+      </Modal>
+    </Panel>
   );
 }
 
@@ -569,7 +623,7 @@ function InspectorRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between text-xs">
       <span className="text-nd-text-muted">{label}</span>
-      <span className="font-mono text-nd-text/80 truncate max-w-[140px]" title={value}>{value}</span>
+      <span className="truncate max-w-[140px] font-mono text-nd-text-secondary" title={value}>{value}</span>
     </div>
   );
 }
@@ -579,7 +633,7 @@ function MiniBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; labe
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1 text-[10px] text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+      className="flex items-center gap-1 rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 px-2 py-1 text-[10px] text-nd-text-muted transition-colors duration-fast hover:bg-nd-surface-secondary hover:text-nd-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
       title={label}
     >
       <Icon className="h-3 w-3" aria-hidden="true" /> {label}

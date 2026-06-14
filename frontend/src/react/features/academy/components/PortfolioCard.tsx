@@ -1,46 +1,20 @@
 import { useState } from 'react';
 import { Copy, Check, ChevronDown, ChevronUp, FileText, ShieldAlert } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
+import { Button } from '../../../components/primitives/Button';
 import { entryToMarkdown, entryToResumeBullet } from '../utils/portfolioExport';
 import type { AcademyPortfolioEntry } from '../../../services/bridgeAdapter';
 
 type Entry = AcademyPortfolioEntry;
 
 const SKILL_LABEL: Record<string, string> = {
-  'it-foundations':        'IT Foundations',
-  'networking':            'Networking',
-  'operating-systems':     'Operating Systems',
+  'it-foundations': 'IT Foundations',
+  networking: 'Networking',
+  'operating-systems': 'Operating Systems',
   'security-fundamentals': 'Security Fundamentals',
-  'soc-triage':            'SOC Triage',
-  'log-analysis':          'Log Analysis',
+  'soc-triage': 'SOC Triage',
+  'log-analysis': 'Log Analysis',
 };
-
-interface CopyButtonProps {
-  content: string;
-  label: string;
-}
-
-function CopyButton({ content, label }: CopyButtonProps) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      aria-label={label}
-      className="inline-flex items-center gap-1 rounded-md border border-nd-border-subtle px-2 py-1 text-[10px] text-nd-text-muted/60 transition hover:border-nd-accent/30 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-    >
-      {copied ? <Check className="h-2.5 w-2.5 text-nd-success" /> : <Copy className="h-2.5 w-2.5" />}
-      {copied ? 'Copied' : label}
-    </button>
-  );
-}
 
 interface PortfolioCardProps {
   entry: Entry;
@@ -49,16 +23,30 @@ interface PortfolioCardProps {
 
 export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const [copiedMd, setCopiedMd] = useState(false);
+  const [copiedResume, setCopiedResume] = useState(false);
   const isSoc = entry.labId.startsWith('soc-session');
   const Icon = isSoc ? ShieldAlert : FileText;
-  const iconColor = isSoc ? 'text-nd-danger' : 'text-nd-accent';
+  const iconColor = isSoc ? 'text-nd-accent-error' : 'text-nd-accent-primary';
+
+  async function copyMarkdown() {
+    await navigator.clipboard.writeText(entryToMarkdown(entry));
+    setCopiedMd(true);
+    setTimeout(() => setCopiedMd(false), 1800);
+  }
+
+  async function copyResume() {
+    await navigator.clipboard.writeText(entryToResumeBullet(entry));
+    setCopiedResume(true);
+    setTimeout(() => setCopiedResume(false), 1800);
+  }
 
   return (
-    <article className="rounded-xl border border-nd-border-subtle bg-nd-surface-base/50 transition hover:border-nd-accent/20">
+    <article className="rounded-2xl border border-nd-border-subtle bg-nd-surface-base/50 transition hover:border-nd-accent/20">
       {/* Card header — always visible */}
       <button
         type="button"
-        className="flex w-full items-start gap-3 px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 focus-visible:ring-inset rounded-xl"
+        className="flex w-full items-start gap-3 rounded-2xl px-4 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 focus-visible:ring-inset"
         onClick={() => setExpanded((v) => !v)}
         aria-expanded={expanded}
       >
@@ -67,34 +55,44 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-wrap items-center gap-2">
             <p className="text-sm font-semibold text-nd-text-primary">{entry.labTitle}</p>
             {isSoc && <Badge tone="danger">SOC</Badge>}
           </div>
-          <p className="mt-0.5 text-[11px] text-nd-text-muted/50">
-            {new Date(entry.timestamp).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+          <p className="mt-0.5 text-[11px] text-nd-text-muted/60">
+            {new Date(entry.timestamp).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
           </p>
           {entry.summary && !expanded && (
             <p className="mt-1 text-[11px] text-nd-text-secondary line-clamp-1">{entry.summary}</p>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
           {entry.skillsEarned.slice(0, 2).map((s) => (
-            <Badge key={s} tone="accent">{SKILL_LABEL[s] ?? s}</Badge>
+            <Badge key={s} tone="accent">
+              {SKILL_LABEL[s] ?? s}
+            </Badge>
           ))}
           {entry.skillsEarned.length > 2 && (
             <Badge tone="neutral">+{entry.skillsEarned.length - 2}</Badge>
           )}
           <div className="ml-1 text-nd-text-muted/40">
-            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            {expanded ? (
+              <ChevronUp className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5" />
+            )}
           </div>
         </div>
       </button>
 
       {/* Expanded body */}
       {expanded && (
-        <div className="border-t border-nd-border-subtle/50 px-4 pb-4 pt-3 space-y-3">
+        <div className="space-y-3 border-t border-nd-border-subtle/50 px-4 pb-4 pt-3">
           {/* Summary */}
           {entry.summary && (
             <p className="text-[11px] leading-relaxed text-nd-text-secondary">{entry.summary}</p>
@@ -103,13 +101,13 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
           {/* Findings */}
           {entry.findings.length > 0 && (
             <section>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/50">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/60">
                 Findings ({entry.findings.length})
               </p>
               <ul className="space-y-1">
                 {entry.findings.map((f, i) => (
                   <li key={i} className="flex gap-2 text-[11px] text-nd-text-secondary">
-                    <span className="text-nd-accent/60 shrink-0">›</span>
+                    <span className="shrink-0 text-nd-accent-primary/60">›</span>
                     <span>{f}</span>
                   </li>
                 ))}
@@ -120,7 +118,7 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
           {/* Commands */}
           {entry.commandsUsed.length > 0 && (
             <section>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/50">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/60">
                 Commands / Queries
               </p>
               <pre className="overflow-x-auto rounded-md border border-nd-border-subtle bg-black/40 px-3 py-2 text-[10px] font-mono text-nd-text-secondary leading-5">
@@ -132,14 +130,14 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
           {/* MITRE */}
           {entry.mitreMappings.length > 0 && (
             <section>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/50">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/60">
                 MITRE ATT&CK
               </p>
               <div className="flex flex-wrap gap-1">
                 {entry.mitreMappings.map((m) => (
                   <span
                     key={m}
-                    className="rounded bg-nd-accent/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-nd-accent"
+                    className="rounded bg-nd-accent/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-nd-accent-primary"
                   >
                     {m}
                   </span>
@@ -151,21 +149,39 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
           {/* Skills */}
           {entry.skillsEarned.length > 0 && (
             <section>
-              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/50">
+              <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/60">
                 Skills Demonstrated
               </p>
               <div className="flex flex-wrap gap-1">
                 {entry.skillsEarned.map((s) => (
-                  <Badge key={s} tone="accent">{SKILL_LABEL[s] ?? s}</Badge>
+                  <Badge key={s} tone="accent">
+                    {SKILL_LABEL[s] ?? s}
+                  </Badge>
                 ))}
               </div>
             </section>
           )}
 
           {/* Actions */}
-          <div className="flex flex-wrap gap-1.5 pt-1 border-t border-nd-border-subtle/40">
-            <CopyButton content={entryToMarkdown(entry)} label="Copy MD" />
-            <CopyButton content={entryToResumeBullet(entry)} label="Copy Resume Bullet" />
+          <div className="flex flex-wrap gap-2 border-t border-nd-border-subtle/40 pt-2">
+            <Button
+              size="xs"
+              variant="ghost"
+              icon={copiedMd ? Check : Copy}
+              iconPosition="left"
+              onClick={copyMarkdown}
+            >
+              {copiedMd ? 'Copied MD' : 'Copy MD'}
+            </Button>
+            <Button
+              size="xs"
+              variant="ghost"
+              icon={copiedResume ? Check : Copy}
+              iconPosition="left"
+              onClick={copyResume}
+            >
+              {copiedResume ? 'Copied Bullet' : 'Copy Resume Bullet'}
+            </Button>
           </div>
         </div>
       )}

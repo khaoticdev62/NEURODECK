@@ -1,6 +1,7 @@
 import { GraduationCap } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
 import { Panel } from '../../../components/primitives/Panel';
+import { Button } from '../../../components/primitives/Button';
 import { SkillBar } from '../components/SkillBar';
 import { PathCard } from '../components/PathCard';
 import { LabCard } from '../components/LabCard';
@@ -26,11 +27,13 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
       <div className="rounded-2xl border border-nd-accent/20 bg-nd-accent/[0.06] px-5 py-4">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent/30 bg-nd-accent/10">
-            <GraduationCap className="h-5 w-5 text-nd-accent" aria-hidden="true" />
+            <GraduationCap className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-nd-text">
-              {totalCompleted === 0 ? 'Welcome to SOC Forge' : `${totalCompleted} lab${totalCompleted !== 1 ? 's' : ''} completed`}
+            <p className="text-sm font-semibold text-nd-text-primary">
+              {totalCompleted === 0
+                ? 'Welcome to SOC Forge'
+                : `${totalCompleted} lab${totalCompleted !== 1 ? 's' : ''} completed`}
             </p>
             <p className="text-xs text-nd-text-muted">
               {totalCompleted === 0
@@ -51,15 +54,15 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
       </Panel>
 
       {/* Quick start labs */}
-      <Panel eyebrow="Quick Start" title="Starter Labs" action={
-        <button
-          type="button"
-          onClick={() => onNavigate('labs')}
-          className="text-xs text-nd-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded"
-        >
-          View all
-        </button>
-      }>
+      <Panel
+        eyebrow="Quick Start"
+        title="Starter Labs"
+        action={
+          <Button size="xs" variant="ghost" onClick={() => onNavigate('labs')}>
+            View all
+          </Button>
+        }
+      >
         <div className="space-y-3 p-4">
           {ALL_LABS.map((lab) => (
             <LabCard
@@ -73,15 +76,15 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
       </Panel>
 
       {/* Active tracks */}
-      <Panel eyebrow="Tracks" title="Learning Paths" action={
-        <button
-          type="button"
-          onClick={() => onNavigate('paths')}
-          className="text-xs text-nd-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded"
-        >
-          View all
-        </button>
-      }>
+      <Panel
+        eyebrow="Tracks"
+        title="Learning Paths"
+        action={
+          <Button size="xs" variant="ghost" onClick={() => onNavigate('paths')}>
+            View all
+          </Button>
+        }
+      >
         <div className="space-y-3 p-4">
           {LEARNING_PATHS.filter((p) => !p.locked).map((path) => (
             <PathCard
@@ -102,15 +105,19 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
               icon={GraduationCap}
               title="No completed labs yet"
               description="Start your first lab to build your activity history and portfolio."
+              compact
             />
           ) : (
             <ul className="space-y-2">
               {recentIds.map((id) => {
                 const lab = ALL_LABS.find((l) => l.id === id);
                 return (
-                  <li key={id} className="flex items-center gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2">
-                    <div className="h-2 w-2 rounded-full bg-nd-success" aria-hidden="true" />
-                    <span className="text-xs text-nd-text/80">{lab?.title ?? id}</span>
+                  <li
+                    key={id}
+                    className="flex items-center gap-3 rounded-xl border border-nd-border-subtle/50 bg-nd-surface-base/40 px-3 py-2"
+                  >
+                    <div className="h-2 w-2 rounded-full bg-nd-accent-success" aria-hidden="true" />
+                    <span className="text-xs text-nd-text-secondary">{lab?.title ?? id}</span>
                   </li>
                 );
               })}

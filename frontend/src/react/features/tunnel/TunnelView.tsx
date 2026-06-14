@@ -1,5 +1,10 @@
 import { useState } from 'react';
 import { ArrowLeftRight, Power, PowerOff, Send, FolderOpen } from 'lucide-react';
+import { Button } from '../../components/primitives/Button';
+import { EmptyState } from '../../components/primitives/EmptyState';
+import { Panel } from '../../components/primitives/Panel';
+import { StatusChip } from '../../components/primitives/StatusChip';
+import { TextInput } from '../../components/primitives/TextInput';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 
 export function TunnelView() {
@@ -54,67 +59,95 @@ export function TunnelView() {
   };
 
   return (
-    <div className="tunnel-container flex h-full flex-col">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <ArrowLeftRight className="h-5 w-5 text-nd-accent" />
-        </div>
-        <div className="flex-1">
-          <div className="tunnel-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Tunnel</div>
-          <h2 className="text-lg font-semibold text-nd-text">SteamOS Bridge</h2>
-          <p className="text-xs text-nd-text-muted">SteamOS Game Mode to Desktop Mode bridge</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div
-            className={`h-2 w-2 rounded-full ${running ? 'bg-nd-success' : 'bg-nd-text-muted/40'}`}
-            aria-hidden="true"
-          />
-          <span className="text-xs text-nd-text-muted">{running ? 'Active' : 'Offline'}</span>
-        </div>
-        <button type="button" onClick={toggle} disabled={loading} aria-label={running ? 'Stop tunnel' : 'Start tunnel'} className={`rounded-lg border px-3 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20' : 'border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20'}`}>
-          {running ? <><PowerOff className="inline h-4 w-4" aria-hidden="true" /> Stop</> : <><Power className="inline h-4 w-4" aria-hidden="true" /> Start</>}
-        </button>
-      </div>
-
-      <div className="mb-4 space-y-2">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && sendCmd()}
-            placeholder="Shell command..."
-            aria-label="Shell command"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-          />
-          <button type="button" onClick={sendCmd} className="flex items-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <Send className="h-4 w-4" aria-hidden="true" /> Send
-          </button>
-        </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={dirPath}
-            onChange={(e) => setDirPath(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && listDir()}
-            placeholder="Directory path..."
-            aria-label="Directory path to list"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-          />
-          <button type="button" onClick={listDir} className="flex items-center gap-2 rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text/80 hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-            <FolderOpen className="h-4 w-4" aria-hidden="true" /> List
-          </button>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 font-mono text-xs">
-        {log.length === 0 && <span className="text-nd-text-muted/70">Tunnel log will appear here...</span>}
-        {log.map((line, i) => (
-          <div key={i} className={`py-0.5 ${line.startsWith('>') ? 'text-nd-accent' : line.startsWith('Error') ? 'text-nd-danger' : 'text-nd-text-muted'}`}>
-            {line}
+    <Panel
+      eyebrow="Bridge"
+      title="SteamOS Tunnel"
+      className="flex h-full flex-col"
+    >
+      <div className="flex flex-col gap-4 p-4">
+        {/* Connection card */}
+        <div className="flex items-center gap-3 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+            <ArrowLeftRight className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
           </div>
-        ))}
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-semibold text-nd-text-primary">SteamOS Bridge</div>
+            <p className="text-xs text-nd-text-muted">Game Mode ↔ Desktop Mode tunnel</p>
+          </div>
+          <StatusChip tone={running ? 'success' : 'error'} pulse={running} icon={running ? undefined : PowerOff}>
+            {running ? 'Active' : 'Offline'}
+          </StatusChip>
+          <Button
+            variant={running ? 'danger' : 'success'}
+            size="sm"
+            icon={running ? PowerOff : Power}
+            onClick={() => void toggle()}
+            loading={loading}
+          >
+            {running ? 'Stop' : 'Start'}
+          </Button>
+        </div>
+
+        {/* Command inputs */}
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <TextInput
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && sendCmd()}
+              placeholder="Shell command..."
+              aria-label="Shell command"
+              fullWidth
+              className="flex-1"
+            />
+            <Button variant="primary" size="md" icon={Send} onClick={() => void sendCmd()}>
+              Send
+            </Button>
+          </div>
+          <div className="flex gap-2">
+            <TextInput
+              value={dirPath}
+              onChange={(e) => setDirPath(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && listDir()}
+              placeholder="Directory path..."
+              aria-label="Directory path to list"
+              fullWidth
+              className="flex-1"
+            />
+            <Button variant="secondary" size="md" icon={FolderOpen} onClick={() => void listDir()}>
+              List
+            </Button>
+          </div>
+        </div>
+
+        {/* Log */}
+        <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 font-mono text-xs">
+          {log.length === 0 ? (
+            <EmptyState
+              icon={ArrowLeftRight}
+              title="Tunnel ready"
+              description="Start the bridge, then send shell commands or list remote directories."
+              compact
+              className="h-full"
+            />
+          ) : (
+            log.map((line, i) => (
+              <div
+                key={i}
+                className={`py-0.5 ${
+                  line.startsWith('>')
+                    ? 'text-nd-accent-primary'
+                    : line.startsWith('Error')
+                      ? 'text-nd-accent-error'
+                      : 'text-nd-text-muted'
+                }`}
+              >
+                {line}
+              </div>
+            ))
+          )}
+        </div>
       </div>
-    </div>
+    </Panel>
   );
 }

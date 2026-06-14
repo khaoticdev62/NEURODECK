@@ -22,6 +22,7 @@ export function LearningPathsView({ progress, onStartLab }: LearningPathsViewPro
               icon={Award}
               title="No tracks available"
               description="Learning tracks will appear here as the curriculum is expanded."
+              compact
             />
           ) : (
             LEARNING_PATHS.map((path) => (
@@ -34,24 +35,32 @@ export function LearningPathsView({ progress, onStartLab }: LearningPathsViewPro
 
                 {/* Expanded module list */}
                 {!path.locked && (
-                  <div className="ml-4 space-y-2 border-l border-nd-text-muted/15 pl-4">
+                  <div className="ml-4 space-y-2 border-l border-nd-border-subtle pl-4">
                     {path.modules.map((mod) => {
-                      const modComplete = mod.labIds.length > 0
-                        ? mod.labIds.every((id) => progress.completedLabs.includes(id))
-                        : false;
+                      const modComplete =
+                        mod.labIds.length > 0
+                          ? mod.labIds.every((id) => progress.completedLabs.includes(id))
+                          : false;
                       return (
-                        <div key={mod.id} className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/20 px-3 py-2.5">
+                        <div
+                          key={mod.id}
+                          className="rounded-xl border border-nd-border-subtle/50 bg-nd-surface-base/40 px-3 py-2.5"
+                        >
                           <div className="flex items-center gap-2">
                             <div
-                              className={`h-2 w-2 shrink-0 rounded-full ${modComplete ? 'bg-nd-success' : 'bg-nd-text-muted/20'}`}
+                              className={`h-2 w-2 shrink-0 rounded-full ${
+                                modComplete ? 'bg-nd-accent-success' : 'bg-nd-text-muted/20'
+                              }`}
                               aria-hidden="true"
                             />
-                            <p className="text-xs font-medium text-nd-text/80">{mod.title}</p>
+                            <p className="text-xs font-medium text-nd-text-secondary">{mod.title}</p>
                           </div>
                           {mod.objectives.length > 0 && (
                             <ul className="ml-4 mt-1 space-y-0.5">
                               {mod.objectives.map((obj, i) => (
-                                <li key={i} className="text-[11px] leading-5 text-nd-text-muted">• {obj}</li>
+                                <li key={i} className="text-[11px] leading-5 text-nd-text-muted">
+                                  • {obj}
+                                </li>
                               ))}
                             </ul>
                           )}

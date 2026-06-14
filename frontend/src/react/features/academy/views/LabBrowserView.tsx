@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FlaskConical } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
 import { Panel } from '../../../components/primitives/Panel';
+import { Select } from '../../../components/primitives/Select';
 import { LabCard } from '../components/LabCard';
 import { ALL_LABS, LEARNING_PATHS } from '../data/curricula';
 import type { LearnerProgress, LabType, Difficulty } from '../types';
@@ -19,6 +20,15 @@ const TYPE_FILTERS: { value: FilterType; label: string }[] = [
   { value: 'cloud', label: 'Cloud' },
 ];
 
+const DIFFICULTY_OPTIONS = [
+  { value: '0', label: 'Any Difficulty' },
+  { value: '1', label: 'Difficulty 1' },
+  { value: '2', label: 'Difficulty 2' },
+  { value: '3', label: 'Difficulty 3' },
+  { value: '4', label: 'Difficulty 4' },
+  { value: '5', label: 'Difficulty 5' },
+];
+
 interface LabBrowserViewProps {
   progress: LearnerProgress;
   onStartLab: (labId: string) => void;
@@ -29,9 +39,7 @@ export function LabBrowserView({ progress, onStartLab }: LabBrowserViewProps) {
   const [filterPath, setFilterPath] = useState<FilterPath>('all');
   const [filterDiff, setFilterDiff] = useState<Difficulty | 0>(0);
 
-  const allLabs = ALL_LABS;
-
-  const filtered = allLabs.filter((lab) => {
+  const filtered = ALL_LABS.filter((lab) => {
     if (filterType !== 'all' && lab.type !== filterType) return false;
     if (filterPath !== 'all' && lab.pathId !== filterPath) return false;
     if (filterDiff !== 0 && lab.difficulty !== filterDiff) return false;
@@ -41,19 +49,19 @@ export function LabBrowserView({ progress, onStartLab }: LabBrowserViewProps) {
   return (
     <div className="space-y-4">
       {/* Filter bar */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Lab filters">
-        {/* Type filter */}
-        <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap items-start gap-3" role="group" aria-label="Lab filters">
+        {/* Type filter chips */}
+        <div className="flex flex-wrap gap-1.5">
           {TYPE_FILTERS.map(({ value, label }) => (
             <button
               key={value}
               type="button"
               onClick={() => setFilterType(value)}
               aria-pressed={filterType === value}
-              className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+              className={`min-h-touch rounded-lg border px-3 py-1.5 text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
                 filterType === value
-                  ? 'border-nd-accent/40 bg-nd-accent/15 text-nd-accent'
-                  : 'border-nd-text-muted/15 bg-nd-surface/30 text-nd-text-muted hover:border-nd-accent/20 hover:text-nd-text/80'
+                  ? 'border-nd-accent-primary/40 bg-nd-accent/15 text-nd-accent-primary'
+                  : 'border-nd-border-subtle/50 bg-nd-surface-base/40 text-nd-text-secondary hover:border-nd-accent/20 hover:text-nd-text-primary'
               }`}
             >
               {label}
@@ -62,36 +70,29 @@ export function LabBrowserView({ progress, onStartLab }: LabBrowserViewProps) {
         </div>
 
         {/* Path filter */}
-        <select
+        <Select
           value={filterPath}
           onChange={(e) => setFilterPath(e.target.value)}
           aria-label="Filter by learning path"
-          className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/50 px-2.5 py-1 text-[11px] text-nd-text-muted focus:border-nd-accent/40 focus:outline-none focus:ring-1 focus:ring-nd-accent/30"
-        >
-          <option value="all">All Paths</option>
-          {LEARNING_PATHS.map((p) => (
-            <option key={p.id} value={p.id}>{p.title}</option>
-          ))}
-        </select>
+          options={[
+            { value: 'all', label: 'All Paths' },
+            ...LEARNING_PATHS.map((p) => ({ value: p.id, label: p.title })),
+          ]}
+          className="min-w-[10rem]"
+        />
 
         {/* Difficulty filter */}
-        <select
-          value={filterDiff}
+        <Select
+          value={String(filterDiff)}
           onChange={(e) => setFilterDiff(Number(e.target.value) as Difficulty | 0)}
           aria-label="Filter by difficulty"
-          className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/50 px-2.5 py-1 text-[11px] text-nd-text-muted focus:border-nd-accent/40 focus:outline-none focus:ring-1 focus:ring-nd-accent/30"
-        >
-          <option value={0}>Any Difficulty</option>
-          <option value={1}>Difficulty 1</option>
-          <option value={2}>Difficulty 2</option>
-          <option value={3}>Difficulty 3</option>
-          <option value={4}>Difficulty 4</option>
-          <option value={5}>Difficulty 5</option>
-        </select>
+          options={DIFFICULTY_OPTIONS}
+          className="min-w-[10rem]"
+        />
       </div>
 
       {/* Result count */}
-      <p className="text-[11px] text-nd-text-muted/70" aria-live="polite">
+      <p className="text-[11px] text-nd-text-muted/80" aria-live="polite">
         {filtered.length} lab{filtered.length !== 1 ? 's' : ''} found
       </p>
 
@@ -103,6 +104,7 @@ export function LabBrowserView({ progress, onStartLab }: LabBrowserViewProps) {
               icon={FlaskConical}
               title="No labs match these filters"
               description="Try broadening your search by clearing one or more filters."
+              compact
             />
           ) : (
             filtered.map((lab) => (

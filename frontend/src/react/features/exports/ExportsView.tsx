@@ -1,4 +1,7 @@
 import { FileDown, FileJson, FolderOpen, Sparkles } from 'lucide-react';
+import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
+import { MetricCard } from '../../components/primitives/MetricCard';
 import { Panel } from '../../components/primitives/Panel';
 import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
@@ -6,7 +9,7 @@ export function ExportsView({ state, actions }: { state: NeuroDeckState; actions
   return (
     <div data-testid="exports-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel eyebrow="Export Manager" title="Session Exports" className="h-full overflow-hidden">
-        <div className="space-y-3 p-4">
+        <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 scrollbar-thin">
           <div className="grid gap-3 sm:grid-cols-2">
             <ExportAction
               icon={FileDown}
@@ -23,40 +26,47 @@ export function ExportsView({ state, actions }: { state: NeuroDeckState; actions
           </div>
 
           {state.lastExportPath && (
-            <div className="rounded-2xl border border-nd-success/20 bg-nd-success/[0.06] p-4">
-              <p className="text-xs font-semibold text-nd-success">Last export</p>
-              <p className="mt-1 break-all text-xs text-nd-text-muted">{state.lastExportPath}</p>
+            <div className="rounded-2xl border border-accent-success/20 bg-accent-success/5 p-4">
+              <div className="flex items-center gap-2">
+                <Badge tone="success">Last export</Badge>
+              </div>
+              <p className="mt-2 break-all text-xs text-text-secondary">{state.lastExportPath}</p>
             </div>
           )}
 
           <div className="space-y-2 pt-2">
-            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-nd-text-muted/70">Session Summary</p>
-            <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-              <dl className="grid gap-2 sm:grid-cols-2 text-xs text-nd-text-muted">
-                <ExportRow label="Messages"    value={String(state.messages.length)} />
-                <ExportRow label="Agent Runs"  value={String(state.aiRuns.length)} />
-                <ExportRow label="Memories"    value={String(state.memories.length)} />
-                <ExportRow label="Active Model" value={state.models.find((m) => m.id === state.selectedModelId)?.name ?? '—'} />
-              </dl>
+            <p className="text-2xs font-semibold uppercase tracking-[0.2em] text-text-muted">Session Summary</p>
+            <div className="grid grid-cols-2 gap-3">
+              <MetricCard label="Messages" value={state.messages.length} icon={Sparkles} hint="Current thread" />
+              <MetricCard label="Agent Runs" value={state.aiRuns.length} icon={Sparkles} hint="Executed runs" />
+              <MetricCard label="Memories" value={state.memories.length} icon={Sparkles} hint="Stored facts" />
+              <MetricCard
+                label="Active Model"
+                value={state.models.find((m) => m.id === state.selectedModelId)?.name ?? '—'}
+                icon={Sparkles}
+                hint="Selected runtime"
+              />
             </div>
           </div>
         </div>
       </Panel>
 
       <Panel eyebrow="Diagnostics Export" title="Support Bundle">
-        <div className="space-y-3 p-4">
-          <p className="text-sm leading-6 text-nd-text-muted">
-            Generate a sanitized diagnostics bundle for sharing with support. Contains runtime info, IPC logs, and health data. Secrets are always redacted.
+        <div className="space-y-4 p-4">
+          <p className="text-sm leading-relaxed text-text-secondary">
+            Generate a sanitized diagnostics bundle for sharing with support. Contains runtime info, IPC logs, and
+            health data. Secrets are always redacted.
           </p>
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            fullWidth
+            icon={FolderOpen}
             onClick={() => void actions.exportDiagnosticsBundle()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
-            <FolderOpen className="h-4 w-4" aria-hidden="true" /> Export Diagnostics Bundle
-          </button>
+            Export Diagnostics Bundle
+          </Button>
           {state.diagnostics?.diagnosticsDir && (
-            <p className="break-all text-xs text-nd-text-muted/70">Output: {state.diagnostics.diagnosticsDir}</p>
+            <p className="break-all text-xs text-text-muted">Output: {state.diagnostics.diagnosticsDir}</p>
           )}
         </div>
       </Panel>
@@ -64,25 +74,26 @@ export function ExportsView({ state, actions }: { state: NeuroDeckState; actions
   );
 }
 
-function ExportAction({ icon: Icon, label, description, onClick }: { icon: typeof Sparkles; label: string; description: string; onClick: () => void }) {
+function ExportAction({
+  icon: Icon,
+  label,
+  description,
+  onClick,
+}: {
+  icon: typeof Sparkles;
+  label: string;
+  description: string;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col gap-2 rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+      className="flex flex-col gap-2 rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4 text-left transition duration-fast hover:border-accent-primary/30 hover:bg-surface-tertiary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
     >
-      <Icon className="h-6 w-6 text-nd-accent" />
-      <p className="font-semibold text-nd-text">{label}</p>
-      <p className="text-xs leading-5 text-nd-text-muted">{description}</p>
+      <Icon className="h-6 w-6 text-accent-primary" aria-hidden="true" />
+      <p className="font-semibold text-text-primary">{label}</p>
+      <p className="text-xs leading-5 text-text-muted">{description}</p>
     </button>
-  );
-}
-
-function ExportRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-[10px] uppercase tracking-[0.18em] text-nd-text-muted/60">{label}</dt>
-      <dd className="mt-0.5 text-nd-text/80">{value}</dd>
-    </div>
   );
 }

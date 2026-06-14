@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Network } from "lucide-react";
+import { Network, RefreshCw, Cpu, Database, FolderOpen, Layers, Zap, Server } from "lucide-react";
+import { ErrorState } from "../../components/primitives/ErrorState";
+import { IconButton } from "../../components/primitives/IconButton";
+import { LoadingState } from "../../components/primitives/LoadingState";
+import { MetricCard } from "../../components/primitives/MetricCard";
+import { Panel } from "../../components/primitives/Panel";
 import {
   neurodeckApi,
   type DashboardStats,
@@ -42,13 +47,13 @@ const CY = H / 2;
 const R_CATEGORY = 130;
 const R_LEAF = 250;
 
-const CATEGORIES: { key: string; label: string; colorClass: string }[] = [
-  { key: "sessions", label: "Sessions", colorClass: "text-nd-accent" },
-  { key: "memory", label: "Memory", colorClass: "text-nd-success" },
-  { key: "projects", label: "Projects", colorClass: "text-nd-warning" },
-  { key: "models", label: "Models", colorClass: "text-nd-text-info" },
-  { key: "workflows", label: "Workflows", colorClass: "text-nd-accent-tertiary" },
-  { key: "plugins", label: "Plugins", colorClass: "text-nd-text-code" },
+const CATEGORIES: { key: string; label: string; colorClass: string; icon: typeof Network }[] = [
+  { key: "sessions", label: "Sessions", colorClass: "text-accent-primary", icon: Network },
+  { key: "memory", label: "Memory", colorClass: "text-accent-success", icon: Database },
+  { key: "projects", label: "Projects", colorClass: "text-accent-warning", icon: FolderOpen },
+  { key: "models", label: "Models", colorClass: "text-accent-info", icon: Cpu },
+  { key: "workflows", label: "Workflows", colorClass: "text-accent-agent", icon: Zap },
+  { key: "plugins", label: "Plugins", colorClass: "text-accent-success", icon: Server },
 ];
 
 function truncate(text: string, max = 18) {
@@ -78,7 +83,7 @@ function buildGraph(data: GraphData): { nodes: GraphNode[]; edges: GraphEdge[] }
     label: "NeuroDeck",
     x: CX,
     y: CY,
-    colorClass: "text-nd-accent",
+    colorClass: "text-accent-primary",
     detail: coreDetail,
   });
 
@@ -293,136 +298,140 @@ export function GraphView() {
     }
   };
 
+  const dashboard = data.dashboard;
+
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Network className="h-5 w-5 text-nd-accent" aria-hidden="true" />
-        </div>
-        <div>
-          <h2 className="text-lg font-semibold text-nd-text">Graph</h2>
-          <p className="text-xs text-nd-text-muted">Live relationship graph of sessions, memory, models, projects, workflows, and plugins</p>
-        </div>
-      </div>
-
-      <div className="relative flex min-h-0 flex-1 flex-col rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
-        {data.loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-nd-accent/30 border-t-nd-accent" />
-          </div>
+    <Panel
+      eyebrow="Intelligence"
+      title="System Graph"
+      className="flex h-full flex-col overflow-hidden"
+      action={
+        <IconButton variant="subtle" size="md" aria-label="Refresh graph" onClick={load} disabled={data.loading}>
+          <RefreshCw className={`h-4 w-4 ${data.loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+        </IconButton>
+      }
+    >
+      <div className="flex h-full min-h-0 flex-col gap-3 p-4">
+        {data.error && (
+          <ErrorState
+            title="Graph load failed"
+            message={data.error}
+            onRetry={() => void load()}
+          />
         )}
 
-        {data.error && !data.loading && (
-          <div className="absolute left-4 right-4 top-4 z-10 flex items-center justify-between rounded-xl border border-nd-accent-error/30 bg-nd-surface-danger/10 px-4 py-2 text-xs text-nd-text-danger">
-            <span>{data.error}</span>
-            <button
-              type="button"
-              onClick={load}
-              className="ml-3 rounded-md bg-nd-surface/60 px-2 py-1 text-nd-text-secondary hover:bg-nd-surface hover:text-nd-text"
-            >
-              Retry
-            </button>
-          </div>
-        )}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+          <MetricCard label="Sessions" value={dashboard?.sessions_total ?? 0} icon={Network} hint="Total sessions" />
+          <MetricCard label="Memory" value={dashboard?.memory_total ?? 0} icon={Database} hint="Stored records" />
+          <MetricCard label="Projects" value={dashboard?.projects_total ?? 0} icon={FolderOpen} hint="Knowledge spaces" />
+          <MetricCard label="Models" value={data.health.length} icon={Cpu} hint="Provider runtimes" />
+          <MetricCard label="Workflows" value={data.workflows.length} icon={Layers} hint="Automation flows" />
+          <MetricCard label="Plugins" value={data.plugins?.count ?? 0} icon={Server} hint="Registered plugins" />
+        </div>
 
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          preserveAspectRatio="xMidYMid meet"
-          className="h-full w-full cursor-crosshair"
-          onMouseMove={handleNodeMove}
-          onMouseLeave={handleNodeLeave}
-        >
-          <defs>
-            <filter id="graph-glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
+        <div className="relative min-h-0 flex-1 rounded-2xl border border-border-subtle bg-surface-secondary/30">
+          {data.loading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface-secondary/40">
+              <LoadingState label="Loading graph…" />
+            </div>
+          )}
 
-          {edges.map((e) => {
-            const s = nodeMap.get(e.source);
-            const t = nodeMap.get(e.target);
-            if (!s || !t) return null;
-            const dim = hovered && hovered !== s.id && hovered !== t.id;
-            return (
-              <line
-                key={`${e.source}-${e.target}`}
-                x1={s.x}
-                y1={s.y}
-                x2={t.x}
-                y2={t.y}
-                className={`stroke-nd-text-muted/20 transition-opacity ${dim ? "opacity-20" : "opacity-100"}`}
-                strokeWidth={1}
-              />
-            );
-          })}
+          <svg
+            viewBox={`0 0 ${W} ${H}`}
+            preserveAspectRatio="xMidYMid meet"
+            className="h-full w-full cursor-crosshair"
+            onMouseMove={handleNodeMove}
+            onMouseLeave={handleNodeLeave}
+          >
+            <defs>
+              <filter id="graph-glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
 
-          {nodes.map((n) => {
-            const r = nodeRadius(n.type);
-            const isHovered = hovered === n.id;
-            const dim = hovered && hovered !== n.id && !edges.some((e) => (e.source === hovered && e.target === n.id) || (e.target === hovered && e.source === n.id));
-            const showLabel = n.type !== "leaf" || isHovered;
-            return (
-              <g
-                key={n.id}
-                className={`${n.colorClass} transition-opacity ${dim ? "opacity-30" : "opacity-100"}`}
-                onMouseEnter={() => handleNodeEnter(n)}
-              >
-                <circle
-                  cx={n.x}
-                  cy={n.y}
-                  r={isHovered ? r + 3 : r}
-                  fill="currentColor"
-                  className={n.type === "core" ? "opacity-30" : n.type === "category" ? "opacity-25" : "opacity-80"}
-                  filter={n.type === "core" || n.type === "category" ? "url(#graph-glow)" : undefined}
+            {edges.map((e) => {
+              const s = nodeMap.get(e.source);
+              const t = nodeMap.get(e.target);
+              if (!s || !t) return null;
+              const dim = hovered && hovered !== s.id && hovered !== t.id;
+              return (
+                <line
+                  key={`${e.source}-${e.target}`}
+                  x1={s.x}
+                  y1={s.y}
+                  x2={t.x}
+                  y2={t.y}
+                  className={`stroke-text-muted/20 transition-opacity duration-fast ${dim ? "opacity-20" : "opacity-100"}`}
+                  strokeWidth={1}
                 />
-                {n.type === "core" && (
+              );
+            })}
+
+            {nodes.map((n) => {
+              const r = nodeRadius(n.type);
+              const isHovered = hovered === n.id;
+              const dim = hovered && hovered !== n.id && !edges.some((e) => (e.source === hovered && e.target === n.id) || (e.target === hovered && e.source === n.id));
+              const showLabel = n.type !== "leaf" || isHovered;
+              return (
+                <g
+                  key={n.id}
+                  className={`${n.colorClass} transition-opacity duration-fast ${dim ? "opacity-30" : "opacity-100"}`}
+                  onMouseEnter={() => handleNodeEnter(n)}
+                >
                   <circle
                     cx={n.x}
                     cy={n.y}
-                    r={r - 8}
+                    r={isHovered ? r + 3 : r}
                     fill="currentColor"
-                    className="opacity-90"
+                    className={n.type === "core" ? "opacity-30" : n.type === "category" ? "opacity-25" : "opacity-80"}
+                    filter={n.type === "core" || n.type === "category" ? "url(#graph-glow)" : undefined}
                   />
-                )}
-                {showLabel && (
-                  <text
-                    x={n.x}
-                    y={n.y + r + 14}
-                    textAnchor="middle"
-                    className="fill-nd-text-secondary text-[9px] select-none"
-                    dominantBaseline="middle"
-                  >
-                    {n.label}
-                  </text>
-                )}
-              </g>
-            );
-          })}
-        </svg>
+                  {n.type === "core" && (
+                    <circle cx={n.x} cy={n.y} r={r - 8} fill="currentColor" className="opacity-90" />
+                  )}
+                  {showLabel && (
+                    <text
+                      x={n.x}
+                      y={n.y + r + 14}
+                      textAnchor="middle"
+                      className="fill-text-secondary text-[9px] select-none"
+                      dominantBaseline="middle"
+                    >
+                      {n.label}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </svg>
 
-        {tooltip.visible && (
-          <div
-            className="pointer-events-none absolute z-20 max-w-[16rem] rounded-lg border border-nd-border-subtle bg-nd-surface-tooltip px-3 py-2 shadow-lg"
-            style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
-          >
-            <div className="text-xs font-semibold text-nd-text-primary">{tooltip.title}</div>
-            {tooltip.detail && <div className="mt-0.5 text-[10px] text-nd-text-muted">{tooltip.detail}</div>}
-          </div>
-        )}
-
-        <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <div key={c.key} className="flex items-center gap-1.5 rounded-full border border-nd-border-subtle bg-nd-surface/70 px-2 py-1">
-              <span className={`h-2 w-2 rounded-full ${c.colorClass.replace("text-", "bg-")}`} />
-              <span className="text-[10px] text-nd-text-muted">{c.label}</span>
+          {tooltip.visible && (
+            <div
+              className="pointer-events-none absolute z-20 max-w-[16rem] rounded-lg border border-border-subtle bg-surface-secondary px-3 py-2 shadow-card"
+              style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
+            >
+              <div className="text-xs font-semibold text-text-primary">{tooltip.title}</div>
+              {tooltip.detail && <div className="mt-0.5 text-2xs text-text-secondary">{tooltip.detail}</div>}
             </div>
-          ))}
+          )}
+
+          <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-2">
+            {CATEGORIES.map((c) => (
+              <div
+                key={c.key}
+                className="flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-secondary/80 px-2 py-1"
+              >
+                <span className={`h-2 w-2 rounded-full ${c.colorClass.replace("text-", "bg-")}`} />
+                <span className="text-2xs text-text-secondary">{c.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }

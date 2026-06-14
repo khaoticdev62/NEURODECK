@@ -1,5 +1,7 @@
 import { InboxIcon, FolderOpen } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
+import { Panel } from '../../../components/primitives/Panel';
+import { Badge } from '../../../components/primitives/Badge';
 import type { FileTransfer } from '../../../services/bridgeAdapter';
 
 function formatBytes(n: number): string {
@@ -19,50 +21,88 @@ export function InboxTab({ inboxPath, transfers }: Props) {
   const pending = transfers.filter((t) => t.direction === 'Incoming' && t.status === 'Pending');
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-1">
-      {/* Pending incoming (shown but respond happens via the root ConfirmDialog) */}
-      {pending.length > 0 && (
-        <section aria-label="Pending incoming transfers">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-nd-warning">Awaiting Your Decision</h3>
-          <ul role="list" className="flex flex-col gap-2">
-            {pending.map((t) => (
-              <li key={t.id} className="rounded-xl border border-nd-warning/25 bg-nd-warning/5 px-4 py-3">
-                <p className="text-sm font-medium text-nd-text">{t.filename}</p>
-                <p className="text-xs text-nd-text-muted">{formatBytes(t.size)} from {t.peer_name || t.peer_ip}</p>
-                <p className="mt-1 text-xs text-nd-text-muted">A confirmation dialog should have appeared. If not, dismiss and try again.</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Inbox path */}
-      <section aria-label="Received files location">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-nd-text-muted">Receive Folder</h3>
-        <div className="flex items-center gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-4 py-3">
-          <FolderOpen className="h-4 w-4 shrink-0 text-nd-text-muted" aria-hidden="true" />
-          <p className="break-all text-xs text-nd-text-muted font-mono">{inboxPath || 'Loading…'}</p>
-        </div>
-      </section>
-
-      {/* Received files */}
-      <section aria-label="Received files">
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-widest text-nd-text-muted">Received This Session</h3>
-        {received.length === 0 ? (
-          <EmptyState icon={InboxIcon} title="No files received yet" description="Accepted incoming transfers will appear here." />
-        ) : (
-          <ul role="list" className="flex flex-col gap-2">
-            {received.map((t) => (
-              <li key={t.id} className="flex items-center gap-3 rounded-xl border border-nd-success/15 bg-nd-success/5 px-4 py-3">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-nd-text">{t.filename}</p>
-                  <p className="text-xs text-nd-text-muted">{formatBytes(t.size)} from {t.peer_name || t.peer_ip}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
+    <Panel eyebrow="Inbox" title="Incoming Transfers" className="h-full">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto">
+        {/* Pending incoming (shown but respond happens via the root ConfirmDialog) */}
+        {pending.length > 0 && (
+          <section aria-label="Pending incoming transfers">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-nd-warning">
+              Awaiting Your Decision
+            </h3>
+            <ul role="list" className="flex flex-col gap-2">
+              {pending.map((t) => (
+                <li
+                  key={t.id}
+                  className="rounded-xl border border-nd-warning/25 bg-nd-warning/5 px-4 py-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-warning/20 bg-nd-warning/10">
+                      <InboxIcon className="h-4 w-4 text-nd-warning" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-nd-text-primary">{t.filename}</p>
+                      <p className="text-xs text-nd-text-muted">
+                        {formatBytes(t.size)} from {t.peer_name || t.peer_ip}
+                      </p>
+                      <p className="mt-1 text-xs text-nd-text-muted">
+                        A confirmation dialog should have appeared. If not, dismiss and try again.
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
         )}
-      </section>
-    </div>
+
+        {/* Inbox path */}
+        <section aria-label="Received files location">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
+            Receive Folder
+          </h3>
+          <div className="flex items-center gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60">
+              <FolderOpen className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+            </div>
+            <p className="break-all text-xs text-nd-text-secondary font-mono">{inboxPath || 'Loading…'}</p>
+          </div>
+        </section>
+
+        {/* Received files */}
+        <section aria-label="Received files" className="min-h-0 flex-1">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
+            Received This Session
+          </h3>
+          {received.length === 0 ? (
+            <EmptyState
+              icon={InboxIcon}
+              title="No files received yet"
+              description="Accepted incoming transfers will appear here."
+              compact
+            />
+          ) : (
+            <ul role="list" className="flex flex-col gap-2">
+              {received.map((t) => (
+                <li
+                  key={t.id}
+                  className="flex items-center gap-3 rounded-xl border border-nd-success/20 bg-nd-success/5 px-4 py-3"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-success/20 bg-nd-success/10">
+                    <InboxIcon className="h-4 w-4 text-nd-success" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-nd-text-primary">{t.filename}</p>
+                    <p className="text-xs text-nd-text-muted">
+                      {formatBytes(t.size)} from {t.peer_name || t.peer_ip}
+                    </p>
+                  </div>
+                  <Badge tone="success" variant="outline" size="sm">Received</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </Panel>
   );
 }

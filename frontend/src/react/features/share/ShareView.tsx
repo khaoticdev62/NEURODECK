@@ -1,13 +1,21 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Share2, Users, ArrowUpDown, Send, Radio,
-  CheckCircle2, XCircle, X, Download, Upload, Loader2,
+  CheckCircle2, XCircle, X, Download, Upload,
   Wifi, AlertTriangle, KeyRound, ArrowLeftRight
 } from 'lucide-react';
 import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
 import type { DiscoveredPeer, FileTransfer } from '../../services/bridgeAdapter';
 import { TorrentView } from '../torrent/TorrentView';
 import { EmptyState } from '../../components/primitives/EmptyState';
+import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
+import { Panel } from '../../components/primitives/Panel';
+import { Select } from '../../components/primitives/Select';
+import { StatusChip } from '../../components/primitives/StatusChip';
+import { TextInput } from '../../components/primitives/TextInput';
+import { Badge } from '../../components/primitives/Badge';
+
 
 // ── LAN P2P Panel ─────────────────────────────────────────────────────────────
 
@@ -76,78 +84,95 @@ function LanPanel() {
   };
 
   return (
-    <>
-      <div className="mb-4 flex gap-2">
-        <input
-          type="text"
-          value={filePath}
-          onChange={(e) => setFilePath(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && void sendFile()}
-          placeholder="File path to send..."
-          aria-label="File path to send"
-          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-        />
-        <button
-          type="button"
-          onClick={() => void sendFile()}
-          disabled={loading || !filePath.trim()}
-          className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          <Send className="h-4 w-4" aria-hidden="true" /> Send
-        </button>
-      </div>
-
-      <div className="flex min-h-0 flex-1 gap-4">
-        <div className="flex w-64 flex-col overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
-            <Users className="h-3.5 w-3.5" aria-hidden="true" /> Peers ({peers.length})
-          </div>
-          <div className="mt-2 space-y-2">
-            {peers.map((peer) => (
-              <div key={peer.id} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/50 p-2">
-                <p className="text-xs font-medium text-nd-text/90">{peer.name}</p>
-                <p className="text-[10px] font-mono text-nd-text-muted/70">{peer.address}</p>
-              </div>
-            ))}
-            {!peers.length && (
-              <EmptyState
-                compact
-                icon={Wifi}
-                title="No peers discovered"
-                description="Ensure devices are on the same network with NEURODECK running."
-              />
-            )}
-          </div>
+    <Panel eyebrow="LAN" title="Local Network P2P" className="h-full">
+      <div className="flex h-full flex-col gap-4">
+        <div className="flex gap-2">
+          <TextInput
+            value={filePath}
+            onChange={(e) => setFilePath(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && void sendFile()}
+            placeholder="File path to send..."
+            aria-label="File path to send"
+            fullWidth
+          />
+          <Button
+            type="button"
+            variant="primary"
+            size="md"
+            icon={Send}
+            loading={loading}
+            disabled={loading || !filePath.trim()}
+            onClick={() => void sendFile()}
+          >
+            Send
+          </Button>
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
-            <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" /> Active Transfers
+        <div className="flex min-h-0 flex-1 gap-4">
+          <div className="flex w-64 flex-col gap-2 overflow-auto rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-nd-text-muted">
+              <Users className="h-3.5 w-3.5" aria-hidden="true" />
+              Peers ({peers.length})
+            </div>
+            <div className="flex flex-col gap-2">
+              {peers.map((peer) => (
+                <div
+                  key={peer.id}
+                  className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-2.5 transition-colors duration-fast hover:border-nd-accent-primary/25"
+                >
+                  <p className="text-xs font-medium text-nd-text-primary">{peer.name}</p>
+                  <p className="text-[10px] font-mono text-nd-text-muted">{peer.address}</p>
+                </div>
+              ))}
+              {!peers.length && (
+                <EmptyState
+                  compact
+                  icon={Wifi}
+                  title="No peers discovered"
+                  description="Ensure devices are on the same network with NEURODECK running."
+                />
+              )}
+            </div>
           </div>
-          <div className="mt-2 space-y-2">
-            {transfers.map((t) => (
-              <div key={t.id} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/50 p-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-nd-text/90">{t.filename}</span>
-                  <span className="text-[10px] text-nd-text-muted">{t.status}</span>
+
+          <div className="flex min-w-0 flex-1 flex-col gap-2 overflow-auto rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-nd-text-muted">
+              <ArrowUpDown className="h-3.5 w-3.5" aria-hidden="true" />
+              Active Transfers
+            </div>
+            <div className="flex flex-col gap-2">
+              {transfers.map((t) => (
+                <div
+                  key={t.id}
+                  className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-2.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs font-medium text-nd-text-primary">{t.filename}</span>
+                    <StatusChip size="sm" tone={t.status === 'Completed' ? 'success' : t.status === 'Failed' ? 'error' : 'info'}>
+                      {t.status}
+                    </StatusChip>
+                  </div>
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-nd-surface-tertiary/60">
+                    <div
+                      className="h-full rounded-full bg-nd-accent-primary transition-all duration-normal motion-reduce:transition-none"
+                      style={{ width: `${t.progress}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-nd-text/10">
-                  <div className="h-full rounded-full bg-nd-accent transition-all" style={{ width: `${t.progress}%` }} />
-                </div>
-              </div>
-            ))}
-            {!transfers.length && (
-              <EmptyState
-                compact
-                icon={ArrowLeftRight}
-                title="No active transfers"
-                description="Select a discovered peer and send a file to begin."
-              />
-            )}
+              ))}
+              {!transfers.length && (
+                <EmptyState
+                  compact
+                  icon={ArrowLeftRight}
+                  title="No active transfers"
+                  description="Select a discovered peer and send a file to begin."
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </Panel>
   );
 }
 
@@ -310,284 +335,298 @@ function WarpinatorPanel() {
   const pendingIncoming = transfers.filter((t) => t.direction === 'Incoming' && t.status === 'Pending');
   const activeTransfers = transfers.filter((t) => !['Rejected', 'Cancelled'].includes(t.status) && !(t.direction === 'Incoming' && t.status === 'Pending'));
 
+  const peerOptions = peers.map((p) => ({ value: p.ip, label: `${p.hostname} (${p.ip})` }));
+
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto scrollbar-thin">
-      {/* Notice */}
-      {notice && (
-        <div
-          role="status"
-          aria-live="polite"
-          className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
-            notice.kind === 'ok'
-              ? 'border-nd-success/25 bg-nd-success/10 text-nd-success'
-              : 'border-nd-danger/25 bg-nd-danger/10 text-nd-danger'
-          }`}
-        >
-          {notice.text}
-          <button
-            type="button"
-            onClick={() => setNotice(null)}
-            aria-label="Dismiss"
-            className="shrink-0 opacity-70 hover:opacity-100"
+    <Panel eyebrow="Warpinator" title="Cross-Platform P2P" className="h-full">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto">
+        {/* Notice */}
+        {notice && (
+          <div
+            role="status"
+            aria-live="polite"
+            className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
+              notice.kind === 'ok'
+                ? 'border-nd-success/25 bg-nd-success/10 text-nd-success'
+                : 'border-nd-accent-error/25 bg-nd-accent-error/10 text-nd-accent-error'
+            }`}
           >
-            <X className="h-3.5 w-3.5" aria-hidden="true" />
-          </button>
-        </div>
-      )}
-
-      {/* Service status card */}
-      <div className="flex items-center gap-3 rounded-2xl border border-nd-accent/20 bg-nd-accent/[0.03] px-4 py-3">
-        <Radio className="h-5 w-5 shrink-0 text-nd-accent" aria-hidden="true" />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-nd-text">Warpinator gRPC Service</p>
-          <p className="text-[10px] text-nd-text-muted">Listening on port 42000 · mDNS discovery active</p>
-        </div>
-        <span className="flex items-center gap-1.5 rounded-full border border-nd-success/30 bg-nd-success/10 px-2 py-0.5 text-[10px] font-bold text-nd-success">
-          <span className="h-1.5 w-1.5 rounded-full bg-nd-success" aria-hidden="true" />
-          RUNNING
-        </span>
-      </div>
-
-      {/* Group code */}
-      <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-        <div className="mb-2 flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-nd-accent" aria-hidden="true" />
-          <h3 className="text-xs font-semibold text-nd-text">Group Code</h3>
-          {groupCode && (
-            <span className="ml-auto rounded-full border border-nd-success/30 bg-nd-success/10 px-2 py-0.5 text-[10px] font-mono font-bold text-nd-success">
-              {groupCode}
-            </span>
-          )}
-        </div>
-        <p className="mb-3 text-[10px] text-nd-text-muted">
-          Warpinator peers on the same group code are discoverable. Leave blank to use the default group.
-        </p>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={codeInput}
-            onChange={(e) => setCodeInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void saveGroupCode()}
-            placeholder="e.g. NEURODECK"
-            aria-label="Warpinator group code"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-mono text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-          />
-          <button
-            type="button"
-            onClick={() => void saveGroupCode()}
-            disabled={savingCode || !codeInput.trim() || codeInput === groupCode}
-            className="flex items-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-          >
-            {savingCode ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : null}
-            Save
-          </button>
-        </div>
-      </div>
-
-      {/* Incoming transfer requests */}
-      {pendingIncoming.length > 0 && (
-        <div className="rounded-2xl border border-nd-warning/25 bg-nd-warning/[0.04] p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Download className="h-4 w-4 text-nd-warning" aria-hidden="true" />
-            <h3 className="text-xs font-semibold text-nd-text">
-              Incoming Requests ({pendingIncoming.length})
-            </h3>
+            {notice.text}
+            <IconButton
+              type="button"
+              size="sm"
+              variant="ghost"
+              aria-label="Dismiss"
+              onClick={() => setNotice(null)}
+            >
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </IconButton>
           </div>
-          <div className="space-y-2">
-            {pendingIncoming.map((t) => (
-              <div
-                key={t.id}
-                className="flex items-center gap-3 rounded-xl border border-nd-warning/20 bg-nd-surface/40 p-3"
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold text-nd-text">{t.filename}</p>
-                  <p className="text-[10px] text-nd-text-muted">
-                    From {t.peer_name} · {t.size > 0 ? formatBytes(t.size) : 'unknown size'}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void accept(t.id)}
-                  aria-label={`Accept ${t.filename}`}
-                  className="flex items-center gap-1 rounded-lg border border-nd-success/30 bg-nd-success/10 px-2.5 py-1.5 text-[11px] font-semibold text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Accept
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void reject(t.id)}
-                  aria-label={`Reject ${t.filename}`}
-                  className="flex items-center gap-1 rounded-lg border border-nd-danger/30 bg-nd-danger/10 px-2.5 py-1.5 text-[11px] font-semibold text-nd-danger hover:bg-nd-danger/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                >
-                  <XCircle className="h-3.5 w-3.5" aria-hidden="true" /> Reject
-                </button>
-              </div>
-            ))}
+        )}
+
+        {/* Service status card */}
+        <div className="flex items-center gap-3 rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/[0.04] px-4 py-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+            <Radio className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-nd-text-primary">Warpinator gRPC Service</p>
+            <p className="text-[10px] text-nd-text-muted">Listening on port 42000 · mDNS discovery active</p>
+          </div>
+          <Badge tone="success" variant="outline" dot>
+            RUNNING
+          </Badge>
+        </div>
+
+        {/* Group code */}
+        <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+          <div className="mb-2 flex items-center gap-2">
+            <KeyRound className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+            <h3 className="text-xs font-semibold text-nd-text-primary">Group Code</h3>
+            {groupCode && (
+              <Badge tone="success" variant="outline" size="sm" className="ml-auto">
+                {groupCode}
+              </Badge>
+            )}
+          </div>
+          <p className="mb-3 text-[10px] text-nd-text-muted">
+            Warpinator peers on the same group code are discoverable. Leave blank to use the default group.
+          </p>
+          <div className="flex gap-2">
+            <TextInput
+              value={codeInput}
+              onChange={(e) => setCodeInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && void saveGroupCode()}
+              placeholder="e.g. NEURODECK"
+              aria-label="Warpinator group code"
+              fullWidth
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              loading={savingCode}
+              disabled={savingCode || !codeInput.trim() || codeInput === groupCode}
+              onClick={() => void saveGroupCode()}
+            >
+              Save
+            </Button>
           </div>
         </div>
-      )}
 
-      {/* Peer list + send */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Warpinator peers */}
-        <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Wifi className="h-4 w-4 text-nd-accent" aria-hidden="true" />
-            <h3 className="text-xs font-semibold text-nd-text">Warpinator Peers</h3>
-            <span className="ml-auto rounded-full border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 text-[10px] text-nd-text-muted">
-              {peers.length}
-            </span>
-          </div>
-          {peers.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 py-4 text-center">
-              <AlertTriangle className="h-5 w-5 text-nd-text-muted/40" aria-hidden="true" />
-              <p className="text-xs text-nd-text-muted">
-                No Warpinator peers found. Ensure peers use the same group code and are on the same LAN.
-              </p>
+        {/* Incoming transfer requests */}
+        {pendingIncoming.length > 0 && (
+          <div className="rounded-xl border border-nd-warning/25 bg-nd-warning/5 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Download className="h-4 w-4 text-nd-warning" aria-hidden="true" />
+              <h3 className="text-xs font-semibold text-nd-text-primary">
+                Incoming Requests ({pendingIncoming.length})
+              </h3>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {peers.map((peer) => (
-                <button
-                  key={peer.ip}
-                  type="button"
-                  onClick={() => setSelectedPeerIp(peer.ip)}
-                  aria-pressed={selectedPeerIp === peer.ip}
-                  className={`w-full rounded-xl border p-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                    selectedPeerIp === peer.ip
-                      ? 'border-nd-accent/40 bg-nd-accent/[0.06]'
-                      : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25'
-                  }`}
+            <div className="flex flex-col gap-2">
+              {pendingIncoming.map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center gap-3 rounded-lg border border-nd-warning/20 bg-nd-warning/5 p-3"
                 >
-                  <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 shrink-0 rounded-full ${selectedPeerIp === peer.ip ? 'bg-nd-accent' : 'bg-nd-text-muted/40'}`} aria-hidden="true" />
-                    <p className="text-xs font-semibold text-nd-text truncate">{peer.hostname}</p>
-                    <span className="ml-auto shrink-0 rounded px-1 py-0.5 text-[9px] font-mono text-nd-text-muted/70">{peer.os}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-nd-text-primary">{t.filename}</p>
+                    <p className="text-[10px] text-nd-text-muted">
+                      From {t.peer_name} · {t.size > 0 ? formatBytes(t.size) : 'unknown size'}
+                    </p>
                   </div>
-                  <p className="mt-0.5 pl-4 text-[10px] font-mono text-nd-text-muted/70">{peer.ip}:{peer.port}</p>
-                </button>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="secondary"
+                    icon={CheckCircle2}
+                    onClick={() => void accept(t.id)}
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    type="button"
+                    size="xs"
+                    variant="danger"
+                    icon={XCircle}
+                    onClick={() => void reject(t.id)}
+                  >
+                    Reject
+                  </Button>
+                </div>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Send file */}
-        <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Upload className="h-4 w-4 text-nd-accent" aria-hidden="true" />
-            <h3 className="text-xs font-semibold text-nd-text">Send File</h3>
           </div>
-          <div className="space-y-2">
-            <div>
-              <label htmlFor="warp-file-path" className="mb-1 block text-[10px] text-nd-text-muted">
-                File path
-              </label>
-              <input
+        )}
+
+        {/* Peer list + send */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Warpinator peers */}
+          <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Wifi className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+              <h3 className="text-xs font-semibold text-nd-text-primary">Warpinator Peers</h3>
+              <Badge tone="neutral" variant="outline" size="sm" className="ml-auto">
+                {peers.length}
+              </Badge>
+            </div>
+            {peers.length === 0 ? (
+              <EmptyState
+                compact
+                icon={AlertTriangle}
+                title="No Warpinator peers found"
+                description="Ensure peers use the same group code and are on the same LAN."
+              />
+            ) : (
+              <div className="flex flex-col gap-2">
+                {peers.map((peer) => (
+                  <button
+                    key={peer.ip}
+                    type="button"
+                    onClick={() => setSelectedPeerIp(peer.ip)}
+                    aria-pressed={selectedPeerIp === peer.ip}
+                    className={`w-full rounded-lg border p-2.5 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                      selectedPeerIp === peer.ip
+                        ? 'border-nd-accent-primary/40 bg-nd-accent-primary/[0.06]'
+                        : 'border-nd-border-subtle bg-nd-surface-secondary/60 hover:border-nd-accent-primary/25'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2 w-2 shrink-0 rounded-full ${
+                          selectedPeerIp === peer.ip ? 'bg-nd-accent-primary' : 'bg-nd-text-muted/40'
+                        }`}
+                        aria-hidden="true"
+                      />
+                      <p className="truncate text-xs font-semibold text-nd-text-primary">{peer.hostname}</p>
+                      <span className="ml-auto shrink-0 rounded px-1 py-0.5 text-[9px] font-mono text-nd-text-muted">
+                        {peer.os}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 pl-4 text-[10px] font-mono text-nd-text-muted">{peer.ip}:{peer.port}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Send file */}
+          <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <Upload className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+              <h3 className="text-xs font-semibold text-nd-text-primary">Send File</h3>
+            </div>
+            <div className="flex flex-col gap-3">
+              <TextInput
                 id="warp-file-path"
-                type="text"
+                label="File path"
                 value={sendPath}
                 onChange={(e) => setSendPath(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && void sendFile()}
                 placeholder="/path/to/file"
-                className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-mono text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+                fullWidth
               />
-            </div>
-            {peers.length > 0 && (
-              <div>
-                <label htmlFor="warp-peer-select" className="mb-1 block text-[10px] text-nd-text-muted">
-                  Target peer
-                </label>
-                <select
+              {peers.length > 0 && (
+                <Select
                   id="warp-peer-select"
+                  label="Target peer"
                   value={selectedPeerIp}
                   onChange={(e) => setSelectedPeerIp(e.target.value)}
-                  className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-                >
-                  {peers.map((p) => (
-                    <option key={p.ip} value={p.ip}>{p.hostname} ({p.ip})</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            <button
-              type="button"
-              onClick={() => void sendFile()}
-              disabled={sending || !sendPath.trim() || !selectedPeerIp}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 py-2.5 text-sm font-semibold text-nd-success hover:bg-nd-success/20 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-            >
-              {sending
-                ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                : <Send className="h-4 w-4" aria-hidden="true" />}
-              Send via Warpinator
-            </button>
+                  options={peerOptions}
+                  fullWidth
+                />
+              )}
+              <Button
+                type="button"
+                variant="primary"
+                size="md"
+                fullWidth
+                icon={Send}
+                loading={sending}
+                disabled={sending || !sendPath.trim() || !selectedPeerIp}
+                onClick={() => void sendFile()}
+              >
+                Send via Warpinator
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Active transfers */}
-      {activeTransfers.length > 0 && (
-        <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <ArrowUpDown className="h-4 w-4 text-nd-accent" aria-hidden="true" />
-            <h3 className="text-xs font-semibold text-nd-text">Transfers ({activeTransfers.length})</h3>
-          </div>
-          <div className="space-y-2">
-            {activeTransfers.map((t) => {
-              const pct = t.size > 0 ? Math.min(100, Math.round((t.progress / t.size) * 100)) : 0;
-              const isActive = t.status === 'Transferring';
-              const isDone = t.status === 'Completed';
-              const isFailed = t.status === 'Failed';
-              return (
-                <div key={t.id} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-0.5 shrink-0">
-                      {t.direction === 'Incoming'
-                        ? <Download className="h-4 w-4 text-nd-accent" aria-hidden="true" />
-                        : <Upload className="h-4 w-4 text-nd-success" aria-hidden="true" />}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-xs font-semibold text-nd-text">{t.filename}</p>
-                        <span className={`shrink-0 text-[10px] font-bold ${isDone ? 'text-nd-success' : isFailed ? 'text-nd-danger' : 'text-nd-text-muted'}`}>
-                          {t.status}
-                        </span>
+        {/* Active transfers */}
+        {activeTransfers.length > 0 && (
+          <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <ArrowUpDown className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+              <h3 className="text-xs font-semibold text-nd-text-primary">Transfers ({activeTransfers.length})</h3>
+            </div>
+            <div className="flex flex-col gap-2">
+              {activeTransfers.map((t) => {
+                const pct = t.size > 0 ? Math.min(100, Math.round((t.progress / t.size) * 100)) : 0;
+                const isActive = t.status === 'Transferring';
+                const isDone = t.status === 'Completed';
+                const isFailed = t.status === 'Failed';
+                return (
+                  <div
+                    key={t.id}
+                    className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="mt-0.5 shrink-0">
+                        {t.direction === 'Incoming'
+                          ? <Download className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+                          : <Upload className="h-4 w-4 text-nd-success" aria-hidden="true" />}
                       </div>
-                      <p className="text-[10px] text-nd-text-muted">
-                        {t.peer_name} · {formatBytes(t.size)}
-                      </p>
-                      {(isActive || pct > 0) && (
-                        <div className="mt-2">
-                          <div className="mb-1 flex justify-between text-[10px] text-nd-text-muted">
-                            <span>{formatBytes(t.progress)} / {formatBytes(t.size)}</span>
-                            <span>{pct}%</span>
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-nd-text/10">
-                            <div
-                              className={`h-full rounded-full transition-all ${isDone ? 'bg-nd-success' : isFailed ? 'bg-nd-danger' : 'bg-nd-accent'}`}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-xs font-semibold text-nd-text-primary">{t.filename}</p>
+                          <StatusChip
+                            size="sm"
+                            tone={isDone ? 'success' : isFailed ? 'error' : isActive ? 'info' : 'warning'}
+                            pulse={isActive}
+                          >
+                            {t.status}
+                          </StatusChip>
                         </div>
+                        <p className="text-[10px] text-nd-text-muted">
+                          {t.peer_name} · {formatBytes(t.size)}
+                        </p>
+                        {(isActive || pct > 0) && (
+                          <div className="mt-2">
+                            <div className="mb-1 flex justify-between text-[10px] text-nd-text-muted">
+                              <span>{formatBytes(t.progress)} / {formatBytes(t.size)}</span>
+                              <span>{pct}%</span>
+                            </div>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-nd-surface-tertiary/60">
+                              <div
+                                className={`h-full rounded-full transition-all duration-normal motion-reduce:transition-none ${
+                                  isDone ? 'bg-nd-success' : isFailed ? 'bg-nd-accent-error' : 'bg-nd-accent-primary'
+                                }`}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      {!isDone && !isFailed && (
+                        <IconButton
+                          type="button"
+                          size="md"
+                          variant="danger"
+                          aria-label={`Cancel ${t.filename}`}
+                          onClick={() => void cancel(t.id)}
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        </IconButton>
                       )}
                     </div>
-                    {!isDone && !isFailed && (
-                      <button
-                        type="button"
-                        onClick={() => void cancel(t.id)}
-                        aria-label={`Cancel ${t.filename}`}
-                        className="shrink-0 rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                      >
-                        <X className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                    )}
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </Panel>
   );
 }
 
@@ -614,19 +653,20 @@ export function ShareView() {
 
   return (
     <div className="flex h-full flex-col">
+      {/* Header */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Share2 className="h-5 w-5 text-nd-accent" aria-hidden="true" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <Share2 className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
-        <div className="flex-1">
-          <div className="share-view-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Share</div>
-          <h2 className="text-lg font-semibold text-nd-text">Share & Transfer</h2>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-nd-text-muted">Share</p>
+          <h2 className="text-lg font-semibold text-nd-text-primary">Share & Transfer</h2>
           <p className="text-xs text-nd-text-muted">LAN P2P · Warpinator · Torrent</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div role="tablist" aria-label="Share panels" className="share-inner-tabs mb-4">
+      <div role="tablist" aria-label="Share panels" className="mb-3 flex gap-1 overflow-x-auto rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -635,7 +675,11 @@ export function ShareView() {
             aria-selected={activePanel === tab.id}
             onClick={() => setActivePanel(tab.id)}
             data-panel={tab.id}
-            className={`share-inner-tab ${activePanel === tab.id ? 'active' : ''} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40`}
+            className={`relative flex min-h-[40px] shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium outline-none transition-colors duration-fast focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
+              activePanel === tab.id
+                ? 'bg-nd-surface-tertiary text-nd-text-primary shadow-sm'
+                : 'text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary'
+            }`}
           >
             {tab.label}
           </button>

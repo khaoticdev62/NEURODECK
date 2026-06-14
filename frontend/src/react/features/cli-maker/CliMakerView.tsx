@@ -1,12 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   TerminalSquare, Plus, Copy, Play, Trash2, Save, Upload, Code, Sparkles,
-  Command, Settings, Folder, HelpCircle, Check, AlertCircle,
-  Search, Globe, Activity, Layers
+  Command, Check, AlertCircle, Globe, Layers
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { CliCommandDef, CliAction } from '../../types/neurodeck';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
+import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
+import { TextInput } from '../../components/primitives/TextInput';
+import { Select } from '../../components/primitives/Select';
+import { Badge } from '../../components/primitives/Badge';
+import { Panel } from '../../components/primitives/Panel';
+import { EmptyState } from '../../components/primitives/EmptyState';
+import { LoadingState } from '../../components/primitives/LoadingState';
 
 const LOCAL_STORAGE_KEY = 'neurodeck:cli_commands_fallback';
 
@@ -15,6 +22,32 @@ const AVAILABLE_ICONS = [
   'bot', 'brain', 'share-2', 'panel-right-open', 'sparkles', 'file-text', 'git-branch', 'send',
   'copy', 'play', 'settings-2', 'search', 'trash-2', 'cpu', 'layers', 'box', 'rocket', 'activity'
 ];
+
+const CATEGORIES = ['all', 'prompt', 'shell', 'view', 'chain', 'plugin'];
+
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  prompt: <Sparkles className="h-4 w-4" aria-hidden="true" />,
+  shell: <Command className="h-4 w-4" aria-hidden="true" />,
+  view: <Globe className="h-4 w-4" aria-hidden="true" />,
+  chain: <Layers className="h-4 w-4" aria-hidden="true" />,
+  plugin: <Code className="h-4 w-4" aria-hidden="true" />,
+};
+
+const VIEW_OPTIONS = [
+  'chat', 'canvas', 'terminal', 'ssh', 'tunnel', 'share', 'browser', 'agent', 'memory',
+  'prompt-lab', 'remote', 'docs', 'git', 'api-lab', 'cli-maker', 'graph', 'scheduler',
+  'workflow', 'ide', 'orchestrator'
+].map((v) => ({ value: v, label: v }));
+
+const CATEGORY_OPTIONS = [
+  { value: 'prompt', label: 'AI Prompt Template' },
+  { value: 'shell', label: 'Shell Command' },
+  { value: 'view', label: 'View Switcher' },
+  { value: 'chain', label: 'Command Chain' },
+  { value: 'plugin', label: 'Lua Plugin Script' },
+];
+
+const ICON_OPTIONS = AVAILABLE_ICONS.map((i) => ({ value: i, label: i }));
 
 function getFallbackCommands(): CliCommandDef[] {
   const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -52,13 +85,11 @@ function saveFallbackCommands(cmds: CliCommandDef[]) {
 }
 
 export function CliMakerView() {
-  // Commands List State
   const [commands, setCommands] = useState<CliCommandDef[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [loading, setLoading] = useState(true);
 
-  // Form Fields State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -67,7 +98,6 @@ export function CliMakerView() {
   const [shortcut, setShortcut] = useState('');
   const [radialBind, setRadialBind] = useState<string>('');
 
-  // Dynamic Fields
   const [promptTemplate, setPromptTemplate] = useState('');
   const [promptUseLlm, setPromptUseLlm] = useState(false);
   const [shellCommand, setShellCommand] = useState('');
@@ -76,7 +106,6 @@ export function CliMakerView() {
   const [chainSteps, setChainSteps] = useState<string[]>([]);
   const [pluginLuaCode, setPluginLuaCode] = useState('-- Lua code\nregisterCommand("mycommand", function(args)\n  return args\nend)');
 
-  // Testing & Status State
   const [testArgs, setTestArgs] = useState('');
   const [testOutput, setTestOutput] = useState('');
   const [testError, setTestError] = useState(false);
@@ -84,18 +113,15 @@ export function CliMakerView() {
   const [statusMessage, setStatusMessage] = useState('');
   const [statusIsError, setStatusIsError] = useState(false);
 
-  // Import State
   const [importPath, setImportPath] = useState('');
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
-  // Load commands from live API or fallback
   const loadCommands = useCallback(async () => {
     setLoading(true);
     try {
       const list = await neurodeckApi.cliMaker.list();
       setCommands(list);
     } catch (_) {
-      // Offline fallback — bridge not yet available, use persisted local copy
       setCommands(getFallbackCommands());
     } finally {
       setLoading(false);
@@ -128,7 +154,6 @@ export function CliMakerView() {
     setShortcut(parts.join('+'));
   };
 
-  // Helper to compile form state into CliCommandDef
   const gatherDef = (forcedId?: string | null): CliCommandDef => {
     const activeId = forcedId !== undefined ? forcedId : editingId;
     const finalId = activeId || `cmd-${Date.now()}`;
@@ -186,7 +211,6 @@ export function CliMakerView() {
     setShortcut(cmd.shortcut || '');
     setRadialBind(cmd.radial_bind != null ? String(cmd.radial_bind) : '');
 
-    // Action specific fields
     if (cmd.action.type === 'Prompt') {
       setPromptTemplate(cmd.action.data.template || '');
       setPromptUseLlm(cmd.action.data.use_llm || false);
@@ -220,7 +244,6 @@ export function CliMakerView() {
       }
       await loadCommands();
     } catch (_) {
-      // Local fallback saving
       const currentFallback = getFallbackCommands();
       let updatedFallback: CliCommandDef[];
       if (editingId) {
@@ -264,7 +287,6 @@ export function CliMakerView() {
     setTestOutput('Executing command...');
     setTestError(false);
     try {
-      // Save it first so it exists in backend run environment
       let runId = editingId;
       if (!runId) {
         const res = await neurodeckApi.cliMaker.create(def);
@@ -367,7 +389,6 @@ export function CliMakerView() {
     await handleImportLua(result.filePaths[0]);
   };
 
-  // Filter & Search
   const filteredCommands = commands.filter(cmd => {
     const matchesSearch = cmd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       cmd.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -375,7 +396,6 @@ export function CliMakerView() {
     return matchesSearch && matchesCategory;
   });
 
-  // Help Preview Lines
   const getHelpPreview = () => {
     const cmdName = name.trim() || 'mycommand';
     const cmdDesc = description.trim() || '(no description)';
@@ -407,65 +427,54 @@ export function CliMakerView() {
 
   return (
     <div className="flex h-full flex-col min-h-0 bg-transparent">
-      {/* View Header */}
-      <div className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+      <header className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-            <TerminalSquare className="h-5 w-5 text-nd-accent" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
+            <TerminalSquare className="h-5 w-5 text-accent-primary" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-nd-text">CLI Maker</h2>
-            <p className="text-xs text-nd-text-muted">Build custom commands, macros, and plugin scripts</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">CLI Maker</p>
+            <h2 className="text-lg font-semibold text-text-primary">Command Builder</h2>
+            <p className="text-xs text-text-muted">Build custom commands, macros, and plugin scripts.</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {statusMessage && (
-            <div className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs border ${
+            <div className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
               statusIsError
-                ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger'
-                : 'border-nd-success/30 bg-nd-success/10 text-nd-success'
+                ? 'border-accent-error/30 bg-accent-error/10 text-accent-error'
+                : 'border-accent-success/30 bg-accent-success/10 text-accent-success'
             }`}>
               {statusIsError ? <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" /> : <Check className="h-3.5 w-3.5" aria-hidden="true" />}
               <span>{statusMessage}</span>
             </div>
           )}
-          <button
-            type="button"
-            onClick={handleNewCommand}
-            className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 transition-all duration-150 cursor-pointer min-h-[40px] min-w-[120px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" /> New Command
-          </button>
+          <Button variant="primary" onClick={handleNewCommand} icon={Plus}>
+            New Command
+          </Button>
         </div>
-      </div>
+      </header>
 
-      {/* Main Workspace split */}
-      <div className="flex flex-1 gap-6 min-h-0">
-        {/* Left Side: Commands List */}
-        <div className="flex w-80 flex-col gap-3 min-h-0">
-          <div className="relative flex items-center">
-            <Search className="absolute left-3.5 h-4 w-4 text-nd-text-muted/65" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search commands..."
-              className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 pl-10 pr-4 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 transition-colors duration-150 min-h-[40px]"
-            />
-          </div>
+      <div className="flex flex-1 gap-4 min-h-0">
+        <aside className="flex w-80 flex-col gap-3 min-h-0">
+          <TextInput
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search commands..."
+            className="w-full"
+          />
 
-          {/* Category Filters */}
           <div className="flex flex-wrap gap-1">
-            {['all', 'prompt', 'shell', 'view', 'chain', 'plugin'].map((filter) => (
+            {CATEGORIES.map((filter) => (
               <button
                 key={filter}
                 type="button"
                 onClick={() => setCategoryFilter(filter)}
-                className={`rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition-all duration-150 min-h-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                className={`rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                   categoryFilter === filter
-                    ? 'bg-nd-accent/20 text-nd-accent border border-nd-accent/35'
-                    : 'bg-nd-surface/30 text-nd-text-muted border border-nd-text-muted/10 hover:border-nd-text-muted/25'
+                    ? 'border-accent-primary/40 bg-accent-primary/15 text-accent-primary'
+                    : 'border-border-subtle bg-surface-secondary text-text-muted hover:border-border-strong'
                 }`}
               >
                 {filter}
@@ -473,178 +482,141 @@ export function CliMakerView() {
             ))}
           </div>
 
-          {/* List container */}
-          <div className="flex-1 overflow-y-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/20 p-2 space-y-1.5 scrollbar-thin">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-10 text-nd-text-muted">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-nd-accent border-t-transparent mb-2" />
-                <span className="text-xs">Loading commands...</span>
-              </div>
-            ) : filteredCommands.length === 0 ? (
-              <div className="text-center py-10 text-xs text-nd-text-muted">
-                No commands found.
-              </div>
-            ) : (
-              filteredCommands.map((cmd) => (
-                <div
-                  key={cmd.id}
-                  onClick={() => handleEditCommand(cmd)}
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && handleEditCommand(cmd)}
-                  className={`group relative flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                    editingId === cmd.id
-                      ? 'border-nd-accent/40 bg-nd-accent/5 shadow-[0_0_10px_rgba(94,235,255,0.05)]'
-                      : 'border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-text-muted/30 hover:bg-nd-surface/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-nd-text-muted/10 bg-nd-bg/60 text-nd-accent">
-                      {cmd.category === 'prompt' && <Sparkles className="h-4 w-4" aria-hidden="true" />}
-                      {cmd.category === 'shell' && <Command className="h-4 w-4" aria-hidden="true" />}
-                      {cmd.category === 'view' && <Globe className="h-4 w-4" aria-hidden="true" />}
-                      {cmd.category === 'chain' && <Layers className="h-4 w-4" aria-hidden="true" />}
-                      {cmd.category === 'plugin' && <Code className="h-4 w-4" aria-hidden="true" />}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-nd-text/90">/{cmd.name}</div>
-                      <div className="text-[10px] text-nd-text-muted truncate max-w-[160px]">
-                        {cmd.description || 'No description'}
+          <Panel className="flex-1 min-h-0 overflow-hidden">
+            <div className="h-full overflow-y-auto space-y-1.5 p-2">
+              {loading ? (
+                <LoadingState label="Loading commands..." />
+              ) : filteredCommands.length === 0 ? (
+                <EmptyState
+                  icon={TerminalSquare}
+                  title="No commands found"
+                  description="Create a new command or adjust your search/filter."
+                  compact
+                  className="h-full"
+                />
+              ) : (
+                filteredCommands.map((cmd) => (
+                  <div
+                    key={cmd.id}
+                    onClick={() => handleEditCommand(cmd)}
+                    tabIndex={0}
+                    onKeyDown={(e) => e.key === 'Enter' && handleEditCommand(cmd)}
+                    className={`group relative flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
+                      editingId === cmd.id
+                        ? 'border-accent-primary/40 bg-accent-primary/5'
+                        : 'border-border-subtle bg-surface-secondary hover:border-border-strong hover:bg-surface-tertiary'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-app text-accent-primary">
+                        {CATEGORY_ICONS[cmd.category] ?? <TerminalSquare className="h-4 w-4" aria-hidden="true" />}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-text-primary">/{cmd.name}</div>
+                        <div className="text-[10px] text-text-muted truncate max-w-[160px]">
+                          {cmd.description || 'No description'}
+                        </div>
                       </div>
                     </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Badge tone="neutral" variant="outline" size="sm">{cmd.category}</Badge>
+                      <IconButton
+                        aria-label="Delete command"
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                        onClick={(e) => handleDeleteCommand(cmd.id, e)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-accent-error" aria-hidden="true" />
+                      </IconButton>
+                    </div>
                   </div>
+                ))
+              )}
+            </div>
+          </Panel>
+        </aside>
 
-                  <div className="flex items-center gap-1.5">
-                    <span className="rounded px-1.5 py-0.5 text-[9px] font-medium bg-nd-bg text-nd-text-muted uppercase">
-                      {cmd.category}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={(e) => handleDeleteCommand(cmd.id, e)}
-                      className="opacity-0 group-hover:opacity-100 hover:text-nd-danger p-1 transition-all duration-150 min-w-[30px] min-h-[30px] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                      aria-label="Delete command"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Right Side: Form Editor */}
-        <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-2 min-w-0 scrollbar-thin">
-          {/* Card 1: Command Profile */}
-          <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2">
-              <Settings className="h-4 w-4" aria-hidden="true" /> Command Profile
-            </h3>
-
+        <div className="flex-1 flex flex-col gap-4 overflow-y-auto pr-2 min-w-0">
+          <Panel eyebrow="Profile" title="Command Profile">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-nd-text-muted">Command Trigger</label>
+                <label className="text-xs font-medium text-text-muted" htmlFor="cli-name">Command Trigger</label>
                 <div className="relative flex items-center">
-                  <span className="absolute left-3.5 text-sm font-semibold text-nd-text-muted">/</span>
+                  <span className="absolute left-3.5 text-sm font-semibold text-text-muted">/</span>
                   <input
+                    id="cli-name"
                     type="text"
                     aria-label="Command trigger"
                     value={name}
                     onChange={(e) => setName(e.target.value.replace(/\s+/g, '-').toLowerCase())}
                     placeholder="my-command"
-                    className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 pl-6 pr-4 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
+                    className="w-full h-10 rounded-xl border border-border-subtle bg-surface-app pl-6 pr-4 text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40 min-h-[40px]"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-nd-text-muted">Short Description</label>
-                <input
-                  type="text"
-                  aria-label="Short description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="What does this command do?"
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
-                />
-              </div>
+              <TextInput
+                id="cli-description"
+                label="Short Description"
+                aria-label="Short description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="What does this command do?"
+              />
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-nd-text-muted">Action Category</label>
-                <select
-                  aria-label="Action category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
-                >
-                  <option value="prompt">AI Prompt Template</option>
-                  <option value="shell">Shell Command</option>
-                  <option value="view">View Switcher</option>
-                  <option value="chain">Command Chain</option>
-                  <option value="plugin">Lua Plugin Script</option>
-                </select>
-              </div>
+              <Select
+                label="Action Category"
+                aria-label="Action category"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                options={CATEGORY_OPTIONS}
+              />
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-nd-text-muted">Radial Bind (Menu Slot)</label>
-                <select
-                  aria-label="Radial menu bind slot"
-                  value={radialBind}
-                  onChange={(e) => setRadialBind(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
-                >
-                  <option value="">No Radial Bind</option>
-                  {Array.from({ length: 12 }, (_, i) => (
-                    <option key={i + 1} value={i + 1}>Slot {i + 1}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Radial Bind"
+                aria-label="Radial menu bind slot"
+                value={radialBind}
+                onChange={(e) => setRadialBind(e.target.value)}
+                options={[
+                  { value: '', label: 'No Radial Bind' },
+                  ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Slot ${i + 1}` }))
+                ]}
+              />
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-nd-text-muted">Shortcut Hotkey</label>
-                <input
-                  type="text"
-                  aria-label="Shortcut hotkey"
-                  value={shortcut}
-                  onKeyDown={handleShortcutKeyDown}
-                  onChange={(e) => setShortcut(e.target.value)}
-                  placeholder="Click to type hotkey (e.g. Ctrl+Alt+N)"
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
-                />
-              </div>
+              <TextInput
+                label="Shortcut Hotkey"
+                aria-label="Shortcut hotkey"
+                value={shortcut}
+                onKeyDown={handleShortcutKeyDown}
+                onChange={(e) => setShortcut(e.target.value)}
+                placeholder="Click to type hotkey"
+              />
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-nd-text-muted">Command Icon</label>
-                <select
-                  aria-label="Command icon"
-                  value={icon}
-                  onChange={(e) => setIcon(e.target.value)}
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
-                >
-                  {AVAILABLE_ICONS.map(i => (
-                    <option key={i} value={i}>{i}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Command Icon"
+                aria-label="Command icon"
+                value={icon}
+                onChange={(e) => setIcon(e.target.value)}
+                options={ICON_OPTIONS}
+              />
             </div>
-          </div>
+          </Panel>
 
-          {/* Card 2: Action Details */}
-          <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2">
-              <Code className="h-4 w-4" aria-hidden="true" /> Action Implementation
-            </h3>
-
+          <Panel eyebrow="Implementation" title="Action Details">
             {category === 'prompt' && (
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-nd-text-muted">Prompt Template</label>
+                  <label htmlFor="cli-prompt" className="text-xs font-medium text-text-muted">Prompt Template</label>
                   <textarea
+                    id="cli-prompt"
                     value={promptTemplate}
                     onChange={(e) => setPromptTemplate(e.target.value)}
                     placeholder="Enter prompt content. Use {{input}} to insert custom runner arguments at runtime."
                     rows={4}
                     aria-label="Prompt template"
-                    className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-3 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 resize-none"
+                    className="w-full rounded-xl border border-border-subtle bg-surface-app p-3 text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40 resize-none"
                   />
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -652,9 +624,9 @@ export function CliMakerView() {
                     type="checkbox"
                     checked={promptUseLlm}
                     onChange={(e) => setPromptUseLlm(e.target.checked)}
-                    className="rounded border-nd-text-muted/30 bg-nd-bg/60 text-nd-accent focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus:ring-nd-accent/30 h-4 w-4"
+                    className="rounded border-border-subtle bg-surface-app text-accent-primary focus-visible:ring-2 focus-visible:ring-accent-primary/40 h-4 w-4"
                   />
-                  <span className="text-xs text-nd-text-muted">Send output directly to LLM for response streaming</span>
+                  <span className="text-xs text-text-muted">Send output directly to LLM for response streaming</span>
                 </label>
               </div>
             )}
@@ -662,61 +634,45 @@ export function CliMakerView() {
             {category === 'shell' && (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-nd-text-muted">Shell Command</label>
-                    <input
-                      type="text"
-                      value={shellCommand}
-                      onChange={(e) => setShellCommand(e.target.value)}
-                      placeholder="e.g. git status or node build.js"
-                      aria-label="Shell command"
-                      className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-nd-text-muted">Working Directory (CWD - Optional)</label>
-                    <input
-                      type="text"
-                      value={shellCwd}
-                      onChange={(e) => setShellCwd(e.target.value)}
-                      placeholder="Absolute path, or blank for default workspace"
-                      aria-label="Working directory"
-                      className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
-                    />
-                  </div>
+                  <TextInput
+                    label="Shell Command"
+                    aria-label="Shell command"
+                    value={shellCommand}
+                    onChange={(e) => setShellCommand(e.target.value)}
+                    placeholder="e.g. git status or node build.js"
+                  />
+                  <TextInput
+                    label="Working Directory (optional)"
+                    aria-label="Working directory"
+                    value={shellCwd}
+                    onChange={(e) => setShellCwd(e.target.value)}
+                    placeholder="Absolute path, or blank for default workspace"
+                  />
                 </div>
-                <div className="flex items-start gap-2.5 rounded-xl border border-nd-warning/20 bg-nd-warning/5 p-3 text-xs text-nd-warning/90">
+                <div className="flex items-start gap-2.5 rounded-xl border border-accent-warning/20 bg-accent-warning/5 p-3 text-xs text-accent-warning/90">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
-                  <span>Shell commands are executed directly on the host machine. Ensure you audit inputs properly. Use <code>"&#123;&#123;input&#125;&#125;"</code> to safely pass runner arguments.</span>
+                  <span>Shell commands are executed directly on the host machine. Ensure you audit inputs properly. Use <code className="font-mono">{"{{input}}"}</code> to safely pass runner arguments.</span>
                 </div>
               </div>
             )}
 
             {category === 'view' && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-nd-text-muted">Target Screen View</label>
-                <select
-                  value={viewName}
-                  onChange={(e) => setViewName(e.target.value)}
-                  aria-label="Target screen view"
-                  className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 min-h-[40px]"
-                >
-                  {['chat', 'canvas', 'terminal', 'ssh', 'tunnel', 'share', 'browser', 'agent', 'memory',
-                    'prompt-lab', 'remote', 'docs', 'git', 'api-lab', 'cli-maker', 'graph', 'scheduler',
-                    'workflow', 'ide', 'orchestrator'].map(v => (
-                    <option key={v} value={v}>{v}</option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Target Screen View"
+                aria-label="Target screen view"
+                value={viewName}
+                onChange={(e) => setViewName(e.target.value)}
+                options={VIEW_OPTIONS}
+              />
             )}
 
             {category === 'chain' && (
               <div className="space-y-3">
-                <label className="text-xs font-medium text-nd-text-muted">Step Sequences</label>
+                <label className="text-xs font-medium text-text-muted">Step Sequences</label>
                 <div className="space-y-2">
                   {chainSteps.map((step, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="text-xs text-nd-text-muted font-mono w-6">#{idx + 1}</span>
+                      <span className="text-xs text-text-muted font-mono w-6">#{idx + 1}</span>
                       <select
                         value={step}
                         onChange={(e) => {
@@ -725,198 +681,145 @@ export function CliMakerView() {
                           setChainSteps(nextSteps);
                         }}
                         aria-label={`Chain step ${idx + 1}`}
-                        className="flex-1 h-9 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                        className="flex-1 h-9 rounded-xl border border-border-subtle bg-surface-app px-3 text-xs text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
                       >
                         <option value="">Select Command...</option>
                         {commands.filter(c => c.id !== editingId).map(c => (
                           <option key={c.id} value={c.id}>/{c.name} ({c.description || 'No description'})</option>
                         ))}
                       </select>
-                      <button
-                        type="button"
-                        onClick={() => setChainSteps(chainSteps.filter((_, i) => i !== idx))}
+                      <IconButton
                         aria-label={`Remove chain step ${idx + 1}`}
-                        className="rounded-lg border border-nd-danger/30 text-nd-danger hover:bg-nd-danger/10 px-2 py-1.5 text-xs transition duration-150 min-w-[30px] min-h-[30px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setChainSteps(chainSteps.filter((_, i) => i !== idx))}
                       >
-                        ×
-                      </button>
+                        <Trash2 className="h-3.5 w-3.5 text-accent-error" aria-hidden="true" />
+                      </IconButton>
                     </div>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setChainSteps([...chainSteps, ''])}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[35px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Add Chain Step
-                </button>
+                <Button variant="ghost" size="sm" onClick={() => setChainSteps([...chainSteps, ''])} icon={Plus}>
+                  Add Chain Step
+                </Button>
               </div>
             )}
 
             {category === 'plugin' && (
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-nd-text-muted">Lua Code Snippet</label>
+                <label htmlFor="cli-lua" className="text-xs font-medium text-text-muted">Lua Code Snippet</label>
                 <textarea
+                  id="cli-lua"
                   value={pluginLuaCode}
                   onChange={(e) => setPluginLuaCode(e.target.value)}
                   rows={8}
                   spellCheck={false}
                   aria-label="Lua code snippet"
-                  className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-3 font-mono text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 resize-none"
+                  className="w-full rounded-xl border border-border-subtle bg-surface-app p-3 font-mono text-xs text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40 resize-none"
                 />
               </div>
             )}
-          </div>
+          </Panel>
 
-          {/* Card 3: Save, Test, and Export Actions */}
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Left Actions: Save and Test */}
-            <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2">
-                <Play className="h-4 w-4" aria-hidden="true" /> Save &amp; Run Test
-              </h3>
+            <Panel eyebrow="Test" title="Save & Run Test">
+              <div className="space-y-4">
+                <Button variant="success" fullWidth onClick={handleSaveCommand} icon={Save}>
+                  Save Command
+                </Button>
 
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleSaveCommand}
-                  className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 text-sm font-semibold text-nd-success hover:bg-nd-success/20 transition-all duration-150 cursor-pointer min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  <Save className="h-4 w-4" aria-hidden="true" /> Save Command
-                </button>
-              </div>
-
-              <div className="space-y-3 pt-2 border-t border-nd-text-muted/10">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-nd-text-muted">Test Input Args</label>
-                  <input
-                    type="text"
+                <div className="space-y-3 pt-4 border-t border-border-subtle">
+                  <TextInput
+                    label="Test Input Args"
+                    aria-label="Test input args"
                     value={testArgs}
                     onChange={(e) => setTestArgs(e.target.value)}
                     placeholder="Arguments passed to {{input}}"
-                    aria-label="Test input args"
-                    className="w-full h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3.5 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[40px]"
                   />
-                </div>
-                <button
-                  type="button"
-                  onClick={handleTestCommand}
-                  disabled={loadingTest}
-                  className="w-full inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 text-sm font-semibold text-nd-accent hover:bg-nd-accent/20 transition-all duration-150 cursor-pointer disabled:opacity-50 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  {loadingTest ? (
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" />
-                  ) : (
-                    <Play className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  Run Test
-                </button>
-              </div>
-            </div>
-
-            {/* Right Actions: Export and Imports */}
-            <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2">
-                <Folder className="h-4 w-4" aria-hidden="true" /> Import &amp; Export
-              </h3>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={handleCopyLua}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                  aria-label="Copy Lua wrapper to clipboard"
-                >
-                  <Copy className="h-3.5 w-3.5" aria-hidden="true" /> Copy Lua
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveAsPlugin}
-                  className="inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                  aria-label="Save wrapper to sidecar plugins"
-                >
-                  <Code className="h-3.5 w-3.5" aria-hidden="true" /> Save Plugin
-                </button>
-              </div>
-
-              {/* Export Script */}
-              <div className="flex gap-2">
-                <select
-                  id="export-script-format"
-                  defaultValue="sh"
-                  aria-label="Export script format"
-                  className="w-24 h-10 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-2 text-xs text-nd-text outline-none focus:border-nd-accent/40 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  <option value="sh">Bash (.sh)</option>
-                  <option value="py">Python (.py)</option>
-                  <option value="lua">Lua (.lua)</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const sel = document.getElementById('export-script-format') as HTMLSelectElement;
-                    handleExportScript((sel?.value || 'sh') as 'sh' | 'py' | 'lua');
-                  }}
-                  className="flex-1 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  Export Standalone Script
-                </button>
-              </div>
-
-              {/* Import Lua */}
-              <div className="space-y-2 pt-2 border-t border-nd-text-muted/10">
-                <label className="text-[10px] font-medium text-nd-text-muted">Import from Lua File</label>
-                <button
-                  type="button"
-                  onClick={() => void handleBrowseImport()}
-                  className="w-full inline-flex h-10 items-center justify-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 transition duration-150 min-h-[40px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  <Upload className="h-3.5 w-3.5" aria-hidden="true" /> Browse &amp; Import Lua
-                </button>
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="text"
-                    value={importPath}
-                    onChange={(e) => setImportPath(e.target.value)}
-                    placeholder="Or paste absolute file path..."
-                    aria-label="Lua file path for import"
-                    className="flex-1 h-9 rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40 min-h-[36px]"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => void handleImportLua()}
-                    className="inline-flex h-9 items-center gap-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition duration-150 min-h-[36px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    onClick={handleTestCommand}
+                    loading={loadingTest}
+                    icon={Play}
                   >
-                    Import
-                  </button>
+                    Run Test
+                  </Button>
                 </div>
               </div>
-            </div>
+            </Panel>
+
+            <Panel eyebrow="Share" title="Import & Export">
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button variant="secondary" size="sm" onClick={handleCopyLua} icon={Copy}>
+                    Copy Lua
+                  </Button>
+                  <Button variant="secondary" size="sm" onClick={handleSaveAsPlugin} icon={Code}>
+                    Save Plugin
+                  </Button>
+                </div>
+
+                <div className="flex gap-2">
+                  <select
+                    id="export-script-format"
+                    defaultValue="sh"
+                    aria-label="Export script format"
+                    className="w-24 h-10 rounded-xl border border-border-subtle bg-surface-app px-2 text-xs text-text-primary outline-none focus:border-accent-primary/40"
+                  >
+                    <option value="sh">Bash (.sh)</option>
+                    <option value="py">Python (.py)</option>
+                    <option value="lua">Lua (.lua)</option>
+                  </select>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    fullWidth
+                    onClick={() => {
+                      const sel = document.getElementById('export-script-format') as HTMLSelectElement;
+                      handleExportScript((sel?.value || 'sh') as 'sh' | 'py' | 'lua');
+                    }}
+                  >
+                    Export Script
+                  </Button>
+                </div>
+
+                <div className="space-y-2 pt-4 border-t border-border-subtle">
+                  <label htmlFor="cli-import-path" className="text-[10px] font-medium uppercase tracking-wider text-text-muted">Import from Lua File</label>
+                  <Button variant="primary" size="sm" fullWidth onClick={() => void handleBrowseImport()} icon={Upload}>
+                    Browse & Import Lua
+                  </Button>
+                  <div className="flex gap-2 items-center">
+                    <TextInput
+                      id="cli-import-path"
+                      value={importPath}
+                      onChange={(e) => setImportPath(e.target.value)}
+                      placeholder="Or paste absolute file path..."
+                      className="flex-1"
+                    />
+                    <Button variant="secondary" size="sm" onClick={() => void handleImportLua()}>
+                      Import
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </Panel>
           </div>
 
-          {/* Card 4: Help Preview & Output Terminal */}
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Help Preview */}
-            <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-2 flex flex-col h-64">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2 shrink-0">
-                <HelpCircle className="h-4 w-4" aria-hidden="true" /> Command Help Preview
-              </h3>
-              <pre className="flex-1 overflow-auto rounded-xl bg-nd-bg/40 p-3 font-mono text-[11px] text-nd-text-muted leading-relaxed select-text whitespace-pre scrollbar-thin">
+            <Panel eyebrow="Help" title="Command Help Preview" className="h-64 flex flex-col">
+              <pre className="flex-1 overflow-auto rounded-xl bg-surface-app p-3 font-mono text-[11px] text-text-muted leading-relaxed select-text whitespace-pre">
                 {getHelpPreview()}
               </pre>
-            </div>
+            </Panel>
 
-            {/* Test Run Output */}
-            <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5 space-y-2 flex flex-col h-64">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-nd-text-muted flex items-center gap-2 shrink-0">
-                <Activity className="h-4 w-4" aria-hidden="true" /> Test Execution Output
-              </h3>
-              <pre className={`flex-1 overflow-auto rounded-xl bg-nd-bg/40 p-3 font-mono text-[11px] leading-relaxed select-text whitespace-pre-wrap scrollbar-thin ${
-                testError ? 'text-nd-danger' : 'text-nd-success'
+            <Panel eyebrow="Output" title="Test Execution Output" className="h-64 flex flex-col">
+              <pre className={`flex-1 overflow-auto rounded-xl bg-surface-app p-3 font-mono text-[11px] leading-relaxed select-text whitespace-pre-wrap ${
+                testError ? 'text-accent-error' : 'text-accent-success'
               }`}>
                 {testOutput || 'No execution outputs recorded yet. Fill out parameters and click "Run Test".'}
               </pre>
-            </div>
+            </Panel>
           </div>
         </div>
       </div>

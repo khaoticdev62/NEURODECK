@@ -1,12 +1,22 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
-  RefreshCcw, LayoutDashboard, Laptop, Send as SendIcon, Inbox, Clock, Activity, Settings, ListChecks, IdCard, Network,
+  RefreshCcw,
+  LayoutDashboard,
+  Laptop,
+  Send as SendIcon,
+  Inbox,
+  Clock,
+  Activity,
+  Settings,
+  ListChecks,
+  IdCard,
+  Network,
 } from 'lucide-react';
 import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
 import type { FileTransfer, TransferPeer, TrustedPeer } from '../../services/bridgeAdapter';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import { DeckButtonHint } from '../../components/primitives/DeckButtonHint';
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '../../components/primitives/Tabs';
 import { DashboardTab } from './tabs/DashboardTab';
 import { DevicesTab } from './tabs/DevicesTab';
 import { SendTab } from './tabs/SendTab';
@@ -35,24 +45,7 @@ const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
 
 export function SyncView() {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
-  const tabListRef = useRef<HTMLDivElement>(null);
 
-  const handleTabKeyDown = useCallback((e: ReactKeyboardEvent<HTMLDivElement>) => {
-    const tabs = Array.from(
-      tabListRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []
-    );
-    const idx = tabs.indexOf(document.activeElement as HTMLButtonElement);
-    if (idx === -1) return;
-    let next = -1;
-    if (e.key === 'ArrowRight') next = (idx + 1) % tabs.length;
-    else if (e.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = tabs.length - 1;
-    else return;
-    e.preventDefault();
-    tabs[next]?.focus();
-    tabs[next]?.click();
-  }, []);
   const [transfers, setTransfers] = useState<FileTransfer[]>([]);
   const [peers, setPeers] = useState<TransferPeer[]>([]);
   const [trustedPeers, setTrustedPeers] = useState<TrustedPeer[]>([]);
@@ -228,11 +221,12 @@ export function SyncView() {
     <div data-testid="sync-view" className="flex h-full flex-col">
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <RefreshCcw className="h-5 w-5 text-nd-accent" aria-hidden="true" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <RefreshCcw className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-nd-text">NEURODECK Sync</h2>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-nd-text-muted">Sync</p>
+          <h2 className="text-lg font-semibold text-nd-text-primary">NEURODECK Sync</h2>
           <p className="text-xs text-nd-text-muted">LAN file transfer — Warpinator/Winpinator compatible</p>
         </div>
         <div className="flex items-center gap-1.5">
@@ -245,61 +239,39 @@ export function SyncView() {
       {mutateError && (
         <div
           role="alert"
-          className="mb-3 flex items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger"
+          className="mb-3 flex items-center gap-2 rounded-xl border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-2 text-xs text-nd-accent-error"
         >
           {mutateError}
           <button
             type="button"
             onClick={() => setMutateError(null)}
             aria-label="Dismiss error"
-            className="ml-auto text-nd-danger/70 hover:text-nd-danger"
+            className="ml-auto text-nd-accent-error/70 hover:text-nd-accent-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-error/40 rounded"
           >
             ×
           </button>
         </div>
       )}
 
-      {/* Tab bar */}
-      <div
-        ref={tabListRef}
-        role="tablist"
-        aria-label="Sync sections"
-        onKeyDown={handleTabKeyDown}
-        className="mb-4 flex gap-1 overflow-x-auto rounded-xl border border-nd-text-muted/10 bg-nd-surface/20 p-1"
-      >
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`sync-panel-${tab.id}`}
-              id={`sync-tab-${tab.id}`}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                activeTab === tab.id
-                  ? 'bg-nd-accent/15 text-nd-accent'
-                  : 'text-nd-text-muted hover:bg-nd-surface/40 hover:text-nd-text'
-              }`}
-            >
-              <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Tab panels */}
-      <div className="min-h-0 flex-1">
-        <div
-          role="tabpanel"
-          id={`sync-panel-${activeTab}`}
-          aria-labelledby={`sync-tab-${activeTab}`}
-          className="h-full"
+      {/* Tabs */}
+      <TabGroup value={activeTab} onChange={(v) => setActiveTab(v as TabId)} className="flex min-h-0 flex-1 flex-col">
+        <TabList
+          aria-label="Sync sections"
+          className="mb-3"
         >
-          {activeTab === 'dashboard' && (
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <Tab key={tab.id} value={tab.id} className="gap-1.5 px-3 py-1.5 text-xs">
+                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                {tab.label}
+              </Tab>
+            );
+          })}
+        </TabList>
+
+        <TabPanels className="min-h-0 flex-1">
+          <TabPanel value="dashboard" className="h-full">
             <DashboardTab
               transfers={transfers}
               peers={peers}
@@ -307,8 +279,8 @@ export function SyncView() {
               onRetry={(id) => void handleRetry(id)}
               onRefresh={() => { void refreshTransfers(); void refreshPeers(); }}
             />
-          )}
-          {activeTab === 'devices' && (
+          </TabPanel>
+          <TabPanel value="devices" className="h-full">
             <DevicesTab
               peers={peers}
               trustedPeers={trustedPeers}
@@ -316,8 +288,8 @@ export function SyncView() {
               onRefreshTrusted={() => void refreshTrusted()}
               onError={setMutateError}
             />
-          )}
-          {activeTab === 'send' && (
+          </TabPanel>
+          <TabPanel value="send" className="h-full">
             <SendTab
               peers={sendToPreselect ? [sendToPreselect, ...peers.filter((p) => p.ip !== sendToPreselect.ip)] : peers}
               onSuccess={() => {
@@ -328,11 +300,11 @@ export function SyncView() {
               }}
               onError={setMutateError}
             />
-          )}
-          {activeTab === 'inbox' && (
+          </TabPanel>
+          <TabPanel value="inbox" className="h-full">
             <InboxTab transfers={transfers} inboxPath={inboxPath} />
-          )}
-          {activeTab === 'queue' && (
+          </TabPanel>
+          <TabPanel value="queue" className="h-full">
             <QueueTab
               transfers={transfers}
               onCancel={(id) => void handleCancel(id)}
@@ -340,41 +312,43 @@ export function SyncView() {
               onClearDone={() => void refreshTransfers()}
               onError={setMutateError}
             />
-          )}
-          {activeTab === 'history' && (
+          </TabPanel>
+          <TabPanel value="history" className="h-full">
             <HistoryTab
               transfers={transfers}
               onRetry={(id) => void handleRetry(id)}
               onClearDone={() => void refreshTransfers()}
             />
-          )}
-          {activeTab === 'profiles' && (
+          </TabPanel>
+          <TabPanel value="profiles" className="h-full">
             <ProfilesTab
               groupCode={groupCode}
               inboxPath={inboxPath}
               trustedPeers={trustedPeers}
               onError={setMutateError}
             />
-          )}
-          {activeTab === 'vpn' && (
+          </TabPanel>
+          <TabPanel value="vpn" className="h-full">
             <VpnWanTab
               peers={peers}
               onSendToPeer={handleSendToPeer}
               onPeerAdded={() => void refreshPeers()}
               onError={setMutateError}
             />
-          )}
-          {activeTab === 'diagnostics' && <DiagnosticsTab />}
-          {activeTab === 'settings' && (
+          </TabPanel>
+          <TabPanel value="diagnostics" className="h-full">
+            <DiagnosticsTab />
+          </TabPanel>
+          <TabPanel value="settings" className="h-full">
             <SettingsTab
               groupCode={groupCode}
               inboxPath={inboxPath}
               onGroupCodeChange={setGroupCode}
               onError={setMutateError}
             />
-          )}
-        </div>
-      </div>
+          </TabPanel>
+        </TabPanels>
+      </TabGroup>
 
       {/* Incoming transfer confirm dialog — mounted at root so it's always accessible */}
       <ConfirmDialog

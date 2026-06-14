@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Activity, CheckCircle2, RefreshCcw, Trash2, Wrench } from 'lucide-react';
-import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import { EmptyState } from '../../components/primitives/EmptyState';
+import { MetricCard } from '../../components/primitives/MetricCard';
 import { Panel } from '../../components/primitives/Panel';
+import { StatusChip } from '../../components/primitives/StatusChip';
 import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
 export function MaintenanceView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
@@ -26,7 +28,7 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
                 <InfoRow label="Build type" value={diagnostics.packaged ? 'packaged' : 'development'} />
               </>
             ) : (
-              <p className="text-sm text-nd-text-muted">Run a diagnostics refresh to load build info.</p>
+              <p className="text-sm text-text-secondary">Run a diagnostics refresh to load build info.</p>
             )}
           </div>
         </Panel>
@@ -34,55 +36,59 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
         {/* Maintenance Actions */}
         <Panel eyebrow="Actions" title="System Maintenance">
           <div className="space-y-2 p-4">
-            <ActionRow
+            <Button
+              variant="primary"
+              fullWidth
               icon={RefreshCcw}
-              label="Refresh Diagnostics"
-              description="Re-read runtime state, IPC logs, and health data."
-              variant="accent"
               onClick={() => void actions.refreshDiagnostics()}
-            />
-            <ActionRow
+            >
+              Refresh Diagnostics
+            </Button>
+            <Button
+              variant="secondary"
+              fullWidth
               icon={Activity}
-              label="Export Support Bundle"
-              description="Package sanitized diagnostics into a shareable archive."
-              variant="neutral"
               onClick={() => void actions.exportDiagnosticsBundle()}
-            />
-            <ActionRow
-              icon={Trash2}
-              label="Clear Local State"
-              description="Reset all session history, memories, and preferences. Keys in the OS keychain are preserved."
+            >
+              Export Support Bundle
+            </Button>
+            <Button
               variant="danger"
+              fullWidth
+              icon={Trash2}
               onClick={() => setConfirmReset(true)}
-            />
+            >
+              Clear Local State
+            </Button>
           </div>
         </Panel>
       </div>
 
       {/* Health Overview */}
       <Panel eyebrow="Health" title="System Status">
-        <div className="space-y-3 p-4">
-          <button
-            type="button"
-            onClick={() => void actions.checkAiHealth()}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-          >
-            <Wrench className="h-4 w-4" aria-hidden="true" /> Check AI Health
-          </button>
+        <div className="space-y-4 p-4">
+          <Button variant="primary" fullWidth icon={Wrench} onClick={() => void actions.checkAiHealth()}>
+            Check AI Health
+          </Button>
 
           {state.aiHealth.length > 0 ? (
             <div className="space-y-2">
               {state.aiHealth.map((provider) => (
-                <div key={provider.provider} className="flex items-center justify-between gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2.5">
+                <div
+                  key={provider.provider}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2.5"
+                >
                   <div className="flex items-center gap-2">
-                    {provider.available
-                      ? <CheckCircle2 className="h-4 w-4 text-nd-success" aria-hidden="true" />
-                      : <Activity className="h-4 w-4 text-nd-warning" aria-hidden="true" />}
-                    <span className="text-xs text-nd-text/80">{provider.provider}</span>
+                    {provider.available ? (
+                      <CheckCircle2 className="h-4 w-4 text-accent-success" aria-hidden="true" />
+                    ) : (
+                      <Activity className="h-4 w-4 text-accent-warning" aria-hidden="true" />
+                    )}
+                    <span className="text-xs text-text-primary">{provider.provider}</span>
                   </div>
-                  <Badge tone={provider.available ? 'success' : 'neutral'}>
+                  <StatusChip tone={provider.available ? 'success' : 'warning'} size="sm">
                     {provider.available ? `${provider.latencyMs ?? '?'}ms` : 'unavailable'}
-                  </Badge>
+                  </StatusChip>
                 </div>
               ))}
             </div>
@@ -92,21 +98,26 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
               title="No health data yet"
               description="Check AI health to populate provider availability and latency."
               compact
-              className="rounded-2xl border border-dashed border-nd-text-muted/15 bg-nd-surface/30"
+              className="rounded-2xl border border-dashed border-border-subtle bg-surface-secondary/30"
             />
           )}
 
-          <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-nd-text-muted/70">Diagnostics Log</p>
-            <p className="mt-1 text-xs text-nd-text/80">{state.diagnosticLogs.length} entries</p>
-          </div>
+          <MetricCard
+            label="Diagnostics Log"
+            value={state.diagnosticLogs.length}
+            icon={Activity}
+            hint="Main-process events"
+          />
         </div>
       </Panel>
 
       <ConfirmDialog
         open={confirmReset}
         onCancel={() => setConfirmReset(false)}
-        onConfirm={() => { setConfirmReset(false); void actions.resetLocalState(); }}
+        onConfirm={() => {
+          setConfirmReset(false);
+          void actions.resetLocalState();
+        }}
         title="Clear all local state?"
         message="This will permanently remove all session history, memories, and preferences. Keys stored in the OS keychain are preserved. This action cannot be undone."
         confirmLabel="Clear State"
@@ -119,31 +130,9 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2">
-      <span className="text-xs text-nd-text-muted/70">{label}</span>
-      <span className="font-mono text-xs text-nd-text/80">{value}</span>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2">
+      <span className="text-xs text-text-muted">{label}</span>
+      <span className="font-mono text-xs text-text-secondary">{value}</span>
     </div>
-  );
-}
-
-function ActionRow({ icon: Icon, label, description, variant, onClick }: { icon: typeof RefreshCcw; label: string; description: string; variant: 'accent' | 'neutral' | 'danger'; onClick: () => void }) {
-  const cls = {
-    accent:  'border-nd-accent/25 bg-nd-accent/10 text-nd-accent hover:bg-nd-accent/15',
-    neutral: 'border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:border-nd-accent/30 hover:text-nd-accent',
-    danger:  'border-nd-danger/25 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/15',
-  }[variant];
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${cls}`}
-    >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-      <div>
-        <p className="font-semibold">{label}</p>
-        <p className="mt-0.5 text-xs leading-5 opacity-70">{description}</p>
-      </div>
-    </button>
   );
 }

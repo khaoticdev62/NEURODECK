@@ -2,6 +2,8 @@ import { ArrowDown, ArrowUp, RefreshCw, X, RotateCcw } from 'lucide-react';
 import { MetricCard } from '../../../components/primitives/MetricCard';
 import { StatusChip } from '../../../components/primitives/StatusChip';
 import { EmptyState } from '../../../components/primitives/EmptyState';
+import { IconButton } from '../../../components/primitives/IconButton';
+import { Panel } from '../../../components/primitives/Panel';
 import type { FileTransfer, TransferPeer } from '../../../services/bridgeAdapter';
 
 function formatBytes(n: number): string {
@@ -31,87 +33,115 @@ export function DashboardTab({ transfers, peers, onCancel, onRetry, onRefresh }:
   const completed = transfers.filter((t) => t.status === 'Completed').length;
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-1">
-      <div className="grid grid-cols-3 gap-3">
-        <MetricCard label="Active" value={active} icon={RefreshCw} hint="In-progress transfers" />
-        <MetricCard label="Peers" value={peers.length} icon={ArrowUp} hint="Discovered LAN peers" />
-        <MetricCard label="Completed" value={completed} icon={ArrowDown} hint="Finished this session" />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold uppercase tracking-widest text-nd-text-muted">Transfer Queue</h3>
-        <button
+    <Panel
+      eyebrow="Overview"
+      title="Sync Dashboard"
+      action={
+        <IconButton
           type="button"
-          onClick={onRefresh}
+          size="md"
+          variant="subtle"
           aria-label="Refresh transfers"
-          className="rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          onClick={onRefresh}
         >
-          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-      </div>
+          <RefreshCw className="h-4 w-4" aria-hidden="true" />
+        </IconButton>
+      }
+      className="h-full"
+    >
+      <div className="flex h-full flex-col gap-4 overflow-y-auto">
+        <div className="grid grid-cols-3 gap-3">
+          <MetricCard label="Active" value={active} icon={RefreshCw} hint="In-progress transfers" />
+          <MetricCard label="Peers" value={peers.length} icon={ArrowUp} hint="Discovered LAN peers" />
+          <MetricCard label="Completed" value={completed} icon={ArrowDown} hint="Finished this session" />
+        </div>
 
-      {transfers.length === 0 ? (
-        <EmptyState icon={RefreshCw} title="No transfers" description="Send a file or wait for an incoming request." />
-      ) : (
-        <ul role="list" className="flex flex-col gap-2">
-          {transfers.map((t) => (
-            <li
-              key={t.id}
-              className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3"
-            >
-              <div className="flex items-start gap-3">
-                <span className="mt-0.5 text-nd-text-muted" aria-hidden="true">
-                  {t.direction === 'Incoming' ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-nd-text" title={t.filename}>{t.filename}</p>
-                  <p className="text-xs text-nd-text-muted">
-                    {t.direction} · {t.peer_name || t.peer_ip} · {formatBytes(t.size)}
-                  </p>
-                  {t.status === 'Transferring' && (
-                    <div
-                      className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-nd-surface"
-                      role="progressbar"
-                      aria-valuenow={Math.round((t.progress / Math.max(t.size, 1)) * 100)}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`Transfer progress for ${t.filename}`}
-                    >
-                      <div
-                        className="h-full rounded-full bg-nd-accent transition-all duration-300"
-                        style={{ width: `${Math.min(100, Math.round((t.progress / Math.max(t.size, 1)) * 100))}%` }}
-                      />
+        <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
+          Transfer Queue
+        </h3>
+
+        {transfers.length === 0 ? (
+          <EmptyState
+            icon={RefreshCw}
+            title="No transfers"
+            description="Send a file or wait for an incoming request."
+            compact
+          />
+        ) : (
+          <ul role="list" className="flex flex-col gap-2">
+            {transfers.map((t) => {
+              const pct = Math.min(100, Math.round((t.progress / Math.max(t.size, 1)) * 100));
+              const isTransferring = t.status === 'Transferring';
+              return (
+                <li
+                  key={t.id}
+                  className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 transition-colors duration-fast hover:border-nd-accent-primary/25"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="mt-0.5 text-nd-text-muted" aria-hidden="true">
+                      {t.direction === 'Incoming' ? (
+                        <ArrowDown className="h-4 w-4" />
+                      ) : (
+                        <ArrowUp className="h-4 w-4" />
+                      )}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-nd-text-primary" title={t.filename}>
+                        {t.filename}
+                      </p>
+                      <p className="text-xs text-nd-text-muted">
+                        {t.direction} · {t.peer_name || t.peer_ip} · {formatBytes(t.size)}
+                      </p>
+                      {isTransferring && (
+                        <div
+                          className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-nd-surface-tertiary/60"
+                          role="progressbar"
+                          aria-valuenow={pct}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`Transfer progress for ${t.filename}`}
+                        >
+                          <div
+                            className="h-full rounded-full bg-nd-accent-primary transition-all duration-normal motion-reduce:transition-none"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <StatusChip tone={transferTone(t.status)} size="sm">{t.status}</StatusChip>
-                  {t.status === 'Transferring' && (
-                    <button
-                      type="button"
-                      onClick={() => onCancel(t.id)}
-                      aria-label={`Cancel transfer of ${t.filename}`}
-                      className="rounded p-1 text-nd-text-muted hover:bg-nd-danger/10 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-danger/40"
-                    >
-                      <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                  )}
-                  {(t.status === 'Failed' || t.status === 'Cancelled') && t.direction === 'Outgoing' && (
-                    <button
-                      type="button"
-                      onClick={() => onRetry(t.id)}
-                      aria-label={`Retry transfer of ${t.filename}`}
-                      className="rounded p-1 text-nd-text-muted hover:bg-nd-accent/10 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <StatusChip tone={transferTone(t.status)} size="sm" pulse={isTransferring}>
+                        {t.status}
+                      </StatusChip>
+                      {isTransferring && (
+                        <IconButton
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Cancel transfer of ${t.filename}`}
+                          onClick={() => onCancel(t.id)}
+                        >
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        </IconButton>
+                      )}
+                      {(t.status === 'Failed' || t.status === 'Cancelled') && t.direction === 'Outgoing' && (
+                        <IconButton
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          aria-label={`Retry transfer of ${t.filename}`}
+                          onClick={() => onRetry(t.id)}
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                        </IconButton>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </Panel>
   );
 }

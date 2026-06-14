@@ -1,8 +1,24 @@
 import { useCallback, useEffect, useState } from 'react';
 import { IdCard, Plus, Trash2 } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
+import { Button } from '../../../components/primitives/Button';
+import { IconButton } from '../../../components/primitives/IconButton';
+import { Panel } from '../../../components/primitives/Panel';
+import { Select } from '../../../components/primitives/Select';
+import { TextInput } from '../../../components/primitives/TextInput';
+import { Toggle } from '../../../components/primitives/Toggle';
+import { Badge } from '../../../components/primitives/Badge';
 import { neurodeckApi } from '../../../services/bridgeAdapter';
 import type { SyncProfile, TrustedPeer } from '../../../services/bridgeAdapter';
+
+const MODE_OPTIONS: { value: SyncProfile['mode']; label: string }[] = [
+  { value: 'lan', label: 'LAN' },
+  { value: 'vpn_manual', label: 'VPN Manual' },
+  { value: 'vpn_mesh', label: 'VPN Mesh' },
+  { value: 'hybrid', label: 'Hybrid' },
+  { value: 'receive_only', label: 'Receive Only' },
+  { value: 'send_only', label: 'Send Only' },
+];
 
 interface Props {
   groupCode: string;
@@ -65,86 +81,110 @@ export function ProfilesTab({ groupCode, inboxPath, trustedPeers, onError }: Pro
   };
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-y-auto p-1">
-      <section aria-label="Create sync profile" className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-        <h3 className="mb-3 text-xs font-semibold uppercase tracking-widest text-nd-text-muted">Create Profile</h3>
-        <div className="grid gap-3 lg:grid-cols-[1fr_180px_auto]">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            aria-label="Profile name"
-            placeholder="Profile name"
-            className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-          />
-          <select
-            value={mode}
-            onChange={(e) => setMode(e.target.value as SyncProfile['mode'])}
-            aria-label="Profile mode"
-            className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-          >
-            <option value="lan">LAN</option>
-            <option value="vpn_manual">VPN Manual</option>
-            <option value="vpn_mesh">VPN Mesh</option>
-            <option value="hybrid">Hybrid</option>
-            <option value="receive_only">Receive Only</option>
-            <option value="send_only">Send Only</option>
-          </select>
-          <button
-            type="button"
-            onClick={() => void handleAdd()}
-            disabled={saving || !name.trim()}
-            className="flex items-center justify-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:pointer-events-none disabled:opacity-40"
-          >
-            <Plus className="h-4 w-4" aria-hidden="true" /> Save
-          </button>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-4 text-xs text-nd-text-muted">
-          <label className="inline-flex items-center gap-2">
-            <input type="checkbox" checked={vpnOnly} onChange={(e) => setVpnOnly(e.target.checked)} />
-            VPN-only lock
-          </label>
-          <label className="inline-flex items-center gap-2">
-            <input type="checkbox" checked={autoAcceptTrusted} onChange={(e) => setAutoAcceptTrusted(e.target.checked)} />
-            Auto-accept trusted peers
-          </label>
-        </div>
-      </section>
+    <Panel eyebrow="Profiles" title="Sync Profiles" className="h-full">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto">
+        <section aria-label="Create sync profile" className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+          <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
+            Create Profile
+          </h3>
+          <div className="grid gap-3 lg:grid-cols-[1fr_180px_auto] lg:items-end">
+            <TextInput
+              label="Profile name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Home LAN"
+              fullWidth
+            />
+            <Select
+              label="Mode"
+              value={mode}
+              onChange={(e) => setMode(e.target.value as SyncProfile['mode'])}
+              options={MODE_OPTIONS}
+              fullWidth
+            />
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              icon={Plus}
+              loading={saving}
+              disabled={saving || !name.trim()}
+              onClick={() => void handleAdd()}
+            >
+              Save
+            </Button>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-6 text-xs text-nd-text-secondary">
+            <Toggle
+              checked={vpnOnly}
+              onChange={() => setVpnOnly((v) => !v)}
+              label="VPN-only lock"
+            />
+            <Toggle
+              checked={autoAcceptTrusted}
+              onChange={() => setAutoAcceptTrusted((v) => !v)}
+              label="Auto-accept trusted peers"
+            />
+          </div>
+        </section>
 
-      <section aria-label="Saved sync profiles">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-nd-text-muted">Saved Profiles</h3>
-          <span className="text-xs text-nd-text-muted">{trustedPeers.length} trusted peers · group {groupCode ? 'set' : 'default'}</span>
-        </div>
-        {profiles.length === 0 ? (
-          <EmptyState icon={IdCard} title="No profiles saved" description="Save LAN, VPN, receive-only, or travel profiles here." />
-        ) : (
-          <ul role="list" className="grid gap-2 lg:grid-cols-2">
-            {profiles.map((profile) => (
-              <li key={profile.id} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-                <div className="flex items-start gap-3">
-                  <IdCard className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-nd-text">{profile.name}</p>
-                    <p className="mt-1 text-xs text-nd-text-muted">
-                      {profile.mode.replace('_', ' ')} · {profile.vpn_only ? 'VPN-only' : 'LAN allowed'} · {profile.auto_accept_trusted ? 'trusted auto-accept' : 'manual accept'}
-                    </p>
-                    <p className="mt-1 break-all font-mono text-[11px] text-nd-text-muted">{profile.incoming_folder}</p>
+        <section aria-label="Saved sync profiles" className="min-h-0 flex-1">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
+              Saved Profiles
+            </h3>
+            <span className="text-xs text-nd-text-muted">
+              {trustedPeers.length} trusted peers · group {groupCode ? 'set' : 'default'}
+            </span>
+          </div>
+          {profiles.length === 0 ? (
+            <EmptyState
+              icon={IdCard}
+              title="No profiles saved"
+              description="Save LAN, VPN, receive-only, or travel profiles here."
+              compact
+            />
+          ) : (
+            <ul role="list" className="grid gap-2 lg:grid-cols-2">
+              {profiles.map((profile) => (
+                <li
+                  key={profile.id}
+                  className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 transition-colors duration-fast hover:border-nd-accent-primary/25"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60">
+                      <IdCard className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-nd-text-primary">{profile.name}</p>
+                      <p className="mt-1 text-xs text-nd-text-muted">
+                        {profile.mode.replace('_', ' ')} · {profile.vpn_only ? 'VPN-only' : 'LAN allowed'} · {profile.auto_accept_trusted ? 'trusted auto-accept' : 'manual accept'}
+                      </p>
+                      <p className="mt-1 break-all font-mono text-[11px] text-nd-text-muted">
+                        {profile.incoming_folder}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <Badge tone="accent" variant="outline" size="sm">{profile.mode.replace('_', ' ')}</Badge>
+                        {profile.vpn_only && <Badge tone="warning" variant="outline" size="sm">VPN-only</Badge>}
+                        {profile.auto_accept_trusted && <Badge tone="success" variant="outline" size="sm">Auto-accept</Badge>}
+                      </div>
+                    </div>
+                    <IconButton
+                      type="button"
+                      size="md"
+                      variant="danger"
+                      aria-label={`Remove profile ${profile.name}`}
+                      onClick={() => void handleRemove(profile.id)}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
+                    </IconButton>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleRemove(profile.id)}
-                    aria-label={`Remove profile ${profile.name}`}
-                    className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-danger/10 hover:text-nd-danger focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-danger/40"
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </Panel>
   );
 }

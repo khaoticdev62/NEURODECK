@@ -1,3 +1,4 @@
+import { Badge } from '../../components/primitives/Badge';
 import type { IdeMode } from '../../../shared/ide/ideContracts';
 
 type LspStatus = 'ready' | 'starting' | 'missing' | 'error';
@@ -17,11 +18,11 @@ const MODE_LABELS: Record<IdeMode, string> = {
   IDE_SNIPPET: 'SNIP',
 };
 
-const LSP_DOT: Record<LspStatus, { color: string; title: string }> = {
-  ready:    { color: 'bg-nd-success', title: 'LSP ready' },
-  starting: { color: 'bg-nd-warning animate-pulse', title: 'LSP starting…' },
-  missing:  { color: 'bg-nd-text-muted/40', title: 'LSP not installed' },
-  error:    { color: 'bg-nd-danger', title: 'LSP error' },
+const LSP_DOT: Record<LspStatus, { tone: 'success' | 'warning' | 'neutral' | 'danger'; title: string }> = {
+  ready:    { tone: 'success', title: 'LSP ready' },
+  starting: { tone: 'warning', title: 'LSP starting…' },
+  missing:  { tone: 'neutral', title: 'LSP not installed' },
+  error:    { tone: 'danger', title: 'LSP error' },
 };
 
 export function LanguageModeBadge({ languageId, displayName, lspStatus, ideMode }: LanguageModeBadgeProps) {
@@ -32,17 +33,10 @@ export function LanguageModeBadge({ languageId, displayName, lspStatus, ideMode 
 
   return (
     <div className="flex items-center gap-1.5" role="status" aria-label={`Language: ${displayName ?? languageId}, LSP: ${lspStatus}, Mode: ${ideMode}`}>
-      <span
-        className={`inline-block h-2 w-2 rounded-full shrink-0 ${dot.color}`}
-        title={dot.title}
-        aria-hidden="true"
-      />
-      <span className="text-[11px] font-mono font-semibold text-nd-text-muted uppercase tracking-wide">
+      <Badge tone={dot.tone} variant="outline" dot size="sm">
         {displayName ?? languageId}
-      </span>
-      <span className="rounded bg-nd-accent/10 px-1 py-0.5 text-[10px] font-bold text-nd-accent/80 leading-none">
-        {modeLabel}
-      </span>
+      </Badge>
+      <Badge tone="accent" variant="fill" size="sm">{modeLabel}</Badge>
     </div>
   );
 }

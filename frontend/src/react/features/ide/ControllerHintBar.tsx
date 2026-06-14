@@ -1,3 +1,4 @@
+import { DeckButtonHint } from '../../components/primitives/DeckButtonHint';
 import type { IdeMode } from '../../../shared/ide/ideContracts';
 
 interface HintEntry {
@@ -53,17 +54,12 @@ export function ControllerHintBar({ ideMode, visible }: ControllerHintBarProps) 
 
   return (
     <div
-      className="flex h-8 shrink-0 items-center gap-4 border-b border-nd-text-muted/10 bg-nd-surface/60 px-3 overflow-x-auto"
+      className="flex h-9 shrink-0 items-center gap-5 border-b border-border-subtle bg-surface-primary px-3 overflow-x-auto"
       role="status"
       aria-label={`Controller hints for ${ideMode} mode`}
     >
       {hints.map((h) => (
-        <span key={h.button} className="flex shrink-0 items-center gap-1 text-[10px]">
-          <kbd className="rounded bg-nd-surface/80 border border-nd-text-muted/20 px-1 py-0.5 font-mono text-[9px] text-nd-text-muted/80 leading-none">
-            {h.button}
-          </kbd>
-          <span className="text-nd-text-muted/60">{h.label}</span>
-        </span>
+        <DeckButtonHint key={h.button} button={h.button} label={h.label} />
       ))}
     </div>
   );

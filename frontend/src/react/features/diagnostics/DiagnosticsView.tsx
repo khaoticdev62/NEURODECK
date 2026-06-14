@@ -18,8 +18,12 @@ import {
   Server,
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { IconButton } from "../../components/primitives/IconButton";
+import { MetricCard } from "../../components/primitives/MetricCard";
 import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
 import { DiagnosticsPanel } from "../../components/systems/DiagnosticsPanel";
 import type { DiagnosticsCheck } from "../../components/systems/DiagnosticsPanel";
 import { neurodeckApi } from "../../services/bridgeAdapter";
@@ -94,13 +98,17 @@ export function DiagnosticsView({
   };
 
   const runSingleProbe = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card selection toggle
+    e.stopPropagation();
     setIsProbing((prev) => ({ ...prev, [id]: true }));
     try {
       const res = await neurodeckApi.diagnostics.runHealthProbe(id);
       if (res.ok) {
         mergeProbeResults(res.data || []);
-        setProbeErrors((prev) => { const next = { ...prev }; delete next[id]; return next; });
+        setProbeErrors((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
       }
     } catch (err) {
       setProbeErrors((prev) => ({ ...prev, [id]: String(err) }));
@@ -111,7 +119,6 @@ export function DiagnosticsView({
 
   const runAllProbes = async () => {
     setGlobalProbing(true);
-    // Optimistically set all to probing status
     const allIds = matrix.map((c) => c.id);
     const initialProbing = allIds.reduce((acc, id) => ({ ...acc, [id]: true }), {});
     setIsProbing(initialProbing);
@@ -131,47 +138,21 @@ export function DiagnosticsView({
 
   const selectedConnection = matrix.find((c) => c.id === selectedConnectionId);
 
-  // Helper to resolve state/status styles
-  const getStatusStyles = (connState: string) => {
+  const getStatusTone = (connState: string): { tone: "success" | "warning" | "error" | "info"; label: string } => {
     switch (connState) {
       case "connected":
       case "passed":
-        return {
-          bg: "bg-nd-success/10",
-          border: "border-nd-success/20",
-          text: "text-nd-success",
-          dot: "bg-nd-success shadow-[0_0_8px_rgba(var(--nd-green-rgb),0.5)]",
-          label: "ONLINE",
-        };
+        return { tone: "success", label: "ONLINE" };
       case "error":
       case "offline":
-        return {
-          bg: "bg-nd-danger/10",
-          border: "border-nd-danger/20",
-          text: "text-nd-danger",
-          dot: "bg-nd-danger shadow-[0_0_8px_rgba(var(--nd-red-rgb),0.5)]",
-          label: "OFFLINE",
-        };
+        return { tone: "error", label: "OFFLINE" };
       case "warning":
-        return {
-          bg: "bg-nd-warning/10",
-          border: "border-nd-warning/20",
-          text: "text-nd-warning",
-          dot: "bg-nd-warning shadow-[0_0_8px_rgba(var(--nd-yellow-rgb),0.5)]",
-          label: "WARN",
-        };
+        return { tone: "warning", label: "WARN" };
       default:
-        return {
-          bg: "bg-nd-text-muted/10",
-          border: "border-nd-text-muted/10",
-          text: "text-nd-text-muted",
-          dot: "bg-nd-text-muted/40",
-          label: "UNPROBED",
-        };
+        return { tone: "info", label: "UNPROBED" };
     }
   };
 
-  // Helper to map category to icon
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case "ipc":
@@ -193,36 +174,35 @@ export function DiagnosticsView({
 
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[340px_1fr_400px]">
-      {/* ── Column 1: System Info & Core Health Checks ────────────────────── */}
+      {/* Column 1: System Info & Core Health Checks */}
       <Panel
         eyebrow="Diagnostics"
         title="Runtime Health"
         className="min-h-0 overflow-y-auto scrollbar-thin"
       >
-        <div className="space-y-3 p-4">
+        <div className="space-y-4 p-4">
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            <button
-              type="button"
+            <Button
+              variant="primary"
+              fullWidth
+              icon={RefreshCcw}
               onClick={() => void actions.refreshDiagnostics()}
-              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2.5 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15"
             >
-              <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Refresh System
-            </button>
-            <button
-              type="button"
+              Refresh System
+            </Button>
+            <Button
+              variant="secondary"
+              fullWidth
+              icon={FileArchive}
               onClick={() => void actions.exportDiagnosticsBundle()}
-              className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent"
             >
-              <FileArchive className="h-4 w-4" aria-hidden="true" /> Export Bundle
-            </button>
+              Export Bundle
+            </Button>
           </div>
           {diagnostics ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <RuntimeRow
-                  label="Platform"
-                  value={`${diagnostics.platform}/${diagnostics.arch}`}
-                />
+                <RuntimeRow label="Platform" value={`${diagnostics.platform}/${diagnostics.arch}`} />
                 <RuntimeRow label="Electron" value={diagnostics.electron} />
                 <RuntimeRow label="Chrome" value={diagnostics.chrome} />
                 <RuntimeRow label="Node" value={diagnostics.node} />
@@ -236,10 +216,7 @@ export function DiagnosticsView({
                 <RuntimeRow label="Store" value={diagnostics.storeFile} wrap />
                 <RuntimeRow label="Exports" value={diagnostics.exportsDir} wrap />
               </div>
-              <DiagnosticsPanel
-                title="Runtime Health Checks"
-                checks={buildRuntimeChecks(diagnostics)}
-              />
+              <DiagnosticsPanel title="Runtime Health Checks" checks={buildRuntimeChecks(diagnostics)} />
             </div>
           ) : (
             <EmptyState
@@ -247,44 +224,47 @@ export function DiagnosticsView({
               title="No diagnostics loaded"
               description="Refresh to read Electron runtime data and recent main-process events."
               compact
-              className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40"
+              className="rounded-2xl border border-border-subtle bg-surface-secondary/40"
             />
           )}
         </div>
       </Panel>
 
-      {/* ── Column 2: Connection Health Matrix ───────────────────────────── */}
+      {/* Column 2: Connection Health Matrix */}
       <Panel
         eyebrow="Connection Integrity"
         title="Connection Health Matrix"
         className="min-h-0 overflow-y-auto scrollbar-thin"
         action={
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="sm"
+            icon={Zap}
             onClick={runAllProbes}
-            disabled={globalProbing}
-            className="inline-flex min-h-[30px] items-center gap-1.5 rounded-lg border border-nd-accent/20 bg-nd-accent/10 px-2.5 py-1 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:opacity-50"
+            loading={globalProbing}
           >
-            <Zap className={`h-3 w-3 ${globalProbing ? "animate-pulse" : ""}`} aria-hidden="true" />
-            {globalProbing ? "Probing..." : "Probe All"}
-          </button>
+            Probe All
+          </Button>
         }
       >
-        <div className="space-y-2 p-4">
-          <p className="text-xs text-nd-text-muted">
-            The Connection Matrix monitors 9 operational connections in real-time. Click any
-            connection to view its diagnostic timeline and raw evidence logs.
+        <div className="space-y-3 p-4">
+          <p className="text-xs text-text-secondary">
+            The Connection Matrix monitors operational connections in real-time. Click any connection to view
+            its diagnostic timeline and raw evidence logs.
           </p>
 
           {matrixError && (
-            <p role="alert" className="mx-4 mb-2 rounded-xl border border-nd-danger/20 bg-nd-danger/5 px-3 py-2 text-xs text-nd-danger">
+            <p
+              role="alert"
+              className="rounded-xl border border-accent-error/20 bg-accent-error/5 px-3 py-2 text-xs text-accent-error"
+            >
               {matrixError}
             </p>
           )}
 
           <div className="mt-4 space-y-2.5">
             {matrix.map((conn) => {
-              const styles = getStatusStyles(conn.state);
+              const status = getStatusTone(conn.state);
               const CatIcon = getCategoryIcon(conn.category);
               const isSelected = selectedConnectionId === conn.id;
 
@@ -295,41 +275,38 @@ export function DiagnosticsView({
                   tabIndex={0}
                   aria-pressed={isSelected}
                   onClick={() => setSelectedConnectionId(isSelected ? null : conn.id)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedConnectionId(isSelected ? null : conn.id); } }}
-                  className={`group flex items-center justify-between rounded-xl border p-3.5 transition cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedConnectionId(isSelected ? null : conn.id);
+                    }
+                  }}
+                  className={`group flex cursor-pointer items-center justify-between rounded-xl border p-3.5 transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                     isSelected
-                      ? "bg-nd-accent/5 border-nd-accent/30 shadow-sm"
-                      : "bg-nd-surface/40 border-nd-text-muted/10 hover:border-nd-text-muted/20 hover:bg-nd-surface/60"
+                      ? "border-accent-primary/30 bg-accent-primary/5 shadow-glow-sm"
+                      : "border-border-subtle bg-surface-secondary/40 hover:border-accent-primary/30 hover:bg-surface-tertiary/30"
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* Status Dot */}
-                    <div className="relative flex h-5 items-center">
-                      <span className={`h-2.5 w-2.5 rounded-full ${styles.dot}`} />
-                    </div>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <StatusChip tone={status.tone} size="sm">
+                      {status.label}
+                    </StatusChip>
 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-nd-text group-hover:text-nd-accent transition truncate">
+                        <span className="truncate text-sm font-semibold text-text-primary transition group-hover:text-accent-primary">
                           {conn.label}
-                        </span>
-                        <span
-                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold border uppercase ${styles.bg} ${styles.border} ${styles.text}`}
-                        >
-                          {styles.label}
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3 mt-1 text-xs text-nd-text-muted">
+                      <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-text-secondary">
                         <span className="flex items-center gap-1">
                           <CatIcon className="h-3.5 w-3.5" aria-hidden="true" />
-                          <span className="uppercase tracking-wide text-[10px]">
-                            {conn.category}
-                          </span>
+                          <span className="text-2xs uppercase tracking-wide">{conn.category}</span>
                         </span>
                         {conn.latencyMs !== null && (
                           <span className="flex items-center gap-1">
-                            <Clock className="h-3.5 w-3.5 text-nd-text-muted/60" aria-hidden="true" />
+                            <Clock className="h-3.5 w-3.5 text-text-muted/60" aria-hidden="true" />
                             <span>{conn.latencyMs}ms</span>
                           </span>
                         )}
@@ -340,17 +317,15 @@ export function DiagnosticsView({
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => runSingleProbe(conn.id, e)}
-                      disabled={isProbing[conn.id]}
-                      className="flex h-10 w-10 items-center justify-center rounded-lg border border-nd-text-muted/10 bg-nd-surface/50 text-nd-text-muted transition hover:border-nd-accent/25 hover:text-nd-accent hover:bg-nd-surface/80 disabled:opacity-40"
-                      aria-label="Run connection probe"
-                    >
-                      <Play className={`h-3.5 w-3.5 ${isProbing[conn.id] ? "animate-spin" : ""}`} aria-hidden="true" />
-                    </button>
-                  </div>
+                  <IconButton
+                    variant="outline"
+                    size="sm"
+                    aria-label="Run connection probe"
+                    onClick={(e) => runSingleProbe(conn.id, e)}
+                    disabled={isProbing[conn.id]}
+                  >
+                    <Play className={`h-3.5 w-3.5 ${isProbing[conn.id] ? "animate-spin" : ""}`} aria-hidden="true" />
+                  </IconButton>
                 </div>
               );
             })}
@@ -358,64 +333,50 @@ export function DiagnosticsView({
         </div>
       </Panel>
 
-      {/* ── Column 3: Evidence logs timeline OR General IPC Logs ─────────── */}
+      {/* Column 3: Evidence logs timeline OR General IPC Logs */}
       {selectedConnection ? (
         <Panel
           eyebrow="Diagnostic Timeline"
           title={`${selectedConnection.label}`}
           className="min-h-0 overflow-y-auto scrollbar-thin"
           action={
-            <button
-              type="button"
-              onClick={() => setSelectedConnectionId(null)}
+            <IconButton
+              variant="ghost"
+              size="sm"
               aria-label="Close connection detail"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-nd-text-muted/10 text-nd-text-muted hover:text-nd-text hover:border-nd-text-muted/30 transition"
+              onClick={() => setSelectedConnectionId(null)}
             >
               <X className="h-4 w-4" aria-hidden="true" />
-            </button>
+            </IconButton>
           }
         >
-          <div className="p-4 space-y-4">
+          <div className="space-y-4 p-4">
             {/* Quick Metrics Header Card */}
-            <div className="grid grid-cols-2 gap-2 rounded-xl border border-nd-text-muted/10 bg-nd-surface/20 p-3 text-xs">
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">Category</p>
-                <p className="font-semibold text-nd-text mt-0.5 uppercase">
-                  {selectedConnection.category}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">Latency</p>
-                <p className="font-semibold text-nd-text mt-0.5">
-                  {selectedConnection.latencyMs !== null
-                    ? `${selectedConnection.latencyMs} ms`
-                    : "N/A"}
-                </p>
-              </div>
-              <div className="mt-2 border-t border-nd-text-muted/10 pt-2">
-                <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">
-                  Probes Ran
-                </p>
-                <p className="font-semibold text-nd-text mt-0.5">
-                  {selectedConnection.requestCount}
-                </p>
-              </div>
-              <div className="mt-2 border-t border-nd-text-muted/10 pt-2">
-                <p className="text-[10px] uppercase tracking-wider text-nd-text-muted">
-                  Success Rate
-                </p>
-                <p className="font-semibold text-nd-text mt-0.5">
-                  {selectedConnection.requestCount > 0
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-border-subtle bg-surface-secondary/30 p-3 text-xs">
+              <MetricCard label="Category" value={selectedConnection.category.toUpperCase()} icon={Server} hint="Connection type" />
+              <MetricCard
+                label="Latency"
+                value={selectedConnection.latencyMs !== null ? `${selectedConnection.latencyMs} ms` : "N/A"}
+                icon={Clock}
+                hint="Last probe"
+              />
+              <MetricCard label="Probes Ran" value={selectedConnection.requestCount} icon={Zap} hint="Total attempts" />
+              <MetricCard
+                label="Success Rate"
+                value={
+                  selectedConnection.requestCount > 0
                     ? `${((selectedConnection.successCount / selectedConnection.requestCount) * 100).toFixed(0)}%`
-                    : "0%"}
-                </p>
-              </div>
+                    : "0%"
+                }
+                icon={CheckCircle2}
+                hint="Pass ratio"
+              />
             </div>
 
             {/* Evidence Timeline */}
             <div>
-              <h3 className="text-xs uppercase font-bold tracking-widest text-nd-text-muted mb-3 flex items-center gap-1.5">
-                <ShieldCheck className="h-4 w-4 text-nd-accent" /> Probe Integrity Timeline
+              <h3 className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-text-muted">
+                <ShieldCheck className="h-4 w-4 text-accent-primary" /> Probe Integrity Timeline
               </h3>
 
               {!selectedConnection.evidence || selectedConnection.evidence.length === 0 ? (
@@ -424,41 +385,36 @@ export function DiagnosticsView({
                   title="No probe runs registered"
                   description="Click the play button to execute this probe."
                   compact
-                  className="rounded-xl border border-dashed border-nd-text-muted/20"
+                  className="rounded-xl border border-dashed border-border-subtle"
                 />
               ) : (
-                <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-[1px] before:bg-nd-text-muted/10">
+                <div className="relative space-y-3 before:absolute before:bottom-2 before:left-3 before:top-2 before:w-px before:bg-border-subtle">
                   {selectedConnection.evidence.map((ev: EvidenceEntry, idx: number) => {
                     const isSuccess = ev.status === "passed";
                     return (
                       <div key={idx} className="relative pl-7 text-xs">
-                        {/* Timeline node dot */}
                         <span
-                          className={`absolute left-1.5 top-1 h-3.5 w-3.5 rounded-full border-2 border-nd-surface flex items-center justify-center shadow-sm ${
-                            isSuccess ? "bg-nd-success" : "bg-nd-danger"
+                          className={`absolute left-1.5 top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full border-2 border-surface-secondary shadow-sm ${
+                            isSuccess ? "bg-accent-success" : "bg-accent-error"
                           }`}
                         />
 
-                        <div className="rounded-lg border border-nd-text-muted/10 bg-nd-surface/30 p-2.5">
-                          <div className="flex items-center justify-between text-[10px] text-nd-text-muted mb-1">
-                            <span className="font-mono text-nd-text-muted/70">
-                              {ev.requestId || "req-unknown"}
-                            </span>
+                        <div className="rounded-lg border border-border-subtle bg-surface-secondary/40 p-2.5 transition duration-fast hover:bg-surface-tertiary/30">
+                          <div className="mb-1 flex items-center justify-between text-2xs text-text-secondary">
+                            <span className="font-mono text-text-muted/70">{ev.requestId || "req-unknown"}</span>
                             <span>{new Date(ev.timestamp).toLocaleTimeString()}</span>
                           </div>
 
-                          <p className="text-nd-text font-medium leading-relaxed mt-0.5">
-                            {ev.summary}
-                          </p>
+                          <p className="font-medium leading-relaxed text-text-primary">{ev.summary}</p>
 
-                          <div className="flex flex-wrap items-center gap-3 mt-1.5 pt-1.5 border-t border-nd-text-muted/5 text-[10px] text-nd-text-muted/80 font-mono">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-1.5 font-mono text-2xs text-text-secondary/80">
                             {ev.durationMs !== undefined && <span>time: {ev.durationMs}ms</span>}
                             {ev.bytesSent > 0 && <span>sent: {ev.bytesSent}B</span>}
                             {ev.bytesReceived > 0 && <span>recv: {ev.bytesReceived}B</span>}
                             {ev.realTransportUsed !== undefined && (
-                              <span className="text-nd-accent uppercase">
+                              <Badge tone={ev.realTransportUsed ? "accent" : "neutral"} size="sm">
                                 {ev.realTransportUsed ? "Real Call" : "Mock Fallback"}
-                              </span>
+                              </Badge>
                             )}
                           </div>
                         </div>
@@ -471,11 +427,7 @@ export function DiagnosticsView({
           </div>
         </Panel>
       ) : (
-        <Panel
-          eyebrow="IPC Logs"
-          title="Recent Main Process Events"
-          className="min-h-0 overflow-hidden"
-        >
+        <Panel eyebrow="IPC Logs" title="Recent Main Process Events" className="min-h-0 overflow-hidden">
           <div className="h-full overflow-y-auto p-4 scrollbar-thin">
             {!state.diagnosticLogs.length && (
               <div className="flex h-full items-center justify-center">
@@ -555,37 +507,35 @@ function RuntimeRow({
   wrap?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2 text-xs">
-      <p className="uppercase tracking-[0.2em] text-nd-text-muted/70">{label}</p>
-      <p className={`mt-1 text-nd-text/80 ${wrap ? "break-all" : ""}`}>{value}</p>
+    <div className="rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2 text-xs">
+      <p className="text-2xs uppercase tracking-[0.2em] text-text-muted/80">{label}</p>
+      <p className={`mt-1 text-text-secondary ${wrap ? "break-all" : ""}`}>{value}</p>
     </div>
   );
 }
 
 function LogCard({ log }: { log: DiagnosticLog }) {
-  const Icon =
-    log.level === "error" ? AlertTriangle : log.level === "warning" ? AlertTriangle : CheckCircle2;
+  const Icon = log.level === "error" ? AlertTriangle : log.level === "warning" ? AlertTriangle : CheckCircle2;
   const tone: "danger" | "warning" | "success" =
     log.level === "error" ? "danger" : log.level === "warning" ? "warning" : "success";
   return (
-    <article className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
+    <article className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4 transition duration-fast hover:bg-surface-tertiary/30">
       <div className="flex items-start gap-3">
         <Icon
-          className={`mt-0.5 h-5 w-5 ${tone === "danger" ? "text-nd-danger" : tone === "warning" ? "text-nd-warning" : "text-nd-success"}`}
+          className={`mt-0.5 h-5 w-5 ${
+            tone === "danger" ? "text-accent-error" : tone === "warning" ? "text-accent-warning" : "text-accent-success"
+          }`}
+          aria-hidden="true"
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={tone}>{log.level}</Badge>
-            <span className="text-xs uppercase tracking-[0.2em] text-nd-text-muted/70">
-              {log.scope}
-            </span>
-            <span className="text-xs text-nd-text-muted/70">
-              {new Date(log.timestamp).toLocaleTimeString()}
-            </span>
+            <span className="text-2xs uppercase tracking-[0.2em] text-text-muted/80">{log.scope}</span>
+            <span className="text-2xs text-text-muted/70">{new Date(log.timestamp).toLocaleTimeString()}</span>
           </div>
-          <h3 className="mt-2 font-semibold text-nd-text">{log.message}</h3>
+          <h3 className="mt-2 font-semibold text-text-primary">{log.message}</h3>
           {log.details && (
-            <pre className="mt-3 overflow-x-auto rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-xs text-nd-text">
+            <pre className="mt-3 overflow-x-auto rounded-xl border border-border-subtle bg-surface-primary/60 p-3 text-xs text-text-primary scrollbar-thin">
               {JSON.stringify(log.details, null, 2)}
             </pre>
           )}

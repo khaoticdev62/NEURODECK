@@ -1,8 +1,23 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, KeyRound, RefreshCcw, Shield, ShieldAlert, ShieldCheck, Trash2, Users } from 'lucide-react';
+import {
+  CheckCircle2,
+  KeyRound,
+  RefreshCcw,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  Trash2,
+  Users,
+} from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
+import { EmptyState } from '../../components/primitives/EmptyState';
+import { LoadingState } from '../../components/primitives/LoadingState';
+import { MetricCard } from '../../components/primitives/MetricCard';
 import { Panel } from '../../components/primitives/Panel';
+import { Select } from '../../components/primitives/Select';
+import { StatusChip } from '../../components/primitives/StatusChip';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PermissionRegistry } from '../../services/bridgeAdapter';
 import type { NeuroDeckAppActions, NeuroDeckState, SecurityReport, CredentialStatus } from '../../types/neurodeck';
@@ -121,10 +136,7 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
   const handleAgentProfileChange = async (agentId: string, value: string) => {
     setAgentMapSaving((prev) => ({ ...prev, [agentId]: true }));
     try {
-      await neurodeckApi.permissions.setAgentProfile(
-        agentId,
-        value === '__default__' ? null : value
-      );
+      await neurodeckApi.permissions.setAgentProfile(agentId, value === '__default__' ? null : value);
       const next = await neurodeckApi.permissions.listProfiles();
       setPermissionRegistry(next);
     } finally {
@@ -136,22 +148,41 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
     <div data-testid="security-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Hardening Status */}
-        <Panel eyebrow="Security" title="Hardening Status">
+        <Panel
+          eyebrow="Security"
+          title="Hardening Status"
+          action={
+            <Button variant="secondary" size="sm" icon={RefreshCcw} onClick={() => void refresh()}>
+              Refresh
+            </Button>
+          }
+        >
           <div className="space-y-3 p-4">
-            {loading && (
-              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-xs text-nd-text-muted">
-                Loading security report…
+            {loading && <LoadingState label="Loading security report…" size="sm" />}
+            {!loading &&
+              hardeningRows.map((row) => (
+                <HardeningRow key={row.label} label={row.label} ok={row.ok} unknown={row.unknown} />
+              ))}
+            {!loading && (
+              <div
+                className={`mt-2 rounded-xl border px-3 py-2 text-xs ${
+                  allPass
+                    ? 'border-accent-success/20 bg-accent-success/10 text-accent-success'
+                    : 'border-accent-warning/20 bg-accent-warning/10 text-accent-warning'
+                }`}
+              >
+                <span className="flex items-center gap-2 font-semibold">
+                  {allPass ? (
+                    <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <ShieldAlert className="h-4 w-4" aria-hidden="true" />
+                  )}
+                  {allPass
+                    ? 'v6 hardening active — all gates passing'
+                    : 'One or more hardening gates are not confirmed.'}
+                </span>
               </div>
             )}
-            {!loading && hardeningRows.map((row) => (
-              <HardeningRow key={row.label} label={row.label} ok={row.ok} unknown={row.unknown} />
-            ))}
-            <div className={`mt-2 rounded-xl border px-3 py-2 text-xs ${allPass ? 'border-nd-success/20 bg-nd-success/10 text-nd-success' : 'border-nd-warning/20 bg-nd-warning/10 text-nd-warning'}`}>
-              <span className="flex items-center gap-2 font-semibold">
-                {allPass ? <ShieldCheck className="h-4 w-4" aria-hidden="true" /> : <ShieldAlert className="h-4 w-4" aria-hidden="true" />}
-                {allPass ? 'v6 hardening active — all gates passing' : 'One or more hardening gates are not confirmed.'}
-              </span>
-            </div>
           </div>
         </Panel>
 
@@ -170,8 +201,9 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
               label="OpenAI Compat Key"
               status={credentialStatus === null ? 'optional' : credentialStatus.openai_compat ? 'keychain' : 'missing'}
             />
-            <p className="text-[11px] leading-5 text-nd-text-muted/70">
-              All API keys are stored exclusively in the OS keychain. They are never written to disk files, localStorage, or log output.
+            <p className="text-2xs leading-5 text-text-muted/80">
+              All API keys are stored exclusively in the OS keychain. They are never written to disk files,
+              localStorage, or log output.
             </p>
           </div>
         </Panel>
@@ -185,21 +217,29 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                   {permissionRegistry.profiles.map((profile) => (
                     <div
                       key={profile.id}
-                      className={`rounded-xl border px-3 py-2.5 ${profile.id === permissionRegistry.default_profile_id ? 'border-nd-accent/30 bg-nd-accent/10' : 'border-nd-text-muted/15 bg-nd-surface/30'}`}
+                      className={`rounded-xl border px-3 py-2.5 transition duration-fast ${
+                        profile.id === permissionRegistry.default_profile_id
+                          ? 'border-accent-primary/30 bg-accent-primary/10'
+                          : 'border-border-subtle bg-surface-secondary/40 hover:bg-surface-tertiary/30'
+                      }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-nd-text/90">{profile.name}</span>
+                        <span className="text-xs font-semibold text-text-primary">{profile.name}</span>
                         {profile.id === permissionRegistry.default_profile_id && (
-                          <Badge tone="accent">default</Badge>
+                          <Badge tone="accent" size="sm">
+                            default
+                          </Badge>
                         )}
                       </div>
-                      <p className="mt-1 text-[11px] text-nd-text-muted/80">{profile.description}</p>
+                      <p className="mt-1 text-2xs text-text-secondary">{profile.description}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
                         {profile.granted.length === 0 && (
-                          <span className="text-[10px] text-nd-text-muted/60">No capabilities granted</span>
+                          <span className="text-2xs text-text-muted/70">No capabilities granted</span>
                         )}
                         {profile.granted.map((cap) => (
-                          <Badge key={cap} tone="success">{formatCapability(cap)}</Badge>
+                          <Badge key={cap} tone="success" size="sm">
+                            {formatCapability(cap)}
+                          </Badge>
                         ))}
                       </div>
                     </div>
@@ -207,10 +247,10 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                 </div>
 
                 {agents.length > 0 && (
-                  <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/20 p-3">
+                  <div className="rounded-xl border border-border-subtle bg-surface-secondary/30 p-3">
                     <div className="mb-2 flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5 text-nd-accent" aria-hidden="true" />
-                      <span className="text-xs font-semibold text-nd-text/90">Agent Profile Mapping</span>
+                      <Users className="h-3.5 w-3.5 text-accent-primary" aria-hidden="true" />
+                      <span className="text-xs font-semibold text-text-primary">Agent Profile Mapping</span>
                     </div>
                     <div className="space-y-2">
                       {agents.map((agent) => {
@@ -219,24 +259,32 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                         return (
                           <div
                             key={agent.id}
-                            className="flex items-center justify-between gap-2 rounded-lg border border-nd-text-muted/10 bg-nd-surface/30 px-2.5 py-2"
+                            className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-surface-secondary/40 px-2.5 py-2"
                           >
                             <div className="min-w-0">
-                              <p className="truncate text-xs font-medium text-nd-text/90">{agent.name || agent.id}</p>
-                              <p className="truncate text-[10px] text-nd-text-muted/70">{agent.description}</p>
+                              <p className="truncate text-xs font-medium text-text-primary">
+                                {agent.name || agent.id}
+                              </p>
+                              <p className="truncate text-2xs text-text-muted">{agent.description}</p>
                             </div>
-                            <select
+                            <Select
+                              id={`agent-profile-${agent.id}`}
                               value={value}
                               disabled={agentMapSaving[agent.id]}
                               aria-label={`Permission profile for ${agent.name || agent.id}`}
                               onChange={(e) => void handleAgentProfileChange(agent.id, e.target.value)}
-                              className="min-w-[120px] rounded-lg border border-nd-text-muted/20 bg-nd-surface px-2 py-1 text-xs text-nd-text/80 focus:border-nd-accent focus:outline-none disabled:opacity-50"
-                            >
-                              <option value="__default__">Default ({permissionRegistry.default_profile_id})</option>
-                              {permissionRegistry.profiles.map((p) => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
-                              ))}
-                            </select>
+                              className="min-w-[140px]"
+                              options={[
+                                {
+                                  value: '__default__',
+                                  label: `Default (${permissionRegistry.default_profile_id})`,
+                                },
+                                ...permissionRegistry.profiles.map((p) => ({
+                                  value: p.id,
+                                  label: p.name,
+                                })),
+                              ]}
+                            />
                           </div>
                         );
                       })}
@@ -245,35 +293,44 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                 )}
               </>
             ) : (
-              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-xs text-nd-text-muted">
-                <Shield className="mb-1 h-4 w-4" aria-hidden="true" />
-                Permission registry unavailable.
-              </div>
+              <EmptyState
+                icon={Shield}
+                title="Permission registry unavailable"
+                description="Security profiles could not be loaded from the bridge."
+                compact
+              />
             )}
           </div>
         </Panel>
 
         {/* Privacy Controls */}
-        <Panel eyebrow="Privacy" title="Data Controls">
+        <Panel
+          eyebrow="Privacy"
+          title="Data Controls"
+          className="border-accent-error/30 bg-accent-error/[0.03]"
+        >
           <div className="space-y-3 p-4">
             <div className="space-y-2">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                fullWidth
+                icon={RefreshCcw}
                 onClick={() => void actions.exportDiagnosticsBundle()}
-                className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm text-nd-text/80 transition hover:border-nd-accent/30 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
               >
-                <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Generate Security Audit Bundle
-              </button>
-              <button
-                type="button"
+                Generate Security Audit Bundle
+              </Button>
+              <Button
+                variant="danger"
+                fullWidth
+                icon={Trash2}
                 onClick={() => setConfirmReset(true)}
-                className="inline-flex w-full items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2.5 text-sm font-semibold text-nd-danger transition hover:bg-nd-danger/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
               >
-                <Trash2 className="h-4 w-4" aria-hidden="true" /> Clear All Local State
-              </button>
+                Clear All Local State
+              </Button>
             </div>
-            <p className="text-[11px] leading-5 text-nd-text-muted/70">
-              Clearing local state removes session history, memories, and preferences. Keys stored in the OS keychain are preserved.
+            <p className="text-2xs leading-5 text-text-muted/80">
+              Clearing local state removes session history, memories, and preferences. Keys stored in the OS
+              keychain are preserved.
             </p>
           </div>
         </Panel>
@@ -281,38 +338,28 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
 
       {/* Audit Log Panel */}
       <Panel eyebrow="Audit Log" title="Security Events" className="min-h-0 overflow-hidden">
-        <div className="h-full space-y-2 overflow-y-auto p-4 scrollbar-thin">
+        <div className="h-full space-y-3 overflow-y-auto p-4 scrollbar-thin">
           {report ? (
             <>
-              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-nd-text/90">Schema version</span>
-                  <Badge tone="accent">v{report.schemaVersion ?? '?'}</Badge>
-                </div>
-              </div>
-              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-nd-text/90">Platform</span>
-                  <span className="text-xs text-nd-text-muted">{report.platform}/{report.arch}</span>
-                </div>
-              </div>
-              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-nd-text/90">Packaged build</span>
-                  <Badge tone={report.packaged ? 'success' : 'warning'}>{report.packaged ? 'yes' : 'dev mode'}</Badge>
-                </div>
-              </div>
-              <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-nd-text-muted/70">User Data</p>
-                <p className="mt-1 break-all text-xs text-nd-text/80">{report.userData}</p>
+              <MetricCard label="Schema version" value={`v${report.schemaVersion ?? '?'}`} icon={ShieldCheck} hint="Runtime schema" />
+              <MetricCard label="Platform" value={`${report.platform}/${report.arch}`} icon={Shield} hint="OS / architecture" />
+              <MetricCard
+                label="Packaged build"
+                value={report.packaged ? 'yes' : 'dev mode'}
+                icon={report.packaged ? CheckCircle2 : ShieldAlert}
+                hint="Build configuration"
+              />
+              <div className="rounded-xl border border-border-subtle bg-surface-secondary/40 p-3">
+                <p className="text-2xs font-semibold uppercase tracking-[0.18em] text-text-muted">User Data</p>
+                <p className="mt-1 break-all text-xs text-text-secondary">{report.userData}</p>
               </div>
             </>
           ) : (
-            <div className="flex flex-col items-center py-10 text-center">
-              <ShieldAlert className="h-10 w-10 text-nd-warning/60" />
-              <p className="mt-3 text-sm font-semibold text-nd-text">No audit data loaded</p>
-              <p className="mt-1 text-xs text-nd-text-muted">Run Diagnostics to populate security audit context.</p>
-            </div>
+            <EmptyState
+              icon={ShieldAlert}
+              title="No audit data loaded"
+              description="Run Diagnostics to populate security audit context."
+            />
           )}
         </div>
       </Panel>
@@ -320,7 +367,10 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
       <ConfirmDialog
         open={confirmReset}
         onCancel={() => setConfirmReset(false)}
-        onConfirm={() => { setConfirmReset(false); void actions.resetLocalState(); }}
+        onConfirm={() => {
+          setConfirmReset(false);
+          void actions.resetLocalState();
+        }}
         title="Clear all local state?"
         message="This will permanently remove all session history, memories, and preferences. Keys stored in the OS keychain are preserved. This action cannot be undone."
         confirmLabel="Clear State"
@@ -333,14 +383,16 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
 
 function HardeningRow({ label, ok, unknown }: { label: string; ok: boolean; unknown: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2.5">
-      <span className="text-xs text-nd-text/80">{label}</span>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2.5">
+      <span className="text-xs text-text-primary">{label}</span>
       {unknown ? (
-        <Badge tone="neutral">unknown</Badge>
+        <StatusChip tone="info" size="sm">
+          unknown
+        </StatusChip>
       ) : ok ? (
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-nd-success" role="img" aria-label="Pass" />
+        <CheckCircle2 className="h-4 w-4 shrink-0 text-accent-success" role="img" aria-label="Pass" />
       ) : (
-        <ShieldAlert className="h-4 w-4 shrink-0 text-nd-warning" role="img" aria-label="Warning" />
+        <ShieldAlert className="h-4 w-4 shrink-0 text-accent-warning" role="img" aria-label="Warning" />
       )}
     </div>
   );
@@ -348,9 +400,11 @@ function HardeningRow({ label, ok, unknown }: { label: string; ok: boolean; unkn
 
 function CredentialRow({ label, status }: { label: string; status: 'keychain' | 'optional' | 'missing' }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2.5">
-      <span className="flex items-center gap-2 text-xs text-nd-text/80"><KeyRound className="h-3.5 w-3.5 text-nd-accent" aria-hidden="true" /> {label}</span>
-      <Badge tone={status === 'keychain' ? 'success' : status === 'optional' ? 'neutral' : 'danger'}>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2.5">
+      <span className="flex items-center gap-2 text-xs text-text-primary">
+        <KeyRound className="h-3.5 w-3.5 text-accent-primary" aria-hidden="true" /> {label}
+      </span>
+      <Badge tone={status === 'keychain' ? 'success' : status === 'optional' ? 'neutral' : 'danger'} size="sm">
         {status}
       </Badge>
     </div>

@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Power, PowerOff, Radio, Copy, Users, Clock, Bell, Send } from 'lucide-react';
+import { Power, PowerOff, Copy, Users, Clock, Bell, Send } from 'lucide-react';
 import QRCode from 'qrcode';
+import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
+import { Panel } from '../../components/primitives/Panel';
+import { Select } from '../../components/primitives/Select';
+
+import { TextInput } from '../../components/primitives/TextInput';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 
 interface LogEntry {
@@ -8,6 +15,13 @@ interface LogEntry {
   tone: 'info' | 'success' | 'warn' | 'error';
   time: string;
 }
+
+const NOTIF_TYPES = [
+  { value: 'info', label: 'Info' },
+  { value: 'success', label: 'Success' },
+  { value: 'warn', label: 'Warn' },
+  { value: 'error', label: 'Error' },
+];
 
 export function RemoteView() {
   const [status, setStatus] = useState<{
@@ -44,7 +58,6 @@ export function RemoteView() {
       setStatus(info);
       if (info.running && info.ttl_seconds_remaining != null) {
         setTtl((prev) => {
-          // Only reset from server if our local countdown drifts > 5s
           if (Math.abs(prev - info.ttl_seconds_remaining!) > 5) {
             return info.ttl_seconds_remaining!;
           }
@@ -54,14 +67,12 @@ export function RemoteView() {
     } catch (_) { /* ignore */ }
   }, []);
 
-  // Poll server info every 5s
   useEffect(() => {
     void refresh();
     const interval = setInterval(refresh, 5000);
     return () => clearInterval(interval);
   }, [refresh]);
 
-  // Generate QR code when URL changes
   useEffect(() => {
     if (status.running && status.url) {
       const accentColor =
@@ -80,7 +91,6 @@ export function RemoteView() {
     }
   }, [status.running, status.url]);
 
-  // Local TTL countdown tick
   useEffect(() => {
     if (status.running && ttl > 0) {
       if (ttlTimer.current) clearInterval(ttlTimer.current);
@@ -100,12 +110,10 @@ export function RemoteView() {
     };
   }, [status.running, ttl, log]);
 
-  // Auto-scroll event log
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  // Subscribe to bridge events (replaces the raw WebSocket connection)
   useEffect(() => {
     const unsubConnect = neurodeckApi.remote.onClientConnected((count) => {
       log(`Client connected (${count} total)`, 'success');
@@ -183,111 +191,94 @@ export function RemoteView() {
   };
 
   return (
-    <div data-testid="remote-view" className="flex h-full flex-col">
-      <div className="mb-4 flex items-center gap-3">
-        <div
-          className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
-            status.running ? 'border-nd-success/30 bg-nd-success/10' : 'border-nd-accent/20 bg-nd-accent/10'
-          }`}
-        >
-          <Radio className={`h-5 w-5 ${status.running ? 'text-nd-success' : 'text-nd-accent'}`} />
-        </div>
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Remote</div>
-          <h2 className="text-lg font-semibold text-nd-text">Remote Control</h2>
-          <p className="text-xs text-nd-text-muted">Mobile-friendly web remote server</p>
-        </div>
-      </div>
-
-      <div className="flex min-h-0 flex-1 gap-3">
+    <Panel
+      eyebrow="Remote"
+      title="Remote Control"
+      className="flex h-full flex-col"
+    >
+      <div data-testid="remote-view" className="flex min-h-0 flex-1 gap-3 p-4">
         {/* Main panel */}
-        <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-5">
-          {/* Status badge */}
-          <div data-testid="remote-status-badge" className="flex items-center gap-4 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-4 scrollbar-thin">
+          {/* Status card */}
+          <div
+            data-testid="remote-status-badge"
+            className="flex items-center gap-4 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-4"
+          >
             <div
               className={`h-3 w-3 rounded-full ${
-                status.running ? 'bg-nd-success shadow-[0_0_8px_rgba(124,255,178,0.5)]' : 'bg-nd-text-muted/40'
+                status.running
+                  ? 'bg-nd-accent-success shadow-[0_0_8px_rgba(var(--nd-green-rgb),0.5)]'
+                  : 'bg-nd-text-muted/40'
               }`}
             />
-            <span className="text-sm font-medium text-nd-text/90">
+            <span className="text-sm font-medium text-nd-text-primary/90">
               {status.running ? 'Server Running' : 'Server Offline'}
             </span>
             {status.clients !== undefined && status.running && (
-              <span className="ml-auto flex items-center gap-1 text-xs text-nd-text-muted">
-                <Users className="h-3.5 w-3.5" aria-hidden="true" /> {status.clients} client
-                {status.clients === 1 ? '' : 's'}
-              </span>
+              <Badge tone="accent" size="sm" className="ml-auto">
+                <Users className="mr-1 inline h-3 w-3" aria-hidden="true" />
+                {status.clients} client{status.clients === 1 ? '' : 's'}
+              </Badge>
             )}
           </div>
 
           {/* Port + Toggle */}
-          <div className="flex items-end gap-3">
-            <div className="space-y-2">
-              <label htmlFor="remote-port" className="block text-xs font-medium text-nd-text-muted">
-                Server Port
-              </label>
-              <input
-                id="remote-port"
-                type="number"
-                value={port}
-                onChange={(e) => setPort(Number(e.target.value))}
-                disabled={status.running || loading}
-                className="w-32 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-              />
-            </div>
-            <button
-              type="button"
+          <div className="flex flex-wrap items-end gap-3">
+            <TextInput
+              id="remote-port"
+              label="Server Port"
+              type="number"
+              value={port}
+              onChange={(e) => setPort(Number(e.target.value))}
+              disabled={status.running || loading}
+              className="w-32"
+            />
+            <Button
+              variant={status.running ? 'danger' : 'success'}
+              size="md"
+              icon={status.running ? PowerOff : Power}
               onClick={() => void toggle()}
-              disabled={loading}
-              aria-label={status.running ? 'Stop remote server' : 'Start remote server'}
-              className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                status.running
-                  ? 'border border-nd-danger/30 bg-nd-danger/10 text-nd-danger hover:bg-nd-danger/20'
-                  : 'border border-nd-success/30 bg-nd-success/10 text-nd-success hover:bg-nd-success/20'
-              }`}
+              loading={loading}
             >
-              {loading ? (
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
-              ) : status.running ? (
-                <><PowerOff className="h-4 w-4" aria-hidden="true" /> Stop Server</>
-              ) : (
-                <><Power className="h-4 w-4" aria-hidden="true" /> Start Server</>
-              )}
-            </button>
+              {status.running ? 'Stop Server' : 'Start Server'}
+            </Button>
           </div>
 
           {/* QR + URL */}
           {status.running && status.url && (
-            <div className="flex flex-col gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 sm:flex-row sm:items-center">
+            <div className="flex flex-col gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-4 sm:flex-row sm:items-center">
               {qrDataUrl && (
                 <img
                   src={qrDataUrl}
                   alt="Remote control QR code — scan to connect"
-                  className="h-40 w-40 rounded-lg border border-nd-text-muted/15"
+                  className="h-40 w-40 rounded-lg border border-nd-border-subtle"
                 />
               )}
               <div className="flex-1 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-nd-text-muted">Remote URL</span>
-                  <button
-                    type="button"
-                    onClick={copyUrl}
+                  <IconButton
                     aria-label="Copy remote URL"
-                    className="rounded text-nd-accent hover:text-nd-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                    variant="subtle"
+                    size="sm"
+                    onClick={copyUrl}
                   >
                     <Copy className="h-4 w-4" aria-hidden="true" />
-                  </button>
+                  </IconButton>
                 </div>
-                <p className="break-all font-mono text-sm text-nd-text/80">{status.url}</p>
+                <p className="break-all font-mono text-sm text-nd-text-primary/80">{status.url}</p>
                 {status.pin && (
-                  <p className="text-xs text-nd-text-muted">
-                    PIN: <span className="font-mono text-nd-accent">{status.pin}</span>
-                  </p>
+                  <div className="flex items-center gap-2 text-xs text-nd-text-muted">
+                    <span>PIN:</span>
+                    <span className="rounded-md bg-nd-surface-app px-2 py-0.5 font-mono text-nd-accent-primary">
+                      {status.pin}
+                    </span>
+                  </div>
                 )}
                 {ttl > 0 && (
                   <div className="flex items-center gap-1.5 text-xs text-nd-text-muted">
                     <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className={ttl < 120 ? 'text-nd-danger' : ''}>
+                    <span className={ttl < 120 ? 'text-nd-accent-error' : ''}>
                       Session expires in {formatTtl(ttl)}
                     </span>
                   </div>
@@ -298,91 +289,76 @@ export function RemoteView() {
 
           {/* Notification relay */}
           {status.running && (
-            <fieldset className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 space-y-3">
+            <fieldset className="space-y-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-4">
               <legend className="flex items-center gap-1.5 px-1 text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
                 <Bell className="h-3 w-3" aria-hidden="true" /> Push Notification
               </legend>
-              <div className="flex gap-2">
-                <input
-                  type="text"
+              <div className="flex flex-wrap gap-2">
+                <TextInput
                   value={notifTitle}
                   onChange={(e) => setNotifTitle(e.target.value)}
                   placeholder="Title"
                   aria-label="Notification title"
-                  className="w-36 shrink-0 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1.5 text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+                  className="w-36 shrink-0"
                 />
-                <input
-                  type="text"
+                <TextInput
                   value={notifText}
                   onChange={(e) => setNotifText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') void sendNotification(); }}
                   placeholder="Message"
                   aria-label="Notification message"
-                  className="min-w-0 flex-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1.5 text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+                  fullWidth
+                  className="min-w-0 flex-1"
                 />
-                <select
+                <Select
                   value={notifType}
                   onChange={(e) => setNotifType(e.target.value as typeof notifType)}
                   aria-label="Notification type"
-                  className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-2 py-1.5 text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-                >
-                  <option value="info">Info</option>
-                  <option value="success">Success</option>
-                  <option value="warn">Warn</option>
-                  <option value="error">Error</option>
-                </select>
-                <button
-                  type="button"
+                  options={NOTIF_TYPES}
+                  className="w-28 shrink-0"
+                />
+                <Button
+                  variant="primary"
+                  size="md"
+                  icon={Send}
                   onClick={() => void sendNotification()}
-                  disabled={sendingNotif || !notifTitle.trim() || !notifText.trim()}
-                  aria-label="Send notification to remote clients"
-                  className="flex items-center gap-1.5 rounded-lg border border-nd-accent/30 bg-nd-accent/10 px-3 py-1.5 text-xs text-nd-accent hover:bg-nd-accent/20 disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                  loading={sendingNotif}
+                  disabled={!notifTitle.trim() || !notifText.trim()}
                 >
-                  {sendingNotif ? (
-                    <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />
-                  ) : (
-                    <Send className="h-3 w-3" aria-hidden="true" />
-                  )}
                   Send
-                </button>
+                </Button>
               </div>
               {status.clients === 0 && (
-                <p className="text-[11px] text-nd-text-muted/60 italic">No clients connected — notification will not be delivered.</p>
+                <p className="text-[11px] italic text-nd-text-muted/60">No clients connected — notification will not be delivered.</p>
               )}
             </fieldset>
           )}
 
           {/* Event log */}
-          <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
+          <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Event Log</span>
-              <button
-                type="button"
-                onClick={() => setLogs([])}
-                className="rounded px-1 text-[11px] text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-              >
+              <Button variant="ghost" size="xs" onClick={() => setLogs([])}>
                 Clear
-              </button>
+              </Button>
             </div>
             <div
               role="log"
               aria-live="polite"
               aria-label="Remote control event log"
-              className="min-h-0 flex-1 overflow-auto space-y-1"
+              className="min-h-0 flex-1 space-y-1 overflow-auto"
             >
-              {logs.length === 0 && (
-                <p className="text-xs text-nd-text-muted/50 italic">No events yet</p>
-              )}
+              {logs.length === 0 && <p className="text-xs text-nd-text-muted/50 italic">No events yet</p>}
               {logs.map((l, i) => (
                 <div
                   key={i}
                   className={`text-[11px] font-mono ${
                     l.tone === 'error'
-                      ? 'text-nd-danger'
+                      ? 'text-nd-accent-error'
                       : l.tone === 'success'
-                        ? 'text-nd-success'
+                        ? 'text-nd-accent-success'
                         : l.tone === 'warn'
-                          ? 'text-nd-warning'
+                          ? 'text-nd-accent-warning'
                           : 'text-nd-text-muted'
                   }`}
                 >
@@ -394,6 +370,6 @@ export function RemoteView() {
           </div>
         </div>
       </div>
-    </div>
+    </Panel>
   );
 }

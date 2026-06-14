@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Paintbrush, Play, Copy, Trash2, RefreshCw, Sparkles, Users } from 'lucide-react';
 import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
 import type { CodeLang } from '../../services/bridgeAdapter';
+import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
+import { Select } from '../../components/primitives/Select';
+import { Badge } from '../../components/primitives/Badge';
+import { Panel } from '../../components/primitives/Panel';
+import { EmptyState } from '../../components/primitives/EmptyState';
 
 const LANG_OPTIONS: { value: CodeLang; label: string }[] = [
   { value: 'html', label: 'HTML' },
@@ -34,7 +40,6 @@ export function CanvasView() {
         : String(payload);
       setOutput((prev) => {
         const next = prev + line + '\n';
-        // Auto-scroll output pane to bottom
         requestAnimationFrame(() => {
           if (outputRef.current) {
             outputRef.current.scrollTop = outputRef.current.scrollHeight;
@@ -83,7 +88,6 @@ export function CanvasView() {
 
   const copyCode = () => navigator.clipboard.writeText(code);
 
-  // Stable object URL: only create/revoke when code changes while lang === 'html'.
   const htmlBlob = useMemo(() => {
     if (lang !== 'html') return null;
     return URL.createObjectURL(new Blob([code], { type: 'text/html' }));
@@ -96,102 +100,93 @@ export function CanvasView() {
   }, [htmlBlob]);
 
   return (
-    <div className="canvas-container flex h-full flex-col">
-      <div className="canvas-toolbar mb-3 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Paintbrush className="h-5 w-5 text-nd-accent" aria-hidden="true" />
+    <div className="flex h-full flex-col">
+      <header className="mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
+          <Paintbrush className="h-5 w-5 text-accent-primary" aria-hidden="true" />
         </div>
-        <div className="flex-1">
-          <div className="canvas-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
-            Canvas
-          </div>
-          <h2 className="text-lg font-semibold text-nd-text">Canvas</h2>
-          <p className="text-xs text-nd-text-muted">Live code editor and execution</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">Canvas</p>
+          <h2 className="text-lg font-semibold text-text-primary">Live Code Canvas</h2>
+          <p className="text-xs text-text-muted">Edit, run, and preview code in split view.</p>
         </div>
-        <select
-          id="canvas-lang-select"
-          value={lang}
-          onChange={(e) => setLang(e.target.value as CodeLang)}
-          aria-label="Select language"
-          className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          {LANG_OPTIONS.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <button
-          id="canvas-run-btn"
-          type="button"
-          onClick={run}
-          disabled={running}
-          className="flex items-center gap-2 rounded-lg border border-nd-success/30 bg-nd-success/10 px-3 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40"
-        >
-          {running ? (
-            <RefreshCw className="h-4 w-4 animate-spin nd-icon-svg" aria-hidden="true" />
-          ) : (
-            <Play className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
-          )}
-          Run
-        </button>
-        <button
-          id="canvas-copy-btn"
-          type="button"
-          aria-label="Copy code"
-          onClick={copyCode}
-          className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          <Copy className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
-        </button>
-        <button
-          id="canvas-clear-btn"
-          type="button"
-          aria-label="Reset canvas to default"
-          onClick={clear}
-          className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          <Trash2 className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
-        </button>
-        <button
-          id="canvas-ai-edit-btn"
-          type="button"
-          aria-label="AI edit (coming soon)"
-          disabled
-          className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted/40 cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          <Sparkles className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
-        </button>
-        <button
-          id="canvas-collab-btn"
-          type="button"
-          aria-label="Collaborate (coming soon)"
-          disabled
-          className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted/40 cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          <Users className="h-4 w-4 nd-icon-svg" aria-hidden="true" />
-        </button>
-      </div>
+        <div className="flex items-center gap-2">
+          <Badge tone="accent" variant="outline">{lang.toUpperCase()}</Badge>
+          <Select
+            aria-label="Select language"
+            value={lang}
+            onChange={(e) => setLang(e.target.value as CodeLang)}
+            options={LANG_OPTIONS}
+            className="w-36"
+          />
+          <Button
+            id="canvas-run-btn"
+            variant="success"
+            size="md"
+            loading={running}
+            onClick={run}
+            icon={running ? RefreshCw : Play}
+          >
+            Run
+          </Button>
+          <IconButton
+            id="canvas-copy-btn"
+            aria-label="Copy code"
+            variant="subtle"
+            onClick={copyCode}
+          >
+            <Copy className="h-4 w-4" aria-hidden="true" />
+          </IconButton>
+          <IconButton
+            id="canvas-clear-btn"
+            aria-label="Reset canvas to default"
+            variant="subtle"
+            onClick={clear}
+          >
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </IconButton>
+          <IconButton
+            id="canvas-ai-edit-btn"
+            aria-label="AI edit (coming soon)"
+            variant="subtle"
+            disabled
+          >
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+          </IconButton>
+          <IconButton
+            id="canvas-collab-btn"
+            aria-label="Collaborate (coming soon)"
+            variant="subtle"
+            disabled
+          >
+            <Users className="h-4 w-4" aria-hidden="true" />
+          </IconButton>
+        </div>
+      </header>
 
       <div className="flex min-h-0 flex-1 gap-3">
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40">
-          <div className="border-b border-nd-text-muted/15 px-3 py-2 text-xs font-medium text-nd-text-muted">
-            Editor
-          </div>
+        <Panel
+          className="flex min-w-0 flex-1 flex-col"
+          title="Editor"
+          eyebrow="Source"
+         
+        >
           <textarea
             id="canvas-monaco"
             value={code}
             onChange={(e) => setCode(e.target.value)}
             spellCheck={false}
             aria-label="Code editor"
-            className="min-h-0 flex-1 resize-none bg-transparent p-3 font-mono text-sm text-nd-text/90 outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-nd-accent/30"
+            className="min-h-0 flex-1 resize-none bg-transparent p-3 font-mono text-sm leading-relaxed text-text-primary outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-accent-primary/30"
           />
-        </div>
+        </Panel>
 
-        <div className="flex flex-1 flex-col overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40">
-          <div className="border-b border-nd-text-muted/15 px-3 py-2 text-xs font-medium text-nd-text-muted">
-            {lang === 'html' ? 'Preview' : 'Output'}
-          </div>
+        <Panel
+          className="flex min-w-0 flex-1 flex-col"
+          title={lang === 'html' ? 'Preview' : 'Output'}
+          eyebrow={lang === 'html' ? 'Render' : 'Stream'}
+         
+        >
           {lang === 'html' ? (
             <iframe
               id="canvas-preview-frame"
@@ -199,19 +194,29 @@ export function CanvasView() {
               src={htmlBlob ?? undefined}
               title="Canvas Preview"
               sandbox="allow-scripts allow-forms allow-pointer-lock allow-top-navigation-by-user-activation"
-              className="min-h-0 flex-1 w-full border-none bg-nd-bg"
+              className="min-h-0 flex-1 w-full border-none bg-surface-app"
             />
           ) : (
-            <pre
-              ref={outputRef}
-              className="min-h-0 flex-1 overflow-auto p-3 font-mono text-sm text-nd-text/80"
-            >
-              {output || (
-                <span className="text-nd-text-muted/70">Output will appear here...</span>
+            <div className="relative min-h-0 flex-1">
+              {output ? (
+                <pre
+                  ref={outputRef}
+                  className="h-full overflow-auto p-3 font-mono text-sm leading-relaxed text-text-secondary"
+                >
+                  {output}
+                </pre>
+              ) : (
+                <EmptyState
+                  icon={Play}
+                  title="Ready to run"
+                  description={`Click Run to execute your ${lang} code. Output streams here in real time.`}
+                  compact
+                  className="h-full"
+                />
               )}
-            </pre>
+            </div>
           )}
-        </div>
+        </Panel>
       </div>
     </div>
   );

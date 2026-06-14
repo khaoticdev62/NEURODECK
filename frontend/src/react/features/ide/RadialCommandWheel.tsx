@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, TestTube, Package, Wand2, ScanLine, RefreshCw, AlertCircle, Puzzle } from 'lucide-react';
+import { Badge } from '../../components/primitives/Badge';
 import type { CommandTemplate } from '../../../shared/ide/ideContracts';
 
 interface WheelSegment {
@@ -50,7 +51,6 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
 
   const activeSegment = segments.find((s) => s.id === selectedSegment);
 
-  // Focus trap and keyboard navigation
   useEffect(() => {
     if (!visible) return;
     wheelRef.current?.focus();
@@ -99,7 +99,7 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
 
   return (
     <div
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-modal flex items-center justify-center bg-surface-overlay/80 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="Command wheel"
@@ -111,7 +111,6 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
         className="relative flex items-center justify-center outline-none"
         style={{ width: CENTER * 2, height: CENTER * 2 }}
       >
-        {/* SVG ring */}
         <svg
           width={CENTER * 2}
           height={CENTER * 2}
@@ -124,7 +123,6 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
           />
         </svg>
 
-        {/* Segments */}
         {segments.map((seg, i) => {
           const angle = SEGMENT_ANGLES[i]!;
           const rad = (angle * Math.PI) / 180;
@@ -141,12 +139,12 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
               aria-label={`${seg.label} — ${seg.commands.length} command${seg.commands.length !== 1 ? 's' : ''}`}
               onClick={() => handleSegmentClick(seg.id)}
               style={{ position: 'absolute', left: x - 28, top: y - 28, width: 56, height: 56 }}
-              className={`flex flex-col items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/50 ${
+              className={`flex flex-col items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50 ${
                 isActive
-                  ? 'border-nd-accent/50 bg-nd-accent/20 text-nd-accent shadow-lg shadow-nd-accent/20'
+                  ? 'border-accent-primary/50 bg-accent-primary/20 text-accent-primary shadow-lg shadow-accent-primary/20'
                   : hasCommands
-                  ? 'border-nd-text-muted/20 bg-nd-surface/80 text-nd-text hover:border-nd-accent/30 hover:text-nd-accent'
-                  : 'border-nd-text-muted/10 bg-nd-surface/40 text-nd-text-muted/40 cursor-not-allowed'
+                  ? 'border-border-subtle bg-surface-secondary/80 text-text-primary hover:border-accent-primary/30 hover:text-accent-primary'
+                  : 'border-border-subtle/50 bg-surface-secondary/40 text-text-muted/40 cursor-not-allowed'
               }`}
             >
               {seg.icon}
@@ -155,28 +153,26 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
           );
         })}
 
-        {/* Center: language + instructions */}
-        <div className="relative z-10 flex flex-col items-center justify-center rounded-full border border-nd-text-muted/15 bg-nd-bg text-center shadow-xl"
+        <div className="relative z-10 flex flex-col items-center justify-center rounded-full border border-border-subtle bg-surface-app text-center shadow-xl"
           style={{ width: 96, height: 96 }}>
-          <span className="text-[10px] font-bold uppercase tracking-wider text-nd-text-muted/60">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted/60">
             {languageId ?? 'IDE'}
           </span>
-          <span className="mt-0.5 text-[9px] text-nd-text-muted/40">
+          <span className="mt-0.5 text-[9px] text-text-muted/40">
             {selectedSegment ? '← Back' : 'Select'}
           </span>
         </div>
       </div>
 
-      {/* Command list panel */}
       {activeSegment && (
-        <div className="absolute right-4 top-1/2 w-64 -translate-y-1/2 rounded-2xl border border-nd-text-muted/15 bg-nd-bg p-3 shadow-2xl">
+        <div className="absolute right-4 top-1/2 w-64 -translate-y-1/2 rounded-2xl border border-border-subtle bg-surface-primary p-3 shadow-overlay">
           <div className="mb-2 flex items-center gap-2">
             {activeSegment.icon}
-            <span className="font-semibold text-nd-text">{activeSegment.label}</span>
-            <span className="ml-auto text-[10px] text-nd-text-muted/60">{activeSegment.commands.length} cmd</span>
+            <span className="font-semibold text-text-primary">{activeSegment.label}</span>
+            <span className="ml-auto text-[10px] text-text-muted">{activeSegment.commands.length} cmd</span>
           </div>
           {activeSegment.commands.length === 0 ? (
-            <p className="text-xs text-nd-text-muted/50 italic">No commands available for {languageId}</p>
+            <p className="text-xs text-text-muted/60 italic">No commands available for {languageId}</p>
           ) : (
             <div className="space-y-0.5">
               {activeSegment.commands.map((cmd, i) => (
@@ -184,19 +180,17 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
                   key={cmd.id}
                   type="button"
                   onClick={() => onRunCommand(cmd)}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 ${
+                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40 ${
                     i === selectedCmd
-                      ? 'bg-nd-accent/10 text-nd-accent'
-                      : 'text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text'
+                      ? 'bg-accent-primary/10 text-accent-primary'
+                      : 'text-text-muted hover:bg-surface-secondary hover:text-text-primary'
                   }`}
                 >
                   <span className="flex-1 truncate font-mono">{cmd.label}</span>
                   {cmd.safety !== 'safe' && (
-                    <span className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-bold ${
-                      cmd.safety === 'confirm' ? 'bg-nd-warning/10 text-nd-warning' : 'bg-nd-danger/10 text-nd-danger'
-                    }`}>
+                    <Badge tone={cmd.safety === 'confirm' ? 'warning' : 'danger'} variant="outline" size="sm">
                       {cmd.safety}
-                    </span>
+                    </Badge>
                   )}
                 </button>
               ))}

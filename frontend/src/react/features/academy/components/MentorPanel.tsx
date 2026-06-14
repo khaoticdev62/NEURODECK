@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useId, KeyboardEvent } from 'react';
 import { BrainCircuit, ChevronDown, ChevronUp, Send, Trash2 } from 'lucide-react';
+import { Button } from '../../../components/primitives/Button';
+import { IconButton } from '../../../components/primitives/IconButton';
 import { useMentorChat } from '../hooks/useMentorChat';
 
 interface MentorPanelProps {
@@ -45,14 +47,14 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-center gap-2 px-4 py-2 text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 focus-visible:ring-inset hover:bg-nd-surface/30 transition"
+        className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition hover:bg-nd-surface/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 focus-visible:ring-inset"
       >
-        <BrainCircuit className="h-3.5 w-3.5 text-nd-accent shrink-0" aria-hidden="true" />
+        <BrainCircuit className="h-3.5 w-3.5 shrink-0 text-nd-accent-primary" aria-hidden="true" />
         <span className="flex-1 text-[11px] font-semibold text-nd-text-secondary">
           Ask Alex — SOC Mentor
         </span>
         {streaming && (
-          <span className="text-[10px] text-nd-accent animate-pulse">thinking…</span>
+          <span className="animate-pulse text-[10px] text-nd-accent-primary">thinking…</span>
         )}
         <div className="text-nd-text-muted/40">
           {open ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
@@ -63,54 +65,57 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
       {open && (
         <div className="flex flex-col" style={{ height: '220px' }}>
           {/* Message log */}
-          <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+          <div className="flex-1 space-y-2 overflow-y-auto px-4 py-2">
             {/* Static greeting */}
             {!hasContent && (
-              <div className="flex gap-2 items-start">
+              <div className="flex items-start gap-2">
                 <MentorAvatar />
-                <div className="rounded-lg bg-nd-surface/40 border border-nd-border-subtle/50 px-3 py-2 text-[11px] text-nd-text-secondary leading-relaxed max-w-prose">
+                <div className="max-w-prose rounded-lg border border-nd-border-subtle/50 bg-nd-surface/40 px-3 py-2 text-[11px] leading-relaxed text-nd-text-secondary">
                   {greeting ?? "What's your question? I'll guide you — I won't hand you the answer."}
                 </div>
               </div>
             )}
 
-            {messages.map((msg, i) => (
+            {messages.map((msg, i) =>
               msg.role === 'student' ? (
                 <div key={i} className="flex justify-end gap-2">
-                  <div className="rounded-lg bg-nd-accent/15 px-3 py-2 text-[11px] text-nd-text-primary leading-relaxed max-w-[80%]">
+                  <div className="max-w-[80%] rounded-lg bg-nd-accent/15 px-3 py-2 text-[11px] leading-relaxed text-nd-text-primary">
                     {msg.content}
                   </div>
                 </div>
               ) : (
-                <div key={i} className="flex gap-2 items-start">
+                <div key={i} className="flex items-start gap-2">
                   <MentorAvatar />
-                  <div className="rounded-lg bg-nd-surface/40 border border-nd-border-subtle/50 px-3 py-2 text-[11px] text-nd-text-secondary leading-relaxed max-w-prose">
+                  <div className="max-w-prose rounded-lg border border-nd-border-subtle/50 bg-nd-surface/40 px-3 py-2 text-[11px] leading-relaxed text-nd-text-secondary">
                     {msg.content}
                   </div>
                 </div>
               )
-            ))}
+            )}
 
             {/* Live stream buffer */}
             {streaming && streamBuffer && (
-              <div className="flex gap-2 items-start">
+              <div className="flex items-start gap-2">
                 <MentorAvatar />
-                <div className="rounded-lg bg-nd-surface/40 border border-nd-border-subtle/50 px-3 py-2 text-[11px] text-nd-text-secondary leading-relaxed max-w-prose">
+                <div className="max-w-prose rounded-lg border border-nd-border-subtle/50 bg-nd-surface/40 px-3 py-2 text-[11px] leading-relaxed text-nd-text-secondary">
                   {streamBuffer}
-                  <span className="inline-block h-3 w-0.5 bg-nd-accent ml-0.5 animate-pulse" aria-hidden="true" />
+                  <span
+                    className="ml-0.5 inline-block h-3 w-0.5 animate-pulse bg-nd-accent-primary"
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
             )}
 
             {/* Thinking indicator — before first token */}
             {streaming && !streamBuffer && (
-              <div className="flex gap-2 items-center">
+              <div className="flex items-center gap-2">
                 <MentorAvatar />
                 <div className="flex gap-1 px-3 py-2">
                   {[0, 1, 2].map((i) => (
                     <span
                       key={i}
-                      className="h-1.5 w-1.5 rounded-full bg-nd-accent/50 animate-bounce"
+                      className="h-1.5 w-1.5 animate-bounce rounded-full bg-nd-accent-primary/50 motion-reduce:animate-none"
                       style={{ animationDelay: `${i * 150}ms` }}
                       aria-hidden="true"
                     />
@@ -124,7 +129,9 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
 
           {/* Input row */}
           <div className="flex items-end gap-2 border-t border-nd-border-subtle/50 px-3 py-2">
-            <label htmlFor={inputId} className="sr-only">Message Alex</label>
+            <label htmlFor={inputId} className="sr-only">
+              Message Alex
+            </label>
             <textarea
               id={inputId}
               rows={1}
@@ -133,7 +140,7 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
               onKeyDown={handleKeyDown}
               disabled={streaming}
               placeholder="Ask Alex a question… (Ctrl+Enter to send)"
-              className="flex-1 resize-none rounded-lg border border-nd-border-subtle bg-nd-surface-base/60 px-2.5 py-1.5 text-[11px] text-nd-text-primary placeholder:text-nd-text-muted/30 focus:border-nd-accent/40 focus:outline-none focus:ring-1 focus:ring-nd-accent/20 disabled:opacity-50"
+              className="flex-1 resize-none rounded-lg border border-nd-border-subtle bg-nd-surface-base/60 px-2.5 py-1.5 text-[11px] text-nd-text-primary placeholder:text-nd-text-muted/30 focus:border-nd-accent-primary/40 focus:outline-none focus:ring-1 focus:ring-nd-accent-primary/20 disabled:opacity-50"
               style={{ maxHeight: '80px' }}
               onInput={(e) => {
                 const el = e.currentTarget;
@@ -141,26 +148,26 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
                 el.style.height = `${Math.min(el.scrollHeight, 80)}px`;
               }}
             />
-            <div className="flex gap-1 shrink-0">
+            <div className="flex shrink-0 gap-1">
               {messages.length > 0 && (
-                <button
-                  type="button"
+                <IconButton
+                  size="sm"
+                  variant="ghost"
                   onClick={clear}
                   aria-label="Clear conversation"
-                  className="rounded-lg p-1.5 text-nd-text-muted/40 transition hover:text-nd-danger focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+                  className="text-nd-text-muted/40 hover:text-nd-accent-error"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                </IconButton>
               )}
-              <button
-                type="button"
+              <Button
+                size="xs"
+                variant="soft"
+                icon={Send}
                 onClick={handleSend}
                 disabled={!input.trim() || streaming}
                 aria-label="Send message"
-                className="rounded-lg bg-nd-accent/15 p-1.5 text-nd-accent transition hover:bg-nd-accent/25 disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </button>
+              />
             </div>
           </div>
         </div>
@@ -172,10 +179,10 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
 function MentorAvatar() {
   return (
     <div
-      className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-nd-accent/20 mt-0.5"
+      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-nd-accent/20"
       aria-hidden="true"
     >
-      <span className="text-[9px] font-bold text-nd-accent">A</span>
+      <span className="text-[9px] font-bold text-nd-accent-primary">A</span>
     </div>
   );
 }

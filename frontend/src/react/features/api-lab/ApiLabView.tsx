@@ -2,9 +2,16 @@ import { useState } from 'react';
 import { Webhook, Send, Copy, Plus, Trash2 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { ApiResponse } from '../../services/bridgeAdapter';
+import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
+import { Select } from '../../components/primitives/Select';
+import { TextInput } from '../../components/primitives/TextInput';
+import { Badge } from '../../components/primitives/Badge';
 import { EmptyState } from '../../components/primitives/EmptyState';
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '../../components/primitives/Tabs';
 
 const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+const METHOD_OPTIONS = METHODS.map((m) => ({ value: m, label: m }));
 
 export function ApiLabView() {
   const [method, setMethod] = useState('GET');
@@ -43,116 +50,135 @@ export function ApiLabView() {
   };
   const removeHeader = (i: number) => setHeaders(headers.filter((_, idx) => idx !== i));
 
+  const responseTone = response
+    ? response.status >= 200 && response.status < 300
+      ? 'success'
+      : response.status >= 400
+        ? 'danger'
+        : 'warning'
+    : 'neutral';
+
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Webhook className="h-5 w-5 text-nd-accent" aria-hidden="true" />
+      <header className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
+          <Webhook className="h-5 w-5 text-accent-primary" aria-hidden="true" />
         </div>
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-nd-text">API Lab</h2>
-          <p className="text-xs text-nd-text-muted">HTTP request builder and tester</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">API Lab</p>
+          <h2 className="text-lg font-semibold text-text-primary">HTTP Request Builder</h2>
+          <p className="text-xs text-text-muted">Send requests, inspect headers, and capture responses.</p>
         </div>
-      </div>
+      </header>
 
-      <div className="mb-3 flex gap-2">
-        <select
+      <div className="mb-3 flex items-center gap-2">
+        <Select
+          aria-label="HTTP method"
           value={method}
           onChange={(e) => setMethod(e.target.value)}
-          aria-label="HTTP method"
-          className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-medium text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-        >
-          {METHODS.map((m) => <option key={m} value={m}>{m}</option>)}
-        </select>
-        <input
-          type="text"
+          options={METHOD_OPTIONS}
+          className="w-28 shrink-0"
+        />
+        <TextInput
+          aria-label="Request URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && send()}
           placeholder="https://api.example.com/v1/resource"
-          aria-label="Request URL"
-          className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+          fullWidth
         />
-        <button type="button" onClick={send} disabled={loading} className="flex items-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
-          {loading ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
+        <Button
+          variant="success"
+          loading={loading}
+          onClick={send}
+          icon={Send}
+        >
           Send
-        </button>
+        </Button>
       </div>
 
-      <div role="tablist" aria-label="Request sections" className="mb-3 flex gap-1">
-        {(['headers', 'body', 'response'] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === tab}
-            onClick={() => setActiveTab(tab)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${activeTab === tab ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:text-nd-text/80'}`}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      <TabGroup value={activeTab} onChange={(v) => setActiveTab(v as typeof activeTab)} className="flex min-h-0 flex-1 flex-col">
+        <TabList aria-label="Request sections" className="mb-3">
+          {(['headers', 'body', 'response'] as const).map((tab) => (
+            <Tab key={tab} value={tab}>
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </Tab>
+          ))}
+        </TabList>
 
-      <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4">
-        {activeTab === 'headers' && (
-          <div className="space-y-2">
-            {headers.map((h, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  type="text"
-                  value={h.key}
-                  onChange={(e) => updateHeader(i, e.target.value, h.value)}
-                  placeholder="Header"
-                  className="flex-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-                />
-                <input
-                  type="text"
-                  value={h.value}
-                  onChange={(e) => updateHeader(i, h.key, e.target.value)}
-                  placeholder="Value"
-                  className="flex-1 rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-                />
-                <button type="button" onClick={() => removeHeader(i)} aria-label="Remove header" className="text-nd-text-muted hover:text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40 rounded">
-                  <Trash2 className="h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
-            <button type="button" onClick={addHeader} className="flex items-center gap-1 text-xs text-nd-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" /> Add header
-            </button>
-          </div>
-        )}
-
-        {activeTab === 'body' && (
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder='{"key": "value"}'
-            className="h-full w-full resize-none rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-3 font-mono text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-          />
-        )}
-
-        {activeTab === 'response' && (
-          <div className="space-y-3">
-            {response ? (
-              <>
-                <div className="flex items-center gap-3">
-                  <span className={`rounded-lg px-2 py-1 text-xs font-medium ${response.status >= 200 && response.status < 300 ? 'bg-nd-success/10 text-nd-success' : response.status >= 400 ? 'bg-nd-danger/10 text-nd-danger' : 'bg-nd-warning/10 text-nd-warning'}`}>
-                    {response.status} {response.statusText}
-                  </span>
-                  <button type="button" onClick={() => navigator.clipboard.writeText(response.body)} aria-label="Copy response" className="text-nd-text-muted hover:text-nd-text/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 rounded">
-                    <Copy className="h-4 w-4" aria-hidden="true" />
-                  </button>
+        <TabPanels className="min-h-0 flex-1 overflow-hidden">
+          <TabPanel value="headers" className="h-full">
+            <div className="space-y-2 rounded-2xl border border-border-subtle bg-surface-secondary p-4">
+              {headers.map((h, i) => (
+                <div key={i} className="flex gap-2">
+                  <TextInput
+                    aria-label={`Header ${i + 1} name`}
+                    value={h.key}
+                    onChange={(e) => updateHeader(i, e.target.value, h.value)}
+                    placeholder="Header"
+                    fullWidth
+                  />
+                  <TextInput
+                    aria-label={`Header ${i + 1} value`}
+                    value={h.value}
+                    onChange={(e) => updateHeader(i, h.key, e.target.value)}
+                    placeholder="Value"
+                    fullWidth
+                  />
+                  <IconButton
+                    aria-label="Remove header"
+                    variant="subtle"
+                    onClick={() => removeHeader(i)}
+                  >
+                    <Trash2 className="h-4 w-4 text-accent-error" aria-hidden="true" />
+                  </IconButton>
                 </div>
-                <pre className="overflow-auto rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-3 font-mono text-xs text-nd-text/80">{response.body}</pre>
-              </>
-            ) : (
-              <EmptyState icon={Send} title="No response yet" description="Configure your request and press Send to see the response here." />
-            )}
-          </div>
-        )}
-      </div>
+              ))}
+              <Button variant="ghost" size="sm" onClick={addHeader} icon={Plus}>
+                Add header
+              </Button>
+            </div>
+          </TabPanel>
+
+          <TabPanel value="body" className="h-full">
+            <textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder='{"key": "value"}'
+              className="h-full w-full resize-none rounded-2xl border border-border-subtle bg-surface-secondary p-4 font-mono text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40"
+            />
+          </TabPanel>
+
+          <TabPanel value="response" className="h-full">
+            <div className="h-full space-y-3 rounded-2xl border border-border-subtle bg-surface-secondary p-4">
+              {response ? (
+                <>
+                  <div className="flex items-center gap-3">
+                    <Badge tone={responseTone} variant="fill">
+                      {response.status} {response.statusText}
+                    </Badge>
+                    <IconButton
+                      aria-label="Copy response"
+                      variant="subtle"
+                      onClick={() => navigator.clipboard.writeText(response.body)}
+                    >
+                      <Copy className="h-4 w-4" aria-hidden="true" />
+                    </IconButton>
+                  </div>
+                  <pre className="h-[calc(100%-2.5rem)] overflow-auto rounded-xl border border-border-subtle bg-surface-secondary/60 p-3 font-mono text-xs text-text-secondary">{response.body}</pre>
+                </>
+              ) : (
+                <EmptyState
+                  icon={Send}
+                  title="No response yet"
+                  description="Configure your request and press Send to see the response here."
+                  className="h-full"
+                />
+              )}
+            </div>
+          </TabPanel>
+        </TabPanels>
+      </TabGroup>
     </div>
   );
 }

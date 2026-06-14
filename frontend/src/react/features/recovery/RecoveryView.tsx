@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { Dispatch } from "react";
+import { useState } from 'react';
+import type { Dispatch } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -8,11 +8,13 @@ import {
   RotateCcw,
   ShieldAlert,
   Trash2,
-} from "lucide-react";
-import { Badge } from "../../components/primitives/Badge";
-import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
-import { Panel } from "../../components/primitives/Panel";
-import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
+} from 'lucide-react';
+import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
+import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
+import { EmptyState } from '../../components/primitives/EmptyState';
+import { Panel } from '../../components/primitives/Panel';
+import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
 export function RecoveryView({
   state,
@@ -33,46 +35,47 @@ export function RecoveryView({
         <Panel eyebrow="Recovery" title="Current Error State">
           <div className="p-4">
             {hasError ? (
-              <div className="rounded-2xl border border-nd-danger/25 bg-nd-danger/[0.06] p-4">
+              <div className="rounded-2xl border border-accent-error/25 bg-accent-error/[0.06] p-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-danger" aria-hidden="true" />
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-accent-error" aria-hidden="true" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-nd-text">{state.lastError!.title}</p>
-                    <p className="mt-1 text-sm leading-6 text-nd-text-muted">
+                    <p className="font-semibold text-text-primary">{state.lastError!.title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-text-secondary">
                       {state.lastError!.message}
                     </p>
                     {state.lastError!.action && (
-                      <p className="mt-2 rounded-lg bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger/90">
+                      <p className="mt-2 rounded-lg bg-accent-error/10 px-3 py-2 text-xs text-accent-error/90">
                         {state.lastError!.action}
                       </p>
                     )}
                   </div>
                 </div>
-                <div className="mt-4 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => dispatch({ type: "set-error", error: null })}
-                    className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/50 px-3 py-2 text-sm text-nd-text/80 transition hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={CheckCircle2}
+                    onClick={() => dispatch({ type: 'set-error', error: null })}
                   >
-                    <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Dismiss
-                  </button>
-                  <button
-                    type="button"
+                    Dismiss
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={RefreshCcw}
                     onClick={() => void actions.refreshDiagnostics()}
-                    className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
-                    <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Run Diagnostics
-                  </button>
+                    Run Diagnostics
+                  </Button>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center py-8 text-center">
-                <CheckCircle2 className="h-12 w-12 text-nd-success" aria-hidden="true" />
-                <p className="mt-3 font-semibold text-nd-text">No active errors</p>
-                <p className="mt-1 text-sm text-nd-text-muted">
-                  All systems are operating normally.
-                </p>
-              </div>
+              <EmptyState
+                icon={CheckCircle2}
+                title="No active errors"
+                description="All systems are operating normally."
+                compact
+              />
             )}
           </div>
         </Panel>
@@ -132,35 +135,34 @@ export function RecoveryView({
                 .map((event) => (
                   <li
                     key={event.id}
-                    className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-3 py-2"
+                    className="rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2 transition duration-fast hover:bg-surface-tertiary/30"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <Badge tone={event.allowed ? "success" : "danger"}>
-                        {event.allowed ? "allowed" : "blocked"}
+                      <Badge tone={event.allowed ? 'success' : 'danger'}>
+                        {event.allowed ? 'allowed' : 'blocked'}
                       </Badge>
-                      <span className="text-[10px] text-nd-text-muted/60">
+                      <span className="text-2xs text-text-muted">
                         {new Date(event.timestamp).toLocaleString()}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs font-medium text-nd-text/80">
+                    <p className="mt-1 text-xs font-medium text-text-primary">
                       {event.action} · {event.runtimeId}
                       {event.modelId && ` · ${event.modelId}`}
                     </p>
-                    <p className="mt-0.5 text-xs leading-5 text-nd-text-muted">{event.reason}</p>
-                    <p className="mt-0.5 text-[10px] uppercase tracking-wide text-nd-text-muted/50">
+                    <p className="mt-0.5 text-xs leading-5 text-text-secondary">{event.reason}</p>
+                    <p className="mt-0.5 text-2xs uppercase tracking-wide text-text-muted/70">
                       state: {event.state}
                     </p>
                   </li>
                 ))}
             </ul>
           ) : (
-            <div className="flex flex-col items-center py-10 text-center">
-              <ShieldAlert className="h-8 w-8 text-nd-text-muted/40" aria-hidden="true" />
-              <p className="mt-3 text-sm font-semibold text-nd-text-muted">No recovery events logged yet</p>
-              <p className="mt-1 text-xs text-nd-text-muted/70">
-                Events will appear here when the self-healing engine activates.
-              </p>
-            </div>
+            <EmptyState
+              icon={ShieldAlert}
+              title="No recovery events logged yet"
+              description="Events will appear here when the self-healing engine activates."
+              compact
+            />
           )}
         </div>
       </Panel>
@@ -168,7 +170,10 @@ export function RecoveryView({
       <ConfirmDialog
         open={confirmReset}
         onCancel={() => setConfirmReset(false)}
-        onConfirm={() => { setConfirmReset(false); void actions.resetLocalState(); }}
+        onConfirm={() => {
+          setConfirmReset(false);
+          void actions.resetLocalState();
+        }}
         title="Clear all local state?"
         message="This will permanently remove all session history, memories, and preferences. Keys stored in the OS keychain are preserved. This action cannot be undone."
         confirmLabel="Clear State"
@@ -191,19 +196,19 @@ function RecoveryAction({
   label: string;
   description: string;
   badge: string;
-  badgeTone: "success" | "danger" | "warning" | "neutral";
+  badgeTone: 'success' | 'danger' | 'warning' | 'neutral';
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-3 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+      className="flex w-full items-start gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-3 text-left transition duration-fast hover:border-accent-primary/30 hover:bg-surface-tertiary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent-primary" aria-hidden="true" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-nd-text">{label}</p>
-        <p className="mt-0.5 text-xs leading-5 text-nd-text-muted">{description}</p>
+        <p className="text-sm font-semibold text-text-primary">{label}</p>
+        <p className="mt-0.5 text-xs leading-5 text-text-secondary">{description}</p>
       </div>
       <Badge tone={badgeTone}>{badge}</Badge>
     </button>
