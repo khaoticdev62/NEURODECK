@@ -1,9 +1,13 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useFocusRestoration } from "./hooks/useFocusRestoration";
 import { AlertTriangle, Command, Loader2, Sparkles, X } from "lucide-react";
 import { CommandPalette } from "./components/command/CommandPalette";
 import { OnboardingModal } from "./components/onboarding/OnboardingModal";
-import { NeurodeckShell } from "./components/layout/NeurodeckShell";
+import { ControllerHintBar } from "./components/layout/ControllerHintBar";
+import { PrimarySidebar } from "./components/layout/PrimarySidebar";
+import { SecondaryRail } from "./components/layout/SecondaryRail";
+import { TitleBar } from "./components/layout/TitleBar";
 import { Badge } from "./components/primitives/Badge";
 import { ToastProvider } from "./components/primitives/Toast";
 // ─── Eager imports — default view, overlay views, and lightweight core views ──
@@ -22,6 +26,7 @@ import { SessionsView } from "./features/sessions/SessionsView";
 import { SettingsView } from "./features/settings/SettingsView";
 import { SSHView } from "./features/ssh/SSHView";
 import { TerminalView } from "./features/terminal/TerminalView";
+import { WorkspaceView } from "./features/workspace/WorkspaceView";
 
 // ─── Lazy imports — heavy or infrequently-visited feature modules ─────────────
 const AcademyView    = lazy(() => import("./features/academy/AcademyView").then((m) => ({ default: m.AcademyView })));
@@ -845,6 +850,26 @@ export default function App() {
     [state.selectedFont]
   );
 
+  const renderView = (id: ViewId, content: ReactNode) => (
+    <div
+      id={`view-${id}`}
+      data-testid={`view-${id}`}
+      data-controller-screen={id}
+      data-controller-screen-active="true"
+      className="view-content active h-full min-h-0 animate-view-enter"
+    >
+      {content}
+    </div>
+  );
+
+  const titleSubtitle = [
+    state.activeProject?.name ?? state.statusBar?.session?.id ?? "NEURODECK",
+    modelName,
+    state.selectedPersona,
+  ]
+    .filter(Boolean)
+    .join(" / ");
+
   // Inject runtime design tokens as CSS custom properties on the app shell
   useEffect(() => {
     const shell = shellRef.current;
@@ -1034,77 +1059,97 @@ export default function App() {
             </div>
           </div>
         )}
-        <NeurodeckShell
-          state={state}
-          dispatch={dispatch}
-          appActions={appActions}
-          selectors={selectors}
-          runAssistant={runAssistant}
-          modelName={modelName}
-          selectedBackendModel={selectedBackendModel}
-          selectedModel={selectedModel}
-          activeTheme={activeTheme}
-          recentViews={recentViews}
-          setRecentViews={setRecentViews}
-          openSettings={openSettings}
-          setSettingsOpen={setSettingsOpen}
-          setNotificationsOpen={setNotificationsOpen}
-          setShortcutsOpen={setShortcutsOpen}
-          setQuickSwitcherOpen={setQuickSwitcherOpen}
-          setCtrlPromptOpen={setCtrlPromptOpen}
-        >
-          <Suspense fallback={<ViewLoader />}>
-            {state.activeView === "execution" && <ExecutionView state={state} actions={appActions} />}
-            {state.activeView === "project" && <ProjectView state={state} actions={appActions} />}
-            {state.activeView === "models" && (
-              <ModelsView state={state} dispatch={dispatch} actions={appActions} />
-            )}
-            {(state.activeView === "agent" || state.activeView === "agents") && (
-              <AgentsView state={state} dispatch={dispatch} actions={appActions} />
-            )}
-            {state.activeView === "memory" && (
-              <MemoryView state={state} dispatch={dispatch} actions={appActions} />
-            )}
-            {state.activeView === "sessions" && <SessionsView state={state} actions={appActions} />}
-            {state.activeView === "cache" && <CacheView state={state} />}
-            {state.activeView === "plugins" && <PluginsView state={state} dispatch={dispatch} />}
-            {state.activeView === "diagnostics" && (
-              <DiagnosticsView state={state} actions={appActions} />
-            )}
-            {state.activeView === "canvas" && <CanvasView />}
-            {state.activeView === "terminal" && <TerminalView />}
-            {state.activeView === "ssh" && <SSHView />}
-            {state.activeView === "ide" && <IDEView />}
-            {state.activeView === "git" && <GitView />}
-            {state.activeView === "api-lab" && <ApiLabView />}
-            {state.activeView === "cli-maker" && <CliMakerView />}
-            {state.activeView === "browser" && <BrowserView />}
-            {state.activeView === "tunnel" && <TunnelView />}
-            {state.activeView === "share" && <ShareView />}
-            {state.activeView === "torrent" && <TorrentView />}
-            {state.activeView === "remote" && <RemoteView />}
-            {state.activeView === "docs" && <DocsView />}
-            {state.activeView === "prompt-lab" && <PromptLabView />}
-            {state.activeView === "academy" && <AcademyView />}
-            {state.activeView === "graph" && <GraphView />}
-            {state.activeView === "scheduler" && <SchedulerView />}
-            {state.activeView === "sync" && <SyncView />}
-            {state.activeView === "orchestrator" && <OrchestratorView />}
-            {state.activeView === "settings" && (
-              <SettingsView state={state} dispatch={dispatch} actions={appActions} />
-            )}
-            {state.activeView === "security" && <SecurityView state={state} actions={appActions} />}
-            {state.activeView === "themes" && <ThemesView />}
-            {state.activeView === "exports" && <ExportsView state={state} actions={appActions} />}
-            {state.activeView === "maintenance" && (
-              <MaintenanceView state={state} actions={appActions} />
-            )}
-            {state.activeView === "recovery" && (
-              <RecoveryView state={state} dispatch={dispatch} actions={appActions} />
-            )}
-            {state.activeView === "fonts" && <FontManagerView state={state} dispatch={dispatch} />}
-          </Suspense>
-        </NeurodeckShell>
+        <TitleBar subtitle={titleSubtitle} />
+        <div className="flex min-h-0 flex-1">
+          <PrimarySidebar
+            state={state}
+            dispatch={dispatch}
+            onOpenSettings={() => openSettings("general")}
+          />
+          <main id="main-content" className="min-w-0 flex-1 overflow-hidden p-3 md:p-4">
+            <div className="view-container h-full min-h-0">
+              <Suspense fallback={<ViewLoader />}>
+                {(state.activeView === "chat" || state.activeView === "workspace") &&
+                  renderView(
+                    "chat",
+                    <WorkspaceView
+                      state={state}
+                      dispatch={dispatch}
+                      selectors={selectors}
+                      actions={appActions}
+                    />
+                  )}
+                {state.activeView === "execution" &&
+                  renderView("execution", <ExecutionView state={state} actions={appActions} />)}
+                {state.activeView === "project" &&
+                  renderView("project", <ProjectView state={state} actions={appActions} />)}
+                {state.activeView === "models" &&
+                  renderView(
+                    "models",
+                    <ModelsView state={state} dispatch={dispatch} actions={appActions} />
+                  )}
+                {(state.activeView === "agent" || state.activeView === "agents") &&
+                  renderView(
+                    "agent",
+                    <AgentsView state={state} dispatch={dispatch} actions={appActions} />
+                  )}
+                {state.activeView === "memory" &&
+                  renderView(
+                    "memory",
+                    <MemoryView state={state} dispatch={dispatch} actions={appActions} />
+                  )}
+                {state.activeView === "sessions" &&
+                  renderView("sessions", <SessionsView state={state} actions={appActions} />)}
+                {state.activeView === "cache" && renderView("cache", <CacheView state={state} />)}
+                {state.activeView === "plugins" &&
+                  renderView("plugins", <PluginsView state={state} dispatch={dispatch} />)}
+                {state.activeView === "diagnostics" &&
+                  renderView("diagnostics", <DiagnosticsView state={state} actions={appActions} />)}
+                {state.activeView === "canvas" && renderView("canvas", <CanvasView />)}
+                {state.activeView === "terminal" && renderView("terminal", <TerminalView />)}
+                {state.activeView === "ssh" && renderView("ssh", <SSHView />)}
+                {state.activeView === "ide" && renderView("ide", <IDEView />)}
+                {state.activeView === "git" && renderView("git", <GitView />)}
+                {state.activeView === "api-lab" && renderView("api-lab", <ApiLabView />)}
+                {state.activeView === "cli-maker" && renderView("cli-maker", <CliMakerView />)}
+                {state.activeView === "browser" && renderView("browser", <BrowserView />)}
+                {state.activeView === "tunnel" && renderView("tunnel", <TunnelView />)}
+                {state.activeView === "share" && renderView("share", <ShareView />)}
+                {state.activeView === "torrent" && renderView("torrent", <TorrentView />)}
+                {state.activeView === "remote" && renderView("remote", <RemoteView />)}
+                {state.activeView === "docs" && renderView("docs", <DocsView />)}
+                {state.activeView === "prompt-lab" && renderView("prompt-lab", <PromptLabView />)}
+                {state.activeView === "academy" && renderView("academy", <AcademyView />)}
+                {state.activeView === "graph" && renderView("graph", <GraphView />)}
+                {state.activeView === "scheduler" && renderView("scheduler", <SchedulerView />)}
+                {state.activeView === "sync" && renderView("sync", <SyncView />)}
+                {state.activeView === "orchestrator" &&
+                  renderView("orchestrator", <OrchestratorView />)}
+                {state.activeView === "settings" &&
+                  renderView(
+                    "settings",
+                    <SettingsView state={state} dispatch={dispatch} actions={appActions} />
+                  )}
+                {state.activeView === "security" &&
+                  renderView("security", <SecurityView state={state} actions={appActions} />)}
+                {state.activeView === "themes" && renderView("themes", <ThemesView />)}
+                {state.activeView === "exports" &&
+                  renderView("exports", <ExportsView state={state} actions={appActions} />)}
+                {state.activeView === "maintenance" &&
+                  renderView("maintenance", <MaintenanceView state={state} actions={appActions} />)}
+                {state.activeView === "recovery" &&
+                  renderView(
+                    "recovery",
+                    <RecoveryView state={state} dispatch={dispatch} actions={appActions} />
+                  )}
+                {state.activeView === "fonts" &&
+                  renderView("fonts", <FontManagerView state={state} dispatch={dispatch} />)}
+              </Suspense>
+            </div>
+          </main>
+          <SecondaryRail state={state} dispatch={dispatch} selectors={selectors} />
+        </div>
+        {state.deckMode && <ControllerHintBar />}
         <ControllerHelpOverlay />
         <ControllerDebugOverlay />
         <CommandPalette
