@@ -21,6 +21,7 @@ pub mod lsp;
 mod lua;
 mod mcp;
 pub mod memory;
+mod npm_packages;
 pub mod model_registry;
 pub mod models;
 mod ollama_mgr;

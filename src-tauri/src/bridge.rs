@@ -409,6 +409,12 @@ pub async fn run_bridge_server(
 
     // ── Config & env ───────────────────────────────────────────────────────
     crate::load_env_file();
+    if let Some(npm_bin) = crate::npm_packages::npm_path_prefix() {
+        let sep = if cfg!(target_os = "windows") { ';' } else { ':' };
+        let current = std::env::var_os("PATH").unwrap_or_default();
+        let updated = format!("{}{}{}", npm_bin, sep, current.to_string_lossy());
+        std::env::set_var("PATH", updated);
+    }
     let boot_self_heal = crate::self_heal::boot_self_heal(config_root, config_path);
     let mut config = boot_self_heal.config;
 

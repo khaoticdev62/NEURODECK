@@ -10,6 +10,7 @@ export type OnboardingStep =
   | 'models'
   | 'preferences'
   | 'plugins'
+  | 'packages'
   | 'finish';
 
 export interface SetupWarning {

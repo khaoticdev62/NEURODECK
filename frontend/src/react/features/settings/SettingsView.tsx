@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Check,
   AlertTriangle,
+  Package,
 } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
@@ -25,6 +26,7 @@ import { Panel } from "../../components/primitives/Panel";
 import { Toggle } from "../../components/primitives/Toggle";
 import { useController } from "../../input/controller/ControllerProvider";
 import { LiveWallpaperPanel } from "./LiveWallpaperPanel";
+import { PackagesPanel } from "./PackagesPanel";
 import { neurodeckApi, runtimeTypeToProvider } from "../../services/bridgeAdapter";
 import { useTheme } from "../../theme/useTheme";
 import type {
@@ -52,6 +54,7 @@ const NAV_PANELS = [
   { key: "input", label: "Input", icon: Gamepad2 },
   { key: "performance", label: "Performance", icon: Cpu },
   { key: "extensions", label: "Extensions", icon: Sliders },
+  { key: "packages", label: "Packages", icon: Package },
   { key: "privacy", label: "Privacy", icon: Shield },
 ] as const;
 
@@ -841,6 +844,9 @@ export function SettingsView({
             )}
           </div>
         )}
+
+        {/* ── Packages ─────────────────────────────── */}
+        {activePanel === "packages" && <PackagesPanel />}
 
         {/* ── Privacy ──────────────────────────────── */}
         {activePanel === "privacy" && (

@@ -10,6 +10,7 @@ import { StepEnvironment, type InstallerItemState, type InstallerProgressMap } f
 import { StepModels } from './steps/StepModels';
 import { StepPreferences } from './steps/StepPreferences';
 import { StepPlugins } from './steps/StepPlugins';
+import { StepPackages } from './steps/StepPackages';
 import { StepFinish } from './steps/StepFinish';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -37,6 +38,7 @@ const STEPS: StepDef[] = [
   { id: 'models', label: 'AI Model Connection' },
   { id: 'preferences', label: 'Preferences' },
   { id: 'plugins', label: 'Plugins' },
+  { id: 'packages', label: 'Packages' },
   { id: 'finish', label: 'Finish' },
 ];
 
@@ -537,6 +539,13 @@ export function OnboardingModal({
             {currentStep === 'plugins' && (
               <StepPlugins pluginStats={pluginStats} pluginsLoading={pluginsLoading} />
             )}
+            {currentStep === 'packages' && (
+              <StepPackages
+                onInstallComplete={() => {
+                  wizardDispatch({ type: 'complete-and-advance' });
+                }}
+              />
+            )}
             {currentStep === 'finish' && (
               <StepFinish
                 availableThemes={availableThemes}
@@ -561,13 +570,19 @@ export function OnboardingModal({
                   <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back
                 </button>
               )}
-              {(currentStep === 'welcome' || currentStep === 'environment') && (
+              {(currentStep === 'welcome' || currentStep === 'environment' || currentStep === 'packages') && (
                 <button
                   type="button"
-                  onClick={() => void dismiss('skipped')}
+                  onClick={() => {
+                    if (currentStep === 'packages') {
+                      void handleNext();
+                    } else {
+                      void dismiss('skipped');
+                    }
+                  }}
                   className="inline-flex h-9 items-center rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-4 text-xs font-semibold text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  Skip for Now
+                  {currentStep === 'packages' ? 'Skip Packages' : 'Skip for Now'}
                 </button>
               )}
             </div>

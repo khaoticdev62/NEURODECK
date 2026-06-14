@@ -570,3 +570,38 @@ export type NeuroDeckAction =
   | { type: 'set-agents'; agents: Agent[] }
   | { type: 'set-plugins'; plugins: PluginCard[] }
   | { type: 'reset-local-state' };
+
+
+// ── npm Package Manager ──────────────────────────────────────────────────────
+
+export interface NpmStatus {
+  node: boolean;
+  npm: boolean;
+  nodeVersion?: string;
+  npmVersion?: string;
+}
+
+export interface NpmPackage {
+  name: string;
+  versionConstraint?: string;
+  installedVersion?: string;
+  enabled: boolean;
+  category?: string;
+  source?: string;
+}
+
+export interface NpmInstallProgress {
+  name: string;
+  state: 'downloading' | 'installing' | 'verifying' | 'completed' | 'failed';
+  percent?: number;
+  details?: string;
+  error?: string;
+}
+
+export interface NpmRecommendedPackage {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  defaultSelected: boolean;
+}
