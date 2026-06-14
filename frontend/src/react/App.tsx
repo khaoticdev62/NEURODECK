@@ -4,6 +4,7 @@ import { useFocusRestoration } from "./hooks/useFocusRestoration";
 import { AlertTriangle, Command, Loader2, Sparkles, X } from "lucide-react";
 import { CommandPalette } from "./components/command/CommandPalette";
 import { OnboardingModal } from "./components/onboarding/OnboardingModal";
+import { OnboardingProvider } from "./onboarding/OnboardingProvider";
 import { ControllerHintBar } from "./components/layout/ControllerHintBar";
 import { PrimarySidebar } from "./components/layout/PrimarySidebar";
 import { SecondaryRail } from "./components/layout/SecondaryRail";
@@ -891,6 +892,7 @@ export default function App() {
   }
 
   return (
+    <OnboardingProvider state={state} dispatch={dispatch}>
     <ToastProvider>
       <ControllerProvider
         activeView={state.activeView}
@@ -1381,9 +1383,10 @@ export default function App() {
           )}
         </div>
 
-        {state.showOnboarding && <OnboardingModal state={state} dispatch={dispatch} />}
+        {state.showOnboarding && state.onboardingMode === 'setup' && <OnboardingModal state={state} dispatch={dispatch} />}
       </div>
       </ControllerProvider>
     </ToastProvider>
+    </OnboardingProvider>
   );
 }

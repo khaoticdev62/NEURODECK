@@ -7,7 +7,7 @@
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  true,
-    "stamped_at_utc":  "2026-06-14T15:08:22Z",
+    "stamped_at_utc":  "2026-06-14T15:24:40Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -36,7 +36,7 @@
                          "metadata":  "aligned",
                          "diff_hygiene":  "pass",
                          "workspace_state":  "manual-uncommitted",
-                         "loose_root_files":  2,
+                         "loose_root_files":  3,
                          "hardening_check":  "pass",
                          "cargo_check":  "pass",
                          "cargo_test":  "pass",
@@ -47,43 +47,43 @@
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "",
-                                           "duration_ms":  801,
-                                           "started_at_utc":  "2026-06-14T15:08:24Z",
-                                           "finished_at_utc":  "2026-06-14T15:08:24Z"
+                                           "duration_ms":  941,
+                                           "started_at_utc":  "2026-06-14T15:24:43Z",
+                                           "finished_at_utc":  "2026-06-14T15:24:44Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  4256,
-                                           "started_at_utc":  "2026-06-14T15:08:24Z",
-                                           "finished_at_utc":  "2026-06-14T15:08:29Z"
+                                           "duration_ms":  4894,
+                                           "started_at_utc":  "2026-06-14T15:24:44Z",
+                                           "finished_at_utc":  "2026-06-14T15:24:48Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  5004,
-                                           "started_at_utc":  "2026-06-14T15:08:29Z",
-                                           "finished_at_utc":  "2026-06-14T15:08:34Z"
+                                           "duration_ms":  5527,
+                                           "started_at_utc":  "2026-06-14T15:24:48Z",
+                                           "finished_at_utc":  "2026-06-14T15:24:54Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  3052,
-                                           "started_at_utc":  "2026-06-14T15:08:34Z",
-                                           "finished_at_utc":  "2026-06-14T15:08:37Z"
+                                           "duration_ms":  3502,
+                                           "started_at_utc":  "2026-06-14T15:24:54Z",
+                                           "finished_at_utc":  "2026-06-14T15:24:57Z"
                                        }
                                    ],
                          "blockers":  [
                                           "Workspace has uncommitted manual changes.",
                                           "Loose root files are present outside the preserved set."
                                       ],
-                         "duration_ms":  13137,
-                         "checked_at_utc":  "2026-06-14T15:08:37Z"
+                         "duration_ms":  14896,
+                         "checked_at_utc":  "2026-06-14T15:24:57Z"
                      }
 }
