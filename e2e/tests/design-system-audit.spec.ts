@@ -261,7 +261,7 @@ test.describe("Design System Visual Audit", () => {
   test("§4.1 — settings sidebar uses .stv-sidebar class", async ({ page }) => {
     await app.openSettings();
     await page.waitForTimeout(400);
-    const sidebar = page.locator(".stv-sidebar");
+    const sidebar = page.locator("#settings-overlay .stv-sidebar");
     await expect(sidebar, ".stv-sidebar should exist in settings modal").toHaveCount(1);
   });
 
@@ -284,7 +284,7 @@ test.describe("Design System Visual Audit", () => {
   test("§4.4 — active settings nav item has .active class", async ({ page }) => {
     await app.openSettings();
     await page.waitForTimeout(400);
-    const activeItems = page.locator(".stv-nav-item.active");
+    const activeItems = page.locator("#settings-overlay .stv-nav-item.active");
     const count = await activeItems.count();
     expect(count, "Exactly one .stv-nav-item should have .active class").toBe(1);
   });
@@ -294,7 +294,7 @@ test.describe("Design System Visual Audit", () => {
     await page.waitForTimeout(400);
 
     const hasIndicator = await page.evaluate(() => {
-      const active = document.querySelector(".stv-nav-item.active");
+      const active = document.querySelector("#settings-overlay .stv-nav-item.active");
       if (!active) return false;
       const before = getComputedStyle(active, "::before");
       // The ::before pseudo-element should have a non-zero width
