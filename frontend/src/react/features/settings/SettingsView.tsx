@@ -98,6 +98,71 @@ function SettingRow({
   );
 }
 
+// --- Theme Live Preview Mockup -------------------------------------------
+// Renders a self-contained miniature NEURODECK UI using the supplied theme
+// token colors as inline styles. aria-hidden because it is decorative.
+interface ThemePreviewColors {
+  surface: { app: string; sidebar: string; base: string; raised: string; input: string };
+  text: { primary: string; muted: string };
+  accent: { primary: string };
+  border: { default: string; subtle: string };
+  state: { success: string; warning: string; error: string };
+}
+function ThemePreviewMockup({ name, color }: { name: string; color: ThemePreviewColors }) {
+  const c = color;
+  return (
+    <div
+      aria-hidden="true"
+      title={`Preview: ${name}`}
+      className="relative overflow-hidden rounded-xl border select-none transition-all duration-200"
+      style={{ height: '150px', background: c.surface.app, borderColor: c.border.default }}
+    >
+      {/* Sidebar strip */}
+      <div
+        className="absolute inset-y-0 left-0 flex flex-col items-center gap-2 py-3"
+        style={{ width: '36px', background: c.surface.sidebar, borderRight: `1px solid ${c.border.subtle}` }}
+      >
+        <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: c.accent.primary }} />
+        {[0.35, 0.25, 0.2].map((op, i) => (
+          <div key={i} style={{ width: '14px', height: '14px', borderRadius: '4px', background: c.text.muted, opacity: op }} />
+        ))}
+      </div>
+
+      {/* Main pane */}
+      <div className="absolute inset-0" style={{ left: '36px', padding: '10px 10px 8px' }}>
+        {/* Topbar */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: c.accent.primary }} />
+          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '50px', opacity: 0.45 }} />
+          <div style={{ marginLeft: 'auto', width: '32px', height: '13px', borderRadius: '5px', background: c.accent.primary, opacity: 0.85 }} />
+        </div>
+
+        {/* Response card */}
+        <div className="mb-2 rounded-lg p-1.5" style={{ background: c.surface.raised, border: `1px solid ${c.border.subtle}` }}>
+          <div style={{ height: '3px', borderRadius: '2px', background: c.text.primary, width: '78%', marginBottom: '4px', opacity: 0.75 }} />
+          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '60%', marginBottom: '3px', opacity: 0.5 }} />
+          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '42%', opacity: 0.35 }} />
+        </div>
+
+        {/* Input row */}
+        <div className="flex items-center gap-1.5 mb-2">
+          <div style={{ flex: 1, height: '16px', borderRadius: '5px', background: c.surface.input, border: `1px solid ${c.border.default}` }} />
+          <div style={{ width: '20px', height: '16px', borderRadius: '5px', background: c.accent.primary, opacity: 0.9 }} />
+        </div>
+
+        {/* State pills */}
+        <div className="flex gap-1">
+          <div style={{ height: '3px', borderRadius: '2px', flex: 3, background: c.accent.primary }} />
+          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.success, opacity: 0.75 }} />
+          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.warning, opacity: 0.75 }} />
+          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.error, opacity: 0.75 }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+// -------------------------------------------------------------------------
+
 export function SettingsView({
   state,
   dispatch,
@@ -130,6 +195,8 @@ export function SettingsView({
     return (saved === "complete" || saved === "stream" ? saved : "off") as "off" | "complete" | "stream";
   });
   const [ttsTesting, setTtsTesting] = useState(false);
+  const [pendingThemeId, setPendingThemeId] = useState<string | null>(null);
+  const [hoveredThemeId, setHoveredThemeId] = useState<string | null>(null);
 
   const handleTtsModeChange = (mode: "off" | "complete" | "stream") => {
     setTtsMode(mode);
@@ -328,62 +395,121 @@ export function SettingsView({
                     }
                   />
                 </div>
-              ) : (
-                <div id="theme-cards-grid">
-                  <div className="grid gap-2.5 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {availableThemes.map((theme) => {
-                      const isActive = settings.activeThemeId === theme.id;
-                      return (
-                        <button
-                          key={theme.id}
-                          type="button"
-                          data-testid="theme-card"
-                          onClick={() => void updateSettings({ activeThemeId: theme.id })}
-                          className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
-                            isActive
-                              ? "border-nd-accent/50 bg-nd-accent/[0.07] shadow-glow"
-                              : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25"
-                          }`}
-                        >
-                          {isActive && (
-                            <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent">
-                              <Check className="h-3 w-3 text-nd-bg" />
-                            </span>
-                          )}
-                          <div className="mb-2 flex gap-1">
-                            {[
-                              theme.tokens.color.accent.primary,
-                              theme.tokens.color.accent.secondary,
-                              theme.tokens.color.text.warning,
-                              theme.tokens.color.text.danger,
-                              theme.tokens.color.surface.raised,
-                            ].map((c) => (
-                              <span
-                                key={c}
-                                className="h-3 flex-1 rounded-full"
-                                style={{ backgroundColor: c }}
-                              />
-                            ))}
-                          </div>
-                          <p className="text-xs font-semibold text-nd-text truncate">{theme.name}</p>
-                          <p className="mt-1 text-[11px] leading-4 text-nd-text-muted line-clamp-2">
-                            {theme.description}
+              ) : (() => {
+                // Resolve which theme to show in the preview pane:
+                // hovered > pending > currently active
+                const previewId = hoveredThemeId ?? pendingThemeId ?? settings.activeThemeId;
+                const previewTheme = availableThemes.find((t) => t.id === previewId) ?? activeTheme;
+                const hasPendingChange = pendingThemeId !== null && pendingThemeId !== settings.activeThemeId;
+                return (
+                  <div id="theme-cards-grid">
+                    <div className="grid gap-4 p-4 lg:grid-cols-[1fr_200px]">
+                      {/* Left: theme card grid */}
+                      <div
+                        className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
+                        onMouseLeave={() => setHoveredThemeId(null)}
+                      >
+                        {availableThemes.map((theme) => {
+                          const isActive = settings.activeThemeId === theme.id;
+                          const isPending = pendingThemeId === theme.id && !isActive;
+                          return (
+                            <button
+                              key={theme.id}
+                              type="button"
+                              data-testid="theme-card"
+                              onMouseEnter={() => setHoveredThemeId(theme.id)}
+                              onClick={() => setPendingThemeId((prev) => prev === theme.id ? null : theme.id)}
+                              aria-pressed={isActive}
+                              className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                                isActive
+                                  ? "border-nd-success/40 bg-nd-success/[0.05]"
+                                  : isPending
+                                  ? "border-nd-accent/50 bg-nd-accent/[0.07] shadow-glow"
+                                  : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25"
+                              }`}
+                            >
+                              {isActive && (
+                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-success" aria-label="Active theme">
+                                  <Check className="h-3 w-3 text-nd-bg" />
+                                </span>
+                              )}
+                              {isPending && (
+                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-nd-accent/40 bg-nd-accent/20 text-[8px] font-bold text-nd-accent">
+                                  ▶
+                                </span>
+                              )}
+                              <div className="mb-2 flex gap-1">
+                                {[
+                                  theme.tokens.color.accent.primary,
+                                  theme.tokens.color.accent.secondary,
+                                  theme.tokens.color.text.warning,
+                                  theme.tokens.color.text.danger,
+                                  theme.tokens.color.surface.raised,
+                                ].map((c, i) => (
+                                  <span key={i} className="h-3 flex-1 rounded-full" style={{ backgroundColor: c }} />
+                                ))}
+                              </div>
+                              <p className="text-xs font-semibold text-nd-text truncate">{theme.name}</p>
+                              <p className="mt-1 text-[11px] leading-4 text-nd-text-muted line-clamp-2">
+                                {theme.description}
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Right: live preview pane */}
+                      <div className="flex flex-col gap-3">
+                        <ThemePreviewMockup
+                          name={previewTheme.name}
+                          color={previewTheme.tokens.color}
+                        />
+                        <div className="space-y-1">
+                          <p className="text-xs font-semibold text-nd-text truncate">{previewTheme.name}</p>
+                          <p className="text-[11px] text-nd-text-muted leading-4 line-clamp-2">
+                            {hoveredThemeId
+                              ? "Hover to preview — click to select"
+                              : hasPendingChange
+                              ? "Selected — click Apply to switch"
+                              : "Currently active"}
                           </p>
-                        </button>
-                      );
-                    })}
+                        </div>
+
+                        {/* Apply / Cancel controls */}
+                        <div className="flex flex-col gap-1.5">
+                          <button
+                            type="button"
+                            disabled={!hasPendingChange}
+                            onClick={() => {
+                              if (pendingThemeId) {
+                                void updateSettings({ activeThemeId: pendingThemeId });
+                                setPendingThemeId(null);
+                              }
+                            }}
+                            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                          >
+                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
+                            {hasPendingChange ? "Apply Theme" : "Applied"}
+                          </button>
+                          {hasPendingChange && (
+                            <button
+                              type="button"
+                              onClick={() => setPendingThemeId(null)}
+                              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted transition hover:border-nd-text-muted/30 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+
+                        <p className="text-[10px] text-nd-text-muted/70 leading-4">
+                          Full wallpaper and display tuning in the <strong className="text-nd-text-muted">Themes</strong> tab.
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="px-4 pb-4">
-                    <p className="text-xs text-nd-text-muted">
-                      Active theme: <strong className="text-nd-text">{activeTheme.name}</strong>
-                    </p>
-                    <p className="mt-1 text-xs text-nd-text-muted">
-                      Full wallpaper and display tuning remains in the{" "}
-                      <strong className="text-nd-text">Themes</strong> tab.
-                    </p>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
             </Panel>
           </div>
         )}
