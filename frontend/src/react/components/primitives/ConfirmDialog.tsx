@@ -1,6 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import { Modal } from './Modal';
-import { Button } from './Button';
+import { ConfirmDialog as DSConfirmDialog } from '../../../design-system/components/feedback/ConfirmDialog';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -24,33 +23,16 @@ export function ConfirmDialog({
   destructive = false,
 }: ConfirmDialogProps) {
   return (
-    <Modal
+    <DSConfirmDialog
       open={open}
-      onClose={onCancel}
-      size="sm"
-      closeOnBackdrop={false}
-      footer={
-        <>
-          <Button variant="ghost" size="md" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
-          <Button variant={destructive ? 'danger' : 'primary'} size="md" onClick={onConfirm}>
-            {confirmLabel}
-          </Button>
-        </>
-      }
-    >
-      <div className="flex items-start gap-3">
-        {destructive && (
-          <span className="mt-0.5 shrink-0 text-nd-accent-error">
-            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
-          </span>
-        )}
-        <div>
-          <p className="font-semibold text-nd-text-primary">{title}</p>
-          <p className="mt-1 text-sm text-nd-text-secondary">{message}</p>
-        </div>
-      </div>
-    </Modal>
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+      title={title}
+      consequence={<p className="mt-1 text-sm text-nd-text-secondary">{message}</p>}
+      confirmLabel={confirmLabel}
+      cancelLabel={cancelLabel}
+      tone={destructive ? 'destructive' : 'safe'}
+      icon={destructive ? <AlertTriangle className="h-5 w-5" aria-hidden="true" /> : undefined}
+    />
   );
 }

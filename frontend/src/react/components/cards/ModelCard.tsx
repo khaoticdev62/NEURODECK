@@ -1,7 +1,8 @@
 import { BrainCircuit, CheckCircle2, DownloadCloud, Power } from "lucide-react";
-import { Badge } from "../../../design-system";
-import { Button } from "../../../design-system";
-import { Panel } from "../../../design-system";
+import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
+import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
 import type { LocalModel, ModelStatus } from "../../types/neurodeck";
 
 interface ModelCardProps {
@@ -16,11 +17,11 @@ interface ModelCardProps {
   onSelect: (id: string) => void;
 }
 
-const statusTone: Record<ModelStatus, "neutral" | "info" | "success" | "warning"> = {
+const statusTone: Record<ModelStatus, "info" | "success" | "warning" | "error"> = {
   ready: "success",
   indexed: "info",
   missing: "warning",
-  disabled: "neutral",
+  disabled: "error",
 };
 
 export function ModelCard({
@@ -34,51 +35,60 @@ export function ModelCard({
   onDisable,
   onSelect,
 }: ModelCardProps) {
-  const emphasis = selected
-    ? "active"
+  const status = model.status ?? "missing";
+  const panelBorder = selected
+    ? "border-nd-accent-primary/40"
     : policyAllowed === false
-      ? "critical"
-      : "default";
+      ? "border-nd-danger/30"
+      : "border-nd-border-subtle";
+  const panelBg = selected
+    ? "bg-nd-accent-primary/[0.05]"
+    : policyAllowed === false
+      ? "bg-nd-danger/[0.03]"
+      : "bg-transparent";
 
   return (
-    <Panel emphasis={emphasis} className="transition hover:border-[rgba(var(--nd-cyan-rgb),0.3)]">
+    <Panel
+      className={`transition hover:border-[rgba(var(--nd-cyan-rgb),0.3)] ${panelBorder} ${panelBg}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-3">
           <div
-            className={`flex h-12 w-12 items-center justify-center rounded-[var(--nd-radius-md)] border text-[var(--nd-accent-agent)] ${
+            className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border ${
               policyAllowed === false
-                ? "border-[rgba(var(--nd-red-rgb),0.3)] bg-[rgba(var(--nd-red-rgb),0.12)] text-[var(--nd-accent-error)]"
-                : "border-[rgba(var(--nd-purple-rgb),0.3)] bg-[rgba(var(--nd-purple-rgb),0.12)]"
+                ? "border-nd-danger/30 bg-nd-danger/10 text-nd-danger"
+                : "border-nd-purple-400/30 bg-nd-purple-400/10 text-nd-purple-400"
             }`}
           >
             <BrainCircuit className="h-6 w-6" aria-hidden="true" />
           </div>
-          <div>
-            <h3 className="font-semibold text-[var(--nd-text-primary)]">{model.name}</h3>
-            <p className="text-xs text-[var(--nd-text-muted)]">
+          <div className="min-w-0">
+            <h3 className="font-semibold text-nd-text-primary">{model.name}</h3>
+            <p className="text-xs text-nd-text-muted">
               {model.provider} · {model.size} · {model.quantization}
             </p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-2">
-          <Badge tone={statusTone[model.status]}>{model.status}</Badge>
-          {agentPreferred && <Badge tone="agent">Preferred</Badge>}
-          {policyAllowed === false && <Badge tone="error">Blocked</Badge>}
-          {selected && <Badge tone="info">Selected</Badge>}
+          <StatusChip tone={statusTone[status]} size="sm">
+            {status}
+          </StatusChip>
+          <div className="flex flex-wrap justify-end gap-1">
+            {agentPreferred && <Badge tone="accent" size="sm">Preferred</Badge>}
+            {policyAllowed === false && <Badge tone="danger" size="sm">Blocked</Badge>}
+            {selected && <Badge tone="accent" size="sm">Selected</Badge>}
+          </div>
         </div>
       </div>
 
-      <div className="mt-4 grid gap-2 text-xs text-[var(--nd-text-muted)] sm:grid-cols-3">
-        <ModelSpec
-          label="Context"
-          value={model.context ? model.context.toLocaleString() : "runtime"}
-        />
+      <div className="mt-4 grid gap-2 text-xs text-nd-text-muted sm:grid-cols-3">
+        <ModelSpec label="Context" value={model.context ? model.context.toLocaleString() : "runtime"} />
         <ModelSpec label="RAM" value={model.ramEstimate} />
         <ModelSpec label="Best For" value={model.bestFor.join(", ")} />
       </div>
 
       {policyAllowed === false && policyReason && (
-        <p className="mt-3 rounded-[var(--nd-radius-md)] border border-[rgba(var(--nd-red-rgb),0.2)] bg-[rgba(var(--nd-red-rgb),0.1)] px-3 py-2 text-xs text-[var(--nd-accent-error)]">
+        <p className="mt-3 rounded-[var(--nd-radius-md)] border border-nd-danger/20 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger">
           {policyReason}
         </p>
       )}
@@ -87,7 +97,7 @@ export function ModelCard({
           variant="success"
           size="sm"
           disabled={policyAllowed === false}
-          icon={<CheckCircle2 className="h-4 w-4" aria-hidden="true" />}
+          icon={CheckCircle2}
           onClick={() => {
             onMarkReady(model.id);
             onSelect(model.id);
@@ -98,7 +108,7 @@ export function ModelCard({
         <Button
           variant="primary"
           size="sm"
-          icon={<DownloadCloud className="h-4 w-4" aria-hidden="true" />}
+          icon={DownloadCloud}
           onClick={() => {
             onMarkIndexed(model.id);
             onSelect(model.id);
@@ -109,7 +119,7 @@ export function ModelCard({
         <Button
           variant="secondary"
           size="sm"
-          icon={<Power className="h-4 w-4" aria-hidden="true" />}
+          icon={Power}
           onClick={() => onDisable(model.id)}
         >
           Disable
@@ -121,11 +131,11 @@ export function ModelCard({
 
 function ModelSpec({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-tertiary)] p-3">
-      <p className="text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]">
+    <div className="rounded-[var(--nd-radius-md)] border border-nd-border-subtle bg-nd-surface-tertiary p-3">
+      <p className="text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-nd-text-muted">
         {label}
       </p>
-      <p className="mt-1 text-[var(--nd-text-secondary)]">{value}</p>
+      <p className="mt-1 text-nd-text-secondary">{value}</p>
     </div>
   );
 }

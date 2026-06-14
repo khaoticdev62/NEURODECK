@@ -13,6 +13,7 @@ import { StepPlugins } from './steps/StepPlugins';
 import { StepPackages } from './steps/StepPackages';
 import { StepFinish } from './steps/StepFinish';
 import { OnboardingOverlay } from '../../onboarding/OnboardingOverlay';
+import { Button } from '../primitives/Button';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -439,19 +440,21 @@ function SetupOnboardingModal({
       <div
         ref={wizardRef}
         data-controller-zone="modal"
-        className="no-drag w-full max-w-4xl h-[600px] overflow-hidden rounded-3xl border border-nd-accent/25 bg-nd-bg/95 shadow-2xl shadow-nd-accent/10 flex flex-row"
+        className="no-drag flex h-[600px] w-full max-w-4xl flex-row overflow-hidden rounded-[var(--nd-radius-xl)] border border-[var(--nd-border-default)] bg-[var(--nd-surface-modal)] shadow-[var(--nd-elevation-overlay)]"
         role="dialog"
         aria-modal="true"
         aria-label="NEURODECK Setup Wizard"
       >
         {/* Sidebar — step progress */}
-        <aside className="w-56 shrink-0 border-r border-nd-text-muted/10 bg-nd-surface/20 p-5 flex flex-col justify-between select-none">
-          <div className="space-y-4">
-            <div className="flex items-center gap-2.5 px-2 py-1 mb-4">
-              <Rocket className="h-5 w-5 text-nd-accent animate-pulse" aria-hidden="true" />
+        <aside className="flex w-56 shrink-0 select-none flex-col justify-between border-r border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] p-5">
+          <div className="space-y-5">
+            <div className="flex items-center gap-3 px-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-tertiary)] shadow-[var(--nd-elevation-panel)]">
+                <Rocket className="h-4 w-4 text-[var(--nd-accent-primary)]" aria-hidden="true" />
+              </div>
               <div>
-                <h1 className="text-xs font-bold uppercase tracking-wider text-nd-accent">NEURODECK</h1>
-                <p className="text-[10px] text-nd-text-muted">Setup Control</p>
+                <h1 className="text-[11px] font-bold uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-accent-primary)]">NEURODECK</h1>
+                <p className="text-[11px] text-[var(--nd-text-muted)]">Setup Control</p>
               </div>
             </div>
 
@@ -465,36 +468,36 @@ function SetupOnboardingModal({
                     type="button"
                     onClick={() => void handleStepClick(s.id)}
                     aria-current={isCurrent ? 'step' : undefined}
-                    className={`flex w-full items-center gap-3 rounded-xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                    className={`nd-focus-ring flex w-full items-center gap-3 rounded-[var(--nd-radius-md)] border px-3 py-2.5 text-left transition motion-reduce:transition-none ${
                       isCurrent
-                        ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent font-semibold'
+                        ? 'border-[rgba(var(--nd-cyan-rgb),0.3)] bg-[var(--nd-accent-soft)] text-[var(--nd-accent-primary)]'
                         : isDone
-                        ? 'border-transparent text-nd-success hover:bg-nd-surface/50'
-                        : 'border-transparent text-nd-text-muted/70 hover:text-nd-text hover:bg-nd-surface/40'
+                        ? 'border-transparent text-[var(--nd-accent-success)] hover:bg-[var(--nd-surface-hover)]'
+                        : 'border-transparent text-[var(--nd-text-muted)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-text-primary)]'
                     }`}
                   >
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center text-xs">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold">
                       {isDone
-                        ? <Check className="h-4 w-4 text-nd-success font-bold" aria-hidden="true" />
+                        ? <Check className="h-4 w-4 text-[var(--nd-accent-success)]" aria-hidden="true" />
                         : <span className="font-mono">{idx + 1}</span>}
                     </span>
-                    <span className="text-xs truncate">{s.label}</span>
+                    <span className={`text-xs ${isCurrent ? 'font-semibold' : ''} truncate`}>{s.label}</span>
                   </button>
                 );
               })}
             </nav>
           </div>
 
-          <div className="px-2 py-1 border-t border-nd-text-muted/10 pt-3">
-            <p className="text-[10px] text-nd-text-muted">Version: {appVersion}</p>
-            <p className="text-[9px] text-nd-text-muted/65 mt-0.5">
+          <div className="border-t border-[var(--nd-border-subtle)] px-2 pt-3">
+            <p className="text-[11px] text-[var(--nd-text-muted)]">Version: {appVersion}</p>
+            <p className="mt-0.5 text-[11px] text-[var(--nd-text-muted)]">
               {isSteamDeck ? 'Steam Deck Mode' : 'Desktop Mode'}
             </p>
           </div>
         </aside>
 
         {/* Main content */}
-        <div className="flex-1 flex flex-col min-h-0 bg-nd-bg/20">
+        <div className="flex min-h-0 flex-1 flex-col bg-[var(--nd-surface-app)]">
           <div className="flex-1 overflow-y-auto px-8 py-7 scrollbar-thin">
             {currentStep === 'welcome' && (
               <StepWelcome
@@ -570,20 +573,17 @@ function SetupOnboardingModal({
           </div>
 
           {/* Footer */}
-          <footer className="border-t border-nd-text-muted/10 px-8 py-4 bg-nd-surface/30 flex items-center justify-between">
+          <footer className="flex items-center justify-between border-t border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] px-8 py-4">
             <div className="flex gap-2">
               {currentStep !== 'welcome' && (
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-4 text-xs font-semibold text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" /> Back
-                </button>
+                <Button variant="secondary" size="sm" icon={ArrowLeft} onClick={handleBack}>
+                  Back
+                </Button>
               )}
               {(currentStep === 'welcome' || currentStep === 'environment' || currentStep === 'packages') && (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     if (currentStep === 'packages') {
                       void handleNext();
@@ -591,31 +591,28 @@ function SetupOnboardingModal({
                       void dismiss('skipped');
                     }
                   }}
-                  className="inline-flex h-9 items-center rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-4 text-xs font-semibold text-nd-text-muted transition hover:bg-nd-surface/60 hover:text-nd-text focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   {currentStep === 'packages' ? 'Skip Packages' : 'Skip for Now'}
-                </button>
+                </Button>
               )}
             </div>
 
             <div>
               {currentStep === 'finish' ? (
-                <button
-                  type="button"
-                  onClick={() => void dismiss('completed')}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-nd-accent px-5 text-xs font-bold text-nd-bg transition hover:brightness-110 focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  <Check className="h-4 w-4" aria-hidden="true" /> Enter Workspace
-                </button>
+                <Button variant="primary" size="sm" icon={Check} onClick={() => void dismiss('completed')}>
+                  Enter Workspace
+                </Button>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => void handleNext()}
+                <Button
+                  variant="primary"
+                  size="sm"
+                  icon={ArrowRight}
+                  iconPosition="right"
                   disabled={isNextDisabled()}
-                  className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-nd-accent px-5 text-xs font-bold text-nd-bg transition hover:brightness-110 disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                  onClick={() => void handleNext()}
                 >
-                  Next <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-                </button>
+                  Next
+                </Button>
               )}
             </div>
           </footer>

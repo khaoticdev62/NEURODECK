@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import type { Dispatch, FormEvent } from 'react';
-import { Bot } from 'lucide-react';
-import { Panel } from '../../components/primitives/Panel';
-import { AgentCard } from '../../components/cards/AgentCard';
+import { Bot, Send } from 'lucide-react';
+import { Button } from '../../components/primitives/Button';
 import { EmptyState } from '../../components/primitives/EmptyState';
+import { Panel } from '../../components/primitives/Panel';
+import { TextInput } from '../../components/primitives/TextInput';
+import { AgentCard } from '../../components/cards/AgentCard';
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
 
 export function AgentsView({
@@ -32,23 +34,24 @@ export function AgentsView({
       </div>
       <form onSubmit={handleSubmit} className="px-4 pt-3">
         <div className="flex gap-2">
-          <input
+          <TextInput
             id="agent-task-input"
-            type="text"
             value={task}
             onChange={(e) => setTask(e.target.value)}
             placeholder="Describe a task for the active agent..."
             aria-label="Task for agent"
-            className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+            className="flex-1"
           />
-          <button
+          <Button
             id="agent-run-btn"
             type="submit"
+            variant="primary"
+            size="md"
             disabled={!task.trim()}
-            className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+            icon={Send}
           >
             Run
-          </button>
+          </Button>
         </div>
       </form>
       <div className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-thin">

@@ -7,6 +7,10 @@ import { TERMINAL_PROFILES, type TerminalProfile, type TerminalProfileAvailabili
 import type { TerminalCommandHistoryEntry, TerminalSession, TerminalTab } from "../../../../../src/shared/terminal/terminalContracts";
 import type { TerminalCommandSafety } from "../../../../../src/shared/terminal/terminalSafetyTypes";
 import type { TerminalDiagnosticsReport, TerminalEnvironmentReport } from "../../../../../src/shared/terminal/terminalDiagnosticsTypes";
+import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { StatusChip } from "../../components/primitives/StatusChip";
 import { TerminalCommandPalette } from "./TerminalCommandPalette";
 import { TerminalControllerHintBar } from "./TerminalControllerHintBar";
 import { TerminalDiagnosticsPanel } from "./TerminalDiagnosticsPanel";
@@ -753,34 +757,54 @@ export function TerminalScreen() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded-full border px-3 py-1 text-xs font-semibold ${statusLevel === "running" ? "border-nd-success/25 bg-nd-success/10 text-nd-success" : statusLevel === "blocked" ? "border-nd-danger/25 bg-nd-danger/10 text-nd-danger" : "border-nd-text-muted/15 bg-nd-surface/40 text-nd-text-muted"}`}>
+          <StatusChip
+            tone={statusLevel === "running" ? "success" : statusLevel === "blocked" ? "error" : "warning"}
+            size="sm"
+          >
             {statusLevel}
-          </span>
-          <span className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-1 text-xs text-nd-text-muted">
+          </StatusChip>
+          <Badge tone="neutral" size="sm" variant="outline">
             {activeTab?.label ?? "No tab"}
-          </span>
-          <span className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-1 text-xs text-nd-text-muted">
+          </Badge>
+          <Badge tone="neutral" size="sm" variant="outline">
             {shellLabel}
-          </span>
-          <span className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-1 text-xs text-nd-text-muted">
+          </Badge>
+          <Badge tone="neutral" size="sm" variant="outline" className="max-w-[12rem] truncate">
             {activePane?.cwd || activeProjectPath || environment?.cwd || "cwd unavailable"}
-          </span>
-          <button id="terminal-new-tab-btn" type="button" onClick={() => createTab()} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
-            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          </Badge>
+          <Button
+            id="terminal-new-tab-btn"
+            variant="secondary"
+            size="sm"
+            icon={Plus}
+            onClick={() => createTab()}
+          >
             New Tab
-          </button>
-          <button type="button" onClick={() => splitActivePane("vertical")} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
-            <SplitSquareVertical className="h-3.5 w-3.5" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={SplitSquareVertical}
+            onClick={() => splitActivePane("vertical")}
+          >
             Split
-          </button>
-          <button type="button" onClick={() => setCommandPaletteOpen(true)} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
-            <LayoutGrid className="h-3.5 w-3.5" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={LayoutGrid}
+            onClick={() => setCommandPaletteOpen(true)}
+          >
             Palette
-          </button>
-          <button type="button" onClick={() => void refreshDiagnostics()} className="inline-flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:bg-nd-surface/60">
-            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={RefreshCw}
+            onClick={() => void refreshDiagnostics()}
+          >
             Refresh
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -817,15 +841,20 @@ export function TerminalScreen() {
 
           <TerminalDiagnosticsPanel diagnostics={diagnostics} environment={environment} activePane={activePane} />
 
-          <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3" tabIndex={0} aria-label="Terminal output">
+          <section className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-3" tabIndex={0} aria-label="Terminal output">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Session Manager</p>
                 <h3 className="text-sm font-semibold text-nd-text">Tabs and panes</h3>
               </div>
-              <button type="button" aria-label="Toggle session manager" onClick={() => setSessionManagerOpen((value) => !value)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+              <IconButton
+                aria-label="Toggle session manager"
+                variant="ghost"
+                size="sm"
+                onClick={() => setSessionManagerOpen((value) => !value)}
+              >
                 <TerminalIcon className="h-4 w-4" aria-hidden="true" />
-              </button>
+              </IconButton>
             </div>
             <div className="space-y-2">
               {tabs.map((tab) => {
@@ -837,20 +866,29 @@ export function TerminalScreen() {
                     tabIndex={0}
                     onClick={() => switchTab(tab.id)}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') switchTab(tab.id); }}
-                    className={`w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition ${tab.id === activeTabId ? "border-nd-accent/30 bg-nd-accent/[0.08]" : "border-nd-text-muted/15 bg-nd-surface/40 hover:bg-nd-surface/60"}`}
+                    className={`w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]" : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:bg-nd-surface-tertiary/60"}`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-nd-text">{tab.label}</div>
+                        <div className="truncate text-sm font-semibold text-nd-text-primary">{tab.label}</div>
                         <div className="truncate text-[11px] text-nd-text-muted">{pane?.shell ?? "unknown shell"}</div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button type="button" onClick={(e) => { e.stopPropagation(); pinTab(tab.id); }} className="rounded-md border border-nd-text-muted/15 px-2 py-1 text-[10px] text-nd-text-muted">
+                        <Button
+                          variant="secondary"
+                          size="xs"
+                          onClick={(e) => { e.stopPropagation(); pinTab(tab.id); }}
+                        >
                           {tab.pinned ? "Pinned" : "Pin"}
-                        </button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); void closeTab(tab.id); }} aria-label="Close tab" className="rounded-md border border-nd-danger/25 px-2 py-1 text-[10px] text-nd-danger">
-                          <X className="h-3 w-3" aria-hidden="true" />
-                        </button>
+                        </Button>
+                        <IconButton
+                          aria-label="Close tab"
+                          variant="danger"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); void closeTab(tab.id); }}
+                        >
+                          <X className="h-4 w-4" aria-hidden="true" />
+                        </IconButton>
                       </div>
                     </div>
                     <div className="mt-2 flex items-center gap-2 text-[11px] text-nd-text-muted">
@@ -871,48 +909,72 @@ export function TerminalScreen() {
         </aside>
 
         <main className="min-w-0 flex-1 overflow-hidden">
-          <div className="mb-3 flex items-center gap-2 overflow-x-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-2">
+          <div className="mb-3 flex items-center gap-2 overflow-x-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => switchTab(tab.id)}
-                className={`inline-flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${tab.id === activeTabId ? "border-nd-accent/30 bg-nd-accent/[0.08] text-nd-text" : "border-nd-text-muted/15 bg-nd-surface/40 text-nd-text-muted hover:bg-nd-surface/60"}`}
+                className={`inline-flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08] text-nd-text-primary" : "border-nd-border-subtle bg-nd-surface-secondary/40 text-nd-text-muted hover:bg-nd-surface-tertiary/60"}`}
               >
                 <TerminalIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="truncate">{tab.label}</span>
                 {tab.pinned && <ShieldCheck className="h-3.5 w-3.5 text-nd-success" aria-hidden="true" />}
               </button>
             ))}
-            <button type="button" onClick={() => createTab()} className="inline-flex items-center gap-2 rounded-xl border border-dashed border-nd-text-muted/15 px-3 py-2 text-sm text-nd-text-muted">
-              <Plus className="h-4 w-4" aria-hidden="true" />
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={Plus}
+              onClick={() => createTab()}
+            >
               Add Tab
-            </button>
+            </Button>
           </div>
 
           <div className="grid min-h-0 gap-3" style={{ gridTemplateColumns: assistantOpen ? "minmax(0,1fr) 18rem" : "minmax(0,1fr)" }}>
-            <section className="min-h-0 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
+            <section className="min-h-0 overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30">
               {activeTab ? (
                 <div className="flex min-h-0 h-full flex-col">
-                  <div className="flex items-center justify-between border-b border-nd-text-muted/15 px-3 py-2">
+                  <div className="flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2">
                     <div className="flex items-center gap-2 text-xs text-nd-text-muted">
-                      <span>{activeTab.layout}</span>
+                      <Badge tone="neutral" size="sm" variant="outline">{activeTab.layout}</Badge>
                       <span>•</span>
-                      <span>{activeTab.cwd || environment?.cwd || "cwd unavailable"}</span>
+                      <span className="truncate max-w-[16rem]">{activeTab.cwd || environment?.cwd || "cwd unavailable"}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <button type="button" aria-label="Search terminal output" onClick={() => setSearchOpen((value) => !value)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                    <div className="flex items-center gap-1">
+                      <IconButton
+                        aria-label="Search terminal output"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSearchOpen((value) => !value)}
+                      >
                         <Search className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button type="button" aria-label="Split pane horizontally" onClick={() => splitActivePane("horizontal")} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                      </IconButton>
+                      <IconButton
+                        aria-label="Split pane horizontally"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => splitActivePane("horizontal")}
+                      >
                         <SplitSquareHorizontal className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button type="button" aria-label="Reset pane" onClick={() => void resetPane(activePaneId)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                      </IconButton>
+                      <IconButton
+                        aria-label="Reset pane"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => void resetPane(activePaneId)}
+                      >
                         <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                      <button type="button" aria-label="Close pane" onClick={() => void closePane(activePaneId)} className="rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-2 text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
+                      </IconButton>
+                      <IconButton
+                        aria-label="Close pane"
+                        variant="danger"
+                        size="sm"
+                        onClick={() => void closePane(activePaneId)}
+                      >
                         <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </button>
+                      </IconButton>
                     </div>
                   </div>
 
@@ -923,7 +985,7 @@ export function TerminalScreen() {
                         if (!pane) return null;
                         const profile = profiles.find((item) => item.id === pane.profileId) ?? null;
                         return (
-                          <div key={pane.id} className={`min-h-0 overflow-hidden rounded-2xl border ${pane.id === activePaneId ? "border-nd-accent/30 bg-nd-bg/60" : "border-nd-text-muted/15 bg-nd-bg/40"}`}>
+                          <div key={pane.id} className={`min-h-0 overflow-hidden rounded-2xl border ${pane.id === activePaneId ? "border-nd-accent-primary/30 bg-nd-surface-app/60" : "border-nd-border-subtle bg-nd-surface-app/40"}`}>
                             <TerminalViewport
                               pane={pane}
                               profile={profile}

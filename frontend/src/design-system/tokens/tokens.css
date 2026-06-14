@@ -65,6 +65,19 @@
   --nd-surface-modal:     #0F1419;
   --nd-surface-tooltip:   #1C242E;
 
+  /* ---- Semantic interaction surfaces ---- */
+  --nd-surface-hover:     rgba(141, 161, 179, 0.08);
+  --nd-surface-active:    rgba(94, 235, 255, 0.12);
+  --nd-surface-selected:  rgba(94, 235, 255, 0.14);
+  --nd-surface-disabled:  rgba(141, 161, 179, 0.06);
+
+  /* ---- Semantic state colors ---- */
+  --nd-state-success:     var(--nd-green-400);
+  --nd-state-warning:     var(--nd-yellow-400);
+  --nd-state-error:       var(--nd-red-400);
+  --nd-state-info:        var(--nd-blue-500);
+  --nd-state-loading:     var(--nd-cyan-400);
+
   /* ---- Semantic borders ---- */
   --nd-border-subtle:  rgba(141, 161, 179, 0.16);
   --nd-border-default: rgba(141, 161, 179, 0.28);
@@ -209,6 +222,32 @@
   outline: none;
   box-shadow: var(--nd-elevation-focus);
   border-color: var(--nd-accent-primary);
+}
+
+/* Scrollbar treatment aligned with the dark tactical shell */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--nd-border-default) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--nd-border-default);
+  border-radius: var(--nd-radius-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--nd-border-strong);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -17,11 +17,11 @@ export function LiveWallpaperPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-3 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
-        <SlidersHorizontal className="h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
+      <div className="flex items-center gap-3 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+        <SlidersHorizontal className="h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex items-center justify-between">
-            <label htmlFor="wallpaper-opacity" className="text-xs font-semibold text-nd-text/80">
+            <label htmlFor="wallpaper-opacity" className="text-xs font-semibold text-nd-text-primary/80">
               Wallpaper Opacity
             </label>
             <span className="text-xs tabular-nums text-nd-text-muted">
@@ -36,7 +36,7 @@ export function LiveWallpaperPanel() {
             step={1}
             value={settings.wallpaperOpacity}
             onChange={(event) => handleOpacity(Number(event.target.value))}
-            className="h-1.5 w-full cursor-pointer accent-nd-accent"
+            className="h-1.5 w-full cursor-pointer accent-nd-accent-primary"
             aria-label="Wallpaper opacity"
           />
         </div>
@@ -46,10 +46,10 @@ export function LiveWallpaperPanel() {
         <button
           type="button"
           onClick={() => applyWallpaper("none")}
-          className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-nd-accent ${
+          className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-nd-accent-primary ${
             settings.activeWallpaperId === "none" || !settings.liveWallpaperEnabled
-              ? "border-nd-accent/50 ring-1 ring-nd-accent/30"
-              : "border-nd-text-muted/15 hover:border-nd-text-muted/20"
+              ? "border-nd-accent-primary/50 ring-1 ring-nd-accent-primary/30"
+              : "border-nd-border-subtle hover:border-nd-border-default"
           }`}
           aria-pressed={settings.activeWallpaperId === "none" || !settings.liveWallpaperEnabled}
         >
@@ -57,7 +57,7 @@ export function LiveWallpaperPanel() {
             <ImageIcon className="h-5 w-5 text-nd-text-muted/70" aria-hidden="true" />
           </div>
           <div className="px-2 pb-2">
-            <p className="text-[11px] font-semibold leading-tight text-nd-text/80">No Wallpaper</p>
+            <p className="text-[11px] font-semibold leading-tight text-nd-text-primary/80">No Wallpaper</p>
             <p className="text-[10px] leading-tight text-nd-text-muted/70">
               Disable animated and ambient background layers.
             </p>
@@ -66,7 +66,7 @@ export function LiveWallpaperPanel() {
 
         {availableWallpapers.map((wallpaper) => {
           const active = settings.activeWallpaperId === wallpaper.id && settings.liveWallpaperEnabled;
-          const accent = wallpaper.visuals.basePalette[0] ?? "var(--nd-accent)";
+          const accent = wallpaper.visuals.basePalette[0] ?? "var(--nd-accent-primary)";
           const accentSecondary = wallpaper.visuals.basePalette[1] ?? accent;
 
           return (
@@ -74,10 +74,10 @@ export function LiveWallpaperPanel() {
               key={wallpaper.id}
               type="button"
               onClick={() => applyWallpaper(wallpaper.id)}
-              className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-nd-accent ${
+              className={`flex flex-col gap-1.5 rounded-xl border p-0 text-left transition focus-visible:outline-2 focus-visible:outline-nd-accent-primary ${
                 active
-                  ? "border-nd-accent/50 ring-1 ring-nd-accent/30"
-                  : "border-nd-text-muted/15 hover:border-nd-text-muted/20"
+                  ? "border-nd-accent-primary/50 ring-1 ring-nd-accent-primary/30"
+                  : "border-nd-border-subtle hover:border-nd-border-default"
               }`}
               aria-pressed={active}
             >
@@ -93,7 +93,7 @@ export function LiveWallpaperPanel() {
                 <MonitorPlay className="h-4 w-4 text-white/70" aria-hidden="true" />
               </div>
               <div className="px-2 pb-2">
-                <p className="text-[11px] font-semibold leading-tight text-nd-text/80">
+                <p className="text-[11px] font-semibold leading-tight text-nd-text-primary/80">
                   {wallpaper.name}
                 </p>
                 <p className="text-[10px] leading-tight text-nd-text-muted/70 line-clamp-2">

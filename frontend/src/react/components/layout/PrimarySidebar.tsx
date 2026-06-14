@@ -31,7 +31,7 @@ export function PrimarySidebar({
 
   return (
     <aside
-      className="group/sidebar relative hidden shrink-0 flex-col border-r border-nd-text-muted/15 bg-nd-bg/72 backdrop-blur-xl transition-all duration-200 ease-snap lg:flex"
+      className="group/sidebar relative hidden shrink-0 flex-col border-r border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] transition-[width] duration-[var(--nd-motion-normal)] ease-[var(--nd-ease-standard)] lg:flex"
       style={{ width: expanded ? 200 : 56 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -42,12 +42,16 @@ export function PrimarySidebar({
           id="command-palette-btn"
           type="button"
           data-onboarding-anchor="command-palette-trigger"
-          className="no-drag flex w-full items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/[0.06] px-2 py-2.5 text-left transition hover:border-nd-accent/40 hover:bg-nd-accent/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+          className="no-drag flex w-full min-h-touch items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-accent-primary)]/20 bg-[var(--nd-accent-primary)]/[0.06] px-2 py-2 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/40 hover:bg-[var(--nd-accent-primary)]/[0.10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
           onClick={() => dispatch({ type: 'toggle-command', open: true })}
           aria-label="Open command palette"
         >
-          <Command className="h-5 w-5 shrink-0 text-nd-accent" aria-hidden="true" />
-          <span className={`ml-2.5 overflow-hidden whitespace-nowrap text-xs font-semibold uppercase tracking-[0.22em] text-nd-accent transition-opacity duration-150 ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>
+          <Command className="h-5 w-5 shrink-0 text-[var(--nd-accent-primary)]" aria-hidden="true" />
+          <span
+            className={`ml-2.5 overflow-hidden whitespace-nowrap text-xs font-semibold uppercase tracking-[var(--nd-tracking-wordmark)] text-[var(--nd-accent-primary)] transition-opacity duration-[var(--nd-motion-fast)] ${
+              expanded ? 'opacity-100' : 'opacity-0 w-0'
+            }`}
+          >
             Cmd
           </span>
         </button>
@@ -58,10 +62,16 @@ export function PrimarySidebar({
           aria-label={pinned ? 'Collapse sidebar' : 'Expand sidebar'}
           aria-pressed={pinned}
           title={pinned ? 'Collapse sidebar' : 'Expand sidebar'}
-          className={`no-drag flex w-full items-center justify-center rounded-lg border px-2 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${pinned ? 'border-nd-accent/30 bg-nd-accent/[0.06] text-nd-accent' : 'border-transparent text-nd-text-muted/50 hover:border-nd-text-muted/15 hover:text-nd-text-muted'}`}
+          className={`no-drag flex w-full min-h-touch items-center justify-center rounded-[var(--nd-radius-md)] border px-2 py-1.5 text-xs transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
+            pinned
+              ? 'border-[var(--nd-accent-primary)]/30 bg-[var(--nd-accent-primary)]/[0.06] text-[var(--nd-accent-primary)]'
+              : 'border-transparent text-[var(--nd-text-muted)]/60 hover:border-[var(--nd-border-subtle)] hover:text-[var(--nd-text-secondary)]'
+          }`}
         >
           <ChevronRight
-            className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${pinned ? 'rotate-180' : ''}`}
+            className={`h-3.5 w-3.5 shrink-0 transition-transform duration-[var(--nd-motion-normal)] ${
+              pinned ? 'rotate-180' : ''
+            }`}
             aria-hidden="true"
           />
           {expanded && <span className="ml-1.5 overflow-hidden whitespace-nowrap">{pinned ? 'Collapse' : 'Expand'}</span>}
@@ -76,8 +86,14 @@ export function PrimarySidebar({
           return (
             <div key={section} className="mb-2">
               {/* Section divider (icon mode) or label (expanded) */}
-              <div className={`mb-1 transition-opacity duration-150 ${expanded ? 'px-2 py-1 text-xs font-bold uppercase tracking-[0.18em] text-nd-text-muted/60' : 'flex justify-center py-1'}`}>
-                {expanded ? section : <div className="h-px w-6 bg-nd-text-muted/20" />}
+              <div
+                className={`mb-1 transition-opacity duration-[var(--nd-motion-fast)] ${
+                  expanded
+                    ? 'px-2 py-1 text-[10px] font-bold uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]/60'
+                    : 'flex justify-center py-1'
+                }`}
+              >
+                {expanded ? section : <div className="h-px w-6 bg-[var(--nd-border-subtle)]" />}
               </div>
               <div className="space-y-0.5">
                 {items.map((item) => {
@@ -94,18 +110,24 @@ export function PrimarySidebar({
                       aria-label={item.label}
                       title={item.label}
                       onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}
-                      className={`no-drag flex w-full items-center rounded-lg px-2 py-2 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                      className={`no-drag group/nav flex w-full min-h-touch items-center rounded-[var(--nd-radius-md)] px-2 py-2 text-left transition-[background-color,border-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
                         active
-                          ? 'active bg-nd-accent/10 text-nd-accent font-semibold'
-                          : 'text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text'
+                          ? 'border-l-2 border-[var(--nd-border-focus)] bg-[var(--nd-surface-selected)] pl-[6px] font-semibold text-[var(--nd-accent-primary)]'
+                          : 'border-l-2 border-transparent text-[var(--nd-text-muted)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-text-primary)]'
                       } ${expanded ? '' : 'justify-center'}`}
                     >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className={`ml-2.5 overflow-hidden whitespace-nowrap text-[13px] font-medium transition-opacity duration-150 ${expanded ? 'opacity-100' : 'opacity-0 w-0'}`}>
+                      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span
+                        className={`ml-2.5 overflow-hidden whitespace-nowrap text-[13px] font-medium transition-opacity duration-[var(--nd-motion-fast)] ${
+                          expanded ? 'opacity-100' : 'opacity-0 w-0'
+                        }`}
+                      >
                         {item.label}
                       </span>
                       {expanded && item.shortcut && (
-                        <span className="ml-auto rounded border border-nd-text-muted/15 bg-nd-surface/50 px-1.5 py-0.5 text-[10px] text-nd-text-muted">
+                        <span className="ml-auto rounded border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] px-1.5 py-0.5 text-[10px] text-[var(--nd-text-muted)]">
                           {item.shortcut}
                         </span>
                       )}
@@ -119,15 +141,17 @@ export function PrimarySidebar({
       </nav>
 
       {/* Footer */}
-      <div className="shrink-0 space-y-1.5 rounded-2xl border-t border-nd-text-muted/15 bg-nd-surface/30 p-2">
+      <div className="shrink-0 space-y-1.5 border-t border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/40 p-2">
         <div className="flex items-center justify-center">
           {expanded ? (
-            <div className="flex w-full items-center justify-between px-1">
-              <Badge tone="success">Offline Ready</Badge>
-              <WifiOff className="h-4 w-4 text-nd-success" />
+            <div className="flex w-full min-h-touch items-center justify-between px-1">
+              <Badge tone="success" variant="outline" dot>
+                Offline Ready
+              </Badge>
+              <WifiOff className="h-4 w-4 text-[var(--nd-accent-success)]" />
             </div>
           ) : (
-            <WifiOff className="h-4 w-4 text-nd-success" />
+            <WifiOff className="h-4 w-4 text-[var(--nd-accent-success)]" aria-label="Offline ready" />
           )}
         </div>
         <div className={`flex gap-1 ${expanded ? '' : 'flex-col'}`}>
@@ -137,7 +161,7 @@ export function PrimarySidebar({
             onClick={() => onOpenSettings?.()}
             aria-label="Open settings"
             title="Settings"
-            className="flex flex-1 items-center justify-center rounded-lg border border-transparent px-2 py-1.5 text-xs text-nd-text-muted transition hover:border-nd-text-muted/15 hover:text-nd-text/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+            className="flex flex-1 min-h-touch items-center justify-center rounded-[var(--nd-radius-md)] border border-transparent px-2 py-1.5 text-xs text-[var(--nd-text-muted)] transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-border-subtle)] hover:text-[var(--nd-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
           >
             <Settings className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {expanded && <span className="ml-1.5 whitespace-nowrap">Settings</span>}
@@ -148,7 +172,7 @@ export function PrimarySidebar({
             onClick={() => onOpenNotifications?.()}
             aria-label="Notifications"
             title="Notifications"
-            className="flex flex-1 items-center justify-center rounded-lg border border-transparent px-2 py-1.5 text-xs text-nd-text-muted transition hover:border-nd-text-muted/15 hover:text-nd-text/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+            className="flex flex-1 min-h-touch items-center justify-center rounded-[var(--nd-radius-md)] border border-transparent px-2 py-1.5 text-xs text-[var(--nd-text-muted)] transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-border-subtle)] hover:text-[var(--nd-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
           >
             <Bell className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {expanded && <span className="ml-1.5 whitespace-nowrap">Alerts</span>}
@@ -157,7 +181,11 @@ export function PrimarySidebar({
         <button
           type="button"
           onClick={() => dispatch({ type: 'toggle-deck-mode' })}
-          className={`flex w-full items-center justify-center rounded-full border px-2 py-1.5 text-xs transition ${state.deckMode ? 'border-nd-accent/40 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted hover:text-nd-text/90'}`}
+          className={`flex w-full min-h-touch items-center justify-center rounded-full border px-2 py-1.5 text-xs transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
+            state.deckMode
+              ? 'border-[var(--nd-accent-primary)]/40 bg-[var(--nd-accent-primary)]/10 text-[var(--nd-accent-primary)]'
+              : 'border-[var(--nd-border-subtle)] text-[var(--nd-text-muted)] hover:text-[var(--nd-text-primary)]'
+          }`}
           aria-label={`Deck Mode ${state.deckMode ? 'On' : 'Off'}`}
           title={`Deck Mode ${state.deckMode ? 'On' : 'Off'}`}
         >

@@ -1,4 +1,6 @@
 import { Loader2, Terminal, ShieldCheck, Check, ShieldAlert } from 'lucide-react';
+import { Panel } from '../../primitives/Panel';
+import { StatusChip } from '../../primitives/StatusChip';
 
 interface StepWelcomeProps {
   appVersion: string;
@@ -11,53 +13,51 @@ export function StepWelcome({ appVersion, isSteamDeck, precheckPassed, prechecki
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-2xl font-bold tracking-tight text-nd-text">Welcome to NEURODECK</h2>
-        <p className="text-sm text-nd-text-muted">Turn your device into a focused local-first AI workstation.</p>
+        <h2 className="text-2xl font-bold tracking-tight text-[var(--nd-text-primary)]">Welcome to NEURODECK</h2>
+        <p className="text-sm text-[var(--nd-text-muted)]">Turn your device into a focused local-first AI workstation.</p>
       </div>
 
-      <div className="rounded-2xl border border-nd-accent/15 bg-nd-accent/[0.03] p-5 space-y-4">
-        <h3 className="font-semibold text-nd-text text-sm">System Environment Detected</h3>
-
+      <Panel title="System Environment Detected" variant="surface">
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/40 p-3 flex items-center gap-3">
-            <Terminal className="h-5 w-5 text-nd-accent" aria-hidden="true" />
-            <div>
-              <p className="text-xs text-nd-text-muted">Device Class</p>
-              <p className="text-sm font-semibold text-nd-text mt-0.5">
+          <div className="flex items-center gap-3 rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-tertiary)] p-3">
+            <Terminal className="h-5 w-5 shrink-0 text-[var(--nd-accent-primary)]" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]">Device Class</p>
+              <p className="truncate text-sm font-semibold text-[var(--nd-text-primary)]">
                 {isSteamDeck ? 'Steam Deck Console' : 'Standard PC Workstation'}
               </p>
             </div>
           </div>
 
-          <div className="rounded-xl border border-nd-text-muted/10 bg-nd-surface/40 p-3 flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-nd-accent" aria-hidden="true" />
-            <div>
-              <p className="text-xs text-nd-text-muted">App Release</p>
-              <p className="text-sm font-semibold text-nd-text mt-0.5">v{appVersion}</p>
+          <div className="flex items-center gap-3 rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-tertiary)] p-3">
+            <ShieldCheck className="h-5 w-5 shrink-0 text-[var(--nd-accent-primary)]" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]">App Release</p>
+              <p className="truncate text-sm font-semibold text-[var(--nd-text-primary)]">v{appVersion}</p>
             </div>
           </div>
         </div>
 
-        <p className="text-xs text-nd-text-muted/85 leading-relaxed">
+        <p className="mt-4 text-xs leading-relaxed text-[var(--nd-text-secondary)]">
           This wizard will verify your local diagnostic environment, configure connection variables to local/remote models, select themes, and check active Lua automation scripts.
         </p>
-      </div>
+      </Panel>
 
-      <div className="flex items-center gap-3 p-3 rounded-xl border border-nd-text-muted/10 bg-nd-surface/20">
+      <div className="flex items-center gap-3 rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] p-3">
         {prechecking ? (
           <>
-            <Loader2 className="h-4 w-4 animate-spin text-nd-accent" aria-hidden="true" />
-            <span className="text-xs text-nd-text-muted">Pre-checking system environment...</span>
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[var(--nd-accent-primary)] motion-reduce:animate-none" aria-hidden="true" />
+            <span className="text-xs text-[var(--nd-text-muted)]">Pre-checking system environment...</span>
           </>
         ) : precheckPassed ? (
           <>
-            <Check className="h-4 w-4 text-nd-success" aria-hidden="true" />
-            <span className="text-xs text-nd-success font-medium">Basic diagnostic requirements passing. You can safely skip setup.</span>
+            <Check className="h-4 w-4 shrink-0 text-[var(--nd-accent-success)]" aria-hidden="true" />
+            <StatusChip tone="success" size="sm">Basic diagnostic requirements passing. You can safely skip setup.</StatusChip>
           </>
         ) : (
           <>
-            <ShieldAlert className="h-4 w-4 text-nd-warning" aria-hidden="true" />
-            <span className="text-xs text-nd-text-muted">Initial environment issue detected. Setup recommended before launching.</span>
+            <ShieldAlert className="h-4 w-4 shrink-0 text-[var(--nd-accent-warning)]" aria-hidden="true" />
+            <StatusChip tone="warning" size="sm">Initial environment issue detected. Setup recommended before launching.</StatusChip>
           </>
         )}
       </div>

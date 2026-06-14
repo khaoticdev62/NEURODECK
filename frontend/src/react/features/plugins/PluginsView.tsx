@@ -5,7 +5,9 @@ import {
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { PluginInfo } from '../../services/bridgeAdapter';
+import { Badge } from '../../components/primitives/Badge';
 import { Button } from '../../components/primitives/Button';
+import { StatusChip } from '../../components/primitives/StatusChip';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { IconButton } from '../../components/primitives/IconButton';
@@ -330,21 +332,21 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
-        <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-4 py-3">
+        <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-3">
           <p className="text-[10px] uppercase font-bold tracking-wider text-nd-text-muted">Total Installed</p>
-          <p className="text-xl font-bold text-nd-text mt-0.5">{totalInstalled}</p>
+          <p className="text-xl font-bold text-nd-text-primary mt-0.5">{totalInstalled}</p>
         </div>
-        <div className="rounded-xl border border-nd-success/20 bg-nd-success/[0.02] px-4 py-3">
+        <div className="rounded-xl border border-nd-success/20 bg-nd-success/[0.04] px-4 py-3">
           <p className="text-[10px] uppercase font-bold tracking-wider text-nd-success/80">Active Scripts</p>
           <p className="text-xl font-bold text-nd-success mt-0.5">{totalEnabled}</p>
         </div>
-        <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/30 px-4 py-3">
+        <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-3">
           <p className="text-[10px] uppercase font-bold tracking-wider text-nd-text-muted">Disabled</p>
-          <p className="text-xl font-bold text-nd-text/80 mt-0.5">{totalDisabled}</p>
+          <p className="text-xl font-bold text-nd-text-primary/80 mt-0.5">{totalDisabled}</p>
         </div>
-        <div className={`rounded-xl border px-4 py-3 transition ${totalErrors > 0 ? 'border-nd-danger/30 bg-nd-danger/[0.02]' : 'border-nd-text-muted/15 bg-nd-surface/30'}`}>
+        <div className={`rounded-xl border px-4 py-3 transition ${totalErrors > 0 ? 'border-nd-danger/30 bg-nd-danger/[0.04]' : 'border-nd-border-subtle bg-nd-surface-secondary/40'}`}>
           <p className={`text-[10px] uppercase font-bold tracking-wider ${totalErrors > 0 ? 'text-nd-danger/80' : 'text-nd-text-muted'}`}>QA Failures</p>
-          <p className={`text-xl font-bold mt-0.5 ${totalErrors > 0 ? 'text-nd-danger' : 'text-nd-text'}`}>{totalErrors}</p>
+          <p className={`text-xl font-bold mt-0.5 ${totalErrors > 0 ? 'text-nd-danger' : 'text-nd-text-primary'}`}>{totalErrors}</p>
         </div>
       </div>
 
@@ -433,7 +435,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
       <div className="flex-1 flex flex-col md:flex-row gap-4 min-h-0">
         
         {/* LEFT COLUMN: PLUGIN LIST */}
-        <div className="flex-1 flex flex-col min-h-0 border border-nd-text-muted/10 bg-nd-surface/10 rounded-2xl overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 border border-nd-border-subtle bg-nd-surface-secondary/30 rounded-2xl overflow-hidden">
           <div className="flex-1 overflow-y-auto p-4 space-y-2.5 scrollbar-thin">
             {loading && plugins.length === 0 ? (
               <LoadingState label="Scanning plugins..." />
@@ -467,12 +469,13 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <FileCode className={`h-4 w-4 shrink-0 ${p.enabled ? 'text-nd-accent' : 'text-nd-text-muted'}`} aria-hidden="true" />
-                          <h4 className="font-semibold text-xs text-nd-text truncate">{p.name}</h4>
+                          <FileCode className={`h-4 w-4 shrink-0 ${p.enabled ? 'text-nd-accent-primary' : 'text-nd-text-muted'}`} aria-hidden="true" />
+                          <h4 className="font-semibold text-xs text-nd-text-primary truncate">{p.name}</h4>
+                          <Badge tone={p.enabled ? 'success' : 'neutral'} size="sm" variant="outline">
+                            {p.enabled ? 'Active' : 'Disabled'}
+                          </Badge>
                           {hasErrors && (
-                            <span className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-nd-danger/10 px-1.5 py-0.5 text-[9px] font-bold text-nd-danger">
-                              Failed QA
-                            </span>
+                            <Badge tone="danger" size="sm">Failed QA</Badge>
                           )}
                         </div>
                         <p className="text-[10px] text-nd-text-muted mt-0.5 font-mono truncate">{p.file_name}</p>
@@ -489,11 +492,11 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
 
                     <p className="text-xs text-nd-text-muted/80 line-clamp-1">{p.description || 'No description provided.'}</p>
 
-                    <div className="flex items-center justify-between text-[10px] text-nd-text-muted/70 mt-1 border-t border-nd-text-muted/5 pt-2">
+                    <div className="flex items-center justify-between text-[10px] text-nd-text-muted mt-1 border-t border-nd-border-subtle pt-2">
                       <div className="flex items-center gap-3">
-                        {p.version && <span>v{p.version}</span>}
+                        {p.version && <Badge tone="accent" size="sm" variant="outline">v{p.version}</Badge>}
                         {p.author && <span className="truncate max-w-[80px]">By {p.author}</span>}
-                        <span>{p.permissions.length} perms</span>
+                        <Badge tone="neutral" size="sm" variant="outline">{p.permissions.length} perms</Badge>
                       </div>
                       
                       {p.id && (
@@ -520,7 +523,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
         </div>
 
         {/* RIGHT COLUMN: DETAILS DRAWER */}
-        <div className="w-full md:w-[380px] shrink-0 flex flex-col border border-nd-text-muted/10 bg-nd-surface/20 rounded-2xl overflow-hidden">
+        <div className="w-full md:w-[380px] shrink-0 flex flex-col border border-nd-border-subtle bg-nd-surface-secondary/20 rounded-2xl overflow-hidden">
           {!selectedPlugin ? (
             <div className="flex-1 flex flex-col items-center justify-center p-6 text-center text-nd-text-muted select-none">
               <Plug className="h-10 w-10 text-nd-text-muted/30 mb-3" />
@@ -531,19 +534,15 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
             <div className="flex-1 flex flex-col min-h-0">
               
               {/* Drawer Header */}
-              <div className="px-5 py-4 border-b border-nd-text-muted/10 bg-nd-surface/30">
+              <div className="px-5 py-4 border-b border-nd-border-subtle bg-nd-surface-secondary/40">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-sm font-semibold text-nd-text truncate">{selectedPlugin.name}</h3>
+                    <h3 className="text-sm font-semibold text-nd-text-primary truncate">{selectedPlugin.name}</h3>
                     <p className="text-[10px] text-nd-text-muted font-mono truncate mt-0.5">{selectedPlugin.file_name}</p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
-                    selectedPlugin.enabled
-                      ? 'bg-nd-success/10 text-nd-success border border-nd-success/20'
-                      : 'bg-nd-text-muted/10 text-nd-text-muted border border-nd-text-muted/20'
-                  }`}>
+                  <StatusChip tone={selectedPlugin.enabled ? 'success' : 'info'} size="sm">
                     {selectedPlugin.enabled ? 'Active' : 'Disabled'}
-                  </span>
+                  </StatusChip>
                 </div>
               </div>
 
@@ -553,7 +552,7 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                 {/* Description */}
                 <div className="space-y-1.5">
                   <h5 className="text-[10px] uppercase font-bold tracking-wider text-nd-text-muted">Description</h5>
-                  <p className="text-xs text-nd-text/90 leading-normal">{selectedPlugin.description || 'No description provided.'}</p>
+                  <p className="text-xs text-nd-text-secondary/90 leading-normal">{selectedPlugin.description || 'No description provided.'}</p>
                 </div>
 
                 {/* Metadata Details */}
@@ -562,19 +561,19 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                   <div className="grid grid-cols-2 gap-y-2 text-[11px]">
                     <div>
                       <span className="text-nd-text-muted block">Author</span>
-                      <span className="text-nd-text font-semibold">{selectedPlugin.author || 'Unknown'}</span>
+                      <span className="text-nd-text-primary font-semibold">{selectedPlugin.author || 'Unknown'}</span>
                     </div>
                     <div>
                       <span className="text-nd-text-muted block">Version</span>
-                      <span className="text-nd-text font-semibold">v{selectedPlugin.version || '1.0.0'}</span>
+                      <span className="text-nd-text-primary font-semibold">v{selectedPlugin.version || '1.0.0'}</span>
                     </div>
                     <div>
                       <span className="text-nd-text-muted block">Runtime</span>
-                      <span className="text-nd-text font-semibold capitalize">{getPluginRuntime(selectedPlugin.file_name)}</span>
+                      <span className="text-nd-text-primary font-semibold capitalize">{getPluginRuntime(selectedPlugin.file_name)}</span>
                     </div>
                     <div>
                       <span className="text-nd-text-muted block">Marketplace</span>
-                      <span className="text-nd-text font-semibold">{selectedPlugin.marketplace ? 'Yes' : 'Local'}</span>
+                      <span className="text-nd-text-primary font-semibold">{selectedPlugin.marketplace ? 'Yes' : 'Local'}</span>
                     </div>
                   </div>
                 </div>
@@ -656,17 +655,16 @@ export function PluginsView({ state, dispatch }: { state?: NeuroDeckState; dispa
                                 : 'border-nd-text-muted/10 bg-nd-surface/30'
                             }`}
                           >
-                            <span className={`font-bold uppercase tracking-wider text-[8px] rounded px-1.5 py-0.5 mt-0.5 border ${
-                              risk === 'high'
-                                ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger'
-                                : risk === 'medium'
-                                ? 'border-nd-warning/30 bg-nd-warning/10 text-nd-warning'
-                                : 'border-nd-text-muted/20 bg-nd-surface-raised text-nd-text-muted'
-                            }`}>
+                            <Badge
+                              tone={risk === 'high' ? 'danger' : risk === 'medium' ? 'warning' : 'neutral'}
+                              size="sm"
+                              variant="outline"
+                              className="mt-0.5 uppercase"
+                            >
                               {risk}
-                            </span>
+                            </Badge>
                             <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-nd-text font-mono truncate">{perm}</p>
+                              <p className="font-semibold text-nd-text-primary font-mono truncate">{perm}</p>
                               <p className="text-[10px] text-nd-text-muted mt-0.5">
                                 {perm === 'shell_execution' && 'Executes system shell binary commands and utilities.'}
                                 {perm === 'filesystem_write' && 'Creates, deletes, or writes content to local codebase files.'}

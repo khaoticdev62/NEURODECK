@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Button } from '../../components/primitives/Button';
 
@@ -30,21 +30,21 @@ describe('Button', () => {
     expect(container.querySelector('svg')).toBeDefined();
   });
 
-  it('does not fire onClick while loading', async () => {
+  it('does not fire onClick while loading', () => {
     const onClick = vi.fn();
     render(<Button loading onClick={onClick}>Submit</Button>);
-    await userEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByRole('button'));
     expect(onClick).not.toHaveBeenCalled();
   });
 
   it('applies primary variant classes', () => {
     const { container } = render(<Button variant="primary">Primary</Button>);
-    expect(container.querySelector('button')?.className).toContain('text-nd-accent-primary');
+    expect(container.querySelector('button')?.className).toContain('nd-btn--primary');
   });
 
   it('applies danger variant classes', () => {
     const { container } = render(<Button variant="danger">Delete</Button>);
-    expect(container.querySelector('button')?.className).toContain('text-nd-accent-error');
+    expect(container.querySelector('button')?.className).toContain('nd-btn--danger');
   });
 
   it('applies fullWidth class when fullWidth=true', () => {
@@ -52,14 +52,14 @@ describe('Button', () => {
     expect(container.querySelector('button')?.className).toContain('w-full');
   });
 
-  it('sm size applies h-8 class', () => {
+  it('sm size applies nd-btn--sm class', () => {
     const { container } = render(<Button size="sm">Small</Button>);
-    expect(container.querySelector('button')?.className).toContain('h-8');
+    expect(container.querySelector('button')?.className).toContain('nd-btn--sm');
   });
 
-  it('lg size applies h-11 class', () => {
+  it('lg size applies nd-btn--lg class', () => {
     const { container } = render(<Button size="lg">Large</Button>);
-    expect(container.querySelector('button')?.className).toContain('h-11');
+    expect(container.querySelector('button')?.className).toContain('nd-btn--lg');
   });
 
   it('passes through arbitrary HTML button attributes', () => {

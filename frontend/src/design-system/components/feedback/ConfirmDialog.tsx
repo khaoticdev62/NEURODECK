@@ -21,6 +21,12 @@ export interface ConfirmDialogProps {
   cancelLabel?: string;
   /** @default 'destructive' */
   tone?: 'destructive' | 'security' | 'safe';
+  /** Optional leading icon rendered beside the consequence. */
+  icon?: React.ReactNode;
+  /** Accessible label for the icon. @default 'Warning' */
+  iconLabel?: string;
+  /** Allow clicking the backdrop to close. @default false */
+  closeOnBackdrop?: boolean;
 }
 
 export function ConfirmDialog({
@@ -32,6 +38,9 @@ export function ConfirmDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   tone = 'destructive',
+  icon,
+  iconLabel = 'Warning',
+  closeOnBackdrop = false,
 }: ConfirmDialogProps): React.ReactNode {
   const confirmVariant = tone === 'destructive' ? 'danger' : tone === 'security' ? 'danger' : 'primary';
   return (
@@ -40,6 +49,7 @@ export function ConfirmDialog({
       onClose={onCancel}
       title={title}
       emphasis={tone === 'safe' ? 'default' : 'critical'}
+      closeOnBackdrop={closeOnBackdrop}
       footer={
         <>
           <Button variant="ghost" onClick={onCancel}>{cancelLabel}</Button>
@@ -47,7 +57,14 @@ export function ConfirmDialog({
         </>
       }
     >
-      {consequence}
+      <div className={icon ? 'flex items-start gap-3' : ''}>
+        {icon ? (
+          <span className="mt-0.5 shrink-0 text-nd-accent-error" aria-label={iconLabel}>
+            {icon}
+          </span>
+        ) : null}
+        <div>{consequence}</div>
+      </div>
     </Modal>
   );
 }

@@ -9,6 +9,9 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-statuschip-c
   .nd-chip--sm{height:22px;padding:0 9px;font-size:11px;}
   .nd-chip--md{height:26px;padding:0 11px;font-size:12px;}
   .nd-chip__glyph{font-family:var(--nd-font-mono);font-weight:700;}
+  .nd-chip__icon{display:flex;align-items:center;justify-content:center;}
+  .nd-chip__icon svg{width:14px;height:14px;}
+  .nd-chip--sm .nd-chip__icon svg{width:12px;height:12px;}
   .nd-chip__dot{width:7px;height:7px;border-radius:50%;background:currentColor;}
   .nd-chip__dot--pulse{animation:nd-chip-pulse 1.4s var(--nd-ease-standard) infinite;}
   @keyframes nd-chip-pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
@@ -37,6 +40,8 @@ export interface StatusChipProps extends React.HTMLAttributes<HTMLSpanElement> {
   pulse?: boolean;
   /** Override the default glyph for the tone. */
   glyph?: string;
+  /** Optional icon node rendered in place of the glyph/dot. */
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -45,6 +50,7 @@ export function StatusChip({
   size = 'md',
   pulse = false,
   glyph,
+  icon,
   children,
   className = '',
   ...rest
@@ -53,9 +59,11 @@ export function StatusChip({
   const mark = glyph ?? GLYPHS[tone];
   return (
     <span className={cls} {...rest}>
-      {pulse
-        ? <span className={`nd-chip__dot nd-chip__dot--pulse`} aria-hidden="true" />
-        : <span className="nd-chip__glyph" aria-hidden="true">{mark}</span>}
+      {icon
+        ? <span className="nd-chip__icon" aria-hidden="true">{icon}</span>
+        : pulse
+          ? <span className="nd-chip__dot nd-chip__dot--pulse" aria-hidden="true" />
+          : <span className="nd-chip__glyph" aria-hidden="true">{mark}</span>}
       {children}
     </span>
   );

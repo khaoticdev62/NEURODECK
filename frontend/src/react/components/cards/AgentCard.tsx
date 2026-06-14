@@ -1,8 +1,8 @@
-import { Bot, PlayCircle, RotateCcw } from 'lucide-react';
-import { Badge } from '../../../design-system';
-import { Button } from '../../../design-system';
-import { Panel } from '../../../design-system';
-import type { Agent, AgentStatus } from '../../types/neurodeck';
+import { Bot, PlayCircle, RotateCcw } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
+import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import type { Agent, AgentStatus } from "../../types/neurodeck";
 
 interface AgentCardProps {
   agent: Agent;
@@ -10,11 +10,11 @@ interface AgentCardProps {
   onCycle: (id: string) => void;
 }
 
-const statusTone: Record<AgentStatus, 'neutral' | 'info' | 'success' | 'error'> = {
-  thinking: 'info',
-  complete: 'success',
-  blocked: 'error',
-  idle: 'neutral',
+const statusTone: Record<AgentStatus, "info" | "success" | "error"> = {
+  thinking: "info",
+  complete: "success",
+  blocked: "error",
+  idle: "info",
 };
 
 export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
@@ -22,20 +22,20 @@ export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
     <Panel className="transition hover:border-[rgba(var(--nd-cyan-rgb),0.3)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div
-            className="flex h-11 w-11 items-center justify-center rounded-[var(--nd-radius-md)] border border-[rgba(var(--nd-purple-rgb),0.3)] bg-[rgba(var(--nd-purple-rgb),0.12)] text-[var(--nd-accent-agent)]"
-          >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border border-nd-purple-400/30 bg-nd-purple-400/10 text-nd-purple-400">
             <Bot className="h-5 w-5" aria-hidden="true" />
           </div>
-          <div>
-            <h3 className="font-semibold text-[var(--nd-text-primary)]">{agent.name}</h3>
-            <p className="text-xs text-[var(--nd-text-muted)]">{agent.role}</p>
+          <div className="min-w-0">
+            <h3 className="font-semibold text-nd-text-primary">{agent.name}</h3>
+            <p className="text-xs text-nd-text-muted">{agent.role}</p>
           </div>
         </div>
-        <Badge tone={statusTone[agent.status]}>{agent.status}</Badge>
+        <StatusChip tone={statusTone[agent.status]} size="sm">
+          {agent.status}
+        </StatusChip>
       </div>
 
-      <dl className="mt-4 space-y-2 text-xs text-[var(--nd-text-muted)]">
+      <dl className="mt-4 space-y-2 text-xs text-nd-text-muted">
         <AgentRow label="Model" value={agent.model} />
         <AgentRow label="Memory" value={agent.memoryAccess} />
         <AgentRow label="Task" value={agent.task} />
@@ -47,7 +47,7 @@ export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
           variant="primary"
           size="sm"
           fullWidth
-          icon={<PlayCircle className="h-4 w-4" aria-hidden="true" />}
+          icon={PlayCircle}
           onClick={() => onRun(agent.id)}
         >
           Run Agent
@@ -56,7 +56,7 @@ export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
           variant="secondary"
           size="sm"
           fullWidth
-          icon={<RotateCcw className="h-4 w-4" aria-hidden="true" />}
+          icon={RotateCcw}
           onClick={() => onCycle(agent.id)}
         >
           Cycle
@@ -68,11 +68,11 @@ export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
 
 function AgentRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-3 rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-tertiary)] px-3 py-2">
-      <dt className="w-16 shrink-0 uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]">
+    <div className="flex gap-3 rounded-[var(--nd-radius-md)] border border-nd-border-subtle bg-nd-surface-tertiary px-3 py-2">
+      <dt className="w-16 shrink-0 uppercase tracking-[var(--nd-tracking-hud)] text-nd-text-muted">
         {label}
       </dt>
-      <dd className="min-w-0 flex-1 text-[var(--nd-text-secondary)]">{value}</dd>
+      <dd className="min-w-0 flex-1 text-nd-text-secondary">{value}</dd>
     </div>
   );
 }

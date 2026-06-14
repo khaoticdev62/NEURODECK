@@ -6,4 +6,7 @@
   --nd-surface-tertiary: #18212B;
   --nd-accent-primary: #5EEBFF;
   --nd-accent-agent: #B28CFF;
+  --nd-surface-hover: rgba(141, 161, 179, 0.08);
+  --nd-surface-active: rgba(94, 235, 255, 0.12);
+  --nd-surface-selected: rgba(94, 235, 255, 0.14);
 }

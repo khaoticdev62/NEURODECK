@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { forwardRef } from 'react';
 
 /* Inject scoped Button styles once (token-driven, real :hover/:focus-visible/:active). */
 if (typeof document !== 'undefined' && !document.getElementById('nd-button-css')) {
@@ -27,6 +28,10 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-button-css')
   .nd-btn--danger:hover{background:rgba(var(--nd-red-rgb),0.2);}
   .nd-btn--success{background:rgba(var(--nd-green-rgb),0.1);border-color:rgba(var(--nd-green-rgb),0.3);color:var(--nd-accent-success);}
   .nd-btn--success:hover{background:rgba(var(--nd-green-rgb),0.2);}
+  .nd-btn--soft{background:var(--nd-surface-secondary);border-color:var(--nd-border-subtle);color:var(--nd-text-primary);}
+  .nd-btn--soft:hover{background:var(--nd-surface-tertiary);}
+  .nd-btn--selected{background:rgba(var(--nd-cyan-rgb),0.14);border-color:rgba(var(--nd-cyan-rgb),0.45);color:var(--nd-accent-primary);}
+  .nd-btn--selected:hover{background:rgba(var(--nd-cyan-rgb),0.2);}
   .nd-btn__spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;animation:nd-spin 0.6s linear infinite;}
   @keyframes nd-spin{to{transform:rotate(360deg);}}
   .nd-btn__sc{font-family:var(--nd-font-mono);font-size:11px;opacity:0.6;margin-left:4px;}
@@ -58,19 +63,22 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   children: React.ReactNode;
 }
 
-export function Button({
-  variant = 'secondary',
-  size = 'md',
-  loading = false,
-  disabled = false,
-  fullWidth = false,
-  icon = null,
-  iconPosition = 'left',
-  shortcut,
-  children,
-  className = '',
-  ...rest
-}: ButtonProps): React.ReactNode {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = 'secondary',
+    size = 'md',
+    loading = false,
+    disabled = false,
+    fullWidth = false,
+    icon = null,
+    iconPosition = 'left',
+    shortcut,
+    children,
+    className = '',
+    ...rest
+  },
+  ref,
+): React.ReactNode {
   const cls = [
     'nd-btn',
     `nd-btn--${variant}`,
@@ -80,7 +88,7 @@ export function Button({
   ].filter(Boolean).join(' ');
 
   return (
-    <button className={cls} disabled={disabled || loading} aria-busy={loading || undefined} {...rest}>
+    <button ref={ref} className={cls} disabled={disabled || loading} aria-busy={loading || undefined} {...rest}>
       {loading ? <span className="nd-btn__spin" aria-hidden="true" /> : null}
       {!loading && icon && iconPosition === 'left' ? icon : null}
       {children}
@@ -88,4 +96,4 @@ export function Button({
       {shortcut ? <span className="nd-btn__sc">{shortcut}</span> : null}
     </button>
   );
-}
+});

@@ -14,6 +14,7 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-panel-css'))
     padding:14px 16px;border-bottom:1px solid var(--nd-border-subtle);}
   .nd-panel__titles{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .nd-panel__title{font-size:15px;font-weight:600;line-height:20px;}
+  .nd-panel__eyebrow{font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--nd-accent-primary);opacity:0.85;line-height:14px;}
   .nd-panel__desc{font-size:12px;color:var(--nd-text-muted);line-height:16px;}
   .nd-panel__actions{display:flex;align-items:center;gap:6px;flex:none;}
   .nd-panel__body{}
@@ -32,6 +33,8 @@ export type PanelDensity = 'compact' | 'normal' | 'spacious';
  */
 export interface PanelProps extends React.HTMLAttributes<HTMLElement> {
   title?: string;
+  /** Small uppercase label above the title. */
+  eyebrow?: string;
   description?: string;
   /** Right-aligned header actions (IconButtons, Buttons, Badges). */
   actions?: React.ReactNode;
@@ -44,6 +47,7 @@ export interface PanelProps extends React.HTMLAttributes<HTMLElement> {
 
 export function Panel({
   title,
+  eyebrow,
   description,
   actions,
   emphasis = 'default',
@@ -54,12 +58,13 @@ export function Panel({
 }: PanelProps): React.ReactNode {
   const cls = ['nd-panel', emphasis !== 'default' ? `nd-panel--${emphasis}` : '', className]
     .filter(Boolean).join(' ');
-  const hasHeader = title || description || actions;
+  const hasHeader = title || eyebrow || description || actions;
   return (
     <section className={cls} {...rest}>
       {hasHeader ? (
         <header className="nd-panel__head">
           <div className="nd-panel__titles">
+            {eyebrow ? <p className="nd-panel__eyebrow">{eyebrow}</p> : null}
             {title ? <h3 className="nd-panel__title">{title}</h3> : null}
             {description ? <p className="nd-panel__desc">{description}</p> : null}
           </div>

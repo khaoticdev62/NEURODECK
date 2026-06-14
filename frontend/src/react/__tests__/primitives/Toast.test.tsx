@@ -67,28 +67,28 @@ describe('ToastProvider / useToast — structure', () => {
     render(<ToastProvider><Trigger message="Oops" tone="error" /></ToastProvider>);
     await userEvent.click(screen.getByRole('button'));
     const toast = screen.getByText('Oops').closest('[role="status"]');
-    expect(toast?.className).toContain('nd-danger');
+    expect(toast?.className).toContain('nd-toast--error');
   });
 
   it('renders success tone classes', async () => {
     render(<ToastProvider><Trigger message="Done!" tone="success" /></ToastProvider>);
     await userEvent.click(screen.getByRole('button'));
     const toast = screen.getByText('Done!').closest('[role="status"]');
-    expect(toast?.className).toContain('nd-success');
+    expect(toast?.className).toContain('nd-toast--success');
   });
 
   it('renders warning tone classes', async () => {
     render(<ToastProvider><Trigger message="Watch out" tone="warning" /></ToastProvider>);
     await userEvent.click(screen.getByRole('button'));
     const toast = screen.getByText('Watch out').closest('[role="status"]');
-    expect(toast?.className).toContain('nd-warning');
+    expect(toast?.className).toContain('nd-toast--warning');
   });
 
   it('renders info tone classes by default', async () => {
     render(<ToastProvider><Trigger message="FYI" tone="info" /></ToastProvider>);
     await userEvent.click(screen.getByRole('button'));
     const toast = screen.getByText('FYI').closest('[role="status"]');
-    expect(toast?.className).toContain('nd-accent');
+    expect(toast?.className).toContain('nd-toast--info');
   });
 });
 

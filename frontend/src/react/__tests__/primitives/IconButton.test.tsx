@@ -44,17 +44,17 @@ describe('IconButton', () => {
 
   it('applies subtle variant by default', () => {
     const { container } = render(<IconButton aria-label="x"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('bg-nd-surface-base/50');
+    expect(container.querySelector('button')?.className).toContain('nd-iconbtn--subtle');
   });
 
   it('applies ghost variant', () => {
     const { container } = render(<IconButton aria-label="x" variant="ghost"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('bg-transparent');
+    expect(container.querySelector('button')?.className).toContain('nd-iconbtn--ghost');
   });
 
   it('applies outline variant', () => {
     const { container } = render(<IconButton aria-label="x" variant="outline"><X /></IconButton>);
-    expect(container.querySelector('button')?.className).toContain('border-nd-border-subtle');
+    expect(container.querySelector('button')?.className).toContain('nd-iconbtn--outline');
   });
 
   it('passes through additional props', () => {

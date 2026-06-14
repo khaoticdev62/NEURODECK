@@ -43,7 +43,7 @@ function highlightMatch(text: string, query: string): (string | React.JSX.Elemen
     const sub = t.slice(i, i + q.length);
     if (sub === q) {
       if (i > lastIndex) result.push(text.slice(lastIndex, i));
-      result.push(<mark key={i} className="rounded bg-nd-accent/20 text-nd-accent">{text.slice(i, i + q.length)}</mark>);
+      result.push(<mark key={i} className="rounded bg-[var(--nd-accent-primary)]/20 text-[var(--nd-accent-primary)]">{text.slice(i, i + q.length)}</mark>);
       lastIndex = i + q.length;
       i += q.length - 1;
     }
@@ -306,17 +306,28 @@ export function CommandPalette({
   );
 
   return (
-    <div id="command-palette-overlay" data-controller-overlay={isOpen ? 'true' : undefined} className={`command-palette-overlay ${isOpen ? 'active' : ''} fixed inset-0 z-[var(--z-modal)] flex items-start justify-center`} onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}>
-      <div className="command-palette-card no-drag w-full max-w-2xl overflow-hidden" onMouseDown={(event) => event.stopPropagation()}>
-        <div className="flex items-center gap-3 border-b border-nd-text-muted/15 px-4 py-3">
-          <Search className="h-5 w-5 text-nd-accent" />
+    <div
+      id="command-palette-overlay"
+      data-controller-overlay={isOpen ? 'true' : undefined}
+      className={`fixed inset-0 z-[var(--z-modal)] flex items-start justify-center transition-opacity duration-[var(--nd-motion-normal)] ${
+        isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+      }`}
+      style={{ backgroundColor: 'var(--nd-surface-overlay)' }}
+      onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}
+    >
+      <div
+        className="no-drag mt-[10vh] w-full max-w-2xl overflow-hidden rounded-[var(--nd-radius-lg)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-modal)] shadow-[var(--nd-elevation-overlay)]"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center gap-3 border-b border-[var(--nd-border-subtle)] px-4 py-3">
+          <Search className="h-5 w-5 text-[var(--nd-accent-primary)]" aria-hidden="true" />
           <input
             ref={inputRef}
             id="command-palette-input"
             data-controller-default="true"
             data-onboarding-anchor="command-palette-input"
             placeholder="Run command, open panel, execute local AI workflow..."
-            className="h-10 flex-1 bg-transparent text-sm text-nd-text outline-none placeholder:text-nd-text-muted/70"
+            className="h-10 flex-1 bg-transparent text-sm text-[var(--nd-text-primary)] outline-none placeholder:text-[var(--nd-text-muted)]/70"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={handleKeyDown}
@@ -330,7 +341,7 @@ export function CommandPalette({
         <div ref={listRef} id="command-palette-list" className="max-h-[62vh] overflow-y-auto p-3 scrollbar-thin">
           {showRecents && (
             <>
-              <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Recent</p>
+              <SectionHeading>Recent</SectionHeading>
               <div className="space-y-1.5">
                 {recentCommands.slice(0, 4).map((label) => {
                   const command = commands.find((c) => c.label === label);
@@ -340,13 +351,13 @@ export function CommandPalette({
                     <button
                       key={`recent-${label}`}
                       type="button"
-                      className="command-palette-item flex w-full items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-left transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.07]"
+                      className="flex w-full min-h-touch items-center gap-3 rounded-[var(--nd-radius-md)] border border-transparent px-3 py-2.5 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
                       onClick={() => void runCommand(command)}
                     >
-                      <Icon className="h-5 w-5 text-nd-accent" />
-                      <span className="flex-1">
-                        <span className="block text-sm font-medium text-nd-text">{command.label}</span>
-                        <span className="block text-xs text-nd-text-muted">{command.hint}</span>
+                      <Icon className="h-5 w-5 text-[var(--nd-accent-primary)]" aria-hidden="true" />
+                      <span className="flex-1 min-w-0">
+                        <span className="block truncate text-sm font-medium text-[var(--nd-text-primary)]">{command.label}</span>
+                        <span className="block truncate text-xs text-[var(--nd-text-muted)]">{command.hint}</span>
                       </span>
                     </button>
                   );
@@ -356,7 +367,7 @@ export function CommandPalette({
             </>
           )}
 
-          <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">{normalizedQuery ? `Results (${filteredCommands.length})` : 'All Commands'}</p>
+          <SectionHeading>{normalizedQuery ? `Results (${filteredCommands.length})` : 'All Commands'}</SectionHeading>
           <div className="space-y-1.5" role="listbox" aria-label="Command results">
             {filteredCommands.map((command, index) => {
               const Icon = command.icon;
@@ -369,39 +380,48 @@ export function CommandPalette({
                   data-cmd-index={index}
                   role="option"
                   aria-selected={isSelected}
-                  className={`command-palette-item flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition ${
+                  className={`flex w-full min-h-touch items-center gap-3 rounded-[var(--nd-radius-md)] border px-3 py-2.5 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
                     isSelected
-                      ? 'border-nd-accent/30 bg-nd-accent/[0.07]'
-                      : 'border-transparent hover:border-nd-accent/30 hover:bg-nd-accent/[0.07]'
+                      ? 'border-[var(--nd-accent-primary)]/40 bg-[var(--nd-surface-selected)] shadow-[var(--nd-elevation-glow)]'
+                      : 'border-transparent hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)]'
                   }`}
                   onClick={() => void runCommand(command)}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
-                  <Icon className="h-5 w-5 text-nd-accent" />
-                  <span className="flex-1">
-                    <span className="block text-sm font-medium text-nd-text">{highlightMatch(command.label, query)}</span>
-                    <span className="block text-xs text-nd-text-muted">{highlightMatch(command.hint, query)}</span>
+                  <Icon className="h-5 w-5 text-[var(--nd-accent-primary)]" aria-hidden="true" />
+                  <span className="flex-1 min-w-0">
+                    <span className="block truncate text-sm font-medium text-[var(--nd-text-primary)]">{highlightMatch(command.label, query)}</span>
+                    <span className="block truncate text-xs text-[var(--nd-text-muted)]">{highlightMatch(command.hint, query)}</span>
                   </span>
                 </button>
               );
             })}
             {filteredCommands.length === 0 && (
-              <p className="px-3 py-4 text-sm text-nd-text-muted">No commands match "{query}"</p>
+              <p className="px-3 py-4 text-sm text-[var(--nd-text-muted)]">No commands match &quot;{query}&quot;</p>
             )}
           </div>
 
           <Divider className="my-3" />
 
-          <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Starter Actions</p>
+          <SectionHeading>Starter Actions</SectionHeading>
           <div className="grid gap-2 sm:grid-cols-2">
             {starterPrompts.map((prompt) => (
-              <button key={prompt} type="button" onClick={() => dispatch({ type: 'run-starter', prompt })} className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-left text-xs text-nd-text/80 transition hover:border-nd-accent/30 hover:bg-nd-accent/[0.06]">
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => dispatch({ type: 'run-starter', prompt })}
+                className="min-h-touch rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/40 p-3 text-left text-xs text-[var(--nd-text-secondary)] transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
+              >
                 {prompt}
               </button>
             ))}
           </div>
 
-          <button type="button" onClick={() => void actions.resetLocalState()} className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-3 text-sm text-nd-danger transition hover:bg-nd-danger/15">
+          <button
+            type="button"
+            onClick={() => void actions.resetLocalState()}
+            className="mt-4 flex w-full min-h-touch items-center justify-center gap-2 rounded-[var(--nd-radius-md)] border border-[var(--nd-accent-error)]/25 bg-[var(--nd-accent-error)]/10 px-3 py-2.5 text-sm text-[var(--nd-accent-error)] transition-[background-color] duration-[var(--nd-motion-fast)] hover:bg-[var(--nd-accent-error)]/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-accent-error)]"
+          >
             <Trash2 className="h-4 w-4" /> Reset local UI state
           </button>
         </div>
@@ -411,5 +431,13 @@ export function CommandPalette({
 }
 
 function Divider({ className = '' }: { className?: string }) {
-  return <div className={`h-px bg-nd-text-muted/15 ${className}`} />;
+  return <div className={`h-px bg-[var(--nd-border-subtle)] ${className}`} />;
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--nd-text-muted)]">
+      {children}
+    </p>
+  );
 }

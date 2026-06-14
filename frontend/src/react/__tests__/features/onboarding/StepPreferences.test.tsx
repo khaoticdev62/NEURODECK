@@ -57,41 +57,41 @@ describe('StepPreferences', () => {
     expect(onFontScaleChange).toHaveBeenCalledWith(105);
   });
 
-  it('compact mode toggle reflects aria-pressed=false when off', () => {
+  it('compact mode toggle reflects aria-checked=false when off', () => {
     render(<StepPreferences {...DEFAULT_PROPS} compactMode={false} />);
-    const btn = screen.getByRole('button', { name: /enable compact density layout/i });
-    expect(btn.getAttribute('aria-pressed')).toBe('false');
+    const btn = screen.getByRole('switch', { name: /compact density layout/i });
+    expect(btn.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('compact mode toggle reflects aria-pressed=true when on', () => {
+  it('compact mode toggle reflects aria-checked=true when on', () => {
     render(<StepPreferences {...DEFAULT_PROPS} compactMode={true} />);
-    const btn = screen.getByRole('button', { name: /disable compact density layout/i });
-    expect(btn.getAttribute('aria-pressed')).toBe('true');
+    const btn = screen.getByRole('switch', { name: /compact density layout/i });
+    expect(btn.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('calls onCompactModeToggle when compact button is clicked', async () => {
+  it('calls onCompactModeToggle when compact switch is clicked', async () => {
     const onCompactModeToggle = vi.fn();
     render(<StepPreferences {...DEFAULT_PROPS} onCompactModeToggle={onCompactModeToggle} />);
-    await userEvent.click(screen.getByRole('button', { name: /enable compact density layout/i }));
+    await userEvent.click(screen.getByRole('switch', { name: /compact density layout/i }));
     expect(onCompactModeToggle).toHaveBeenCalledOnce();
   });
 
-  it('reduced motion toggle reflects aria-pressed=false when off', () => {
+  it('reduced motion toggle reflects aria-checked=false when off', () => {
     render(<StepPreferences {...DEFAULT_PROPS} reducedMotion={false} />);
-    const btn = screen.getByRole('button', { name: /enable reduced motion effects/i });
-    expect(btn.getAttribute('aria-pressed')).toBe('false');
+    const btn = screen.getByRole('switch', { name: /reduced motion effects/i });
+    expect(btn.getAttribute('aria-checked')).toBe('false');
   });
 
-  it('reduced motion toggle reflects aria-pressed=true when on', () => {
+  it('reduced motion toggle reflects aria-checked=true when on', () => {
     render(<StepPreferences {...DEFAULT_PROPS} reducedMotion={true} />);
-    const btn = screen.getByRole('button', { name: /disable reduced motion effects/i });
-    expect(btn.getAttribute('aria-pressed')).toBe('true');
+    const btn = screen.getByRole('switch', { name: /reduced motion effects/i });
+    expect(btn.getAttribute('aria-checked')).toBe('true');
   });
 
   it('calls onReducedMotionToggle when clicked', async () => {
     const onReducedMotionToggle = vi.fn();
     render(<StepPreferences {...DEFAULT_PROPS} onReducedMotionToggle={onReducedMotionToggle} />);
-    await userEvent.click(screen.getByRole('button', { name: /enable reduced motion effects/i }));
+    await userEvent.click(screen.getByRole('switch', { name: /reduced motion effects/i }));
     expect(onReducedMotionToggle).toHaveBeenCalledOnce();
   });
 });

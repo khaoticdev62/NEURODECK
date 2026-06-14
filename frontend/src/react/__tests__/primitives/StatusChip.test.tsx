@@ -23,18 +23,18 @@ describe('StatusChip', () => {
     'applies tone classes for %s',
     (tone) => {
       const { container } = render(<StatusChip tone={tone}>Status</StatusChip>);
-      expect(container.querySelector('span')?.className).toContain(`text-nd-accent-${tone}`);
+      expect(container.querySelector('span')?.className).toContain(`nd-chip--${tone}`);
     },
   );
 
   it('applies md size classes by default', () => {
     const { container } = render(<StatusChip>Status</StatusChip>);
-    expect(container.querySelector('span')?.className).toContain('h-6');
+    expect(container.querySelector('span')?.className).toContain('nd-chip--md');
   });
 
   it('applies sm size classes', () => {
     const { container } = render(<StatusChip size="sm">Status</StatusChip>);
-    expect(container.querySelector('span')?.className).toContain('h-5');
+    expect(container.querySelector('span')?.className).toContain('nd-chip--sm');
   });
 
   it('adds pulse animation when pulse=true', () => {

@@ -11,25 +11,25 @@ describe('Badge', () => {
   it('uses neutral tone by default', () => {
     const { container } = render(<Badge>Neutral</Badge>);
     const span = container.querySelector('span');
-    expect(span?.className).toContain('text-nd-text');
+    expect(span?.className).toContain('nd-badge--neutral');
   });
 
   it('applies danger tone classes', () => {
     const { container } = render(<Badge tone="danger">Error</Badge>);
     const span = container.querySelector('span');
-    expect(span?.className).toContain('text-nd-danger');
+    expect(span?.className).toContain('nd-badge--error');
   });
 
   it('applies success tone classes', () => {
     const { container } = render(<Badge tone="success">OK</Badge>);
     const span = container.querySelector('span');
-    expect(span?.className).toContain('text-nd-success');
+    expect(span?.className).toContain('nd-badge--success');
   });
 
   it('applies accent tone classes', () => {
     const { container } = render(<Badge tone="accent">Active</Badge>);
     const span = container.querySelector('span');
-    expect(span?.className).toContain('text-nd-accent');
+    expect(span?.className).toContain('nd-badge--info');
   });
 
   it('renders dot indicator when dot=true', () => {
@@ -48,20 +48,19 @@ describe('Badge', () => {
   it('applies outline variant classes', () => {
     const { container } = render(<Badge variant="outline" tone="success">Outlined</Badge>);
     const span = container.querySelector('span');
-    // Outline variant: no bg class, has border class
-    expect(span?.className).toContain('border-nd-success');
-    expect(span?.className).not.toContain('bg-nd-success');
+    expect(span?.className).toContain('nd-badge--outline');
+    expect(span?.className).toContain('nd-badge--success');
   });
 
-  it('sm size applies text-2xs', () => {
+  it('sm size applies nd-badge--sm class', () => {
     const { container } = render(<Badge size="sm">Small</Badge>);
     const span = container.querySelector('span');
-    expect(span?.className).toContain('text-2xs');
+    expect(span?.className).toContain('nd-badge--sm');
   });
 
-  it('md size applies text-xs', () => {
+  it('md size applies nd-badge--md class', () => {
     const { container } = render(<Badge size="md">Medium</Badge>);
     const span = container.querySelector('span');
-    expect(span?.className).toContain('text-xs');
+    expect(span?.className).toContain('nd-badge--md');
   });
 });

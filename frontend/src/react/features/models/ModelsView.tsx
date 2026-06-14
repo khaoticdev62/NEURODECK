@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { Dispatch } from "react";
 import { Cpu, RefreshCcw } from "lucide-react";
 import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
 import { ErrorState } from "../../components/primitives/ErrorState";
 import { LoadingState } from "../../components/primitives/LoadingState";
 import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
 import { ModelCard } from "../../components/cards/ModelCard";
 import { neurodeckApi } from "../../services/bridgeAdapter";
 import type { AgentScoredModel, ModelCompatibilityScore } from "../../services/bridgeAdapter";
@@ -86,13 +88,14 @@ export function ModelsView({
               title="No models detected."
               description="Run native detection to scan for Ollama, LM Studio, or OpenAI-compatible providers."
               action={
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={RefreshCcw}
                   onClick={() => void actions.detectModels()}
-                  className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Detect Models
-                </button>
+                  Detect Models
+                </Button>
               }
             />
           )}
@@ -137,21 +140,21 @@ export function ModelsView({
         className="flex flex-col min-h-0 overflow-hidden"
       >
         <div className="flex-1 min-h-0 space-y-3 overflow-y-auto p-4 scrollbar-thin">
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={() => void actions.detectModels()}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-            >
-              <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Detect Local Models
-            </button>
-          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            fullWidth
+            icon={RefreshCcw}
+            onClick={() => void actions.detectModels()}
+          >
+            Detect Local Models
+          </Button>
 
-          <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted/70">
+          <div className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
               Active agent
             </p>
-            <p className="mt-1 text-sm font-medium text-nd-text">{state.activeAgentId}</p>
+            <p className="mt-1 text-sm font-medium text-nd-text-primary">{state.activeAgentId}</p>
             {state.agentPolicies.find((p) => p.agentId === state.activeAgentId) && (
               <p className="mt-2 text-xs text-nd-text-muted">
                 Models are filtered by this agent&apos;s policy.
@@ -161,14 +164,19 @@ export function ModelsView({
 
           {state.modelDetection ? (
             <>
-              <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
-                <Badge tone={state.modelDetection.discoveredModels.length ? "success" : "warning"}>
-                  {state.modelDetection.discoveredModels.length} found
-                </Badge>
+              <div className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+                <div className="flex items-center gap-2">
+                  <StatusChip
+                    tone={state.modelDetection.discoveredModels.length ? "success" : "warning"}
+                    size="sm"
+                  >
+                    {state.modelDetection.discoveredModels.length} found
+                  </StatusChip>
+                </div>
                 <p className="mt-3 text-sm leading-6 text-nd-text-muted">
                   {state.modelDetection.summary}
                 </p>
-                <p className="mt-2 text-xs text-nd-text-muted/70">
+                <p className="mt-2 text-xs text-nd-text-muted">
                   {new Date(state.modelDetection.scannedAt).toLocaleString()}
                 </p>
               </div>
@@ -176,11 +184,11 @@ export function ModelsView({
                 {state.modelDetection.runtimes.map((runtime) => (
                   <div
                     key={`${runtime.name}-${runtime.path}`}
-                    className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3"
+                    className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-nd-text/90">{runtime.name}</span>
-                      <Badge tone={runtime.exists ? "success" : "neutral"}>{runtime.status}</Badge>
+                      <span className="font-medium text-nd-text-primary/90">{runtime.name}</span>
+                      <Badge tone={runtime.exists ? "success" : "neutral"} size="sm">{runtime.status}</Badge>
                     </div>
                     <p className="mt-1 break-all text-xs text-nd-text-muted/70">{runtime.path}</p>
                   </div>
@@ -188,7 +196,7 @@ export function ModelsView({
               </div>
               {Object.keys(scoresMap).length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted/70">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
                     Compatibility
                   </p>
                   {state.models.map((model) => {
@@ -197,9 +205,9 @@ export function ModelsView({
                     return (
                       <div
                         key={`score-${model.id}`}
-                        className="flex items-center justify-between rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2"
+                        className="flex items-center justify-between rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2"
                       >
-                        <span className="text-xs text-nd-text/80">{model.name}</span>
+                        <span className="text-xs text-nd-text-primary/80">{model.name}</span>
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-nd-text-muted">{score.score}/100</span>
                           <Badge
@@ -210,6 +218,7 @@ export function ModelsView({
                                   ? "warning"
                                   : "danger"
                             }
+                            size="sm"
                           >
                             {score.tier}
                           </Badge>
@@ -221,7 +230,7 @@ export function ModelsView({
               )}
             </>
           ) : (
-            <p className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 text-sm leading-6 text-nd-text-muted">
+            <p className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 text-sm leading-6 text-nd-text-muted">
               Detection runs through the NEURODECK bridge server and checks configured local model
               runtimes. No cloud calls.
             </p>

@@ -7,7 +7,7 @@ describe('Divider', () => {
     const { container } = render(<Divider />);
     const el = container.firstElementChild as HTMLElement;
     expect(el?.className).toContain('h-px');
-    expect(el?.className).toContain('bg-nd-text-muted/15');
+    expect(el?.className).toContain('bg-nd-border-subtle');
   });
 
   it('renders label text when provided', () => {

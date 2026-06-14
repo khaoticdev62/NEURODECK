@@ -9,9 +9,11 @@ import {
 } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import { Button } from '../../components/primitives/Button';
+import { Badge } from '../../components/primitives/Badge';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { LoadingState } from '../../components/primitives/LoadingState';
 import { Panel } from '../../components/primitives/Panel';
+import { StatusChip } from '../../components/primitives/StatusChip';
 import { TextInput } from '../../components/primitives/TextInput';
 import { Toggle } from '../../components/primitives/Toggle';
 import type { NpmPackage, NpmStatus, NpmInstallProgress } from '../../types/neurodeck';
@@ -113,8 +115,12 @@ export function PackagesPanel() {
         <div className="p-4">
           {status ? (
             <div className="flex flex-wrap items-center gap-3">
-              <StatusBadge ok={status.node} label={`Node ${status.nodeVersion ?? 'not found'}`} />
-              <StatusBadge ok={status.npm} label={`npm ${status.npmVersion ?? 'not found'}`} />
+              <StatusChip tone={status.node ? 'success' : 'error'} size="sm">
+                Node {status.nodeVersion ?? 'not found'}
+              </StatusChip>
+              <StatusChip tone={status.npm ? 'success' : 'error'} size="sm">
+                npm {status.npmVersion ?? 'not found'}
+              </StatusChip>
               {!nodeAvailable && (
                 <p className="w-full text-xs text-nd-warning">
                   <AlertTriangle className="inline h-3 w-3 mr-1" aria-hidden="true" />
@@ -217,22 +223,18 @@ export function PackagesPanel() {
                           {pkg.name}
                         </span>
                         {pkg.installedVersion && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-nd-accent/10 text-nd-accent">
-                            {pkg.installedVersion}
-                          </span>
+                          <Badge tone="accent" size="sm" variant="outline">{pkg.installedVersion}</Badge>
                         )}
                         {pkg.category && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-nd-surface/60 text-nd-text-muted">
-                            {pkg.category}
-                          </span>
+                          <Badge tone="neutral" size="sm" variant="outline">{pkg.category}</Badge>
                         )}
                       </div>
                       {pkg.installedVersion ? (
-                        <p className="text-[10px] text-nd-success flex items-center gap-1 mt-0.5">
+                        <Badge tone="success" size="sm" variant="outline" className="mt-1.5 w-fit">
                           <Check className="h-3 w-3" aria-hidden="true" /> Installed
-                        </p>
+                        </Badge>
                       ) : (
-                        <p className="text-[10px] text-nd-warning mt-0.5">Not installed on disk</p>
+                        <Badge tone="warning" size="sm" variant="outline" className="mt-1.5 w-fit">Not installed on disk</Badge>
                       )}
                       {prog && isBusy && (
                         <p className="text-[10px] text-nd-text-muted truncate mt-0.5">
@@ -294,17 +296,3 @@ export function PackagesPanel() {
   );
 }
 
-function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-semibold ${
-        ok
-          ? 'border-nd-success/20 bg-nd-success/10 text-nd-success'
-          : 'border-nd-danger/20 bg-nd-danger/10 text-nd-danger'
-      }`}
-    >
-      {ok ? <Check className="h-3 w-3" /> : <AlertTriangle className="h-3 w-3" />}
-      {label}
-    </span>
-  );
-}

@@ -41,8 +41,10 @@ export function SessionsView({
     <Panel eyebrow="Session History" title="Saved Sessions" className="h-full overflow-hidden">
       <div className="grid h-full gap-4 overflow-y-auto p-4 scrollbar-thin xl:grid-cols-[360px_1fr]">
         <div className="rounded-3xl border border-nd-accent/25 bg-nd-accent/[0.045] p-5">
-          <Archive className="h-8 w-8 text-nd-accent" />
-          <h3 className="mt-4 text-xl font-semibold text-nd-text">Session History</h3>
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent/20 bg-nd-accent/10">
+            <Archive className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
+          </div>
+          <h3 className="mt-4 text-xl font-semibold text-nd-text-primary">Session History</h3>
           <p className="mt-2 text-sm leading-6 text-nd-text-muted">
             A chronological trail of your interactions. View, export, or audit past sessions.
           </p>
@@ -58,7 +60,7 @@ export function SessionsView({
           </Button>
 
           <div className="mt-8 border-t border-nd-text-muted/15 pt-5">
-            <h4 className="text-sm font-semibold text-nd-text">Active Session Actions</h4>
+            <h4 className="text-sm font-semibold text-nd-text-primary">Active Session Actions</h4>
             <Button
               variant="primary"
               fullWidth

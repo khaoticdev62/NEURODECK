@@ -1,19 +1,20 @@
-import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
-import { Modal } from "../../../design-system";
-import { TextInput } from "../../../design-system";
-import { Button } from "../../../design-system";
-import { IconButton } from "../../../design-system";
-import { Panel } from "../../../design-system";
-import type { SessionNode } from "../../types/neurodeck";
 import { useState } from "react";
+import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { Modal } from "../../components/primitives/Modal";
+import { Panel } from "../../components/primitives/Panel";
+import { TextInput } from "../../components/primitives/TextInput";
 import { bridgeInvoke, neurodeckApi } from "../../services/bridgeAdapter";
+import type { SessionNode } from "../../types/neurodeck";
 
 interface SessionCardProps {
   node: SessionNode;
+  selected?: boolean;
   onRefresh?: () => void;
 }
 
-export function SessionCard({ node, onRefresh }: SessionCardProps) {
+export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
@@ -70,58 +71,78 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
 
   return (
     <>
-      <Panel className="transition hover:border-[rgba(var(--nd-cyan-rgb),0.25)]">
+      <Panel
+        className={[
+          "transition",
+          selected
+            ? "border-nd-accent/40 bg-nd-accent/[0.07]"
+            : "hover:border-[rgba(var(--nd-cyan-rgb),0.25)]",
+        ].join(" ")}
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">
-            <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-tertiary)] text-[var(--nd-accent-agent)]">
-              <MessageSquareText className="h-5 w-5" />
+            <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border border-nd-border-subtle bg-nd-surface-tertiary text-nd-purple-400">
+              <MessageSquareText className="h-5 w-5" aria-hidden="true" />
             </div>
-            <div className="flex-1 min-w-0">
-              <h4 className="truncate font-semibold text-[var(--nd-text-primary)]" title={displayName}>
+            <div className="min-w-0 flex-1">
+              <h4
+                className="truncate font-semibold text-nd-text-primary"
+                title={displayName}
+              >
                 {displayName}
               </h4>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--nd-text-muted)]">
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-nd-text-muted">
                 <span className="shrink-0">{formattedDate}</span>
                 <span className="shrink-0">•</span>
                 <span className="shrink-0">{node.message_count} messages</span>
               </div>
               {node.preview && (
-                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[var(--nd-text-muted)]">
+                <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-nd-text-muted">
                   {node.preview}
                 </p>
               )}
-              {error && <p className="mt-2 text-xs text-[var(--nd-accent-error)]">{error}</p>}
+              {error && <p className="mt-2 text-xs text-nd-danger">{error}</p>}
             </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-2 self-end sm:self-start">
             <IconButton
-              label="Rename Session"
-              icon={<Edit2 className="h-4 w-4" aria-hidden="true" />}
-              variant="default"
+              aria-label="Rename Session"
+              variant="subtle"
               size="md"
               disabled={loading}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setRenameValue(node.name || "");
                 setRenameOpen(true);
               }}
-            />
+            >
+              <Edit2 className="h-4 w-4" aria-hidden="true" />
+            </IconButton>
             <IconButton
-              label="Export Markdown"
-              icon={<Download className="h-4 w-4" aria-hidden="true" />}
-              variant="default"
+              aria-label="Export Markdown"
+              variant="subtle"
               size="md"
               disabled={loading}
-              onClick={handleExport}
-            />
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleExport();
+              }}
+            >
+              <Download className="h-4 w-4" aria-hidden="true" />
+            </IconButton>
             <IconButton
-              label="Delete Session"
-              icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+              aria-label="Delete Session"
               variant="danger"
               size="md"
               disabled={loading}
-              onClick={handleDelete}
-            />
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleDelete();
+              }}
+            >
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            </IconButton>
           </div>
         </div>
       </Panel>
@@ -146,12 +167,12 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
           </>
         }
       >
-        <p className="mb-3 text-sm text-[var(--nd-text-secondary)]">
+        <p className="mb-3 text-sm text-nd-text-secondary">
           Update the saved session label.
         </p>
         <TextInput
           value={renameValue}
-          onChange={setRenameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
           placeholder="Session name"
           className="w-full"
         />

@@ -23,6 +23,7 @@ import {
 import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { LoadingState } from "../../components/primitives/LoadingState";
 import { Panel } from "../../components/primitives/Panel";
 import { Toggle } from "../../components/primitives/Toggle";
@@ -85,11 +86,11 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4">
+    <div className="flex min-h-[64px] items-center justify-between gap-4 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3.5 py-3">
       <div className="flex items-center gap-3 min-w-0">
-        <Icon className="h-5 w-5 shrink-0 text-nd-accent" />
+        <Icon className="h-5 w-5 shrink-0 text-nd-accent-primary" aria-hidden="true" />
         <div className="min-w-0">
-          <p className="font-semibold text-nd-text text-sm">{title}</p>
+          <p className="font-semibold text-nd-text-primary text-sm">{title}</p>
           <p className="text-xs text-nd-text-muted mt-0.5">{description}</p>
         </div>
       </div>
@@ -296,10 +297,10 @@ export function SettingsView({
   return (
     <div className="grid h-full min-h-0 gap-3 overflow-hidden p-3 xl:grid-cols-[220px_1fr]">
       {/* Sidebar */}
-      <aside className="stv-sidebar flex min-h-0 flex-col rounded-2xl border border-nd-text-muted/15 bg-nd-surface/50 p-2.5 gap-1">
-        <div className="stv-sidebar-brand-chip flex items-center gap-2 rounded-xl border border-nd-accent/20 bg-nd-accent/10 px-3 py-2 mb-1">
-          <Settings className="h-4 w-4 text-nd-accent" />
-          <span className="text-xs font-bold uppercase tracking-[0.22em] text-nd-accent">
+      <aside className="stv-sidebar flex min-h-0 flex-col rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/50 p-2.5 gap-1">
+        <div className="stv-sidebar-brand-chip flex items-center gap-2 rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10 px-3 py-2 mb-1">
+          <Settings className="h-4 w-4 text-nd-accent-primary" />
+          <span className="text-xs font-bold uppercase tracking-[0.22em] text-nd-accent-primary">
             Settings
           </span>
         </div>
@@ -313,10 +314,10 @@ export function SettingsView({
               data-panel={`sp-${key}`}
               aria-current={active ? "page" : undefined}
               onClick={() => selectPanel(key)}
-              className={`stv-nav-item flex w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+              className={`stv-nav-item flex min-h-10 w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                 active
-                  ? "active border-nd-accent/35 bg-nd-accent/10 text-nd-accent font-semibold"
-                  : "border-transparent text-nd-text/70 hover:border-nd-text-muted/15 hover:bg-nd-surface/60 hover:text-nd-text"
+                  ? "active border-nd-accent-primary/35 bg-nd-accent-primary/10 text-nd-accent-primary font-semibold"
+                  : "border-transparent text-nd-text-primary/70 hover:border-nd-border-subtle hover:bg-nd-surface-secondary/60 hover:text-nd-text-primary"
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -328,7 +329,7 @@ export function SettingsView({
       </aside>
 
       {/* Content */}
-      <section className="min-h-0 overflow-y-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-4 scrollbar-thin">
+      <section className="min-h-0 overflow-y-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-4 scrollbar-thin">
         {/* ── General ──────────────────────────────── */}
         {activePanel === "general" && (
           <div id="sp-general" className="settings-panel active space-y-4">
@@ -346,22 +347,24 @@ export function SettingsView({
                   />
                 </SettingRow>
                 <div className="grid gap-2 md:grid-cols-2">
-                  <button
-                    type="button"
+                  <Button
+                    variant="primary"
+                    size="md"
+                    fullWidth
+                    icon={MonitorPlay}
                     onClick={() => dispatch({ type: "open-onboarding", mode: "tour" })}
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
-                    <MonitorPlay className="h-4 w-4" aria-hidden="true" />
                     Replay Tour
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    fullWidth
+                    icon={Rocket}
                     onClick={() => dispatch({ type: "open-onboarding", mode: "contextual" })}
-                    className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
-                    <Rocket className="h-4 w-4" aria-hidden="true" />
                     Show Current Tool
-                  </button>
+                  </Button>
                 </div>
                 <SettingRow
                   icon={Gamepad2}
@@ -420,21 +423,21 @@ export function SettingsView({
                               onMouseEnter={() => setHoveredThemeId(theme.id)}
                               onClick={() => setPendingThemeId((prev) => prev === theme.id ? null : theme.id)}
                               aria-pressed={isActive}
-                              className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                              className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                                 isActive
-                                  ? "border-nd-success/40 bg-nd-success/[0.05]"
+                                  ? "border-nd-success/40 bg-nd-success/[0.06]"
                                   : isPending
-                                  ? "border-nd-accent/50 bg-nd-accent/[0.07] shadow-glow"
-                                  : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25"
+                                  ? "border-nd-accent-primary/50 bg-nd-accent-primary/[0.08]"
+                                  : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/30"
                               }`}
                             >
                               {isActive && (
                                 <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-success" aria-label="Active theme">
-                                  <Check className="h-3 w-3 text-nd-bg" />
+                                  <Check className="h-3 w-3 text-nd-surface-app" />
                                 </span>
                               )}
                               {isPending && (
-                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-nd-accent/40 bg-nd-accent/20 text-[8px] font-bold text-nd-accent">
+                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-nd-accent-primary/40 bg-nd-accent-primary/20 text-[8px] font-bold text-nd-accent-primary">
                                   ▶
                                 </span>
                               )}
@@ -449,7 +452,7 @@ export function SettingsView({
                                   <span key={i} className="h-3 flex-1 rounded-full" style={{ backgroundColor: c }} />
                                 ))}
                               </div>
-                              <p className="text-xs font-semibold text-nd-text truncate">{theme.name}</p>
+                              <p className="text-xs font-semibold text-nd-text-primary truncate">{theme.name}</p>
                               <p className="mt-1 text-[11px] leading-4 text-nd-text-muted line-clamp-2">
                                 {theme.description}
                               </p>
@@ -465,7 +468,7 @@ export function SettingsView({
                           color={previewTheme.tokens.color}
                         />
                         <div className="space-y-1">
-                          <p className="text-xs font-semibold text-nd-text truncate">{previewTheme.name}</p>
+                          <p className="text-xs font-semibold text-nd-text-primary truncate">{previewTheme.name}</p>
                           <p className="text-[11px] text-nd-text-muted leading-4 line-clamp-2">
                             {hoveredThemeId
                               ? "Hover to preview — click to select"
@@ -477,28 +480,30 @@ export function SettingsView({
 
                         {/* Apply / Cancel controls */}
                         <div className="flex flex-col gap-1.5">
-                          <button
-                            type="button"
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            fullWidth
                             disabled={!hasPendingChange}
+                            icon={Check}
                             onClick={() => {
                               if (pendingThemeId) {
                                 void updateSettings({ activeThemeId: pendingThemeId });
                                 setPendingThemeId(null);
                               }
                             }}
-                            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/20 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                           >
-                            <Check className="h-3.5 w-3.5" aria-hidden="true" />
                             {hasPendingChange ? "Apply Theme" : "Applied"}
-                          </button>
+                          </Button>
                           {hasPendingChange && (
-                            <button
-                              type="button"
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              fullWidth
                               onClick={() => setPendingThemeId(null)}
-                              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 text-xs text-nd-text-muted transition hover:border-nd-text-muted/30 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                             >
                               Cancel
-                            </button>
+                            </Button>
                           )}
                         </div>
 
@@ -525,19 +530,12 @@ export function SettingsView({
                   </div>
                 )}
                 {providersError && (
-                  <div className="flex items-start justify-between gap-2 rounded-xl border border-nd-danger/20 bg-nd-danger/10 p-3 text-sm text-nd-danger">
-                    <div className="flex items-start gap-2 min-w-0">
-                      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                      <span className="truncate">{providersError}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setProviderRetryCount((n) => n + 1)}
-                      className="shrink-0 rounded-lg border border-nd-danger/30 bg-nd-danger/10 px-2 py-1 text-xs font-semibold text-nd-danger transition hover:bg-nd-danger/20 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-danger/40"
-                    >
-                      <RefreshCcw className="inline h-3 w-3 mr-1" aria-hidden="true" />Retry
-                    </button>
-                  </div>
+                  <ErrorState
+                    title="Provider load failed"
+                    message={providersError}
+                    onRetry={() => setProviderRetryCount((n) => n + 1)}
+                    retryLabel="Retry"
+                  />
                 )}
                 {!providersLoading &&
                   providerOptions.map((provider) => {
@@ -551,16 +549,16 @@ export function SettingsView({
                           dispatch({ type: "set-provider", provider: provider.id });
                           void neurodeckApi.ai.setProvider(provider.id);
                         }}
-                        className={`w-full rounded-xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${
+                        className={`w-full rounded-xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                           active
-                            ? "border-nd-accent/40 bg-nd-accent/[0.07]"
-                            : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/25"
+                            ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]"
+                            : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/25"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 min-w-0">
-                            <BrainCircuit className="h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
-                            <span className="font-semibold text-nd-text text-sm truncate">
+                            <BrainCircuit className="h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
+                            <span className="font-semibold text-nd-text-primary text-sm truncate">
                               {provider.label}
                             </span>
                           </div>
@@ -580,18 +578,20 @@ export function SettingsView({
                           {provider.description}
                         </p>
                         {health?.detail && (
-                          <p className="mt-1 text-xs text-nd-text-muted/60">{health.detail}</p>
+                          <p className="mt-1 text-xs text-nd-text-muted/70">{health.detail}</p>
                         )}
                       </button>
                     );
                   })}
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  icon={RefreshCcw}
                   onClick={() => void actions.checkAiHealth()}
-                  className="w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   Check AI Health
-                </button>
+                </Button>
               </div>
             </Panel>
           </div>
@@ -603,8 +603,8 @@ export function SettingsView({
             <Panel eyebrow="Display" title="Font Scale">
               <div className="space-y-3 p-4">
                 <div className="flex items-center justify-between text-sm text-nd-text-muted">
-                  <span>Scale</span>
-                  <span className="font-mono text-nd-accent">{fontScale}%</span>
+                  <span className="font-medium">Scale</span>
+                  <span className="font-mono text-nd-accent-primary">{fontScale}%</span>
                 </div>
                 <input
                   type="range"
@@ -613,10 +613,10 @@ export function SettingsView({
                   step={5}
                   value={fontScale}
                   onChange={(e) => applyFontScale(Number(e.target.value))}
-                  className="w-full accent-nd-accent"
+                  className="w-full accent-nd-accent-primary"
                   aria-label="Font scale percentage"
                 />
-                <div className="flex justify-between text-xs text-nd-text-muted/60">
+                <div className="flex justify-between text-xs text-nd-text-muted/70">
                   <span>75%</span>
                   <span>100%</span>
                   <span>130%</span>
@@ -668,8 +668,8 @@ export function SettingsView({
                     key={value}
                     className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${
                       ttsMode === value
-                        ? "border-nd-accent/40 bg-nd-accent/[0.07]"
-                        : "border-nd-text-muted/15 bg-nd-surface/40 hover:border-nd-accent/20"
+                        ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]"
+                        : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/20"
                     }`}
                   >
                     <input
@@ -678,14 +678,14 @@ export function SettingsView({
                       value={value}
                       checked={ttsMode === value}
                       onChange={() => handleTtsModeChange(value)}
-                      className="mt-0.5 accent-[var(--nd-accent)]"
+                      className="mt-0.5 accent-nd-accent-primary"
                     />
                     <div>
-                      <p className="font-semibold text-sm text-nd-text">{label}</p>
+                      <p className="font-semibold text-sm text-nd-text-primary">{label}</p>
                       <p className="text-xs text-nd-text-muted mt-0.5">{desc}</p>
                     </div>
                     {ttsMode === value && (
-                      <Check className="ml-auto h-4 w-4 shrink-0 text-nd-accent" aria-hidden="true" />
+                      <Check className="ml-auto h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
                     )}
                   </label>
                 ))}
@@ -697,15 +697,17 @@ export function SettingsView({
                 <p className="text-xs text-nd-text-muted">
                   Plays a short sample phrase through the TTS engine to verify it is working.
                 </p>
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="md"
+                  fullWidth
+                  loading={ttsTesting}
                   disabled={ttsTesting}
+                  icon={Volume2}
                   onClick={() => void handleTtsTest()}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Volume2 className="h-4 w-4" aria-hidden="true" />
                   {ttsTesting ? "Speaking…" : "Test Voice Output"}
-                </button>
+                </Button>
               </div>
             </Panel>
           </div>
@@ -760,8 +762,8 @@ export function SettingsView({
                   />
                 </SettingRow>
                 <div className="grid gap-3 md:grid-cols-2">
-                  <label className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
-                    <span className="mb-2 block text-xs font-semibold text-nd-text">Preferred profile</span>
+                  <label className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">Preferred profile</span>
                     <select
                       value={controllerSettings.preferredProfile}
                       onChange={(event) =>
@@ -772,7 +774,7 @@ export function SettingsView({
                           },
                         })
                       }
-                      className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                      className="w-full rounded-xl border border-nd-border-subtle bg-nd-surface-app/50 px-3 py-2 text-sm text-nd-text-primary outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
                     >
                       <option value="steam_deck">Steam Deck</option>
                       <option value="xbox">Xbox</option>
@@ -781,8 +783,8 @@ export function SettingsView({
                       <option value="custom">Custom</option>
                     </select>
                   </label>
-                  <label className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
-                    <span className="mb-2 block text-xs font-semibold text-nd-text">Glyph style</span>
+                  <label className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">Glyph style</span>
                     <select
                       value={controllerSettings.glyphStyle}
                       onChange={(event) =>
@@ -793,7 +795,7 @@ export function SettingsView({
                           },
                         })
                       }
-                      className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 py-2 text-sm text-nd-text outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                      className="w-full rounded-xl border border-nd-border-subtle bg-nd-surface-app/50 px-3 py-2 text-sm text-nd-text-primary outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
                     >
                       <option value="auto">Auto detect</option>
                       <option value="steam_deck">Steam Deck</option>
@@ -810,10 +812,10 @@ export function SettingsView({
                     ["Repeat delay", controllerSettings.initialRepeatDelayMs, 150, 700, 10, "initialRepeatDelayMs"],
                     ["Repeat rate", controllerSettings.repeatIntervalMs, 40, 180, 5, "repeatIntervalMs"],
                   ].map(([label, value, min, max, step, key]) => (
-                    <label key={String(key)} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
-                      <span className="flex items-center justify-between text-xs font-semibold text-nd-text">
+                    <label key={String(key)} className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+                      <span className="flex items-center justify-between text-xs font-semibold text-nd-text-primary">
                         <span>{label}</span>
-                        <span className="font-mono text-nd-accent">{value}</span>
+                        <span className="font-mono text-nd-accent-primary">{value}</span>
                       </span>
                       <input
                         type="range"
@@ -827,7 +829,7 @@ export function SettingsView({
                             settings: { [key]: Number(event.target.value) } as never,
                           })
                         }
-                        className="mt-2 w-full accent-nd-accent"
+                        className="mt-2 w-full accent-nd-accent-primary"
                       />
                     </label>
                   ))}
@@ -868,8 +870,8 @@ export function SettingsView({
                     />
                   </SettingRow>
                 </div>
-                <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 space-y-2 text-xs text-nd-text-muted">
-                  <p className="font-semibold text-nd-text text-sm">Default bindings</p>
+                <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 space-y-2 text-xs text-nd-text-muted">
+                  <p className="font-semibold text-nd-text-primary text-sm">Default bindings</p>
                   {[
                     ["A / Cross", "Confirm and activate"],
                     ["B / Circle", "Back, cancel, close modal"],
@@ -880,7 +882,7 @@ export function SettingsView({
                   ].map(([key, desc]) => (
                     <div key={key} className="flex items-center justify-between gap-3">
                       <span>{desc}</span>
-                      <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 font-mono text-nd-accent text-[10px]">
+                      <kbd className="rounded border border-nd-border-subtle bg-nd-surface-secondary/60 px-2 py-0.5 font-mono text-nd-accent-primary text-[10px]">
                         {key}
                       </kbd>
                     </div>
@@ -898,14 +900,14 @@ export function SettingsView({
                     ["Screen", runtime.currentScreenId],
                     ["Focus zone", runtime.currentFocusZone ?? "unknown"],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2">
+                    <div key={label} className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2">
                       <p className="text-[11px] uppercase tracking-[0.18em] text-nd-text-muted">{label}</p>
-                      <p className="mt-1 text-sm font-semibold text-nd-text">{value}</p>
+                      <p className="mt-1 text-sm font-semibold text-nd-text-primary">{value}</p>
                     </div>
                   ))}
                 </div>
-                <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 space-y-2 text-xs text-nd-text-muted">
-                  <p className="font-semibold text-nd-text text-sm">Detected devices</p>
+                <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 space-y-2 text-xs text-nd-text-muted">
+                  <p className="font-semibold text-nd-text-primary text-sm">Detected devices</p>
                   {runtime.devices.length === 0 && (
                     <p>No controller detected. Keyboard and mouse remain available.</p>
                   )}
@@ -918,13 +920,14 @@ export function SettingsView({
                     </div>
                   ))}
                 </div>
-                <button
-                  type="button"
+                <Button
+                  variant="primary"
+                  size="md"
+                  fullWidth
                   onClick={() => setDebugOverlayOpen(true)}
-                  className="w-full rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
                   Open Controller Diagnostics Overlay
-                </button>
+                </Button>
               </div>
             </Panel>
           </div>
@@ -962,10 +965,10 @@ export function SettingsView({
                   return (
                     <div
                       key={tier}
-                      className={`rounded-xl border p-3.5 ${active ? "border-nd-accent/40 bg-nd-accent/[0.07]" : "border-nd-text-muted/15 bg-nd-surface/40"}`}
+                      className={`rounded-xl border p-3.5 ${active ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]" : "border-nd-border-subtle bg-nd-surface-secondary/40"}`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-nd-text text-sm">{meta.label}</span>
+                        <span className="font-semibold text-nd-text-primary text-sm">{meta.label}</span>
                         {active && <Badge tone="accent">Active</Badge>}
                       </div>
                       <p className="mt-1 text-xs text-nd-text-muted">{meta.desc}</p>
@@ -986,10 +989,10 @@ export function SettingsView({
                 ].map(([label, value]) => (
                   <div
                     key={label}
-                    className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-4 py-3"
+                    className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-3"
                   >
                     <p className="text-xs text-nd-text-muted">{label}</p>
-                    <p className="mt-1 font-mono text-lg font-bold text-nd-accent">{value}</p>
+                    <p className="mt-1 font-mono text-lg font-bold text-nd-accent-primary">{value}</p>
                   </div>
                 ))}
               </div>
@@ -1002,8 +1005,11 @@ export function SettingsView({
           <div id="sp-extensions" className="settings-panel active space-y-4">
             <Panel eyebrow="Native Actions" title="Utilities">
               <div className="space-y-2 p-4">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="md"
+                  fullWidth
+                  icon={RefreshCcw}
                   onClick={async () => {
                     dispatch({ type: "set-busy", label: "Refreshing diagnostic metrics..." });
                     try {
@@ -1024,19 +1030,23 @@ export function SettingsView({
                     }
                     dispatch({ type: "set-busy", label: null });
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <RefreshCcw className="h-4 w-4" aria-hidden="true" /> Refresh Diagnostics
-                </button>
-                <button
-                  type="button"
+                  Refresh Diagnostics
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  fullWidth
+                  icon={FileDown}
                   onClick={() => void actions.exportSession()}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <FileDown className="h-4 w-4" aria-hidden="true" /> Export Active Session
-                </button>
-                <button
-                  type="button"
+                  Export Active Session
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  fullWidth
+                  icon={FileArchive}
                   onClick={async () => {
                     dispatch({
                       type: "set-busy",
@@ -1057,10 +1067,9 @@ export function SettingsView({
                     }
                     dispatch({ type: "set-busy", label: null });
                   }}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2.5 text-sm font-semibold text-nd-text/80 transition hover:border-nd-accent/25 hover:text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                 >
-                  <FileArchive className="h-4 w-4" aria-hidden="true" /> Export Diagnostics Bundle
-                </button>
+                  Export Diagnostics Bundle
+                </Button>
               </div>
             </Panel>
 
@@ -1089,7 +1098,7 @@ export function SettingsView({
                   persists locally in the Electron userData folder. Nothing is sent to external
                   servers without your explicit action.
                 </p>
-                <div className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 space-y-1.5 text-xs text-nd-text-muted">
+                <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 space-y-1.5 text-xs text-nd-text-muted">
                   {[
                     ["Sessions", "userData/sessions/"],
                     ["Exports", "userData/exports/"],
@@ -1098,7 +1107,7 @@ export function SettingsView({
                     ["Logs", "userData/logs/"],
                   ].map(([label, path]) => (
                     <div key={label} className="flex items-center justify-between gap-3">
-                      <span className="text-nd-text">{label}</span>
+                      <span className="text-nd-text-primary">{label}</span>
                       <span className="font-mono text-nd-text-muted/70">{path}</span>
                     </div>
                   ))}
@@ -1106,14 +1115,18 @@ export function SettingsView({
               </div>
             </Panel>
 
-            <Panel eyebrow="Danger Zone" title="Reset">
+            <Panel eyebrow="Danger Zone" title="Reset" className="border-nd-danger/30 bg-nd-danger/[0.02]">
               <div className="p-4 space-y-3">
-                <p className="text-xs text-nd-text-muted">
-                  Clears stored UI preferences, active session, and cached context. Does not delete
-                  sessions or exports from disk.
-                </p>
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-nd-danger" aria-hidden="true" />
+                  <p className="text-xs text-nd-text-secondary">
+                    Clears stored UI preferences, active session, and cached context. Does not delete
+                    sessions or exports from disk.
+                  </p>
+                </div>
                 <Button
                   variant="danger"
+                  size="md"
                   fullWidth
                   onClick={() => void actions.resetLocalState()}
                   icon={RotateCcw}
@@ -1137,8 +1150,8 @@ export function SettingsView({
                     key={label}
                     className="flex items-center justify-between gap-3 rounded-lg px-2 py-1"
                   >
-                    <span className="text-nd-text/60">{label}</span>
-                    <span className="font-mono text-nd-text">{value}</span>
+                    <span className="text-nd-text-primary/60">{label}</span>
+                    <span className="font-mono text-nd-text-primary">{value}</span>
                   </div>
                 ))}
               </div>

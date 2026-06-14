@@ -64,21 +64,21 @@ describe('ConfirmDialog', () => {
 
   it('does NOT call onCancel when backdrop clicked (closeOnBackdrop=false)', () => {
     const { onCancel } = setup();
-    const backdrop = document.querySelector('[aria-hidden="true"]') as HTMLElement;
-    fireEvent.click(backdrop);
+    const backdrop = document.querySelector('.nd-modal__overlay') as HTMLElement;
+    fireEvent.mouseDown(backdrop);
     expect(onCancel).not.toHaveBeenCalled();
   });
 
   it('renders danger variant on confirm button when destructive=true', () => {
     setup({ destructive: true });
     const confirmBtn = screen.getByRole('button', { name: 'Confirm' });
-    expect(confirmBtn.className).toContain('nd-accent-error');
+    expect(confirmBtn.className).toContain('nd-btn--danger');
   });
 
   it('renders primary variant on confirm button when destructive=false', () => {
     setup({ destructive: false });
     const confirmBtn = screen.getByRole('button', { name: 'Confirm' });
-    expect(confirmBtn.className).toContain('nd-accent-primary');
+    expect(confirmBtn.className).toContain('nd-btn--primary');
   });
 
   it('renders alert triangle icon when destructive=true', () => {

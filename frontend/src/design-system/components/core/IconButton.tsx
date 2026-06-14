@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { forwardRef } from 'react';
 
 if (typeof document !== 'undefined' && !document.getElementById('nd-iconbtn-css')) {
   const s = document.createElement('style');
@@ -19,6 +20,12 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-iconbtn-css'
   .nd-iconbtn--primary:hover{background:rgba(var(--nd-cyan-rgb),0.12);color:var(--nd-accent-primary);}
   .nd-iconbtn--danger{color:var(--nd-accent-error);}
   .nd-iconbtn--danger:hover{background:rgba(var(--nd-red-rgb),0.12);color:var(--nd-accent-error);}
+  .nd-iconbtn--subtle{background:var(--nd-surface-secondary);border-color:var(--nd-border-subtle);color:var(--nd-text-primary);}
+  .nd-iconbtn--subtle:hover{border-color:rgba(var(--nd-cyan-rgb),0.4);background:rgba(var(--nd-cyan-rgb),0.1);color:var(--nd-accent-primary);}
+  .nd-iconbtn--outline{background:transparent;border-color:var(--nd-border-subtle);color:var(--nd-text-primary);}
+  .nd-iconbtn--outline:hover{border-color:rgba(var(--nd-cyan-rgb),0.4);color:var(--nd-accent-primary);}
+  .nd-iconbtn--ghost{background:transparent;border-color:transparent;color:var(--nd-text-muted);}
+  .nd-iconbtn--ghost:hover{background:var(--nd-surface-tertiary);color:var(--nd-text-primary);}
   .nd-iconbtn__tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
     background:var(--nd-surface-tertiary);color:var(--nd-text-primary);font-family:var(--nd-font-ui);
     font-size:11px;padding:4px 8px;border-radius:var(--nd-radius-sm);border:1px solid var(--nd-border-subtle);
@@ -28,7 +35,7 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-iconbtn-css'
   document.head.appendChild(s);
 }
 
-export type IconButtonVariant = 'default' | 'primary' | 'danger';
+export type IconButtonVariant = 'default' | 'primary' | 'danger' | 'subtle' | 'outline' | 'ghost';
 export type IconButtonSize = 'sm' | 'md' | 'lg';
 
 /**
@@ -36,8 +43,8 @@ export type IconButtonSize = 'sm' | 'md' | 'lg';
  * aria-label and a hover/focus tooltip.
  */
 export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> {
-  /** Accessible label — also rendered as the tooltip. Required. */
-  label: string;
+  /** Accessible label — also rendered as the tooltip and aria-label. */
+  label?: string;
   /** Icon node (e.g. a Lucide icon element). */
   icon: React.ReactNode;
   /** @default 'default' */
@@ -48,22 +55,25 @@ export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLBut
   showTooltip?: boolean;
 }
 
-export function IconButton({
-  label,
-  icon,
-  variant = 'default',
-  size = 'md',
-  disabled = false,
-  showTooltip = true,
-  className = '',
-  ...rest
-}: IconButtonProps): React.ReactNode {
+export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
+  {
+    label,
+    icon,
+    variant = 'default',
+    size = 'md',
+    disabled = false,
+    showTooltip = true,
+    className = '',
+    ...rest
+  },
+  ref,
+): React.ReactNode {
   const cls = ['nd-iconbtn', `nd-iconbtn--${variant}`, `nd-iconbtn--${size}`, className]
     .filter(Boolean).join(' ');
   return (
-    <button className={cls} aria-label={label} title={showTooltip ? undefined : label} disabled={disabled} {...rest}>
+    <button ref={ref} className={cls} aria-label={label} title={showTooltip ? undefined : label} disabled={disabled} {...rest}>
       {icon}
-      {showTooltip ? <span className="nd-iconbtn__tip" role="tooltip">{label}</span> : null}
+      {showTooltip && label ? <span className="nd-iconbtn__tip" role="tooltip">{label}</span> : null}
     </button>
   );
-}
+});

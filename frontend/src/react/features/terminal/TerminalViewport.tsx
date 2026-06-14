@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Terminal as XTerm } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { AlertTriangle, Copy, RefreshCw, Trash2 } from "lucide-react";
+import { IconButton } from "../../components/primitives/IconButton";
+import { StatusChip } from "../../components/primitives/StatusChip";
 import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
 import type { TerminalSession } from "../../../../../src/shared/terminal/terminalContracts";
 import type { TerminalEnvironmentReport } from "../../../../../src/shared/terminal/terminalDiagnosticsTypes";
@@ -96,10 +98,10 @@ export function TerminalViewport({
       scrollback: 4000,
       convertEol: true,
       theme: {
-        background:          getVar("--bg-color", "#0A0D10"),
-        foreground:          getVar("--fg-color", "#E8F4FF"),
-        cursor:              getVar("--accent-color", "#5EEBFF"),
-        selectionBackground: `rgba(${getVar("--accent-rgb", "94, 235, 255")}, 0.25)`,
+        background:          getVar("--nd-surface-app", "#0A0D10"),
+        foreground:          getVar("--nd-text-primary", "#E8F4FF"),
+        cursor:              getVar("--nd-accent-primary", "#5EEBFF"),
+        selectionBackground: `rgba(${getVar("--nd-cyan-rgb", "94, 235, 255")}, 0.25)`,
       },
     });
     const fit = new FitAddon();
@@ -297,31 +299,58 @@ export function TerminalViewport({
     await navigator.clipboard.writeText(text).catch(() => {});
   };
 
-  const buttonClass = "rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted hover:bg-nd-surface/60";
+  const statusTone =
+    pane.state === "error" || pane.state === "blocked"
+      ? "error"
+      : pane.state === "exited"
+        ? "warning"
+        : "success";
 
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      <div className="flex items-center justify-between border-b border-nd-text-muted/15 px-3 py-2 text-xs text-nd-text-muted">
+      <div className="flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2 text-xs text-nd-text-muted">
         <div className="flex min-w-0 items-center gap-2">
-          <span className="truncate font-semibold text-nd-text">{pane.title}</span>
-          <span>•</span>
-          <span>{status}</span>
-          <span>•</span>
+          <span className="truncate font-semibold text-nd-text-primary">{pane.title}</span>
+          <span className="text-nd-border-default">•</span>
+          <StatusChip tone={statusTone} size="sm">
+            {status}
+          </StatusChip>
+          <span className="text-nd-border-default">•</span>
           <span className="truncate">{pane.cwd || "cwd unavailable"}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={copySelection} className={buttonClass} aria-label="Copy selection">
+        <div className="flex items-center gap-1">
+          <IconButton
+            aria-label="Copy selection"
+            variant="ghost"
+            size="sm"
+            onClick={copySelection}
+          >
             <Copy className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <button type="button" onClick={() => onRequestClear()} className={buttonClass} aria-label="Clear terminal">
+          </IconButton>
+          <IconButton
+            aria-label="Clear terminal"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRequestClear()}
+          >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <button type="button" onClick={() => onRequestRestart()} className={buttonClass} aria-label="Restart session">
+          </IconButton>
+          <IconButton
+            aria-label="Restart session"
+            variant="ghost"
+            size="sm"
+            onClick={() => onRequestRestart()}
+          >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
-          </button>
-          <button type="button" aria-label="Close pane" onClick={() => onRequestClose()} className="rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-2 text-nd-danger focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40">
+          </IconButton>
+          <IconButton
+            aria-label="Close pane"
+            variant="danger"
+            size="sm"
+            onClick={() => onRequestClose()}
+          >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       </div>
       <div
@@ -330,18 +359,22 @@ export function TerminalViewport({
         onClick={onFocus}
       />
       {(pane.state === "error" || pane.state === "blocked" || pane.state === "exited") && (
-        <div className="absolute inset-0 flex items-center justify-center bg-nd-bg/65 p-4 backdrop-blur-sm">
-          <div className="max-w-md rounded-2xl border border-nd-text-muted/15 bg-nd-bg/95 p-4 shadow-panel-elevated">
+        <div className="absolute inset-0 flex items-center justify-center bg-nd-surface-app/65 p-4 backdrop-blur-sm">
+          <div className="max-w-md rounded-2xl border border-nd-border-subtle bg-nd-surface-modal p-4 shadow-nd-elevation-card">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-warning" aria-hidden="true" />
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-nd-text">{pane.state === "blocked" ? "Session blocked" : pane.state === "error" ? "Session error" : "Session exited"}</div>
-                <div className="mt-1 text-xs text-nd-text-muted">{pane.lastErrorMessage || pane.lastExitReason || pane.stateMessage || "The PTY is not currently running."}</div>
+                <div className="text-sm font-semibold text-nd-text-primary">
+                  {pane.state === "blocked" ? "Session blocked" : pane.state === "error" ? "Session error" : "Session exited"}
+                </div>
+                <div className="mt-1 text-xs text-nd-text-muted">
+                  {pane.lastErrorMessage || pane.lastExitReason || pane.stateMessage || "The PTY is not currently running."}
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={onRequestRestart} className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent">
+                  <button type="button" onClick={onRequestRestart} className="rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-xs font-semibold text-nd-accent-primary hover:bg-nd-accent-primary/20">
                     Restart
                   </button>
-                  <button type="button" onClick={onRequestClose} className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs font-semibold text-nd-danger">
+                  <button type="button" onClick={onRequestClose} className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs font-semibold text-nd-danger hover:bg-nd-danger/20">
                     Close
                   </button>
                 </div>

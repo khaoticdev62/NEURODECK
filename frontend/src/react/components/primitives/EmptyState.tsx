@@ -16,24 +16,28 @@ export function EmptyState({
   compact?: boolean;
   className?: string;
 }) {
-  const rootClass = [
-    'flex flex-col items-center justify-center text-center',
-    compact ? 'px-3 py-6' : 'px-4 py-12',
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
-
   return (
-    <div className={rootClass}>
+    <div
+      className={[
+        'flex flex-col items-center justify-center text-center',
+        compact ? 'px-3 py-6' : 'px-4 py-12',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <div
-        className={`mb-4 flex items-center justify-center border border-nd-text-muted/15 bg-nd-surface/40 shadow-panel ${
-          compact ? 'h-10 w-10 rounded-xl' : 'h-14 w-14 rounded-2xl'
-        }`}
+        className={[
+          'mb-4 flex items-center justify-center border border-nd-border-subtle bg-nd-surface-secondary/60 shadow-panel',
+          compact ? 'h-10 w-10 rounded-xl' : 'h-14 w-14 rounded-2xl',
+        ].join(' ')}
       >
-        <Icon className={`${compact ? 'h-5 w-5' : 'h-7 w-7'} text-nd-accent`} aria-hidden="true" />
+        <Icon
+          className={`${compact ? 'h-5 w-5' : 'h-7 w-7'} text-nd-accent-primary motion-reduce:transition-none`}
+          aria-hidden="true"
+        />
       </div>
-      <h3 className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-nd-text`}>{title}</h3>
+      <h3 className={`${compact ? 'text-sm' : 'text-base'} font-semibold text-nd-text-primary`}>{title}</h3>
       <p className={`${compact ? 'max-w-[14rem] text-xs' : 'max-w-xs text-sm'} mt-1 leading-relaxed text-nd-text-muted`}>
         {description}
       </p>

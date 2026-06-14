@@ -77,7 +77,12 @@ export function TabList({
       role="tablist"
       aria-label={ariaLabel}
       onKeyDown={handleKeyDown}
-      className={className}
+      className={[
+        'flex items-center gap-1 rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-1',
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       {children}
     </div>
@@ -104,6 +109,16 @@ export function Tab({
   const { value: active, onChange, idPrefix } = useTabsCtx();
   const isActive = active === value;
 
+  const base = [
+    'relative flex min-h-[40px] items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium outline-none transition-colors duration-fast',
+    'focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60',
+    'disabled:pointer-events-none disabled:opacity-40',
+    className,
+  ].join(' ');
+
+  const activeCls = activeClassName ?? 'bg-nd-surface-tertiary text-nd-text-primary shadow-sm';
+  const inactiveCls = inactiveClassName ?? 'text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary';
+
   return (
     <button
       type="button"
@@ -114,7 +129,7 @@ export function Tab({
       tabIndex={isActive ? 0 : -1}
       disabled={disabled}
       onClick={() => onChange(value)}
-      className={`${className ?? ''} ${isActive ? (activeClassName ?? '') : (inactiveClassName ?? '')}`}
+      className={`${base} ${isActive ? activeCls : inactiveCls}`}
     >
       {children}
     </button>

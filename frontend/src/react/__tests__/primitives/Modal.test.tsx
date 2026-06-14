@@ -75,15 +75,15 @@ describe('Modal', () => {
 
   it('calls onClose when backdrop clicked and closeOnBackdrop=true', () => {
     const { onClose } = renderModal({ closeOnBackdrop: true });
-    const backdrop = document.querySelector('[aria-hidden="true"]') as HTMLElement;
-    fireEvent.click(backdrop);
+    const backdrop = document.querySelector('.nd-modal__overlay') as HTMLElement;
+    fireEvent.mouseDown(backdrop);
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it('does NOT call onClose when backdrop clicked and closeOnBackdrop=false', () => {
     const { onClose } = renderModal({ closeOnBackdrop: false });
-    const backdrop = document.querySelector('[aria-hidden="true"]') as HTMLElement;
-    fireEvent.click(backdrop);
+    const backdrop = document.querySelector('.nd-modal__overlay') as HTMLElement;
+    fireEvent.mouseDown(backdrop);
     expect(onClose).not.toHaveBeenCalled();
   });
 
@@ -100,14 +100,13 @@ describe('Modal', () => {
 
   it('applies sm size class', () => {
     renderModal({ size: 'sm' });
-    // The inner dialog panel should have max-w-sm
     const panel = document.querySelector('[tabindex="-1"]');
-    expect(panel?.className).toContain('max-w-sm');
+    expect(panel?.className).toContain('nd-modal--sm');
   });
 
   it('applies xl size class', () => {
     renderModal({ size: 'xl' });
     const panel = document.querySelector('[tabindex="-1"]');
-    expect(panel?.className).toContain('max-w-2xl');
+    expect(panel?.className).toContain('nd-modal--xl');
   });
 });

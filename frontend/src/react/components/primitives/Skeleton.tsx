@@ -12,11 +12,11 @@ export function Skeleton({
       {Array.from({ length: count }, (_, i) => (
         <div
           key={i}
-          className={`relative overflow-hidden rounded-xl bg-nd-surface/60 animate-pulse motion-reduce:animate-none ${className}`}
+          className={`relative overflow-hidden rounded-lg bg-nd-surface-secondary/60 animate-pulse motion-reduce:animate-none ${className}`}
           style={{ animationDelay: `${i * 80 + delay}ms` }}
         >
           <span
-            className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/10 to-transparent motion-reduce:animate-none"
+            className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-nd-text-primary/10 to-transparent motion-reduce:animate-none"
             style={{ animationDelay: `${i * 80 + delay}ms` }}
           />
         </div>

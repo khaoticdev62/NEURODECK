@@ -11,4 +11,9 @@
   --nd-accent-warning: #FFD400;
   --nd-accent-error: #FF3355;
   --nd-border-default: rgba(255, 255, 255, 0.48);
+  --nd-border-subtle: rgba(255, 255, 255, 0.32);
+  --nd-border-strong: rgba(255, 255, 255, 0.72);
+  --nd-surface-hover: rgba(255, 255, 255, 0.12);
+  --nd-surface-active: rgba(0, 229, 255, 0.18);
+  --nd-surface-selected: rgba(0, 229, 255, 0.22);
 }

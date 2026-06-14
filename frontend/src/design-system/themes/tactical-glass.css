@@ -7,4 +7,7 @@
   --nd-surface-glass: rgba(17, 25, 34, 0.78);
   --nd-accent-primary: #68F1FF;
   --nd-border-default: rgba(104, 241, 255, 0.22);
+  --nd-surface-hover: rgba(104, 241, 255, 0.08);
+  --nd-surface-active: rgba(104, 241, 255, 0.14);
+  --nd-surface-selected: rgba(104, 241, 255, 0.16);
 }
