@@ -171,12 +171,14 @@ jobs:
         run: |
           cd pr/e2e
           npm install pixelmatch pngjs
-          cat > compare.js <<'EOF'
-          const fs = require('fs');
-          const path = require('path');
-          const pixelmatch = require('pixelmatch');
-          const { PNG } = require('pngjs');
+          cat > compare.mjs <<'EOF'
+          import fs from 'fs';
+          import path from 'path';
+          import { fileURLToPath } from 'url';
+          import { PNG } from 'pngjs';
+          import pixelmatch from 'pixelmatch';
 
+          const __dirname = path.dirname(fileURLToPath(import.meta.url));
           const baselineDir = path.join(__dirname, '..', '..', 'baseline', 'e2e', '.regression', 'baseline');
           const prDir = path.join(__dirname, '.regression', 'pr');
           const diffDir = path.join(__dirname, '.regression', 'diff');
@@ -217,8 +219,8 @@ jobs:
           }
           // Informational only: PRs with intentional UI changes will diverge from master.
           // Diff images are uploaded as artifacts and a comment is posted when differences exist.
-          process.exit(0);
           EOF
+          node compare.mjs
           node compare.js
           if [ -f "pr/e2e/.regression/diff/.has_differences" ]; then
             echo "has_differences=true" >> "$GITHUB_OUTPUT"
