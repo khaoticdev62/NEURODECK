@@ -587,14 +587,15 @@ export function IDEView() {
                 >
                   <span>{getLangIcon(tab.lang)}</span>
                   <span className="truncate max-w-[120px]">{tab.name}{tab.dirty ? ' ●' : ''}</span>
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); closeTab(tab.path); }}
+                  <IconButton
                     aria-label={`Close ${tab.name}`}
-                    className="ml-1 rounded p-0.5 hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/50"
+                    variant="ghost"
+                    size="sm"
+                    className="ml-1 h-5 w-5"
+                    onClick={(e) => { e.stopPropagation(); closeTab(tab.path); }}
                   >
                     <X className="h-3 w-3" aria-hidden="true" />
-                  </button>
+                  </IconButton>
                 </button>
               ))}
             </div>
@@ -611,18 +612,19 @@ export function IDEView() {
                   <span className="text-xs text-text-muted">{activeTabData.name}</span>
                   {activeTabData.dirty && <Badge tone="accent" size="sm" variant="outline">modified</Badge>}
                   {diagnostics.length > 0 && (
-                    <button
-                      type="button"
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      icon={AlertCircle}
+                      className="ml-auto text-accent-error hover:bg-accent-error/10"
                       onClick={() => {
                         setShowDiagnosticPanel(true);
                         setActiveDiagnosticMsg(diagnostics[0]?.message ?? '');
                         setDiagnosticFixes([]);
                       }}
-                      className="ml-auto flex items-center gap-1 rounded px-1 text-[11px] text-accent-error hover:bg-accent-error/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-error/40"
                     >
-                      <AlertCircle className="h-3 w-3" aria-hidden="true" />
-                      <span>{diagnostics.length} issue{diagnostics.length !== 1 ? 's' : ''}</span>
-                    </button>
+                      {diagnostics.length} issue{diagnostics.length !== 1 ? 's' : ''}
+                    </Button>
                   )}
                 </div>
                 <div className="relative flex min-h-0 flex-1">
@@ -693,14 +695,15 @@ export function IDEView() {
                   >
                     <div className="flex items-center justify-between border-b border-border-subtle px-3 py-1.5">
                       <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Completions</span>
-                      <button
-                        type="button"
-                        onClick={() => setShowLspCompletions(false)}
+                      <IconButton
                         aria-label="Close completions"
-                        className="text-text-muted hover:text-text-primary rounded focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40"
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5"
+                        onClick={() => setShowLspCompletions(false)}
                       >
                         <X className="h-3 w-3" aria-hidden="true" />
-                      </button>
+                      </IconButton>
                     </div>
                     {lspCompletions.slice(0, 20).map((item, i) => (
                       <button

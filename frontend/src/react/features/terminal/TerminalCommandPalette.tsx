@@ -1,5 +1,6 @@
 ﻿import { useMemo, useState } from "react";
 import { Command } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
 import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
 
 type ActionItem = {
@@ -69,9 +70,7 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
         </div>
         <div className="flex items-center justify-between border-t border-nd-text-muted/15 px-4 py-3 text-xs text-nd-text-muted">
           <span>Esc closes</span>
-          <button type="button" onClick={onClose} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-1.5 text-xs text-nd-text-muted">
-            Close
-          </button>
+          <Button size="xs" variant="secondary" onClick={onClose}>Close</Button>
         </div>
       </FocusTrapContainer>
     </div>
