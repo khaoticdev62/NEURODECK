@@ -25,6 +25,7 @@ interface PanelOwnProps {
   variant?: PanelVariant;
   children: ReactNode;
   className?: string;
+  bodyClassName?: string;
 }
 
 export function Panel({
@@ -34,6 +35,7 @@ export function Panel({
   variant = "glass",
   children,
   className = "",
+  bodyClassName,
   ...rest
 }: PanelOwnProps & Omit<HTMLAttributes<HTMLElement>, keyof PanelOwnProps | "children">) {
   const emphasis = emphasisMap[variant];
@@ -61,7 +63,7 @@ export function Panel({
           {action && <div className="nd-panel__actions">{action}</div>}
         </header>
       )}
-      <div className="nd-panel__body nd-panel__body--normal">{children}</div>
+      <div className={bodyClassName ?? "nd-panel__body nd-panel__body--normal"}>{children}</div>
     </section>
   );
 }
