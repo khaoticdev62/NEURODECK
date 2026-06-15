@@ -18,14 +18,19 @@ if [[ -z "$binary" ]]; then
 fi
 
 # Allow Electron executableName override: fall back to lowercase neurodeck
-if [[ ! -x "$binary" ]]; then
+if [[ ! -e "$binary" ]]; then
   fallback_binary="${binary%/*}/neurodeck"
-  if [[ -x "$fallback_binary" ]]; then
+  if [[ -e "$fallback_binary" ]]; then
     binary="$fallback_binary"
   fi
 fi
 
-[[ -x "$binary" ]] || { steamdeck_write_report "validate-runtime" "blocked" "Launcher not found." "$binary"; exit "$STEAMDECK_EXIT_MISSING_ARTIFACT"; }
+# Artifact upload/download may strip the executable bit; restore it.
+if [[ -f "$binary" && ! -x "$binary" ]]; then
+  chmod +x "$binary" || true
+fi
+
+[[ -x "$binary" ]] || { steamdeck_write_report "validate-runtime" "blocked" "Launcher not found or not executable." "$binary"; exit "$STEAMDECK_EXIT_MISSING_ARTIFACT"; }
 
 log_file="$REPORT_ROOT/validate-runtime.log"
 cmd=("$binary" --self-test --steam-deck --exit-after-self-test)
