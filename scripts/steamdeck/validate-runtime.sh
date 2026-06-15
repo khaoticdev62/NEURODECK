@@ -34,6 +34,10 @@ fi
 
 log_file="$REPORT_ROOT/validate-runtime.log"
 cmd=("$binary" --self-test --steam-deck --exit-after-self-test)
+# GitHub Actions runners lack the privileges Electron's sandbox requires.
+if [[ "${CI:-}" == "true" ]]; then
+  cmd+=(--no-sandbox)
+fi
 if [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]] && command -v xvfb-run >/dev/null 2>&1; then
   cmd=(xvfb-run -a "${cmd[@]}")
 fi
