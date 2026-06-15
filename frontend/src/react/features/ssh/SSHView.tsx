@@ -90,7 +90,7 @@ export function SSHView() {
     "w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40";
 
   return (
-    <div className="ssh-container flex h-full flex-col">
+    <div className="ssh-container flex h-full flex-col overflow-hidden">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
           <Lock className="h-5 w-5 text-nd-accent-primary" />

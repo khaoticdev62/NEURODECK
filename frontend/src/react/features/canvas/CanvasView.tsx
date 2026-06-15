@@ -174,7 +174,12 @@ export function CanvasView() {
       </header>
 
       <div className="flex min-h-0 flex-1 gap-3">
-        <Panel className="flex min-w-0 flex-1 flex-col" title="Editor" eyebrow="Source">
+        <Panel
+          className="flex min-w-0 flex-1 flex-col"
+          title="Editor"
+          eyebrow="Source"
+          bodyClassName="flex flex-1 flex-col min-h-0 p-0"
+        >
           <textarea
             id="canvas-monaco"
             value={code}
@@ -189,6 +194,7 @@ export function CanvasView() {
           className="flex min-w-0 flex-1 flex-col"
           title={lang === "html" ? "Preview" : "Output"}
           eyebrow={lang === "html" ? "Render" : "Stream"}
+          bodyClassName="flex flex-1 flex-col min-h-0 p-0"
         >
           {lang === "html" ? (
             <iframe

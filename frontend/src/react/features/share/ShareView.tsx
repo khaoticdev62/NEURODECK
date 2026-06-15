@@ -130,7 +130,7 @@ function LanPanel() {
               {peers.map((peer) => (
                 <div
                   key={peer.id}
-                  className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-2.5 transition-colors duration-fast hover:border-nd-accent-primary/25"
+                  className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-3 transition-colors duration-fast hover:border-nd-accent-primary/25"
                 >
                   <p className="text-xs font-medium text-nd-text-primary">{peer.name}</p>
                   <p className="text-[10px] font-mono text-nd-text-muted">{peer.address}</p>
@@ -156,7 +156,7 @@ function LanPanel() {
               {transfers.map((t) => (
                 <div
                   key={t.id}
-                  className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-2.5"
+                  className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-xs font-medium text-nd-text-primary">
@@ -389,7 +389,7 @@ function WarpinatorPanel() {
 
         {/* Service status card */}
         <div className="flex items-center gap-3 rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/[0.04] px-4 py-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-nd-accent-primary/20 bg-nd-accent-primary/10">
             <Radio className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
@@ -513,7 +513,7 @@ function WarpinatorPanel() {
                     type="button"
                     onClick={() => setSelectedPeerIp(peer.ip)}
                     aria-pressed={selectedPeerIp === peer.ip}
-                    className={`w-full rounded-lg border p-2.5 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                    className={`w-full rounded-lg border p-3 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                       selectedPeerIp === peer.ip
                         ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.06]"
                         : "border-nd-border-subtle bg-nd-surface-secondary/60 hover:border-nd-accent-primary/25"
@@ -706,7 +706,7 @@ export function ShareView() {
   ];
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
@@ -735,7 +735,7 @@ export function ShareView() {
             aria-selected={activePanel === tab.id}
             onClick={() => setActivePanel(tab.id)}
             data-panel={tab.id}
-            className={`relative flex min-h-[40px] shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium outline-none transition-colors duration-fast focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
+            className={`relative flex min-h-[40px] shrink-0 items-center justify-center rounded-md px-3 py-2 text-xs font-medium outline-none transition-colors duration-fast focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
               activePanel === tab.id
                 ? "bg-nd-surface-tertiary text-nd-text-primary shadow-sm"
                 : "text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary"

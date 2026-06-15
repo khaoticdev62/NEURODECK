@@ -592,10 +592,10 @@ export function IDEView() {
     : [];
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       <ControllerHintBar ideMode={ideMode} visible={showHintBar} />
 
-      <header className="mb-3 mt-2 flex items-center gap-3 px-1">
+      <header className="mb-3 mt-2 flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
           <Code className="h-5 w-5 text-accent-primary" aria-hidden="true" />
         </div>
@@ -661,7 +661,12 @@ export function IDEView() {
       </header>
 
       <div className="flex min-h-0 flex-1 gap-3">
-        <Panel className="flex w-52 flex-col" eyebrow="Explorer" title="Workspace">
+        <Panel
+          className="flex w-52 flex-col"
+          eyebrow="Explorer"
+          title="Workspace"
+          bodyClassName="flex flex-1 flex-col min-h-0 p-0"
+        >
           <div className="min-h-0 flex-1 overflow-auto space-y-0.5">
             {currentPath && (
               <Button

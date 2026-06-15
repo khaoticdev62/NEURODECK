@@ -489,7 +489,7 @@ export function CliMakerView() {
   };
 
   return (
-    <div className="flex h-full flex-col min-h-0 bg-transparent">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
       <header className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
@@ -538,7 +538,7 @@ export function CliMakerView() {
             className="w-full"
           />
 
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((filter) => (
               <button
                 key={filter}
@@ -556,7 +556,7 @@ export function CliMakerView() {
           </div>
 
           <Panel className="flex-1 min-h-0 overflow-hidden">
-            <div className="h-full overflow-y-auto space-y-1.5 p-2">
+            <div className="h-full overflow-y-auto space-y-2 p-3">
               {loading ? (
                 <LoadingState label="Loading commands..." />
               ) : filteredCommands.length === 0 ? (
