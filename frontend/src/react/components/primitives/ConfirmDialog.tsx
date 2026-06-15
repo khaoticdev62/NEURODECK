@@ -1,5 +1,5 @@
-import { AlertTriangle } from 'lucide-react';
-import { ConfirmDialog as DSConfirmDialog } from '../../../design-system/components/feedback/ConfirmDialog';
+import { AlertTriangle } from "lucide-react";
+import { ConfirmDialog as DSConfirmDialog } from "../../../design-system/components/feedback/ConfirmDialog";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -16,10 +16,10 @@ export function ConfirmDialog({
   open,
   onConfirm,
   onCancel,
-  title = 'Are you sure?',
+  title = "Are you sure?",
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
   destructive = false,
 }: ConfirmDialogProps) {
   return (
@@ -31,7 +31,7 @@ export function ConfirmDialog({
       consequence={<p className="mt-1 text-sm text-nd-text-secondary">{message}</p>}
       confirmLabel={confirmLabel}
       cancelLabel={cancelLabel}
-      tone={destructive ? 'destructive' : 'safe'}
+      tone={destructive ? "destructive" : "safe"}
       icon={destructive ? <AlertTriangle className="h-5 w-5" aria-hidden="true" /> : undefined}
     />
   );

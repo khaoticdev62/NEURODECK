@@ -183,7 +183,10 @@ const store = {
     return { ok: true, updatedAt: new Date().toISOString() };
   },
   async setConfig(key: string, value: string) {
-    return bridgeInvoke<{ status: string; key: string; value: string }>("set_config", { key, value });
+    return bridgeInvoke<{ status: string; key: string; value: string }>("set_config", {
+      key,
+      value,
+    });
   },
   async saveGeminiApiKey(key: string) {
     return bridgeInvoke<{ status: string }>("save_gemini_api_key", { key });
@@ -681,7 +684,7 @@ const ai = {
     if (neurodeck?.models) {
       const res = await neurodeck.models.runPrompt(
         payload.prompt,
-        payload.provider === 'offline-draft' ? undefined : payload.provider,
+        payload.provider === "offline-draft" ? undefined : payload.provider,
         payload.model === "NeuroDraft" ? undefined : payload.model
       );
       if (!res.ok) {
@@ -753,13 +756,14 @@ const ai = {
     });
 
     // Streaming TTS: speak each sentence as it arrives from the backend
-    const unsubTtsChunk = ttsMode === "stream"
-      ? listenBridge("tts_chunk", (msg: unknown) => {
-          if (!ttsActive) return;
-          const text = (msg as Record<string, string>)?.text ?? "";
-          if (text.trim()) bridgeInvoke("speak_text_stream", { text }).catch(() => {});
-        })
-      : () => {};
+    const unsubTtsChunk =
+      ttsMode === "stream"
+        ? listenBridge("tts_chunk", (msg: unknown) => {
+            if (!ttsActive) return;
+            const text = (msg as Record<string, string>)?.text ?? "";
+            if (text.trim()) bridgeInvoke("speak_text_stream", { text }).catch(() => {});
+          })
+        : () => {};
 
     const unsubDone = listenBridge("command_done", (msg: unknown) => {
       unsubToken();
@@ -929,7 +933,9 @@ const permissions = {
     return bridgeInvoke<PermissionRegistry>("list_permission_profiles");
   },
   async getAgentProfile(agentId: string): Promise<AgentPermissionProfile> {
-    return bridgeInvoke<AgentPermissionProfile>("get_agent_permission_profile", { agent_id: agentId });
+    return bridgeInvoke<AgentPermissionProfile>("get_agent_permission_profile", {
+      agent_id: agentId,
+    });
   },
   async setAgentProfile(agentId: string, profileId: string | null): Promise<{ status: string }> {
     return bridgeInvoke<{ status: string }>("set_agent_permission_profile", {
@@ -1057,13 +1063,20 @@ const memory = {
     return bridgeInvoke<{ data: string; count: number }>("memory_export");
   },
   async importData(data: string): Promise<{ status: string; imported: number; total: number }> {
-    return bridgeInvoke<{ status: string; imported: number; total: number }>("memory_import_data", { data });
+    return bridgeInvoke<{ status: string; imported: number; total: number }>("memory_import_data", {
+      data,
+    });
   },
   async backup(): Promise<{ status: string }> {
     return bridgeInvoke<{ status: string }>("memory_backup_auto");
   },
-  async listBackups(): Promise<{ backups: Array<{ name: string; size_bytes: number }>; count: number }> {
-    return bridgeInvoke<{ backups: Array<{ name: string; size_bytes: number }>; count: number }>("memory_list_backups");
+  async listBackups(): Promise<{
+    backups: Array<{ name: string; size_bytes: number }>;
+    count: number;
+  }> {
+    return bridgeInvoke<{ backups: Array<{ name: string; size_bytes: number }>; count: number }>(
+      "memory_list_backups"
+    );
   },
   async restoreBackup(name: string): Promise<{ status: string; name: string }> {
     return bridgeInvoke<{ status: string; name: string }>("memory_restore_backup", { name });
@@ -1071,7 +1084,13 @@ const memory = {
   async searchSemantic(query: string, limit = 5, lambda = 0.5) {
     return bridgeInvoke<{
       query: string;
-      results: Array<{ id: string; content: string; metadata: Record<string, string>; source_file: string; score?: number }>;
+      results: Array<{
+        id: string;
+        content: string;
+        metadata: Record<string, string>;
+        source_file: string;
+        score?: number;
+      }>;
       method: string;
     }>("memory_search_semantic", { query, limit, lambda });
   },
@@ -1344,7 +1363,7 @@ export interface DependencyStatus {
 
 export interface DependencyProgress {
   id: string;
-  state: 'downloading' | 'installing' | 'verifying' | 'completed' | 'failed';
+  state: "downloading" | "installing" | "verifying" | "completed" | "failed";
   percent?: number;
   downloadedBytes?: number;
   totalBytes?: number;
@@ -1381,7 +1400,7 @@ const dependency = {
       });
     }
     return () => {};
-  }
+  },
 };
 
 /* ── Dashboard ───────────────────────────────────────────────────────────── */
@@ -1427,7 +1446,11 @@ export type TerminalSpawnOptions = {
 };
 
 const terminal = {
-  async spawn(sessionId: string = "main_pty_session", shell?: string, options?: TerminalSpawnOptions) {
+  async spawn(
+    sessionId: string = "main_pty_session",
+    shell?: string,
+    options?: TerminalSpawnOptions
+  ) {
     return bridgeInvoke<{ success: boolean }>("pty_spawn", {
       id: sessionId,
       shell,
@@ -1456,7 +1479,9 @@ const terminal = {
   },
   async getSessionDetails(): Promise<TerminalSessionSummary[]> {
     try {
-      const result = await bridgeInvoke<{ sessions: TerminalSessionSummary[]; count: number }>("get_terminal_sessions");
+      const result = await bridgeInvoke<{ sessions: TerminalSessionSummary[]; count: number }>(
+        "get_terminal_sessions"
+      );
       return result.sessions ?? [];
     } catch (_) {
       return [];
@@ -1464,7 +1489,9 @@ const terminal = {
   },
   async getEnvironment(): Promise<TerminalEnvironmentReport> {
     try {
-      const result = await bridgeInvoke<{ environment: TerminalEnvironmentReport }>("get_terminal_environment");
+      const result = await bridgeInvoke<{ environment: TerminalEnvironmentReport }>(
+        "get_terminal_environment"
+      );
       return result.environment;
     } catch (_) {
       return {
@@ -1482,7 +1509,9 @@ const terminal = {
   },
   async getProfiles(): Promise<TerminalProfileAvailability[]> {
     try {
-      const result = await bridgeInvoke<{ profiles: TerminalProfileAvailability[] }>("get_terminal_environment");
+      const result = await bridgeInvoke<{ profiles: TerminalProfileAvailability[] }>(
+        "get_terminal_environment"
+      );
       return result.profiles ?? [];
     } catch (_) {
       return [];
@@ -1503,9 +1532,15 @@ const terminal = {
       };
     }
   },
-  async classifyCommand(command: string, source: "user" | "assistant" | "palette" | "controller" | "history" = "palette") {
+  async classifyCommand(
+    command: string,
+    source: "user" | "assistant" | "palette" | "controller" | "history" = "palette"
+  ) {
     try {
-      return await bridgeInvoke<TerminalCommandSafety>("classify_terminal_command", { command, source });
+      return await bridgeInvoke<TerminalCommandSafety>("classify_terminal_command", {
+        command,
+        source,
+      });
     } catch (_) {
       return {
         level: "unknown" as const,
@@ -1844,7 +1879,7 @@ const npm = {
 export interface RemoteNotificationPayload {
   title: string;
   text: string;
-  type?: 'info' | 'success' | 'warn' | 'error';
+  type?: "info" | "success" | "warn" | "error";
 }
 
 const remote = {
@@ -1942,8 +1977,15 @@ export interface FileTransfer {
   filename: string;
   size: number;
   progress: number;
-  status: 'Pending' | 'Accepted' | 'Rejected' | 'Transferring' | 'Completed' | 'Failed' | 'Cancelled';
-  direction: 'Incoming' | 'Outgoing';
+  status:
+    | "Pending"
+    | "Accepted"
+    | "Rejected"
+    | "Transferring"
+    | "Completed"
+    | "Failed"
+    | "Cancelled";
+  direction: "Incoming" | "Outgoing";
   peer_ip: string;
   peer_name: string;
 }
@@ -1958,12 +2000,12 @@ export interface TrustedPeer {
 export interface SyncProfile {
   id: string;
   name: string;
-  mode: 'lan' | 'vpn_manual' | 'vpn_mesh' | 'hybrid' | 'receive_only' | 'send_only';
+  mode: "lan" | "vpn_manual" | "vpn_mesh" | "hybrid" | "receive_only" | "send_only";
   enabled: boolean;
   preferred_interface: string;
   incoming_folder: string;
   auto_accept_trusted: boolean;
-  compression: 'auto' | 'off';
+  compression: "auto" | "off";
   vpn_only: boolean;
   created_at: string;
   updated_at: string;
@@ -1979,7 +2021,7 @@ export interface TransferDiagnostics {
   download_dir: string;
 }
 
-const SYNC_PROFILES_STORAGE_KEY = 'neurodeck:sync_profiles_fallback';
+const SYNC_PROFILES_STORAGE_KEY = "neurodeck:sync_profiles_fallback";
 
 function isBridgeCommandMissing(error: unknown, command: string): boolean {
   const message = error instanceof Error ? error.message : String(error);
@@ -1987,7 +2029,7 @@ function isBridgeCommandMissing(error: unknown, command: string): boolean {
 }
 
 function readLocalSyncProfiles(): SyncProfile[] {
-  if (typeof localStorage === 'undefined') return [];
+  if (typeof localStorage === "undefined") return [];
   try {
     const raw = localStorage.getItem(SYNC_PROFILES_STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
@@ -1998,23 +2040,23 @@ function readLocalSyncProfiles(): SyncProfile[] {
 }
 
 function writeLocalSyncProfiles(profiles: SyncProfile[]): void {
-  if (typeof localStorage === 'undefined') return;
+  if (typeof localStorage === "undefined") return;
   localStorage.setItem(SYNC_PROFILES_STORAGE_KEY, JSON.stringify(profiles));
 }
 
 function applyLocalSyncProfileAction(
-  action: 'list' | 'add' | 'update' | 'remove',
-  profile?: Partial<SyncProfile> & { id?: string },
+  action: "list" | "add" | "update" | "remove",
+  profile?: Partial<SyncProfile> & { id?: string }
 ): { status: string; profiles?: SyncProfile[]; profile?: SyncProfile } {
   const profiles = readLocalSyncProfiles();
-  if (action === 'list') return { status: 'ok', profiles };
+  if (action === "list") return { status: "ok", profiles };
 
-  if (action === 'remove') {
+  if (action === "remove") {
     const id = profile?.id;
-    if (!id) return { status: 'error', profiles };
+    if (!id) return { status: "error", profiles };
     const next = profiles.filter((p) => p.id !== id);
     writeLocalSyncProfiles(next);
-    return { status: 'ok', profiles: next };
+    return { status: "ok", profiles: next };
   }
 
   const now = new Date().toISOString();
@@ -2022,13 +2064,13 @@ function applyLocalSyncProfileAction(
   const existing = profiles.find((p) => p.id === id);
   const nextProfile: SyncProfile = {
     id,
-    name: profile?.name || existing?.name || 'Sync Profile',
-    mode: profile?.mode || existing?.mode || 'lan',
+    name: profile?.name || existing?.name || "Sync Profile",
+    mode: profile?.mode || existing?.mode || "lan",
     enabled: profile?.enabled ?? existing?.enabled ?? true,
-    preferred_interface: profile?.preferred_interface || existing?.preferred_interface || 'auto',
-    incoming_folder: profile?.incoming_folder || existing?.incoming_folder || '',
+    preferred_interface: profile?.preferred_interface || existing?.preferred_interface || "auto",
+    incoming_folder: profile?.incoming_folder || existing?.incoming_folder || "",
     auto_accept_trusted: profile?.auto_accept_trusted ?? existing?.auto_accept_trusted ?? false,
-    compression: profile?.compression || existing?.compression || 'auto',
+    compression: profile?.compression || existing?.compression || "auto",
     vpn_only: profile?.vpn_only ?? existing?.vpn_only ?? false,
     created_at: existing?.created_at || now,
     updated_at: now,
@@ -2037,58 +2079,85 @@ function applyLocalSyncProfileAction(
   const next = profiles.filter((p) => p.id !== id);
   next.push(nextProfile);
   writeLocalSyncProfiles(next);
-  return { status: 'ok', profile: nextProfile, profiles: next };
+  return { status: "ok", profile: nextProfile, profiles: next };
 }
 
 const transfer = {
   async listPeers(): Promise<TransferPeer[]> {
-    return bridgeInvoke<TransferPeer[]>('get_discovered_peers');
+    return bridgeInvoke<TransferPeer[]>("get_discovered_peers");
   },
   async listActive(): Promise<FileTransfer[]> {
-    return bridgeInvoke<FileTransfer[]>('get_active_transfers');
+    return bridgeInvoke<FileTransfer[]>("get_active_transfers");
   },
   async sendFile(peer_ip: string, file_path: string) {
-    return bridgeInvoke<{ status: string; transfer_id: string }>('start_file_transfer', { peer_ip, file_path });
+    return bridgeInvoke<{ status: string; transfer_id: string }>("start_file_transfer", {
+      peer_ip,
+      file_path,
+    });
   },
   async respond(transfer_id: string, accept: boolean) {
-    return bridgeInvoke<{ status: string }>('respond_to_transfer', { transfer_id, accept });
+    return bridgeInvoke<{ status: string }>("respond_to_transfer", { transfer_id, accept });
   },
   async cancel(id: string) {
-    return bridgeInvoke<{ status: string }>('transfer_cancel', { id });
+    return bridgeInvoke<{ status: string }>("transfer_cancel", { id });
   },
   async retry(transfer_id: string) {
-    return bridgeInvoke<{ status: string; new_transfer_id: string }>('transfer_retry', { transfer_id });
+    return bridgeInvoke<{ status: string; new_transfer_id: string }>("transfer_retry", {
+      transfer_id,
+    });
   },
-  async groupCode(action: 'get' | 'set' | 'clear', code?: string) {
-    return bridgeInvoke<{ status: string; code?: string; has_code?: boolean }>('transfer_group_code', { action, code });
+  async groupCode(action: "get" | "set" | "clear", code?: string) {
+    return bridgeInvoke<{ status: string; code?: string; has_code?: boolean }>(
+      "transfer_group_code",
+      { action, code }
+    );
   },
   async addManualPeer(ip: string, port: number, hostname: string) {
-    return bridgeInvoke<{ status: string; peer_ip: string }>('transfer_manual_add_peer', { ip, port, hostname });
+    return bridgeInvoke<{ status: string; peer_ip: string }>("transfer_manual_add_peer", {
+      ip,
+      port,
+      hostname,
+    });
   },
-  async trustedPeers(action: 'list' | 'add' | 'remove', ip?: string, label?: string) {
-    return bridgeInvoke<{ status: string; peers?: TrustedPeer[] }>('transfer_trusted_peers', { action, ip, label });
+  async trustedPeers(action: "list" | "add" | "remove", ip?: string, label?: string) {
+    return bridgeInvoke<{ status: string; peers?: TrustedPeer[] }>("transfer_trusted_peers", {
+      action,
+      ip,
+      label,
+    });
   },
-  async profiles(action: 'list' | 'add' | 'update' | 'remove', profile?: Partial<SyncProfile> & { id?: string }) {
+  async profiles(
+    action: "list" | "add" | "update" | "remove",
+    profile?: Partial<SyncProfile> & { id?: string }
+  ) {
     try {
-      return await bridgeInvoke<{ status: string; profiles?: SyncProfile[]; profile?: SyncProfile }>('transfer_profiles', {
+      return await bridgeInvoke<{
+        status: string;
+        profiles?: SyncProfile[];
+        profile?: SyncProfile;
+      }>("transfer_profiles", {
         action,
         profile,
       });
     } catch (e) {
-      if (isBridgeCommandMissing(e, 'transfer_profiles')) {
+      if (isBridgeCommandMissing(e, "transfer_profiles")) {
         return applyLocalSyncProfileAction(action, profile);
       }
       throw e;
     }
   },
   async diagnostics() {
-    return bridgeInvoke<{ status: string; diagnostics: TransferDiagnostics }>('transfer_diagnostics');
+    return bridgeInvoke<{ status: string; diagnostics: TransferDiagnostics }>(
+      "transfer_diagnostics"
+    );
   },
   async clearHistory(include_active?: boolean) {
-    return bridgeInvoke<{ status: string; cleared: number }>('transfer_clear_history', { include_active });
+    return bridgeInvoke<{ status: string; cleared: number }>("transfer_clear_history", {
+      include_active,
+    });
   },
   async getInboxPath() {
-    return bridgeInvoke<{ status: string; path: string }>('transfer_get_inbox_path');
+    return bridgeInvoke<{ status: string; path: string }>("transfer_get_inbox_path");
   },
 };
 
@@ -2373,8 +2442,15 @@ export interface FileTransfer {
   filename: string;
   size: number;
   progress: number;
-  status: 'Pending' | 'Accepted' | 'Rejected' | 'Transferring' | 'Completed' | 'Failed' | 'Cancelled';
-  direction: 'Incoming' | 'Outgoing';
+  status:
+    | "Pending"
+    | "Accepted"
+    | "Rejected"
+    | "Transferring"
+    | "Completed"
+    | "Failed"
+    | "Cancelled";
+  direction: "Incoming" | "Outgoing";
   peer_ip: string;
   peer_name: string;
 }
@@ -2519,7 +2595,10 @@ const ssh = {
     });
   },
   async getCredential(host: string) {
-    return bridgeInvoke<{ user?: string; has_key?: boolean; key_path?: string }>("get_ssh_credential", { host });
+    return bridgeInvoke<{ user?: string; has_key?: boolean; key_path?: string }>(
+      "get_ssh_credential",
+      { host }
+    );
   },
 };
 
@@ -2675,7 +2754,7 @@ const academy = {
   async saveProgress(progress: AcademyLearnerProgress): Promise<{ status: string }> {
     return bridgeInvoke<{ status: string }>("academy_save_progress", { progress });
   },
-  async savePortfolioEntry(entry: Omit<AcademyPortfolioEntry, 'id'>): Promise<{ id: string }> {
+  async savePortfolioEntry(entry: Omit<AcademyPortfolioEntry, "id">): Promise<{ id: string }> {
     return bridgeInvoke<{ id: string }>("academy_save_portfolio_entry", { entry });
   },
   async listPortfolio(): Promise<AcademyPortfolioEntry[]> {
@@ -2791,8 +2870,13 @@ const lsp = {
     return bridgeInvoke<KnownLspServer[]>("lsp_known_servers");
   },
 
-  async getDiagnostics(uri: string): Promise<{ uri: string; diagnostics: LspDiagnostic[]; count: number }> {
-    return bridgeInvoke<{ uri: string; diagnostics: LspDiagnostic[]; count: number }>("lsp_get_diagnostics", { uri });
+  async getDiagnostics(
+    uri: string
+  ): Promise<{ uri: string; diagnostics: LspDiagnostic[]; count: number }> {
+    return bridgeInvoke<{ uri: string; diagnostics: LspDiagnostic[]; count: number }>(
+      "lsp_get_diagnostics",
+      { uri }
+    );
   },
 
   async openDocument(language: string, uri: string, content: string): Promise<void> {
@@ -2803,23 +2887,50 @@ const lsp = {
     await bridgeInvoke<{ ok: boolean }>("lsp_close_document", { language, uri });
   },
 
-  async changeDocument(language: string, uri: string, content: string, version: number): Promise<void> {
+  async changeDocument(
+    language: string,
+    uri: string,
+    content: string,
+    version: number
+  ): Promise<void> {
     await bridgeInvoke<{ ok: boolean }>("lsp_change_document", { language, uri, content, version });
   },
 
-  async getCompletions(language: string, uri: string, line: number, character: number): Promise<LspCompletionItem[]> {
-    return bridgeInvoke<LspCompletionItem[]>("lsp_get_completions", { language, uri, line, character });
+  async getCompletions(
+    language: string,
+    uri: string,
+    line: number,
+    character: number
+  ): Promise<LspCompletionItem[]> {
+    return bridgeInvoke<LspCompletionItem[]>("lsp_get_completions", {
+      language,
+      uri,
+      line,
+      character,
+    });
   },
 
-  async getHover(language: string, uri: string, line: number, character: number): Promise<LspHover | null> {
+  async getHover(
+    language: string,
+    uri: string,
+    line: number,
+    character: number
+  ): Promise<LspHover | null> {
     return bridgeInvoke<LspHover | null>("lsp_get_hover", { language, uri, line, character });
   },
 
-  async getDefinitions(language: string, uri: string, line: number, character: number): Promise<LspLocation[]> {
+  async getDefinitions(
+    language: string,
+    uri: string,
+    line: number,
+    character: number
+  ): Promise<LspLocation[]> {
     return bridgeInvoke<LspLocation[]>("lsp_get_definitions", { language, uri, line, character });
   },
 
-  onDiagnostics(handler: (data: { uri: string; diagnostics: LspDiagnostic[] }) => void): () => void {
+  onDiagnostics(
+    handler: (data: { uri: string; diagnostics: LspDiagnostic[] }) => void
+  ): () => void {
     return listenBridge("lsp:diagnostics", handler as (payload: unknown) => void);
   },
 
@@ -2846,7 +2957,9 @@ const mcp = {
     return bridgeInvoke<McpStatus>("get_mcp_status");
   },
   async start(port = 13337): Promise<{ port: number; token: string; discovery: string }> {
-    return bridgeInvoke<{ port: number; token: string; discovery: string }>("start_mcp_server", { port });
+    return bridgeInvoke<{ port: number; token: string; discovery: string }>("start_mcp_server", {
+      port,
+    });
   },
   async stop(): Promise<{ status: string }> {
     return bridgeInvoke<{ status: string }>("stop_mcp_server");

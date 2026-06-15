@@ -79,7 +79,7 @@ function AgentRow({ label, value }: { label: string; value: string }) {
       <dt className="w-16 shrink-0 uppercase tracking-[var(--nd-tracking-hud)] text-nd-text-muted">
         {label}
       </dt>
-      <dd className="min-w-0 flex-1 text-nd-text-secondary">{value || '—'}</dd>
+      <dd className="min-w-0 flex-1 text-nd-text-secondary">{value || "—"}</dd>
     </div>
   );
 }

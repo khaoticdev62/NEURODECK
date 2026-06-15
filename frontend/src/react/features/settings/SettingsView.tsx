@@ -121,47 +121,162 @@ function ThemePreviewMockup({ name, color }: { name: string; color: ThemePreview
       aria-hidden="true"
       title={`Preview: ${name}`}
       className="relative overflow-hidden rounded-xl border select-none transition-all duration-200"
-      style={{ height: '150px', background: c.surface.app, borderColor: c.border.default }}
+      style={{ height: "150px", background: c.surface.app, borderColor: c.border.default }}
     >
       {/* Sidebar strip */}
       <div
         className="absolute inset-y-0 left-0 flex flex-col items-center gap-2 py-3"
-        style={{ width: '36px', background: c.surface.sidebar, borderRight: `1px solid ${c.border.subtle}` }}
+        style={{
+          width: "36px",
+          background: c.surface.sidebar,
+          borderRight: `1px solid ${c.border.subtle}`,
+        }}
       >
-        <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: c.accent.primary }} />
+        <div
+          style={{
+            width: "14px",
+            height: "14px",
+            borderRadius: "4px",
+            background: c.accent.primary,
+          }}
+        />
         {[0.35, 0.25, 0.2].map((op, i) => (
-          <div key={i} style={{ width: '14px', height: '14px', borderRadius: '4px', background: c.text.muted, opacity: op }} />
+          <div
+            key={i}
+            style={{
+              width: "14px",
+              height: "14px",
+              borderRadius: "4px",
+              background: c.text.muted,
+              opacity: op,
+            }}
+          />
         ))}
       </div>
 
       {/* Main pane */}
-      <div className="absolute inset-0" style={{ left: '36px', padding: '10px 10px 8px' }}>
+      <div className="absolute inset-0" style={{ left: "36px", padding: "10px 10px 8px" }}>
         {/* Topbar */}
         <div className="flex items-center gap-1.5 mb-2">
-          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: c.accent.primary }} />
-          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '50px', opacity: 0.45 }} />
-          <div style={{ marginLeft: 'auto', width: '32px', height: '13px', borderRadius: '5px', background: c.accent.primary, opacity: 0.85 }} />
+          <div
+            style={{
+              width: "5px",
+              height: "5px",
+              borderRadius: "50%",
+              background: c.accent.primary,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              background: c.text.muted,
+              width: "50px",
+              opacity: 0.45,
+            }}
+          />
+          <div
+            style={{
+              marginLeft: "auto",
+              width: "32px",
+              height: "13px",
+              borderRadius: "5px",
+              background: c.accent.primary,
+              opacity: 0.85,
+            }}
+          />
         </div>
 
         {/* Response card */}
-        <div className="mb-2 rounded-lg p-1.5" style={{ background: c.surface.raised, border: `1px solid ${c.border.subtle}` }}>
-          <div style={{ height: '3px', borderRadius: '2px', background: c.text.primary, width: '78%', marginBottom: '4px', opacity: 0.75 }} />
-          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '60%', marginBottom: '3px', opacity: 0.5 }} />
-          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '42%', opacity: 0.35 }} />
+        <div
+          className="mb-2 rounded-lg p-1.5"
+          style={{ background: c.surface.raised, border: `1px solid ${c.border.subtle}` }}
+        >
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              background: c.text.primary,
+              width: "78%",
+              marginBottom: "4px",
+              opacity: 0.75,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              background: c.text.muted,
+              width: "60%",
+              marginBottom: "3px",
+              opacity: 0.5,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              background: c.text.muted,
+              width: "42%",
+              opacity: 0.35,
+            }}
+          />
         </div>
 
         {/* Input row */}
         <div className="flex items-center gap-1.5 mb-2">
-          <div style={{ flex: 1, height: '16px', borderRadius: '5px', background: c.surface.input, border: `1px solid ${c.border.default}` }} />
-          <div style={{ width: '20px', height: '16px', borderRadius: '5px', background: c.accent.primary, opacity: 0.9 }} />
+          <div
+            style={{
+              flex: 1,
+              height: "16px",
+              borderRadius: "5px",
+              background: c.surface.input,
+              border: `1px solid ${c.border.default}`,
+            }}
+          />
+          <div
+            style={{
+              width: "20px",
+              height: "16px",
+              borderRadius: "5px",
+              background: c.accent.primary,
+              opacity: 0.9,
+            }}
+          />
         </div>
 
         {/* State pills */}
         <div className="flex gap-1">
-          <div style={{ height: '3px', borderRadius: '2px', flex: 3, background: c.accent.primary }} />
-          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.success, opacity: 0.75 }} />
-          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.warning, opacity: 0.75 }} />
-          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.error, opacity: 0.75 }} />
+          <div
+            style={{ height: "3px", borderRadius: "2px", flex: 3, background: c.accent.primary }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              flex: 1,
+              background: c.state.success,
+              opacity: 0.75,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              flex: 1,
+              background: c.state.warning,
+              opacity: 0.75,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              flex: 1,
+              background: c.state.error,
+              opacity: 0.75,
+            }}
+          />
         </div>
       </div>
     </div>
@@ -198,12 +313,17 @@ export function SettingsView({
   const [compactMode, setCompactMode] = useState(false);
   const [ttsMode, setTtsMode] = useState<"off" | "complete" | "stream">(() => {
     const saved = localStorage.getItem("neurodeck_tts_mode");
-    return (saved === "complete" || saved === "stream" ? saved : "off") as "off" | "complete" | "stream";
+    return (saved === "complete" || saved === "stream" ? saved : "off") as
+      | "off"
+      | "complete"
+      | "stream";
   });
   const [ttsTesting, setTtsTesting] = useState(false);
   const [pendingThemeId, setPendingThemeId] = useState<string | null>(null);
   const [hoveredThemeId, setHoveredThemeId] = useState<string | null>(null);
-  const [indexedDirs, setIndexedDirs] = useState<Array<{ path: string; doc_count: number }> | null>(null);
+  const [indexedDirs, setIndexedDirs] = useState<Array<{ path: string; doc_count: number }> | null>(
+    null
+  );
   const [kbBusy, setKbBusy] = useState<string | null>(null);
   const [kbStatus, setKbStatus] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -215,7 +335,9 @@ export function SettingsView({
   const handleTtsTest = async () => {
     setTtsTesting(true);
     try {
-      await bridgeInvoke("speak_text", { text: "NEURODECK voice output test. Text-to-speech is working." });
+      await bridgeInvoke("speak_text", {
+        text: "NEURODECK voice output test. Text-to-speech is working.",
+      });
     } catch (_) {
       // Ignore — TTS may not be available on this platform
     } finally {
@@ -456,123 +578,141 @@ export function SettingsView({
                     }
                   />
                 </div>
-              ) : (() => {
-                // Resolve which theme to show in the preview pane:
-                // hovered > pending > currently active
-                const previewId = hoveredThemeId ?? pendingThemeId ?? settings.activeThemeId;
-                const previewTheme = availableThemes.find((t) => t.id === previewId) ?? activeTheme;
-                const hasPendingChange = pendingThemeId !== null && pendingThemeId !== settings.activeThemeId;
-                return (
-                  <div id="theme-cards-grid">
-                    <div className="grid gap-4 p-4 lg:grid-cols-[1fr_200px]">
-                      {/* Left: theme card grid */}
-                      <div
-                        className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
-                        onMouseLeave={() => setHoveredThemeId(null)}
-                      >
-                        {availableThemes.map((theme) => {
-                          const isActive = settings.activeThemeId === theme.id;
-                          const isPending = pendingThemeId === theme.id && !isActive;
-                          return (
-                            <button
-                              key={theme.id}
-                              type="button"
-                              data-testid="theme-card"
-                              onMouseEnter={() => setHoveredThemeId(theme.id)}
-                              onClick={() => setPendingThemeId((prev) => prev === theme.id ? null : theme.id)}
-                              aria-pressed={isActive}
-                              className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
-                                isActive
-                                  ? "border-nd-accent-success/40 bg-nd-accent-success/[0.06]"
-                                  : isPending
-                                  ? "border-nd-accent-primary/50 bg-nd-accent-primary/[0.08]"
-                                  : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/30"
-                              }`}
-                            >
-                              {isActive && (
-                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent-success" aria-label="Active theme">
-                                  <Check className="h-3 w-3 text-nd-surface-app" />
-                                </span>
-                              )}
-                              {isPending && (
-                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-nd-accent-primary/40 bg-nd-accent-primary/20 text-[8px] font-bold text-nd-accent-primary">
-                                  ▶
-                                </span>
-                              )}
-                              <div className="mb-2 flex gap-1">
-                                {[
-                                  theme.tokens.color.accent.primary,
-                                  theme.tokens.color.accent.secondary,
-                                  theme.tokens.color.text.warning,
-                                  theme.tokens.color.text.danger,
-                                  theme.tokens.color.surface.raised,
-                                ].map((c, i) => (
-                                  <span key={i} className="h-3 flex-1 rounded-full" style={{ backgroundColor: c }} />
-                                ))}
-                              </div>
-                              <p className="text-xs font-semibold text-nd-text-primary truncate">{theme.name}</p>
-                              <p className="mt-1 text-[11px] leading-4 text-nd-text-muted line-clamp-2">
-                                {theme.description}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Right: live preview pane */}
-                      <div className="flex flex-col gap-3">
-                        <ThemePreviewMockup
-                          name={previewTheme.name}
-                          color={previewTheme.tokens.color}
-                        />
-                        <div className="space-y-1">
-                          <p className="text-xs font-semibold text-nd-text-primary truncate">{previewTheme.name}</p>
-                          <p className="text-[11px] text-nd-text-muted leading-4 line-clamp-2">
-                            {hoveredThemeId
-                              ? "Hover to preview — click to select"
-                              : hasPendingChange
-                              ? "Selected — click Apply to switch"
-                              : "Currently active"}
-                          </p>
+              ) : (
+                (() => {
+                  // Resolve which theme to show in the preview pane:
+                  // hovered > pending > currently active
+                  const previewId = hoveredThemeId ?? pendingThemeId ?? settings.activeThemeId;
+                  const previewTheme =
+                    availableThemes.find((t) => t.id === previewId) ?? activeTheme;
+                  const hasPendingChange =
+                    pendingThemeId !== null && pendingThemeId !== settings.activeThemeId;
+                  return (
+                    <div id="theme-cards-grid">
+                      <div className="grid gap-4 p-4 lg:grid-cols-[1fr_200px]">
+                        {/* Left: theme card grid */}
+                        <div
+                          className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
+                          onMouseLeave={() => setHoveredThemeId(null)}
+                        >
+                          {availableThemes.map((theme) => {
+                            const isActive = settings.activeThemeId === theme.id;
+                            const isPending = pendingThemeId === theme.id && !isActive;
+                            return (
+                              <button
+                                key={theme.id}
+                                type="button"
+                                data-testid="theme-card"
+                                onMouseEnter={() => setHoveredThemeId(theme.id)}
+                                onClick={() =>
+                                  setPendingThemeId((prev) => (prev === theme.id ? null : theme.id))
+                                }
+                                aria-pressed={isActive}
+                                className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                                  isActive
+                                    ? "border-nd-accent-success/40 bg-nd-accent-success/[0.06]"
+                                    : isPending
+                                      ? "border-nd-accent-primary/50 bg-nd-accent-primary/[0.08]"
+                                      : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/30"
+                                }`}
+                              >
+                                {isActive && (
+                                  <span
+                                    className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent-success"
+                                    aria-label="Active theme"
+                                  >
+                                    <Check className="h-3 w-3 text-nd-surface-app" />
+                                  </span>
+                                )}
+                                {isPending && (
+                                  <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-nd-accent-primary/40 bg-nd-accent-primary/20 text-[8px] font-bold text-nd-accent-primary">
+                                    ▶
+                                  </span>
+                                )}
+                                <div className="mb-2 flex gap-1">
+                                  {[
+                                    theme.tokens.color.accent.primary,
+                                    theme.tokens.color.accent.secondary,
+                                    theme.tokens.color.text.warning,
+                                    theme.tokens.color.text.danger,
+                                    theme.tokens.color.surface.raised,
+                                  ].map((c, i) => (
+                                    <span
+                                      key={i}
+                                      className="h-3 flex-1 rounded-full"
+                                      style={{ backgroundColor: c }}
+                                    />
+                                  ))}
+                                </div>
+                                <p className="text-xs font-semibold text-nd-text-primary truncate">
+                                  {theme.name}
+                                </p>
+                                <p className="mt-1 text-[11px] leading-4 text-nd-text-muted line-clamp-2">
+                                  {theme.description}
+                                </p>
+                              </button>
+                            );
+                          })}
                         </div>
 
-                        {/* Apply / Cancel controls */}
-                        <div className="flex flex-col gap-1.5">
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            fullWidth
-                            disabled={!hasPendingChange}
-                            icon={Check}
-                            onClick={() => {
-                              if (pendingThemeId) {
-                                void updateSettings({ activeThemeId: pendingThemeId });
-                                setPendingThemeId(null);
-                              }
-                            }}
-                          >
-                            {hasPendingChange ? "Apply Theme" : "Applied"}
-                          </Button>
-                          {hasPendingChange && (
+                        {/* Right: live preview pane */}
+                        <div className="flex flex-col gap-3">
+                          <ThemePreviewMockup
+                            name={previewTheme.name}
+                            color={previewTheme.tokens.color}
+                          />
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-nd-text-primary truncate">
+                              {previewTheme.name}
+                            </p>
+                            <p className="text-[11px] text-nd-text-muted leading-4 line-clamp-2">
+                              {hoveredThemeId
+                                ? "Hover to preview — click to select"
+                                : hasPendingChange
+                                  ? "Selected — click Apply to switch"
+                                  : "Currently active"}
+                            </p>
+                          </div>
+
+                          {/* Apply / Cancel controls */}
+                          <div className="flex flex-col gap-1.5">
                             <Button
-                              variant="secondary"
+                              variant="primary"
                               size="sm"
                               fullWidth
-                              onClick={() => setPendingThemeId(null)}
+                              disabled={!hasPendingChange}
+                              icon={Check}
+                              onClick={() => {
+                                if (pendingThemeId) {
+                                  void updateSettings({ activeThemeId: pendingThemeId });
+                                  setPendingThemeId(null);
+                                }
+                              }}
                             >
-                              Cancel
+                              {hasPendingChange ? "Apply Theme" : "Applied"}
                             </Button>
-                          )}
-                        </div>
+                            {hasPendingChange && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                fullWidth
+                                onClick={() => setPendingThemeId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
 
-                        <p className="text-[10px] text-nd-text-muted/70 leading-4">
-                          Full wallpaper and display tuning in the <strong className="text-nd-text-muted">Themes</strong> tab.
-                        </p>
+                          <p className="text-[10px] text-nd-text-muted/70 leading-4">
+                            Full wallpaper and display tuning in the{" "}
+                            <strong className="text-nd-text-muted">Themes</strong> tab.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()
+              )}
             </Panel>
           </div>
         )}
@@ -617,7 +757,10 @@ export function SettingsView({
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 min-w-0">
-                            <BrainCircuit className="h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
+                            <BrainCircuit
+                              className="h-4 w-4 shrink-0 text-nd-accent-primary"
+                              aria-hidden="true"
+                            />
                             <span className="font-semibold text-nd-text-primary text-sm truncate">
                               {provider.label}
                             </span>
@@ -715,8 +858,8 @@ export function SettingsView({
               <div className="space-y-3 p-4">
                 <p className="text-xs text-nd-text-muted leading-5">
                   Directories indexed into the vector memory via the Docs tab. Click{" "}
-                  <strong className="text-nd-text-primary">Re-index All</strong> to re-chunk all directories
-                  with fresh embeddings (monitors via WebSocket{" "}
+                  <strong className="text-nd-text-primary">Re-index All</strong> to re-chunk all
+                  directories with fresh embeddings (monitors via WebSocket{" "}
                   <code className="font-mono text-nd-accent-primary">doc_index_done</code> event).
                 </p>
 
@@ -748,10 +891,19 @@ export function SettingsView({
                 ) : (
                   <ul className="divide-y divide-nd-text-muted/10 rounded-xl border border-nd-text-muted/15 overflow-hidden">
                     {indexedDirs.map((d) => (
-                      <li key={d.path} className="flex items-center gap-3 bg-nd-surface/30 px-4 py-3">
-                        <FolderOpen className="h-4 w-4 shrink-0 text-nd-accent-primary/70" aria-hidden="true" />
+                      <li
+                        key={d.path}
+                        className="flex items-center gap-3 bg-nd-surface/30 px-4 py-3"
+                      >
+                        <FolderOpen
+                          className="h-4 w-4 shrink-0 text-nd-accent-primary/70"
+                          aria-hidden="true"
+                        />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-mono text-xs text-nd-text-primary" title={d.path}>
+                          <p
+                            className="truncate font-mono text-xs text-nd-text-primary"
+                            title={d.path}
+                          >
                             {d.path}
                           </p>
                           <p className="text-[10px] text-nd-text-muted mt-0.5">
@@ -802,14 +954,22 @@ export function SettingsView({
             <Panel eyebrow="Text-to-Speech" title="TTS Mode">
               <div className="space-y-3 p-4">
                 <p className="text-xs text-nd-text-muted leading-5">
-                  Choose when NEURODECK speaks AI responses aloud. Requires espeak-ng (Linux),
-                  say (macOS), or Windows Speech API.
+                  Choose when NEURODECK speaks AI responses aloud. Requires espeak-ng (Linux), say
+                  (macOS), or Windows Speech API.
                 </p>
                 {(
                   [
                     { value: "off", label: "Off", desc: "No voice output." },
-                    { value: "complete", label: "After Response", desc: "Speaks the full response once generation finishes." },
-                    { value: "stream", label: "Stream Sentences", desc: "Speaks each sentence as it arrives — minimum latency." },
+                    {
+                      value: "complete",
+                      label: "After Response",
+                      desc: "Speaks the full response once generation finishes.",
+                    },
+                    {
+                      value: "stream",
+                      label: "Stream Sentences",
+                      desc: "Speaks each sentence as it arrives — minimum latency.",
+                    },
                   ] as const
                 ).map(({ value, label, desc }) => (
                   <label
@@ -833,7 +993,10 @@ export function SettingsView({
                       <p className="text-xs text-nd-text-muted mt-0.5">{desc}</p>
                     </div>
                     {ttsMode === value && (
-                      <Check className="ml-auto h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
+                      <Check
+                        className="ml-auto h-4 w-4 shrink-0 text-nd-accent-primary"
+                        aria-hidden="true"
+                      />
                     )}
                   </label>
                 ))}
@@ -911,14 +1074,17 @@ export function SettingsView({
                 </SettingRow>
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
-                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">Preferred profile</span>
+                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">
+                      Preferred profile
+                    </span>
                     <select
                       value={controllerSettings.preferredProfile}
                       onChange={(event) =>
                         dispatch({
                           type: "set-controller-settings",
                           settings: {
-                            preferredProfile: event.target.value as typeof controllerSettings.preferredProfile,
+                            preferredProfile: event.target
+                              .value as typeof controllerSettings.preferredProfile,
                           },
                         })
                       }
@@ -932,7 +1098,9 @@ export function SettingsView({
                     </select>
                   </label>
                   <label className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
-                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">Glyph style</span>
+                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">
+                      Glyph style
+                    </span>
                     <select
                       value={controllerSettings.glyphStyle}
                       onChange={(event) =>
@@ -955,12 +1123,43 @@ export function SettingsView({
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   {[
-                    ["Stick deadzone", controllerSettings.stickDeadzone, 0.1, 0.5, 0.01, "stickDeadzone"],
-                    ["Trigger threshold", controllerSettings.triggerThreshold, 0.1, 1, 0.01, "triggerThreshold"],
-                    ["Repeat delay", controllerSettings.initialRepeatDelayMs, 150, 700, 10, "initialRepeatDelayMs"],
-                    ["Repeat rate", controllerSettings.repeatIntervalMs, 40, 180, 5, "repeatIntervalMs"],
+                    [
+                      "Stick deadzone",
+                      controllerSettings.stickDeadzone,
+                      0.1,
+                      0.5,
+                      0.01,
+                      "stickDeadzone",
+                    ],
+                    [
+                      "Trigger threshold",
+                      controllerSettings.triggerThreshold,
+                      0.1,
+                      1,
+                      0.01,
+                      "triggerThreshold",
+                    ],
+                    [
+                      "Repeat delay",
+                      controllerSettings.initialRepeatDelayMs,
+                      150,
+                      700,
+                      10,
+                      "initialRepeatDelayMs",
+                    ],
+                    [
+                      "Repeat rate",
+                      controllerSettings.repeatIntervalMs,
+                      40,
+                      180,
+                      5,
+                      "repeatIntervalMs",
+                    ],
                   ].map(([label, value, min, max, step, key]) => (
-                    <label key={String(key)} className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+                    <label
+                      key={String(key)}
+                      className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3"
+                    >
                       <span className="flex items-center justify-between text-xs font-semibold text-nd-text-primary">
                         <span>{label}</span>
                         <span className="font-mono text-nd-accent-primary">{value}</span>
@@ -1048,8 +1247,13 @@ export function SettingsView({
                     ["Screen", runtime.currentScreenId],
                     ["Focus zone", runtime.currentFocusZone ?? "unknown"],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-nd-text-muted">{label}</p>
+                    <div
+                      key={label}
+                      className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2"
+                    >
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-nd-text-muted">
+                        {label}
+                      </p>
                       <p className="mt-1 text-sm font-semibold text-nd-text-primary">{value}</p>
                     </div>
                   ))}
@@ -1116,7 +1320,9 @@ export function SettingsView({
                       className={`rounded-xl border p-3.5 ${active ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]" : "border-nd-border-subtle bg-nd-surface-secondary/40"}`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-nd-text-primary text-sm">{meta.label}</span>
+                        <span className="font-semibold text-nd-text-primary text-sm">
+                          {meta.label}
+                        </span>
                         {active && <Badge tone="accent">Active</Badge>}
                       </div>
                       <p className="mt-1 text-xs text-nd-text-muted">{meta.desc}</p>
@@ -1140,7 +1346,9 @@ export function SettingsView({
                     className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-3"
                   >
                     <p className="text-xs text-nd-text-muted">{label}</p>
-                    <p className="mt-1 font-mono text-lg font-bold text-nd-accent-primary">{value}</p>
+                    <p className="mt-1 font-mono text-lg font-bold text-nd-accent-primary">
+                      {value}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -1263,13 +1471,20 @@ export function SettingsView({
               </div>
             </Panel>
 
-            <Panel eyebrow="Danger Zone" title="Reset" className="border-nd-accent-error/30 bg-nd-accent-error/[0.02]">
+            <Panel
+              eyebrow="Danger Zone"
+              title="Reset"
+              className="border-nd-accent-error/30 bg-nd-accent-error/[0.02]"
+            >
               <div className="p-4 space-y-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-error" aria-hidden="true" />
+                  <AlertTriangle
+                    className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-error"
+                    aria-hidden="true"
+                  />
                   <p className="text-xs text-nd-text-secondary">
-                    Clears stored UI preferences, active session, and cached context. Does not delete
-                    sessions or exports from disk.
+                    Clears stored UI preferences, active session, and cached context. Does not
+                    delete sessions or exports from disk.
                   </p>
                 </div>
                 <Button

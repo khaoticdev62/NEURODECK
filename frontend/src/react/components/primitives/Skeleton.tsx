@@ -1,5 +1,5 @@
 export function Skeleton({
-  className = '',
+  className = "",
   count = 1,
   delay = 0,
 }: {

@@ -1,5 +1,5 @@
-﻿import React from 'react';
-import { AlertTriangle, RotateCcw } from 'lucide-react';
+﻿import React from "react";
+import { AlertTriangle, RotateCcw } from "lucide-react";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -8,14 +8,14 @@ interface ErrorBoundaryState {
 }
 
 export class ErrorBoundary extends React.Component<React.PropsWithChildren, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { hasError: false, message: '' };
+  state: ErrorBoundaryState = { hasError: false, message: "" };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, message: error.message || 'Unknown renderer error.' };
+    return { hasError: true, message: error.message || "Unknown renderer error." };
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error('[neurodeck:renderer-boundary]', error, info.componentStack);
+    console.error("[neurodeck:renderer-boundary]", error, info.componentStack);
     this.setState({ stack: info.componentStack || undefined });
   }
 
@@ -30,14 +30,17 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, Erro
               <AlertTriangle className="h-7 w-7" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs uppercase tracking-[0.3em] text-nd-accent-error">Renderer Recovery</p>
+              <p className="text-xs uppercase tracking-[0.3em] text-nd-accent-error">
+                Renderer Recovery
+              </p>
               <h1 className="mt-2 text-2xl font-bold">NEURODECK hit a renderer fault.</h1>
               <p className="mt-3 text-sm leading-6 text-nd-text-muted">
-                The app shell stayed contained. Reload the renderer, then export diagnostics from Settings or Diagnostics if the issue repeats.
+                The app shell stayed contained. Reload the renderer, then export diagnostics from
+                Settings or Diagnostics if the issue repeats.
               </p>
               <pre className="mt-4 max-h-48 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 text-xs text-nd-text-primary">
                 {this.state.message}
-                {this.state.stack ? `\n\n${this.state.stack}` : ''}
+                {this.state.stack ? `\n\n${this.state.stack}` : ""}
               </pre>
               <button
                 type="button"

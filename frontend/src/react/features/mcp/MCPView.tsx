@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   CheckSquare,
   Circle,
@@ -9,34 +9,74 @@ import {
   PowerOff,
   RefreshCw,
   Square,
-} from 'lucide-react';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { Panel } from '../../components/primitives/Panel';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import { TextInput } from '../../components/primitives/TextInput';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { McpStatus } from '../../services/bridgeAdapter';
+} from "lucide-react";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import { TextInput } from "../../components/primitives/TextInput";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { McpStatus } from "../../services/bridgeAdapter";
 
 const ALL_TOOLS = [
-  { name: 'neurodeck_chat', label: 'neurodeck_chat', desc: 'Send a prompt to the active LLM and receive a full response' },
-  { name: 'get_status', label: 'get_status', desc: 'Query server status, version, and active tools' },
-  { name: 'memory_add_fact', label: 'memory_add_fact', desc: 'Persist a pinned fact into long-term vector memory' },
-  { name: 'memory_list_all', label: 'memory_list_all', desc: 'Return all memory records as formatted text' },
-  { name: 'memory_search', label: 'memory_search', desc: 'Semantic or keyword search across memory records' },
-  { name: 'read_file', label: 'read_file', desc: 'Read a file from the NEURODECK workspace (sandboxed)' },
-  { name: 'write_file', label: 'write_file', desc: 'Write a file to the NEURODECK workspace (sandboxed)' },
-  { name: 'run_shell', label: 'run_shell', desc: 'Shell command execution — requires NEURODECK_ENABLE_MCP_EXEC=true' },
-  { name: 'run_code', label: 'run_code', desc: 'Python / Bash / JS code execution — requires NEURODECK_ENABLE_MCP_EXEC=true' },
-  { name: 'run_lua', label: 'run_lua', desc: 'Sandboxed Lua 5.4 script execution — requires NEURODECK_ENABLE_MCP_EXEC=true' },
+  {
+    name: "neurodeck_chat",
+    label: "neurodeck_chat",
+    desc: "Send a prompt to the active LLM and receive a full response",
+  },
+  {
+    name: "get_status",
+    label: "get_status",
+    desc: "Query server status, version, and active tools",
+  },
+  {
+    name: "memory_add_fact",
+    label: "memory_add_fact",
+    desc: "Persist a pinned fact into long-term vector memory",
+  },
+  {
+    name: "memory_list_all",
+    label: "memory_list_all",
+    desc: "Return all memory records as formatted text",
+  },
+  {
+    name: "memory_search",
+    label: "memory_search",
+    desc: "Semantic or keyword search across memory records",
+  },
+  {
+    name: "read_file",
+    label: "read_file",
+    desc: "Read a file from the NEURODECK workspace (sandboxed)",
+  },
+  {
+    name: "write_file",
+    label: "write_file",
+    desc: "Write a file to the NEURODECK workspace (sandboxed)",
+  },
+  {
+    name: "run_shell",
+    label: "run_shell",
+    desc: "Shell command execution — requires NEURODECK_ENABLE_MCP_EXEC=true",
+  },
+  {
+    name: "run_code",
+    label: "run_code",
+    desc: "Python / Bash / JS code execution — requires NEURODECK_ENABLE_MCP_EXEC=true",
+  },
+  {
+    name: "run_lua",
+    label: "run_lua",
+    desc: "Sandboxed Lua 5.4 script execution — requires NEURODECK_ENABLE_MCP_EXEC=true",
+  },
 ];
 
 const DEFAULT_WHITELIST = new Set([
-  'neurodeck_chat',
-  'get_status',
-  'memory_add_fact',
-  'memory_list_all',
-  'memory_search',
+  "neurodeck_chat",
+  "get_status",
+  "memory_add_fact",
+  "memory_list_all",
+  "memory_search",
 ]);
 
 export function MCPView() {
@@ -86,7 +126,7 @@ export function MCPView() {
     setBusy(true);
     try {
       await neurodeckApi.mcp.stop();
-      showToast('MCP server stopped');
+      showToast("MCP server stopped");
       await refresh();
     } catch (e) {
       showToast(`Stop failed: ${e}`, false);
@@ -112,7 +152,7 @@ export function MCPView() {
   );
 
   const handleCopyToken = useCallback(() => {
-    const token = status?.token ?? '';
+    const token = status?.token ?? "";
     if (!token) return;
     void navigator.clipboard.writeText(token).then(() => {
       setCopied(true);
@@ -126,7 +166,7 @@ export function MCPView() {
           mcpServers: {
             neurodeck: {
               url: `http://127.0.0.1:${status.port}/`,
-              headers: { Authorization: `Bearer ${status.token ?? ''}` },
+              headers: { Authorization: `Bearer ${status.token ?? ""}` },
             },
           },
         },
@@ -138,7 +178,7 @@ export function MCPView() {
   const handleCopyConfig = useCallback(() => {
     if (!claudeDesktopConfig) return;
     void navigator.clipboard.writeText(claudeDesktopConfig);
-    showToast('Config snippet copied');
+    showToast("Config snippet copied");
   }, [claudeDesktopConfig, showToast]);
 
   const running = status?.running ?? false;
@@ -151,11 +191,20 @@ export function MCPView() {
       action={
         <div className="flex items-center gap-2">
           {toast && (
-            <span role="status" aria-live="polite" className={`text-xs ${toast.ok ? 'text-accent-success' : 'text-accent-error'}`}>
+            <span
+              role="status"
+              aria-live="polite"
+              className={`text-xs ${toast.ok ? "text-accent-success" : "text-accent-error"}`}
+            >
               {toast.text}
             </span>
           )}
-          <IconButton variant="subtle" size="md" aria-label="Refresh MCP status" onClick={() => void refresh()}>
+          <IconButton
+            variant="subtle"
+            size="md"
+            aria-label="Refresh MCP status"
+            onClick={() => void refresh()}
+          >
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
           </IconButton>
         </div>
@@ -168,17 +217,17 @@ export function MCPView() {
             aria-label="Server status"
             className={`rounded-2xl border p-4 transition duration-fast ${
               running
-                ? 'border-accent-success/25 bg-accent-success/[0.055]'
-                : 'border-border-subtle bg-surface-secondary/40'
+                ? "border-accent-success/25 bg-accent-success/[0.055]"
+                : "border-border-subtle bg-surface-secondary/40"
             }`}
           >
             <div className="flex flex-wrap items-center gap-3">
               <Circle
-                className={`h-3 w-3 shrink-0 fill-current ${running ? 'text-accent-success' : 'text-text-muted/40'}`}
+                className={`h-3 w-3 shrink-0 fill-current ${running ? "text-accent-success" : "text-text-muted/40"}`}
                 aria-hidden="true"
               />
-              <StatusChip tone={running ? 'success' : 'info'} size="sm" pulse={running}>
-                {running ? `Running on port ${status?.port}` : 'Stopped'}
+              <StatusChip tone={running ? "success" : "info"} size="sm" pulse={running}>
+                {running ? `Running on port ${status?.port}` : "Stopped"}
               </StatusChip>
               <span className="ml-auto text-2xs text-text-muted">Protocol: MCP 2024-11</span>
             </div>
@@ -199,7 +248,10 @@ export function MCPView() {
           </section>
 
           {/* Start / Stop controls */}
-          <section aria-label="Server controls" className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
+          <section
+            aria-label="Server controls"
+            className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+          >
             <h2 className="mb-3 text-sm font-semibold text-text-primary">Controls</h2>
             <div className="flex flex-wrap items-end gap-3">
               {!running && (
@@ -216,11 +268,23 @@ export function MCPView() {
               )}
 
               {running ? (
-                <Button variant="danger" size="md" icon={PowerOff} onClick={() => void handleStop()} loading={busy}>
+                <Button
+                  variant="danger"
+                  size="md"
+                  icon={PowerOff}
+                  onClick={() => void handleStop()}
+                  loading={busy}
+                >
                   Stop Server
                 </Button>
               ) : (
-                <Button variant="primary" size="md" icon={Power} onClick={() => void handleStart()} loading={busy}>
+                <Button
+                  variant="primary"
+                  size="md"
+                  icon={Power}
+                  onClick={() => void handleStart()}
+                  loading={busy}
+                >
                   Start Server
                 </Button>
               )}
@@ -229,11 +293,16 @@ export function MCPView() {
 
           {/* Bearer token */}
           {running && status?.token && (
-            <section aria-label="Authentication token" className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
+            <section
+              aria-label="Authentication token"
+              className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+            >
               <h2 className="mb-3 text-sm font-semibold text-text-primary">Bearer Token</h2>
               <p className="mb-3 text-2xs text-text-secondary">
-                Every request must include this token in the{' '}
-                <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">Authorization: Bearer …</code>{' '}
+                Every request must include this token in the{" "}
+                <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">
+                  Authorization: Bearer …
+                </code>{" "}
                 header. Regenerated each time the server starts.
               </p>
               <div className="flex items-center gap-2">
@@ -245,8 +314,13 @@ export function MCPView() {
                   aria-label="MCP bearer token"
                   className="min-w-0 flex-1"
                 />
-                <Button variant="secondary" size="sm" icon={copied ? ClipboardCheck : Clipboard} onClick={handleCopyToken}>
-                  {copied ? 'Copied' : 'Copy'}
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={copied ? ClipboardCheck : Clipboard}
+                  onClick={handleCopyToken}
+                >
+                  {copied ? "Copied" : "Copy"}
                 </Button>
               </div>
             </section>
@@ -254,7 +328,10 @@ export function MCPView() {
 
           {/* Claude Desktop config snippet */}
           {claudeDesktopConfig && (
-            <section aria-label="Claude Desktop config snippet" className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
+            <section
+              aria-label="Claude Desktop config snippet"
+              className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+            >
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-text-primary">Claude Desktop Config</h2>
                 <Button variant="secondary" size="sm" icon={Clipboard} onClick={handleCopyConfig}>
@@ -262,8 +339,10 @@ export function MCPView() {
                 </Button>
               </div>
               <p className="mb-3 text-2xs text-text-secondary">
-                Add this to your{' '}
-                <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">claude_desktop_config.json</code>{' '}
+                Add this to your{" "}
+                <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">
+                  claude_desktop_config.json
+                </code>{" "}
                 to connect Claude Desktop (or any MCP client) to NEURODECK.
               </p>
               <pre className="overflow-x-auto rounded-xl border border-border-subtle bg-surface-primary p-4 font-mono text-2xs leading-relaxed text-text-secondary scrollbar-thin">
@@ -273,12 +352,17 @@ export function MCPView() {
           )}
 
           {/* Tool whitelist */}
-          <section aria-label="Tool whitelist" className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
+          <section
+            aria-label="Tool whitelist"
+            className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+          >
             <h2 className="mb-1 text-sm font-semibold text-text-primary">Tool Whitelist</h2>
             <p className="mb-4 text-2xs text-text-secondary">
-              Only enabled tools are advertised to MCP clients via{' '}
-              <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">tools/list</code>. Changes take
-              effect on the next call — no restart required.
+              Only enabled tools are advertised to MCP clients via{" "}
+              <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">
+                tools/list
+              </code>
+              . Changes take effect on the next call — no restart required.
             </p>
             <ul role="list" className="space-y-1.5">
               {ALL_TOOLS.map((tool) => {
@@ -292,17 +376,25 @@ export function MCPView() {
                       onClick={() => void toggleTool(tool.name)}
                       className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                         enabled
-                          ? 'border-accent-primary/20 bg-accent-primary/[0.06]'
-                          : 'border-border-subtle bg-surface-primary/50 hover:bg-surface-tertiary/30'
+                          ? "border-accent-primary/20 bg-accent-primary/[0.06]"
+                          : "border-border-subtle bg-surface-primary/50 hover:bg-surface-tertiary/30"
                       }`}
                     >
                       {enabled ? (
-                        <CheckSquare className="mt-0.5 h-4 w-4 shrink-0 text-accent-primary" aria-hidden="true" />
+                        <CheckSquare
+                          className="mt-0.5 h-4 w-4 shrink-0 text-accent-primary"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <Square className="mt-0.5 h-4 w-4 shrink-0 text-text-muted/40" aria-hidden="true" />
+                        <Square
+                          className="mt-0.5 h-4 w-4 shrink-0 text-text-muted/40"
+                          aria-hidden="true"
+                        />
                       )}
                       <div className="min-w-0">
-                        <span className="block font-mono text-xs font-medium text-text-primary">{tool.label}</span>
+                        <span className="block font-mono text-xs font-medium text-text-primary">
+                          {tool.label}
+                        </span>
                         <span className="mt-0.5 block text-2xs leading-relaxed text-text-secondary/80">
                           {tool.desc}
                         </span>
@@ -315,25 +407,32 @@ export function MCPView() {
           </section>
 
           {/* Capability summary */}
-          <section aria-label="MCP 2024-11 capabilities" className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
-            <h2 className="mb-3 text-sm font-semibold text-text-primary">MCP 2024-11 Capabilities</h2>
+          <section
+            aria-label="MCP 2024-11 capabilities"
+            className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+          >
+            <h2 className="mb-3 text-sm font-semibold text-text-primary">
+              MCP 2024-11 Capabilities
+            </h2>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
               {[
-                ['tools/list + tools/call', true],
-                ['resources/list + resources/read', true],
-                ['prompts/list + prompts/get', true],
-                ['sampling/createMessage', true],
-                ['roots/list', true],
-                ['completion/complete', true],
-                ['resources/subscribe', false],
-                ['Streaming SSE transport', false],
+                ["tools/list + tools/call", true],
+                ["resources/list + resources/read", true],
+                ["prompts/list + prompts/get", true],
+                ["sampling/createMessage", true],
+                ["roots/list", true],
+                ["completion/complete", true],
+                ["resources/subscribe", false],
+                ["Streaming SSE transport", false],
               ].map(([label, supported]) => (
                 <div key={String(label)} className="flex items-center gap-2">
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${supported ? 'bg-accent-success' : 'bg-text-muted/30'}`}
+                    className={`h-2 w-2 shrink-0 rounded-full ${supported ? "bg-accent-success" : "bg-text-muted/30"}`}
                     aria-hidden="true"
                   />
-                  <dt className={supported ? 'text-text-primary' : 'text-text-muted/50 line-through'}>
+                  <dt
+                    className={supported ? "text-text-primary" : "text-text-muted/50 line-through"}
+                  >
                     {String(label)}
                   </dt>
                 </div>

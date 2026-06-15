@@ -1,4 +1,4 @@
-import type { AcademyPortfolioEntry } from '../../../services/bridgeAdapter';
+import type { AcademyPortfolioEntry } from "../../../services/bridgeAdapter";
 
 type Entry = AcademyPortfolioEntry;
 
@@ -11,62 +11,63 @@ export function entryToMarkdown(entry: Entry): string {
   if (entry.summary) lines.push(`\n**Summary:** ${entry.summary}`);
 
   if (entry.findings.length > 0) {
-    lines.push('\n**Findings:**');
+    lines.push("\n**Findings:**");
     entry.findings.forEach((f) => lines.push(`- ${f}`));
   }
   if (entry.commandsUsed.length > 0) {
-    lines.push('\n**Commands / Queries Used:**');
-    lines.push('```');
+    lines.push("\n**Commands / Queries Used:**");
+    lines.push("```");
     entry.commandsUsed.forEach((c) => lines.push(c));
-    lines.push('```');
+    lines.push("```");
   }
   if (entry.mitreMappings.length > 0) {
-    lines.push(`\n**MITRE ATT&CK:** ${entry.mitreMappings.join(', ')}`);
+    lines.push(`\n**MITRE ATT&CK:** ${entry.mitreMappings.join(", ")}`);
   }
   if (entry.skillsEarned.length > 0) {
-    lines.push(`\n**Skills Demonstrated:** ${entry.skillsEarned.join(', ')}`);
+    lines.push(`\n**Skills Demonstrated:** ${entry.skillsEarned.join(", ")}`);
   }
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 export function entriesToMarkdown(entries: Entry[]): string {
   const header = [
-    '# NeuroDeck Ops Academy — SOC Portfolio',
+    "# NeuroDeck Ops Academy — SOC Portfolio",
     `Generated: ${new Date().toLocaleString()}`,
-    '',
-    '---',
-    '',
-  ].join('\n');
-  return header + entries.map(entryToMarkdown).join('\n\n---\n\n');
+    "",
+    "---",
+    "",
+  ].join("\n");
+  return header + entries.map(entryToMarkdown).join("\n\n---\n\n");
 }
 
 // ── Resume bullet (STAR-adjacent) ─────────────────────────────────────────────
 
 export function entryToResumeBullet(entry: Entry): string {
-  const isSoc = entry.labId.startsWith('soc-session');
-  const skills = entry.skillsEarned.join(', ') || 'security analysis';
+  const isSoc = entry.labId.startsWith("soc-session");
+  const skills = entry.skillsEarned.join(", ") || "security analysis";
 
   if (isSoc) {
-    const tpCount = entry.findings.filter((f) => f.includes('true-positive')).length;
-    const fpCount = entry.findings.filter((f) => f.includes('false-positive')).length;
-    const techniques = entry.mitreMappings.slice(0, 3).join(', ');
-    const techSuffix = techniques ? `; mapped threats to ${techniques}` : '';
+    const tpCount = entry.findings.filter((f) => f.includes("true-positive")).length;
+    const fpCount = entry.findings.filter((f) => f.includes("false-positive")).length;
+    const techniques = entry.mitreMappings.slice(0, 3).join(", ");
+    const techSuffix = techniques ? `; mapped threats to ${techniques}` : "";
     return `• Triaged ${entry.findings.length} security alerts — correctly identified ${tpCount} true positives and ${fpCount} false positives${techSuffix}, demonstrating ${skills} proficiency`;
   }
 
   const cmdCount = entry.commandsUsed.length;
   const findingCount = entry.findings.length;
-  const techniques = entry.mitreMappings.slice(0, 2).join(', ');
+  const techniques = entry.mitreMappings.slice(0, 2).join(", ");
   const parts: string[] = [`• Completed ${entry.labTitle} investigation`];
-  if (findingCount > 0) parts.push(`identifying ${findingCount} key finding${findingCount > 1 ? 's' : ''}`);
-  if (cmdCount > 0) parts.push(`using ${cmdCount} analytical technique${cmdCount > 1 ? 's' : ''}`);
+  if (findingCount > 0)
+    parts.push(`identifying ${findingCount} key finding${findingCount > 1 ? "s" : ""}`);
+  if (cmdCount > 0) parts.push(`using ${cmdCount} analytical technique${cmdCount > 1 ? "s" : ""}`);
   if (techniques) parts.push(`correlated with MITRE ATT&CK ${techniques}`);
   parts.push(`demonstrating ${skills}`);
-  return parts.join(', ') + '.';
+  return parts.join(", ") + ".";
 }
 
 export function entriesToResumeBullets(entries: Entry[]): string {
-  return entries.map(entryToResumeBullet).join('\n');
+  return entries.map(entryToResumeBullet).join("\n");
 }
 
 // ── Stats ─────────────────────────────────────────────────────────────────────
@@ -97,10 +98,10 @@ export function computeStats(entries: Entry[]): PortfolioStats {
 
 // ── Download helpers ──────────────────────────────────────────────────────────
 
-export function downloadText(content: string, filename: string, mime = 'text/markdown') {
+export function downloadText(content: string, filename: string, mime = "text/markdown") {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   a.click();

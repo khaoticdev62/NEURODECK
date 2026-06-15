@@ -88,10 +88,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
               <MessageSquareText className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-              <h4
-                className="truncate font-semibold text-nd-text-primary"
-                title={displayName}
-              >
+              <h4 className="truncate font-semibold text-nd-text-primary" title={displayName}>
                 {displayName}
               </h4>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-nd-text-muted">
@@ -186,9 +183,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
           </>
         }
       >
-        <p className="mb-3 text-sm text-nd-text-secondary">
-          Update the saved session label.
-        </p>
+        <p className="mb-3 text-sm text-nd-text-secondary">Update the saved session label.</p>
         <TextInput
           value={renameValue}
           onChange={(e) => setRenameValue(e.target.value)}

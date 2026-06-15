@@ -3,15 +3,15 @@
  * These types describe the shape of data, not runtime behavior.
  */
 
-export type CommandSafety = 'safe' | 'confirm' | 'dangerous' | 'blocked';
+export type CommandSafety = "safe" | "confirm" | "dangerous" | "blocked";
 
 export type CwdStrategy =
-  | 'workspaceRoot'
-  | 'fileDirectory'
-  | 'nearestPackageRoot'
-  | 'nearestGitRoot';
+  | "workspaceRoot"
+  | "fileDirectory"
+  | "nearestPackageRoot"
+  | "nearestGitRoot";
 
-export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun' | 'none';
+export type PackageManager = "npm" | "pnpm" | "yarn" | "bun" | "none";
 
 export type SnippetPlaceholder = {
   index: number;
@@ -46,7 +46,7 @@ export type PredictiveSnippet = {
   insertText: string;
   placeholders: SnippetPlaceholder[];
   controllerFriendly: boolean;
-  safety: 'safe' | 'confirm';
+  safety: "safe" | "confirm";
 };
 
 export type LspProfile = {
@@ -99,11 +99,11 @@ export type ProjectContext = {
 };
 
 export type PredictionSource =
-  | 'lsp_completion'
-  | 'diagnostic_fix'
-  | 'snippet'
-  | 'command'
-  | 'ai_suggestion';
+  | "lsp_completion"
+  | "diagnostic_fix"
+  | "snippet"
+  | "command"
+  | "ai_suggestion";
 
 export type PredictionResult = {
   id: string;
@@ -118,11 +118,11 @@ export type PredictionResult = {
 };
 
 export type IdeMode =
-  | 'IDE_NAVIGATION'
-  | 'IDE_EDIT'
-  | 'IDE_PREDICTION'
-  | 'IDE_COMMAND'
-  | 'IDE_SNIPPET';
+  | "IDE_NAVIGATION"
+  | "IDE_EDIT"
+  | "IDE_PREDICTION"
+  | "IDE_COMMAND"
+  | "IDE_SNIPPET";
 
 export type PredictionContext = {
   filePath: string;

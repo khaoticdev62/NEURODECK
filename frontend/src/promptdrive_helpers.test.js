@@ -40,7 +40,7 @@ describe("PromptDrive helper contracts", () => {
   it("records only PromptDrive-safe macro steps", () => {
     const started = reducePromptDriveMacroAction(
       { recording: false, recordingId: null, steps: [] },
-      { type: "start", recordingId: "draft-1" },
+      { type: "start", recordingId: "draft-1" }
     );
     const withSafeStep = reducePromptDriveMacroAction(started, {
       type: "record_step",
@@ -58,7 +58,7 @@ describe("PromptDrive helper contracts", () => {
   it("stores macro step payloads as immutable snapshots", () => {
     const started = reducePromptDriveMacroAction(
       { recording: false, recordingId: null, steps: [] },
-      { type: "start", recordingId: "draft-1" },
+      { type: "start", recordingId: "draft-1" }
     );
     const payload = { slot_id: "task", value: "first draft" };
     const recorded = reducePromptDriveMacroAction(started, {
@@ -74,7 +74,7 @@ describe("PromptDrive helper contracts", () => {
   it("rejects confirmation-gated macro steps even when their kind is otherwise safe", () => {
     const started = reducePromptDriveMacroAction(
       { recording: false, recordingId: null, steps: [] },
-      { type: "start", recordingId: "draft-1" },
+      { type: "start", recordingId: "draft-1" }
     );
     const recorded = reducePromptDriveMacroAction(started, {
       type: "record_step",

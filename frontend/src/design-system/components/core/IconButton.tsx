@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { forwardRef } from 'react';
+import * as React from "react";
+import { forwardRef } from "react";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-iconbtn-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-iconbtn-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-iconbtn-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-iconbtn-css";
   s.textContent = `
   .nd-iconbtn{display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
     border:1px solid transparent;border-radius:var(--nd-radius-sm);background:transparent;
@@ -35,14 +35,17 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-iconbtn-css'
   document.head.appendChild(s);
 }
 
-export type IconButtonVariant = 'default' | 'primary' | 'danger' | 'subtle' | 'outline' | 'ghost';
-export type IconButtonSize = 'sm' | 'md' | 'lg';
+export type IconButtonVariant = "default" | "primary" | "danger" | "subtle" | "outline" | "ghost";
+export type IconButtonSize = "sm" | "md" | "lg";
 
 /**
  * Compact icon-only button. Always requires an accessible `label`, exposed as
  * aria-label and a hover/focus tooltip.
  */
-export interface IconButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label'> {
+export interface IconButtonProps extends Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  "aria-label"
+> {
   /** Accessible label — also rendered as the tooltip and aria-label. */
   label?: string;
   /** Icon node (e.g. a Lucide icon element). */
@@ -59,21 +62,33 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   {
     label,
     icon,
-    variant = 'default',
-    size = 'md',
+    variant = "default",
+    size = "md",
     disabled = false,
     showTooltip = true,
-    className = '',
+    className = "",
     ...rest
   },
-  ref,
+  ref
 ): React.ReactNode {
-  const cls = ['nd-iconbtn', `nd-iconbtn--${variant}`, `nd-iconbtn--${size}`, className]
-    .filter(Boolean).join(' ');
+  const cls = ["nd-iconbtn", `nd-iconbtn--${variant}`, `nd-iconbtn--${size}`, className]
+    .filter(Boolean)
+    .join(" ");
   return (
-    <button ref={ref} className={cls} aria-label={label} title={showTooltip ? undefined : label} disabled={disabled} {...rest}>
+    <button
+      ref={ref}
+      className={cls}
+      aria-label={label}
+      title={showTooltip ? undefined : label}
+      disabled={disabled}
+      {...rest}
+    >
       {icon}
-      {showTooltip && label ? <span className="nd-iconbtn__tip" role="tooltip">{label}</span> : null}
+      {showTooltip && label ? (
+        <span className="nd-iconbtn__tip" role="tooltip">
+          {label}
+        </span>
+      ) : null}
     </button>
   );
 });

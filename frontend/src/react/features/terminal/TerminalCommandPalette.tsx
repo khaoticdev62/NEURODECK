@@ -26,7 +26,10 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-start justify-center bg-black/55 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[var(--z-modal)] flex items-start justify-center bg-black/55 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <FocusTrapContainer
         active={open}
         onEscape={onClose}
@@ -38,7 +41,9 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
         <div className="flex items-center gap-3 border-b border-nd-text-muted/15 px-4 py-3">
           <Command className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
           <div>
-            <div className="text-sm font-semibold text-nd-text-primary">Terminal Command Palette</div>
+            <div className="text-sm font-semibold text-nd-text-primary">
+              Terminal Command Palette
+            </div>
             <div className="text-xs text-nd-text-muted">Execute real terminal actions only.</div>
           </div>
         </div>
@@ -70,10 +75,11 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
         </div>
         <div className="flex items-center justify-between border-t border-nd-text-muted/15 px-4 py-3 text-xs text-nd-text-muted">
           <span>Esc closes</span>
-          <Button size="xs" variant="secondary" onClick={onClose}>Close</Button>
+          <Button size="xs" variant="secondary" onClick={onClose}>
+            Close
+          </Button>
         </div>
       </FocusTrapContainer>
     </div>
   );
 }
-

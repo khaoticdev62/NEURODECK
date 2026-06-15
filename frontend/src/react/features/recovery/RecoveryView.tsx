@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { Dispatch } from 'react';
+import { useState } from "react";
+import type { Dispatch } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -8,13 +8,13 @@ import {
   RotateCcw,
   ShieldAlert,
   Trash2,
-} from 'lucide-react';
-import { Badge } from '../../components/primitives/Badge';
-import { Button } from '../../components/primitives/Button';
-import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { Panel } from '../../components/primitives/Panel';
-import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
+} from "lucide-react";
+import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { Panel } from "../../components/primitives/Panel";
+import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
 
 export function RecoveryView({
   state,
@@ -37,7 +37,10 @@ export function RecoveryView({
             {hasError ? (
               <div className="rounded-2xl border border-accent-error/25 bg-accent-error/[0.06] p-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-accent-error" aria-hidden="true" />
+                  <AlertTriangle
+                    className="mt-0.5 h-5 w-5 shrink-0 text-accent-error"
+                    aria-hidden="true"
+                  />
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-text-primary">{state.lastError!.title}</p>
                     <p className="mt-1 text-sm leading-relaxed text-text-secondary">
@@ -55,7 +58,7 @@ export function RecoveryView({
                     variant="secondary"
                     size="sm"
                     icon={CheckCircle2}
-                    onClick={() => dispatch({ type: 'set-error', error: null })}
+                    onClick={() => dispatch({ type: "set-error", error: null })}
                   >
                     Dismiss
                   </Button>
@@ -138,8 +141,8 @@ export function RecoveryView({
                     className="rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2 transition duration-fast hover:bg-surface-tertiary/30"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <Badge tone={event.allowed ? 'success' : 'danger'}>
-                        {event.allowed ? 'allowed' : 'blocked'}
+                      <Badge tone={event.allowed ? "success" : "danger"}>
+                        {event.allowed ? "allowed" : "blocked"}
                       </Badge>
                       <span className="text-2xs text-text-muted">
                         {new Date(event.timestamp).toLocaleString()}
@@ -196,7 +199,7 @@ function RecoveryAction({
   label: string;
   description: string;
   badge: string;
-  badgeTone: 'success' | 'danger' | 'warning' | 'neutral';
+  badgeTone: "success" | "danger" | "warning" | "neutral";
   onClick: () => void;
 }) {
   return (

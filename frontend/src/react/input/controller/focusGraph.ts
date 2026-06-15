@@ -25,18 +25,20 @@ export function getFocusableElements(root: ParentNode = document): HTMLElement[]
 
 export function findInteractiveRoot(): HTMLElement {
   const visibleModals = Array.from(
-    document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]'),
+    document.querySelectorAll<HTMLElement>('[role="dialog"][aria-modal="true"]')
   ).filter(isVisible);
   const modal = visibleModals[visibleModals.length - 1];
   if (modal) return modal;
 
   const visibleOverlays = Array.from(
-    document.querySelectorAll<HTMLElement>("[data-controller-overlay='true']"),
+    document.querySelectorAll<HTMLElement>("[data-controller-overlay='true']")
   ).filter(isVisible);
   const activeOverlay = visibleOverlays[visibleOverlays.length - 1];
   if (activeOverlay) return activeOverlay;
 
-  const activeScreen = document.querySelector<HTMLElement>("[data-controller-screen-active='true']");
+  const activeScreen = document.querySelector<HTMLElement>(
+    "[data-controller-screen-active='true']"
+  );
   return activeScreen ?? document.body;
 }
 
@@ -51,9 +53,10 @@ function getRectCenter(el: HTMLElement) {
 export function focusDefault(root?: HTMLElement): HTMLElement | null {
   const scope = root ?? findInteractiveRoot();
   const explicitDefault = scope.querySelector<HTMLElement>("[data-controller-default='true']");
-  const target = explicitDefault && isVisible(explicitDefault)
-    ? explicitDefault
-    : getFocusableElements(scope)[0];
+  const target =
+    explicitDefault && isVisible(explicitDefault)
+      ? explicitDefault
+      : getFocusableElements(scope)[0];
   target?.focus({ preventScroll: false });
   target?.scrollIntoView({ block: "nearest", inline: "nearest" });
   return target ?? null;
@@ -65,7 +68,8 @@ export function moveSpatialFocus(direction: "up" | "down" | "left" | "right", ro
   if (candidates.length === 0) return null;
 
   const active = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-  const current = active && scope.contains(active) && isVisible(active) ? active : focusDefault(scope);
+  const current =
+    active && scope.contains(active) && isVisible(active) ? active : focusDefault(scope);
   if (!current) return null;
 
   const origin = getRectCenter(current);

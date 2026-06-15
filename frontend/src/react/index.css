@@ -24,22 +24,22 @@
   -moz-osx-font-smoothing: grayscale;
 
   /* Response color for wallpapers / legacy compatibility */
-  --response-color: #7CFFB2;
+  --response-color: #7cffb2;
 
   /* Density mode tokens — overridden by [data-density] selectors below */
   --nd-target-min: 44px;
   --nd-spacing-item: 8px;
 
   /* Z-index scale (matches AGENTS.md documented range) */
-  --z-behind:     -1;
-  --z-wallpaper:   0;
-  --z-base:        1;
-  --z-sticky:     10;
-  --z-dropdown:   20;
-  --z-overlay:    30;
-  --z-modal:      40;
-  --z-toast:      50;
-  --z-tooltip:    60;
+  --z-behind: -1;
+  --z-wallpaper: 0;
+  --z-base: 1;
+  --z-sticky: 10;
+  --z-dropdown: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 50;
+  --z-tooltip: 60;
   --z-toast-peak: 30000;
 }
 
@@ -81,7 +81,7 @@ input,
 textarea,
 select,
 a,
-[role='button'] {
+[role="button"] {
   -webkit-app-region: no-drag;
 }
 
@@ -117,26 +117,26 @@ a,
 
 .glass-panel {
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%),
     linear-gradient(135deg, var(--nd-surface) 0%, var(--nd-bg) 100%);
   background-blend-mode: overlay;
   border: 1px solid color-mix(in srgb, var(--nd-text-muted) 12%, transparent);
   box-shadow:
-    0 1px 2px rgba(0,0,0,0.2),
-    0 4px 16px rgba(0,0,0,0.15),
-    inset 0 1px 0 rgba(255,255,255,0.04);
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .glass-panel-elevated {
   background:
-    linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%),
     linear-gradient(135deg, var(--nd-surface-raised) 0%, var(--nd-surface) 100%);
   background-blend-mode: overlay;
   border: 1px solid color-mix(in srgb, var(--nd-text-muted) 16%, transparent);
   box-shadow:
-    0 2px 4px rgba(0,0,0,0.25),
-    0 8px 24px rgba(0,0,0,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.06);
+    0 2px 4px rgba(0, 0, 0, 0.25),
+    0 8px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .glass-panel-flat {
@@ -150,18 +150,34 @@ a,
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes view-enter {
-  from { opacity: 0; transform: translateY(6px) scale(0.995); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .animate-view-enter {
@@ -176,7 +192,11 @@ a,
 .tactical-grid {
   background-image:
     linear-gradient(color-mix(in srgb, var(--nd-accent) 3.5%, transparent) 1px, transparent 1px),
-    linear-gradient(90deg, color-mix(in srgb, var(--nd-accent) 3.5%, transparent) 1px, transparent 1px);
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--nd-accent) 3.5%, transparent) 1px,
+      transparent 1px
+    );
   background-size: 32px 32px;
 }
 
@@ -193,22 +213,27 @@ a,
 }
 
 .glow-border {
-  box-shadow: 0 0 0 1px var(--nd-accent), 0 0 12px var(--nd-glow);
+  box-shadow:
+    0 0 0 1px var(--nd-accent),
+    0 0 12px var(--nd-glow);
 }
 
 .glow-border-subtle {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--nd-accent) 50%, transparent),
-              0 0 8px var(--nd-glow);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--nd-accent) 50%, transparent),
+    0 0 8px var(--nd-glow);
 }
 
 .shadow-glow-md {
-  box-shadow: 0 0 24px color-mix(in srgb, var(--nd-accent) 20%, transparent),
-              0 0 6px color-mix(in srgb, var(--nd-accent) 10%, transparent);
+  box-shadow:
+    0 0 24px color-mix(in srgb, var(--nd-accent) 20%, transparent),
+    0 0 6px color-mix(in srgb, var(--nd-accent) 10%, transparent);
 }
 
 .shadow-focus {
-  box-shadow: 0 0 0 1px var(--nd-accent),
-              0 0 12px var(--nd-glow);
+  box-shadow:
+    0 0 0 1px var(--nd-accent),
+    0 0 12px var(--nd-glow);
 }
 
 .shadow-panel {
@@ -253,7 +278,9 @@ body.wallpaper-active #app-shell {
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
-  transition: opacity 0.5s ease, background-image 0.5s ease;
+  transition:
+    opacity 0.5s ease,
+    background-image 0.5s ease;
 }
 
 .app-background-css.css-nebula {
@@ -266,8 +293,12 @@ body.wallpaper-active #app-shell {
 }
 
 @keyframes nebula-drift {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 100% 100%; }
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
 }
 
 .app-background-css.css-aurora {
@@ -283,9 +314,15 @@ body.wallpaper-active #app-shell {
 }
 
 @keyframes aurora-sweep {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -293,7 +330,9 @@ body.wallpaper-active #app-shell {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
@@ -311,36 +350,54 @@ body.wallpaper-active #app-shell {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* Base interactive element transitions */
-button, a, [role='button'], input, textarea, select {
-  transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 100ms ease;
+button,
+a,
+[role="button"],
+input,
+textarea,
+select {
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    color 150ms ease,
+    box-shadow 150ms ease,
+    transform 100ms ease;
 }
 
 /* Button micro-interactions */
-button:active:not(:disabled), [role='button']:active:not(:disabled) {
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled) {
   transform: scale(0.97);
 }
 
 /* Card hover lift */
 .card-hover {
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  transition:
+    transform 200ms ease,
+    box-shadow 200ms ease,
+    border-color 200ms ease;
 }
 .card-hover:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 }
 
 /* Input focus glow */
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
-  box-shadow: 0 0 0 1px var(--nd-accent), 0 0 8px var(--nd-glow);
+  box-shadow:
+    0 0 0 1px var(--nd-accent),
+    0 0 8px var(--nd-glow);
 }
 
 button:focus,
 a:focus,
-[role='button']:focus,
-[role='option']:focus,
-[aria-current='page']:focus,
-[aria-current='step']:focus {
+[role="button"]:focus,
+[role="option"]:focus,
+[aria-current="page"]:focus,
+[aria-current="step"]:focus {
   outline: none;
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--nd-accent) 55%, transparent),
@@ -363,7 +420,11 @@ a:focus,
 }
 
 /* Override for elements that already have custom focus styles */
-input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible, [role='button']:focus-visible {
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible {
   outline: none;
 }
 
@@ -372,14 +433,30 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   opacity: 0;
   animation: fade-in 200ms ease-out forwards;
 }
-.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 40ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 80ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 120ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 160ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 200ms; }
-.stagger-children > *:nth-child(7) { animation-delay: 240ms; }
-.stagger-children > *:nth-child(8) { animation-delay: 280ms; }
+.stagger-children > *:nth-child(1) {
+  animation-delay: 0ms;
+}
+.stagger-children > *:nth-child(2) {
+  animation-delay: 40ms;
+}
+.stagger-children > *:nth-child(3) {
+  animation-delay: 80ms;
+}
+.stagger-children > *:nth-child(4) {
+  animation-delay: 120ms;
+}
+.stagger-children > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.stagger-children > *:nth-child(6) {
+  animation-delay: 200ms;
+}
+.stagger-children > *:nth-child(7) {
+  animation-delay: 240ms;
+}
+.stagger-children > *:nth-child(8) {
+  animation-delay: 280ms;
+}
 
 /* Glow pulse for active/running states */
 .glow-pulse {
@@ -479,7 +556,11 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
     0 0 0 9999px rgba(0, 0, 0, 0.22),
     0 0 0 4px color-mix(in srgb, var(--nd-accent) 13%, transparent),
     0 0 28px color-mix(in srgb, var(--nd-accent) 35%, transparent);
-  transition: left 150ms ease, top 150ms ease, width 150ms ease, height 150ms ease;
+  transition:
+    left 150ms ease,
+    top 150ms ease,
+    width 150ms ease,
+    height 150ms ease;
 }
 
 .onboarding-viewfinder-fallback {
@@ -507,11 +588,23 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--nd-accent) 18%, transparent);
   background:
-    linear-gradient(90deg, color-mix(in srgb, var(--nd-accent) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--nd-accent) 18%, transparent) 1px,
+      transparent 1px
+    ),
     linear-gradient(color-mix(in srgb, var(--nd-accent) 14%, transparent) 1px, transparent 1px),
-    radial-gradient(circle at 30% 40%, color-mix(in srgb, var(--nd-accent) 28%, transparent), transparent 34%),
+    radial-gradient(
+      circle at 30% 40%,
+      color-mix(in srgb, var(--nd-accent) 28%, transparent),
+      transparent 34%
+    ),
     color-mix(in srgb, var(--nd-bg) 82%, black 18%);
-  background-size: 18px 18px, 18px 18px, 100% 100%, 100% 100%;
+  background-size:
+    18px 18px,
+    18px 18px,
+    100% 100%,
+    100% 100%;
 }
 
 .onboarding-css-demo span {
@@ -531,21 +624,46 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--nd-accent) 18%, transparent);
   background:
-    conic-gradient(from 210deg at 50% 50%, rgba(0, 0, 0, 0), color-mix(in srgb, var(--nd-accent) 34%, transparent), rgba(0, 0, 0, 0)),
-    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--nd-accent) 28%, transparent), transparent 54%),
+    conic-gradient(
+      from 210deg at 50% 50%,
+      rgba(0, 0, 0, 0),
+      color-mix(in srgb, var(--nd-accent) 34%, transparent),
+      rgba(0, 0, 0, 0)
+    ),
+    radial-gradient(
+      circle at 50% 50%,
+      color-mix(in srgb, var(--nd-accent) 28%, transparent),
+      transparent 54%
+    ),
     color-mix(in srgb, var(--nd-bg) 84%, black 16%);
   animation: onboarding-orbit 5s linear infinite;
 }
 
 @keyframes onboarding-scan {
-  0%, 100% { transform: translateY(-32px); opacity: 0.35; }
-  50% { transform: translateY(32px); opacity: 1; }
+  0%,
+  100% {
+    transform: translateY(-32px);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(32px);
+    opacity: 1;
+  }
 }
 
 @keyframes onboarding-orbit {
-  0% { filter: hue-rotate(0deg); transform: scale(1); }
-  50% { filter: hue-rotate(18deg); transform: scale(1.03); }
-  100% { filter: hue-rotate(0deg); transform: scale(1); }
+  0% {
+    filter: hue-rotate(0deg);
+    transform: scale(1);
+  }
+  50% {
+    filter: hue-rotate(18deg);
+    transform: scale(1.03);
+  }
+  100% {
+    filter: hue-rotate(0deg);
+    transform: scale(1);
+  }
 }
 
 .onboarding-tour-root.motion-off .onboarding-css-demo span,

@@ -1,6 +1,6 @@
-import * as React from 'react';
-import { Button } from '../core/Button';
-import { Modal } from './Modal';
+import * as React from "react";
+import { Button } from "../core/Button";
+import { Modal } from "./Modal";
 
 /**
  * Explicit confirmation for destructive or security-sensitive actions. Follows
@@ -20,7 +20,7 @@ export interface ConfirmDialogProps {
   /** @default 'Cancel' */
   cancelLabel?: string;
   /** @default 'destructive' */
-  tone?: 'destructive' | 'security' | 'safe';
+  tone?: "destructive" | "security" | "safe";
   /** Optional leading icon rendered beside the consequence. */
   icon?: React.ReactNode;
   /** Accessible label for the icon. @default 'Warning' */
@@ -35,29 +35,34 @@ export function ConfirmDialog({
   onConfirm,
   title,
   consequence,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  tone = 'destructive',
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
+  tone = "destructive",
   icon,
-  iconLabel = 'Warning',
+  iconLabel = "Warning",
   closeOnBackdrop = false,
 }: ConfirmDialogProps): React.ReactNode {
-  const confirmVariant = tone === 'destructive' ? 'danger' : tone === 'security' ? 'danger' : 'primary';
+  const confirmVariant =
+    tone === "destructive" ? "danger" : tone === "security" ? "danger" : "primary";
   return (
     <Modal
       open={open}
       onClose={onCancel}
       title={title}
-      emphasis={tone === 'safe' ? 'default' : 'critical'}
+      emphasis={tone === "safe" ? "default" : "critical"}
       closeOnBackdrop={closeOnBackdrop}
       footer={
         <>
-          <Button variant="ghost" onClick={onCancel}>{cancelLabel}</Button>
-          <Button variant={confirmVariant} onClick={onConfirm}>{confirmLabel}</Button>
+          <Button variant="ghost" onClick={onCancel}>
+            {cancelLabel}
+          </Button>
+          <Button variant={confirmVariant} onClick={onConfirm}>
+            {confirmLabel}
+          </Button>
         </>
       }
     >
-      <div className={icon ? 'flex items-start gap-3' : ''}>
+      <div className={icon ? "flex items-start gap-3" : ""}>
         {icon ? (
           <span className="mt-0.5 shrink-0 text-nd-accent-error" aria-label={iconLabel}>
             {icon}

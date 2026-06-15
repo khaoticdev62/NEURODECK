@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Timer,
   Play,
@@ -10,13 +10,13 @@ import {
   BookOpen,
   RotateCcw,
   Award,
-} from 'lucide-react';
-import { Badge } from '../../../components/primitives/Badge';
-import { Button } from '../../../components/primitives/Button';
-import { Modal } from '../../../components/primitives/Modal';
-import { Panel } from '../../../components/primitives/Panel';
-import { EXAM_QUESTIONS, EXAM_DOMAINS, sampleQuestions } from '../data/examQuestions';
-import type { ExamQuestion, ExamSession, ExamPhase } from '../types';
+} from "lucide-react";
+import { Badge } from "../../../components/primitives/Badge";
+import { Button } from "../../../components/primitives/Button";
+import { Modal } from "../../../components/primitives/Modal";
+import { Panel } from "../../../components/primitives/Panel";
+import { EXAM_QUESTIONS, EXAM_DOMAINS, sampleQuestions } from "../data/examQuestions";
+import type { ExamQuestion, ExamSession, ExamPhase } from "../types";
 
 const QUESTION_COUNTS = [10, 20, 40, 60] as const;
 const DEFAULT_MINUTES_PER_Q = 1.5;
@@ -26,7 +26,7 @@ const DEFAULT_MINUTES_PER_Q = 1.5;
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 function domainScore(
@@ -71,8 +71,8 @@ function ExamConfig({ onStart }: { onStart: (count: number) => void }) {
                   onClick={() => setCount(n)}
                   className={`min-h-touch rounded-xl border py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
                     count === n
-                      ? 'border-nd-accent-primary/40 bg-nd-accent-primary/15 text-nd-accent-primary'
-                      : 'border-nd-border-subtle bg-nd-surface-base/40 text-nd-text-secondary hover:border-nd-accent-primary/20'
+                      ? "border-nd-accent-primary/40 bg-nd-accent-primary/15 text-nd-accent-primary"
+                      : "border-nd-border-subtle bg-nd-surface-base/40 text-nd-text-secondary hover:border-nd-accent-primary/20"
                   }`}
                 >
                   {n}
@@ -135,15 +135,15 @@ function OptionButton({
       disabled={disabled}
       className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
         selected
-          ? 'border-nd-accent-primary/50 bg-nd-accent-primary/15 text-nd-text-primary'
-          : 'border-nd-border-subtle bg-nd-surface-base/20 text-nd-text-secondary hover:border-nd-accent-primary/20 hover:bg-nd-surface-base/40'
+          ? "border-nd-accent-primary/50 bg-nd-accent-primary/15 text-nd-text-primary"
+          : "border-nd-border-subtle bg-nd-surface-base/20 text-nd-text-secondary hover:border-nd-accent-primary/20 hover:bg-nd-surface-base/40"
       } disabled:cursor-not-allowed`}
     >
       <span
         className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-bold ${
           selected
-            ? 'border-nd-accent-primary bg-nd-accent-primary text-black'
-            : 'border-nd-border-subtle text-nd-text-muted/60'
+            ? "border-nd-accent-primary bg-nd-accent-primary text-black"
+            : "border-nd-border-subtle text-nd-text-muted/60"
         }`}
       >
         {letter}
@@ -213,8 +213,8 @@ function ExamRunner({
         <div
           className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 font-mono text-sm font-bold ${
             timerWarning
-              ? 'border-nd-accent-error/40 bg-nd-accent-error/10 text-nd-accent-error'
-              : 'border-nd-border-subtle text-nd-text-primary'
+              ? "border-nd-accent-error/40 bg-nd-accent-error/10 text-nd-accent-error"
+              : "border-nd-border-subtle text-nd-text-primary"
           }`}
         >
           <Timer className="h-3.5 w-3.5" aria-hidden="true" />
@@ -243,9 +243,9 @@ function ExamRunner({
               </div>
               <Button
                 size="xs"
-                variant={isFlagged ? 'soft' : 'secondary'}
+                variant={isFlagged ? "soft" : "secondary"}
                 onClick={() => onFlag(q.id)}
-                aria-label={isFlagged ? 'Remove flag from question' : 'Flag question for review'}
+                aria-label={isFlagged ? "Remove flag from question" : "Flag question for review"}
                 aria-pressed={isFlagged}
               >
                 <Flag className="h-3.5 w-3.5" aria-hidden="true" />
@@ -253,7 +253,11 @@ function ExamRunner({
             </div>
 
             {/* Options */}
-            <div className="space-y-2.5" role="radiogroup" aria-label={`Options for question ${activeIdx + 1}`}>
+            <div
+              className="space-y-2.5"
+              role="radiogroup"
+              aria-label={`Options for question ${activeIdx + 1}`}
+            >
               {q.options.map((opt, i) => (
                 <OptionButton
                   key={i}
@@ -324,18 +328,18 @@ function ExamRunner({
                   key={question.id}
                   type="button"
                   onClick={() => goTo(i)}
-                  aria-label={`Question ${i + 1}${isAnswered ? ', answered' : ''}${
-                    isFlaggedQ ? ', flagged' : ''
+                  aria-label={`Question ${i + 1}${isAnswered ? ", answered" : ""}${
+                    isFlaggedQ ? ", flagged" : ""
                   }`}
-                  aria-current={isActive ? 'page' : undefined}
+                  aria-current={isActive ? "page" : undefined}
                   className={`flex h-7 w-7 items-center justify-center rounded-md text-[10px] font-bold transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 ${
                     isActive
-                      ? 'bg-nd-accent-primary text-black'
+                      ? "bg-nd-accent-primary text-black"
                       : isFlaggedQ
-                      ? 'border border-nd-accent-warning/50 bg-nd-accent-warning/10 text-nd-accent-warning'
-                      : isAnswered
-                      ? 'bg-nd-surface-base/60 text-nd-text-primary'
-                      : 'border border-nd-border-subtle/50 text-nd-text-muted/40'
+                        ? "border border-nd-accent-warning/50 bg-nd-accent-warning/10 text-nd-accent-warning"
+                        : isAnswered
+                          ? "bg-nd-surface-base/60 text-nd-text-primary"
+                          : "border border-nd-border-subtle/50 text-nd-text-muted/40"
                   }`}
                 >
                   {i + 1}
@@ -395,11 +399,11 @@ function ExamRunner({
         }
       >
         <p className="text-sm text-nd-text-secondary">
-          You have{' '}
+          You have{" "}
           {unanswered > 0
-            ? `${unanswered} unanswered question${unanswered !== 1 ? 's' : ''}`
-            : 'answered all questions'}.
-          {unanswered > 0 && ' Unanswered questions will be marked incorrect.'}
+            ? `${unanswered} unanswered question${unanswered !== 1 ? "s" : ""}`
+            : "answered all questions"}
+          .{unanswered > 0 && " Unanswered questions will be marked incorrect."}
         </p>
       </Modal>
     </div>
@@ -418,7 +422,7 @@ function ExamReview({
   onReset: () => void;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'wrong' | 'flagged'>('all');
+  const [filter, setFilter] = useState<"all" | "wrong" | "flagged">("all");
 
   const correct = questions.filter((q) => session.answers[q.id] === q.correct).length;
   const percent = Math.round((correct / questions.length) * 100);
@@ -430,8 +434,8 @@ function ExamReview({
     : session.timeLimitSeconds;
 
   const filtered = questions.filter((q) => {
-    if (filter === 'wrong') return session.answers[q.id] !== q.correct;
-    if (filter === 'flagged') return session.flagged.has(q.id);
+    if (filter === "wrong") return session.answers[q.id] !== q.correct;
+    if (filter === "flagged") return session.flagged.has(q.id);
     return true;
   });
 
@@ -440,22 +444,22 @@ function ExamReview({
       {/* Summary header */}
       <div
         className={`shrink-0 border-b border-nd-border-subtle px-5 py-4 ${
-          passed ? 'bg-nd-accent-success/[0.04]' : 'bg-nd-accent-warning/[0.04]'
+          passed ? "bg-nd-accent-success/[0.04]" : "bg-nd-accent-warning/[0.04]"
         }`}
       >
         <div className="flex items-center gap-5">
           <div
             className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border font-mono text-2xl font-bold ${
               passed
-                ? 'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success'
-                : 'border-nd-accent-warning/30 bg-nd-accent-warning/10 text-nd-accent-warning'
+                ? "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
+                : "border-nd-accent-warning/30 bg-nd-accent-warning/10 text-nd-accent-warning"
             }`}
           >
             {percent}%
           </div>
           <div className="flex-1">
             <p className="text-sm font-bold text-nd-text-primary">
-              {passed ? 'Passing Score' : 'Needs More Study'}
+              {passed ? "Passing Score" : "Needs More Study"}
               <span className="ml-2 font-normal text-nd-text-muted/70">
                 {correct}/{questions.length} correct
               </span>
@@ -470,10 +474,10 @@ function ExamReview({
                     <div
                       className={`h-full rounded-full ${
                         c / t >= 0.75
-                          ? 'bg-nd-accent-success'
+                          ? "bg-nd-accent-success"
                           : c / t >= 0.5
-                          ? 'bg-nd-accent-warning'
-                          : 'bg-nd-accent-error'
+                            ? "bg-nd-accent-warning"
+                            : "bg-nd-accent-error"
                       }`}
                       style={{ width: `${Math.round((c / t) * 100)}%` }}
                     />
@@ -485,7 +489,7 @@ function ExamReview({
                     className="max-w-[80px] truncate text-[9px] text-nd-text-muted/60"
                     title={domain}
                   >
-                    {domain.split(' ')[0]}
+                    {domain.split(" ")[0]}
                   </span>
                 </div>
               ))}
@@ -498,22 +502,22 @@ function ExamReview({
 
         {/* Filter bar */}
         <div className="mt-3 flex gap-1.5">
-          {(['all', 'wrong', 'flagged'] as const).map((f) => (
+          {(["all", "wrong", "flagged"] as const).map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setFilter(f)}
               className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium capitalize transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 ${
                 filter === f
-                  ? 'border-nd-accent-primary/40 bg-nd-accent-primary/15 text-nd-accent-primary'
-                  : 'border-nd-border-subtle text-nd-text-muted/70 hover:text-nd-text-secondary'
+                  ? "border-nd-accent-primary/40 bg-nd-accent-primary/15 text-nd-accent-primary"
+                  : "border-nd-border-subtle text-nd-text-muted/70 hover:text-nd-text-secondary"
               }`}
             >
-              {f === 'all'
+              {f === "all"
                 ? `All (${questions.length})`
-                : f === 'wrong'
-                ? `Incorrect (${questions.length - correct})`
-                : `Flagged (${session.flagged.size})`}
+                : f === "wrong"
+                  ? `Incorrect (${questions.length - correct})`
+                  : `Flagged (${session.flagged.size})`}
             </button>
           ))}
         </div>
@@ -540,9 +544,15 @@ function ExamReview({
                 className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-nd-surface/10 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 focus-visible:ring-inset"
               >
                 {isCorrect ? (
-                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-success" aria-label="Correct" />
+                  <CheckCircle2
+                    className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-success"
+                    aria-label="Correct"
+                  />
                 ) : (
-                  <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-error" aria-label="Incorrect" />
+                  <XCircle
+                    className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-error"
+                    aria-label="Incorrect"
+                  />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="mb-0.5 text-[10px] text-nd-text-muted/60">{q.domain}</p>
@@ -550,12 +560,12 @@ function ExamReview({
                   {!expanded && (
                     <p
                       className={`mt-1 text-[11px] font-medium ${
-                        isCorrect ? 'text-nd-accent-success' : 'text-nd-accent-error'
+                        isCorrect ? "text-nd-accent-success" : "text-nd-accent-error"
                       }`}
                     >
                       {isCorrect
                         ? `✓ ${q.options[q.correct]}`
-                        : `✗ You chose: ${userAnswer >= 0 ? q.options[userAnswer] : 'Unanswered'}`}
+                        : `✗ You chose: ${userAnswer >= 0 ? q.options[userAnswer] : "Unanswered"}`}
                     </p>
                   )}
                 </div>
@@ -572,13 +582,15 @@ function ExamReview({
                         key={idx}
                         className={`flex items-start gap-2.5 rounded-lg border px-3 py-2 text-sm ${
                           isCorrectOpt
-                            ? 'border-nd-accent-success/40 bg-nd-accent-success/10 text-nd-text-primary'
+                            ? "border-nd-accent-success/40 bg-nd-accent-success/10 text-nd-text-primary"
                             : isUserChoice
-                            ? 'border-nd-accent-error/40 bg-nd-accent-error/10 text-nd-text-primary'
-                            : 'border-nd-border-subtle/50 text-nd-text-muted/70'
+                              ? "border-nd-accent-error/40 bg-nd-accent-error/10 text-nd-text-primary"
+                              : "border-nd-border-subtle/50 text-nd-text-muted/70"
                         }`}
                       >
-                        <span className="w-4 shrink-0 font-bold">{String.fromCharCode(65 + idx)}.</span>
+                        <span className="w-4 shrink-0 font-bold">
+                          {String.fromCharCode(65 + idx)}.
+                        </span>
                         <span className="flex-1">{opt}</span>
                         {isCorrectOpt && (
                           <CheckCircle2
@@ -602,7 +614,9 @@ function ExamReview({
                         Explanation
                       </span>
                     </div>
-                    <p className="text-[12px] leading-relaxed text-nd-text-secondary">{q.explanation}</p>
+                    <p className="text-[12px] leading-relaxed text-nd-text-secondary">
+                      {q.explanation}
+                    </p>
                     {q.mitreTechnique && (
                       <Badge tone="warning" className="mt-2">
                         {q.mitreTechnique}
@@ -622,7 +636,7 @@ function ExamReview({
 // ── Root view ─────────────────────────────────────────────────────────────────
 
 export function PracticeExamView() {
-  const [phase, setPhase] = useState<ExamPhase>('config');
+  const [phase, setPhase] = useState<ExamPhase>("config");
   const [session, setSession] = useState<ExamSession | null>(null);
   const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const seed = useRef(Date.now());
@@ -639,7 +653,7 @@ export function PracticeExamView() {
     };
     setQuestions(qs);
     setSession(newSession);
-    setPhase('running');
+    setPhase("running");
   }, []);
 
   const handleAnswer = useCallback((qId: string, idx: number) => {
@@ -658,17 +672,17 @@ export function PracticeExamView() {
 
   const handleFinish = useCallback(() => {
     setSession((s) => (s ? { ...s, finishedAt: Date.now() } : s));
-    setPhase('review');
+    setPhase("review");
   }, []);
 
   const handleReset = useCallback(() => {
-    setPhase('config');
+    setPhase("config");
     setSession(null);
     setQuestions([]);
   }, []);
 
-  if (phase === 'config') return <ExamConfig onStart={handleStart} />;
-  if (phase === 'running' && session) {
+  if (phase === "config") return <ExamConfig onStart={handleStart} />;
+  if (phase === "running" && session) {
     return (
       <ExamRunner
         session={session}
@@ -680,7 +694,7 @@ export function PracticeExamView() {
       />
     );
   }
-  if (phase === 'review' && session) {
+  if (phase === "review" && session) {
     return <ExamReview questions={questions} session={session} onReset={handleReset} />;
   }
   return null;

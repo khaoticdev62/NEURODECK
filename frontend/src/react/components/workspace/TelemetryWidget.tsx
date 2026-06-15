@@ -1,6 +1,6 @@
-import { Activity, Cpu, HardDrive, Layers, Zap } from 'lucide-react';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import type { AIProviderHealth } from '../../types/neurodeck';
+import { Activity, Cpu, HardDrive, Layers, Zap } from "lucide-react";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import type { AIProviderHealth } from "../../types/neurodeck";
 
 interface TelemetryWidgetProps {
   provider: string;
@@ -22,11 +22,11 @@ export function TelemetryWidget({
   const healthPercent = Math.round((ready / total) * 100);
 
   const items = [
-    { icon: Zap, label: 'Provider', value: provider || 'None' },
-    { icon: Activity, label: 'Model', value: model || 'default' },
-    { icon: Cpu, label: 'RAM', value: `${Math.round(ramUsageMb)} MB` },
-    { icon: Layers, label: 'Memory', value: `${memoryDocCount.toLocaleString()} docs` },
-    { icon: HardDrive, label: 'Health', value: `${ready}/${total} ready` },
+    { icon: Zap, label: "Provider", value: provider || "None" },
+    { icon: Activity, label: "Model", value: model || "default" },
+    { icon: Cpu, label: "RAM", value: `${Math.round(ramUsageMb)} MB` },
+    { icon: Layers, label: "Memory", value: `${memoryDocCount.toLocaleString()} docs` },
+    { icon: HardDrive, label: "Health", value: `${ready}/${total} ready` },
   ];
 
   return (
@@ -42,21 +42,29 @@ export function TelemetryWidget({
               <item.icon className="h-3.5 w-3.5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-nd-text-muted/80">{item.label}</p>
-              {item.label === 'Health' ? (
+              <p className="text-[10px] uppercase tracking-wider text-nd-text-muted/80">
+                {item.label}
+              </p>
+              {item.label === "Health" ? (
                 <div className="flex items-center gap-1.5">
-                  <span className="truncate text-xs font-semibold text-nd-text-primary" title={item.value}>
+                  <span
+                    className="truncate text-xs font-semibold text-nd-text-primary"
+                    title={item.value}
+                  >
                     {item.value}
                   </span>
                   <StatusChip
-                    tone={ready === total ? 'success' : ready > 0 ? 'warning' : 'error'}
+                    tone={ready === total ? "success" : ready > 0 ? "warning" : "error"}
                     size="sm"
                   >
                     {healthPercent}%
                   </StatusChip>
                 </div>
               ) : (
-                <p className="truncate text-xs font-semibold text-nd-text-primary" title={item.value}>
+                <p
+                  className="truncate text-xs font-semibold text-nd-text-primary"
+                  title={item.value}
+                >
                   {item.value}
                 </p>
               )}

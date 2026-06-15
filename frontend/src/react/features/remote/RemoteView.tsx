@@ -1,26 +1,26 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Power, PowerOff, Copy, Users, Clock, Bell, Send } from 'lucide-react';
-import QRCode from 'qrcode';
-import { Badge } from '../../components/primitives/Badge';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { Panel } from '../../components/primitives/Panel';
-import { Select } from '../../components/primitives/Select';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Power, PowerOff, Copy, Users, Clock, Bell, Send } from "lucide-react";
+import QRCode from "qrcode";
+import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { Panel } from "../../components/primitives/Panel";
+import { Select } from "../../components/primitives/Select";
 
-import { TextInput } from '../../components/primitives/TextInput';
-import { neurodeckApi } from '../../services/bridgeAdapter';
+import { TextInput } from "../../components/primitives/TextInput";
+import { neurodeckApi } from "../../services/bridgeAdapter";
 
 interface LogEntry {
   text: string;
-  tone: 'info' | 'success' | 'warn' | 'error';
+  tone: "info" | "success" | "warn" | "error";
   time: string;
 }
 
 const NOTIF_TYPES = [
-  { value: 'info', label: 'Info' },
-  { value: 'success', label: 'Success' },
-  { value: 'warn', label: 'Warn' },
-  { value: 'error', label: 'Error' },
+  { value: "info", label: "Info" },
+  { value: "success", label: "Success" },
+  { value: "warn", label: "Warn" },
+  { value: "error", label: "Error" },
 ];
 
 export function RemoteView() {
@@ -37,18 +37,18 @@ export function RemoteView() {
   const [loading, setLoading] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [ttl, setTtl] = useState(0);
-  const [qrDataUrl, setQrDataUrl] = useState('');
-  const [notifTitle, setNotifTitle] = useState('');
-  const [notifText, setNotifText] = useState('');
-  const [notifType, setNotifType] = useState<'info' | 'success' | 'warn' | 'error'>('info');
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [notifTitle, setNotifTitle] = useState("");
+  const [notifText, setNotifText] = useState("");
+  const [notifType, setNotifType] = useState<"info" | "success" | "warn" | "error">("info");
   const [sendingNotif, setSendingNotif] = useState(false);
   const ttlTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
-  const log = useCallback((text: string, tone: LogEntry['tone'] = 'info') => {
+  const log = useCallback((text: string, tone: LogEntry["tone"] = "info") => {
     setLogs((prev) => [
       ...prev.slice(-199),
-      { text, tone, time: new Date().toLocaleTimeString('en-US', { hour12: false }) },
+      { text, tone, time: new Date().toLocaleTimeString("en-US", { hour12: false }) },
     ]);
   }, []);
 
@@ -64,7 +64,9 @@ export function RemoteView() {
           return prev;
         });
       }
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
@@ -76,18 +78,20 @@ export function RemoteView() {
   useEffect(() => {
     if (status.running && status.url) {
       const accentColor =
-        getComputedStyle(document.documentElement).getPropertyValue('--nd-accent-primary').trim() || '#5EEBFF';
+        getComputedStyle(document.documentElement).getPropertyValue("--nd-accent-primary").trim() ||
+        "#5EEBFF";
       const bgColor =
-        getComputedStyle(document.documentElement).getPropertyValue('--nd-surface-app').trim() || '#0A0D10';
+        getComputedStyle(document.documentElement).getPropertyValue("--nd-surface-app").trim() ||
+        "#0A0D10";
       QRCode.toDataURL(status.url, {
         width: 160,
         margin: 1,
         color: { dark: accentColor, light: bgColor },
       })
         .then(setQrDataUrl)
-        .catch(() => setQrDataUrl(''));
+        .catch(() => setQrDataUrl(""));
     } else {
-      setQrDataUrl('');
+      setQrDataUrl("");
     }
   }, [status.running, status.url]);
 
@@ -98,7 +102,7 @@ export function RemoteView() {
         setTtl((prev) => {
           if (prev <= 1) {
             if (ttlTimer.current) clearInterval(ttlTimer.current);
-            log('Session token expired. Restart the server to refresh.', 'warn');
+            log("Session token expired. Restart the server to refresh.", "warn");
             return 0;
           }
           return prev - 1;
@@ -111,23 +115,23 @@ export function RemoteView() {
   }, [status.running, ttl, log]);
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
   useEffect(() => {
     const unsubConnect = neurodeckApi.remote.onClientConnected((count) => {
-      log(`Client connected (${count} total)`, 'success');
+      log(`Client connected (${count} total)`, "success");
       setStatus((s) => ({ ...s, clients: count }));
     });
     const unsubDisconnect = neurodeckApi.remote.onClientDisconnected((count) => {
-      log(`Client disconnected (${count} remaining)`, 'warn');
+      log(`Client disconnected (${count} remaining)`, "warn");
       setStatus((s) => ({ ...s, clients: count }));
     });
     const unsubChat = neurodeckApi.remote.onChat((text) => {
-      log(`Remote chat: ${String(text).slice(0, 80)}`, 'info');
+      log(`Remote chat: ${String(text).slice(0, 80)}`, "info");
     });
     const unsubNav = neurodeckApi.remote.onNavigate((view) => {
-      log(`Remote navigate → ${view}`, 'info');
+      log(`Remote navigate → ${view}`, "info");
     });
     return () => {
       unsubConnect();
@@ -143,15 +147,15 @@ export function RemoteView() {
       if (status.running) {
         await neurodeckApi.remote.stop();
         setTtl(0);
-        log('Server stopped.', 'warn');
+        log("Server stopped.", "warn");
       } else {
         const info = await neurodeckApi.remote.start(port);
-        log(`Server started: ${info.url ?? ''}`, 'success');
-        log(`PIN: ${info.pin ?? ''}`, 'success');
+        log(`Server started: ${info.url ?? ""}`, "success");
+        log(`PIN: ${info.pin ?? ""}`, "success");
       }
       await refresh();
     } catch (err) {
-      log(`Failed: ${err}`, 'error');
+      log(`Failed: ${err}`, "error");
     } finally {
       setLoading(false);
     }
@@ -170,15 +174,15 @@ export function RemoteView() {
         text: notifText.trim(),
         type: notifType,
       });
-      if (res.status === 'relayed') {
-        log(`Notification relayed: "${notifTitle}"`, 'success');
-        setNotifTitle('');
-        setNotifText('');
+      if (res.status === "relayed") {
+        log(`Notification relayed: "${notifTitle}"`, "success");
+        setNotifTitle("");
+        setNotifText("");
       } else {
-        log('No remote clients connected — notification not delivered.', 'warn');
+        log("No remote clients connected — notification not delivered.", "warn");
       }
     } catch (err) {
-      log(`Notification failed: ${err}`, 'error');
+      log(`Notification failed: ${err}`, "error");
     } finally {
       setSendingNotif(false);
     }
@@ -187,15 +191,11 @@ export function RemoteView() {
   const formatTtl = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${mins}:${String(secs).padStart(2, '0')}`;
+    return `${mins}:${String(secs).padStart(2, "0")}`;
   };
 
   return (
-    <Panel
-      eyebrow="Remote"
-      title="Remote Control"
-      className="flex h-full flex-col"
-    >
+    <Panel eyebrow="Remote" title="Remote Control" className="flex h-full flex-col">
       <div data-testid="remote-view" className="flex min-h-0 flex-1 gap-3 p-4">
         {/* Main panel */}
         <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-4 scrollbar-thin">
@@ -207,17 +207,17 @@ export function RemoteView() {
             <div
               className={`h-3 w-3 rounded-full ${
                 status.running
-                  ? 'bg-nd-accent-success shadow-[0_0_8px_rgba(var(--nd-green-rgb),0.5)]'
-                  : 'bg-nd-text-muted/40'
+                  ? "bg-nd-accent-success shadow-[0_0_8px_rgba(var(--nd-green-rgb),0.5)]"
+                  : "bg-nd-text-muted/40"
               }`}
             />
             <span className="text-sm font-medium text-nd-text-primary/90">
-              {status.running ? 'Server Running' : 'Server Offline'}
+              {status.running ? "Server Running" : "Server Offline"}
             </span>
             {status.clients !== undefined && status.running && (
               <Badge tone="accent" size="sm" className="ml-auto">
                 <Users className="mr-1 inline h-3 w-3" aria-hidden="true" />
-                {status.clients} client{status.clients === 1 ? '' : 's'}
+                {status.clients} client{status.clients === 1 ? "" : "s"}
               </Badge>
             )}
           </div>
@@ -234,13 +234,13 @@ export function RemoteView() {
               className="w-32"
             />
             <Button
-              variant={status.running ? 'danger' : 'success'}
+              variant={status.running ? "danger" : "success"}
               size="md"
               icon={status.running ? PowerOff : Power}
               onClick={() => void toggle()}
               loading={loading}
             >
-              {status.running ? 'Stop Server' : 'Start Server'}
+              {status.running ? "Stop Server" : "Start Server"}
             </Button>
           </div>
 
@@ -278,7 +278,7 @@ export function RemoteView() {
                 {ttl > 0 && (
                   <div className="flex items-center gap-1.5 text-xs text-nd-text-muted">
                     <Clock className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span className={ttl < 120 ? 'text-nd-accent-error' : ''}>
+                    <span className={ttl < 120 ? "text-nd-accent-error" : ""}>
                       Session expires in {formatTtl(ttl)}
                     </span>
                   </div>
@@ -304,7 +304,9 @@ export function RemoteView() {
                 <TextInput
                   value={notifText}
                   onChange={(e) => setNotifText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') void sendNotification(); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void sendNotification();
+                  }}
                   placeholder="Message"
                   aria-label="Notification message"
                   fullWidth
@@ -329,7 +331,9 @@ export function RemoteView() {
                 </Button>
               </div>
               {status.clients === 0 && (
-                <p className="text-[11px] italic text-nd-text-muted/60">No clients connected — notification will not be delivered.</p>
+                <p className="text-[11px] italic text-nd-text-muted/60">
+                  No clients connected — notification will not be delivered.
+                </p>
               )}
             </fieldset>
           )}
@@ -337,7 +341,9 @@ export function RemoteView() {
           {/* Event log */}
           <div className="flex min-h-0 flex-1 flex-col rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">Event Log</span>
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
+                Event Log
+              </span>
               <Button variant="ghost" size="xs" onClick={() => setLogs([])}>
                 Clear
               </Button>
@@ -348,18 +354,20 @@ export function RemoteView() {
               aria-label="Remote control event log"
               className="min-h-0 flex-1 space-y-1 overflow-auto"
             >
-              {logs.length === 0 && <p className="text-xs text-nd-text-muted/50 italic">No events yet</p>}
+              {logs.length === 0 && (
+                <p className="text-xs text-nd-text-muted/50 italic">No events yet</p>
+              )}
               {logs.map((l, i) => (
                 <div
                   key={i}
                   className={`text-[11px] font-mono ${
-                    l.tone === 'error'
-                      ? 'text-nd-accent-error'
-                      : l.tone === 'success'
-                        ? 'text-nd-accent-success'
-                        : l.tone === 'warn'
-                          ? 'text-nd-accent-warning'
-                          : 'text-nd-text-muted'
+                    l.tone === "error"
+                      ? "text-nd-accent-error"
+                      : l.tone === "success"
+                        ? "text-nd-accent-success"
+                        : l.tone === "warn"
+                          ? "text-nd-accent-warning"
+                          : "text-nd-text-muted"
                   }`}
                 >
                   [{l.time}] {l.text}

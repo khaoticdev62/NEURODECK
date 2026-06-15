@@ -20,7 +20,10 @@ import { Select } from "../../components/primitives/Select";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "../../components/primitives/Tabs";
 import { Toggle } from "../../components/primitives/Toggle";
 import { useTheme } from "../../theme/useTheme";
-import type { AccessibilityProfile, ThemeDisplayTarget } from "../../../shared/theme/themeContracts";
+import type {
+  AccessibilityProfile,
+  ThemeDisplayTarget,
+} from "../../../shared/theme/themeContracts";
 
 const THEME_SETTINGS_KEYS = [
   "activeThemeId",
@@ -55,7 +58,7 @@ export function ThemesView() {
     resetToDefaults,
   } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<typeof TABS[number]>("themes");
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("themes");
   const [showTokenInspector, setShowTokenInspector] = useState(false);
   const [exportStr, setExportStr] = useState("");
   const [importStr, setImportStr] = useState("");
@@ -103,7 +106,11 @@ export function ThemesView() {
         </IconButton>
       }
     >
-      <TabGroup value={activeTab} onChange={(v) => setActiveTab(v as typeof TABS[number])} className="flex h-full flex-col">
+      <TabGroup
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as (typeof TABS)[number])}
+        className="flex h-full flex-col"
+      >
         <div className="border-b border-border-subtle bg-surface-secondary/30 px-4 py-2">
           <TabList aria-label="Theme settings sections">
             {TABS.map((tab) => (
@@ -141,10 +148,22 @@ export function ThemesView() {
 
                       {/* Color Swatch Strip */}
                       <div className="mb-3 flex h-10 overflow-hidden rounded-lg border border-border-subtle">
-                        <div className="flex-1" style={{ background: theme.tokens.color.surface.app }} />
-                        <div className="flex-1" style={{ background: theme.tokens.color.surface.raised }} />
-                        <div className="w-8" style={{ background: theme.tokens.color.accent.primary }} />
-                        <div className="w-8" style={{ background: theme.tokens.color.text.primary }} />
+                        <div
+                          className="flex-1"
+                          style={{ background: theme.tokens.color.surface.app }}
+                        />
+                        <div
+                          className="flex-1"
+                          style={{ background: theme.tokens.color.surface.raised }}
+                        />
+                        <div
+                          className="w-8"
+                          style={{ background: theme.tokens.color.accent.primary }}
+                        />
+                        <div
+                          className="w-8"
+                          style={{ background: theme.tokens.color.text.primary }}
+                        />
                       </div>
 
                       <p className="text-sm font-semibold text-text-primary">{theme.name}</p>
@@ -174,21 +193,29 @@ export function ThemesView() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-3 rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
                     <div className="flex items-center justify-between">
-                      <label className="text-sm font-semibold text-text-primary">Live Wallpaper</label>
+                      <label className="text-sm font-semibold text-text-primary">
+                        Live Wallpaper
+                      </label>
                       <Toggle
                         checked={settings.liveWallpaperEnabled}
-                        onChange={() => updateSettings({ liveWallpaperEnabled: !settings.liveWallpaperEnabled })}
+                        onChange={() =>
+                          updateSettings({ liveWallpaperEnabled: !settings.liveWallpaperEnabled })
+                        }
                         label="Toggle live wallpaper"
                       />
                     </div>
                     <p className="text-xs text-text-secondary">
-                      Enable beautiful dynamic particles or CSS mesh gradients. Disabled on reduced motion.
+                      Enable beautiful dynamic particles or CSS mesh gradients. Disabled on reduced
+                      motion.
                     </p>
                   </div>
 
                   <div className="flex flex-col gap-2 rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
                     <div className="flex items-center justify-between">
-                      <label htmlFor="wall-opacity" className="text-sm font-semibold text-text-primary">
+                      <label
+                        htmlFor="wall-opacity"
+                        className="text-sm font-semibold text-text-primary"
+                      >
                         Background Opacity
                       </label>
                       <span className="text-xs font-semibold text-accent-primary">
@@ -280,12 +307,15 @@ export function ThemesView() {
                       htmlFor="display-profile"
                       className="flex items-center gap-1.5 text-sm font-semibold text-text-primary"
                     >
-                      <Monitor className="h-4 w-4 text-accent-primary" aria-hidden="true" /> Display Profile
+                      <Monitor className="h-4 w-4 text-accent-primary" aria-hidden="true" /> Display
+                      Profile
                     </label>
                     <Select
                       id="display-profile"
                       value={settings.displayProfile}
-                      onChange={(e) => updateSettings({ displayProfile: e.target.value as ThemeDisplayTarget })}
+                      onChange={(e) =>
+                        updateSettings({ displayProfile: e.target.value as ThemeDisplayTarget })
+                      }
                       options={[
                         { value: "steamdeck_lcd", label: "Steam Deck LCD (Contrast Boost)" },
                         { value: "steamdeck_oled", label: "Steam Deck OLED (Absolute Black)" },
@@ -300,12 +330,17 @@ export function ThemesView() {
                       htmlFor="accessibility-profile"
                       className="flex items-center gap-1.5 text-sm font-semibold text-text-primary"
                     >
-                      <Sliders className="h-4 w-4 text-accent-primary" aria-hidden="true" /> Accessibility Mode
+                      <Sliders className="h-4 w-4 text-accent-primary" aria-hidden="true" />{" "}
+                      Accessibility Mode
                     </label>
                     <Select
                       id="accessibility-profile"
                       value={settings.accessibilityProfile}
-                      onChange={(e) => updateSettings({ accessibilityProfile: e.target.value as AccessibilityProfile })}
+                      onChange={(e) =>
+                        updateSettings({
+                          accessibilityProfile: e.target.value as AccessibilityProfile,
+                        })
+                      }
                       options={[
                         { value: "default", label: "Default (Standard Styling)" },
                         { value: "high_contrast", label: "High Contrast (AAA Black/Yellow)" },
@@ -320,7 +355,9 @@ export function ThemesView() {
 
                 {/* Import / Export Panel */}
                 <div className="flex flex-col gap-4 rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
-                  <h4 className="text-sm font-semibold text-text-primary">Import / Export Settings</h4>
+                  <h4 className="text-sm font-semibold text-text-primary">
+                    Import / Export Settings
+                  </h4>
                   <div className="flex flex-col gap-2">
                     <Button variant="primary" size="sm" fullWidth onClick={handleExport}>
                       Generate Export JSON
@@ -364,7 +401,8 @@ export function ThemesView() {
               <div className="flex flex-col gap-4">
                 <div className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4">
                   <h4 className="flex items-center gap-1.5 text-sm font-semibold text-text-primary">
-                    <ShieldAlert className="h-4 w-4 text-accent-primary" aria-hidden="true" /> Theme Engine Health
+                    <ShieldAlert className="h-4 w-4 text-accent-primary" aria-hidden="true" /> Theme
+                    Engine Health
                   </h4>
                   <div className="mt-3 grid grid-cols-2 gap-3 font-mono text-xs">
                     <MetricCard
@@ -402,25 +440,32 @@ export function ThemesView() {
                   {showTokenInspector && (
                     <div className="flex max-h-60 flex-col gap-1.5 overflow-y-auto rounded-xl border border-border-subtle bg-surface-primary p-3 font-mono text-2xs text-text-secondary scrollbar-thin">
                       <p>
-                        <span className="text-accent-primary">--nd-bg</span>: {resolvedTokens.color.surface.app}
+                        <span className="text-accent-primary">--nd-bg</span>:{" "}
+                        {resolvedTokens.color.surface.app}
                       </p>
                       <p>
-                        <span className="text-accent-primary">--nd-surface</span>: {resolvedTokens.color.surface.base}
+                        <span className="text-accent-primary">--nd-surface</span>:{" "}
+                        {resolvedTokens.color.surface.base}
                       </p>
                       <p>
-                        <span className="text-accent-primary">--nd-accent-primary</span>: {resolvedTokens.color.accent.primary}
+                        <span className="text-accent-primary">--nd-accent-primary</span>:{" "}
+                        {resolvedTokens.color.accent.primary}
                       </p>
                       <p>
-                        <span className="text-accent-primary">--nd-text-primary</span>: {resolvedTokens.color.text.primary}
+                        <span className="text-accent-primary">--nd-text-primary</span>:{" "}
+                        {resolvedTokens.color.text.primary}
                       </p>
                       <p>
-                        <span className="text-accent-primary">--nd-text-muted</span>: {resolvedTokens.color.text.muted}
+                        <span className="text-accent-primary">--nd-text-muted</span>:{" "}
+                        {resolvedTokens.color.text.muted}
                       </p>
                       <p>
-                        <span className="text-accent-primary">--nd-glow</span>: {resolvedTokens.color.accent.glow}
+                        <span className="text-accent-primary">--nd-glow</span>:{" "}
+                        {resolvedTokens.color.accent.glow}
                       </p>
                       <p>
-                        <span className="text-accent-primary">--font-body</span>: {resolvedTokens.typography.fontFamily.ui}
+                        <span className="text-accent-primary">--font-body</span>:{" "}
+                        {resolvedTokens.typography.fontFamily.ui}
                       </p>
                     </div>
                   )}
@@ -433,7 +478,9 @@ export function ThemesView() {
           <div className="flex w-full shrink-0 flex-col gap-4 border-t border-border-subtle bg-surface-secondary/20 p-4 md:w-80 md:border-t-0 md:border-l">
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-accent-primary" aria-hidden="true" />
-              <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted">Active Setup</h4>
+              <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-text-muted">
+                Active Setup
+              </h4>
             </div>
             <div className="rounded-xl border border-border-subtle bg-surface-secondary/40 p-3">
               <p className="text-2xs font-bold uppercase text-text-muted">Theme Name</p>
@@ -446,8 +493,8 @@ export function ThemesView() {
                 {settings.displayProfile === "steamdeck_lcd"
                   ? "LCD Mode: Enhanced contrast and luminance settings active."
                   : settings.displayProfile === "steamdeck_oled"
-                  ? "OLED Mode: True black mapping active to optimize screen efficiency."
-                  : "Standard desktop scaling applied."}
+                    ? "OLED Mode: True black mapping active to optimize screen efficiency."
+                    : "Standard desktop scaling applied."}
               </p>
             </div>
 

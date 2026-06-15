@@ -1,8 +1,8 @@
-import * as React from 'react';
+import * as React from "react";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-statuschip-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-statuschip-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-statuschip-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-statuschip-css";
   s.textContent = `
   .nd-chip{display:inline-flex;align-items:center;gap:7px;font-family:var(--nd-font-ui);
     font-weight:600;border:1px solid;border-radius:var(--nd-radius-full);line-height:1;white-space:nowrap;}
@@ -23,9 +23,9 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-statuschip-c
   document.head.appendChild(s);
 }
 
-const GLYPHS = { info: '…', success: '✓', warning: '!', error: '×' };
+const GLYPHS = { info: "…", success: "✓", warning: "!", error: "×" };
 
-export type StatusTone = 'info' | 'success' | 'warning' | 'error';
+export type StatusTone = "info" | "success" | "warning" | "error";
 
 /**
  * Status indicator following NEURODECK's icon + label + color rule. Renders a
@@ -35,7 +35,7 @@ export interface StatusChipProps extends React.HTMLAttributes<HTMLSpanElement> {
   /** @default 'info' */
   tone?: StatusTone;
   /** @default 'md' */
-  size?: 'sm' | 'md';
+  size?: "sm" | "md";
   /** Use a pulsing dot instead of a glyph (e.g. live "running"). @default false */
   pulse?: boolean;
   /** Override the default glyph for the tone. */
@@ -46,24 +46,32 @@ export interface StatusChipProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 export function StatusChip({
-  tone = 'info',
-  size = 'md',
+  tone = "info",
+  size = "md",
   pulse = false,
   glyph,
   icon,
   children,
-  className = '',
+  className = "",
   ...rest
 }: StatusChipProps): React.ReactNode {
-  const cls = ['nd-chip', `nd-chip--${tone}`, `nd-chip--${size}`, className].filter(Boolean).join(' ');
+  const cls = ["nd-chip", `nd-chip--${tone}`, `nd-chip--${size}`, className]
+    .filter(Boolean)
+    .join(" ");
   const mark = glyph ?? GLYPHS[tone];
   return (
     <span className={cls} {...rest}>
-      {icon
-        ? <span className="nd-chip__icon" aria-hidden="true">{icon}</span>
-        : pulse
-          ? <span className="nd-chip__dot nd-chip__dot--pulse" aria-hidden="true" />
-          : <span className="nd-chip__glyph" aria-hidden="true">{mark}</span>}
+      {icon ? (
+        <span className="nd-chip__icon" aria-hidden="true">
+          {icon}
+        </span>
+      ) : pulse ? (
+        <span className="nd-chip__dot nd-chip__dot--pulse" aria-hidden="true" />
+      ) : (
+        <span className="nd-chip__glyph" aria-hidden="true">
+          {mark}
+        </span>
+      )}
       {children}
     </span>
   );

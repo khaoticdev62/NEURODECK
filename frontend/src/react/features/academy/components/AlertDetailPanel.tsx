@@ -1,15 +1,23 @@
-﻿import { useState, useId, useRef, KeyboardEvent } from 'react';
-import { X, ChevronDown, ChevronUp, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
-import { Badge } from '../../../components/primitives/Badge';
-import { Button } from '../../../components/primitives/Button';
-import { MentorPanel } from './MentorPanel';
-import { gradeAlertAnalysis, alertScoreLabel, alertScoreTone } from '../utils/socGrading';
-import type { SocAlert, AlertDisposition, AlertAnalysisState, AlertGradeResult } from '../types';
+﻿import { useState, useId, useRef, KeyboardEvent } from "react";
+import { X, ChevronDown, ChevronUp, CheckCircle2, XCircle, AlertTriangle } from "lucide-react";
+import { Badge } from "../../../components/primitives/Badge";
+import { Button } from "../../../components/primitives/Button";
+import { MentorPanel } from "./MentorPanel";
+import { gradeAlertAnalysis, alertScoreLabel, alertScoreTone } from "../utils/socGrading";
+import type { SocAlert, AlertDisposition, AlertAnalysisState, AlertGradeResult } from "../types";
 
 const DISPOSITION_OPTIONS: { value: AlertDisposition; label: string; description: string }[] = [
-  { value: 'true-positive', label: 'True Positive', description: 'Real malicious activity — escalate' },
-  { value: 'false-positive', label: 'False Positive', description: 'Benign activity — close alert' },
-  { value: 'benign', label: 'Benign', description: 'Expected activity — no action needed' },
+  {
+    value: "true-positive",
+    label: "True Positive",
+    description: "Real malicious activity — escalate",
+  },
+  {
+    value: "false-positive",
+    label: "False Positive",
+    description: "Benign activity — close alert",
+  },
+  { value: "benign", label: "Benign", description: "Expected activity — no action needed" },
 ];
 
 interface AlertDetailPanelProps {
@@ -20,7 +28,7 @@ interface AlertDetailPanelProps {
 
 export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelProps) {
   const [logsExpanded, setLogsExpanded] = useState(false);
-  const [tagInput, setTagInput] = useState('');
+  const [tagInput, setTagInput] = useState("");
   const tagInputId = useId();
   const dispositionId = useId();
   const escalationId = useId();
@@ -32,7 +40,7 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
     if (!state.mitreTags.includes(tag)) {
       onChange({ ...state, mitreTags: [...state.mitreTags, tag] });
     }
-    setTagInput('');
+    setTagInput("");
   }
 
   function removeTag(tag: string) {
@@ -40,10 +48,10 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
   }
 
   function handleTagKeyDown(e: KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' || e.key === ',') {
+    if (e.key === "Enter" || e.key === ",") {
       e.preventDefault();
       addTag(tagInput);
-    } else if (e.key === 'Backspace' && tagInput === '' && state.mitreTags.length > 0) {
+    } else if (e.key === "Backspace" && tagInput === "" && state.mitreTags.length > 0) {
       removeTag(state.mitreTags[state.mitreTags.length - 1]);
     }
   }
@@ -59,8 +67,8 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
     onChange({ ...state, graded: true, gradeResult: result });
   }
 
-  const canSubmit = state.disposition !== '' && !state.graded;
-  const isFP = alert.correctDisposition === 'false-positive';
+  const canSubmit = state.disposition !== "" && !state.graded;
+  const isFP = alert.correctDisposition === "false-positive";
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -133,8 +141,8 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
                     key={opt.value}
                     className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 transition ${
                       state.disposition === opt.value
-                        ? 'border-nd-accent-primary/40 bg-nd-accent-primary/10'
-                        : 'border-nd-border-subtle hover:border-nd-accent-primary/20 hover:bg-nd-surface/30'
+                        ? "border-nd-accent-primary/40 bg-nd-accent-primary/10"
+                        : "border-nd-border-subtle hover:border-nd-accent-primary/20 hover:bg-nd-surface/30"
                     }`}
                   >
                     <input
@@ -198,7 +206,7 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
                     onBlur={() => {
                       if (tagInput.trim()) addTag(tagInput);
                     }}
-                    placeholder={state.mitreTags.length === 0 ? 'T1059, T1027…' : ''}
+                    placeholder={state.mitreTags.length === 0 ? "T1059, T1027…" : ""}
                     className="min-w-[6rem] flex-1 bg-transparent text-[11px] text-nd-text-primary placeholder:text-nd-text-muted/30 focus:outline-none"
                   />
                 </div>
@@ -237,13 +245,7 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
       {/* Submit bar */}
       {!state.graded && (
         <div className="shrink-0 border-t border-nd-border-subtle px-4 py-3">
-          <Button
-            size="md"
-            variant="premium"
-            fullWidth
-            onClick={submit}
-            disabled={!canSubmit}
-          >
+          <Button size="md" variant="premium" fullWidth onClick={submit} disabled={!canSubmit}>
             Submit Analysis
           </Button>
           {!state.disposition && (
@@ -261,7 +263,7 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
           `Severity: ${alert.severity} | Source: ${alert.source}`,
           `Description: ${alert.description}`,
           `Analyst context: ${alert.context}`,
-        ].join('\n')}
+        ].join("\n")}
         greeting={`I'm here to help you think through this alert. What's your question?`}
       />
     </div>
@@ -279,10 +281,10 @@ function GradeDisplay({ result, alert }: GradeDisplayProps) {
   const tone = alertScoreTone(result.score);
 
   const TONE_COLOR: Record<string, string> = {
-    success: 'text-nd-accent-success border-nd-accent-success/30 bg-nd-accent-success/10',
-    accent: 'text-nd-accent-primary border-nd-accent-primary/30 bg-nd-accent-primary/10',
-    warning: 'text-nd-accent-warning border-nd-accent-warning/30 bg-nd-accent-warning/10',
-    danger: 'text-nd-accent-error border-nd-accent-error/30 bg-nd-accent-error/10',
+    success: "text-nd-accent-success border-nd-accent-success/30 bg-nd-accent-success/10",
+    accent: "text-nd-accent-primary border-nd-accent-primary/30 bg-nd-accent-primary/10",
+    warning: "text-nd-accent-warning border-nd-accent-warning/30 bg-nd-accent-warning/10",
+    danger: "text-nd-accent-error border-nd-accent-error/30 bg-nd-accent-error/10",
   };
 
   return (
@@ -326,8 +328,8 @@ function GradeDisplay({ result, alert }: GradeDisplayProps) {
 
         <div className="flex items-center gap-2">
           <span className="w-24 shrink-0 text-[10px] text-nd-text-muted/60">Disposition</span>
-          <Badge tone={alert.correctDisposition === 'true-positive' ? 'danger' : 'success'}>
-            {alert.correctDisposition.replace('-', ' ')}
+          <Badge tone={alert.correctDisposition === "true-positive" ? "danger" : "success"}>
+            {alert.correctDisposition.replace("-", " ")}
           </Badge>
         </div>
 
@@ -349,9 +351,11 @@ function GradeDisplay({ result, alert }: GradeDisplayProps) {
 
         {alert.escalationKeywords.length > 0 && (
           <div className="flex items-start gap-2">
-            <span className="mt-0.5 w-24 shrink-0 text-[10px] text-nd-text-muted/60">Key Terms</span>
+            <span className="mt-0.5 w-24 shrink-0 text-[10px] text-nd-text-muted/60">
+              Key Terms
+            </span>
             <p className="text-[10px] text-nd-text-secondary">
-              {alert.escalationKeywords.join(', ')}
+              {alert.escalationKeywords.join(", ")}
             </p>
           </div>
         )}
@@ -373,10 +377,10 @@ function ScoreRow({
 }) {
   const Icon = correct ? CheckCircle2 : earned > 0 ? AlertTriangle : XCircle;
   const color = correct
-    ? 'text-nd-accent-success'
+    ? "text-nd-accent-success"
     : earned > 0
-    ? 'text-nd-accent-warning'
-    : 'text-nd-accent-error';
+      ? "text-nd-accent-warning"
+      : "text-nd-accent-error";
 
   return (
     <div className="flex items-center gap-3 px-3 py-2">

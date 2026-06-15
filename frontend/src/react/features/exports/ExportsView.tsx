@@ -1,11 +1,17 @@
-import { FileDown, FileJson, FolderOpen, Sparkles } from 'lucide-react';
-import { Badge } from '../../components/primitives/Badge';
-import { Button } from '../../components/primitives/Button';
-import { MetricCard } from '../../components/primitives/MetricCard';
-import { Panel } from '../../components/primitives/Panel';
-import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
+import { FileDown, FileJson, FolderOpen, Sparkles } from "lucide-react";
+import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
+import { MetricCard } from "../../components/primitives/MetricCard";
+import { Panel } from "../../components/primitives/Panel";
+import type { NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
 
-export function ExportsView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
+export function ExportsView({
+  state,
+  actions,
+}: {
+  state: NeuroDeckState;
+  actions: NeuroDeckAppActions;
+}) {
   return (
     <div data-testid="exports-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel eyebrow="Export Manager" title="Session Exports" className="h-full overflow-hidden">
@@ -35,14 +41,31 @@ export function ExportsView({ state, actions }: { state: NeuroDeckState; actions
           )}
 
           <div className="space-y-2 pt-2">
-            <p className="text-2xs font-semibold uppercase tracking-[0.2em] text-text-muted">Session Summary</p>
+            <p className="text-2xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+              Session Summary
+            </p>
             <div className="grid grid-cols-2 gap-3">
-              <MetricCard label="Messages" value={state.messages.length} icon={Sparkles} hint="Current thread" />
-              <MetricCard label="Agent Runs" value={state.aiRuns.length} icon={Sparkles} hint="Executed runs" />
-              <MetricCard label="Memories" value={state.memories.length} icon={Sparkles} hint="Stored facts" />
+              <MetricCard
+                label="Messages"
+                value={state.messages.length}
+                icon={Sparkles}
+                hint="Current thread"
+              />
+              <MetricCard
+                label="Agent Runs"
+                value={state.aiRuns.length}
+                icon={Sparkles}
+                hint="Executed runs"
+              />
+              <MetricCard
+                label="Memories"
+                value={state.memories.length}
+                icon={Sparkles}
+                hint="Stored facts"
+              />
               <MetricCard
                 label="Active Model"
-                value={state.models.find((m) => m.id === state.selectedModelId)?.name ?? '—'}
+                value={state.models.find((m) => m.id === state.selectedModelId)?.name ?? "—"}
                 icon={Sparkles}
                 hint="Selected runtime"
               />
@@ -54,8 +77,8 @@ export function ExportsView({ state, actions }: { state: NeuroDeckState; actions
       <Panel eyebrow="Diagnostics Export" title="Support Bundle">
         <div className="space-y-4 p-4">
           <p className="text-sm leading-relaxed text-text-secondary">
-            Generate a sanitized diagnostics bundle for sharing with support. Contains runtime info, IPC logs, and
-            health data. Secrets are always redacted.
+            Generate a sanitized diagnostics bundle for sharing with support. Contains runtime info,
+            IPC logs, and health data. Secrets are always redacted.
           </p>
           <Button
             variant="primary"
@@ -66,7 +89,9 @@ export function ExportsView({ state, actions }: { state: NeuroDeckState; actions
             Export Diagnostics Bundle
           </Button>
           {state.diagnostics?.diagnosticsDir && (
-            <p className="break-all text-xs text-text-muted">Output: {state.diagnostics.diagnosticsDir}</p>
+            <p className="break-all text-xs text-text-muted">
+              Output: {state.diagnostics.diagnosticsDir}
+            </p>
           )}
         </div>
       </Panel>

@@ -1,19 +1,19 @@
-﻿import { useState } from 'react';
-import { Copy, Check, ChevronDown, ChevronUp, FileText, ShieldAlert } from 'lucide-react';
-import { Badge } from '../../../components/primitives/Badge';
-import { Button } from '../../../components/primitives/Button';
-import { entryToMarkdown, entryToResumeBullet } from '../utils/portfolioExport';
-import type { AcademyPortfolioEntry } from '../../../services/bridgeAdapter';
+﻿import { useState } from "react";
+import { Copy, Check, ChevronDown, ChevronUp, FileText, ShieldAlert } from "lucide-react";
+import { Badge } from "../../../components/primitives/Badge";
+import { Button } from "../../../components/primitives/Button";
+import { entryToMarkdown, entryToResumeBullet } from "../utils/portfolioExport";
+import type { AcademyPortfolioEntry } from "../../../services/bridgeAdapter";
 
 type Entry = AcademyPortfolioEntry;
 
 const SKILL_LABEL: Record<string, string> = {
-  'it-foundations': 'IT Foundations',
-  networking: 'Networking',
-  'operating-systems': 'Operating Systems',
-  'security-fundamentals': 'Security Fundamentals',
-  'soc-triage': 'SOC Triage',
-  'log-analysis': 'Log Analysis',
+  "it-foundations": "IT Foundations",
+  networking: "Networking",
+  "operating-systems": "Operating Systems",
+  "security-fundamentals": "Security Fundamentals",
+  "soc-triage": "SOC Triage",
+  "log-analysis": "Log Analysis",
 };
 
 interface PortfolioCardProps {
@@ -25,9 +25,9 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [copiedMd, setCopiedMd] = useState(false);
   const [copiedResume, setCopiedResume] = useState(false);
-  const isSoc = entry.labId.startsWith('soc-session');
+  const isSoc = entry.labId.startsWith("soc-session");
   const Icon = isSoc ? ShieldAlert : FileText;
-  const iconColor = isSoc ? 'text-nd-accent-error' : 'text-nd-accent-primary';
+  const iconColor = isSoc ? "text-nd-accent-error" : "text-nd-accent-primary";
 
   async function copyMarkdown() {
     await navigator.clipboard.writeText(entryToMarkdown(entry));
@@ -61,9 +61,9 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
           </div>
           <p className="mt-0.5 text-[11px] text-nd-text-muted/60">
             {new Date(entry.timestamp).toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
+              year: "numeric",
+              month: "short",
+              day: "numeric",
             })}
           </p>
           {entry.summary && !expanded && (
@@ -122,7 +122,7 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
                 Commands / Queries
               </p>
               <pre className="overflow-x-auto rounded-md border border-nd-border-subtle bg-black/40 px-3 py-2 text-[10px] font-mono text-nd-text-secondary leading-5">
-                {entry.commandsUsed.join('\n')}
+                {entry.commandsUsed.join("\n")}
               </pre>
             </section>
           )}
@@ -171,7 +171,7 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
               iconPosition="left"
               onClick={copyMarkdown}
             >
-              {copiedMd ? 'Copied MD' : 'Copy MD'}
+              {copiedMd ? "Copied MD" : "Copy MD"}
             </Button>
             <Button
               size="xs"
@@ -180,7 +180,7 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
               iconPosition="left"
               onClick={copyResume}
             >
-              {copiedResume ? 'Copied Bullet' : 'Copy Resume Bullet'}
+              {copiedResume ? "Copied Bullet" : "Copy Resume Bullet"}
             </Button>
           </div>
         </div>

@@ -1,10 +1,10 @@
-import { ArrowDown, ArrowUp, RefreshCw, X, RotateCcw } from 'lucide-react';
-import { MetricCard } from '../../../components/primitives/MetricCard';
-import { StatusChip } from '../../../components/primitives/StatusChip';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { Panel } from '../../../components/primitives/Panel';
-import type { FileTransfer, TransferPeer } from '../../../services/bridgeAdapter';
+import { ArrowDown, ArrowUp, RefreshCw, X, RotateCcw } from "lucide-react";
+import { MetricCard } from "../../../components/primitives/MetricCard";
+import { StatusChip } from "../../../components/primitives/StatusChip";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { Panel } from "../../../components/primitives/Panel";
+import type { FileTransfer, TransferPeer } from "../../../services/bridgeAdapter";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -13,11 +13,11 @@ function formatBytes(n: number): string {
   return `${(n / 1073741824).toFixed(2)} GB`;
 }
 
-function transferTone(status: FileTransfer['status']): 'info' | 'success' | 'warning' | 'error' {
-  if (status === 'Completed') return 'success';
-  if (status === 'Failed' || status === 'Cancelled' || status === 'Rejected') return 'error';
-  if (status === 'Transferring') return 'info';
-  return 'warning';
+function transferTone(status: FileTransfer["status"]): "info" | "success" | "warning" | "error" {
+  if (status === "Completed") return "success";
+  if (status === "Failed" || status === "Cancelled" || status === "Rejected") return "error";
+  if (status === "Transferring") return "info";
+  return "warning";
 }
 
 interface Props {
@@ -29,8 +29,8 @@ interface Props {
 }
 
 export function DashboardTab({ transfers, peers, onCancel, onRetry, onRefresh }: Props) {
-  const active = transfers.filter((t) => t.status === 'Transferring').length;
-  const completed = transfers.filter((t) => t.status === 'Completed').length;
+  const active = transfers.filter((t) => t.status === "Transferring").length;
+  const completed = transfers.filter((t) => t.status === "Completed").length;
 
   return (
     <Panel
@@ -52,8 +52,18 @@ export function DashboardTab({ transfers, peers, onCancel, onRetry, onRefresh }:
       <div className="flex h-full flex-col gap-4 overflow-y-auto">
         <div className="grid grid-cols-3 gap-3">
           <MetricCard label="Active" value={active} icon={RefreshCw} hint="In-progress transfers" />
-          <MetricCard label="Peers" value={peers.length} icon={ArrowUp} hint="Discovered LAN peers" />
-          <MetricCard label="Completed" value={completed} icon={ArrowDown} hint="Finished this session" />
+          <MetricCard
+            label="Peers"
+            value={peers.length}
+            icon={ArrowUp}
+            hint="Discovered LAN peers"
+          />
+          <MetricCard
+            label="Completed"
+            value={completed}
+            icon={ArrowDown}
+            hint="Finished this session"
+          />
         </div>
 
         <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
@@ -71,7 +81,7 @@ export function DashboardTab({ transfers, peers, onCancel, onRetry, onRefresh }:
           <ul role="list" className="flex flex-col gap-2">
             {transfers.map((t) => {
               const pct = Math.min(100, Math.round((t.progress / Math.max(t.size, 1)) * 100));
-              const isTransferring = t.status === 'Transferring';
+              const isTransferring = t.status === "Transferring";
               return (
                 <li
                   key={t.id}
@@ -79,14 +89,17 @@ export function DashboardTab({ transfers, peers, onCancel, onRetry, onRefresh }:
                 >
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 text-nd-text-muted" aria-hidden="true">
-                      {t.direction === 'Incoming' ? (
+                      {t.direction === "Incoming" ? (
                         <ArrowDown className="h-4 w-4" />
                       ) : (
                         <ArrowUp className="h-4 w-4" />
                       )}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-nd-text-primary" title={t.filename}>
+                      <p
+                        className="truncate text-sm font-medium text-nd-text-primary"
+                        title={t.filename}
+                      >
                         {t.filename}
                       </p>
                       <p className="text-xs text-nd-text-muted">
@@ -123,17 +136,18 @@ export function DashboardTab({ transfers, peers, onCancel, onRetry, onRefresh }:
                           <X className="h-3.5 w-3.5" aria-hidden="true" />
                         </IconButton>
                       )}
-                      {(t.status === 'Failed' || t.status === 'Cancelled') && t.direction === 'Outgoing' && (
-                        <IconButton
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          aria-label={`Retry transfer of ${t.filename}`}
-                          onClick={() => onRetry(t.id)}
-                        >
-                          <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
-                        </IconButton>
-                      )}
+                      {(t.status === "Failed" || t.status === "Cancelled") &&
+                        t.direction === "Outgoing" && (
+                          <IconButton
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Retry transfer of ${t.filename}`}
+                            onClick={() => onRetry(t.id)}
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+                          </IconButton>
+                        )}
                     </div>
                   </div>
                 </li>

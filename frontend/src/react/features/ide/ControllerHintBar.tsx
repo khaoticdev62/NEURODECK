@@ -1,5 +1,5 @@
-import { DeckButtonHint } from '../../components/primitives/DeckButtonHint';
-import type { IdeMode } from '../../../shared/ide/ideContracts';
+import { DeckButtonHint } from "../../components/primitives/DeckButtonHint";
+import type { IdeMode } from "../../../shared/ide/ideContracts";
 
 interface HintEntry {
   button: string;
@@ -8,37 +8,37 @@ interface HintEntry {
 
 const MODE_HINTS: Record<IdeMode, HintEntry[]> = {
   IDE_NAVIGATION: [
-    { button: 'A', label: 'Open' },
-    { button: 'B', label: 'Back' },
-    { button: 'Y', label: 'Commands' },
-    { button: 'X', label: 'Completions' },
-    { button: 'L1/R1', label: 'Tabs' },
-    { button: '▶ Start', label: 'Edit mode' },
+    { button: "A", label: "Open" },
+    { button: "B", label: "Back" },
+    { button: "Y", label: "Commands" },
+    { button: "X", label: "Completions" },
+    { button: "L1/R1", label: "Tabs" },
+    { button: "▶ Start", label: "Edit mode" },
   ],
   IDE_EDIT: [
-    { button: 'A', label: 'Accept' },
-    { button: 'B', label: 'Cancel' },
-    { button: 'Y', label: 'Cmd wheel' },
-    { button: 'X', label: 'Pred bar' },
-    { button: 'L5', label: 'Format' },
-    { button: 'R5', label: 'Run' },
+    { button: "A", label: "Accept" },
+    { button: "B", label: "Cancel" },
+    { button: "Y", label: "Cmd wheel" },
+    { button: "X", label: "Pred bar" },
+    { button: "L5", label: "Format" },
+    { button: "R5", label: "Run" },
   ],
   IDE_PREDICTION: [
-    { button: 'A', label: 'Accept' },
-    { button: 'B', label: 'Dismiss' },
-    { button: '↑/↓', label: 'Navigate' },
-    { button: 'L1/R1', label: 'Category' },
+    { button: "A", label: "Accept" },
+    { button: "B", label: "Dismiss" },
+    { button: "↑/↓", label: "Navigate" },
+    { button: "L1/R1", label: "Category" },
   ],
   IDE_COMMAND: [
-    { button: 'A', label: 'Run' },
-    { button: 'B', label: 'Cancel' },
-    { button: '↑/↓', label: 'Select' },
+    { button: "A", label: "Run" },
+    { button: "B", label: "Cancel" },
+    { button: "↑/↓", label: "Select" },
   ],
   IDE_SNIPPET: [
-    { button: 'A', label: 'Insert' },
-    { button: 'B', label: 'Cancel' },
-    { button: 'L1/R1', label: 'Next/Prev' },
-    { button: '↑/↓', label: 'Select' },
+    { button: "A", label: "Insert" },
+    { button: "B", label: "Cancel" },
+    { button: "L1/R1", label: "Next/Prev" },
+    { button: "↑/↓", label: "Select" },
   ],
 };
 

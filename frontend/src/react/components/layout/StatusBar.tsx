@@ -21,7 +21,9 @@ function toneFromConnection(status: string): "success" | "warning" | "error" | "
   return "info";
 }
 
-function toneFromTool(tool: ToolStatus | null | undefined): "success" | "warning" | "error" | "info" {
+function toneFromTool(
+  tool: ToolStatus | null | undefined
+): "success" | "warning" | "error" | "info" {
   if (!tool) return "info";
   if (tool.state === "working") return "info";
   if (tool.state === "error") return "error";
@@ -116,11 +118,7 @@ export function StatusBar({ state }: { state: NeuroDeckState }) {
 
       {/* Tools */}
       {bar.tools?.label && (
-        <StatusChip
-          tone={toneFromTool(bar.tools)}
-          size="sm"
-          pulse={bar.tools.state === "working"}
-        >
+        <StatusChip tone={toneFromTool(bar.tools)} size="sm" pulse={bar.tools.state === "working"}>
           {bar.tools.label}
         </StatusChip>
       )}
@@ -151,7 +149,10 @@ export function StatusBar({ state }: { state: NeuroDeckState }) {
 
         {/* Remote server */}
         {bar.remote.server_running && (
-          <span className="inline-flex items-center gap-1 text-nd-accent-success" title="Remote server running">
+          <span
+            className="inline-flex items-center gap-1 text-nd-accent-success"
+            title="Remote server running"
+          >
             <Server className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden sm:inline">Remote</span>
           </span>
@@ -170,7 +171,10 @@ export function StatusBar({ state }: { state: NeuroDeckState }) {
 
         {/* Safe mode */}
         {bar.safe_mode && (
-          <span className="inline-flex items-center gap-1 text-nd-accent-warning" title="Safe mode active">
+          <span
+            className="inline-flex items-center gap-1 text-nd-accent-warning"
+            title="Safe mode active"
+          >
             <ShieldAlert className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="hidden sm:inline">Safe</span>
           </span>

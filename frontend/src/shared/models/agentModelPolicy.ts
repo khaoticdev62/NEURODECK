@@ -3,9 +3,12 @@ import type {
   AgentModelPolicy,
   SteamDeckModelScore,
   DiscoveredModel,
-} from '../contracts/models.contracts';
-import { isTierAtLeast, hasAllCapabilities } from './modelCompatibilityPolicy';
-import { scoreSteamDeckCompatibility, type SteamDeckScoreOptions } from './steamDeckCompatibilityScorer';
+} from "../contracts/models.contracts";
+import { isTierAtLeast, hasAllCapabilities } from "./modelCompatibilityPolicy";
+import {
+  scoreSteamDeckCompatibility,
+  type SteamDeckScoreOptions,
+} from "./steamDeckCompatibilityScorer";
 
 export function isPolicySatisfied(
   policy: AgentModelPolicy,
@@ -16,7 +19,7 @@ export function isPolicySatisfied(
   if (!hasAllCapabilities(profile, policy.allowedModelCapabilities)) return false;
   if (policy.blockedModelFamilies.some((f) => profile.family.toLowerCase() === f.toLowerCase()))
     return false;
-  if (!policy.allowHeavyModels && profile.compatibilityTier === 'deck_heavy') return false;
+  if (!policy.allowHeavyModels && profile.compatibilityTier === "deck_heavy") return false;
   if (!policy.allowRemoteFallback && profile.steamDeckPolicy.remoteRecommended) return false;
   return true;
 }
@@ -59,13 +62,13 @@ export function selectModelForAgent(
 export function buildDiscoveredModel(
   profile: SupportedModelProfile,
   providerId: string,
-  status: DiscoveredModel['status']
+  status: DiscoveredModel["status"]
 ): DiscoveredModel {
   return {
     id: profile.id,
     name: profile.displayName,
     provider: providerId,
-    providerType: 'ollama',
+    providerType: "ollama",
     size: undefined,
     quantization: profile.recommendedQuantization,
     context: profile.steamDeckPolicy.maxRecommendedContextTokens,

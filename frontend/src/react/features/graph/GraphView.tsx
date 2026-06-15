@@ -113,13 +113,29 @@ function buildGraph(data: GraphData): { nodes: GraphNode[]; edges: GraphEdge[] }
         count = dashboard?.memory_total ?? 0;
         const pb = dashboard?.privacy_breakdown;
         if (pb) {
-          if (pb.standard > 0) leaves.push({ id: "mem-standard", label: "Standard", detail: `${pb.standard} records` });
-          if (pb.private > 0) leaves.push({ id: "mem-private", label: "Private", detail: `${pb.private} records` });
-          if (pb.sensitive > 0) leaves.push({ id: "mem-sensitive", label: "Sensitive", detail: `${pb.sensitive} records` });
-          if (pb.sealed > 0) leaves.push({ id: "mem-sealed", label: "Sealed", detail: `${pb.sealed} records` });
+          if (pb.standard > 0)
+            leaves.push({
+              id: "mem-standard",
+              label: "Standard",
+              detail: `${pb.standard} records`,
+            });
+          if (pb.private > 0)
+            leaves.push({ id: "mem-private", label: "Private", detail: `${pb.private} records` });
+          if (pb.sensitive > 0)
+            leaves.push({
+              id: "mem-sensitive",
+              label: "Sensitive",
+              detail: `${pb.sensitive} records`,
+            });
+          if (pb.sealed > 0)
+            leaves.push({ id: "mem-sealed", label: "Sealed", detail: `${pb.sealed} records` });
         }
         if ((dashboard?.memory_pinned ?? 0) > 0) {
-          leaves.push({ id: "mem-pinned", label: "Pinned", detail: `${dashboard!.memory_pinned} records` });
+          leaves.push({
+            id: "mem-pinned",
+            label: "Pinned",
+            detail: `${dashboard!.memory_pinned} records`,
+          });
         }
         break;
       }
@@ -220,7 +236,13 @@ export function GraphView() {
     loading: true,
   });
   const [hovered, setHovered] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ visible: boolean; x: number; y: number; title: string; detail: string }>({
+  const [tooltip, setTooltip] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    title: string;
+    detail: string;
+  }>({
     visible: false,
     x: 0,
     y: 0,
@@ -230,13 +252,14 @@ export function GraphView() {
 
   const load = async () => {
     setData((d) => ({ ...d, loading: true, error: null }));
-    const [dashboardRes, projectsRes, healthRes, workflowsRes, pluginsRes] = await Promise.allSettled([
-      neurodeckApi.dashboard.stats().catch(() => null),
-      neurodeckApi.projects.list().catch(() => []),
-      neurodeckApi.models.getProviderHealth().catch(() => []),
-      neurodeckApi.workflow.list().catch(() => []),
-      neurodeckApi.plugins.list().catch(() => null),
-    ]);
+    const [dashboardRes, projectsRes, healthRes, workflowsRes, pluginsRes] =
+      await Promise.allSettled([
+        neurodeckApi.dashboard.stats().catch(() => null),
+        neurodeckApi.projects.list().catch(() => []),
+        neurodeckApi.models.getProviderHealth().catch(() => []),
+        neurodeckApi.workflow.list().catch(() => []),
+        neurodeckApi.plugins.list().catch(() => null),
+      ]);
 
     const dashboard = dashboardRes.status === "fulfilled" ? dashboardRes.value : null;
     const projects = projectsRes.status === "fulfilled" ? projectsRes.value : [];
@@ -306,27 +329,62 @@ export function GraphView() {
       title="System Graph"
       className="flex h-full flex-col overflow-hidden"
       action={
-        <IconButton variant="subtle" size="md" aria-label="Refresh graph" onClick={load} disabled={data.loading}>
-          <RefreshCw className={`h-4 w-4 ${data.loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+        <IconButton
+          variant="subtle"
+          size="md"
+          aria-label="Refresh graph"
+          onClick={load}
+          disabled={data.loading}
+        >
+          <RefreshCw
+            className={`h-4 w-4 ${data.loading ? "animate-spin" : ""}`}
+            aria-hidden="true"
+          />
         </IconButton>
       }
     >
       <div className="flex h-full min-h-0 flex-col gap-3 p-4">
         {data.error && (
-          <ErrorState
-            title="Graph load failed"
-            message={data.error}
-            onRetry={() => void load()}
-          />
+          <ErrorState title="Graph load failed" message={data.error} onRetry={() => void load()} />
         )}
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-          <MetricCard label="Sessions" value={dashboard?.sessions_total ?? 0} icon={Network} hint="Total sessions" />
-          <MetricCard label="Memory" value={dashboard?.memory_total ?? 0} icon={Database} hint="Stored records" />
-          <MetricCard label="Projects" value={dashboard?.projects_total ?? 0} icon={FolderOpen} hint="Knowledge spaces" />
-          <MetricCard label="Models" value={data.health.length} icon={Cpu} hint="Provider runtimes" />
-          <MetricCard label="Workflows" value={data.workflows.length} icon={Layers} hint="Automation flows" />
-          <MetricCard label="Plugins" value={data.plugins?.count ?? 0} icon={Server} hint="Registered plugins" />
+          <MetricCard
+            label="Sessions"
+            value={dashboard?.sessions_total ?? 0}
+            icon={Network}
+            hint="Total sessions"
+          />
+          <MetricCard
+            label="Memory"
+            value={dashboard?.memory_total ?? 0}
+            icon={Database}
+            hint="Stored records"
+          />
+          <MetricCard
+            label="Projects"
+            value={dashboard?.projects_total ?? 0}
+            icon={FolderOpen}
+            hint="Knowledge spaces"
+          />
+          <MetricCard
+            label="Models"
+            value={data.health.length}
+            icon={Cpu}
+            hint="Provider runtimes"
+          />
+          <MetricCard
+            label="Workflows"
+            value={data.workflows.length}
+            icon={Layers}
+            hint="Automation flows"
+          />
+          <MetricCard
+            label="Plugins"
+            value={data.plugins?.count ?? 0}
+            icon={Server}
+            hint="Registered plugins"
+          />
         </div>
 
         <div className="relative min-h-0 flex-1 rounded-2xl border border-border-subtle bg-surface-secondary/30">
@@ -374,7 +432,14 @@ export function GraphView() {
             {nodes.map((n) => {
               const r = nodeRadius(n.type);
               const isHovered = hovered === n.id;
-              const dim = hovered && hovered !== n.id && !edges.some((e) => (e.source === hovered && e.target === n.id) || (e.target === hovered && e.source === n.id));
+              const dim =
+                hovered &&
+                hovered !== n.id &&
+                !edges.some(
+                  (e) =>
+                    (e.source === hovered && e.target === n.id) ||
+                    (e.target === hovered && e.source === n.id)
+                );
               const showLabel = n.type !== "leaf" || isHovered;
               return (
                 <g
@@ -387,11 +452,25 @@ export function GraphView() {
                     cy={n.y}
                     r={isHovered ? r + 3 : r}
                     fill="currentColor"
-                    className={n.type === "core" ? "opacity-30" : n.type === "category" ? "opacity-25" : "opacity-80"}
-                    filter={n.type === "core" || n.type === "category" ? "url(#graph-glow)" : undefined}
+                    className={
+                      n.type === "core"
+                        ? "opacity-30"
+                        : n.type === "category"
+                          ? "opacity-25"
+                          : "opacity-80"
+                    }
+                    filter={
+                      n.type === "core" || n.type === "category" ? "url(#graph-glow)" : undefined
+                    }
                   />
                   {n.type === "core" && (
-                    <circle cx={n.x} cy={n.y} r={r - 8} fill="currentColor" className="opacity-90" />
+                    <circle
+                      cx={n.x}
+                      cy={n.y}
+                      r={r - 8}
+                      fill="currentColor"
+                      className="opacity-90"
+                    />
                   )}
                   {showLabel && (
                     <text
@@ -415,7 +494,9 @@ export function GraphView() {
               style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
             >
               <div className="text-xs font-semibold text-text-primary">{tooltip.title}</div>
-              {tooltip.detail && <div className="mt-0.5 text-2xs text-text-secondary">{tooltip.detail}</div>}
+              {tooltip.detail && (
+                <div className="mt-0.5 text-2xs text-text-secondary">{tooltip.detail}</div>
+              )}
             </div>
           )}
 

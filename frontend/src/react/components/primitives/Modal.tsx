@@ -1,8 +1,5 @@
-import { type ReactNode } from 'react';
-import {
-  Modal as DSModal,
-  type ModalSize,
-} from '../../../design-system/components/feedback/Modal';
+import { type ReactNode } from "react";
+import { Modal as DSModal, type ModalSize } from "../../../design-system/components/feedback/Modal";
 
 interface ModalProps {
   open: boolean;
@@ -20,7 +17,7 @@ export function Modal({
   onClose,
   title,
   description,
-  size = 'md',
+  size = "md",
   children,
   footer,
   closeOnBackdrop = true,

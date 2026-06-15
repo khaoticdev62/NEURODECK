@@ -1,23 +1,23 @@
-import { useCallback, useEffect, useState } from 'react';
-import { IdCard, Plus, Trash2 } from 'lucide-react';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { Button } from '../../../components/primitives/Button';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { Panel } from '../../../components/primitives/Panel';
-import { Select } from '../../../components/primitives/Select';
-import { TextInput } from '../../../components/primitives/TextInput';
-import { Toggle } from '../../../components/primitives/Toggle';
-import { Badge } from '../../../components/primitives/Badge';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import type { SyncProfile, TrustedPeer } from '../../../services/bridgeAdapter';
+import { useCallback, useEffect, useState } from "react";
+import { IdCard, Plus, Trash2 } from "lucide-react";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { Button } from "../../../components/primitives/Button";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { Panel } from "../../../components/primitives/Panel";
+import { Select } from "../../../components/primitives/Select";
+import { TextInput } from "../../../components/primitives/TextInput";
+import { Toggle } from "../../../components/primitives/Toggle";
+import { Badge } from "../../../components/primitives/Badge";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import type { SyncProfile, TrustedPeer } from "../../../services/bridgeAdapter";
 
-const MODE_OPTIONS: { value: SyncProfile['mode']; label: string }[] = [
-  { value: 'lan', label: 'LAN' },
-  { value: 'vpn_manual', label: 'VPN Manual' },
-  { value: 'vpn_mesh', label: 'VPN Mesh' },
-  { value: 'hybrid', label: 'Hybrid' },
-  { value: 'receive_only', label: 'Receive Only' },
-  { value: 'send_only', label: 'Send Only' },
+const MODE_OPTIONS: { value: SyncProfile["mode"]; label: string }[] = [
+  { value: "lan", label: "LAN" },
+  { value: "vpn_manual", label: "VPN Manual" },
+  { value: "vpn_mesh", label: "VPN Mesh" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "receive_only", label: "Receive Only" },
+  { value: "send_only", label: "Send Only" },
 ];
 
 interface Props {
@@ -29,15 +29,15 @@ interface Props {
 
 export function ProfilesTab({ groupCode, inboxPath, trustedPeers, onError }: Props) {
   const [profiles, setProfiles] = useState<SyncProfile[]>([]);
-  const [name, setName] = useState('Home LAN');
-  const [mode, setMode] = useState<SyncProfile['mode']>('lan');
+  const [name, setName] = useState("Home LAN");
+  const [mode, setMode] = useState<SyncProfile["mode"]>("lan");
   const [vpnOnly, setVpnOnly] = useState(false);
   const [autoAcceptTrusted, setAutoAcceptTrusted] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const refreshProfiles = useCallback(async () => {
     try {
-      const res = await neurodeckApi.transfer.profiles('list');
+      const res = await neurodeckApi.transfer.profiles("list");
       setProfiles(res.profiles ?? []);
     } catch (e) {
       onError(`Profile load failed: ${e}`);
@@ -52,17 +52,17 @@ export function ProfilesTab({ groupCode, inboxPath, trustedPeers, onError }: Pro
     if (!name.trim()) return;
     setSaving(true);
     try {
-      await neurodeckApi.transfer.profiles('add', {
+      await neurodeckApi.transfer.profiles("add", {
         name: name.trim(),
         mode,
         enabled: true,
-        preferred_interface: vpnOnly ? 'vpn-auto' : 'auto',
+        preferred_interface: vpnOnly ? "vpn-auto" : "auto",
         incoming_folder: inboxPath,
         auto_accept_trusted: autoAcceptTrusted,
-        compression: 'auto',
+        compression: "auto",
         vpn_only: vpnOnly,
       });
-      setName('');
+      setName("");
       await refreshProfiles();
     } catch (e) {
       onError(`Profile save failed: ${e}`);
@@ -73,7 +73,7 @@ export function ProfilesTab({ groupCode, inboxPath, trustedPeers, onError }: Pro
 
   const handleRemove = async (id: string) => {
     try {
-      await neurodeckApi.transfer.profiles('remove', { id });
+      await neurodeckApi.transfer.profiles("remove", { id });
       await refreshProfiles();
     } catch (e) {
       onError(`Profile remove failed: ${e}`);
@@ -83,7 +83,10 @@ export function ProfilesTab({ groupCode, inboxPath, trustedPeers, onError }: Pro
   return (
     <Panel eyebrow="Profiles" title="Sync Profiles" className="h-full">
       <div className="flex h-full flex-col gap-4 overflow-y-auto">
-        <section aria-label="Create sync profile" className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+        <section
+          aria-label="Create sync profile"
+          className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4"
+        >
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
             Create Profile
           </h3>
@@ -98,7 +101,7 @@ export function ProfilesTab({ groupCode, inboxPath, trustedPeers, onError }: Pro
             <Select
               label="Mode"
               value={mode}
-              onChange={(e) => setMode(e.target.value as SyncProfile['mode'])}
+              onChange={(e) => setMode(e.target.value as SyncProfile["mode"])}
               options={MODE_OPTIONS}
               fullWidth
             />
@@ -134,7 +137,7 @@ export function ProfilesTab({ groupCode, inboxPath, trustedPeers, onError }: Pro
               Saved Profiles
             </h3>
             <span className="text-xs text-nd-text-muted">
-              {trustedPeers.length} trusted peers · group {groupCode ? 'set' : 'default'}
+              {trustedPeers.length} trusted peers · group {groupCode ? "set" : "default"}
             </span>
           </div>
           {profiles.length === 0 ? (
@@ -156,17 +159,31 @@ export function ProfilesTab({ groupCode, inboxPath, trustedPeers, onError }: Pro
                       <IdCard className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-nd-text-primary">{profile.name}</p>
+                      <p className="truncate text-sm font-medium text-nd-text-primary">
+                        {profile.name}
+                      </p>
                       <p className="mt-1 text-xs text-nd-text-muted">
-                        {profile.mode.replace('_', ' ')} · {profile.vpn_only ? 'VPN-only' : 'LAN allowed'} · {profile.auto_accept_trusted ? 'trusted auto-accept' : 'manual accept'}
+                        {profile.mode.replace("_", " ")} ·{" "}
+                        {profile.vpn_only ? "VPN-only" : "LAN allowed"} ·{" "}
+                        {profile.auto_accept_trusted ? "trusted auto-accept" : "manual accept"}
                       </p>
                       <p className="mt-1 break-all font-mono text-[11px] text-nd-text-muted">
                         {profile.incoming_folder}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        <Badge tone="accent" variant="outline" size="sm">{profile.mode.replace('_', ' ')}</Badge>
-                        {profile.vpn_only && <Badge tone="warning" variant="outline" size="sm">VPN-only</Badge>}
-                        {profile.auto_accept_trusted && <Badge tone="success" variant="outline" size="sm">Auto-accept</Badge>}
+                        <Badge tone="accent" variant="outline" size="sm">
+                          {profile.mode.replace("_", " ")}
+                        </Badge>
+                        {profile.vpn_only && (
+                          <Badge tone="warning" variant="outline" size="sm">
+                            VPN-only
+                          </Badge>
+                        )}
+                        {profile.auto_accept_trusted && (
+                          <Badge tone="success" variant="outline" size="sm">
+                            Auto-accept
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <IconButton

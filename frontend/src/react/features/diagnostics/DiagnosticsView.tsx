@@ -138,7 +138,9 @@ export function DiagnosticsView({
 
   const selectedConnection = matrix.find((c) => c.id === selectedConnectionId);
 
-  const getStatusTone = (connState: string): { tone: "success" | "warning" | "error" | "info"; label: string } => {
+  const getStatusTone = (
+    connState: string
+  ): { tone: "success" | "warning" | "error" | "info"; label: string } => {
     switch (connState) {
       case "connected":
       case "passed":
@@ -202,7 +204,10 @@ export function DiagnosticsView({
           {diagnostics ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <RuntimeRow label="Platform" value={`${diagnostics.platform}/${diagnostics.arch}`} />
+                <RuntimeRow
+                  label="Platform"
+                  value={`${diagnostics.platform}/${diagnostics.arch}`}
+                />
                 <RuntimeRow label="Electron" value={diagnostics.electron} />
                 <RuntimeRow label="Chrome" value={diagnostics.chrome} />
                 <RuntimeRow label="Node" value={diagnostics.node} />
@@ -216,7 +221,10 @@ export function DiagnosticsView({
                 <RuntimeRow label="Store" value={diagnostics.storeFile} wrap />
                 <RuntimeRow label="Exports" value={diagnostics.exportsDir} wrap />
               </div>
-              <DiagnosticsPanel title="Runtime Health Checks" checks={buildRuntimeChecks(diagnostics)} />
+              <DiagnosticsPanel
+                title="Runtime Health Checks"
+                checks={buildRuntimeChecks(diagnostics)}
+              />
             </div>
           ) : (
             <EmptyState
@@ -249,8 +257,8 @@ export function DiagnosticsView({
       >
         <div className="space-y-3 p-4">
           <p className="text-xs text-text-secondary">
-            The Connection Matrix monitors operational connections in real-time. Click any connection to view
-            its diagnostic timeline and raw evidence logs.
+            The Connection Matrix monitors operational connections in real-time. Click any
+            connection to view its diagnostic timeline and raw evidence logs.
           </p>
 
           {matrixError && (
@@ -324,7 +332,10 @@ export function DiagnosticsView({
                     onClick={(e) => runSingleProbe(conn.id, e)}
                     disabled={isProbing[conn.id]}
                   >
-                    <Play className={`h-3.5 w-3.5 ${isProbing[conn.id] ? "animate-spin" : ""}`} aria-hidden="true" />
+                    <Play
+                      className={`h-3.5 w-3.5 ${isProbing[conn.id] ? "animate-spin" : ""}`}
+                      aria-hidden="true"
+                    />
                   </IconButton>
                 </div>
               );
@@ -353,14 +364,28 @@ export function DiagnosticsView({
           <div className="space-y-4 p-4">
             {/* Quick Metrics Header Card */}
             <div className="grid grid-cols-2 gap-2 rounded-xl border border-border-subtle bg-surface-secondary/30 p-3 text-xs">
-              <MetricCard label="Category" value={selectedConnection.category.toUpperCase()} icon={Server} hint="Connection type" />
+              <MetricCard
+                label="Category"
+                value={selectedConnection.category.toUpperCase()}
+                icon={Server}
+                hint="Connection type"
+              />
               <MetricCard
                 label="Latency"
-                value={selectedConnection.latencyMs !== null ? `${selectedConnection.latencyMs} ms` : "N/A"}
+                value={
+                  selectedConnection.latencyMs !== null
+                    ? `${selectedConnection.latencyMs} ms`
+                    : "N/A"
+                }
                 icon={Clock}
                 hint="Last probe"
               />
-              <MetricCard label="Probes Ran" value={selectedConnection.requestCount} icon={Zap} hint="Total attempts" />
+              <MetricCard
+                label="Probes Ran"
+                value={selectedConnection.requestCount}
+                icon={Zap}
+                hint="Total attempts"
+              />
               <MetricCard
                 label="Success Rate"
                 value={
@@ -401,11 +426,15 @@ export function DiagnosticsView({
 
                         <div className="rounded-lg border border-border-subtle bg-surface-secondary/40 p-2.5 transition duration-fast hover:bg-surface-tertiary/30">
                           <div className="mb-1 flex items-center justify-between text-2xs text-text-secondary">
-                            <span className="font-mono text-text-muted/70">{ev.requestId || "req-unknown"}</span>
+                            <span className="font-mono text-text-muted/70">
+                              {ev.requestId || "req-unknown"}
+                            </span>
                             <span>{new Date(ev.timestamp).toLocaleTimeString()}</span>
                           </div>
 
-                          <p className="font-medium leading-relaxed text-text-primary">{ev.summary}</p>
+                          <p className="font-medium leading-relaxed text-text-primary">
+                            {ev.summary}
+                          </p>
 
                           <div className="mt-1.5 flex flex-wrap items-center gap-3 border-t border-border-subtle pt-1.5 font-mono text-2xs text-text-secondary/80">
                             {ev.durationMs !== undefined && <span>time: {ev.durationMs}ms</span>}
@@ -427,7 +456,11 @@ export function DiagnosticsView({
           </div>
         </Panel>
       ) : (
-        <Panel eyebrow="IPC Logs" title="Recent Main Process Events" className="min-h-0 overflow-hidden">
+        <Panel
+          eyebrow="IPC Logs"
+          title="Recent Main Process Events"
+          className="min-h-0 overflow-hidden"
+        >
           <div className="h-full overflow-y-auto p-4 scrollbar-thin">
             {!state.diagnosticLogs.length && (
               <div className="flex h-full items-center justify-center">
@@ -515,7 +548,8 @@ function RuntimeRow({
 }
 
 function LogCard({ log }: { log: DiagnosticLog }) {
-  const Icon = log.level === "error" ? AlertTriangle : log.level === "warning" ? AlertTriangle : CheckCircle2;
+  const Icon =
+    log.level === "error" ? AlertTriangle : log.level === "warning" ? AlertTriangle : CheckCircle2;
   const tone: "danger" | "warning" | "success" =
     log.level === "error" ? "danger" : log.level === "warning" ? "warning" : "success";
   return (
@@ -523,15 +557,23 @@ function LogCard({ log }: { log: DiagnosticLog }) {
       <div className="flex items-start gap-3">
         <Icon
           className={`mt-0.5 h-5 w-5 ${
-            tone === "danger" ? "text-accent-error" : tone === "warning" ? "text-accent-warning" : "text-accent-success"
+            tone === "danger"
+              ? "text-accent-error"
+              : tone === "warning"
+                ? "text-accent-warning"
+                : "text-accent-success"
           }`}
           aria-hidden="true"
         />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={tone}>{log.level}</Badge>
-            <span className="text-2xs uppercase tracking-[0.2em] text-text-muted/80">{log.scope}</span>
-            <span className="text-2xs text-text-muted/70">{new Date(log.timestamp).toLocaleTimeString()}</span>
+            <span className="text-2xs uppercase tracking-[0.2em] text-text-muted/80">
+              {log.scope}
+            </span>
+            <span className="text-2xs text-text-muted/70">
+              {new Date(log.timestamp).toLocaleTimeString()}
+            </span>
           </div>
           <h3 className="mt-2 font-semibold text-text-primary">{log.message}</h3>
           {log.details && (

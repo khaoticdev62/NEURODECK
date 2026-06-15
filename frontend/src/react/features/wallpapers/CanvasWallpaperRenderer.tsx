@@ -187,45 +187,50 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     };
   }, [wallpaperId, isPaused, performanceTier]);
 
-  const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    const ac = resolvedTokens?.color?.accent?.primary ?? "#5EEBFF";
-    const sc = resolvedTokens?.color?.state?.success ?? "#00FF88";
+  const draw = useCallback(
+    (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+      const ac = resolvedTokens?.color?.accent?.primary ?? "#5EEBFF";
+      const sc = resolvedTokens?.color?.state?.success ?? "#00FF88";
 
-    if (wallpaperId === "terminal_rainfield") {
-      drawMatrix(ctx, w, h, ac);
-    } else if (wallpaperId === "oled_starfield") {
-      drawStarfield(ctx, w, h, ac, sc);
-    } else if (wallpaperId === "ghost_particles") {
-      drawParticles(ctx, w, h, ac);
-    } else if (wallpaperId === "tactical_signal_grid") {
-      drawGrid(ctx, w, h, ac, sc);
-    } else if (wallpaperId === "deep_space_radar") {
-      drawRadar(ctx, w, h, ac, sc);
-    } else if (wallpaperId === "solar_circuit") {
-      drawCircuit(ctx, w, h, ac, sc);
-    } else if (wallpaperId === "command_waveform") {
-      drawWave(ctx, w, h, ac, sc);
-    } else if (wallpaperId === "code_stream") {
-      drawAscii(ctx, w, h, ac);
-    }
-  }, [resolvedTokens, wallpaperId]);
+      if (wallpaperId === "terminal_rainfield") {
+        drawMatrix(ctx, w, h, ac);
+      } else if (wallpaperId === "oled_starfield") {
+        drawStarfield(ctx, w, h, ac, sc);
+      } else if (wallpaperId === "ghost_particles") {
+        drawParticles(ctx, w, h, ac);
+      } else if (wallpaperId === "tactical_signal_grid") {
+        drawGrid(ctx, w, h, ac, sc);
+      } else if (wallpaperId === "deep_space_radar") {
+        drawRadar(ctx, w, h, ac, sc);
+      } else if (wallpaperId === "solar_circuit") {
+        drawCircuit(ctx, w, h, ac, sc);
+      } else if (wallpaperId === "command_waveform") {
+        drawWave(ctx, w, h, ac, sc);
+      } else if (wallpaperId === "code_stream") {
+        drawAscii(ctx, w, h, ac);
+      }
+    },
+    [resolvedTokens, wallpaperId]
+  );
 
   // Keep the ref in sync so the stable rAF loop always uses the latest draw
-  useEffect(() => { drawRef.current = draw; }, [draw]);
+  useEffect(() => {
+    drawRef.current = draw;
+  }, [draw]);
 
   const drawMatrix = (ctx: CanvasRenderingContext2D, w: number, h: number, ac: string) => {
     ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
     ctx.fillRect(0, 0, w, h);
     ctx.font = "14px monospace";
     const ps = particlesRef.current as number[];
-    
+
     ctx.shadowBlur = 4;
     ctx.shadowColor = ac;
 
     for (let i = 0; i < ps.length; i++) {
       const y = ps[i];
       const char = String.fromCharCode(33 + Math.floor(Math.random() * 93));
-      
+
       if (Math.random() > 0.985) {
         ctx.fillStyle = "#ffffff";
         ctx.shadowBlur = 10;
@@ -237,7 +242,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
         ctx.shadowColor = ac;
         ctx.fillText(char, i * 16, y);
       }
-      
+
       ps[i] += 14;
       if (ps[i] > h && Math.random() > 0.98) {
         ps[i] = 0;
@@ -259,7 +264,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     const cx = w / 2;
     const cy = h / 2;
     const speed = performanceTier === "battery_saver" ? 2 : 4;
-    
+
     angleRef.current = (angleRef.current + 0.002) % (Math.PI * 2);
     const nebulaX1 = cx + Math.cos(angleRef.current) * (w * 0.15);
     const nebulaY1 = cy + Math.sin(angleRef.current) * (h * 0.15);
@@ -278,7 +283,12 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.fillStyle = grad2;
     ctx.fillRect(0, 0, w, h);
 
-    const ps = particlesRef.current as Array<{ x: number; y: number; z: number; isAccent: boolean }>;
+    const ps = particlesRef.current as Array<{
+      x: number;
+      y: number;
+      z: number;
+      isAccent: boolean;
+    }>;
     const mx = mouseRef.current.x;
     const my = mouseRef.current.y;
 
@@ -303,7 +313,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
         const dy = ny - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 150) {
-          const pushForce = (150 - dist) / 150 * 15;
+          const pushForce = ((150 - dist) / 150) * 15;
           nx += (dx / (dist || 1)) * pushForce;
           ny += (dy / (dist || 1)) * pushForce;
         }
@@ -459,7 +469,11 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
       ctx.font = "8px monospace";
       ctx.globalAlpha = 0.35;
       ctx.fillText(`SYS_LOC: [${Math.floor(mx)}, ${Math.floor(my)}]`, mx + 12, my + 3);
-      ctx.fillText(`GRID_SEC: ${(mx / w * 10).toFixed(0)}-${(my / h * 10).toFixed(0)}`, mx + 12, my + 13);
+      ctx.fillText(
+        `GRID_SEC: ${((mx / w) * 10).toFixed(0)}-${((my / h) * 10).toFixed(0)}`,
+        mx + 12,
+        my + 13
+      );
     }
     ctx.globalAlpha = 1;
   };
@@ -550,7 +564,9 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
         n.x = cx + Math.cos(angle) * radius;
         n.y = cy + Math.sin(angle) * radius;
         n.alpha = Math.random();
-        n.label = `TGT_${Math.floor(Math.random() * 256).toString(16).toUpperCase()}`;
+        n.label = `TGT_${Math.floor(Math.random() * 256)
+          .toString(16)
+          .toUpperCase()}`;
         continue;
       }
 
@@ -601,11 +617,11 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
 
     for (let i = 0; i < ps.length; i++) {
       const line = ps[i];
-      
+
       if (line.points.length > 0 && line.stepsRemaining > 0) {
         const last = line.points[line.points.length - 1];
         line.stepsRemaining--;
-        
+
         line.points.push({
           x: last.x + line.dirX * line.growSpeed,
           y: last.y + line.dirY * line.growSpeed,
@@ -642,7 +658,8 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
         ctx.arc(start.x, start.y, 2, 0, Math.PI * 2);
         ctx.fill();
 
-        const pulseIndex = Math.floor((1 - line.alpha) * 4 * line.points.length) % line.points.length;
+        const pulseIndex =
+          Math.floor((1 - line.alpha) * 4 * line.points.length) % line.points.length;
         if (pulseIndex >= 0 && pulseIndex < line.points.length) {
           const pt = line.points[pulseIndex];
           ctx.fillStyle = "#ffffff";
@@ -678,7 +695,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     const waves = [
       { amplitude: 45, freq: 0.003, speed: 0.8, color: ac, opacity: 0.1 },
       { amplitude: 25, freq: 0.005, speed: 1.3, color: rc, opacity: 0.08 },
-      { amplitude: 18, freq: 0.008, speed: 0.6, color: "#9333EA", opacity: 0.06 }
+      { amplitude: 18, freq: 0.008, speed: 0.6, color: "#9333EA", opacity: 0.06 },
     ];
 
     for (const wave of waves) {
@@ -690,14 +707,14 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
       ctx.strokeStyle = grad;
       ctx.lineWidth = 1.6;
       ctx.globalAlpha = wave.opacity;
-      
+
       ctx.beginPath();
       ctx.moveTo(0, midY);
 
       for (let x = 0; x < w; x += 12) {
         let waveFlex = 1.0;
         let waveFreqShift = 0.0;
-        
+
         if (mx > 0 && my > 0) {
           const distToMouse = Math.abs(x - mx);
           if (distToMouse < 220) {
@@ -723,7 +740,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
     ctx.fillStyle = "rgba(2, 3, 5, 0.09)";
     ctx.fillRect(0, 0, w, h);
     ctx.font = "12px Courier, monospace";
-    
+
     const ps = particlesRef.current as Array<{
       text: string;
       y: number;
@@ -733,12 +750,12 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
 
     for (const line of ps) {
       ctx.globalAlpha = line.alpha;
-      
+
       ctx.fillStyle = ac;
       ctx.fillText(line.text, 25, line.y);
 
       line.y -= line.speed;
-      
+
       if (line.y < -20) {
         line.y = h + 20;
         line.text = LOG_LINES[Math.floor(Math.random() * LOG_LINES.length)];

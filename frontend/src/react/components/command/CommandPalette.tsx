@@ -1,18 +1,68 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Dispatch } from 'react';
-import { Activity, ArrowLeftRight, BookOpen, Bot, BrainCircuit, CalendarClock, Code, Database, Download, FileDown, FileJson, FolderOpen, GitBranch, Globe, GraduationCap, HardDrive, History, Layers, Lock, Magnet, MonitorPlay, Network, Paintbrush, Palette, Plug, Radio, RefreshCcw, RotateCcw, Search, Settings, Share2, ShieldCheck, Sparkles, Terminal, TerminalSquare, Trash2, Type, Webhook, Workflow, Wrench } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import { starterPrompts } from '../../types/seed';
-import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from '../../types/neurodeck';
-import type { OnboardingMode } from '../../onboarding/onboarding.types';
-import { useControllerAction } from '../../input/controller/useControllerAction';
-import { Badge } from '../primitives/Badge';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { Dispatch } from "react";
+import {
+  Activity,
+  ArrowLeftRight,
+  BookOpen,
+  Bot,
+  BrainCircuit,
+  CalendarClock,
+  Code,
+  Database,
+  Download,
+  FileDown,
+  FileJson,
+  FolderOpen,
+  GitBranch,
+  Globe,
+  GraduationCap,
+  HardDrive,
+  History,
+  Layers,
+  Lock,
+  Magnet,
+  MonitorPlay,
+  Network,
+  Paintbrush,
+  Palette,
+  Plug,
+  Radio,
+  RefreshCcw,
+  RotateCcw,
+  Search,
+  Settings,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  Terminal,
+  TerminalSquare,
+  Trash2,
+  Type,
+  Webhook,
+  Workflow,
+  Wrench,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { starterPrompts } from "../../types/seed";
+import type {
+  NeuroDeckAction,
+  NeuroDeckAppActions,
+  NeuroDeckState,
+  ViewId,
+} from "../../types/neurodeck";
+import type { OnboardingMode } from "../../onboarding/onboarding.types";
+import { useControllerAction } from "../../input/controller/useControllerAction";
+import { Badge } from "../primitives/Badge";
 
-const RECENT_KEY = 'neurodeck:recent-commands';
+const RECENT_KEY = "neurodeck:recent-commands";
 const MAX_RECENT = 6;
 
 function readRecent(): string[] {
-  try { return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]'); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
 }
 function writeRecent(recents: string[]) {
   localStorage.setItem(RECENT_KEY, JSON.stringify(recents.slice(0, MAX_RECENT)));
@@ -43,7 +93,14 @@ function highlightMatch(text: string, query: string): (string | React.JSX.Elemen
     const sub = t.slice(i, i + q.length);
     if (sub === q) {
       if (i > lastIndex) result.push(text.slice(lastIndex, i));
-      result.push(<mark key={i} className="rounded bg-[var(--nd-accent-primary)]/20 text-[var(--nd-accent-primary)]">{text.slice(i, i + q.length)}</mark>);
+      result.push(
+        <mark
+          key={i}
+          className="rounded bg-[var(--nd-accent-primary)]/20 text-[var(--nd-accent-primary)]"
+        >
+          {text.slice(i, i + q.length)}
+        </mark>
+      );
       lastIndex = i + q.length;
       i += q.length - 1;
     }
@@ -52,7 +109,16 @@ function highlightMatch(text: string, query: string): (string | React.JSX.Elemen
   return result;
 }
 
-type ActionName = keyof Pick<NeuroDeckAppActions, 'scanProject' | 'buildProjectContext' | 'detectModels' | 'checkAiHealth' | 'refreshDiagnostics' | 'exportSession' | 'saveSession'>;
+type ActionName = keyof Pick<
+  NeuroDeckAppActions,
+  | "scanProject"
+  | "buildProjectContext"
+  | "detectModels"
+  | "checkAiHealth"
+  | "refreshDiagnostics"
+  | "exportSession"
+  | "saveSession"
+>;
 
 type CommandItem = {
   label: string;
@@ -63,60 +129,252 @@ type CommandItem = {
   action?: ActionName;
   prompt?: string;
   runPrompt?: boolean;
-  onboardingMode?: Exclude<OnboardingMode, 'setup'>;
+  onboardingMode?: Exclude<OnboardingMode, "setup">;
 };
 
 const commands: CommandItem[] = [
-  { label: 'Open Workspace', hint: 'Mission control and composer', view: 'chat', icon: Sparkles },
-  { label: 'Open Execution Layer', hint: 'Agent runs and tool audit history', view: 'execution', icon: Workflow },
-  { label: 'Open Canvas', hint: 'Live code editor and execution', view: 'canvas', icon: Paintbrush },
-  { label: 'Open Terminal', hint: 'PTY shell sessions', view: 'terminal', icon: Terminal },
-  { label: 'Open SSH', hint: 'Secure shell connections', view: 'ssh', icon: Lock },
-  { label: 'Open Tunnel', hint: 'SteamOS bridge controls', view: 'tunnel', icon: ArrowLeftRight },
-  { label: 'Open Share', hint: 'LAN transfer and peer panels', view: 'share', icon: Share2 },
-  { label: 'Open Browser', hint: 'Embedded web browser', view: 'browser', icon: Globe },
-  { label: 'Open Agent Dock', hint: 'Run specialized AI operators', view: 'agent', icon: Bot },
-  { label: 'Open Memory Vault', hint: 'Pinned project knowledge', view: 'memory', icon: Database },
-  { label: 'Open Prompt Lab', hint: 'Prompt engineering formulas and PromptDrive', view: 'prompt-lab', icon: Sparkles },
-  { label: 'Open Academy', hint: 'SOC Forge — cybersecurity labs, tracks, and portfolio', view: 'academy', icon: GraduationCap },
-  { label: 'Open Remote', hint: 'Mobile remote control server', view: 'remote', icon: Radio },
-  { label: 'Open Docs', hint: 'Knowledge base and indexed docs', view: 'docs', icon: BookOpen },
-  { label: 'Open IDE', hint: 'Integrated code workspace with file tree and editor', view: 'ide', icon: Code },
-  { label: 'Open Git', hint: 'Repository status, diff, commit, and branch operations', view: 'git', icon: GitBranch },
-  { label: 'Open API Lab', hint: 'Interactive HTTP request builder and tester', view: 'api-lab', icon: Webhook },
-  { label: 'Open CLI Maker', hint: 'Visual CLI argument schema builder', view: 'cli-maker', icon: TerminalSquare },
-  { label: 'Open Torrent', hint: 'BitTorrent and magnet-link downloads', view: 'torrent', icon: Magnet },
-  { label: 'Open Project', hint: 'Project folder scan, stack detection, and context', view: 'project', icon: FolderOpen },
-  { label: 'Open Graph', hint: 'Knowledge and memory relationship visualizer', view: 'graph', icon: Network },
-  { label: 'Open Scheduler', hint: 'Cron job management and timed automation', view: 'scheduler', icon: CalendarClock },
-  { label: 'Open Sync', hint: 'LAN file transfer — Warpinator/Winpinator compatible', view: 'sync', icon: RefreshCcw },
-  { label: 'Open Orchestrator', hint: 'Multi-step LLM pipeline builder', view: 'orchestrator', icon: Layers },
-  { label: 'Open Plugins', hint: 'Lua plugin manager and extension tools', view: 'plugins', icon: Plug },
-  { label: 'Open Diagnostics', hint: 'IPC logs, runtime health, and connection matrix', view: 'diagnostics', icon: Activity },
-  { label: 'Open Sessions', hint: 'Saved conversations and export history', view: 'sessions', icon: History },
-  { label: 'Open Font Manager', hint: 'Typography preferences and font preview', view: 'fonts', icon: Type },
-  { label: 'Scan Project Folder', hint: 'Select a folder and detect stack, risks, scripts, and docs', icon: FolderOpen, action: 'scanProject' },
-  { label: 'Build Project Context', hint: 'Read allowlisted files and redact sensitive values', icon: FileJson, action: 'buildProjectContext' },
-  { label: 'Open Model Manager', hint: 'Local model inventory', view: 'models', icon: BrainCircuit },
-  { label: 'Detect Local Models', hint: 'Check Ollama, LM Studio, llama.cpp, and GGUF folders', icon: BrainCircuit, action: 'detectModels' },
-  { label: 'Check AI Health', hint: 'Ping local Ollama and LM Studio endpoints', icon: Activity, action: 'checkAiHealth' },
-  { label: 'Open Offline Cache', hint: 'Local cache and sync queue', view: 'cache', icon: HardDrive },
-  { label: 'Export Session Markdown', hint: 'Write a local markdown export through the main process', icon: FileDown, action: 'exportSession' },
-  { label: 'Save Session JSON', hint: 'Persist messages, context, and agent run history', icon: FileJson, action: 'saveSession' },
-  { label: 'Refresh Diagnostics', hint: 'Read runtime info and recent IPC logs', icon: Activity, action: 'refreshDiagnostics' },
-  { label: 'Replay Onboarding Tour', hint: 'Walk through the main NEURODECK workspace again', icon: MonitorPlay, onboardingMode: 'tour' },
-  { label: 'Show Me This Screen', hint: 'Open contextual help for the current view', icon: Sparkles, onboardingMode: 'contextual' },
-  { label: 'Open Rich Media Onboarding', hint: 'Launch the tour with optional Lottie, WebM, audio, and shader previews', icon: MonitorPlay, onboardingMode: 'tour' },
-  { label: 'Open Settings', hint: 'Theme, Deck Mode, provider, privacy', settingsPanel: 'general', icon: Settings },
-  { label: 'Appearance', hint: 'Open settings on the appearance panel', settingsPanel: 'appearance', icon: Settings },
-  { label: 'Run Security Audit Starter', hint: 'Preload, IPC, secrets, renderer boundaries', icon: ShieldCheck, prompt: 'Audit this Electron app for preload safety, IPC validation, secrets exposure, and renderer privilege risk.', runPrompt: true },
+  { label: "Open Workspace", hint: "Mission control and composer", view: "chat", icon: Sparkles },
+  {
+    label: "Open Execution Layer",
+    hint: "Agent runs and tool audit history",
+    view: "execution",
+    icon: Workflow,
+  },
+  {
+    label: "Open Canvas",
+    hint: "Live code editor and execution",
+    view: "canvas",
+    icon: Paintbrush,
+  },
+  { label: "Open Terminal", hint: "PTY shell sessions", view: "terminal", icon: Terminal },
+  { label: "Open SSH", hint: "Secure shell connections", view: "ssh", icon: Lock },
+  { label: "Open Tunnel", hint: "SteamOS bridge controls", view: "tunnel", icon: ArrowLeftRight },
+  { label: "Open Share", hint: "LAN transfer and peer panels", view: "share", icon: Share2 },
+  { label: "Open Browser", hint: "Embedded web browser", view: "browser", icon: Globe },
+  { label: "Open Agent Dock", hint: "Run specialized AI operators", view: "agent", icon: Bot },
+  { label: "Open Memory Vault", hint: "Pinned project knowledge", view: "memory", icon: Database },
+  {
+    label: "Open Prompt Lab",
+    hint: "Prompt engineering formulas and PromptDrive",
+    view: "prompt-lab",
+    icon: Sparkles,
+  },
+  {
+    label: "Open Academy",
+    hint: "SOC Forge — cybersecurity labs, tracks, and portfolio",
+    view: "academy",
+    icon: GraduationCap,
+  },
+  { label: "Open Remote", hint: "Mobile remote control server", view: "remote", icon: Radio },
+  { label: "Open Docs", hint: "Knowledge base and indexed docs", view: "docs", icon: BookOpen },
+  {
+    label: "Open IDE",
+    hint: "Integrated code workspace with file tree and editor",
+    view: "ide",
+    icon: Code,
+  },
+  {
+    label: "Open Git",
+    hint: "Repository status, diff, commit, and branch operations",
+    view: "git",
+    icon: GitBranch,
+  },
+  {
+    label: "Open API Lab",
+    hint: "Interactive HTTP request builder and tester",
+    view: "api-lab",
+    icon: Webhook,
+  },
+  {
+    label: "Open CLI Maker",
+    hint: "Visual CLI argument schema builder",
+    view: "cli-maker",
+    icon: TerminalSquare,
+  },
+  {
+    label: "Open Torrent",
+    hint: "BitTorrent and magnet-link downloads",
+    view: "torrent",
+    icon: Magnet,
+  },
+  {
+    label: "Open Project",
+    hint: "Project folder scan, stack detection, and context",
+    view: "project",
+    icon: FolderOpen,
+  },
+  {
+    label: "Open Graph",
+    hint: "Knowledge and memory relationship visualizer",
+    view: "graph",
+    icon: Network,
+  },
+  {
+    label: "Open Scheduler",
+    hint: "Cron job management and timed automation",
+    view: "scheduler",
+    icon: CalendarClock,
+  },
+  {
+    label: "Open Sync",
+    hint: "LAN file transfer — Warpinator/Winpinator compatible",
+    view: "sync",
+    icon: RefreshCcw,
+  },
+  {
+    label: "Open Orchestrator",
+    hint: "Multi-step LLM pipeline builder",
+    view: "orchestrator",
+    icon: Layers,
+  },
+  {
+    label: "Open Plugins",
+    hint: "Lua plugin manager and extension tools",
+    view: "plugins",
+    icon: Plug,
+  },
+  {
+    label: "Open Diagnostics",
+    hint: "IPC logs, runtime health, and connection matrix",
+    view: "diagnostics",
+    icon: Activity,
+  },
+  {
+    label: "Open Sessions",
+    hint: "Saved conversations and export history",
+    view: "sessions",
+    icon: History,
+  },
+  {
+    label: "Open Font Manager",
+    hint: "Typography preferences and font preview",
+    view: "fonts",
+    icon: Type,
+  },
+  {
+    label: "Scan Project Folder",
+    hint: "Select a folder and detect stack, risks, scripts, and docs",
+    icon: FolderOpen,
+    action: "scanProject",
+  },
+  {
+    label: "Build Project Context",
+    hint: "Read allowlisted files and redact sensitive values",
+    icon: FileJson,
+    action: "buildProjectContext",
+  },
+  {
+    label: "Open Model Manager",
+    hint: "Local model inventory",
+    view: "models",
+    icon: BrainCircuit,
+  },
+  {
+    label: "Detect Local Models",
+    hint: "Check Ollama, LM Studio, llama.cpp, and GGUF folders",
+    icon: BrainCircuit,
+    action: "detectModels",
+  },
+  {
+    label: "Check AI Health",
+    hint: "Ping local Ollama and LM Studio endpoints",
+    icon: Activity,
+    action: "checkAiHealth",
+  },
+  {
+    label: "Open Offline Cache",
+    hint: "Local cache and sync queue",
+    view: "cache",
+    icon: HardDrive,
+  },
+  {
+    label: "Export Session Markdown",
+    hint: "Write a local markdown export through the main process",
+    icon: FileDown,
+    action: "exportSession",
+  },
+  {
+    label: "Save Session JSON",
+    hint: "Persist messages, context, and agent run history",
+    icon: FileJson,
+    action: "saveSession",
+  },
+  {
+    label: "Refresh Diagnostics",
+    hint: "Read runtime info and recent IPC logs",
+    icon: Activity,
+    action: "refreshDiagnostics",
+  },
+  {
+    label: "Replay Onboarding Tour",
+    hint: "Walk through the main NEURODECK workspace again",
+    icon: MonitorPlay,
+    onboardingMode: "tour",
+  },
+  {
+    label: "Show Me This Screen",
+    hint: "Open contextual help for the current view",
+    icon: Sparkles,
+    onboardingMode: "contextual",
+  },
+  {
+    label: "Open Rich Media Onboarding",
+    hint: "Launch the tour with optional Lottie, WebM, audio, and shader previews",
+    icon: MonitorPlay,
+    onboardingMode: "tour",
+  },
+  {
+    label: "Open Settings",
+    hint: "Theme, Deck Mode, provider, privacy",
+    settingsPanel: "general",
+    icon: Settings,
+  },
+  {
+    label: "Appearance",
+    hint: "Open settings on the appearance panel",
+    settingsPanel: "appearance",
+    icon: Settings,
+  },
+  {
+    label: "Run Security Audit Starter",
+    hint: "Preload, IPC, secrets, renderer boundaries",
+    icon: ShieldCheck,
+    prompt:
+      "Audit this Electron app for preload safety, IPC validation, secrets exposure, and renderer privilege risk.",
+    runPrompt: true,
+  },
 
   // Security & Ops
-  { label: 'Open Security Center',  hint: 'Hardening checklist, credential status, audit log',  view: 'security',    icon: ShieldCheck },
-  { label: 'Open Theme Manager',    hint: 'Browse and apply themes with live preview',           view: 'themes',      icon: Palette     },
-  { label: 'Open Export Manager',   hint: 'Session and diagnostics exports',                     view: 'exports',     icon: Download    },
-  { label: 'Open Maintenance',      hint: 'Version info, health probes, system actions',         view: 'maintenance', icon: Wrench      },
-  { label: 'Open Recovery Center',  hint: 'Error recovery, event log, reset options',            view: 'recovery',    icon: RotateCcw   },
+  {
+    label: "Open Security Center",
+    hint: "Hardening checklist, credential status, audit log",
+    view: "security",
+    icon: ShieldCheck,
+  },
+  {
+    label: "Open Theme Manager",
+    hint: "Browse and apply themes with live preview",
+    view: "themes",
+    icon: Palette,
+  },
+  {
+    label: "Open Export Manager",
+    hint: "Session and diagnostics exports",
+    view: "exports",
+    icon: Download,
+  },
+  {
+    label: "Open Maintenance",
+    hint: "Version info, health probes, system actions",
+    view: "maintenance",
+    icon: Wrench,
+  },
+  {
+    label: "Open Recovery Center",
+    hint: "Error recovery, event log, reset options",
+    view: "recovery",
+    icon: RotateCcw,
+  },
 ];
 
 export function CommandPalette({
@@ -130,7 +388,7 @@ export function CommandPalette({
   actions: NeuroDeckAppActions;
   onOpenSettings?: (panel?: string) => void;
 }) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [recentCommands, setRecentCommands] = useState<string[]>(readRecent);
   const isOpen = state.commandOpen;
@@ -160,7 +418,7 @@ export function CommandPalette({
   }, [query]);
 
   useEffect(() => {
-    if (!isOpen) setQuery('');
+    if (!isOpen) setQuery("");
   }, [isOpen]);
 
   useEffect(() => {
@@ -171,149 +429,156 @@ export function CommandPalette({
     });
   }, [isOpen]);
 
-  const runCommand = useCallback(async (command: CommandItem) => {
-    setRecentCommands((prev) => {
-      const next = [command.label, ...prev.filter((l) => l !== command.label)];
-      writeRecent(next);
-      return next;
-    });
-    if (command.settingsPanel) {
-      dispatch({ type: 'toggle-command', open: false });
-      onOpenSettings?.(command.settingsPanel);
-      return;
-    }
-    dispatch({ type: 'toggle-command', open: false });
-    if (command.onboardingMode) {
-      dispatch({ type: 'open-onboarding', mode: command.onboardingMode });
-      return;
-    }
-    if (command.view) dispatch({ type: 'set-view', view: command.view });
-    if (command.prompt && !command.runPrompt) dispatch({ type: 'run-starter', prompt: command.prompt });
-    if (command.prompt && command.runPrompt) {
-      await actions.runAssistant(command.prompt);
-    }
-    if (command.action) {
-      await actions[command.action]();
-    }
-  }, [actions, dispatch, onOpenSettings]);
+  const runCommand = useCallback(
+    async (command: CommandItem) => {
+      setRecentCommands((prev) => {
+        const next = [command.label, ...prev.filter((l) => l !== command.label)];
+        writeRecent(next);
+        return next;
+      });
+      if (command.settingsPanel) {
+        dispatch({ type: "toggle-command", open: false });
+        onOpenSettings?.(command.settingsPanel);
+        return;
+      }
+      dispatch({ type: "toggle-command", open: false });
+      if (command.onboardingMode) {
+        dispatch({ type: "open-onboarding", mode: command.onboardingMode });
+        return;
+      }
+      if (command.view) dispatch({ type: "set-view", view: command.view });
+      if (command.prompt && !command.runPrompt)
+        dispatch({ type: "run-starter", prompt: command.prompt });
+      if (command.prompt && command.runPrompt) {
+        await actions.runAssistant(command.prompt);
+      }
+      if (command.action) {
+        await actions[command.action]();
+      }
+    },
+    [actions, dispatch, onOpenSettings]
+  );
 
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      dispatch({ type: 'toggle-command', open: false });
-      return;
-    }
-    if (event.key === 'Enter') {
-      event.preventDefault();
-      const cmd = filteredCommands[selectedIndex];
-      if (cmd) void runCommand(cmd);
-      return;
-    }
-    if (event.key === 'ArrowDown') {
-      event.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, filteredCommands.length - 1));
-      return;
-    }
-    if (event.key === 'ArrowUp') {
-      event.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
-      return;
-    }
-  }, [filteredCommands, selectedIndex, runCommand, dispatch]);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        dispatch({ type: "toggle-command", open: false });
+        return;
+      }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        const cmd = filteredCommands[selectedIndex];
+        if (cmd) void runCommand(cmd);
+        return;
+      }
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedIndex((i) => Math.min(i + 1, filteredCommands.length - 1));
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
+    },
+    [filteredCommands, selectedIndex, runCommand, dispatch]
+  );
 
   // Scroll selected item into view
   useEffect(() => {
     if (!listRef.current) return;
     const selected = listRef.current.querySelector(`[data-cmd-index="${selectedIndex}"]`);
-    selected?.scrollIntoView({ block: 'nearest' });
+    selected?.scrollIntoView({ block: "nearest" });
   }, [selectedIndex]);
 
   const normalizedQuery = query.trim().toLowerCase();
   const showRecents = !normalizedQuery && recentCommands.length > 0;
 
   useControllerAction(
-    'cancel',
+    "cancel",
     () => {
       if (!isOpen) return false;
-      dispatch({ type: 'toggle-command', open: false });
+      dispatch({ type: "toggle-command", open: false });
       return true;
     },
-    isOpen,
+    isOpen
   );
   useControllerAction(
-    'back',
+    "back",
     () => {
       if (!isOpen) return false;
-      dispatch({ type: 'toggle-command', open: false });
+      dispatch({ type: "toggle-command", open: false });
       return true;
     },
-    isOpen,
+    isOpen
   );
   useControllerAction(
-    'openSearch',
+    "openSearch",
     () => {
       if (!isOpen) return false;
       inputRef.current?.focus();
       inputRef.current?.select();
       return true;
     },
-    isOpen,
+    isOpen
   );
   useControllerAction(
-    'confirm',
+    "confirm",
     () => {
       if (!isOpen) return false;
       const cmd = filteredCommands[selectedIndex];
       if (cmd) void runCommand(cmd);
       return true;
     },
-    isOpen,
+    isOpen
   );
   useControllerAction(
-    'focusDown',
+    "focusDown",
     () => {
       if (!isOpen) return false;
       setSelectedIndex((i) => Math.min(i + 1, filteredCommands.length - 1));
       return true;
     },
-    isOpen,
+    isOpen
   );
   useControllerAction(
-    'focusUp',
+    "focusUp",
     () => {
       if (!isOpen) return false;
       setSelectedIndex((i) => Math.max(i - 1, 0));
       return true;
     },
-    isOpen,
+    isOpen
   );
   useControllerAction(
-    'pageDown',
+    "pageDown",
     () => {
       if (!isOpen) return false;
       setSelectedIndex((i) => Math.min(i + 5, filteredCommands.length - 1));
       return true;
     },
-    isOpen,
+    isOpen
   );
   useControllerAction(
-    'pageUp',
+    "pageUp",
     () => {
       if (!isOpen) return false;
       setSelectedIndex((i) => Math.max(i - 5, 0));
       return true;
     },
-    isOpen,
+    isOpen
   );
 
   return (
     <div
       id="command-palette-overlay"
-      data-controller-overlay={isOpen ? 'true' : undefined}
+      data-controller-overlay={isOpen ? "true" : undefined}
       className={`fixed inset-0 z-[var(--z-modal)] flex items-start justify-center transition-opacity duration-[var(--nd-motion-normal)] ${
-        isOpen ? 'active pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        isOpen ? "active pointer-events-auto opacity-100" : "pointer-events-none opacity-0"
       }`}
-      style={{ backgroundColor: 'var(--nd-surface-overlay)' }}
-      onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}
+      style={{ backgroundColor: "var(--nd-surface-overlay)" }}
+      onMouseDown={() => dispatch({ type: "toggle-command", open: false })}
     >
       <div
         className="no-drag mt-[10vh] w-full max-w-2xl overflow-hidden rounded-[var(--nd-radius-lg)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-modal)] shadow-[var(--nd-elevation-overlay)]"
@@ -334,12 +599,18 @@ export function CommandPalette({
             aria-label="Command palette search"
             aria-autocomplete="list"
             aria-controls="command-palette-list"
-            aria-activedescendant={filteredCommands[selectedIndex] ? `cmd-${selectedIndex}` : undefined}
+            aria-activedescendant={
+              filteredCommands[selectedIndex] ? `cmd-${selectedIndex}` : undefined
+            }
           />
           <Badge tone="accent">Ctrl K</Badge>
         </div>
 
-        <div ref={listRef} id="command-palette-list" className="max-h-[62vh] overflow-y-auto p-3 scrollbar-thin">
+        <div
+          ref={listRef}
+          id="command-palette-list"
+          className="max-h-[62vh] overflow-y-auto p-3 scrollbar-thin"
+        >
           {showRecents && (
             <>
               <SectionHeading>Recent</SectionHeading>
@@ -355,10 +626,17 @@ export function CommandPalette({
                       className="command-palette-item flex w-full min-h-touch items-center gap-3 rounded-[var(--nd-radius-md)] border border-transparent px-3 py-2.5 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
                       onClick={() => void runCommand(command)}
                     >
-                      <Icon className="h-5 w-5 text-[var(--nd-accent-primary)]" aria-hidden="true" />
+                      <Icon
+                        className="h-5 w-5 text-[var(--nd-accent-primary)]"
+                        aria-hidden="true"
+                      />
                       <span className="flex-1 min-w-0">
-                        <span className="block truncate text-sm font-medium text-[var(--nd-text-primary)]">{command.label}</span>
-                        <span className="block truncate text-xs text-[var(--nd-text-muted)]">{command.hint}</span>
+                        <span className="block truncate text-sm font-medium text-[var(--nd-text-primary)]">
+                          {command.label}
+                        </span>
+                        <span className="block truncate text-xs text-[var(--nd-text-muted)]">
+                          {command.hint}
+                        </span>
                       </span>
                     </button>
                   );
@@ -368,7 +646,9 @@ export function CommandPalette({
             </>
           )}
 
-          <SectionHeading>{normalizedQuery ? `Results (${filteredCommands.length})` : 'All Commands'}</SectionHeading>
+          <SectionHeading>
+            {normalizedQuery ? `Results (${filteredCommands.length})` : "All Commands"}
+          </SectionHeading>
           <div className="space-y-1.5" role="listbox" aria-label="Command results">
             {filteredCommands.map((command, index) => {
               const Icon = command.icon;
@@ -383,22 +663,28 @@ export function CommandPalette({
                   aria-selected={isSelected}
                   className={`flex w-full min-h-touch items-center gap-3 rounded-[var(--nd-radius-md)] border px-3 py-2.5 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
                     isSelected
-                      ? 'command-palette-item active border-[var(--nd-accent-primary)]/40 bg-[var(--nd-surface-selected)] shadow-[var(--nd-elevation-glow)]'
-                      : 'border-transparent hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)]'
-                  } ${isSelected ? '' : 'command-palette-item'}`}
+                      ? "command-palette-item active border-[var(--nd-accent-primary)]/40 bg-[var(--nd-surface-selected)] shadow-[var(--nd-elevation-glow)]"
+                      : "border-transparent hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)]"
+                  } ${isSelected ? "" : "command-palette-item"}`}
                   onClick={() => void runCommand(command)}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >
                   <Icon className="h-5 w-5 text-[var(--nd-accent-primary)]" aria-hidden="true" />
                   <span className="flex-1 min-w-0">
-                    <span className="block truncate text-sm font-medium text-[var(--nd-text-primary)]">{highlightMatch(command.label, query)}</span>
-                    <span className="block truncate text-xs text-[var(--nd-text-muted)]">{highlightMatch(command.hint, query)}</span>
+                    <span className="block truncate text-sm font-medium text-[var(--nd-text-primary)]">
+                      {highlightMatch(command.label, query)}
+                    </span>
+                    <span className="block truncate text-xs text-[var(--nd-text-muted)]">
+                      {highlightMatch(command.hint, query)}
+                    </span>
                   </span>
                 </button>
               );
             })}
             {filteredCommands.length === 0 && (
-              <p className="px-3 py-4 text-sm text-[var(--nd-text-muted)]">No commands match &quot;{query}&quot;</p>
+              <p className="px-3 py-4 text-sm text-[var(--nd-text-muted)]">
+                No commands match &quot;{query}&quot;
+              </p>
             )}
           </div>
 
@@ -410,7 +696,7 @@ export function CommandPalette({
               <button
                 key={prompt}
                 type="button"
-                onClick={() => dispatch({ type: 'run-starter', prompt })}
+                onClick={() => dispatch({ type: "run-starter", prompt })}
                 className="min-h-touch rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/40 p-3 text-left text-xs text-[var(--nd-text-secondary)] transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
               >
                 {prompt}
@@ -431,7 +717,7 @@ export function CommandPalette({
   );
 }
 
-function Divider({ className = '' }: { className?: string }) {
+function Divider({ className = "" }: { className?: string }) {
   return <div className={`h-px bg-[var(--nd-border-subtle)] ${className}`} />;
 }
 

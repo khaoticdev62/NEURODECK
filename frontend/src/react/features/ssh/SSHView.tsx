@@ -1,17 +1,17 @@
-﻿import { useCallback, useEffect, useState } from 'react';
-import { Lock, Server, Save, Trash2, Plug, AlertTriangle } from 'lucide-react';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { SSHTerminal, type SSHConnectionConfig } from './SSHTerminal';
+﻿import { useCallback, useEffect, useState } from "react";
+import { Lock, Server, Save, Trash2, Plug, AlertTriangle } from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { SSHTerminal, type SSHConnectionConfig } from "./SSHTerminal";
 
 export function SSHView() {
-  const [host, setHost] = useState('');
-  const [port, setPort] = useState('22');
-  const [user, setUser] = useState('');
-  const [password, setPassword] = useState('');
-  const [keyPath, setKeyPath] = useState('');
-  const [authType, setAuthType] = useState<'password' | 'key'>('password');
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState("22");
+  const [user, setUser] = useState("");
+  const [password, setPassword] = useState("");
+  const [keyPath, setKeyPath] = useState("");
+  const [authType, setAuthType] = useState<"password" | "key">("password");
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [connectedConfig, setConnectedConfig] = useState<SSHConnectionConfig | null>(null);
@@ -23,8 +23,8 @@ export function SSHView() {
       await neurodeckApi.ssh.saveCredential(
         host.trim(),
         user.trim(),
-        authType === 'password' ? password : undefined,
-        authType === 'key' ? keyPath.trim() : undefined
+        authType === "password" ? password : undefined,
+        authType === "key" ? keyPath.trim() : undefined
       );
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
@@ -41,7 +41,7 @@ export function SSHView() {
       if (cred.user && !user) setUser(cred.user);
       if (cred.key_path && !keyPath) {
         setKeyPath(cred.key_path);
-        setAuthType('key');
+        setAuthType("key");
       }
     } catch (_) {
       // No saved credential is fine.
@@ -58,7 +58,7 @@ export function SSHView() {
     const u = user.trim();
     const p = parseInt(port, 10);
     if (!h || !u || Number.isNaN(p)) {
-      setError('Host, user, and port are required.');
+      setError("Host, user, and port are required.");
       return;
     }
     setError(null);
@@ -67,8 +67,8 @@ export function SSHView() {
       port: p,
       user: u,
       authType,
-      password: authType === 'password' ? password : undefined,
-      keyPath: authType === 'key' ? keyPath.trim() : undefined,
+      password: authType === "password" ? password : undefined,
+      keyPath: authType === "key" ? keyPath.trim() : undefined,
     });
   };
 
@@ -77,17 +77,17 @@ export function SSHView() {
   };
 
   const clearForm = () => {
-    setHost('');
-    setPort('22');
-    setUser('');
-    setPassword('');
-    setKeyPath('');
-    setAuthType('password');
+    setHost("");
+    setPort("22");
+    setUser("");
+    setPassword("");
+    setKeyPath("");
+    setAuthType("password");
     setError(null);
   };
 
   const inputClass =
-    'w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40';
+    "w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40";
 
   return (
     <div className="ssh-container flex h-full flex-col">
@@ -96,7 +96,9 @@ export function SSHView() {
           <Lock className="h-5 w-5 text-nd-accent-primary" />
         </div>
         <div className="flex-1">
-          <div className="ssh-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">SSH</div>
+          <div className="ssh-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
+            SSH
+          </div>
           <h2 className="text-lg font-semibold text-nd-text-primary">SSH</h2>
           <p className="text-xs text-nd-text-muted">Secure shell connections</p>
         </div>
@@ -136,23 +138,23 @@ export function SSHView() {
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => setAuthType('password')}
-            aria-pressed={authType === 'password'}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${authType === 'password' ? 'border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
+            onClick={() => setAuthType("password")}
+            aria-pressed={authType === "password"}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${authType === "password" ? "border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary" : "border-nd-text-muted/15 text-nd-text-muted"}`}
           >
             Password
           </button>
           <button
             type="button"
-            onClick={() => setAuthType('key')}
-            aria-pressed={authType === 'key'}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${authType === 'key' ? 'border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
+            onClick={() => setAuthType("key")}
+            aria-pressed={authType === "key"}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${authType === "key" ? "border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary" : "border-nd-text-muted/15 text-nd-text-muted"}`}
           >
             SSH Key
           </button>
         </div>
 
-        {authType === 'password' ? (
+        {authType === "password" ? (
           <input
             type="password"
             value={password}
@@ -195,13 +197,9 @@ export function SSHView() {
             className="flex-1"
             onClick={() => void saveCredential()}
           >
-            {saved ? 'Saved!' : 'Save Profile'}
+            {saved ? "Saved!" : "Save Profile"}
           </Button>
-          <IconButton
-            aria-label="Clear SSH credentials"
-            variant="ghost"
-            onClick={clearForm}
-          >
+          <IconButton aria-label="Clear SSH credentials" variant="ghost" onClick={clearForm}>
             <Trash2 className="h-4 w-4" aria-hidden="true" />
           </IconButton>
         </div>
@@ -214,7 +212,9 @@ export function SSHView() {
           <div className="flex h-full flex-1 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
             <div className="text-center">
               <Server className="mx-auto h-8 w-8 text-nd-text-muted/40" aria-hidden="true" />
-              <p className="mt-2 text-sm text-nd-text-muted/70">Enter connection details and click Connect.</p>
+              <p className="mt-2 text-sm text-nd-text-muted/70">
+                Enter connection details and click Connect.
+              </p>
             </div>
           </div>
         )}

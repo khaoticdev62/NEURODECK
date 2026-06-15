@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Select } from '../../../../design-system/components/core/Select';
-import { bridgeInvoke } from '../../../services/bridgeAdapter';
+import { useEffect, useMemo, useState } from "react";
+import { Select } from "../../../../design-system/components/core/Select";
+import { bridgeInvoke } from "../../../services/bridgeAdapter";
 
 interface PersonaSelectorProps {
   value: string;
@@ -14,7 +14,7 @@ export function PersonaSelector({ value, onChange }: PersonaSelectorProps) {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    bridgeInvoke<string[]>('get_personas')
+    bridgeInvoke<string[]>("get_personas")
       .then((personas) => {
         if (!mounted) return;
         setOptions(personas ?? []);

@@ -1,12 +1,12 @@
-﻿import { useState } from 'react';
-import { Send, Laptop, Trash2, Plus, Monitor } from 'lucide-react';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { Button } from '../../../components/primitives/Button';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { Panel } from '../../../components/primitives/Panel';
-import { TextInput } from '../../../components/primitives/TextInput';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import type { TransferPeer, TrustedPeer } from '../../../services/bridgeAdapter';
+﻿import { useState } from "react";
+import { Send, Laptop, Trash2, Plus, Monitor } from "lucide-react";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { Button } from "../../../components/primitives/Button";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { Panel } from "../../../components/primitives/Panel";
+import { TextInput } from "../../../components/primitives/TextInput";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import type { TransferPeer, TrustedPeer } from "../../../services/bridgeAdapter";
 
 const OS_ICONS: Record<string, typeof Laptop> = {
   linux: Laptop,
@@ -22,10 +22,16 @@ interface Props {
   onError: (msg: string) => void;
 }
 
-export function DevicesTab({ peers, trustedPeers, onSendToPeer, onRefreshTrusted, onError }: Props) {
-  const [manualIp, setManualIp] = useState('');
-  const [manualPort, setManualPort] = useState('42000');
-  const [manualHost, setManualHost] = useState('');
+export function DevicesTab({
+  peers,
+  trustedPeers,
+  onSendToPeer,
+  onRefreshTrusted,
+  onError,
+}: Props) {
+  const [manualIp, setManualIp] = useState("");
+  const [manualPort, setManualPort] = useState("42000");
+  const [manualHost, setManualHost] = useState("");
   const [adding, setAdding] = useState(false);
 
   const handleAddManual = async () => {
@@ -37,8 +43,8 @@ export function DevicesTab({ peers, trustedPeers, onSendToPeer, onRefreshTrusted
         Number(manualPort) || 42000,
         manualHost.trim() || manualIp.trim()
       );
-      setManualIp('');
-      setManualHost('');
+      setManualIp("");
+      setManualHost("");
     } catch (e) {
       onError(`Failed to add peer: ${e}`);
     } finally {
@@ -48,7 +54,7 @@ export function DevicesTab({ peers, trustedPeers, onSendToPeer, onRefreshTrusted
 
   const handleRemoveTrusted = async (ip: string) => {
     try {
-      await neurodeckApi.transfer.trustedPeers('remove', ip);
+      await neurodeckApi.transfer.trustedPeers("remove", ip);
       onRefreshTrusted();
     } catch (e) {
       onError(`Failed to remove trusted peer: ${e}`);
@@ -83,9 +89,11 @@ export function DevicesTab({ peers, trustedPeers, onSendToPeer, onRefreshTrusted
                       <Icon className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-nd-text-primary">{peer.hostname}</p>
+                      <p className="truncate text-sm font-medium text-nd-text-primary">
+                        {peer.hostname}
+                      </p>
                       <p className="text-xs text-nd-text-muted">
-                        {peer.ip}:{peer.port} · {peer.os} {peer.is_warpinator ? '· Warpinator' : ''}
+                        {peer.ip}:{peer.port} · {peer.os} {peer.is_warpinator ? "· Warpinator" : ""}
                       </p>
                     </div>
                     <Button
@@ -163,7 +171,9 @@ export function DevicesTab({ peers, trustedPeers, onSendToPeer, onRefreshTrusted
                     <Laptop className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-nd-text-primary">{peer.label || peer.ip}</p>
+                    <p className="truncate text-sm font-medium text-nd-text-primary">
+                      {peer.label || peer.ip}
+                    </p>
                     <p className="text-xs text-nd-text-muted">
                       {peer.ip} · Added {new Date(peer.added_at).toLocaleDateString()}
                     </p>

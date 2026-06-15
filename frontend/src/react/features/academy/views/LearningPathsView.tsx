@@ -1,11 +1,11 @@
-import { Award } from 'lucide-react';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { Panel } from '../../../components/primitives/Panel';
-import { SkillBar } from '../components/SkillBar';
-import { PathCard } from '../components/PathCard';
-import { LabCard } from '../components/LabCard';
-import { LEARNING_PATHS, getLabsForPath, pathCompletionPercent } from '../data/curricula';
-import type { LearnerProgress } from '../types';
+import { Award } from "lucide-react";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { Panel } from "../../../components/primitives/Panel";
+import { SkillBar } from "../components/SkillBar";
+import { PathCard } from "../components/PathCard";
+import { LabCard } from "../components/LabCard";
+import { LEARNING_PATHS, getLabsForPath, pathCompletionPercent } from "../data/curricula";
+import type { LearnerProgress } from "../types";
 
 interface LearningPathsViewProps {
   progress: LearnerProgress;
@@ -49,11 +49,13 @@ export function LearningPathsView({ progress, onStartLab }: LearningPathsViewPro
                           <div className="flex items-center gap-2">
                             <div
                               className={`h-2 w-2 shrink-0 rounded-full ${
-                                modComplete ? 'bg-nd-accent-success' : 'bg-nd-text-muted/20'
+                                modComplete ? "bg-nd-accent-success" : "bg-nd-text-muted/20"
                               }`}
                               aria-hidden="true"
                             />
-                            <p className="text-xs font-medium text-nd-text-secondary">{mod.title}</p>
+                            <p className="text-xs font-medium text-nd-text-secondary">
+                              {mod.title}
+                            </p>
                           </div>
                           {mod.objectives.length > 0 && (
                             <ul className="ml-4 mt-1 space-y-0.5">

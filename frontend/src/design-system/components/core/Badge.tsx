@@ -1,8 +1,8 @@
-import * as React from 'react';
+import * as React from "react";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-badge-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-badge-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-badge-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-badge-css";
   s.textContent = `
   .nd-badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--nd-font-hud);
     font-weight:600;text-transform:uppercase;border:1px solid;border-radius:var(--nd-radius-full);
@@ -20,7 +20,7 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-badge-css'))
   document.head.appendChild(s);
 }
 
-export type BadgeTone = 'neutral' | 'info' | 'success' | 'warning' | 'error' | 'agent';
+export type BadgeTone = "neutral" | "info" | "success" | "warning" | "error" | "agent";
 
 /**
  * Compact status/metadata label. Status badges must carry text, not color alone.
@@ -29,9 +29,9 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   /** Semantic tone. @default 'neutral' */
   tone?: BadgeTone;
   /** @default 'sm' */
-  size?: 'sm' | 'md';
+  size?: "sm" | "md";
   /** Fill (tinted) or outline. @default 'fill' */
-  variant?: 'fill' | 'outline';
+  variant?: "fill" | "outline";
   /** Show a leading status dot. @default false */
   dot?: boolean;
   children: React.ReactNode;
@@ -39,15 +39,22 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 export function Badge({
   children,
-  tone = 'neutral',
-  size = 'sm',
-  variant = 'fill',
+  tone = "neutral",
+  size = "sm",
+  variant = "fill",
   dot = false,
-  className = '',
+  className = "",
   ...rest
 }: BadgeProps): React.ReactNode {
-  const cls = ['nd-badge', `nd-badge--${tone}`, `nd-badge--${size}`,
-    variant === 'outline' ? 'nd-badge--outline' : '', className].filter(Boolean).join(' ');
+  const cls = [
+    "nd-badge",
+    `nd-badge--${tone}`,
+    `nd-badge--${size}`,
+    variant === "outline" ? "nd-badge--outline" : "",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
   return (
     <span className={cls} {...rest}>
       {dot ? <span className="nd-badge__dot" aria-hidden="true" /> : null}

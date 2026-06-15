@@ -46,9 +46,7 @@ export function ModelCard({
       : "bg-transparent";
 
   return (
-    <Panel
-      className={`transition hover:border-nd-accent-primary/30 ${panelBorder} ${panelBg}`}
-    >
+    <Panel className={`transition hover:border-nd-accent-primary/30 ${panelBorder} ${panelBg}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-3">
           <div
@@ -73,15 +71,30 @@ export function ModelCard({
             {status}
           </StatusChip>
           <div className="flex flex-wrap justify-end gap-1">
-            {agentPreferred && <Badge tone="accent" size="sm">Preferred</Badge>}
-            {policyAllowed === false && <Badge tone="danger" size="sm">Blocked</Badge>}
-            {selected && <Badge tone="accent" size="sm">Selected</Badge>}
+            {agentPreferred && (
+              <Badge tone="accent" size="sm">
+                Preferred
+              </Badge>
+            )}
+            {policyAllowed === false && (
+              <Badge tone="danger" size="sm">
+                Blocked
+              </Badge>
+            )}
+            {selected && (
+              <Badge tone="accent" size="sm">
+                Selected
+              </Badge>
+            )}
           </div>
         </div>
       </div>
 
       <div className="mt-4 grid gap-2 text-xs text-nd-text-muted sm:grid-cols-3">
-        <ModelSpec label="Context" value={model.context ? model.context.toLocaleString() : "runtime"} />
+        <ModelSpec
+          label="Context"
+          value={model.context ? model.context.toLocaleString() : "runtime"}
+        />
         <ModelSpec label="RAM" value={model.ramEstimate} />
         <ModelSpec label="Best For" value={model.bestFor.join(", ")} />
       </div>
@@ -131,7 +144,7 @@ function ModelSpec({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-nd-text-muted">
         {label}
       </p>
-      <p className="mt-1 text-nd-text-secondary">{value || '—'}</p>
+      <p className="mt-1 text-nd-text-secondary">{value || "—"}</p>
     </div>
   );
 }

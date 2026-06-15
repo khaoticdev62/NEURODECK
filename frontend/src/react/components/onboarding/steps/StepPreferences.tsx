@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
-import { Panel } from '../../primitives/Panel';
-import { Select } from '../../primitives/Select';
-import { Toggle } from '../../primitives/Toggle';
-import type { NeurodeckTheme } from '../../../../shared/theme/themeContracts';
+import { useMemo } from "react";
+import { Panel } from "../../primitives/Panel";
+import { Select } from "../../primitives/Select";
+import { Toggle } from "../../primitives/Toggle";
+import type { NeurodeckTheme } from "../../../../shared/theme/themeContracts";
 
 interface StepPreferencesProps {
   availableThemes: NeurodeckTheme[];
@@ -29,14 +29,18 @@ export function StepPreferences({
 }: StepPreferencesProps) {
   const themeOptions = useMemo(
     () => availableThemes.map((t) => ({ value: t.id, label: t.name })),
-    [availableThemes],
+    [availableThemes]
   );
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold text-[var(--nd-text-primary)]">Preferences & Styling</h2>
-        <p className="text-xs text-[var(--nd-text-muted)]">Personalize your workspace aesthetics and layout scaling.</p>
+        <h2 className="text-xl font-semibold text-[var(--nd-text-primary)]">
+          Preferences & Styling
+        </h2>
+        <p className="text-xs text-[var(--nd-text-muted)]">
+          Personalize your workspace aesthetics and layout scaling.
+        </p>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
@@ -62,14 +66,17 @@ export function StepPreferences({
                   aria-pressed={active}
                   className={`nd-focus-ring flex items-center gap-2 rounded-[var(--nd-radius-md)] border px-2.5 py-1.5 text-xs transition motion-reduce:transition-none ${
                     active
-                      ? 'border-[rgba(var(--nd-cyan-rgb),0.4)] bg-[var(--nd-accent-soft)] text-[var(--nd-accent-primary)]'
-                      : 'border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] text-[var(--nd-text-secondary)] hover:bg-[var(--nd-surface-hover)]'
+                      ? "border-[rgba(var(--nd-cyan-rgb),0.4)] bg-[var(--nd-accent-soft)] text-[var(--nd-accent-primary)]"
+                      : "border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] text-[var(--nd-text-secondary)] hover:bg-[var(--nd-surface-hover)]"
                   }`}
                   title={t.description}
                 >
                   <span
                     className="h-3 w-3 rounded-full border border-[var(--nd-border-subtle)]"
-                    style={{ backgroundColor: t.tokens?.color?.accent?.primary ?? 'var(--nd-accent-primary)' }}
+                    style={{
+                      backgroundColor:
+                        t.tokens?.color?.accent?.primary ?? "var(--nd-accent-primary)",
+                    }}
                     aria-hidden="true"
                   />
                   <span className="truncate max-w-[8rem]">{t.name}</span>
@@ -82,7 +89,9 @@ export function StepPreferences({
         {/* Font Scale Slider */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-[10px] font-semibold uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]">Text Font Scale</label>
+            <label className="text-[10px] font-semibold uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]">
+              Text Font Scale
+            </label>
             <span className="font-mono text-xs text-[var(--nd-accent-primary)]">{fontScale}%</span>
           </div>
           <input
@@ -106,8 +115,12 @@ export function StepPreferences({
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-sm font-medium text-[var(--nd-text-primary)]">Compact Density Layout</p>
-                <p className="text-xs text-[var(--nd-text-muted)]">Reduce element spacing and padding. Recommended for Steam Deck.</p>
+                <p className="text-sm font-medium text-[var(--nd-text-primary)]">
+                  Compact Density Layout
+                </p>
+                <p className="text-xs text-[var(--nd-text-muted)]">
+                  Reduce element spacing and padding. Recommended for Steam Deck.
+                </p>
               </div>
               <Toggle
                 checked={compactMode}
@@ -118,8 +131,12 @@ export function StepPreferences({
 
             <div className="flex items-center justify-between gap-4 border-t border-[var(--nd-border-subtle)] pt-3">
               <div>
-                <p className="text-sm font-medium text-[var(--nd-text-primary)]">Reduced Motion Effects</p>
-                <p className="text-xs text-[var(--nd-text-muted)]">Disable background shaders, particles, and fast slide animations.</p>
+                <p className="text-sm font-medium text-[var(--nd-text-primary)]">
+                  Reduced Motion Effects
+                </p>
+                <p className="text-xs text-[var(--nd-text-muted)]">
+                  Disable background shaders, particles, and fast slide animations.
+                </p>
               </div>
               <Toggle
                 checked={reducedMotion}

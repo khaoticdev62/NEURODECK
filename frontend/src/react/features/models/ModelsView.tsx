@@ -61,7 +61,7 @@ export function ModelsView({
   );
 
   const activeAgent = state.agents.find((a) => a.id === state.activeAgentId);
-  const activeAgentLabel = activeAgent?.name ?? (state.activeAgentId || 'No agent selected');
+  const activeAgentLabel = activeAgent?.name ?? (state.activeAgentId || "No agent selected");
 
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
@@ -127,7 +127,9 @@ export function ModelsView({
                       onMarkIndexed={(id) =>
                         dispatch({ type: "set-model-status", id, status: "indexed" })
                       }
-                      onDisable={(id) => dispatch({ type: "set-model-status", id, status: "disabled" })}
+                      onDisable={(id) =>
+                        dispatch({ type: "set-model-status", id, status: "disabled" })
+                      }
                     />
                   </div>
                 );
@@ -194,9 +196,13 @@ export function ModelsView({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-nd-text-primary/90">{runtime.name}</span>
-                      <Badge tone={runtime.exists ? "success" : "neutral"} size="sm">{runtime.status}</Badge>
+                      <Badge tone={runtime.exists ? "success" : "neutral"} size="sm">
+                        {runtime.status}
+                      </Badge>
                     </div>
-                    <code className="mt-1 block break-all text-xs text-nd-text-muted/70">{runtime.path}</code>
+                    <code className="mt-1 block break-all text-xs text-nd-text-muted/70">
+                      {runtime.path}
+                    </code>
                   </div>
                 ))}
               </div>
@@ -214,7 +220,9 @@ export function ModelsView({
                         className="flex items-center justify-between rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2"
                         aria-label={`${model.name}: ${score.score}/100, tier ${score.tier}`}
                       >
-                        <span className="text-xs text-nd-text-primary/80" aria-hidden="true">{model.name}</span>
+                        <span className="text-xs text-nd-text-primary/80" aria-hidden="true">
+                          {model.name}
+                        </span>
                         <div className="flex items-center gap-2" aria-hidden="true">
                           <span className="text-xs text-nd-text-muted">{score.score}/100</span>
                           <Badge

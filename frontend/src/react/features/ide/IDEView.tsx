@@ -1,29 +1,36 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Code, FileCode, FolderOpen, Save, Trash2, RefreshCw,
-  X, FilePlus, AlertCircle
-} from 'lucide-react';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { LspDiagnostic, LspCompletionItem, LspHover } from '../../services/bridgeAdapter';
-import type { PredictionResult, CommandTemplate, IdeMode } from '../../../shared/ide/ideContracts';
-import { getProfileForFile } from '../../../shared/ide/languageProfiles';
-import { getTopCommands } from '../../../shared/ide/languageCommands';
-import { getControllerFriendlySnippets } from '../../../shared/ide/predictiveSnippets';
-import { PredictiveBar } from './PredictiveBar';
-import { ControllerHintBar } from './ControllerHintBar';
-import { LanguageModeBadge } from './LanguageModeBadge';
-import { RadialCommandWheel } from './RadialCommandWheel';
-import { SafeCommandConfirmModal } from './SafeCommandConfirmModal';
-import { Modal } from '../../components/primitives/Modal';
-import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { TextInput } from '../../components/primitives/TextInput';
-import { Badge } from '../../components/primitives/Badge';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { Panel } from '../../components/primitives/Panel';
-import type { DiagnosticFix } from './DiagnosticFixPanel';
-import { DiagnosticFixPanel } from './DiagnosticFixPanel';
+  Code,
+  FileCode,
+  FolderOpen,
+  Save,
+  Trash2,
+  RefreshCw,
+  X,
+  FilePlus,
+  AlertCircle,
+} from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { LspDiagnostic, LspCompletionItem, LspHover } from "../../services/bridgeAdapter";
+import type { PredictionResult, CommandTemplate, IdeMode } from "../../../shared/ide/ideContracts";
+import { getProfileForFile } from "../../../shared/ide/languageProfiles";
+import { getTopCommands } from "../../../shared/ide/languageCommands";
+import { getControllerFriendlySnippets } from "../../../shared/ide/predictiveSnippets";
+import { PredictiveBar } from "./PredictiveBar";
+import { ControllerHintBar } from "./ControllerHintBar";
+import { LanguageModeBadge } from "./LanguageModeBadge";
+import { RadialCommandWheel } from "./RadialCommandWheel";
+import { SafeCommandConfirmModal } from "./SafeCommandConfirmModal";
+import { Modal } from "../../components/primitives/Modal";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { TextInput } from "../../components/primitives/TextInput";
+import { Badge } from "../../components/primitives/Badge";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { Panel } from "../../components/primitives/Panel";
+import type { DiagnosticFix } from "./DiagnosticFixPanel";
+import { DiagnosticFixPanel } from "./DiagnosticFixPanel";
 
 interface FileEntry {
   name: string;
@@ -48,49 +55,81 @@ interface PendingCommand {
 }
 
 function getLanguage(filename: string) {
-  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  const ext = filename.split(".").pop()?.toLowerCase() || "";
   const map: Record<string, string> = {
-    js: 'javascript', ts: 'typescript', jsx: 'jsx', tsx: 'tsx',
-    rs: 'rust', py: 'python', lua: 'lua', html: 'html',
-    css: 'css', scss: 'scss', json: 'json', md: 'markdown',
-    toml: 'toml', yaml: 'yaml', yml: 'yaml', sh: 'bash',
-    bash: 'bash', zsh: 'bash', c: 'c', cpp: 'cpp',
-    h: 'c', hpp: 'cpp', go: 'go', java: 'java',
-    kt: 'kotlin', swift: 'swift', rb: 'ruby', php: 'php',
-    sql: 'sql', dockerfile: 'dockerfile',
+    js: "javascript",
+    ts: "typescript",
+    jsx: "jsx",
+    tsx: "tsx",
+    rs: "rust",
+    py: "python",
+    lua: "lua",
+    html: "html",
+    css: "css",
+    scss: "scss",
+    json: "json",
+    md: "markdown",
+    toml: "toml",
+    yaml: "yaml",
+    yml: "yaml",
+    sh: "bash",
+    bash: "bash",
+    zsh: "bash",
+    c: "c",
+    cpp: "cpp",
+    h: "c",
+    hpp: "cpp",
+    go: "go",
+    java: "java",
+    kt: "kotlin",
+    swift: "swift",
+    rb: "ruby",
+    php: "php",
+    sql: "sql",
+    dockerfile: "dockerfile",
   };
-  return map[ext] || 'text';
+  return map[ext] || "text";
 }
 
 function getLangIcon(lang: string) {
   const map: Record<string, string> = {
-    rust: '🦀', javascript: '📜', typescript: '📘', python: '🐍',
-    lua: '🌙', html: '🌐', css: '🎨', json: '📋',
-    markdown: '📝', bash: '💲', go: '🐹', java: '☕',
-    c: '🔧', cpp: '🔧',
+    rust: "🦀",
+    javascript: "📜",
+    typescript: "📘",
+    python: "🐍",
+    lua: "🌙",
+    html: "🌐",
+    css: "🎨",
+    json: "📋",
+    markdown: "📝",
+    bash: "💲",
+    go: "🐹",
+    java: "☕",
+    c: "🔧",
+    cpp: "🔧",
   };
-  return map[lang] || '📄';
+  return map[lang] || "📄";
 }
 
 function fileUri(path: string): string {
-  return `file:///${path.replace(/\\/g, '/')}`;
+  return `file:///${path.replace(/\\/g, "/")}`;
 }
 
 function supportsLspLanguage(language: string) {
-  return language !== 'text';
+  return language !== "text";
 }
 
 export function IDEView() {
   const [files, setFiles] = useState<FileEntry[]>([]);
-  const [currentPath, setCurrentPath] = useState('');
+  const [currentPath, setCurrentPath] = useState("");
   const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [logs, setLogs] = useState<{ text: string; tone: 'info' | 'ok' | 'error' | 'warn' }[]>([]);
+  const [logs, setLogs] = useState<{ text: string; tone: "info" | "ok" | "error" | "warn" }[]>([]);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
 
-  const [ideMode, setIdeMode] = useState<IdeMode>('IDE_NAVIGATION');
+  const [ideMode, setIdeMode] = useState<IdeMode>("IDE_NAVIGATION");
   const [showHintBar, setShowHintBar] = useState(true);
   const [showRadialWheel, setShowRadialWheel] = useState(false);
   const [predictions, setPredictions] = useState<PredictionResult[]>([]);
@@ -99,10 +138,10 @@ export function IDEView() {
   const [pendingCommand, setPendingCommand] = useState<PendingCommand | null>(null);
   const [diagnosticFixes, setDiagnosticFixes] = useState<DiagnosticFix[]>([]);
   const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
-  const [activeDiagnosticMsg, setActiveDiagnosticMsg] = useState('');
+  const [activeDiagnosticMsg, setActiveDiagnosticMsg] = useState("");
   const [, setCommandOutput] = useState<{ type: string; data: string }[]>([]);
 
-  const [lspStatus, setLspStatus] = useState<'off' | 'starting' | 'ready' | 'error'>('off');
+  const [lspStatus, setLspStatus] = useState<"off" | "starting" | "ready" | "error">("off");
   const [hoverInfo, setHoverInfo] = useState<LspHover | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
   const [lspCompletions, setLspCompletions] = useState<LspCompletionItem[]>([]);
@@ -110,7 +149,7 @@ export function IDEView() {
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const startedLspLanguages = useRef(new Set<string>());
   const [newFileModalOpen, setNewFileModalOpen] = useState(false);
-  const [newFileName, setNewFileName] = useState('untitled.txt');
+  const [newFileName, setNewFileName] = useState("untitled.txt");
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [pendingDeleteTab, setPendingDeleteTab] = useState<OpenTab | null>(null);
   const [lineCount, setLineCount] = useState(1);
@@ -118,25 +157,28 @@ export function IDEView() {
   const lspChangeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const predictionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const log = useCallback((text: string, tone: 'info' | 'ok' | 'error' | 'warn' = 'info') => {
+  const log = useCallback((text: string, tone: "info" | "ok" | "error" | "warn" = "info") => {
     setLogs((prev) => [...prev.slice(-99), { text, tone }]);
   }, []);
 
-  const loadFiles = useCallback(async (path = '') => {
-    setLoading(true);
-    try {
-      const res = await neurodeckApi.ide.listWorkspaceFiles(path || undefined);
-      setFiles(res.files || []);
-      setCurrentPath(path);
-    } catch (e) {
-      log(`Cannot list files: ${e}`, 'error');
-    }
-    setLoading(false);
-  }, [log]);
+  const loadFiles = useCallback(
+    async (path = "") => {
+      setLoading(true);
+      try {
+        const res = await neurodeckApi.ide.listWorkspaceFiles(path || undefined);
+        setFiles(res.files || []);
+        setCurrentPath(path);
+      } catch (e) {
+        log(`Cannot list files: ${e}`, "error");
+      }
+      setLoading(false);
+    },
+    [log]
+  );
 
   useEffect(() => {
-    loadFiles('');
-    log('Mini IDE ready. Workspace loaded.', 'ok');
+    loadFiles("");
+    log("Mini IDE ready. Workspace loaded.", "ok");
   }, [loadFiles, log]);
 
   useEffect(() => {
@@ -147,13 +189,13 @@ export function IDEView() {
     });
 
     const unsubReady = neurodeckApi.lsp.onReady((data) => {
-      setLspStatus('ready');
-      log(`LSP ready: ${data.language}`, 'ok');
+      setLspStatus("ready");
+      log(`LSP ready: ${data.language}`, "ok");
     });
 
     const unsubError = neurodeckApi.lsp.onError((data) => {
-      setLspStatus('error');
-      log(`LSP error (${data.language}): ${data.message}`, 'error');
+      setLspStatus("error");
+      log(`LSP error (${data.language}): ${data.message}`, "error");
     });
 
     const nd = (window as any).neurodeck;
@@ -163,7 +205,7 @@ export function IDEView() {
 
     const unsubOutput = neurodeckApi.ide.onCommandOutput((data) => {
       setCommandOutput((prev) => [...prev.slice(-499), { type: data.type, data: data.data }]);
-      log(`[${data.type}] ${data.data.trim()}`, data.type === 'stderr' ? 'error' : 'info');
+      log(`[${data.type}] ${data.data.trim()}`, data.type === "stderr" ? "error" : "info");
     });
 
     return () => {
@@ -175,78 +217,95 @@ export function IDEView() {
     };
   }, [activeTab, log]);
 
-  const openFile = useCallback(async (path: string, name: string) => {
-    const existing = openTabs.find((t) => t.path === path);
-    if (existing) {
-      setActiveTab(path);
-      return;
-    }
-    try {
-      const res = await neurodeckApi.ide.readWorkspaceFile(path);
-      const lang = getLanguage(name);
-      const tab: OpenTab = { path, name, content: res.content, dirty: false, lang, lspVersion: 1 };
-      setOpenTabs((prev) => [...prev, tab]);
-      setActiveTab(path);
-      setDiagnostics([]);
-      setPredictions([]);
-      setHoverInfo(null);
-      setLspCompletions([]);
+  const openFile = useCallback(
+    async (path: string, name: string) => {
+      const existing = openTabs.find((t) => t.path === path);
+      if (existing) {
+        setActiveTab(path);
+        return;
+      }
+      try {
+        const res = await neurodeckApi.ide.readWorkspaceFile(path);
+        const lang = getLanguage(name);
+        const tab: OpenTab = {
+          path,
+          name,
+          content: res.content,
+          dirty: false,
+          lang,
+          lspVersion: 1,
+        };
+        setOpenTabs((prev) => [...prev, tab]);
+        setActiveTab(path);
+        setDiagnostics([]);
+        setPredictions([]);
+        setHoverInfo(null);
+        setLspCompletions([]);
 
-      if (supportsLspLanguage(lang)) {
-        if (!startedLspLanguages.current.has(lang)) {
-          const known = await neurodeckApi.lsp.knownServers();
-          const server = known.find((s) => s.language === lang);
-          if (server) {
-            startedLspLanguages.current.add(lang);
-            setLspStatus('starting');
-            neurodeckApi.lsp
-              .start(server.language, server.command, server.args)
-              .catch(() => {
+        if (supportsLspLanguage(lang)) {
+          if (!startedLspLanguages.current.has(lang)) {
+            const known = await neurodeckApi.lsp.knownServers();
+            const server = known.find((s) => s.language === lang);
+            if (server) {
+              startedLspLanguages.current.add(lang);
+              setLspStatus("starting");
+              neurodeckApi.lsp.start(server.language, server.command, server.args).catch(() => {
                 startedLspLanguages.current.delete(lang);
-                setLspStatus('error');
+                setLspStatus("error");
               });
+            }
           }
+          neurodeckApi.lsp.openDocument(lang, fileUri(path), res.content).catch(() => {});
         }
-        neurodeckApi.lsp.openDocument(lang, fileUri(path), res.content).catch(() => {});
+      } catch (e) {
+        log(`Cannot open ${name}: ${e}`, "error");
       }
-    } catch (e) {
-      log(`Cannot open ${name}: ${e}`, 'error');
-    }
-  }, [openTabs, log]);
+    },
+    [openTabs, log]
+  );
 
-  const closeTab = useCallback((path: string) => {
-    const tab = openTabs.find((t) => t.path === path);
-    if (tab && supportsLspLanguage(tab.lang)) {
-      neurodeckApi.lsp.closeDocument(tab.lang, fileUri(path)).catch(() => {});
-    }
-    setOpenTabs((prev) => {
-      const idx = prev.findIndex((t) => t.path === path);
-      const next = prev.filter((t) => t.path !== path);
-      if (activeTab === path) {
-        setActiveTab(next[idx]?.path ?? next[next.length - 1]?.path ?? null);
+  const closeTab = useCallback(
+    (path: string) => {
+      const tab = openTabs.find((t) => t.path === path);
+      if (tab && supportsLspLanguage(tab.lang)) {
+        neurodeckApi.lsp.closeDocument(tab.lang, fileUri(path)).catch(() => {});
       }
-      return next;
-    });
-  }, [activeTab, openTabs]);
+      setOpenTabs((prev) => {
+        const idx = prev.findIndex((t) => t.path === path);
+        const next = prev.filter((t) => t.path !== path);
+        if (activeTab === path) {
+          setActiveTab(next[idx]?.path ?? next[next.length - 1]?.path ?? null);
+        }
+        return next;
+      });
+    },
+    [activeTab, openTabs]
+  );
 
   const saveActiveFile = useCallback(async () => {
     if (!activeTab || !editorRef.current) return;
     const content = editorRef.current.value;
     try {
       await neurodeckApi.ide.writeWorkspaceFile(activeTab, content);
-      setOpenTabs((prev) => prev.map((t) => t.path === activeTab ? { ...t, content, dirty: false } : t));
-      log(`Saved ${activeTab}`, 'ok');
+      setOpenTabs((prev) =>
+        prev.map((t) => (t.path === activeTab ? { ...t, content, dirty: false } : t))
+      );
+      log(`Saved ${activeTab}`, "ok");
     } catch (e) {
-      log(`Save failed: ${e}`, 'error');
+      log(`Save failed: ${e}`, "error");
     }
   }, [activeTab, log]);
 
   const onEditorInput = useCallback(() => {
     if (!activeTab || !editorRef.current) return;
     const value = editorRef.current.value;
-    setOpenTabs((prev) => prev.map((t) =>
-      t.path === activeTab ? { ...t, content: value, dirty: true, lspVersion: t.lspVersion + 1 } : t
-    ));
+    setOpenTabs((prev) =>
+      prev.map((t) =>
+        t.path === activeTab
+          ? { ...t, content: value, dirty: true, lspVersion: t.lspVersion + 1 }
+          : t
+      )
+    );
     updateLineNumbers();
 
     if (lspChangeTimer.current) clearTimeout(lspChangeTimer.current);
@@ -267,7 +326,7 @@ export function IDEView() {
 
   const updateLineNumbers = useCallback(() => {
     if (!editorRef.current) return;
-    const lines = editorRef.current.value.split('\n').length;
+    const lines = editorRef.current.value.split("\n").length;
     setLineCount(lines);
   }, []);
 
@@ -282,15 +341,23 @@ export function IDEView() {
         const el = editorRef.current;
         if (!el) return;
         const textBefore = el.value.slice(0, el.selectionStart);
-        const lines = textBefore.split('\n');
+        const lines = textBefore.split("\n");
         const cursorLine = lines.length - 1;
         const cursorChar = lines[cursorLine]?.length ?? 0;
         const profile = getProfileForFile(tab.name);
-        const snippetIds = profile ? getControllerFriendlySnippets(profile.id).map((s) => s.id) : [];
+        const snippetIds = profile
+          ? getControllerFriendlySnippets(profile.id).map((s) => s.id)
+          : [];
 
         const results = await neurodeckApi.ide.getPredictions(
-          activeTab, tab.lang, cursorLine, cursorChar,
-          diagnostics.length, snippetIds, [], [],
+          activeTab,
+          tab.lang,
+          cursorLine,
+          cursorChar,
+          diagnostics.length,
+          snippetIds,
+          [],
+          []
         );
         if (Array.isArray(results)) {
           setPredictions(results);
@@ -318,12 +385,12 @@ export function IDEView() {
     try {
       await neurodeckApi.ide.createWorkspaceFile(path);
       setNewFileModalOpen(false);
-      setNewFileName('untitled.txt');
-      log(`Created ${path}`, 'ok');
+      setNewFileName("untitled.txt");
+      log(`Created ${path}`, "ok");
       await loadFiles(currentPath);
       await openFile(path, name);
     } catch (e) {
-      log(`Cannot create file: ${e}`, 'error');
+      log(`Cannot create file: ${e}`, "error");
     }
   }, [currentPath, loadFiles, log, newFileName, openFile]);
 
@@ -341,74 +408,86 @@ export function IDEView() {
     try {
       await neurodeckApi.ide.deleteWorkspaceFile(pendingDeleteTab.path);
       closeTab(pendingDeleteTab.path);
-      log(`Deleted ${pendingDeleteTab.name}`, 'ok');
+      log(`Deleted ${pendingDeleteTab.name}`, "ok");
       await loadFiles(currentPath);
     } catch (e) {
-      log(`Delete failed: ${e}`, 'error');
+      log(`Delete failed: ${e}`, "error");
     } finally {
       setPendingDeleteTab(null);
     }
   }, [pendingDeleteTab, closeTab, currentPath, loadFiles, log]);
 
-  const executeCommand = useCallback(async (cmd: CommandTemplate) => {
-    if (cmd.safety === 'blocked') {
-      log(`[BLOCKED] ${cmd.label} is not permitted`, 'error');
-      return;
-    }
-
-    if (cmd.safety === 'confirm' || cmd.safety === 'dangerous') {
-      await new Promise<void>((resolveRun, resolveCancel) => {
-        setPendingCommand({ cmd, resolveRun, resolveCancel });
-      });
-    }
-
-    const cwd = activeTab
-      ? activeTab.replace(/[/\\][^/\\]+$/, '') || '.'
-      : '.';
-
-    try {
-      log(`Running: ${cmd.label}`, 'info');
-      await neurodeckApi.ide.runCommand(cmd.command, cmd.args, cwd, cmd.safety, cmd.label);
-    } catch (e) {
-      log(`Command failed: ${e}`, 'error');
-    }
-  }, [activeTab, log]);
-
-  const handleRadialCommand = useCallback((cmd: CommandTemplate) => {
-    setShowRadialWheel(false);
-    executeCommand(cmd);
-  }, [executeCommand]);
-
-  const acceptPrediction = useCallback((p: PredictionResult) => {
-    if (p.type === 'snippet' || p.type === 'lsp_completion') {
-      if (p.insertText && editorRef.current) {
-        const el = editorRef.current;
-        const start = el.selectionStart;
-        const end = el.selectionEnd;
-        el.value = el.value.slice(0, start) + p.insertText + el.value.slice(end);
-        el.selectionStart = el.selectionEnd = start + p.insertText.length;
-        onEditorInput();
-        log(`Applied: ${p.label}`, 'ok');
+  const executeCommand = useCallback(
+    async (cmd: CommandTemplate) => {
+      if (cmd.safety === "blocked") {
+        log(`[BLOCKED] ${cmd.label} is not permitted`, "error");
+        return;
       }
-    } else if (p.type === 'diagnostic_fix') {
-      setShowDiagnosticPanel(true);
-      setActiveDiagnosticMsg(diagnostics[0]?.message ?? 'Diagnostic');
-      setDiagnosticFixes([{ id: 'apply-fix', title: 'Apply suggested fix', kind: 'quickfix' }]);
-    }
-    setShowPredictions(false);
-  }, [onEditorInput, diagnostics, log]);
+
+      if (cmd.safety === "confirm" || cmd.safety === "dangerous") {
+        await new Promise<void>((resolveRun, resolveCancel) => {
+          setPendingCommand({ cmd, resolveRun, resolveCancel });
+        });
+      }
+
+      const cwd = activeTab ? activeTab.replace(/[/\\][^/\\]+$/, "") || "." : ".";
+
+      try {
+        log(`Running: ${cmd.label}`, "info");
+        await neurodeckApi.ide.runCommand(cmd.command, cmd.args, cwd, cmd.safety, cmd.label);
+      } catch (e) {
+        log(`Command failed: ${e}`, "error");
+      }
+    },
+    [activeTab, log]
+  );
+
+  const handleRadialCommand = useCallback(
+    (cmd: CommandTemplate) => {
+      setShowRadialWheel(false);
+      executeCommand(cmd);
+    },
+    [executeCommand]
+  );
+
+  const acceptPrediction = useCallback(
+    (p: PredictionResult) => {
+      if (p.type === "snippet" || p.type === "lsp_completion") {
+        if (p.insertText && editorRef.current) {
+          const el = editorRef.current;
+          const start = el.selectionStart;
+          const end = el.selectionEnd;
+          el.value = el.value.slice(0, start) + p.insertText + el.value.slice(end);
+          el.selectionStart = el.selectionEnd = start + p.insertText.length;
+          onEditorInput();
+          log(`Applied: ${p.label}`, "ok");
+        }
+      } else if (p.type === "diagnostic_fix") {
+        setShowDiagnosticPanel(true);
+        setActiveDiagnosticMsg(diagnostics[0]?.message ?? "Diagnostic");
+        setDiagnosticFixes([{ id: "apply-fix", title: "Apply suggested fix", kind: "quickfix" }]);
+      }
+      setShowPredictions(false);
+    },
+    [onEditorInput, diagnostics, log]
+  );
 
   const triggerLspCompletions = useCallback(async () => {
     if (!activeTab || !editorRef.current) return;
     const tab = openTabs.find((t) => t.path === activeTab);
-    if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== 'ready') return;
+    if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== "ready") return;
     const el = editorRef.current;
     const textBefore = el.value.slice(0, el.selectionStart);
-    const lines = textBefore.split('\n');
+    const lines = textBefore.split("\n");
     const line = lines.length - 1;
     const character = lines[line]?.length ?? 0;
     try {
-      const items = await neurodeckApi.lsp.getCompletions(tab.lang, fileUri(activeTab), line, character);
+      const items = await neurodeckApi.lsp.getCompletions(
+        tab.lang,
+        fileUri(activeTab),
+        line,
+        character
+      );
       if (items.length > 0) {
         setLspCompletions(items);
         setShowLspCompletions(true);
@@ -421,60 +500,73 @@ export function IDEView() {
   const goToDefinition = useCallback(async () => {
     if (!activeTab || !editorRef.current) return;
     const tab = openTabs.find((t) => t.path === activeTab);
-    if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== 'ready') return;
+    if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== "ready") return;
     const el = editorRef.current;
     const textBefore = el.value.slice(0, el.selectionStart);
-    const lines = textBefore.split('\n');
+    const lines = textBefore.split("\n");
     const line = lines.length - 1;
     const character = lines[line]?.length ?? 0;
     try {
-      const locs = await neurodeckApi.lsp.getDefinitions(tab.lang, fileUri(activeTab), line, character);
+      const locs = await neurodeckApi.lsp.getDefinitions(
+        tab.lang,
+        fileUri(activeTab),
+        line,
+        character
+      );
       if (locs.length > 0) {
         const first = locs[0];
-        const path = first.uri.replace(/^file:\/\//, '').replace(/^file:\/\//, '');
+        const path = first.uri.replace(/^file:\/\//, "").replace(/^file:\/\//, "");
         const name = path.split(/[/\\]/).pop() ?? path;
         await openFile(path, name);
-        log(`Go to definition: ${name}:${first.range.start.line + 1}`, 'ok');
+        log(`Go to definition: ${name}:${first.range.start.line + 1}`, "ok");
       } else {
-        log('No definition found', 'warn');
+        log("No definition found", "warn");
       }
     } catch (e) {
-      log(`Go to definition failed: ${e}`, 'warn');
+      log(`Go to definition failed: ${e}`, "warn");
     }
   }, [activeTab, openTabs, lspStatus, openFile, log]);
 
-  const onEditorMouseMove = useCallback((e: React.MouseEvent<HTMLTextAreaElement>) => {
-    if (!activeTab) return;
-    const tab = openTabs.find((t) => t.path === activeTab);
-    if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== 'ready') return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    if (hoverTimer.current) clearTimeout(hoverTimer.current);
-    hoverTimer.current = setTimeout(async () => {
-      if (!editorRef.current) return;
-      const el = editorRef.current;
-      const lineHeight = 20;
-      const charWidth = 8.4;
-      const scrollTop = el.scrollTop;
-      const scrollLeft = el.scrollLeft;
-      const offsetY = y - rect.top + scrollTop;
-      const offsetX = x - rect.left + scrollLeft - 40;
-      const approxLine = Math.max(0, Math.floor(offsetY / lineHeight));
-      const approxChar = Math.max(0, Math.floor(offsetX / charWidth));
-      try {
-        const hover = await neurodeckApi.lsp.getHover(tab.lang, fileUri(activeTab), approxLine, approxChar);
-        if (hover?.contents) {
-          setHoverInfo(hover);
-          setHoverPos({ x, y });
-        } else {
+  const onEditorMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLTextAreaElement>) => {
+      if (!activeTab) return;
+      const tab = openTabs.find((t) => t.path === activeTab);
+      if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== "ready") return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX;
+      const y = e.clientY;
+      if (hoverTimer.current) clearTimeout(hoverTimer.current);
+      hoverTimer.current = setTimeout(async () => {
+        if (!editorRef.current) return;
+        const el = editorRef.current;
+        const lineHeight = 20;
+        const charWidth = 8.4;
+        const scrollTop = el.scrollTop;
+        const scrollLeft = el.scrollLeft;
+        const offsetY = y - rect.top + scrollTop;
+        const offsetX = x - rect.left + scrollLeft - 40;
+        const approxLine = Math.max(0, Math.floor(offsetY / lineHeight));
+        const approxChar = Math.max(0, Math.floor(offsetX / charWidth));
+        try {
+          const hover = await neurodeckApi.lsp.getHover(
+            tab.lang,
+            fileUri(activeTab),
+            approxLine,
+            approxChar
+          );
+          if (hover?.contents) {
+            setHoverInfo(hover);
+            setHoverPos({ x, y });
+          } else {
+            setHoverInfo(null);
+          }
+        } catch {
           setHoverInfo(null);
         }
-      } catch {
-        setHoverInfo(null);
-      }
-    }, 500);
-  }, [activeTab, openTabs, lspStatus]);
+      }, 500);
+    },
+    [activeTab, openTabs, lspStatus]
+  );
 
   const onEditorMouseLeave = useCallback(() => {
     if (hoverTimer.current) clearTimeout(hoverTimer.current);
@@ -484,7 +576,19 @@ export function IDEView() {
 
   const activeProfile = activeTabData ? getProfileForFile(activeTabData.name) : null;
   const activeCommands: CommandTemplate[] = activeProfile
-    ? getTopCommands(activeProfile, { rootPath: currentPath, detectedLanguages: [activeProfile.id], packageManager: 'none', hasGit: false, configFiles: [], availableScripts: {}, detectedAt: '' }, 8)
+    ? getTopCommands(
+        activeProfile,
+        {
+          rootPath: currentPath,
+          detectedLanguages: [activeProfile.id],
+          packageManager: "none",
+          hasGit: false,
+          configFiles: [],
+          availableScripts: {},
+          detectedAt: "",
+        },
+        8
+      )
     : [];
 
   return (
@@ -502,7 +606,7 @@ export function IDEView() {
               <LanguageModeBadge
                 languageId={activeProfile?.id ?? activeTabData.lang}
                 displayName={activeProfile?.displayName ?? activeTabData.lang}
-                lspStatus={lspStatus === 'off' ? 'missing' : lspStatus}
+                lspStatus={lspStatus === "off" ? "missing" : lspStatus}
                 ideMode={ideMode}
               />
             )}
@@ -510,34 +614,54 @@ export function IDEView() {
           <p className="text-xs text-text-muted">Integrated code workspace</p>
         </div>
         <div className="flex items-center gap-1">
-          <IconButton aria-label="New file" title="New file" variant="subtle" onClick={() => setNewFileModalOpen(true)}>
+          <IconButton
+            aria-label="New file"
+            title="New file"
+            variant="subtle"
+            onClick={() => setNewFileModalOpen(true)}
+          >
             <FilePlus className="h-4 w-4" aria-hidden="true" />
           </IconButton>
-          <IconButton aria-label="Save (Ctrl+S)" title="Save (Ctrl+S)" variant="subtle" onClick={saveActiveFile}>
+          <IconButton
+            aria-label="Save (Ctrl+S)"
+            title="Save (Ctrl+S)"
+            variant="subtle"
+            onClick={saveActiveFile}
+          >
             <Save className="h-4 w-4" aria-hidden="true" />
           </IconButton>
           <IconButton aria-label="Delete" title="Delete" variant="subtle" onClick={deleteFile}>
             <Trash2 className="h-4 w-4" aria-hidden="true" />
           </IconButton>
-          <IconButton aria-label="Command wheel (Y)" title="Command wheel (Y)" variant="subtle" onClick={() => setShowRadialWheel(true)}>
+          <IconButton
+            aria-label="Command wheel (Y)"
+            title="Command wheel (Y)"
+            variant="subtle"
+            onClick={() => setShowRadialWheel(true)}
+          >
             <span className="text-xs font-bold">⊕</span>
           </IconButton>
-          <IconButton aria-label="Toggle hints" title="Toggle hints" variant="subtle" onClick={() => setShowHintBar((v) => !v)}>
+          <IconButton
+            aria-label="Toggle hints"
+            title="Toggle hints"
+            variant="subtle"
+            onClick={() => setShowHintBar((v) => !v)}
+          >
             <span className="text-[10px] font-bold">HB</span>
           </IconButton>
-          <IconButton aria-label="Refresh" title="Refresh" variant="subtle" onClick={() => loadFiles(currentPath)}>
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+          <IconButton
+            aria-label="Refresh"
+            title="Refresh"
+            variant="subtle"
+            onClick={() => loadFiles(currentPath)}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
           </IconButton>
         </div>
       </header>
 
       <div className="flex min-h-0 flex-1 gap-3">
-        <Panel
-          className="flex w-52 flex-col"
-          eyebrow="Explorer"
-          title="Workspace"
-         
-        >
+        <Panel className="flex w-52 flex-col" eyebrow="Explorer" title="Workspace">
           <div className="min-h-0 flex-1 overflow-auto space-y-0.5">
             {currentPath && (
               <Button
@@ -548,13 +672,15 @@ export function IDEView() {
                 className="justify-start"
                 onClick={() => {
                   const parts = currentPath.split(/[/\\]/).filter(Boolean);
-                  loadFiles(parts.slice(0, -1).join('/'));
+                  loadFiles(parts.slice(0, -1).join("/"));
                 }}
               >
                 ..
               </Button>
             )}
-            <div className="px-2 py-1 text-[10px] text-text-muted/60 truncate">{currentPath || 'workspace'}</div>
+            <div className="px-2 py-1 text-[10px] text-text-muted/60 truncate">
+              {currentPath || "workspace"}
+            </div>
             {files.length === 0 && (
               <div className="px-2 py-1.5 text-xs text-text-muted/50 italic">No files</div>
             )}
@@ -562,12 +688,18 @@ export function IDEView() {
               <button
                 key={f.path}
                 type="button"
-                onClick={() => f.is_dir ? loadFiles(f.path) : openFile(f.path, f.name)}
+                onClick={() => (f.is_dir ? loadFiles(f.path) : openFile(f.path, f.name))}
                 className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40 ${
-                  activeTab === f.path ? 'bg-accent-primary/10 text-accent-primary' : 'text-text-muted hover:bg-surface-secondary'
+                  activeTab === f.path
+                    ? "bg-accent-primary/10 text-accent-primary"
+                    : "text-text-muted hover:bg-surface-secondary"
                 }`}
               >
-                {f.is_dir ? <FolderOpen className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : <span className="shrink-0 text-xs">{getLangIcon(getLanguage(f.name))}</span>}
+                {f.is_dir ? (
+                  <FolderOpen className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                ) : (
+                  <span className="shrink-0 text-xs">{getLangIcon(getLanguage(f.name))}</span>
+                )}
                 <span className="truncate">{f.name}</span>
               </button>
             ))}
@@ -576,29 +708,39 @@ export function IDEView() {
 
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           {openTabs.length > 0 && (
-            <div role="tablist" aria-label="Open editor files" className="flex gap-1 overflow-x-auto">
+            <div
+              role="tablist"
+              aria-label="Open editor files"
+              className="flex gap-1 overflow-x-auto"
+            >
               {openTabs.map((tab) => (
                 <button
                   key={tab.path}
-                  id={`ide-tab-${tab.path.replace(/[^a-z0-9]/gi, '-')}`}
+                  id={`ide-tab-${tab.path.replace(/[^a-z0-9]/gi, "-")}`}
                   type="button"
                   role="tab"
                   aria-selected={activeTab === tab.path}
                   onClick={() => setActiveTab(tab.path)}
                   className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                     activeTab === tab.path
-                      ? 'border-accent-primary/30 bg-accent-primary/10 text-accent-primary'
-                      : 'border-border-subtle bg-surface-secondary text-text-muted hover:bg-surface-tertiary'
+                      ? "border-accent-primary/30 bg-accent-primary/10 text-accent-primary"
+                      : "border-border-subtle bg-surface-secondary text-text-muted hover:bg-surface-tertiary"
                   }`}
                 >
                   <span>{getLangIcon(tab.lang)}</span>
-                  <span className="truncate max-w-[120px]">{tab.name}{tab.dirty ? ' ●' : ''}</span>
+                  <span className="truncate max-w-[120px]">
+                    {tab.name}
+                    {tab.dirty ? " ●" : ""}
+                  </span>
                   <IconButton
                     aria-label={`Close ${tab.name}`}
                     variant="ghost"
                     size="sm"
                     className="ml-1 h-5 w-5"
-                    onClick={(e) => { e.stopPropagation(); closeTab(tab.path); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeTab(tab.path);
+                    }}
                   >
                     <X className="h-3 w-3" aria-hidden="true" />
                   </IconButton>
@@ -607,16 +749,17 @@ export function IDEView() {
             </div>
           )}
 
-          <Panel
-            className="relative flex min-h-0 flex-1 flex-col"
-           
-          >
+          <Panel className="relative flex min-h-0 flex-1 flex-col">
             {activeTabData ? (
               <>
                 <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2">
                   <FileCode className="h-3.5 w-3.5 text-text-muted" aria-hidden="true" />
                   <span className="text-xs text-text-muted">{activeTabData.name}</span>
-                  {activeTabData.dirty && <Badge tone="accent" size="sm" variant="outline">modified</Badge>}
+                  {activeTabData.dirty && (
+                    <Badge tone="accent" size="sm" variant="outline">
+                      modified
+                    </Badge>
+                  )}
                   {diagnostics.length > 0 && (
                     <Button
                       size="xs"
@@ -625,18 +768,25 @@ export function IDEView() {
                       className="ml-auto text-accent-error hover:bg-accent-error/10"
                       onClick={() => {
                         setShowDiagnosticPanel(true);
-                        setActiveDiagnosticMsg(diagnostics[0]?.message ?? '');
+                        setActiveDiagnosticMsg(diagnostics[0]?.message ?? "");
                         setDiagnosticFixes([]);
                       }}
                     >
-                      {diagnostics.length} issue{diagnostics.length !== 1 ? 's' : ''}
+                      {diagnostics.length} issue{diagnostics.length !== 1 ? "s" : ""}
                     </Button>
                   )}
                 </div>
                 <div className="relative flex min-h-0 flex-1">
-                  <div ref={lineNumbersRef} className="w-10 shrink-0 overflow-hidden py-3" aria-hidden="true">
+                  <div
+                    ref={lineNumbersRef}
+                    className="w-10 shrink-0 overflow-hidden py-3"
+                    aria-hidden="true"
+                  >
                     {Array.from({ length: lineCount }, (_, i) => (
-                      <div key={i} className="px-2 text-right text-[11px] leading-5 text-text-muted/40 select-none">
+                      <div
+                        key={i}
+                        className="px-2 text-right text-[11px] leading-5 text-text-muted/40 select-none"
+                      >
                         {i + 1}
                       </div>
                     ))}
@@ -650,28 +800,28 @@ export function IDEView() {
                     onMouseMove={onEditorMouseMove}
                     onMouseLeave={onEditorMouseLeave}
                     onKeyDown={(e) => {
-                      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
                         e.preventDefault();
                         saveActiveFile();
                       }
-                      if (e.ctrlKey && e.key === ' ') {
+                      if (e.ctrlKey && e.key === " ") {
                         e.preventDefault();
                         void triggerLspCompletions();
                       }
-                      if (e.key === 'F12') {
+                      if (e.key === "F12") {
                         e.preventDefault();
                         void goToDefinition();
                       }
-                      if (e.key === 'Escape') {
+                      if (e.key === "Escape") {
                         setShowLspCompletions(false);
                         setHoverInfo(null);
                       }
-                      if (e.key === 'Tab' && !showPredictions && !showLspCompletions) {
+                      if (e.key === "Tab" && !showPredictions && !showLspCompletions) {
                         e.preventDefault();
                         const el = e.currentTarget;
                         const start = el.selectionStart;
                         const end = el.selectionEnd;
-                        el.value = el.value.slice(0, start) + '  ' + el.value.slice(end);
+                        el.value = el.value.slice(0, start) + "  " + el.value.slice(end);
                         el.selectionStart = el.selectionEnd = start + 2;
                         onEditorInput();
                       }
@@ -685,7 +835,7 @@ export function IDEView() {
                     fixes={diagnosticFixes}
                     diagnosticMessage={activeDiagnosticMsg}
                     onApply={(fix) => {
-                      log(`Applied fix: ${fix.title}`, 'ok');
+                      log(`Applied fix: ${fix.title}`, "ok");
                       setShowDiagnosticPanel(false);
                     }}
                     onClose={() => setShowDiagnosticPanel(false)}
@@ -700,7 +850,9 @@ export function IDEView() {
                     className="absolute bottom-2 left-12 z-tooltip max-h-48 w-72 overflow-auto rounded-xl border border-accent-primary/20 bg-surface-secondary shadow-glow-sm"
                   >
                     <div className="flex items-center justify-between border-b border-border-subtle px-3 py-1.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Completions</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                        Completions
+                      </span>
                       <IconButton
                         aria-label="Close completions"
                         variant="ghost"
@@ -728,11 +880,17 @@ export function IDEView() {
                           el.selectionStart = el.selectionEnd = start + insertText.length;
                           onEditorInput();
                           setShowLspCompletions(false);
-                          log(`Inserted: ${item.label}`, 'ok');
+                          log(`Inserted: ${item.label}`, "ok");
                         }}
                       >
                         <span className="shrink-0 text-[10px] text-text-muted/60 w-4 text-center">
-                          {item.kind === 2 ? 'M' : item.kind === 6 ? 'V' : item.kind === 5 ? 'F' : '·'}
+                          {item.kind === 2
+                            ? "M"
+                            : item.kind === 6
+                              ? "V"
+                              : item.kind === 5
+                                ? "F"
+                                : "·"}
                         </span>
                         <span className="truncate font-mono">{item.label}</span>
                         {item.detail && (
@@ -763,7 +921,12 @@ export function IDEView() {
                 title="Open a file"
                 description="Select a file from the explorer to start editing, or create a new workspace file."
                 action={
-                  <Button variant="primary" size="sm" onClick={() => setNewFileModalOpen(true)} icon={FilePlus}>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setNewFileModalOpen(true)}
+                    icon={FilePlus}
+                  >
                     New File
                   </Button>
                 }
@@ -784,7 +947,6 @@ export function IDEView() {
             className="h-28 shrink-0"
             eyebrow="Output"
             title="Command Log"
-           
             action={
               <Button variant="ghost" size="xs" onClick={() => setLogs([])}>
                 Clear
@@ -792,12 +954,23 @@ export function IDEView() {
             }
           >
             <div className="h-[calc(100%-2.5rem)] overflow-auto space-y-0.5 px-1">
-              {logs.length === 0 && <p className="text-[11px] text-text-muted/40 italic">No output yet</p>}
+              {logs.length === 0 && (
+                <p className="text-[11px] text-text-muted/40 italic">No output yet</p>
+              )}
               {logs.map((l, i) => (
-                <div key={i} className={`text-[11px] font-mono ${
-                  l.tone === 'error' ? 'text-accent-error' : l.tone === 'ok' ? 'text-accent-success' : l.tone === 'warn' ? 'text-accent-warning' : 'text-text-muted'
-                }`}>
-                  [{new Date().toLocaleTimeString('en-US', { hour12: false })}] {l.text}
+                <div
+                  key={i}
+                  className={`text-[11px] font-mono ${
+                    l.tone === "error"
+                      ? "text-accent-error"
+                      : l.tone === "ok"
+                        ? "text-accent-success"
+                        : l.tone === "warn"
+                          ? "text-accent-warning"
+                          : "text-text-muted"
+                  }`}
+                >
+                  [{new Date().toLocaleTimeString("en-US", { hour12: false })}] {l.text}
                 </div>
               ))}
             </div>
@@ -817,7 +990,7 @@ export function IDEView() {
         <SafeCommandConfirmModal
           command={pendingCommand.cmd.command}
           args={pendingCommand.cmd.args}
-          cwd={activeTab ? activeTab.replace(/[/\\][^/\\]+$/, '') || '.' : '.'}
+          cwd={activeTab ? activeTab.replace(/[/\\][^/\\]+$/, "") || "." : "."}
           safety={pendingCommand.cmd.safety}
           label={pendingCommand.cmd.label}
           description={pendingCommand.cmd.description}
@@ -828,7 +1001,7 @@ export function IDEView() {
           onCancel={() => {
             pendingCommand.resolveCancel();
             setPendingCommand(null);
-            log(`Cancelled: ${pendingCommand.cmd.label}`, 'warn');
+            log(`Cancelled: ${pendingCommand.cmd.label}`, "warn");
           }}
         />
       )}
@@ -843,11 +1016,7 @@ export function IDEView() {
             <Button variant="ghost" onClick={() => setNewFileModalOpen(false)}>
               Cancel
             </Button>
-            <Button
-              variant="primary"
-              onClick={() => void newFile()}
-              disabled={!newFileName.trim()}
-            >
+            <Button variant="primary" onClick={() => void newFile()} disabled={!newFileName.trim()}>
               Create
             </Button>
           </>
@@ -863,10 +1032,13 @@ export function IDEView() {
       <ConfirmDialog
         open={confirmDeleteOpen}
         title="Delete File"
-        message={`Delete '${pendingDeleteTab?.name ?? ''}'? This cannot be undone.`}
+        message={`Delete '${pendingDeleteTab?.name ?? ""}'? This cannot be undone.`}
         confirmLabel="Delete"
         onConfirm={() => void confirmDelete()}
-        onCancel={() => { setConfirmDeleteOpen(false); setPendingDeleteTab(null); }}
+        onCancel={() => {
+          setConfirmDeleteOpen(false);
+          setPendingDeleteTab(null);
+        }}
       />
     </div>
   );

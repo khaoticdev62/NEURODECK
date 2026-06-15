@@ -1,33 +1,37 @@
-import { useState } from 'react';
-import { Webhook, Send, Copy, Plus, Trash2 } from 'lucide-react';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { ApiResponse } from '../../services/bridgeAdapter';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { Select } from '../../components/primitives/Select';
-import { TextInput } from '../../components/primitives/TextInput';
-import { Badge } from '../../components/primitives/Badge';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '../../components/primitives/Tabs';
+import { useState } from "react";
+import { Webhook, Send, Copy, Plus, Trash2 } from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { ApiResponse } from "../../services/bridgeAdapter";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { Select } from "../../components/primitives/Select";
+import { TextInput } from "../../components/primitives/TextInput";
+import { Badge } from "../../components/primitives/Badge";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "../../components/primitives/Tabs";
 
-const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 const METHOD_OPTIONS = METHODS.map((m) => ({ value: m, label: m }));
 
 export function ApiLabView() {
-  const [method, setMethod] = useState('GET');
-  const [url, setUrl] = useState('');
-  const [headers, setHeaders] = useState<{ key: string; value: string }[]>([{ key: 'Content-Type', value: 'application/json' }]);
-  const [body, setBody] = useState('');
+  const [method, setMethod] = useState("GET");
+  const [url, setUrl] = useState("");
+  const [headers, setHeaders] = useState<{ key: string; value: string }[]>([
+    { key: "Content-Type", value: "application/json" },
+  ]);
+  const [body, setBody] = useState("");
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'headers' | 'body' | 'response'>('response');
+  const [activeTab, setActiveTab] = useState<"headers" | "body" | "response">("response");
 
   const send = async () => {
     if (!url.trim()) return;
     setLoading(true);
     try {
       const headerObj: Record<string, string> = {};
-      headers.forEach((h) => { if (h.key) headerObj[h.key] = h.value; });
+      headers.forEach((h) => {
+        if (h.key) headerObj[h.key] = h.value;
+      });
       const res = await neurodeckApi.apiLab.sendRequest({
         method,
         url: url.trim(),
@@ -35,14 +39,14 @@ export function ApiLabView() {
         body: body.trim() || undefined,
       });
       setResponse(res);
-      setActiveTab('response');
+      setActiveTab("response");
     } catch (e) {
-      setResponse({ status: 0, statusText: 'Error', headers: {}, body: String(e) });
+      setResponse({ status: 0, statusText: "Error", headers: {}, body: String(e) });
     }
     setLoading(false);
   };
 
-  const addHeader = () => setHeaders([...headers, { key: '', value: '' }]);
+  const addHeader = () => setHeaders([...headers, { key: "", value: "" }]);
   const updateHeader = (i: number, key: string, value: string) => {
     const next = [...headers];
     next[i] = { key, value };
@@ -52,11 +56,11 @@ export function ApiLabView() {
 
   const responseTone = response
     ? response.status >= 200 && response.status < 300
-      ? 'success'
+      ? "success"
       : response.status >= 400
-        ? 'danger'
-        : 'warning'
-    : 'neutral';
+        ? "danger"
+        : "warning"
+    : "neutral";
 
   return (
     <div className="flex h-full flex-col">
@@ -65,9 +69,13 @@ export function ApiLabView() {
           <Webhook className="h-5 w-5 text-accent-primary" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">API Lab</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
+            API Lab
+          </p>
           <h2 className="text-lg font-semibold text-text-primary">HTTP Request Builder</h2>
-          <p className="text-xs text-text-muted">Send requests, inspect headers, and capture responses.</p>
+          <p className="text-xs text-text-muted">
+            Send requests, inspect headers, and capture responses.
+          </p>
         </div>
       </header>
 
@@ -83,23 +91,22 @@ export function ApiLabView() {
           aria-label="Request URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && send()}
+          onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="https://api.example.com/v1/resource"
           fullWidth
         />
-        <Button
-          variant="success"
-          loading={loading}
-          onClick={send}
-          icon={Send}
-        >
+        <Button variant="success" loading={loading} onClick={send} icon={Send}>
           Send
         </Button>
       </div>
 
-      <TabGroup value={activeTab} onChange={(v) => setActiveTab(v as typeof activeTab)} className="flex min-h-0 flex-1 flex-col">
+      <TabGroup
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as typeof activeTab)}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <TabList aria-label="Request sections" className="mb-3">
-          {(['headers', 'body', 'response'] as const).map((tab) => (
+          {(["headers", "body", "response"] as const).map((tab) => (
             <Tab key={tab} value={tab}>
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </Tab>
@@ -165,7 +172,9 @@ export function ApiLabView() {
                       <Copy className="h-4 w-4" aria-hidden="true" />
                     </IconButton>
                   </div>
-                  <pre className="h-[calc(100%-2.5rem)] overflow-auto rounded-xl border border-border-subtle bg-surface-secondary/60 p-3 font-mono text-xs text-text-secondary">{response.body}</pre>
+                  <pre className="h-[calc(100%-2.5rem)] overflow-auto rounded-xl border border-border-subtle bg-surface-secondary/60 p-3 font-mono text-xs text-text-secondary">
+                    {response.body}
+                  </pre>
                 </>
               ) : (
                 <EmptyState

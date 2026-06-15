@@ -1,5 +1,5 @@
-import { Minus, Square, X } from 'lucide-react';
-import { IconButton } from '../primitives/IconButton';
+import { Minus, Square, X } from "lucide-react";
+import { IconButton } from "../primitives/IconButton";
 
 export function TitleBar({ subtitle }: { subtitle: string }) {
   return (

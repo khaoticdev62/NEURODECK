@@ -85,7 +85,9 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }
     void load();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const availableThemes = useMemo(() => themeRegistry.listThemes(), []);
@@ -98,7 +100,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (!check.valid) {
       console.warn("[ThemeProvider] theme settings validation:", check.errors);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- validate once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- validate once on mount
   }, []);
 
   const activeTheme = useMemo(() => {
@@ -117,9 +119,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [settings, activeTheme]);
 
   // Flush any pending debounced save on unmount
-  useEffect(() => () => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    },
+    []
+  );
 
   // Inject CSS variables when resolved tokens changes
   useEffect(() => {
@@ -224,7 +229,8 @@ function normalizeThemeSettings(loaded: ThemeSettings): ThemeSettings {
       performance: "premium",
       quality: "showcase",
     };
-    normalized.performanceTier = legacyPerformanceMap[rawPerformance] ?? DEFAULT_SETTINGS_FALLBACK.performanceTier;
+    normalized.performanceTier =
+      legacyPerformanceMap[rawPerformance] ?? DEFAULT_SETTINGS_FALLBACK.performanceTier;
   }
 
   return normalized;

@@ -1,43 +1,56 @@
-import type { Dispatch } from 'react';
-import { useMemo, useState } from 'react';
-import { Type, Check, X } from 'lucide-react';
-import { Badge } from '../../components/primitives/Badge';
-import { Button } from '../../components/primitives/Button';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { IconButton } from '../../components/primitives/IconButton';
-import { Panel } from '../../components/primitives/Panel';
-import { TextInput } from '../../components/primitives/TextInput';
-import { fontOptions } from '../../types/seed';
-import type { FontCategory, NeuroDeckAction, NeuroDeckState } from '../../types/neurodeck';
+import type { Dispatch } from "react";
+import { useMemo, useState } from "react";
+import { Type, Check, X } from "lucide-react";
+import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { IconButton } from "../../components/primitives/IconButton";
+import { Panel } from "../../components/primitives/Panel";
+import { TextInput } from "../../components/primitives/TextInput";
+import { fontOptions } from "../../types/seed";
+import type { FontCategory, NeuroDeckAction, NeuroDeckState } from "../../types/neurodeck";
 
-const SAMPLE_TEXT = 'NEURODECK v6 — Local AI, zero latency.';
+const SAMPLE_TEXT = "NEURODECK v6 — Local AI, zero latency.";
 const MONO_SAMPLE = 'fn main() { println!("Hello"); }';
-const CATEGORIES: FontCategory[] = ['Sans Serif', 'Serif', 'Monospace', 'Sci-Fi', 'Display'];
+const CATEGORIES: FontCategory[] = ["Sans Serif", "Serif", "Monospace", "Sci-Fi", "Display"];
 
-export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction> }) {
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<FontCategory | 'All'>('All');
+export function FontManagerView({
+  state,
+  dispatch,
+}: {
+  state: NeuroDeckState;
+  dispatch: Dispatch<NeuroDeckAction>;
+}) {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<FontCategory | "All">("All");
 
   const filtered = useMemo(() => {
     return fontOptions.filter((f) => {
       const matchesSearch = f.name.toLowerCase().includes(search.toLowerCase());
-      const matchesCategory = category === 'All' || f.category === category;
+      const matchesCategory = category === "All" || f.category === category;
       return matchesSearch && matchesCategory;
     });
   }, [search, category]);
 
   const applyFont = (fontId: string) => {
-    dispatch({ type: 'set-font', font: fontId });
+    dispatch({ type: "set-font", font: fontId });
   };
 
   const activeFont = fontOptions.find((f) => f.id === state.selectedFont);
 
   return (
-    <Panel eyebrow="Typography" title="Font Manager" className="flex h-full flex-col overflow-hidden">
+    <Panel
+      eyebrow="Typography"
+      title="Font Manager"
+      className="flex h-full flex-col overflow-hidden"
+    >
       <div className="flex flex-col gap-4 p-4">
         <p className="text-sm text-text-secondary">
-          {fontOptions.length} typefaces available • Active:{' '}
-          <span className="font-medium text-text-primary" style={{ fontFamily: activeFont?.family }}>
+          {fontOptions.length} typefaces available • Active:{" "}
+          <span
+            className="font-medium text-text-primary"
+            style={{ fontFamily: activeFont?.family }}
+          >
             {activeFont?.name}
           </span>
         </p>
@@ -52,7 +65,12 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
             className="flex-1 min-w-[12rem]"
           />
           {search && (
-            <IconButton variant="ghost" size="sm" aria-label="Clear search" onClick={() => setSearch('')}>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              aria-label="Clear search"
+              onClick={() => setSearch("")}
+            >
               <X className="h-4 w-4" aria-hidden="true" />
             </IconButton>
           )}
@@ -61,8 +79,8 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
             <Button
               type="button"
               size="xs"
-              variant={category === 'All' ? 'primary' : 'ghost'}
-              onClick={() => setCategory('All')}
+              variant={category === "All" ? "primary" : "ghost"}
+              onClick={() => setCategory("All")}
             >
               All
             </Button>
@@ -71,7 +89,7 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
                 key={c}
                 type="button"
                 size="xs"
-                variant={category === c ? 'primary' : 'ghost'}
+                variant={category === c ? "primary" : "ghost"}
                 onClick={() => setCategory(c)}
               >
                 {c}
@@ -85,18 +103,18 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((font) => {
             const isActive = state.selectedFont === font.id;
-            const preview = font.category === 'Monospace' ? MONO_SAMPLE : SAMPLE_TEXT;
+            const preview = font.category === "Monospace" ? MONO_SAMPLE : SAMPLE_TEXT;
             return (
               <button
                 key={font.id}
                 type="button"
                 onClick={() => applyFont(font.id)}
                 aria-pressed={isActive}
-                aria-label={`${font.name}${isActive ? ' (active)' : ''}`}
+                aria-label={`${font.name}${isActive ? " (active)" : ""}`}
                 className={`group relative flex flex-col rounded-2xl border p-4 text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/60 ${
                   isActive
-                    ? 'border-accent-primary/50 bg-accent-primary/[0.07] shadow-glow-sm'
-                    : 'border-border-subtle bg-surface-secondary/30 hover:border-accent-primary/30 hover:bg-surface-tertiary/30'
+                    ? "border-accent-primary/50 bg-accent-primary/[0.07] shadow-glow-sm"
+                    : "border-border-subtle bg-surface-secondary/30 hover:border-accent-primary/30 hover:bg-surface-tertiary/30"
                 }`}
               >
                 {isActive && (
@@ -124,7 +142,9 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
                 </div>
 
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-2xs text-text-muted">{font.family.split(',')[0].replace(/"/g, '')}</span>
+                  <span className="text-2xs text-text-muted">
+                    {font.family.split(",")[0].replace(/"/g, "")}
+                  </span>
                   {isActive ? (
                     <span className="text-xs font-medium text-accent-primary">Active</span>
                   ) : (
@@ -137,7 +157,11 @@ export function FontManagerView({ state, dispatch }: { state: NeuroDeckState; di
         </div>
 
         {filtered.length === 0 && (
-          <EmptyState icon={Type} title="No fonts match your search" description="Try a different query or category." />
+          <EmptyState
+            icon={Type}
+            title="No fonts match your search"
+            description="Try a different query or category."
+          />
         )}
       </div>
     </Panel>

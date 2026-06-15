@@ -32,7 +32,7 @@ export function createActionRouter(): ControllerActionRouter {
         const current = handlers.get(action) ?? [];
         handlers.set(
           action,
-          current.filter((item) => item !== handler),
+          current.filter((item) => item !== handler)
         );
       };
     },

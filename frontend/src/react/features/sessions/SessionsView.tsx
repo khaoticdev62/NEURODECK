@@ -56,7 +56,7 @@ export function SessionsView({
             onClick={() => void fetchSessions()}
             icon={loading ? undefined : RefreshCw}
           >
-            {loading ? 'Refreshing…' : 'Refresh List'}
+            {loading ? "Refreshing…" : "Refresh List"}
           </Button>
 
           <div className="mt-8 border-t border-nd-text-muted/15 pt-5">
@@ -103,9 +103,11 @@ export function SessionsView({
               description="Start a conversation to create your first session."
             />
           )}
-          {!loading && !error && sessionsList.map((node) => (
-            <SessionCard key={node.id} node={node} onRefresh={fetchSessions} />
-          ))}
+          {!loading &&
+            !error &&
+            sessionsList.map((node) => (
+              <SessionCard key={node.id} node={node} onRefresh={fetchSessions} />
+            ))}
         </div>
       </div>
     </Panel>

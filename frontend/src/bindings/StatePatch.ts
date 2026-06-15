@@ -4,4 +4,10 @@
  * A `StatePatch` represents a typed event originating from the backend.
  * The frontend listens to these to update its local state atomically.
  */
-export type StatePatch = { "type": "TerminalOutput", "payload": { id: string, data: string, } } | { "type": "TerminalExited", "payload": { id: string, code: number, } } | { "type": "ChatResponseChunk", "payload": { text: string, } } | { "type": "ChatResponseComplete" } | { "type": "Error", "payload": { message: string, } } | { "type": "GameState", "payload": { name: string, is_running: boolean, } };
+export type StatePatch =
+  | { type: "TerminalOutput"; payload: { id: string; data: string } }
+  | { type: "TerminalExited"; payload: { id: string; code: number } }
+  | { type: "ChatResponseChunk"; payload: { text: string } }
+  | { type: "ChatResponseComplete" }
+  | { type: "Error"; payload: { message: string } }
+  | { type: "GameState"; payload: { name: string; is_running: boolean } };

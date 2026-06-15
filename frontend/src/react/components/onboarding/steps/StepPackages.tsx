@@ -1,13 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Package, AlertTriangle, Check, Download } from 'lucide-react';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import { Button } from '../../primitives/Button';
-import { ErrorState } from '../../primitives/ErrorState';
-import { LoadingState } from '../../primitives/LoadingState';
-import { Panel } from '../../primitives/Panel';
-import { StatusChip } from '../../primitives/StatusChip';
-import { Toggle } from '../../primitives/Toggle';
-import type { NpmRecommendedPackage, NpmInstallProgress, NpmStatus } from '../../../types/neurodeck';
+import { useCallback, useEffect, useState } from "react";
+import { Package, AlertTriangle, Check, Download } from "lucide-react";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import { Button } from "../../primitives/Button";
+import { ErrorState } from "../../primitives/ErrorState";
+import { LoadingState } from "../../primitives/LoadingState";
+import { Panel } from "../../primitives/Panel";
+import { StatusChip } from "../../primitives/StatusChip";
+import { Toggle } from "../../primitives/Toggle";
+import type {
+  NpmRecommendedPackage,
+  NpmInstallProgress,
+  NpmStatus,
+} from "../../../types/neurodeck";
 
 export interface StepPackagesProps {
   onInstallComplete?: () => void;
@@ -76,7 +80,7 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
               ...prev,
               [r.name]: {
                 name: r.name,
-                state: 'failed',
+                state: "failed",
                 error: String(e),
               },
             }));
@@ -96,7 +100,9 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold text-[var(--nd-text-primary)]">Recommended Packages</h2>
+        <h2 className="text-xl font-semibold text-[var(--nd-text-primary)]">
+          Recommended Packages
+        </h2>
         <p className="text-xs text-[var(--nd-text-muted)]">
           Install npm feature tools to power the IDE, terminal, and agent capabilities.
         </p>
@@ -104,8 +110,8 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
 
       {status && (
         <div className="flex flex-wrap items-center gap-2">
-          <StatusBadge ok={status.node} label={`Node ${status.nodeVersion ?? 'missing'}`} />
-          <StatusBadge ok={status.npm} label={`npm ${status.npmVersion ?? 'missing'}`} />
+          <StatusBadge ok={status.node} label={`Node ${status.nodeVersion ?? "missing"}`} />
+          <StatusBadge ok={status.npm} label={`npm ${status.npmVersion ?? "missing"}`} />
         </div>
       )}
 
@@ -132,8 +138,8 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
                   key={pkg.id}
                   className={`flex items-start gap-3 rounded-[var(--nd-radius-md)] border p-3 transition motion-reduce:transition-none ${
                     isSelected
-                      ? 'border-[rgba(var(--nd-cyan-rgb),0.3)] bg-[rgba(var(--nd-cyan-rgb),0.05)]'
-                      : 'border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] hover:bg-[var(--nd-surface-hover)]'
+                      ? "border-[rgba(var(--nd-cyan-rgb),0.3)] bg-[rgba(var(--nd-cyan-rgb),0.05)]"
+                      : "border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] hover:bg-[var(--nd-surface-hover)]"
                   }`}
                 >
                   <div className="pt-0.5">
@@ -146,8 +152,13 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 shrink-0 text-[var(--nd-accent-primary)]" aria-hidden="true" />
-                      <span className="truncate text-sm font-semibold text-[var(--nd-text-primary)]">{pkg.name}</span>
+                      <Package
+                        className="h-4 w-4 shrink-0 text-[var(--nd-accent-primary)]"
+                        aria-hidden="true"
+                      />
+                      <span className="truncate text-sm font-semibold text-[var(--nd-text-primary)]">
+                        {pkg.name}
+                      </span>
                       <span className="rounded-full bg-[var(--nd-surface-tertiary)] px-1.5 py-0.5 text-[10px] text-[var(--nd-text-muted)]">
                         {pkg.category}
                       </span>
@@ -156,8 +167,8 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
                     {prog && (
                       <p className="mt-1 truncate text-[10px] text-[var(--nd-text-muted)]">
                         {prog.state}
-                        {prog.details ? `: ${prog.details}` : ''}
-                        {prog.error ? ` — ${prog.error}` : ''}
+                        {prog.details ? `: ${prog.details}` : ""}
+                        {prog.error ? ` — ${prog.error}` : ""}
                       </p>
                     )}
                   </div>
@@ -169,12 +180,7 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
       )}
 
       {error && (
-        <ErrorState
-          title="Package load failed"
-          message={error}
-          onRetry={load}
-          retryLabel="Retry"
-        />
+        <ErrorState title="Package load failed" message={error} onRetry={load} retryLabel="Retry" />
       )}
 
       <Button
@@ -186,8 +192,8 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
         onClick={() => void handleInstallSelected()}
       >
         {installing
-          ? `Installing ${selected.size} package${selected.size === 1 ? '' : 's'}...`
-          : `Install ${selected.size} selected package${selected.size === 1 ? '' : 's'}`}
+          ? `Installing ${selected.size} package${selected.size === 1 ? "" : "s"}...`
+          : `Install ${selected.size} selected package${selected.size === 1 ? "" : "s"}`}
       </Button>
     </div>
   );
@@ -195,7 +201,7 @@ export function StepPackages({ onInstallComplete }: StepPackagesProps) {
 
 function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <StatusChip tone={ok ? 'success' : 'error'} size="sm" icon={ok ? Check : AlertTriangle}>
+    <StatusChip tone={ok ? "success" : "error"} size="sm" icon={ok ? Check : AlertTriangle}>
       {label}
     </StatusChip>
   );

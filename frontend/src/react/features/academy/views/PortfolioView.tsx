@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from "react";
 import {
   Download,
   FolderOpen,
@@ -9,29 +9,29 @@ import {
   Layers,
   Target,
   BookOpen,
-} from 'lucide-react';
-import { LoadingState } from '../../../components/primitives/LoadingState';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { ErrorState } from '../../../components/primitives/ErrorState';
-import { Button } from '../../../components/primitives/Button';
-import { Panel } from '../../../components/primitives/Panel';
-import { PortfolioCard } from '../components/PortfolioCard';
+} from "lucide-react";
+import { LoadingState } from "../../../components/primitives/LoadingState";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { ErrorState } from "../../../components/primitives/ErrorState";
+import { Button } from "../../../components/primitives/Button";
+import { Panel } from "../../../components/primitives/Panel";
+import { PortfolioCard } from "../components/PortfolioCard";
 import {
   computeStats,
   entriesToMarkdown,
   entriesToResumeBullets,
   downloadText,
-} from '../utils/portfolioExport';
-import type { AcademyPortfolioEntry } from '../../../services/bridgeAdapter';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
+} from "../utils/portfolioExport";
+import type { AcademyPortfolioEntry } from "../../../services/bridgeAdapter";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
 
 type Entry = AcademyPortfolioEntry;
-type FilterTab = 'all' | 'labs' | 'soc';
+type FilterTab = "all" | "labs" | "soc";
 
 const FILTER_TABS: { id: FilterTab; label: string; icon: React.ElementType }[] = [
-  { id: 'all', label: 'All', icon: Layers },
-  { id: 'labs', label: 'Lab Reports', icon: FileText },
-  { id: 'soc', label: 'SOC Sessions', icon: ShieldAlert },
+  { id: "all", label: "All", icon: Layers },
+  { id: "labs", label: "Lab Reports", icon: FileText },
+  { id: "soc", label: "SOC Sessions", icon: ShieldAlert },
 ];
 
 function StatChip({
@@ -63,7 +63,7 @@ function CopyAllButton({ content, label }: { content: string; label: string }) {
   }
   return (
     <Button size="xs" variant="ghost" icon={copied ? Check : Copy} onClick={handleCopy}>
-      {copied ? 'Copied' : label}
+      {copied ? "Copied" : label}
     </Button>
   );
 }
@@ -72,7 +72,7 @@ export function PortfolioView() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterTab>('all');
+  const [filter, setFilter] = useState<FilterTab>("all");
   const [showResume, setShowResume] = useState(false);
 
   const load = useCallback(async () => {
@@ -84,10 +84,10 @@ export function PortfolioView() {
     } catch (e) {
       // Fall back to localStorage-persisted SOC entries merged with bridge entries
       try {
-        const raw = localStorage.getItem('neurodeck_academy_portfolio_local');
+        const raw = localStorage.getItem("neurodeck_academy_portfolio_local");
         setEntries(raw ? (JSON.parse(raw) as Entry[]) : []);
       } catch {
-        setError(e instanceof Error ? e.message : 'Failed to load portfolio');
+        setError(e instanceof Error ? e.message : "Failed to load portfolio");
       }
     } finally {
       setLoading(false);
@@ -99,8 +99,8 @@ export function PortfolioView() {
   }, [load]);
 
   const filtered = entries.filter((e) => {
-    if (filter === 'soc') return e.labId.startsWith('soc-session');
-    if (filter === 'labs') return !e.labId.startsWith('soc-session');
+    if (filter === "soc") return e.labId.startsWith("soc-session");
+    if (filter === "labs") return !e.labId.startsWith("soc-session");
     return true;
   });
 
@@ -126,13 +126,15 @@ export function PortfolioView() {
               size="sm"
               variant="soft"
               icon={Download}
-              onClick={() => downloadText(entriesToMarkdown(entries), `soc-portfolio-${Date.now()}.md`)}
+              onClick={() =>
+                downloadText(entriesToMarkdown(entries), `soc-portfolio-${Date.now()}.md`)
+              }
             >
               Export .md
             </Button>
             <Button
               size="sm"
-              variant={showResume ? 'soft' : 'secondary'}
+              variant={showResume ? "soft" : "secondary"}
               icon={BookOpen}
               onClick={() => setShowResume((v) => !v)}
             >
@@ -183,8 +185,8 @@ export function PortfolioView() {
               onClick={() => setFilter(id)}
               className={`inline-flex min-h-touch items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
                 filter === id
-                  ? 'bg-nd-accent-primary/15 text-nd-accent-primary'
-                  : 'text-nd-text-secondary hover:bg-nd-surface/40 hover:text-nd-text-primary'
+                  ? "bg-nd-accent-primary/15 text-nd-accent-primary"
+                  : "text-nd-text-secondary hover:bg-nd-surface/40 hover:text-nd-text-primary"
               }`}
             >
               <Icon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -204,11 +206,11 @@ export function PortfolioView() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title={`No ${filter === 'soc' ? 'SOC sessions' : 'lab reports'} yet`}
+          title={`No ${filter === "soc" ? "SOC sessions" : "lab reports"} yet`}
           description={
-            filter === 'soc'
-              ? 'Complete the SOC Console triage to generate session entries.'
-              : 'Start a lab from the Labs tab to generate report entries.'
+            filter === "soc"
+              ? "Complete the SOC Console triage to generate session entries."
+              : "Start a lab from the Labs tab to generate report entries."
           }
           compact
         />

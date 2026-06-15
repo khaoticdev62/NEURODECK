@@ -1,26 +1,64 @@
-import type { LucideIcon } from 'lucide-react';
-import type { ControllerSettings } from '../../shared/types/controller';
-import type { OnboardingMode } from '../onboarding/onboarding.types';
+import type { LucideIcon } from "lucide-react";
+import type { ControllerSettings } from "../../shared/types/controller";
+import type { OnboardingMode } from "../onboarding/onboarding.types";
 
 export type ViewId =
-  | 'chat' | 'workspace' | 'execution' | 'agent' | 'agents' | 'memory'
-  | 'canvas' | 'terminal' | 'ssh' | 'ide' | 'git' | 'api-lab' | 'cli-maker'
-  | 'browser' | 'tunnel' | 'share' | 'remote' | 'torrent'
-  | 'project' | 'docs' | 'prompt-lab' | 'academy' | 'graph' | 'sessions'
-  | 'scheduler' | 'orchestrator' | 'sync'
-  | 'models' | 'cache' | 'plugins' | 'diagnostics' | 'settings'
-  | 'security' | 'themes' | 'exports' | 'maintenance' | 'recovery'
-  | 'fonts' | 'mcp';
-export type ThemeName = 'Blacksite' | 'Tactical Glass' | 'Ghost Terminal' | 'Hologrid' | 'Minimal Ops' | 'Night Watch' | 'Broadcast';
-export type AgentStatus = 'idle' | 'thinking' | 'blocked' | 'complete';
-export type ModelStatus = 'ready' | 'indexed' | 'missing' | 'disabled';
-export type MemoryScope = 'Global' | 'Project' | 'Session';
-export type PluginStatus = 'enabled' | 'disabled' | 'needs review';
-export type LogLevel = 'info' | 'warning' | 'error';
-export type AIProvider = 'ollama' | 'lmstudio' | 'openai_compat' | 'llama_cpp' | 'offline-draft';
-export type AIRole = 'system' | 'user' | 'assistant' | 'tool';
-export type AIRunStatus = 'queued' | 'running' | 'complete' | 'failed';
-export type ContextFileKind = 'manifest' | 'docs' | 'source' | 'config' | 'security' | 'unknown';
+  | "chat"
+  | "workspace"
+  | "execution"
+  | "agent"
+  | "agents"
+  | "memory"
+  | "canvas"
+  | "terminal"
+  | "ssh"
+  | "ide"
+  | "git"
+  | "api-lab"
+  | "cli-maker"
+  | "browser"
+  | "tunnel"
+  | "share"
+  | "remote"
+  | "torrent"
+  | "project"
+  | "docs"
+  | "prompt-lab"
+  | "academy"
+  | "graph"
+  | "sessions"
+  | "scheduler"
+  | "orchestrator"
+  | "sync"
+  | "models"
+  | "cache"
+  | "plugins"
+  | "diagnostics"
+  | "settings"
+  | "security"
+  | "themes"
+  | "exports"
+  | "maintenance"
+  | "recovery"
+  | "fonts"
+  | "mcp";
+export type ThemeName =
+  | "Blacksite"
+  | "Tactical Glass"
+  | "Ghost Terminal"
+  | "Hologrid"
+  | "Minimal Ops"
+  | "Night Watch"
+  | "Broadcast";
+export type AgentStatus = "idle" | "thinking" | "blocked" | "complete";
+export type ModelStatus = "ready" | "indexed" | "missing" | "disabled";
+export type MemoryScope = "Global" | "Project" | "Session";
+export type PluginStatus = "enabled" | "disabled" | "needs review";
+export type LogLevel = "info" | "warning" | "error";
+export type AIProvider = "ollama" | "lmstudio" | "openai_compat" | "llama_cpp" | "offline-draft";
+export type AIRole = "system" | "user" | "assistant" | "tool";
+export type AIRunStatus = "queued" | "running" | "complete" | "failed";
+export type ContextFileKind = "manifest" | "docs" | "source" | "config" | "security" | "unknown";
 
 export interface NavItem {
   id: ViewId;
@@ -46,7 +84,7 @@ export interface ThemeTokenSet {
 }
 
 export interface ToolStatus {
-  state: 'idle' | 'working' | 'error';
+  state: "idle" | "working" | "error";
   label: string;
   detail?: string;
   since?: string;
@@ -103,7 +141,7 @@ export interface Agent {
   role: string;
   status: AgentStatus;
   model: string;
-  memoryAccess: 'none' | 'session' | 'project' | 'global';
+  memoryAccess: "none" | "session" | "project" | "global";
   lastAction: string;
   task: string;
 }
@@ -129,7 +167,7 @@ export interface RuntimeDetection {
   path: string;
   type: string;
   exists: boolean;
-  status: 'detected' | 'missing';
+  status: "detected" | "missing";
 }
 
 export interface ModelDetectionResult {
@@ -163,7 +201,7 @@ export interface SessionNode {
 export interface CacheEntry {
   id: string;
   label: string;
-  status: 'ready' | 'stale' | 'queued';
+  status: "ready" | "stale" | "queued";
   size: string;
   updatedAt: string;
 }
@@ -280,7 +318,14 @@ export interface AIChatPayload {
 }
 
 export type AIChatResponse =
-  | { ok: true; message: AIMessage; provider: AIProvider; model: string; latencyMs: number; contextSources: string[] }
+  | {
+      ok: true;
+      message: AIMessage;
+      provider: AIProvider;
+      model: string;
+      latencyMs: number;
+      contextSources: string[];
+    }
   | { ok: false; error: string; provider?: AIProvider; model?: string };
 
 export interface AgentRunRequest {
@@ -316,7 +361,7 @@ export type AgentRunResponse =
 export interface PromptTemplate {
   id: string;
   title: string;
-  category: 'Build' | 'Audit' | 'Docs' | 'Security' | 'QA';
+  category: "Build" | "Audit" | "Docs" | "Security" | "QA";
   prompt: string;
   agentId?: string;
 }
@@ -350,8 +395,9 @@ export type CredentialStatus = {
   openai_compat: boolean;
 };
 
-export type DiagnosticsBundleResponse = { ok: true; file: string } | { ok: false; error: string; code?: string };
-
+export type DiagnosticsBundleResponse =
+  | { ok: true; file: string }
+  | { ok: false; error: string; code?: string };
 
 export interface DiagnosticLog {
   id: string;
@@ -368,7 +414,7 @@ export interface AppError {
   action?: string;
 }
 
-export type FontCategory = 'Sans Serif' | 'Serif' | 'Monospace' | 'Sci-Fi' | 'Display';
+export type FontCategory = "Sans Serif" | "Serif" | "Monospace" | "Sci-Fi" | "Display";
 
 export interface FontOption {
   id: string;
@@ -477,11 +523,11 @@ export interface NeuroDeckSelectors {
 }
 
 export type CliAction =
-  | { type: 'Prompt'; data: { template: string; use_llm: boolean } }
-  | { type: 'Shell'; data: { command: string; cwd: string | null } }
-  | { type: 'View'; data: { view_name: string } }
-  | { type: 'Chain'; data: { steps: string[] } }
-  | { type: 'Plugin'; data: { lua_code: string } };
+  | { type: "Prompt"; data: { template: string; use_llm: boolean } }
+  | { type: "Shell"; data: { command: string; cwd: string | null } }
+  | { type: "View"; data: { view_name: string } }
+  | { type: "Chain"; data: { steps: string[] } }
+  | { type: "Plugin"; data: { lua_code: string } };
 
 export interface CliCommandDef {
   id: string;
@@ -505,7 +551,16 @@ export interface ExportSessionPayload {
 
 export interface SavedSessionPayload {
   title: string;
-  state: Pick<NeuroDeckState, 'selectedPersona' | 'selectedProvider' | 'selectedModelId' | 'messages' | 'aiRuns' | 'activeProject' | 'projectContext'>;
+  state: Pick<
+    NeuroDeckState,
+    | "selectedPersona"
+    | "selectedProvider"
+    | "selectedModelId"
+    | "messages"
+    | "aiRuns"
+    | "activeProject"
+    | "projectContext"
+  >;
 }
 
 export type SaveSessionResponse = { ok: true; file: string } | { ok: false; error: string };
@@ -533,52 +588,57 @@ export interface NeuroDeckAppActions {
 }
 
 export type NeuroDeckAction =
-  | { type: 'hydrate'; payload: Partial<NeuroDeckState> | null }
-  | { type: 'set-view'; view: ViewId }
-  | { type: 'toggle-command'; open?: boolean }
-  | { type: 'toggle-deck-mode' }
-  | { type: 'set-controller-settings'; settings: Partial<ControllerSettings> }
-  | { type: 'set-theme'; theme: ThemeName }
-  | { type: 'set-persona'; persona: string }
-  | { type: 'set-tool-status'; status: ToolStatus | null }
-  | { type: 'set-status-bar'; state: StatusBarState | null }
-  | { type: 'set-provider'; provider: AIProvider }
-  | { type: 'set-selected-model'; id: string }
-  | { type: 'set-font'; font: string }
-  | { type: 'toggle-onboarding' }
-  | { type: 'open-onboarding'; mode?: OnboardingMode }
-  | { type: 'close-onboarding' }
-  | { type: 'set-composer'; value: string }
-  | { type: 'run-starter'; prompt: string }
-  | { type: 'toggle-agent'; id: string }
-  | { type: 'set-agent-status'; id: string; status: AgentStatus; lastAction?: string; task?: string }
-  | { type: 'set-model-status'; id: string; status: ModelStatus }
-  | { type: 'toggle-memory-pin'; id: string }
-  | { type: 'toggle-plugin'; id: string }
-  | { type: 'set-project-scan'; project: ProjectScanResult | null }
-  | { type: 'set-project-context'; context: ProjectContextSnapshot | null }
-  | { type: 'set-model-detection'; detection: ModelDetectionResult | null }
-  | { type: 'merge-detected-models'; models: LocalModel[] }
-  | { type: 'set-ai-health'; health: AIProviderHealth[] }
-  | { type: 'append-message'; message: AIMessage }
-  | { type: 'update-message'; id: string; content: string }
-  | { type: 'add-ai-run'; run: AgentRun }
-  | { type: 'set-diagnostics'; diagnostics: DiagnosticsPayload | null; logs: DiagnosticLog[] }
-  | { type: 'set-busy'; label: string | null }
-  | { type: 'set-error'; error: AppError | null }
-  | { type: 'set-export-path'; path: string | null }
-  | { type: 'set-active-agent'; id: string }
-  | { type: 'set-model-scores'; scores: ModelCompatibilityScore[] }
-  | { type: 'set-agent-policies'; policies: AgentModelPolicy[] }
-  | { type: 'set-recovery-events'; events: RecoveryEvent[] }
-  | { type: 'set-memories'; memories: MemoryItem[] }
-  | { type: 'add-memory'; memory: MemoryItem }
-  | { type: 'delete-memory'; id: string }
-  | { type: 'set-sessions'; sessions: SessionNode[] }
-  | { type: 'set-agents'; agents: Agent[] }
-  | { type: 'set-plugins'; plugins: PluginCard[] }
-  | { type: 'reset-local-state' };
-
+  | { type: "hydrate"; payload: Partial<NeuroDeckState> | null }
+  | { type: "set-view"; view: ViewId }
+  | { type: "toggle-command"; open?: boolean }
+  | { type: "toggle-deck-mode" }
+  | { type: "set-controller-settings"; settings: Partial<ControllerSettings> }
+  | { type: "set-theme"; theme: ThemeName }
+  | { type: "set-persona"; persona: string }
+  | { type: "set-tool-status"; status: ToolStatus | null }
+  | { type: "set-status-bar"; state: StatusBarState | null }
+  | { type: "set-provider"; provider: AIProvider }
+  | { type: "set-selected-model"; id: string }
+  | { type: "set-font"; font: string }
+  | { type: "toggle-onboarding" }
+  | { type: "open-onboarding"; mode?: OnboardingMode }
+  | { type: "close-onboarding" }
+  | { type: "set-composer"; value: string }
+  | { type: "run-starter"; prompt: string }
+  | { type: "toggle-agent"; id: string }
+  | {
+      type: "set-agent-status";
+      id: string;
+      status: AgentStatus;
+      lastAction?: string;
+      task?: string;
+    }
+  | { type: "set-model-status"; id: string; status: ModelStatus }
+  | { type: "toggle-memory-pin"; id: string }
+  | { type: "toggle-plugin"; id: string }
+  | { type: "set-project-scan"; project: ProjectScanResult | null }
+  | { type: "set-project-context"; context: ProjectContextSnapshot | null }
+  | { type: "set-model-detection"; detection: ModelDetectionResult | null }
+  | { type: "merge-detected-models"; models: LocalModel[] }
+  | { type: "set-ai-health"; health: AIProviderHealth[] }
+  | { type: "append-message"; message: AIMessage }
+  | { type: "update-message"; id: string; content: string }
+  | { type: "add-ai-run"; run: AgentRun }
+  | { type: "set-diagnostics"; diagnostics: DiagnosticsPayload | null; logs: DiagnosticLog[] }
+  | { type: "set-busy"; label: string | null }
+  | { type: "set-error"; error: AppError | null }
+  | { type: "set-export-path"; path: string | null }
+  | { type: "set-active-agent"; id: string }
+  | { type: "set-model-scores"; scores: ModelCompatibilityScore[] }
+  | { type: "set-agent-policies"; policies: AgentModelPolicy[] }
+  | { type: "set-recovery-events"; events: RecoveryEvent[] }
+  | { type: "set-memories"; memories: MemoryItem[] }
+  | { type: "add-memory"; memory: MemoryItem }
+  | { type: "delete-memory"; id: string }
+  | { type: "set-sessions"; sessions: SessionNode[] }
+  | { type: "set-agents"; agents: Agent[] }
+  | { type: "set-plugins"; plugins: PluginCard[] }
+  | { type: "reset-local-state" };
 
 // ── npm Package Manager ──────────────────────────────────────────────────────
 
@@ -600,7 +660,7 @@ export interface NpmPackage {
 
 export interface NpmInstallProgress {
   name: string;
-  state: 'downloading' | 'installing' | 'verifying' | 'completed' | 'failed';
+  state: "downloading" | "installing" | "verifying" | "completed" | "failed";
   percent?: number;
   details?: string;
   error?: string;

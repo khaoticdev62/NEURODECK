@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import type { Dispatch, FormEvent } from 'react';
-import { Bot, Loader2, Send } from 'lucide-react';
-import { Button } from '../../components/primitives/Button';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { Panel } from '../../components/primitives/Panel';
-import { TextInput } from '../../components/primitives/TextInput';
-import { AgentCard } from '../../components/cards/AgentCard';
-import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
+import { useState } from "react";
+import type { Dispatch, FormEvent } from "react";
+import { Bot, Loader2, Send } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { Panel } from "../../components/primitives/Panel";
+import { TextInput } from "../../components/primitives/TextInput";
+import { AgentCard } from "../../components/cards/AgentCard";
+import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
 
 export function AgentsView({
   state,
@@ -17,7 +17,7 @@ export function AgentsView({
   dispatch: Dispatch<NeuroDeckAction>;
   actions: NeuroDeckAppActions;
 }) {
-  const [task, setTask] = useState('');
+  const [task, setTask] = useState("");
   const isBusy = !!state.busyLabel;
 
   const handleSubmit = (e: FormEvent) => {
@@ -30,11 +30,15 @@ export function AgentsView({
     } else {
       void actions.runAssistant(trimmed);
     }
-    setTask('');
+    setTask("");
   };
 
   return (
-    <Panel eyebrow="Agent Dock" title="Specialized Operators" className="agent-shell flex h-full flex-col overflow-hidden">
+    <Panel
+      eyebrow="Agent Dock"
+      title="Specialized Operators"
+      className="agent-shell flex h-full flex-col overflow-hidden"
+    >
       <div className="agent-kicker px-4 pt-4 text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
         Agent
       </div>
@@ -57,7 +61,7 @@ export function AgentsView({
             disabled={!task.trim() || isBusy}
             icon={isBusy ? Loader2 : Send}
           >
-            {isBusy ? 'Running…' : 'Run'}
+            {isBusy ? "Running…" : "Run"}
           </Button>
         </div>
         {isBusy && state.busyLabel && (
@@ -86,7 +90,7 @@ export function AgentsView({
                 agent={agent}
                 isBusy={isBusy}
                 onRun={(id) => void actions.runAgent(id, task.trim() || undefined)}
-                onCycle={(id) => dispatch({ type: 'toggle-agent', id })}
+                onCycle={(id) => dispatch({ type: "toggle-agent", id })}
               />
             ))}
           </div>

@@ -1,5 +1,5 @@
-import { useRef, useEffect, useMemo } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import { useRef, useEffect, useMemo } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   BrainCircuit,
   FileJson,
@@ -10,11 +10,11 @@ import {
   Target,
   Wand2,
   Zap,
-} from 'lucide-react';
-import { Button } from '../../components/primitives/Button';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { ResponseCard } from './ResponseCard';
-import type { AIMessage } from '../../types/neurodeck';
+} from "lucide-react";
+import { Button } from "../../components/primitives/Button";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { ResponseCard } from "./ResponseCard";
+import type { AIMessage } from "../../types/neurodeck";
 
 interface ChatViewportProps {
   messages: AIMessage[];
@@ -28,19 +28,49 @@ interface ChatViewportProps {
 }
 
 const STARTERS = [
-  { icon: Zap, label: 'Explain RAG', hint: 'How retrieval-augmented generation works', tone: 'accent' as const },
-  { icon: Wand2, label: 'Rust Handler', hint: 'Async Axum endpoint with error handling', tone: 'success' as const },
-  { icon: Target, label: 'Game Mechanic', hint: 'Unique roguelike system design concept', tone: 'warning' as const },
-  { icon: Hash, label: 'Code Review', hint: 'Find bugs and performance issues in pasted code', tone: 'danger' as const },
-  { icon: Sparkles, label: 'Sprint Plan', hint: 'Break scope into tasks for a solo-dev AI app', tone: 'accent' as const },
-  { icon: BrainCircuit, label: 'Debug Help', hint: 'Paste your error for AI-assisted diagnosis', tone: 'success' as const },
+  {
+    icon: Zap,
+    label: "Explain RAG",
+    hint: "How retrieval-augmented generation works",
+    tone: "accent" as const,
+  },
+  {
+    icon: Wand2,
+    label: "Rust Handler",
+    hint: "Async Axum endpoint with error handling",
+    tone: "success" as const,
+  },
+  {
+    icon: Target,
+    label: "Game Mechanic",
+    hint: "Unique roguelike system design concept",
+    tone: "warning" as const,
+  },
+  {
+    icon: Hash,
+    label: "Code Review",
+    hint: "Find bugs and performance issues in pasted code",
+    tone: "danger" as const,
+  },
+  {
+    icon: Sparkles,
+    label: "Sprint Plan",
+    hint: "Break scope into tasks for a solo-dev AI app",
+    tone: "accent" as const,
+  },
+  {
+    icon: BrainCircuit,
+    label: "Debug Help",
+    hint: "Paste your error for AI-assisted diagnosis",
+    tone: "success" as const,
+  },
 ];
 
-const TONE_BAR: Record<(typeof STARTERS)[number]['tone'], string> = {
-  accent: 'bg-nd-accent-primary',
-  success: 'bg-nd-accent-success',
-  warning: 'bg-nd-accent-warning',
-  danger: 'bg-nd-accent-error',
+const TONE_BAR: Record<(typeof STARTERS)[number]["tone"], string> = {
+  accent: "bg-nd-accent-primary",
+  success: "bg-nd-accent-success",
+  warning: "bg-nd-accent-warning",
+  danger: "bg-nd-accent-error",
 };
 
 export function ChatViewport({
@@ -53,19 +83,19 @@ export function ChatViewport({
   onCheckHealth,
   onSaveSession,
 }: ChatViewportProps) {
-  const hasOnlyWelcome = messages.length === 1 && messages[0]?.id === 'system-welcome';
+  const hasOnlyWelcome = messages.length === 1 && messages[0]?.id === "system-welcome";
   const showWelcome = messages.length === 0 || hasOnlyWelcome;
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const streamingMessageId = useMemo(() => {
     if (!busyLabel) return undefined;
     const last = messages[messages.length - 1];
-    return last?.role === 'assistant' ? last.id : undefined;
+    return last?.role === "assistant" ? last.id : undefined;
   }, [busyLabel, messages]);
 
   useEffect(() => {
     if (!showWelcome && bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: 'smooth' });
+      bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, showWelcome]);
 
@@ -160,7 +190,15 @@ export function ChatViewport({
   );
 }
 
-function QuickChip({ icon: Icon, label, onClick }: { icon: LucideIcon; label: string; onClick: () => void }) {
+function QuickChip({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: LucideIcon;
+  label: string;
+  onClick: () => void;
+}) {
   return (
     <Button variant="soft" size="xs" icon={Icon} iconPosition="left" onClick={onClick}>
       {label}

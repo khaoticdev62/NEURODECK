@@ -5,7 +5,7 @@ import { useController } from "./ControllerProvider";
 export function useControllerAction(
   action: ControllerAction,
   handler: () => boolean | void | Promise<boolean | void>,
-  enabled = true,
+  enabled = true
 ) {
   const { registerActionHandler } = useController();
 

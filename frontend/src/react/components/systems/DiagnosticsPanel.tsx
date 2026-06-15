@@ -1,6 +1,6 @@
-﻿import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+﻿import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 
-type CheckStatus = 'pass' | 'warn' | 'fail';
+type CheckStatus = "pass" | "warn" | "fail";
 
 interface DiagnosticsCheck {
   id: string;
@@ -21,28 +21,35 @@ const statusIcon: Record<CheckStatus, React.ReactNode> = {
 };
 
 const statusClass: Record<CheckStatus, string> = {
-  pass: 'border-nd-accent-success/15 bg-nd-accent-success/[0.04]',
-  warn: 'border-nd-accent-warning/20 bg-nd-accent-warning/[0.06]',
-  fail: 'border-nd-accent-error/20 bg-nd-accent-error/[0.06]',
+  pass: "border-nd-accent-success/15 bg-nd-accent-success/[0.04]",
+  warn: "border-nd-accent-warning/20 bg-nd-accent-warning/[0.06]",
+  fail: "border-nd-accent-error/20 bg-nd-accent-error/[0.06]",
 };
 
 export function DiagnosticsPanel({ checks, title }: DiagnosticsPanelProps) {
-  const passCount = checks.filter((c) => c.status === 'pass').length;
-  const warnCount = checks.filter((c) => c.status === 'warn').length;
-  const failCount = checks.filter((c) => c.status === 'fail').length;
+  const passCount = checks.filter((c) => c.status === "pass").length;
+  const warnCount = checks.filter((c) => c.status === "warn").length;
+  const failCount = checks.filter((c) => c.status === "fail").length;
 
-  const overallStatus: CheckStatus = failCount > 0 ? 'fail' : warnCount > 0 ? 'warn' : 'pass';
+  const overallStatus: CheckStatus = failCount > 0 ? "fail" : warnCount > 0 ? "warn" : "pass";
 
   return (
-    <div role="list" aria-label={title ?? 'Diagnostics'}>
+    <div role="list" aria-label={title ?? "Diagnostics"}>
       {/* Summary row */}
-      <div className={`mb-3 flex items-center justify-between rounded-xl border px-3 py-2 text-xs ${statusClass[overallStatus]}`}>
+      <div
+        className={`mb-3 flex items-center justify-between rounded-xl border px-3 py-2 text-xs ${statusClass[overallStatus]}`}
+      >
         <span className="flex items-center gap-1.5 font-semibold text-nd-text-primary/90">
           {statusIcon[overallStatus]}
-          {overallStatus === 'pass' ? 'All checks passing' : overallStatus === 'warn' ? 'Warnings present' : 'Failures detected'}
+          {overallStatus === "pass"
+            ? "All checks passing"
+            : overallStatus === "warn"
+              ? "Warnings present"
+              : "Failures detected"}
         </span>
         <span className="text-nd-text-muted">
-          {passCount}✓ {warnCount > 0 && `${warnCount}⚠ `}{failCount > 0 && `${failCount}✗`}
+          {passCount}✓ {warnCount > 0 && `${warnCount}⚠ `}
+          {failCount > 0 && `${failCount}✗`}
         </span>
       </div>
 

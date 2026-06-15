@@ -118,7 +118,11 @@ describe("BrowserView Component", () => {
         isLoading: false,
       },
     ]);
-    mockGetActiveTab.mockResolvedValue({ id: "tab-1", displayUrl: "google.com", url: "https://google.com" });
+    mockGetActiveTab.mockResolvedValue({
+      id: "tab-1",
+      displayUrl: "google.com",
+      url: "https://google.com",
+    });
     mockGetProfiles.mockResolvedValue([{ id: "default", name: "Default" }]);
     mockGetDownloads.mockResolvedValue([]);
     mockGetBookmarks.mockResolvedValue([]);
@@ -182,7 +186,11 @@ describe("BrowserView Component", () => {
         },
       },
     ]);
-    mockGetActiveTab.mockResolvedValue({ id: "tab-error", url: "https://broken-site.xyz", state: "error" });
+    mockGetActiveTab.mockResolvedValue({
+      id: "tab-error",
+      url: "https://broken-site.xyz",
+      state: "error",
+    });
 
     render(<BrowserView />);
 
@@ -214,7 +222,11 @@ describe("BrowserView Component", () => {
         isLoading: false,
       },
     ]);
-    mockGetActiveTab.mockResolvedValue({ id: "tab-crashed", url: "https://crashy.com", state: "crashed" });
+    mockGetActiveTab.mockResolvedValue({
+      id: "tab-crashed",
+      url: "https://crashy.com",
+      state: "crashed",
+    });
 
     render(<BrowserView />);
 
@@ -242,7 +254,11 @@ describe("BrowserView Component", () => {
         isLoading: false,
       },
     ]);
-    mockGetActiveTab.mockResolvedValue({ id: "tab-blocked", url: "file:///etc/passwd", state: "blocked" });
+    mockGetActiveTab.mockResolvedValue({
+      id: "tab-blocked",
+      url: "file:///etc/passwd",
+      state: "blocked",
+    });
 
     render(<BrowserView />);
 

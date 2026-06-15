@@ -8,7 +8,13 @@ type Props = {
   onOpenSessions: () => void;
 };
 
-export function TerminalControllerHintBar({ activeMode, onOpenPalette, onOpenAssistant, onOpenSearch, onOpenSessions }: Props) {
+export function TerminalControllerHintBar({
+  activeMode,
+  onOpenPalette,
+  onOpenAssistant,
+  onOpenSearch,
+  onOpenSessions,
+}: Props) {
   const hints = [
     `A ${TERMINAL_CONTROLLER_ACTIONS.A}`,
     `B ${TERMINAL_CONTROLLER_ACTIONS.B}`,
@@ -24,22 +30,41 @@ export function TerminalControllerHintBar({ activeMode, onOpenPalette, onOpenAss
     <div className="flex flex-wrap items-center justify-between gap-2 border-b border-nd-text-muted/15 bg-nd-surface/20 px-4 py-2 text-[11px] text-nd-text-muted">
       <div className="flex flex-wrap gap-2">
         {hints.map((hint) => (
-          <span key={hint} className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1">
+          <span
+            key={hint}
+            className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1"
+          >
             {hint}
           </span>
         ))}
       </div>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={onOpenPalette} className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1">
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1"
+        >
           Palette
         </button>
-        <button type="button" onClick={onOpenAssistant} className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1">
+        <button
+          type="button"
+          onClick={onOpenAssistant}
+          className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1"
+        >
           Assistant
         </button>
-        <button type="button" onClick={onOpenSearch} className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1">
+        <button
+          type="button"
+          onClick={onOpenSearch}
+          className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1"
+        >
           Search
         </button>
-        <button type="button" onClick={onOpenSessions} className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1">
+        <button
+          type="button"
+          onClick={onOpenSessions}
+          className="rounded-full border border-nd-text-muted/15 bg-nd-surface/40 px-2.5 py-1"
+        >
           Sessions
         </button>
       </div>
@@ -49,4 +74,3 @@ export function TerminalControllerHintBar({ activeMode, onOpenPalette, onOpenAss
     </div>
   );
 }
-

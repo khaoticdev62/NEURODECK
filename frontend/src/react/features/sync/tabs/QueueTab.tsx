@@ -1,11 +1,11 @@
-import { ArrowDown, ArrowUp, ListChecks, RotateCcw, Trash2, X } from 'lucide-react';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { StatusChip } from '../../../components/primitives/StatusChip';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { Panel } from '../../../components/primitives/Panel';
-import { Button } from '../../../components/primitives/Button';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import type { FileTransfer } from '../../../services/bridgeAdapter';
+import { ArrowDown, ArrowUp, ListChecks, RotateCcw, Trash2, X } from "lucide-react";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { StatusChip } from "../../../components/primitives/StatusChip";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { Panel } from "../../../components/primitives/Panel";
+import { Button } from "../../../components/primitives/Button";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import type { FileTransfer } from "../../../services/bridgeAdapter";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -14,11 +14,11 @@ function formatBytes(n: number): string {
   return `${(n / 1073741824).toFixed(2)} GB`;
 }
 
-function transferTone(status: FileTransfer['status']): 'info' | 'success' | 'warning' | 'error' {
-  if (status === 'Completed') return 'success';
-  if (status === 'Failed' || status === 'Cancelled' || status === 'Rejected') return 'error';
-  if (status === 'Transferring') return 'info';
-  return 'warning';
+function transferTone(status: FileTransfer["status"]): "info" | "success" | "warning" | "error" {
+  if (status === "Completed") return "success";
+  if (status === "Failed" || status === "Cancelled" || status === "Rejected") return "error";
+  if (status === "Transferring") return "info";
+  return "warning";
 }
 
 interface Props {
@@ -30,8 +30,12 @@ interface Props {
 }
 
 export function QueueTab({ transfers, onCancel, onRetry, onClearDone, onError }: Props) {
-  const queue = transfers.filter((t) => ['Pending', 'Accepted', 'Transferring', 'Failed', 'Cancelled'].includes(t.status));
-  const completedCount = transfers.filter((t) => ['Completed', 'Failed', 'Cancelled', 'Rejected'].includes(t.status)).length;
+  const queue = transfers.filter((t) =>
+    ["Pending", "Accepted", "Transferring", "Failed", "Cancelled"].includes(t.status)
+  );
+  const completedCount = transfers.filter((t) =>
+    ["Completed", "Failed", "Cancelled", "Rejected"].includes(t.status)
+  ).length;
 
   const handleClearCompleted = async () => {
     try {
@@ -77,7 +81,7 @@ export function QueueTab({ transfers, onCancel, onRetry, onClearDone, onError }:
           <ul role="list" className="flex flex-col gap-2">
             {queue.map((t) => {
               const pct = Math.min(100, Math.round((t.progress / Math.max(t.size, 1)) * 100));
-              const isTransferring = t.status === 'Transferring';
+              const isTransferring = t.status === "Transferring";
               return (
                 <li
                   key={t.id}
@@ -85,7 +89,7 @@ export function QueueTab({ transfers, onCancel, onRetry, onClearDone, onError }:
                 >
                   <div className="flex items-start gap-3">
                     <span className="mt-0.5 text-nd-text-muted" aria-hidden="true">
-                      {t.direction === 'Incoming' ? (
+                      {t.direction === "Incoming" ? (
                         <ArrowDown className="h-4 w-4" />
                       ) : (
                         <ArrowUp className="h-4 w-4" />
@@ -93,7 +97,10 @@ export function QueueTab({ transfers, onCancel, onRetry, onClearDone, onError }:
                     </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-medium text-nd-text-primary" title={t.filename}>
+                        <p
+                          className="truncate text-sm font-medium text-nd-text-primary"
+                          title={t.filename}
+                        >
                           {t.filename}
                         </p>
                         <StatusChip tone={transferTone(t.status)} size="sm" pulse={isTransferring}>
@@ -101,7 +108,8 @@ export function QueueTab({ transfers, onCancel, onRetry, onClearDone, onError }:
                         </StatusChip>
                       </div>
                       <p className="mt-0.5 text-xs text-nd-text-muted">
-                        {t.direction} · {t.peer_name || t.peer_ip} · {formatBytes(t.progress)} / {formatBytes(t.size)}
+                        {t.direction} · {t.peer_name || t.peer_ip} · {formatBytes(t.progress)} /{" "}
+                        {formatBytes(t.size)}
                       </p>
                       <div
                         className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-nd-surface-tertiary/60"
@@ -129,17 +137,18 @@ export function QueueTab({ transfers, onCancel, onRetry, onClearDone, onError }:
                           <X className="h-4 w-4" aria-hidden="true" />
                         </IconButton>
                       )}
-                      {(t.status === 'Failed' || t.status === 'Cancelled') && t.direction === 'Outgoing' && (
-                        <IconButton
-                          type="button"
-                          size="md"
-                          variant="subtle"
-                          aria-label={`Retry ${t.filename}`}
-                          onClick={() => onRetry(t.id)}
-                        >
-                          <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                        </IconButton>
-                      )}
+                      {(t.status === "Failed" || t.status === "Cancelled") &&
+                        t.direction === "Outgoing" && (
+                          <IconButton
+                            type="button"
+                            size="md"
+                            variant="subtle"
+                            aria-label={`Retry ${t.filename}`}
+                            onClick={() => onRetry(t.id)}
+                          >
+                            <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                          </IconButton>
+                        )}
                     </div>
                   </div>
                 </li>

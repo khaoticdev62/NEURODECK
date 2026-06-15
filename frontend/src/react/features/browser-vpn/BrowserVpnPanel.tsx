@@ -8,7 +8,11 @@ import { Panel } from "../../components/primitives/Panel";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import { Toggle } from "../../components/primitives/Toggle";
 import type { VpnConfigTemplate } from "../../../../../src/shared/browser-vpn/vpnConfigTemplates";
-import type { VpnConnectionEvidence, VpnDiagnosticsReport, VpnProviderSupport } from "../../../../../src/shared/browser-vpn/vpnDiagnosticsTypes";
+import type {
+  VpnConnectionEvidence,
+  VpnDiagnosticsReport,
+  VpnProviderSupport,
+} from "../../../../../src/shared/browser-vpn/vpnDiagnosticsTypes";
 import type { VpnProfile } from "../../../../../src/shared/browser-vpn/vpnProfileTypes";
 
 type VpnImportKind = "openvpn" | "wireguard" | "proxy" | "external";
@@ -49,7 +53,10 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
   const [evidence, setEvidence] = useState<VpnConnectionEvidence[]>([]);
   const [configText, setConfigText] = useState("");
   const [busy, setBusy] = useState(false);
-  const selectedProfile = useMemo(() => profiles.find((profile) => profile.id === selectedProfileId) ?? null, [profiles, selectedProfileId]);
+  const selectedProfile = useMemo(
+    () => profiles.find((profile) => profile.id === selectedProfileId) ?? null,
+    [profiles, selectedProfileId]
+  );
 
   const refresh = async () => {
     if (!api) return;
@@ -64,10 +71,14 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
       setProfiles(nextProfiles as VpnProfile[]);
       setTemplates(nextTemplates as VpnConfigTemplate[]);
       setProviders(nextProviders as VpnProviderSupport[]);
-      const nextProfileId = selectedProfileId ?? (nextProfiles[0] as VpnProfile | undefined)?.id ?? null;
+      const nextProfileId =
+        selectedProfileId ?? (nextProfiles[0] as VpnProfile | undefined)?.id ?? null;
       setSelectedProfileId(nextProfileId);
       if (nextProfileId) {
-        const [nextDiagnostics, nextEvidence] = await Promise.all([api.getStatus(nextProfileId), api.getEvidence(nextProfileId)]);
+        const [nextDiagnostics, nextEvidence] = await Promise.all([
+          api.getStatus(nextProfileId),
+          api.getEvidence(nextProfileId),
+        ]);
         setDiagnostics(nextDiagnostics as VpnDiagnosticsReport);
         setEvidence(nextEvidence as VpnConnectionEvidence[]);
       }
@@ -205,12 +216,25 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-nd-text-primary">{profile.name}</span>
-                      {profile.policy.killSwitchEnabled && <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-nd-accent-warning" aria-hidden="true" />}
+                      <span className="truncate text-sm font-semibold text-nd-text-primary">
+                        {profile.name}
+                      </span>
+                      {profile.policy.killSwitchEnabled && (
+                        <ShieldAlert
+                          className="h-3.5 w-3.5 shrink-0 text-nd-accent-warning"
+                          aria-hidden="true"
+                        />
+                      )}
                     </div>
-                    <div className="mt-0.5 text-[11px] text-nd-text-muted">{profile.providerName}</div>
+                    <div className="mt-0.5 text-[11px] text-nd-text-muted">
+                      {profile.providerName}
+                    </div>
                     <div className="mt-2">
-                      <Badge tone={badgeTone(profile.diagnostics.lastState)} size="sm" variant="outline">
+                      <Badge
+                        tone={badgeTone(profile.diagnostics.lastState)}
+                        size="sm"
+                        variant="outline"
+                      >
                         {stateLabel(profile.diagnostics.lastState)}
                       </Badge>
                     </div>
@@ -241,31 +265,56 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
                     Mode: <span className="text-nd-text-primary">{selectedProfile.routeMode}</span>
                   </div>
                   <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3">
-                    Protocol: <span className="text-nd-text-primary">{selectedProfile.protocol}</span>
+                    Protocol:{" "}
+                    <span className="text-nd-text-primary">{selectedProfile.protocol}</span>
                   </div>
                   <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3">
                     Profiles:{" "}
-                    <span className="text-nd-text-primary">{selectedProfile.browserProfileIds.join(", ") || "default"}</span>
+                    <span className="text-nd-text-primary">
+                      {selectedProfile.browserProfileIds.join(", ") || "default"}
+                    </span>
                   </div>
                   <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3">
-                    Security: <span className="text-nd-text-primary">{selectedProfile.security}</span>
+                    Security:{" "}
+                    <span className="text-nd-text-primary">{selectedProfile.security}</span>
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="success" size="sm" icon={ShieldCheck} onClick={() => void connect()} disabled={busy}>
+                  <Button
+                    variant="success"
+                    size="sm"
+                    icon={ShieldCheck}
+                    onClick={() => void connect()}
+                    disabled={busy}
+                  >
                     Connect
                   </Button>
-                  <Button variant="secondary" size="sm" onClick={() => void disconnect()} disabled={busy}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void disconnect()}
+                    disabled={busy}
+                  >
                     Disconnect
                   </Button>
                   <Button variant="primary" size="sm" onClick={() => void verify()} disabled={busy}>
                     Verify
                   </Button>
-                  <Button variant="secondary" size="sm" onClick={() => void repair()} disabled={busy}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void repair()}
+                    disabled={busy}
+                  >
                     Repair
                   </Button>
-                  <Button variant="secondary" size="sm" onClick={() => void saveProfile()} disabled={busy}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void saveProfile()}
+                    disabled={busy}
+                  >
                     Save
                   </Button>
                 </div>
@@ -312,16 +361,30 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
                   {diagnostics?.status ?? "not_configured"}
                 </StatusChip>
               </div>
-              <div className="mt-1">Active profile: <span className="text-nd-text-primary">{diagnostics?.activeProfileId ?? "none"}</span></div>
-              <div>Route: <span className="text-nd-text-primary">{diagnostics?.routeMode ?? "n/a"}</span></div>
-              <div>Protocol: <span className="text-nd-text-primary">{diagnostics?.protocol ?? "n/a"}</span></div>
+              <div className="mt-1">
+                Active profile:{" "}
+                <span className="text-nd-text-primary">
+                  {diagnostics?.activeProfileId ?? "none"}
+                </span>
+              </div>
+              <div>
+                Route:{" "}
+                <span className="text-nd-text-primary">{diagnostics?.routeMode ?? "n/a"}</span>
+              </div>
+              <div>
+                Protocol:{" "}
+                <span className="text-nd-text-primary">{diagnostics?.protocol ?? "n/a"}</span>
+              </div>
             </div>
 
             <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3">
               <div className="font-semibold text-nd-text-primary">Evidence</div>
               <div className="mt-2 space-y-2">
                 {evidence.slice(-4).map((item) => (
-                  <div key={item.requestId} className="rounded-lg border border-nd-border-subtle bg-nd-surface-app/60 p-2">
+                  <div
+                    key={item.requestId}
+                    className="rounded-lg border border-nd-border-subtle bg-nd-surface-app/60 p-2"
+                  >
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-nd-text-primary">{item.probe}</span>
                       <Badge tone={badgeTone(item.status)} size="sm" variant="outline">
@@ -331,7 +394,9 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
                     <div className="mt-1">{item.redactedSummary}</div>
                   </div>
                 ))}
-                {evidence.length === 0 && <p className="text-nd-text-muted/70 italic">No evidence recorded.</p>}
+                {evidence.length === 0 && (
+                  <p className="text-nd-text-muted/70 italic">No evidence recorded.</p>
+                )}
               </div>
             </div>
 
@@ -339,9 +404,14 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
               <div className="font-semibold text-nd-text-primary">Providers</div>
               <div className="mt-2 space-y-2">
                 {providers.map((provider) => (
-                  <div key={provider.providerName} className="rounded-lg border border-nd-border-subtle bg-nd-surface-app/60 p-2">
+                  <div
+                    key={provider.providerName}
+                    className="rounded-lg border border-nd-border-subtle bg-nd-surface-app/60 p-2"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-nd-text-primary">{provider.providerName}</span>
+                      <span className="font-semibold text-nd-text-primary">
+                        {provider.providerName}
+                      </span>
                       <Badge tone={badgeTone(provider.status)} size="sm" variant="outline">
                         {provider.status}
                       </Badge>
@@ -349,7 +419,9 @@ export function BrowserVpnPanel({ visible, onClose }: Props) {
                     <div className="mt-1">{provider.notes}</div>
                   </div>
                 ))}
-                {providers.length === 0 && <p className="text-nd-text-muted/70 italic">No provider data.</p>}
+                {providers.length === 0 && (
+                  <p className="text-nd-text-muted/70 italic">No provider data.</p>
+                )}
               </div>
             </div>
 

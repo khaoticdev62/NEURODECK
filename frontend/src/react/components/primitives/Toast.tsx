@@ -1,5 +1,13 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Toast as DSToast, type ToastTone } from '../../../design-system/components/feedback/Toast';
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Toast as DSToast, type ToastTone } from "../../../design-system/components/feedback/Toast";
 
 interface ToastItem {
   id: string;
@@ -38,7 +46,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  const toast = useCallback((message: string, tone: ToastTone = 'info', durationMs = 4000) => {
+  const toast = useCallback((message: string, tone: ToastTone = "info", durationMs = 4000) => {
     const id = `toast-${++counter.current}`;
     setToasts((prev) => [...prev.slice(-4), { id, message, tone, durationMs }]);
   }, []);
@@ -63,6 +71,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
 export function useToast(): ToastContextValue {
   const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error('useToast must be used inside <ToastProvider>');
+  if (!ctx) throw new Error("useToast must be used inside <ToastProvider>");
   return ctx;
 }

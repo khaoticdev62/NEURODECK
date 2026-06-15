@@ -14,12 +14,16 @@ import { describe, it, expect } from "vitest";
 function sanitizeHtml(html) {
   if (!html) return "";
   // Remove disallowed tags entirely (script, style, iframe, object, embed, etc.)
-  const BLOCKED_TAG_RE = /<\/?(script|style|iframe|object|embed|form|input|button|link|meta|base|frame|frameset|applet|svg|math|template|slot)[^>]*>/gi;
+  const BLOCKED_TAG_RE =
+    /<\/?(script|style|iframe|object|embed|form|input|button|link|meta|base|frame|frameset|applet|svg|math|template|slot)[^>]*>/gi;
   let out = String(html).replace(BLOCKED_TAG_RE, "");
   // Remove on* event handlers from any tag
   out = out.replace(/\s+on\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]*)/gi, "");
   // Remove javascript: href/src values
-  out = out.replace(/\s+(?:href|src)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*'|javascript:[^\s>]*)/gi, "");
+  out = out.replace(
+    /\s+(?:href|src)\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*'|javascript:[^\s>]*)/gi,
+    ""
+  );
   return out;
 }
 

@@ -1,10 +1,10 @@
-import { TrieIndex } from './trie';
-import { fuzzyScore } from './fuzzy';
+import { TrieIndex } from "./trie";
+import { fuzzyScore } from "./fuzzy";
 
 export interface SuggestionSourceItem {
   id: string;
   label: string;
-  type: 'prompt' | 'command' | 'macro' | 'agent' | 'file' | 'slot';
+  type: "prompt" | "command" | "macro" | "agent" | "file" | "slot";
   payload?: unknown;
 }
 
