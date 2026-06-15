@@ -159,6 +159,7 @@ function MiniStat({ icon: Icon, label, value }: { icon: LucideIcon; label: strin
   return (
     <div
       className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]"
+      role="status"
       aria-label={`${label}: ${value}`}
     >
       <Icon className="h-4 w-4 text-[var(--nd-accent-primary)]" aria-hidden="true" />
