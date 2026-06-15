@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
 import { Button } from "../../components/primitives/Button";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
 import { IconButton } from "../../components/primitives/IconButton";
 import { Modal } from "../../components/primitives/Modal";
 import { Panel } from "../../components/primitives/Panel";
@@ -17,6 +18,8 @@ interface SessionCardProps {
 export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [exportedFile, setExportedFile] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(node.name || "");
 
@@ -24,7 +27,6 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
   const displayName = node.name || node.id;
 
   const handleDelete = async () => {
-    if (!confirm(`Delete session "${displayName}"?`)) return;
     setLoading(true);
     setError(null);
     try {
@@ -60,7 +62,8 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
         { session_id: node.id }
       );
       if (result?.file) {
-        alert(`Exported to: ${result.file}`);
+        setExportedFile(result.file);
+        setTimeout(() => setExportedFile(null), 4000);
       }
     } catch (e) {
       setError(String(e));
@@ -102,6 +105,11 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
                 </p>
               )}
               {error && <p className="mt-2 text-xs text-nd-accent-error">{error}</p>}
+              {exportedFile && (
+                <p role="status" aria-live="polite" className="mt-2 text-xs text-nd-accent-success">
+                  Exported to: {exportedFile}
+                </p>
+              )}
             </div>
           </div>
 
