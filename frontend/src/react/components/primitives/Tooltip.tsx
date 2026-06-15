@@ -1,10 +1,17 @@
-﻿import type { ReactNode } from 'react';
+import { useId, isValidElement, cloneElement } from 'react';
+import type { ReactNode, ReactElement } from 'react';
 
 export function Tooltip({ children, label }: { children: ReactNode; label: string }) {
+  const tipId = useId();
   return (
     <span className="group/tooltip relative inline-flex">
-      {children}
+      {isValidElement(children)
+        ? cloneElement(children as ReactElement<{ 'aria-describedby'?: string }>, {
+            'aria-describedby': tipId,
+          })
+        : children}
       <span
+        id={tipId}
         role="tooltip"
         className={[
           'pointer-events-none absolute left-1/2 top-full z-[var(--z-tip)] mt-1.5',
