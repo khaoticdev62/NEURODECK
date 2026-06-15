@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import { Lock, Server, Save, Trash2, Plug, AlertTriangle } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
+import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
 import { SSHTerminal, type SSHConnectionConfig } from './SSHTerminal';
 
 export function SSHView() {
@@ -85,17 +87,17 @@ export function SSHView() {
   };
 
   const inputClass =
-    'w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40';
+    'w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40';
 
   return (
     <div className="ssh-container flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Lock className="h-5 w-5 text-nd-accent" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <Lock className="h-5 w-5 text-nd-accent-primary" />
         </div>
         <div className="flex-1">
           <div className="ssh-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">SSH</div>
-          <h2 className="text-lg font-semibold text-nd-text">SSH</h2>
+          <h2 className="text-lg font-semibold text-nd-text-primary">SSH</h2>
           <p className="text-xs text-nd-text-muted">Secure shell connections</p>
         </div>
       </div>
@@ -136,7 +138,7 @@ export function SSHView() {
             type="button"
             onClick={() => setAuthType('password')}
             aria-pressed={authType === 'password'}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${authType === 'password' ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${authType === 'password' ? 'border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
           >
             Password
           </button>
@@ -144,7 +146,7 @@ export function SSHView() {
             type="button"
             onClick={() => setAuthType('key')}
             aria-pressed={authType === 'key'}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${authType === 'key' ? 'border-nd-accent/30 bg-nd-accent/10 text-nd-accent' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
+            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${authType === 'key' ? 'border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary' : 'border-nd-text-muted/15 text-nd-text-muted'}`}
           >
             SSH Key
           </button>
@@ -171,36 +173,37 @@ export function SSHView() {
         )}
 
         {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger">
+          <div className="flex items-center gap-2 rounded-xl border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-2 text-xs text-nd-accent-error">
             <AlertTriangle className="h-4 w-4" aria-hidden="true" />
             {error}
           </div>
         )}
 
         <div className="flex gap-2 pt-2">
-          <button
+          <Button
             id="ssh-connect-btn"
-            type="button"
+            variant="primary"
+            icon={Plug}
+            className="flex-1"
             onClick={connect}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-sm font-medium text-nd-accent hover:bg-nd-accent/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
           >
-            <Plug className="h-4 w-4" aria-hidden="true" /> Connect
-          </button>
-          <button
-            type="button"
-            onClick={saveCredential}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-success/30 bg-nd-success/10 px-4 py-2 text-sm font-medium text-nd-success hover:bg-nd-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-success/40"
+            Connect
+          </Button>
+          <Button
+            variant="secondary"
+            icon={Save}
+            className="flex-1"
+            onClick={() => void saveCredential()}
           >
-            <Save className="h-4 w-4" aria-hidden="true" /> {saved ? 'Saved!' : 'Save Profile'}
-          </button>
-          <button
-            type="button"
-            onClick={clearForm}
+            {saved ? 'Saved!' : 'Save Profile'}
+          </Button>
+          <IconButton
             aria-label="Clear SSH credentials"
-            className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
+            variant="ghost"
+            onClick={clearForm}
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       </div>
 

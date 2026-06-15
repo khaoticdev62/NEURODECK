@@ -6,7 +6,7 @@ import {
   type ButtonSize as DSButtonSize,
 } from '../../../design-system/components/core/Button';
 
-type ButtonVariant = DSButtonVariant | 'premium' | 'soft';
+type ButtonVariant = DSButtonVariant | 'premium' | 'soft' | 'outline';
 type ButtonSize = DSButtonSize | 'xs';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -45,8 +45,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
 
   // Map wrapper sizes to design-system sizes (xs -> sm).
   const dsSize: DSButtonSize = size === 'xs' ? 'sm' : size;
-  // Premium maps to primary visually; soft is rendered as a custom class overlay.
-  const dsVariant: DSButtonVariant = variant === 'premium' || variant === 'soft' ? 'primary' : variant;
+  // Premium maps to primary visually; soft/outline are rendered as custom class overlays.
+  const dsVariant: DSButtonVariant =
+    variant === 'premium' || variant === 'soft'
+      ? 'primary'
+      : variant === 'outline'
+        ? 'secondary'
+        : variant;
 
   const extraClasses = [
     variant === 'premium'
@@ -54,6 +59,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       : '',
     variant === 'soft'
       ? 'bg-nd-surface-secondary/60 border-nd-border-subtle text-nd-text-primary hover:bg-nd-surface-tertiary/80'
+      : '',
+    variant === 'outline'
+      ? 'border-nd-border-subtle bg-transparent text-nd-text-primary hover:border-nd-accent-primary/35 hover:bg-nd-surface-secondary/50'
       : '',
     size === 'xs' ? 'h-7 px-2 text-2xs gap-1 rounded-lg' : '',
     fullWidth ? 'w-full' : '',

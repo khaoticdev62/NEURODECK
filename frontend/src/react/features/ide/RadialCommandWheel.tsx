@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, TestTube, Package, Wand2, ScanLine, RefreshCw, AlertCircle, Puzzle } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
 import type { CommandTemplate } from '../../../shared/ide/ideContracts';
 
 interface WheelSegment {
@@ -176,15 +177,13 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
           ) : (
             <div className="space-y-0.5">
               {activeSegment.commands.map((cmd, i) => (
-                <button
+                <Button
                   key={cmd.id}
-                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  fullWidth
+                  className={`justify-start ${i === selectedCmd ? 'bg-accent-primary/10 text-accent-primary' : ''}`}
                   onClick={() => onRunCommand(cmd)}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40 ${
-                    i === selectedCmd
-                      ? 'bg-accent-primary/10 text-accent-primary'
-                      : 'text-text-muted hover:bg-surface-secondary hover:text-text-primary'
-                  }`}
                 >
                   <span className="flex-1 truncate font-mono">{cmd.label}</span>
                   {cmd.safety !== 'safe' && (
@@ -192,7 +191,7 @@ export function RadialCommandWheel({ visible, languageId, commands, onRunCommand
                       {cmd.safety}
                     </Badge>
                   )}
-                </button>
+                </Button>
               ))}
             </div>
           )}

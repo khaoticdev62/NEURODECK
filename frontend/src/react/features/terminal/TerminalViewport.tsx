@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Terminal as XTerm } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { AlertTriangle, Copy, RefreshCw, Trash2 } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
@@ -362,7 +363,7 @@ export function TerminalViewport({
         <div className="absolute inset-0 flex items-center justify-center bg-nd-surface-app/65 p-4 backdrop-blur-sm">
           <div className="max-w-md rounded-2xl border border-nd-border-subtle bg-nd-surface-modal p-4 shadow-nd-elevation-card">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-warning" aria-hidden="true" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-accent-warning" aria-hidden="true" />
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-nd-text-primary">
                   {pane.state === "blocked" ? "Session blocked" : pane.state === "error" ? "Session error" : "Session exited"}
@@ -371,12 +372,8 @@ export function TerminalViewport({
                   {pane.lastErrorMessage || pane.lastExitReason || pane.stateMessage || "The PTY is not currently running."}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={onRequestRestart} className="rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-xs font-semibold text-nd-accent-primary hover:bg-nd-accent-primary/20">
-                    Restart
-                  </button>
-                  <button type="button" onClick={onRequestClose} className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs font-semibold text-nd-danger hover:bg-nd-danger/20">
-                    Close
-                  </button>
+                  <Button variant="secondary" size="sm" onClick={onRequestRestart}>Restart</Button>
+                  <Button variant="danger" size="sm" onClick={onRequestClose}>Close</Button>
                 </div>
               </div>
             </div>

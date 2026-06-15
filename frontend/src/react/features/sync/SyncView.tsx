@@ -11,10 +11,12 @@ import {
   ListChecks,
   IdCard,
   Network,
+  X,
 } from 'lucide-react';
 import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
 import type { FileTransfer, TransferPeer, TrustedPeer } from '../../services/bridgeAdapter';
 import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
+import { IconButton } from '../../components/primitives/IconButton';
 import { DeckButtonHint } from '../../components/primitives/DeckButtonHint';
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '../../components/primitives/Tabs';
 import { DashboardTab } from './tabs/DashboardTab';
@@ -242,14 +244,15 @@ export function SyncView() {
           className="mb-3 flex items-center gap-2 rounded-xl border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-2 text-xs text-nd-accent-error"
         >
           {mutateError}
-          <button
-            type="button"
-            onClick={() => setMutateError(null)}
+          <IconButton
             aria-label="Dismiss error"
-            className="ml-auto text-nd-accent-error/70 hover:text-nd-accent-error focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-error/40 rounded"
+            variant="ghost"
+            size="sm"
+            className="ml-auto text-nd-accent-error/70 hover:text-nd-accent-error"
+            onClick={() => setMutateError(null)}
           >
-            ×
-          </button>
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
+          </IconButton>
         </div>
       )}
 

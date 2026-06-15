@@ -64,8 +64,8 @@ export function WorkspaceView({
 
   const handleSend = (value?: string) => {
     const prompt = (value ?? state.composerValue).trim();
-    if (!prompt) return;
-    dispatch({ type: 'set-composer', value: prompt });
+    if (!prompt || !!state.busyLabel) return;
+    dispatch({ type: 'set-composer', value: '' });
     void actions.runAssistant(prompt);
   };
 
@@ -132,6 +132,7 @@ export function WorkspaceView({
           value={state.composerValue}
           onChange={(v) => dispatch({ type: 'set-composer', value: v })}
           onSend={handleSend}
+          isBusy={!!state.busyLabel}
           provider={state.selectedProvider}
           model={modelName}
           hasContext={!!state.projectContext || !!state.activeProject}

@@ -60,6 +60,9 @@ export function ModelsView({
     [allowedModels]
   );
 
+  const activeAgent = state.agents.find((a) => a.id === state.activeAgentId);
+  const activeAgentLabel = activeAgent?.name ?? (state.activeAgentId || 'No agent selected');
+
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel
@@ -100,33 +103,33 @@ export function ModelsView({
             />
           )}
           {!loading && !error && state.models.length > 0 && (
-            <div className="grid gap-4 lg:grid-cols-2">
+            <div className="grid gap-4 lg:grid-cols-2" role="list" aria-label="Available models">
               {state.models.map((model) => {
                 const scored = allowedById[model.id];
                 return (
-                  <ModelCard
-                    key={model.id}
-                    model={model}
-                    selected={state.selectedModelId === model.id}
-                    policyAllowed={scored?.policyAllowed ?? true}
-                    policyReason={scored?.policyReason}
-                    agentPreferred={scored?.agentPreferred}
-                    onMarkReady={(id) => {
-                      if (scored && !scored.policyAllowed) return;
-                      dispatch({ type: "set-model-status", id, status: "ready" });
-                      dispatch({ type: "set-selected-model", id });
-                      const backendProvider = model.backendProvider ?? "ollama";
-                      const backendModel = model.backendModel ?? model.id;
-                      dispatch({ type: "set-provider", provider: backendProvider });
-                      void neurodeckApi.ai.setProvider(backendProvider);
-                      void neurodeckApi.ai.setModel(backendModel);
-                    }}
-                    onMarkIndexed={(id) =>
-                      dispatch({ type: "set-model-status", id, status: "indexed" })
-                    }
-                    onDisable={(id) => dispatch({ type: "set-model-status", id, status: "disabled" })}
-                    onSelect={(id) => dispatch({ type: "set-selected-model", id })}
-                  />
+                  <div key={model.id} role="listitem">
+                    <ModelCard
+                      model={model}
+                      selected={state.selectedModelId === model.id}
+                      policyAllowed={scored?.policyAllowed ?? true}
+                      policyReason={scored?.policyReason}
+                      agentPreferred={scored?.agentPreferred}
+                      onMarkReady={(id) => {
+                        if (scored && !scored.policyAllowed) return;
+                        dispatch({ type: "set-model-status", id, status: "ready" });
+                        dispatch({ type: "set-selected-model", id });
+                        const backendProvider = model.backendProvider ?? "ollama";
+                        const backendModel = model.backendModel ?? model.id;
+                        dispatch({ type: "set-provider", provider: backendProvider });
+                        void neurodeckApi.ai.setProvider(backendProvider);
+                        void neurodeckApi.ai.setModel(backendModel);
+                      }}
+                      onMarkIndexed={(id) =>
+                        dispatch({ type: "set-model-status", id, status: "indexed" })
+                      }
+                      onDisable={(id) => dispatch({ type: "set-model-status", id, status: "disabled" })}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -141,7 +144,7 @@ export function ModelsView({
       >
         <div className="flex-1 min-h-0 space-y-3 overflow-y-auto p-4 scrollbar-thin">
           <Button
-            variant="secondary"
+            variant="primary"
             size="sm"
             fullWidth
             icon={RefreshCcw}
@@ -154,7 +157,7 @@ export function ModelsView({
             <p className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
               Active agent
             </p>
-            <p className="mt-1 text-sm font-medium text-nd-text-primary">{state.activeAgentId}</p>
+            <p className="mt-1 text-sm font-medium text-nd-text-primary">{activeAgentLabel}</p>
             {state.agentPolicies.find((p) => p.agentId === state.activeAgentId) && (
               <p className="mt-2 text-xs text-nd-text-muted">
                 Models are filtered by this agent&apos;s policy.
@@ -176,9 +179,12 @@ export function ModelsView({
                 <p className="mt-3 text-sm leading-6 text-nd-text-muted">
                   {state.modelDetection.summary}
                 </p>
-                <p className="mt-2 text-xs text-nd-text-muted">
+                <time
+                  dateTime={state.modelDetection.scannedAt}
+                  className="mt-2 block text-xs text-nd-text-muted"
+                >
                   {new Date(state.modelDetection.scannedAt).toLocaleString()}
-                </p>
+                </time>
               </div>
               <div className="space-y-2">
                 {state.modelDetection.runtimes.map((runtime) => (
@@ -190,7 +196,7 @@ export function ModelsView({
                       <span className="font-medium text-nd-text-primary/90">{runtime.name}</span>
                       <Badge tone={runtime.exists ? "success" : "neutral"} size="sm">{runtime.status}</Badge>
                     </div>
-                    <p className="mt-1 break-all text-xs text-nd-text-muted/70">{runtime.path}</p>
+                    <code className="mt-1 block break-all text-xs text-nd-text-muted/70">{runtime.path}</code>
                   </div>
                 ))}
               </div>
@@ -206,9 +212,10 @@ export function ModelsView({
                       <div
                         key={`score-${model.id}`}
                         className="flex items-center justify-between rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2"
+                        aria-label={`${model.name}: ${score.score}/100, tier ${score.tier}`}
                       >
-                        <span className="text-xs text-nd-text-primary/80">{model.name}</span>
-                        <div className="flex items-center gap-2">
+                        <span className="text-xs text-nd-text-primary/80" aria-hidden="true">{model.name}</span>
+                        <div className="flex items-center gap-2" aria-hidden="true">
                           <span className="text-xs text-nd-text-muted">{score.score}/100</span>
                           <Badge
                             tone={

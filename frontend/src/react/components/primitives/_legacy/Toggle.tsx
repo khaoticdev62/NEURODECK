@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+﻿import { forwardRef } from 'react';
 
 interface ToggleProps {
   checked: boolean;
@@ -28,9 +28,9 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(function Toggle
       className={[
         'relative flex items-center justify-center rounded-full transition-colors duration-fast',
         'min-h-touch min-w-18',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 focus-visible:ring-offset-1 focus-visible:ring-offset-nd-bg',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 focus-visible:ring-offset-1 focus-visible:ring-offset-nd-bg',
         'disabled:pointer-events-none disabled:opacity-50',
-        checked ? 'bg-nd-accent' : 'bg-nd-text-muted/20',
+        checked ? 'bg-nd-accent-primary' : 'bg-nd-text-muted/20',
       ].join(' ')}
     >
       <span className="relative h-7 w-12">

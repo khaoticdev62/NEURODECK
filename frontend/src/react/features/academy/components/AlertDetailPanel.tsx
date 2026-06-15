@@ -1,4 +1,4 @@
-import { useState, useId, useRef, KeyboardEvent } from 'react';
+﻿import { useState, useId, useRef, KeyboardEvent } from 'react';
 import { X, ChevronDown, ChevronUp, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
 import { Button } from '../../../components/primitives/Button';
@@ -133,8 +133,8 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
                     key={opt.value}
                     className={`flex cursor-pointer items-start gap-2.5 rounded-xl border px-3 py-2.5 transition ${
                       state.disposition === opt.value
-                        ? 'border-nd-accent-primary/40 bg-nd-accent/10'
-                        : 'border-nd-border-subtle hover:border-nd-accent/20 hover:bg-nd-surface/30'
+                        ? 'border-nd-accent-primary/40 bg-nd-accent-primary/10'
+                        : 'border-nd-border-subtle hover:border-nd-accent-primary/20 hover:bg-nd-surface/30'
                     }`}
                   >
                     <input
@@ -173,7 +173,7 @@ export function AlertDetailPanel({ alert, state, onChange }: AlertDetailPanelPro
                   {state.mitreTags.map((tag) => (
                     <span
                       key={tag}
-                      className="flex items-center gap-1 rounded-md bg-nd-accent/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-nd-accent-primary"
+                      className="flex items-center gap-1 rounded-md bg-nd-accent-primary/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-nd-accent-primary"
                     >
                       {tag}
                       <button
@@ -338,7 +338,7 @@ function GradeDisplay({ result, alert }: GradeDisplayProps) {
               {alert.correctMitreTechniques.map((t) => (
                 <span
                   key={t}
-                  className="rounded-md bg-nd-accent/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-nd-accent-primary"
+                  className="rounded-md bg-nd-accent-primary/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-nd-accent-primary"
                 >
                   {t}
                 </span>

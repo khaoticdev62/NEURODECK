@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, Plus, Trash2, Play, Pause } from 'lucide-react';
+import { CalendarClock, Plus, Trash2, Play, Pause, X } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import type { ScheduledTask } from '../../services/bridgeAdapter';
 import { Button } from '../../components/primitives/Button';
@@ -130,14 +130,15 @@ export function SchedulerView() {
             className="mx-4 mb-3 flex items-center gap-2 rounded-xl border border-accent-error/25 bg-accent-error/10 px-3 py-2 text-xs text-accent-error"
           >
             {mutateError}
-            <button
-              type="button"
-              onClick={() => setMutateError(null)}
+            <IconButton
               aria-label="Dismiss error"
+              variant="ghost"
+              size="sm"
               className="ml-auto text-accent-error/70 hover:text-accent-error"
+              onClick={() => setMutateError(null)}
             >
-              ×
-            </button>
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </IconButton>
           </div>
         )}
 

@@ -1,4 +1,4 @@
-import { Clock, Play } from 'lucide-react';
+﻿import { Clock, Play } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
 import { Button } from '../../../components/primitives/Button';
 import type { Lab } from '../types';
@@ -29,7 +29,7 @@ interface LabCardProps {
 
 export function LabCard({ lab, completed, onStart }: LabCardProps) {
   return (
-    <div className="flex items-start gap-4 rounded-2xl border border-nd-border-subtle bg-nd-surface-base/50 p-4 transition hover:border-nd-accent/25 hover:bg-nd-surface-base/70">
+    <div className="flex items-start gap-4 rounded-2xl border border-nd-border-subtle bg-nd-surface-base/50 p-4 transition hover:border-nd-accent-primary/25 hover:bg-nd-surface-base/70">
       {/* Difficulty pips */}
       <div
         className="flex shrink-0 flex-col items-center gap-0.5 pt-0.5"

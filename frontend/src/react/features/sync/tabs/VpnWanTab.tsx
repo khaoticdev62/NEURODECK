@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Network, Plus, Send, ShieldAlert } from 'lucide-react';
 import { Button } from '../../../components/primitives/Button';
 import { IconButton } from '../../../components/primitives/IconButton';
@@ -42,10 +42,10 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
   return (
     <Panel eyebrow="VPN / WAN" title="Manual & VPN Peers" className="h-full">
       <div className="flex h-full flex-col gap-4 overflow-y-auto">
-        <section aria-label="VPN safety" className="rounded-xl border border-nd-warning/25 bg-nd-warning/5 p-4">
+        <section aria-label="VPN safety" className="rounded-xl border border-nd-accent-warning/25 bg-nd-accent-warning/5 p-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-warning/20 bg-nd-warning/10">
-              <ShieldAlert className="h-4 w-4 text-nd-warning" aria-hidden="true" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-accent-warning/20 bg-nd-accent-warning/10">
+              <ShieldAlert className="h-4 w-4 text-nd-accent-warning" aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-nd-text-primary">VPN/WAN mode is manual and allowlist-first</h3>

@@ -1,4 +1,4 @@
-import { Database, Pin } from 'lucide-react';
+﻿import { Database, Pin } from 'lucide-react';
 import { Badge } from '../primitives/Badge';
 import type { MemoryItem, MemoryScope } from '../../types/neurodeck';
 
@@ -34,12 +34,12 @@ export function MemoryPanel({ memories, onTogglePin, maxItems = 6, compact = fal
       {visible.map((memory) => (
         <div
           key={memory.id}
-          className={`rounded-xl border bg-nd-surface/30 transition hover:border-nd-accent/20 ${
-            memory.pinned ? 'border-nd-accent/20 bg-nd-accent/[0.04]' : 'border-nd-text-muted/15'
+          className={`rounded-xl border bg-nd-surface/30 transition hover:border-nd-accent-primary/20 ${
+            memory.pinned ? 'border-nd-accent-primary/20 bg-nd-accent-primary/[0.04]' : 'border-nd-text-muted/15'
           }`}
         >
           <div className={`flex items-start justify-between gap-2 ${compact ? 'px-3 py-2' : 'px-3 pt-2.5'}`}>
-            <p className="min-w-0 flex-1 text-xs font-medium leading-5 text-nd-text/90 truncate">{memory.title}</p>
+            <p className="min-w-0 flex-1 text-xs font-medium leading-5 text-nd-text-primary/90 truncate">{memory.title}</p>
             <div className="flex items-center gap-1.5 shrink-0">
               <Badge tone={scopeTone[memory.scope]}>{memory.scope}</Badge>
               {onTogglePin && (
@@ -48,7 +48,7 @@ export function MemoryPanel({ memories, onTogglePin, maxItems = 6, compact = fal
                   onClick={() => onTogglePin(memory.id)}
                   aria-label={memory.pinned ? 'Unpin memory' : 'Pin memory'}
                   className={`rounded p-0.5 transition ${
-                    memory.pinned ? 'text-nd-accent' : 'text-nd-text-muted/40 hover:text-nd-accent'
+                    memory.pinned ? 'text-nd-accent-primary' : 'text-nd-text-muted/40 hover:text-nd-accent-primary'
                   }`}
                 >
                   <Pin className="h-3 w-3" />

@@ -8,14 +8,19 @@ import { Panel } from '../primitives/Panel';
 import { MemoryPanel } from '../systems/MemoryPanel';
 
 export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction>; selectors: NeuroDeckSelectors }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() =>
+    localStorage.getItem('nd:rail-collapsed') === 'true'
+  );
   const thinking = state.agents.filter((agent) => agent.status === 'thinking');
 
   if (collapsed) {
     return (
       <button
         type="button"
-        onClick={() => setCollapsed(false)}
+        onClick={() => {
+          localStorage.setItem('nd:rail-collapsed', 'false');
+          setCollapsed(false);
+        }}
         className="hidden h-full shrink-0 items-center border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] px-1 text-[var(--nd-text-muted)] transition-[color,background-color] duration-[var(--nd-motion-fast)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-accent-primary)] xl:flex"
         aria-label="Expand side panel"
         title="Expand side panel (B)"
@@ -34,7 +39,10 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
       <div className="flex items-center justify-end border-b border-[var(--nd-border-subtle)] px-2 py-1.5">
         <button
           type="button"
-          onClick={() => setCollapsed(true)}
+          onClick={() => {
+            localStorage.setItem('nd:rail-collapsed', 'true');
+            setCollapsed(true);
+          }}
           className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] text-[var(--nd-text-muted)] transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:text-[var(--nd-accent-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
           aria-label="Collapse side panel"
           title="Collapse side panel"
@@ -149,10 +157,13 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
 
 function MiniStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string | number }) {
   return (
-    <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]">
+    <div
+      className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]"
+      aria-label={`${label}: ${value}`}
+    >
       <Icon className="h-4 w-4 text-[var(--nd-accent-primary)]" aria-hidden="true" />
-      <p className="mt-2 text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]/60">{label}</p>
-      <p className="mt-1 font-mono text-lg text-[var(--nd-text-primary)]">{value}</p>
+      <p className="mt-2 text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]/60" aria-hidden="true">{label}</p>
+      <p className="mt-1 font-mono text-lg text-[var(--nd-text-primary)]" aria-hidden="true">{value}</p>
     </div>
   );
 }

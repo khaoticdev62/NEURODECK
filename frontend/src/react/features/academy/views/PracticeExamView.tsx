@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+﻿import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Timer,
   Play,
@@ -52,7 +52,7 @@ function ExamConfig({ onStart }: { onStart: (count: number) => void }) {
     <div className="flex h-full flex-col items-center justify-center p-8">
       <div className="w-full max-w-md space-y-6">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-nd-accent/20 bg-nd-accent/10">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
             <Award className="h-8 w-8 text-nd-accent-primary" aria-hidden="true" />
           </div>
           <h3 className="text-lg font-bold text-nd-text-primary">Security+ Practice Exam</h3>
@@ -71,8 +71,8 @@ function ExamConfig({ onStart }: { onStart: (count: number) => void }) {
                   onClick={() => setCount(n)}
                   className={`min-h-touch rounded-xl border py-2 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
                     count === n
-                      ? 'border-nd-accent-primary/40 bg-nd-accent/15 text-nd-accent-primary'
-                      : 'border-nd-border-subtle bg-nd-surface-base/40 text-nd-text-secondary hover:border-nd-accent/20'
+                      ? 'border-nd-accent-primary/40 bg-nd-accent-primary/15 text-nd-accent-primary'
+                      : 'border-nd-border-subtle bg-nd-surface-base/40 text-nd-text-secondary hover:border-nd-accent-primary/20'
                   }`}
                 >
                   {n}
@@ -135,8 +135,8 @@ function OptionButton({
       disabled={disabled}
       className={`flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
         selected
-          ? 'border-nd-accent-primary/50 bg-nd-accent/15 text-nd-text-primary'
-          : 'border-nd-border-subtle bg-nd-surface-base/20 text-nd-text-secondary hover:border-nd-accent/20 hover:bg-nd-surface-base/40'
+          ? 'border-nd-accent-primary/50 bg-nd-accent-primary/15 text-nd-text-primary'
+          : 'border-nd-border-subtle bg-nd-surface-base/20 text-nd-text-secondary hover:border-nd-accent-primary/20 hover:bg-nd-surface-base/40'
       } disabled:cursor-not-allowed`}
     >
       <span
@@ -505,7 +505,7 @@ function ExamReview({
               onClick={() => setFilter(f)}
               className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium capitalize transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 ${
                 filter === f
-                  ? 'border-nd-accent-primary/40 bg-nd-accent/15 text-nd-accent-primary'
+                  ? 'border-nd-accent-primary/40 bg-nd-accent-primary/15 text-nd-accent-primary'
                   : 'border-nd-border-subtle text-nd-text-muted/70 hover:text-nd-text-secondary'
               }`}
             >

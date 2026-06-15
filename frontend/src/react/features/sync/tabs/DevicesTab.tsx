@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Send, Laptop, Trash2, Plus, Monitor } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
 import { Button } from '../../../components/primitives/Button';
@@ -157,10 +157,10 @@ export function DevicesTab({ peers, trustedPeers, onSendToPeer, onRefreshTrusted
               {trustedPeers.map((peer) => (
                 <li
                   key={peer.ip}
-                  className="flex items-center gap-3 rounded-xl border border-nd-success/20 bg-nd-success/5 px-4 py-3"
+                  className="flex items-center gap-3 rounded-xl border border-nd-accent-success/20 bg-nd-accent-success/5 px-4 py-3"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-success/20 bg-nd-success/10">
-                    <Laptop className="h-4 w-4 text-nd-success" aria-hidden="true" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-accent-success/20 bg-nd-accent-success/10">
+                    <Laptop className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium text-nd-text-primary">{peer.label || peer.ip}</p>

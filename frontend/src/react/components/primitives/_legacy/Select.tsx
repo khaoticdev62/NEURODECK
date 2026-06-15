@@ -1,4 +1,4 @@
-import { type SelectHTMLAttributes, forwardRef } from 'react';
+﻿import { type SelectHTMLAttributes, forwardRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 interface SelectOption {
@@ -27,7 +27,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
       {label && (
         <label htmlFor={selectId} className="mb-1.5 block text-xs font-medium text-nd-text-muted">
           {label}
-          {rest.required && <span className="ml-1 text-nd-warning" aria-hidden="true">*</span>}
+          {rest.required && <span className="ml-1 text-nd-accent-warning" aria-hidden="true">*</span>}
         </label>
       )}
       <div className="relative">
@@ -37,12 +37,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           aria-invalid={!!error}
           aria-describedby={error ? `${selectId}-error` : hint ? `${selectId}-hint` : undefined}
           className={[
-            'w-full appearance-none rounded-xl border bg-nd-bg/50 px-3 pr-10 text-sm text-nd-text',
+            'w-full appearance-none rounded-xl border bg-nd-bg/50 px-3 pr-10 text-sm text-nd-text-primary',
             'min-h-touch',
             'transition-colors duration-150',
-            'focus:outline-none focus:ring-2 focus:ring-nd-accent/40',
+            'focus:outline-none focus:ring-2 focus:ring-nd-accent-primary/40',
             error
-              ? 'border-nd-danger/50 focus:ring-nd-danger/40'
+              ? 'border-nd-accent-error/50 focus:ring-nd-accent-error/40'
               : 'border-nd-text-muted/20 hover:border-nd-text-muted/35',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             className,
@@ -66,7 +66,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         />
       </div>
       {error && (
-        <p id={`${selectId}-error`} role="alert" className="mt-1 text-xs text-nd-danger">
+        <p id={`${selectId}-error`} role="alert" className="mt-1 text-xs text-nd-accent-error">
           {error}
         </p>
       )}

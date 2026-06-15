@@ -14,6 +14,7 @@ interface InputConsoleProps {
   value: string;
   onChange: (value: string) => void;
   onSend: (value?: string) => void;
+  isBusy?: boolean;
   provider: string;
   model?: string;
   hasContext: boolean;
@@ -25,6 +26,7 @@ export function InputConsole({
   value,
   onChange,
   onSend,
+  isBusy = false,
   provider,
   model,
   hasContext,
@@ -47,12 +49,12 @@ export function InputConsole({
   }, [value, adjustHeight]);
 
   const handleSend = useCallback(() => {
-    if (!value.trim()) return;
+    if (!value.trim() || isBusy) return;
     onSend(value);
     if (textareaRef.current) {
       textareaRef.current.style.height = '40px';
     }
-  }, [onSend, value]);
+  }, [onSend, value, isBusy]);
 
   return (
     <div
@@ -113,13 +115,17 @@ export function InputConsole({
             size="md"
             variant={isRecording ? 'accent' : 'subtle'}
             onClick={async () => {
-              if (isRecording) {
+              try {
+                if (isRecording) {
+                  setIsRecording(false);
+                  const { transcript } = await neurodeckApi.voice.stop();
+                  if (transcript) onChange(value ? `${value} ${transcript}` : transcript);
+                } else {
+                  const { ok } = await neurodeckApi.voice.start();
+                  if (ok) setIsRecording(true);
+                }
+              } catch {
                 setIsRecording(false);
-                const { transcript } = await neurodeckApi.voice.stop();
-                if (transcript) onChange(value ? `${value} ${transcript}` : transcript);
-              } else {
-                const { ok } = await neurodeckApi.voice.start();
-                if (ok) setIsRecording(true);
               }
             }}
           >
@@ -160,19 +166,21 @@ export function InputConsole({
               handleSend();
             }
           }}
-          placeholder="Command NEURODECK: ask anything, run /commands, or describe what you want to build..."
+          placeholder="Ask anything or describe what you want to build — Ctrl+K for commands..."
           aria-label="Message input"
+          aria-disabled={isBusy}
+          disabled={isBusy}
           rows={1}
-          className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-nd-text-primary outline-none placeholder:text-nd-text-muted/70"
+          className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-nd-text-primary outline-none placeholder:text-nd-text-muted/70 disabled:cursor-not-allowed disabled:opacity-50"
         />
 
         {/* Send */}
         <IconButton
-          aria-label="Send message"
-          title="Send message"
+          aria-label={isBusy ? 'Waiting for response' : 'Send message'}
+          title={isBusy ? 'Waiting for response' : 'Send message'}
           size="md"
           variant="accent"
-          disabled={!value.trim()}
+          disabled={!value.trim() || isBusy}
           onClick={handleSend}
           data-testid="chat-send-btn"
         >

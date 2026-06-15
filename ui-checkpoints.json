@@ -1,0 +1,19 @@
+[
+  {
+    "tag": "ui-checkpoint-ui-audit-baseline",
+    "sha": "a65e6a81",
+    "branch": "master",
+    "timestamp": "2026-06-13-224750",
+    "description": "Baseline after E2E UI/UX audit, token gap fill, and a11y enforcement (commit a65e6a81).",
+    "protectedPaths": [
+      "frontend/src/**/*.css",
+      "frontend/src/**/*.tsx",
+      "frontend/src/**/*.ts",
+      "electron/**/*.css",
+      "electron/**/*.js",
+      "frontend/public/**/*"
+    ],
+    "buildHash": "baseline",
+    "rolledBack": false
+  }
+]

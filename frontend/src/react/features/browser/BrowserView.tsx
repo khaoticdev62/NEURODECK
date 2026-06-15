@@ -931,14 +931,15 @@ export function BrowserView() {
                 })}
                 <div className="my-2 border-t border-nd-border-subtle" />
                 {activeProfile && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    fullWidth
+                    icon={Trash2}
                     onClick={() => clearProfileData(activeProfile.id)}
-                    className="flex w-full min-h-[40px] items-center gap-2 rounded-xl px-2.5 py-2 text-xs text-nd-accent-error transition hover:bg-nd-accent-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-error/40"
                   >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Clear Profile Storage</span>
-                  </button>
+                    Clear Profile Storage
+                  </Button>
                 )}
               </FocusTrapContainer>
             )}

@@ -1,4 +1,4 @@
-import { ChevronRight, Lock } from 'lucide-react';
+﻿import { ChevronRight, Lock } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
 import { SkillBar } from './SkillBar';
 import type { LearningPath } from '../types';
@@ -25,10 +25,10 @@ export function PathCard({ path, completionPct, onSelect }: PathCardProps) {
       className={`group flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
         path.locked
           ? 'cursor-not-allowed border-nd-border-subtle/50 bg-nd-surface-base/30 opacity-60'
-          : 'border-nd-border-subtle bg-nd-surface-base/50 hover:border-nd-accent/25 hover:bg-nd-surface-base/70'
+          : 'border-nd-border-subtle bg-nd-surface-base/50 hover:border-nd-accent-primary/25 hover:bg-nd-surface-base/70'
       }`}
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
         {path.locked ? (
           <Lock className="h-5 w-5 text-nd-text-muted/50" aria-hidden="true" />
         ) : (

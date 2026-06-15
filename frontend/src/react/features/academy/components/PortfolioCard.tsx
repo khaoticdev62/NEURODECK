@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Copy, Check, ChevronDown, ChevronUp, FileText, ShieldAlert } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
 import { Button } from '../../../components/primitives/Button';
@@ -42,7 +42,7 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
   }
 
   return (
-    <article className="rounded-2xl border border-nd-border-subtle bg-nd-surface-base/50 transition hover:border-nd-accent/20">
+    <article className="rounded-2xl border border-nd-border-subtle bg-nd-surface-base/50 transition hover:border-nd-accent-primary/20">
       {/* Card header — always visible */}
       <button
         type="button"
@@ -137,7 +137,7 @@ export function PortfolioCard({ entry, defaultExpanded = false }: PortfolioCardP
                 {entry.mitreMappings.map((m) => (
                   <span
                     key={m}
-                    className="rounded bg-nd-accent/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-nd-accent-primary"
+                    className="rounded bg-nd-accent-primary/15 px-1.5 py-0.5 text-[10px] font-mono font-semibold text-nd-accent-primary"
                   >
                     {m}
                   </span>

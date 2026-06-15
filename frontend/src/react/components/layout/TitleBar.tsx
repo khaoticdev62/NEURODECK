@@ -4,6 +4,7 @@ import { IconButton } from '../primitives/IconButton';
 export function TitleBar({ subtitle }: { subtitle: string }) {
   return (
     <header
+      role="banner"
       className="drag-region flex h-11 shrink-0 items-center justify-between border-b border-[var(--nd-border-subtle)] bg-[var(--nd-surface-primary)] px-3"
     >
       <div className="flex min-w-0 items-center gap-3">

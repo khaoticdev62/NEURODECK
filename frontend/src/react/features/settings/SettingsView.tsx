@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Dispatch } from "react";
 import {
   BrainCircuit,
@@ -7,6 +7,7 @@ import {
   FileDown,
   Gamepad2,
   FolderOpen,
+  Loader2,
   Palette,
   RefreshCcw,
   Rocket,
@@ -293,6 +294,56 @@ export function SettingsView({
     document.documentElement.style.fontSize = `${val}%`;
   };
 
+  const loadKbDirs = useCallback(async () => {
+    setKbBusy("load");
+    try {
+      const res = await neurodeckApi.memory.getIndexedDirs();
+      setIndexedDirs(res.dirs);
+    } catch (e) {
+      setKbStatus({ text: `Failed to load: ${e}`, ok: false });
+    } finally {
+      setKbBusy(null);
+    }
+  }, []);
+
+  const handleRemoveKbDir = useCallback(async (path: string) => {
+    setKbBusy(path);
+    try {
+      await neurodeckApi.memory.removeIndexedDir(path);
+      setIndexedDirs((prev) => prev?.filter((d) => d.path !== path) ?? null);
+      setKbStatus({ text: "Directory removed from index list", ok: true });
+    } catch (e) {
+      setKbStatus({ text: `Remove failed: ${e}`, ok: false });
+    } finally {
+      setKbBusy(null);
+    }
+  }, []);
+
+  const handleReindexAll = useCallback(async () => {
+    if (!indexedDirs?.length) return;
+    setKbBusy("reindex");
+    setKbStatus({ text: "Re-indexing all directories…", ok: true });
+    try {
+      for (const d of indexedDirs) {
+        await neurodeckApi.memory.indexDirectory(d.path);
+      }
+      setKbStatus({
+        text: `Queued ${indexedDirs.length} director${indexedDirs.length === 1 ? "y" : "ies"} for re-indexing`,
+        ok: true,
+      });
+    } catch (e) {
+      setKbStatus({ text: `Re-index failed: ${e}`, ok: false });
+    } finally {
+      setKbBusy(null);
+    }
+  }, [indexedDirs]);
+
+  useEffect(() => {
+    if (activePanel === "knowledge" && indexedDirs === null && kbBusy === null) {
+      void loadKbDirs();
+    }
+  }, [activePanel, indexedDirs, kbBusy, loadKbDirs]);
+
   const applyCompactMode = (val: boolean) => {
     setCompactMode(val);
     void updateSettings({ compactMode: val });
@@ -395,13 +446,13 @@ export function SettingsView({
                     title="Theme settings unavailable."
                     description="Theme data could not be loaded. Reset appearance to restore defaults."
                     action={
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        icon={RotateCcw}
                         onClick={() => void resetToDefaults()}
-                        className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                       >
-                        <RotateCcw className="h-4 w-4" aria-hidden="true" /> Reset Appearance
-                      </button>
+                        Reset Appearance
+                      </Button>
                     }
                   />
                 </div>
@@ -432,14 +483,14 @@ export function SettingsView({
                               aria-pressed={isActive}
                               className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                                 isActive
-                                  ? "border-nd-success/40 bg-nd-success/[0.06]"
+                                  ? "border-nd-accent-success/40 bg-nd-accent-success/[0.06]"
                                   : isPending
                                   ? "border-nd-accent-primary/50 bg-nd-accent-primary/[0.08]"
                                   : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/30"
                               }`}
                             >
                               {isActive && (
-                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-success" aria-label="Active theme">
+                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent-success" aria-label="Active theme">
                                   <Check className="h-3 w-3 text-nd-surface-app" />
                                 </span>
                               )}
@@ -552,6 +603,8 @@ export function SettingsView({
                       <button
                         key={provider.runtimeId}
                         type="button"
+                        aria-pressed={active}
+                        aria-label={`Select ${provider.label} as AI provider`}
                         onClick={() => {
                           dispatch({ type: "set-provider", provider: provider.id });
                           void neurodeckApi.ai.setProvider(provider.id);
@@ -656,136 +709,92 @@ export function SettingsView({
         )}
 
         {/* ── Knowledge Base ───────────────────────── */}
-        {activePanel === "knowledge" && (() => {
-          const loadDirs = async () => {
-            setKbBusy("load");
-            try {
-              const res = await neurodeckApi.memory.getIndexedDirs();
-              setIndexedDirs(res.dirs);
-            } catch (e) {
-              setKbStatus({ text: `Failed to load: ${e}`, ok: false });
-            } finally {
-              setKbBusy(null);
-            }
-          };
-          if (indexedDirs === null && kbBusy === null) void loadDirs();
+        {activePanel === "knowledge" && (
+          <div id="sp-knowledge" className="settings-panel active space-y-4">
+            <Panel eyebrow="Knowledge Base" title="Indexed Directories">
+              <div className="space-y-3 p-4">
+                <p className="text-xs text-nd-text-muted leading-5">
+                  Directories indexed into the vector memory via the Docs tab. Click{" "}
+                  <strong className="text-nd-text-primary">Re-index All</strong> to re-chunk all directories
+                  with fresh embeddings (monitors via WebSocket{" "}
+                  <code className="font-mono text-nd-accent-primary">doc_index_done</code> event).
+                </p>
 
-          const handleRemoveDir = async (path: string) => {
-            setKbBusy(path);
-            try {
-              await neurodeckApi.memory.removeIndexedDir(path);
-              setIndexedDirs((prev) => prev?.filter((d) => d.path !== path) ?? null);
-              setKbStatus({ text: "Directory removed from index list", ok: true });
-            } catch (e) {
-              setKbStatus({ text: `Remove failed: ${e}`, ok: false });
-            } finally {
-              setKbBusy(null);
-            }
-          };
-
-          const handleReindexAll = async () => {
-            if (!indexedDirs?.length) return;
-            setKbBusy("reindex");
-            setKbStatus({ text: "Re-indexing all directories…", ok: true });
-            try {
-              for (const d of indexedDirs) {
-                await neurodeckApi.memory.indexDirectory(d.path);
-              }
-              setKbStatus({ text: `Queued ${indexedDirs.length} director${indexedDirs.length === 1 ? 'y' : 'ies'} for re-indexing`, ok: true });
-            } catch (e) {
-              setKbStatus({ text: `Re-index failed: ${e}`, ok: false });
-            } finally {
-              setKbBusy(null);
-            }
-          };
-
-          return (
-            <div id="sp-knowledge" className="settings-panel active space-y-4">
-              <Panel eyebrow="Knowledge Base" title="Indexed Directories">
-                <div className="space-y-3 p-4">
-                  <p className="text-xs text-nd-text-muted leading-5">
-                    Directories indexed into the vector memory via the Docs tab. Click{" "}
-                    <strong className="text-nd-text">Re-index All</strong> to re-chunk all directories
-                    with fresh embeddings (monitors via WebSocket{" "}
-                    <code className="font-mono text-nd-accent">doc_index_done</code> event).
-                  </p>
-
-                  {kbStatus && (
-                    <div className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
+                {kbStatus && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
                       kbStatus.ok
-                        ? "border-nd-success/30 bg-nd-success/10 text-nd-success"
-                        : "border-nd-danger/30 bg-nd-danger/10 text-nd-danger"
-                    }`}>
-                      {kbStatus.text}
-                    </div>
-                  )}
-
-                  {kbBusy === "load" ? (
-                    <div className="flex items-center gap-2 py-4 text-xs text-nd-text-muted">
-                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" aria-hidden="true" />
-                      Loading indexed directories…
-                    </div>
-                  ) : !indexedDirs || indexedDirs.length === 0 ? (
-                    <EmptyState
-                      icon={BookOpen}
-                      title="No indexed directories"
-                      description="Use Settings → Docs or the index_directory command to add directories to the vector memory."
-                    />
-                  ) : (
-                    <ul className="divide-y divide-nd-text-muted/10 rounded-xl border border-nd-text-muted/15 overflow-hidden">
-                      {indexedDirs.map((d) => (
-                        <li key={d.path} className="flex items-center gap-3 bg-nd-surface/30 px-4 py-3">
-                          <FolderOpen className="h-4 w-4 shrink-0 text-nd-accent/70" aria-hidden="true" />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-mono text-xs text-nd-text" title={d.path}>
-                              {d.path}
-                            </p>
-                            <p className="text-[10px] text-nd-text-muted mt-0.5">
-                              {d.doc_count} chunk{d.doc_count !== 1 ? "s" : ""} indexed
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => void handleRemoveDir(d.path)}
-                            disabled={kbBusy !== null}
-                            aria-label={`Remove ${d.path} from index list`}
-                            className="shrink-0 rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-1.5 text-nd-danger hover:bg-nd-danger/20 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => void loadDirs()}
-                      disabled={kbBusy !== null}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                    >
-                      <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" /> Refresh
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleReindexAll()}
-                      disabled={kbBusy !== null || !indexedDirs?.length}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 transition disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                    >
-                      {kbBusy === "reindex" ? (
-                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" aria-hidden="true" />
-                      ) : (
-                        <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-                      )}
-                      Re-index All
-                    </button>
+                        ? "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
+                        : "border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error"
+                    }`}
+                  >
+                    {kbStatus.text}
                   </div>
+                )}
+
+                {kbBusy === "load" ? (
+                  <div className="flex items-center gap-2 py-4 text-xs text-nd-text-muted">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Loading indexed directories…
+                  </div>
+                ) : !indexedDirs || indexedDirs.length === 0 ? (
+                  <EmptyState
+                    icon={BookOpen}
+                    title="No indexed directories"
+                    description="Use Settings → Docs or the index_directory command to add directories to the vector memory."
+                  />
+                ) : (
+                  <ul className="divide-y divide-nd-text-muted/10 rounded-xl border border-nd-text-muted/15 overflow-hidden">
+                    {indexedDirs.map((d) => (
+                      <li key={d.path} className="flex items-center gap-3 bg-nd-surface/30 px-4 py-3">
+                        <FolderOpen className="h-4 w-4 shrink-0 text-nd-accent-primary/70" aria-hidden="true" />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-mono text-xs text-nd-text-primary" title={d.path}>
+                            {d.path}
+                          </p>
+                          <p className="text-[10px] text-nd-text-muted mt-0.5">
+                            {d.doc_count} chunk{d.doc_count !== 1 ? "s" : ""} indexed
+                          </p>
+                        </div>
+                        <Button
+                          variant="danger"
+                          size="xs"
+                          icon={Trash2}
+                          disabled={kbBusy !== null}
+                          aria-label={`Remove ${d.path} from index list`}
+                          onClick={() => void handleRemoveKbDir(d.path)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={RefreshCcw}
+                    disabled={kbBusy !== null}
+                    onClick={() => void loadKbDirs()}
+                  >
+                    Refresh
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={kbBusy === "reindex" ? Loader2 : BookOpen}
+                    disabled={kbBusy !== null || !indexedDirs?.length}
+                    onClick={() => void handleReindexAll()}
+                  >
+                    Re-index All
+                  </Button>
                 </div>
-              </Panel>
-            </div>
-          );
-        })()}
+              </div>
+            </Panel>
+          </div>
+        )}
 
         {/* ── Voice ────────────────────────────────── */}
         {activePanel === "voice" && (
@@ -1053,7 +1062,7 @@ export function SettingsView({
                   {runtime.devices.map((device) => (
                     <div key={device.id} className="flex items-center justify-between gap-3">
                       <span>{device.name}</span>
-                      <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 font-mono text-nd-accent text-[10px]">
+                      <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 font-mono text-nd-accent-primary text-[10px]">
                         {device.kind}
                       </kbd>
                     </div>
@@ -1215,7 +1224,7 @@ export function SettingsView({
             {state.lastExportPath && (
               <Panel eyebrow="Export" title="Last Export">
                 <div className="p-4">
-                  <p className="rounded-xl border border-nd-success/20 bg-nd-success/10 px-3 py-2 text-xs font-mono text-nd-success break-all">
+                  <p className="rounded-xl border border-nd-accent-success/20 bg-nd-accent-success/10 px-3 py-2 text-xs font-mono text-nd-accent-success break-all">
                     {state.lastExportPath}
                   </p>
                 </div>
@@ -1254,10 +1263,10 @@ export function SettingsView({
               </div>
             </Panel>
 
-            <Panel eyebrow="Danger Zone" title="Reset" className="border-nd-danger/30 bg-nd-danger/[0.02]">
+            <Panel eyebrow="Danger Zone" title="Reset" className="border-nd-accent-error/30 bg-nd-accent-error/[0.02]">
               <div className="p-4 space-y-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-nd-danger" aria-hidden="true" />
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-error" aria-hidden="true" />
                   <p className="text-xs text-nd-text-secondary">
                     Clears stored UI preferences, active session, and cached context. Does not delete
                     sessions or exports from disk.

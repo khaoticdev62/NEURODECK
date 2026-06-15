@@ -107,7 +107,7 @@ const commands: CommandItem[] = [
   { label: 'Replay Onboarding Tour', hint: 'Walk through the main NEURODECK workspace again', icon: MonitorPlay, onboardingMode: 'tour' },
   { label: 'Show Me This Screen', hint: 'Open contextual help for the current view', icon: Sparkles, onboardingMode: 'contextual' },
   { label: 'Open Rich Media Onboarding', hint: 'Launch the tour with optional Lottie, WebM, audio, and shader previews', icon: MonitorPlay, onboardingMode: 'tour' },
-  { label: 'Open Settings', hint: 'Theme, Deck Mode, provider, privacy', view: 'settings', icon: Settings },
+  { label: 'Open Settings', hint: 'Theme, Deck Mode, provider, privacy', settingsPanel: 'general', icon: Settings },
   { label: 'Appearance', hint: 'Open settings on the appearance panel', settingsPanel: 'appearance', icon: Settings },
   { label: 'Run Security Audit Starter', hint: 'Preload, IPC, secrets, renderer boundaries', icon: ShieldCheck, prompt: 'Audit this Electron app for preload safety, IPC validation, secrets exposure, and renderer privilege risk.', runPrompt: true },
 
@@ -310,7 +310,7 @@ export function CommandPalette({
       id="command-palette-overlay"
       data-controller-overlay={isOpen ? 'true' : undefined}
       className={`fixed inset-0 z-[var(--z-modal)] flex items-start justify-center transition-opacity duration-[var(--nd-motion-normal)] ${
-        isOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+        isOpen ? 'active pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
       }`}
       style={{ backgroundColor: 'var(--nd-surface-overlay)' }}
       onMouseDown={() => dispatch({ type: 'toggle-command', open: false })}
@@ -331,6 +331,7 @@ export function CommandPalette({
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={handleKeyDown}
+            aria-label="Command palette search"
             aria-autocomplete="list"
             aria-controls="command-palette-list"
             aria-activedescendant={filteredCommands[selectedIndex] ? `cmd-${selectedIndex}` : undefined}
@@ -351,7 +352,7 @@ export function CommandPalette({
                     <button
                       key={`recent-${label}`}
                       type="button"
-                      className="flex w-full min-h-touch items-center gap-3 rounded-[var(--nd-radius-md)] border border-transparent px-3 py-2.5 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
+                      className="command-palette-item flex w-full min-h-touch items-center gap-3 rounded-[var(--nd-radius-md)] border border-transparent px-3 py-2.5 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
                       onClick={() => void runCommand(command)}
                     >
                       <Icon className="h-5 w-5 text-[var(--nd-accent-primary)]" aria-hidden="true" />
@@ -382,9 +383,9 @@ export function CommandPalette({
                   aria-selected={isSelected}
                   className={`flex w-full min-h-touch items-center gap-3 rounded-[var(--nd-radius-md)] border px-3 py-2.5 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
                     isSelected
-                      ? 'border-[var(--nd-accent-primary)]/40 bg-[var(--nd-surface-selected)] shadow-[var(--nd-elevation-glow)]'
+                      ? 'command-palette-item active border-[var(--nd-accent-primary)]/40 bg-[var(--nd-surface-selected)] shadow-[var(--nd-elevation-glow)]'
                       : 'border-transparent hover:border-[var(--nd-accent-primary)]/30 hover:bg-[var(--nd-surface-hover)]'
-                  }`}
+                  } ${isSelected ? '' : 'command-palette-item'}`}
                   onClick={() => void runCommand(command)}
                   onMouseEnter={() => setSelectedIndex(index)}
                 >

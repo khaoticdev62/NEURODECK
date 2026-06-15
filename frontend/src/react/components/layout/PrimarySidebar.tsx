@@ -93,7 +93,7 @@ export function PrimarySidebar({
                     : 'flex justify-center py-1'
                 }`}
               >
-                {expanded ? section : <div className="h-px w-6 bg-[var(--nd-border-subtle)]" />}
+                {expanded ? section : <div className="h-px w-6 bg-[var(--nd-border-subtle)]" aria-hidden="true" />}
               </div>
               <div className="space-y-0.5">
                 {items.map((item) => {
@@ -112,7 +112,7 @@ export function PrimarySidebar({
                       onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}
                       className={`no-drag group/nav flex w-full min-h-touch items-center rounded-[var(--nd-radius-md)] px-2 py-2 text-left transition-[background-color,border-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
                         active
-                          ? 'border-l-2 border-[var(--nd-border-focus)] bg-[var(--nd-surface-selected)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]'
+                          ? 'active border-l-2 border-[var(--nd-border-focus)] bg-[var(--nd-surface-selected)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]'
                           : 'border-l-2 border-transparent text-[var(--nd-text-muted)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-text-primary)]'
                       } ${expanded ? '' : 'justify-center'}`}
                     >

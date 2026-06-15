@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
 import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
@@ -75,7 +75,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
         className={[
           "transition",
           selected
-            ? "border-nd-accent/40 bg-nd-accent/[0.07]"
+            ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]"
             : "hover:border-[rgba(var(--nd-cyan-rgb),0.25)]",
         ].join(" ")}
       >
@@ -101,7 +101,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
                   {node.preview}
                 </p>
               )}
-              {error && <p className="mt-2 text-xs text-nd-danger">{error}</p>}
+              {error && <p className="mt-2 text-xs text-nd-accent-error">{error}</p>}
             </div>
           </div>
 

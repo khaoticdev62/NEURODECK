@@ -1,4 +1,4 @@
-import { Badge } from '../../../components/primitives/Badge';
+﻿import { Badge } from '../../../components/primitives/Badge';
 import { alertScoreTone } from '../utils/socGrading';
 import type { SocAlert, AlertAnalysisState } from '../types';
 
@@ -72,7 +72,7 @@ export function AlertQueuePanel({ alerts, selectedId, analyses, onSelect }: Aler
                 onClick={() => onSelect(alert.id)}
                 className={`w-full px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/50 focus-visible:ring-inset ${
                   isSelected
-                    ? 'border-l-2 border-nd-accent-primary bg-nd-accent/10'
+                    ? 'border-l-2 border-nd-accent-primary bg-nd-accent-primary/10'
                     : 'border-l-2 border-transparent hover:bg-nd-surface/40'
                 }`}
               >

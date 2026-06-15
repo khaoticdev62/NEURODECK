@@ -1,4 +1,4 @@
-import { type InputHTMLAttributes, forwardRef } from 'react';
+﻿import { type InputHTMLAttributes, forwardRef } from 'react';
 import '../../../design-system/components/core/TextInput';
 
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -20,7 +20,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
         <label htmlFor={inputId} className="nd-field__label">
           {label}
           {rest.required && (
-            <span className="ml-1 text-nd-warning" aria-hidden="true">
+            <span className="ml-1 text-nd-accent-warning" aria-hidden="true">
               *
             </span>
           )}

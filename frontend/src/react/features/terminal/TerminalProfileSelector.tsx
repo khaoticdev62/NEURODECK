@@ -1,4 +1,4 @@
-import type { TerminalProfileAvailability } from "../../../../../src/shared/terminal/terminalProfiles";
+﻿import type { TerminalProfileAvailability } from "../../../../../src/shared/terminal/terminalProfiles";
 
 const PLATFORM_LABELS: Record<string, string> = {
   steamdeck: "Steam Deck",
@@ -26,12 +26,12 @@ export function TerminalProfileSelector({ profiles, selectedProfileId, onSelect 
     <section className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
       <div className="mb-2">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Profile</p>
-        <h3 className="text-sm font-semibold text-nd-text">Shell profile</h3>
+        <h3 className="text-sm font-semibold text-nd-text-primary">Shell profile</h3>
       </div>
       <select
         value={selectedProfileId}
         onChange={(e) => onSelect(e.target.value)}
-        className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
+        className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none"
         aria-label="Select shell profile"
       >
         {Object.entries(byPlatform).map(([platform, group]) => (
@@ -45,10 +45,10 @@ export function TerminalProfileSelector({ profiles, selectedProfileId, onSelect 
         ))}
       </select>
       {selected && (
-        <div className={`mt-3 rounded-2xl border px-3 py-2 text-xs ${selected.shellAvailable ? "border-nd-accent/30 bg-nd-accent/[0.08]" : "border-nd-danger/30 bg-nd-danger/[0.06]"}`}>
+        <div className={`mt-3 rounded-2xl border px-3 py-2 text-xs ${selected.shellAvailable ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]" : "border-nd-accent-error/30 bg-nd-accent-error/[0.06]"}`}>
           <div className="flex items-center justify-between gap-2">
-            <span className="font-semibold text-nd-text">{selected.name}</span>
-            <span className={selected.shellAvailable ? "text-nd-success" : "text-nd-danger"}>
+            <span className="font-semibold text-nd-text-primary">{selected.name}</span>
+            <span className={selected.shellAvailable ? "text-nd-accent-success" : "text-nd-accent-error"}>
               {selected.shellAvailable ? "ready" : "shell not found"}
             </span>
           </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback } from 'react';
 import {
   Download,
   FolderOpen,
@@ -183,7 +183,7 @@ export function PortfolioView() {
               onClick={() => setFilter(id)}
               className={`inline-flex min-h-touch items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
                 filter === id
-                  ? 'bg-nd-accent/15 text-nd-accent-primary'
+                  ? 'bg-nd-accent-primary/15 text-nd-accent-primary'
                   : 'text-nd-text-secondary hover:bg-nd-surface/40 hover:text-nd-text-primary'
               }`}
             >

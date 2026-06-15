@@ -26,12 +26,12 @@ const VIEWS = [
   { id: "canvas", name: "Canvas", selector: "#canvas-monaco" },
   { id: "terminal", name: "Terminal", selector: "#terminal-new-tab-btn" },
   { id: "ssh", name: "SSH", selector: "#ssh-host-input" },
-  { id: "tunnel", name: "Tunnel", selector: ".tunnel-kicker" },
-  { id: "share", name: "Share", selector: ".share-view-kicker" },
+  { id: "tunnel", name: "Tunnel", selector: "[data-testid='view-tunnel']" },
+  { id: "share", name: "Share", selector: "[data-testid='view-share']" },
   { id: "browser", name: "Browser", selector: "#browser-address-input" },
   { id: "agent", name: "Agent", selector: "#agent-task-input" },
   { id: "memory", name: "Memory", selector: "#memory-search-input" },
-  { id: "prompt-lab", name: "Prompt Lab", selector: ".prompt-lab-container" },
+  { id: "prompt-lab", name: "Prompt Lab", selector: "[data-testid='view-prompt-lab']" },
   { id: "remote", name: "Remote", selector: "[data-testid='remote-status-badge']" },
   { id: "docs", name: "Docs", selector: "#docs-search-input" }
 ] as const;
@@ -190,11 +190,11 @@ test("Steam Deck 1280x800: all nav tabs clickable, no horizontal overflow", asyn
   await app.mockTauriBackend();
   await app.goto();
 
-  const navStrip = page.locator(".nav-tab-bar");
+  const navStrip = page.locator("nav[aria-label='Main navigation']");
   const box = await navStrip.boundingBox();
   expect(box).not.toBeNull();
 
-  // ScrollWidth should equal clientWidth (no overflow)
+  // The sidebar owns its own vertical scroll and must not force page-level horizontal overflow.
   const scrollWidth = await navStrip.evaluate((el) => el.scrollWidth);
   const clientWidth = await navStrip.evaluate((el) => el.clientWidth);
   expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2); // allow 2px rounding
