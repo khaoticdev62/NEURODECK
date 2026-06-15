@@ -47,7 +47,7 @@ jobs:
           const routes = process.env.SCREENSHOT_ROUTES.split(' ').filter(Boolean);
 
           (async () => {
-            const server = require('child_process').spawn('python3', ['-m', 'http.server', '4173', '--directory', '../frontend/dist'], { stdio: 'inherit' });
+            const server = require('child_process').spawn('python3', ['-c', "import http.server, socketserver, pathlib\nclass SPAHandler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory='../frontend/dist', **kwargs)\n    def do_GET(self):\n        target = pathlib.Path('../frontend/dist') / self.path.lstrip('/')\n        if not target.exists():\n            self.path = '/index.html'\n        return super().do_GET()\nwith socketserver.TCPServer(('', 4173), SPAHandler) as httpd:\n    httpd.serve_forever()"], { stdio: 'inherit' });
             await new Promise(r => setTimeout(r, 3000));
 
             const browser = await chromium.launch();
@@ -114,7 +114,7 @@ jobs:
           const routes = process.env.SCREENSHOT_ROUTES.split(' ').filter(Boolean);
 
           (async () => {
-            const server = require('child_process').spawn('python3', ['-m', 'http.server', '4173', '--directory', '../frontend/dist'], { stdio: 'inherit' });
+            const server = require('child_process').spawn('python3', ['-c', "import http.server, socketserver, pathlib\nclass SPAHandler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory='../frontend/dist', **kwargs)\n    def do_GET(self):\n        target = pathlib.Path('../frontend/dist') / self.path.lstrip('/')\n        if not target.exists():\n            self.path = '/index.html'\n        return super().do_GET()\nwith socketserver.TCPServer(('', 4173), SPAHandler) as httpd:\n    httpd.serve_forever()"], { stdio: 'inherit' });
             await new Promise(r => setTimeout(r, 3000));
 
             const browser = await chromium.launch();
@@ -147,7 +147,7 @@ jobs:
           const routes = process.env.SCREENSHOT_ROUTES.split(' ').filter(Boolean);
 
           (async () => {
-            const server = require('child_process').spawn('python3', ['-m', 'http.server', '4174', '--directory', '../frontend/dist'], { stdio: 'inherit' });
+            const server = require('child_process').spawn('python3', ['-c', "import http.server, socketserver, pathlib\nclass SPAHandler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory='../frontend/dist', **kwargs)\n    def do_GET(self):\n        target = pathlib.Path('../frontend/dist') / self.path.lstrip('/')\n        if not target.exists():\n            self.path = '/index.html'\n        return super().do_GET()\nwith socketserver.TCPServer(('', 4174), SPAHandler) as httpd:\n    httpd.serve_forever()"], { stdio: 'inherit' });
             await new Promise(r => setTimeout(r, 3000));
 
             const browser = await chromium.launch();

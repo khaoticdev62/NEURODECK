@@ -45,17 +45,29 @@ jobs:
       - name: Build frontend
         run: npm run frontend:build
 
-      - name: Start static server
+      - name: Start static server (SPA fallback)
         run: |
-          python3 -m http.server 4173 --directory frontend/dist &
+          python3 - <<'PY' &
+          import http.server, socketserver, pathlib
+          class SPAHandler(http.server.SimpleHTTPRequestHandler):
+              def __init__(self, *args, **kwargs):
+                  super().__init__(*args, directory='frontend/dist', **kwargs)
+              def do_GET(self):
+                  target = pathlib.Path('frontend/dist') / self.path.lstrip('/')
+                  if not target.exists():
+                      self.path = '/index.html'
+                  return super().do_GET()
+          with socketserver.TCPServer(('', 4173), SPAHandler) as httpd:
+              httpd.serve_forever()
+          PY
           sleep 3
 
       - name: Run axe-core scan
         working-directory: e2e
         run: |
-          cat > a11y-scan.spec.js <<'EOF'
+          cat > tests/a11y-scan.spec.js <<'EOF'
           const { test, expect } = require('@playwright/test');
-          const { injectAxe, getViolations } = require('@axe-core/playwright');
+          const { AxeBuilder } = require('@axe-core/playwright');
 
           const routes = ['/', '/settings', '/chat', '/canvas', '/terminal'];
 
@@ -63,17 +75,18 @@ jobs:
             test(`a11y scan for ${route}`, async ({ page }) => {
               await page.goto(`http://localhost:4173${route}`);
               await page.waitForLoadState('networkidle');
-              await injectAxe(page);
-              const violations = await getViolations(page, null, {
-                runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa'],
-                resultTypes: ['violations'],
-              });
+              const { violations } = await new AxeBuilder({ page })
+                .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+                .analyze();
               const criticalSerious = violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+              if (criticalSerious.length > 0) {
+                console.error(JSON.stringify(criticalSerious.map(v => ({ id: v.id, impact: v.impact, description: v.description, nodes: v.nodes.length })), null, 2));
+              }
               expect(criticalSerious, `Found ${criticalSerious.length} critical/serious a11y violations on ${route}`).toHaveLength(0);
             });
           }
           EOF
-          npx playwright test a11y-scan.spec.js
+          npx playwright test tests/a11y-scan.spec.js
 
   contrast-check:
     name: Theme contrast check
@@ -104,7 +117,7 @@ jobs:
       - run: npm run frontend:build
       - working-directory: e2e
         run: |
-          cat > keyboard-nav.spec.js <<'EOF'
+          cat > tests/keyboard-nav.spec.js <<'EOF'
           const { test, expect } = require('@playwright/test');
 
           test('primary chrome is keyboard navigable', async ({ page }) => {
@@ -130,6 +143,18 @@ jobs:
             expect(focused).toBe(true);
           });
           EOF
-          python3 -m http.server 4173 --directory ../frontend/dist &
+          python3 - <<'PY' &
+          import http.server, socketserver, pathlib
+          class SPAHandler(http.server.SimpleHTTPRequestHandler):
+              def __init__(self, *args, **kwargs):
+                  super().__init__(*args, directory='../frontend/dist', **kwargs)
+              def do_GET(self):
+                  target = pathlib.Path('../frontend/dist') / self.path.lstrip('/')
+                  if not target.exists():
+                      self.path = '/index.html'
+                  return super().do_GET()
+          with socketserver.TCPServer(('', 4173), SPAHandler) as httpd:
+              httpd.serve_forever()
+          PY
           sleep 3
-          npx playwright test keyboard-nav.spec.js
+          npx playwright test tests/keyboard-nav.spec.js

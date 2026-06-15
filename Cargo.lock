@@ -212,6 +212,7 @@ dependencies = [
  "mlua",
  "neurodeck_core",
  "neurodeck_infrastructure",
+ "nix 0.29.0",
  "pbkdf2",
  "portable-pty",
  "rand 0.8.6",
@@ -3391,6 +3392,18 @@ dependencies = [
  "bitflags 2.11.1",
  "cfg-if",
  "cfg_aliases 0.1.1",
+ "libc",
+]
+
+[[package]]
+name = "nix"
+version = "0.29.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71e2746dc3a24dd78b3cfcb7be93368c6de9963d30f43a6a73998a9cf4b17b46"
+dependencies = [
+ "bitflags 2.11.1",
+ "cfg-if",
+ "cfg_aliases 0.2.1",
  "libc",
 ]
 
