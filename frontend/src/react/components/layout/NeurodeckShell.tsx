@@ -134,7 +134,12 @@ export function NeurodeckShell(props: NeurodeckShellProps): React.ReactNode {
       </a>
       <TitleBar subtitle={subtitle} />
       <div className="flex min-h-0 flex-1">
-        <PrimarySidebar state={state} dispatch={dispatch} />
+        <PrimarySidebar
+          state={state}
+          dispatch={dispatch}
+          onOpenSettings={() => props.openSettings('general')}
+          onOpenNotifications={() => props.setNotificationsOpen(true)}
+        />
         <main
           id="main-content"
           data-controller-zone="content"

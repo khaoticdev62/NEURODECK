@@ -860,6 +860,7 @@ export default function App() {
       data-testid={`view-${id}`}
       data-controller-screen={id}
       data-controller-screen-active="true"
+      data-controller-default="true"
       className="view-content active h-full min-h-0 animate-view-enter"
     >
       {content}

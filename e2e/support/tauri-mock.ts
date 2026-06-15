@@ -1,5 +1,9 @@
 /**
- * Shared Tauri backend mock for E2E tests.
+ * Shared bridge backend mock for E2E tests.
+ *
+ * Historical note: this file keeps the tauri-mock name because many existing
+ * specs import it directly. The app now communicates through the Electron
+ * preload and Rust bridge; this helper intercepts bridge HTTP calls in tests.
  *
  * Usage:
  *   import { buildTauriMock } from "../support/tauri-mock";

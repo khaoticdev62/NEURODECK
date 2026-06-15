@@ -111,10 +111,8 @@ test.describe("Command Palette v2", () => {
 test.describe("Quick Switcher", () => {
   test.beforeEach(async ({ page }) => {
     const app = new AppPage(page);
-    await app.goto();
     await app.mockTauriBackend();
-    await page.reload();
-    await page.locator("#boot-overlay").waitFor({ state: "detached", timeout: 12000 }).catch(() => {});
+    await app.goto();
   });
 
   test("opens with Ctrl+Tab when mocked Tauri exists", async ({ page }) => {

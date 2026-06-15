@@ -24,7 +24,6 @@ describe("ModelCard", () => {
         onMarkReady={vi.fn()}
         onMarkIndexed={vi.fn()}
         onDisable={vi.fn()}
-        onSelect={vi.fn()}
       />
     );
     expect(screen.getByText("Llama 3.1 8B")).toBeDefined();
@@ -40,7 +39,6 @@ describe("ModelCard", () => {
         onMarkReady={vi.fn()}
         onMarkIndexed={vi.fn()}
         onDisable={vi.fn()}
-        onSelect={vi.fn()}
       />
     );
     expect(screen.getByText("Preferred")).toBeDefined();
@@ -56,13 +54,12 @@ describe("ModelCard", () => {
         onMarkReady={vi.fn()}
         onMarkIndexed={vi.fn()}
         onDisable={vi.fn()}
-        onSelect={vi.fn()}
       />
     );
     expect(screen.getByText("Blocked")).toBeDefined();
     expect(screen.getByText("Model exceeds agent tier limit")).toBeDefined();
 
-    const markReadyBtn = screen.getByRole("button", { name: /Mark Ready/i });
+    const markReadyBtn = screen.getByRole("button", { name: /Mark Llama 3\.1 8B as ready/i });
     expect(markReadyBtn.hasAttribute("disabled")).toBe(true);
   });
 });
