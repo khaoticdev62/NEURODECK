@@ -2,6 +2,7 @@
 import { Plug, Unplug, AlertTriangle } from "lucide-react";
 import { TerminalViewport } from "../terminal/TerminalViewport";
 import { neurodeckApi } from "../../services/bridgeAdapter";
+import { Button } from "../../components/primitives/Button";
 import type { TerminalSession } from "../../../../../src/shared/terminal/terminalContracts";
 
 type PaneRuntime = TerminalSession & {
@@ -142,14 +143,9 @@ export function SSHTerminal({ config, onClose }: Props) {
           </span>
           <span className={`rounded-full border px-2 py-0.5 ${statusTone}`}>{status}</span>
         </div>
-        <button
-          type="button"
-          onClick={handleDisconnect}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-1.5 text-xs font-semibold text-nd-accent-error hover:bg-nd-accent-error/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-error/40"
-        >
-          <Unplug className="h-3.5 w-3.5" aria-hidden="true" />
+        <Button variant="danger" size="sm" icon={Unplug} onClick={handleDisconnect}>
           Disconnect
-        </button>
+        </Button>
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden p-2">
