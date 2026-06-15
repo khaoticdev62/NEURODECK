@@ -4,4 +4,11 @@
  * An `Intent` represents a typed command originating from the frontend.
  * It replaces unstructured Tauri commands.
  */
-export type Intent = { "type": "StartTerminal", "payload": { id: string, shell: string | null, } } | { "type": "KillTerminal", "payload": { id: string, } } | { "type": "TerminalInput", "payload": { id: string, data: string, } } | { "type": "TerminalResize", "payload": { id: string, cols: number, rows: number, } } | { "type": "SendMessage", "payload": { text: string, persona: string, } } | { "type": "CancelGeneration" } | { "type": "RequestGameState" };
+export type Intent =
+  | { type: "StartTerminal"; payload: { id: string; shell: string | null } }
+  | { type: "KillTerminal"; payload: { id: string } }
+  | { type: "TerminalInput"; payload: { id: string; data: string } }
+  | { type: "TerminalResize"; payload: { id: string; cols: number; rows: number } }
+  | { type: "SendMessage"; payload: { text: string; persona: string } }
+  | { type: "CancelGeneration" }
+  | { type: "RequestGameState" };

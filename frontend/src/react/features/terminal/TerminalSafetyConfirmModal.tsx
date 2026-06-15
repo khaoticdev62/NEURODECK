@@ -1,4 +1,5 @@
-import { AlertTriangle, ShieldAlert } from "lucide-react";
+﻿import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
 import { Modal } from "../../components/primitives/Modal";
 import type { TerminalCommandSafety } from "../../../../../src/shared/terminal/terminalSafetyTypes";
 
@@ -11,7 +12,14 @@ type Props = {
   onCancel: () => void;
 };
 
-export function TerminalSafetyConfirmModal({ open, command, safety, description, onConfirm, onCancel }: Props) {
+export function TerminalSafetyConfirmModal({
+  open,
+  command,
+  safety,
+  description,
+  onConfirm,
+  onCancel,
+}: Props) {
   const isDangerous = safety.level === "dangerous";
   const requiresConfirm = safety.level === "confirm" || safety.level === "dangerous";
 
@@ -20,40 +28,45 @@ export function TerminalSafetyConfirmModal({ open, command, safety, description,
       open={open}
       onClose={onCancel}
       title={isDangerous ? "Dangerous Command" : "Confirm Command"}
-      description={isDangerous ? "Type-confirmed actions are required before execution." : "Review the command before it runs."}
+      description={
+        isDangerous
+          ? "Type-confirmed actions are required before execution."
+          : "Review the command before it runs."
+      }
       size="md"
       footer={
         <>
-          <button type="button" onClick={onCancel} className="rounded-xl border border-nd-text-muted/20 bg-nd-surface/40 px-4 py-2 text-sm text-nd-text-muted">
+          <Button variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={!requiresConfirm}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold ${isDangerous ? "bg-nd-danger/20 text-nd-danger" : "bg-nd-warning/20 text-nd-warning"} disabled:opacity-40`}
-          >
+          </Button>
+          <Button variant="danger" disabled={!requiresConfirm} onClick={onConfirm}>
             Run
-          </button>
+          </Button>
         </>
       }
     >
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          {isDangerous ? <ShieldAlert className="mt-0.5 h-5 w-5 text-nd-danger" aria-hidden="true" /> : <AlertTriangle className="mt-0.5 h-5 w-5 text-nd-warning" aria-hidden="true" />}
+          {isDangerous ? (
+            <ShieldAlert className="mt-0.5 h-5 w-5 text-nd-accent-error" aria-hidden="true" />
+          ) : (
+            <AlertTriangle className="mt-0.5 h-5 w-5 text-nd-accent-warning" aria-hidden="true" />
+          )}
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-nd-text">{safety.reason}</div>
+            <div className="text-sm font-semibold text-nd-text-primary">{safety.reason}</div>
             {description && <div className="mt-1 text-xs text-nd-text-muted">{description}</div>}
           </div>
         </div>
-        <pre className="overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-[12px] font-mono text-nd-text">
+        <pre className="overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3 text-[12px] font-mono text-nd-text-primary">
           {command}
         </pre>
         <div className="text-xs text-nd-text-muted">
-          Safety level: <span className={isDangerous ? "text-nd-danger" : "text-nd-warning"}>{safety.level}</span>
+          Safety level:{" "}
+          <span className={isDangerous ? "text-nd-accent-error" : "text-nd-accent-warning"}>
+            {safety.level}
+          </span>
         </div>
       </div>
     </Modal>
   );
 }
-

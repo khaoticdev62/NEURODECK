@@ -20,4 +20,4 @@ export type {
   CommandRunRequest,
   CommandRunResult,
   CommandHistoryEntry,
-} from '../contracts/ide.contracts';
+} from "../contracts/ide.contracts";

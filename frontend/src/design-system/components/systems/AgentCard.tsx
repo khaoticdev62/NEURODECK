@@ -1,11 +1,11 @@
-import * as React from 'react';
-import { Badge } from '../core/Badge';
-import { StatusChip } from '../core/StatusChip';
-import { Button } from '../core/Button';
+import * as React from "react";
+import { Badge } from "../core/Badge";
+import { StatusChip } from "../core/StatusChip";
+import { Button } from "../core/Button";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-agentcard-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-agentcard-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-agentcard-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-agentcard-css";
   s.textContent = `
   .nd-agentcard{background:var(--nd-surface-secondary);border:1px solid var(--nd-border-subtle);
     border-radius:var(--nd-radius-lg);box-shadow:var(--nd-elevation-card);padding:14px 16px;
@@ -26,10 +26,20 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-agentcard-cs
   document.head.appendChild(s);
 }
 
-const RUN_TONE: Record<AgentRunStatus, import('../core/StatusChip').StatusTone> = { idle: 'info', running: 'info', ok: 'success', failed: 'error' };
-const RUN_LABEL = { idle: 'Idle', running: 'Running', ok: 'Last run OK', failed: 'Last run failed' };
+const RUN_TONE: Record<AgentRunStatus, import("../core/StatusChip").StatusTone> = {
+  idle: "info",
+  running: "info",
+  ok: "success",
+  failed: "error",
+};
+const RUN_LABEL = {
+  idle: "Idle",
+  running: "Running",
+  ok: "Last run OK",
+  failed: "Last run failed",
+};
 
-export type AgentRunStatus = 'idle' | 'running' | 'ok' | 'failed';
+export type AgentRunStatus = "idle" | "running" | "ok" | "failed";
 
 /**
  * Displays an AI agent / persona / workflow unit, its model binding,
@@ -62,35 +72,45 @@ export function AgentCard({
   model,
   trusted = true,
   permissions = [],
-  runStatus = 'idle',
+  runStatus = "idle",
   onRun,
   onConfigure,
-  className = '',
+  className = "",
 }: AgentCardProps): React.ReactNode {
   return (
-    <div className={['nd-agentcard', className].filter(Boolean).join(' ')}>
+    <div className={["nd-agentcard", className].filter(Boolean).join(" ")}>
       <div className="nd-agentcard__top">
         <div className="nd-agentcard__avatar">{initials || name.slice(0, 2).toUpperCase()}</div>
         <div className="nd-agentcard__id">
           <div className="nd-agentcard__name">{name}</div>
           <div className="nd-agentcard__role">{role}</div>
         </div>
-        <StatusChip tone={RUN_TONE[runStatus]} size="sm" pulse={runStatus === 'running'}>
+        <StatusChip tone={RUN_TONE[runStatus]} size="sm" pulse={runStatus === "running"}>
           {RUN_LABEL[runStatus]}
         </StatusChip>
       </div>
       <div className="nd-agentcard__row">
-        <Badge tone={trusted ? 'success' : 'warning'} dot>{trusted ? 'Trusted' : 'Untrusted'}</Badge>
-        {permissions.map((p) => <Badge key={p} tone="agent">{p}</Badge>)}
+        <Badge tone={trusted ? "success" : "warning"} dot>
+          {trusted ? "Trusted" : "Untrusted"}
+        </Badge>
+        {permissions.map((p) => (
+          <Badge key={p} tone="agent">
+            {p}
+          </Badge>
+        ))}
       </div>
       {model ? (
-        <div className="nd-agentcard__bind">Model · <b>{model}</b></div>
+        <div className="nd-agentcard__bind">
+          Model · <b>{model}</b>
+        </div>
       ) : null}
       <div className="nd-agentcard__foot">
-        <Button variant={trusted ? 'primary' : 'secondary'} size="sm" onClick={onRun}>
-          {trusted ? 'Run agent' : 'Review & run'}
+        <Button variant={trusted ? "primary" : "secondary"} size="sm" onClick={onRun}>
+          {trusted ? "Run agent" : "Review & run"}
         </Button>
-        <Button variant="ghost" size="sm" onClick={onConfigure}>Configure</Button>
+        <Button variant="ghost" size="sm" onClick={onConfigure}>
+          Configure
+        </Button>
       </div>
     </div>
   );

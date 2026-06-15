@@ -1,8 +1,8 @@
-import * as React from 'react';
+import * as React from "react";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-textinput-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-textinput-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-textinput-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-textinput-css";
   s.textContent = `
   .nd-field{display:flex;flex-direction:column;gap:6px;font-family:var(--nd-font-ui);}
   .nd-field__label{font-family:var(--nd-font-hud);text-transform:uppercase;letter-spacing:0.14em;
@@ -30,7 +30,10 @@ let ndFieldSeq = 0;
 /**
  * Single-line text entry with label, hint, error, and optional leading icon.
  */
-export interface TextInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange'> {
+export interface TextInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  "value" | "onChange"
+> {
   /** Uppercase HUD label above the field. */
   label?: string;
   /** Controlled value. */
@@ -61,18 +64,34 @@ export function TextInput({
   hint,
   disabled = false,
   icon = null,
-  type = 'text',
+  type = "text",
   onSubmit,
-  className = '',
+  className = "",
   ...rest
 }: TextInputProps): React.ReactNode {
   const id = React.useMemo(() => `nd-field-${++ndFieldSeq}`, []);
   const msgId = `${id}-msg`;
   return (
-    <div className={['nd-field', className].filter(Boolean).join(' ')}>
-      {label ? <label className="nd-field__label" htmlFor={id}>{label}</label> : null}
-      <div className={['nd-field__wrap', error ? 'nd-field__wrap--error' : '', disabled ? 'nd-field__wrap--disabled' : ''].filter(Boolean).join(' ')}>
-        {icon ? <span className="nd-field__icon" aria-hidden="true">{icon}</span> : null}
+    <div className={["nd-field", className].filter(Boolean).join(" ")}>
+      {label ? (
+        <label className="nd-field__label" htmlFor={id}>
+          {label}
+        </label>
+      ) : null}
+      <div
+        className={[
+          "nd-field__wrap",
+          error ? "nd-field__wrap--error" : "",
+          disabled ? "nd-field__wrap--disabled" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        {icon ? (
+          <span className="nd-field__icon" aria-hidden="true">
+            {icon}
+          </span>
+        ) : null}
         <input
           id={id}
           className="nd-field__input"
@@ -81,15 +100,23 @@ export function TextInput({
           placeholder={placeholder}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
-          aria-describedby={(error || hint) ? msgId : undefined}
+          aria-describedby={error || hint ? msgId : undefined}
           onChange={(e) => onChange && onChange(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && onSubmit) onSubmit(); }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && onSubmit) onSubmit();
+          }}
           {...rest}
         />
       </div>
-      {error
-        ? <span id={msgId} className="nd-field__msg nd-field__msg--error">{error}</span>
-        : hint ? <span id={msgId} className="nd-field__msg nd-field__msg--hint">{hint}</span> : null}
+      {error ? (
+        <span id={msgId} className="nd-field__msg nd-field__msg--error">
+          {error}
+        </span>
+      ) : hint ? (
+        <span id={msgId} className="nd-field__msg nd-field__msg--hint">
+          {hint}
+        </span>
+      ) : null}
     </div>
   );
 }

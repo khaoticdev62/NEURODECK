@@ -219,7 +219,7 @@ function switchTab(path) {
     updateLineNumbers();
     _syncMirror();
     openDocument(tab.lang, workspaceUri(path), tab.content).catch(() => {});
-    
+
     // Notify DeckCode runtime of the active language
     invoke("deckcode_set_active_language", { languageId: tab.lang }).catch((e) => {
       console.warn("[DeckCode] Failed to sync active language:", e);
@@ -244,7 +244,7 @@ function closeTab(path, event) {
   _s.openTabs.splice(idx, 1);
 
   // Auto-stop server if no other tabs of this language are open.
-  const langStillOpen = _s.openTabs.some(t => t.lang === closedLang);
+  const langStillOpen = _s.openTabs.some((t) => t.lang === closedLang);
   if (!langStillOpen && getServerStatus()[closedLang]) {
     stopServer(closedLang).catch(() => {});
   }
@@ -289,8 +289,9 @@ function renderTabs() {
 function updateLineNumbers() {
   if (!_s.editorEl || !_s.lineNumbersEl) return;
   const lines = _s.editorEl.value.split("\n").length;
-  _s.lineNumbersEl.innerHTML = Array.from({ length: lines }, (_, i) =>
-    `<div class="ide-line-num">${i + 1}</div>`
+  _s.lineNumbersEl.innerHTML = Array.from(
+    { length: lines },
+    (_, i) => `<div class="ide-line-num">${i + 1}</div>`
   ).join("");
 }
 
@@ -379,7 +380,9 @@ async function saveActiveFile() {
 }
 
 async function newFile() {
-  const name = await showPrompt("Enter filename (with extension):", "untitled.txt", { title: "New File" });
+  const name = await showPrompt("Enter filename (with extension):", "untitled.txt", {
+    title: "New File",
+  });
   if (!name) return;
   const path = _s.currentPath ? `${_s.currentPath}/${name}` : name;
   try {
@@ -455,9 +458,7 @@ async function _initLspToolbar() {
   _s.lspServerSelectEl.innerHTML =
     _s.knownServers.length === 0
       ? `<option value="">No LSP servers found</option>`
-      : _s.knownServers
-          .map((s) => `<option value="${s.language}">${s.label}</option>`)
-          .join("");
+      : _s.knownServers.map((s) => `<option value="${s.language}">${s.label}</option>`).join("");
 
   _s.lspToggleBtnEl.addEventListener("click", async () => {
     const lang = _s.lspServerSelectEl.value;
@@ -550,7 +551,7 @@ async function _gotoDefinition() {
 
 function _openDefinitionLocation(loc) {
   const filePath = loc.uri.replace(/^file:\/\/\/workspace\//, "");
-  const targetLine = (loc.range?.start?.line ?? 0);
+  const targetLine = loc.range?.start?.line ?? 0;
 
   const existing = _s.openTabs.find((t) => t.path === filePath);
   if (existing) {
@@ -596,10 +597,11 @@ async function _ideWireEditorListeners() {
   _s.editorEl.addEventListener("input", onEditorInput);
   _s.editorEl.addEventListener("scroll", onEditorScroll);
   _s.editorEl.addEventListener("keydown", onEditorKeydown);
-  _s.editorEl.addEventListener("mousemove", e => scheduleHover(_s.editorEl, _s.lspHoverEl, e));
+  _s.editorEl.addEventListener("mousemove", (e) => scheduleHover(_s.editorEl, _s.lspHoverEl, e));
   _s.editorEl.addEventListener("mouseleave", () => hideHover(_s.lspHoverEl));
-  document.addEventListener("click", e => {
-    if (_s.lspCompletionEl && !_s.lspCompletionEl.contains(e.target)) hideCompletions(_s.lspCompletionEl);
+  document.addEventListener("click", (e) => {
+    if (_s.lspCompletionEl && !_s.lspCompletionEl.contains(e.target))
+      hideCompletions(_s.lspCompletionEl);
     if (_s.lspHoverEl && !_s.lspHoverEl.contains(e.target)) hideHover(_s.lspHoverEl);
   });
   $("ide-btn-new-file")?.addEventListener("click", newFile);
@@ -616,17 +618,23 @@ async function _ideWireEditorListeners() {
     }
   });
   await _initLspToolbar();
-  document.addEventListener("keydown", e => {
+  document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "s") {
       const view = $("view-ide");
-      if (view && view.classList.contains("active")) { e.preventDefault(); saveActiveFile(); }
+      if (view && view.classList.contains("active")) {
+        e.preventDefault();
+        saveActiveFile();
+      }
     }
   });
 }
 
 async function _ideWireLsp() {
   await initLspClient({
-    onStatusChange: statusMap => { _renderLspStatusBar(statusMap); _updateLspToggleLabel(); },
+    onStatusChange: (statusMap) => {
+      _renderLspStatusBar(statusMap);
+      _updateLspToggleLabel();
+    },
     onDiagnostics: (language, uri, diagnostics) => _renderDiagnostics(language, uri, diagnostics),
     onLog: (msg, tone) => logOutput(msg, tone),
   });
@@ -655,8 +663,7 @@ function _renderLspStatusBar(statusMap) {
   if (!_s.lspStatusBarEl) return;
   const entries = Object.entries(statusMap);
   if (entries.length === 0) {
-    _s.lspStatusBarEl.innerHTML =
-      `<span class="lsp-status-idle">LSP: no servers running</span>`;
+    _s.lspStatusBarEl.innerHTML = `<span class="lsp-status-idle">LSP: no servers running</span>`;
     return;
   }
   _s.lspStatusBarEl.innerHTML = entries
@@ -736,10 +743,8 @@ function _syncMirror() {
 
   const lines = content.split("\n");
   const renderedLines = lines.map((text, lineIdx) => {
-    const lineDiags = diags.filter(d => 
-      d.range && 
-      d.range.start.line <= lineIdx && 
-      d.range.end.line >= lineIdx
+    const lineDiags = diags.filter(
+      (d) => d.range && d.range.start.line <= lineIdx && d.range.end.line >= lineIdx
     );
 
     if (lineDiags.length === 0) return escapeHtml(text);
@@ -747,11 +752,16 @@ function _syncMirror() {
     const classes = new Array(text.length).fill("");
     for (const d of lineDiags) {
       const sev = d.severity || 3;
-      const cls = sev === 1 ? "ide-lsp-squiggly-error" : sev === 2 ? "ide-lsp-squiggly-warn" : "ide-lsp-squiggly-info";
-      
+      const cls =
+        sev === 1
+          ? "ide-lsp-squiggly-error"
+          : sev === 2
+            ? "ide-lsp-squiggly-warn"
+            : "ide-lsp-squiggly-info";
+
       const startC = d.range.start.line < lineIdx ? 0 : d.range.start.character;
       const endC = d.range.end.line > lineIdx ? text.length : d.range.end.character;
-      
+
       for (let i = startC; i < endC; i++) {
         if (i < text.length) classes[i] = `ide-lsp-squiggly ${cls}`;
       }

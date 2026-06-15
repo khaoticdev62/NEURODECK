@@ -1,15 +1,15 @@
 import { invoke } from "./neurobridge.js";
 
 // ── State ──────────────────────────────────────────────────────────────────────
-const HISTORY_KEY    = "nd_api_lab_history";
-const ENV_KEY        = "nd_api_lab_env";
-const HISTORY_LIMIT  = 50;
+const HISTORY_KEY = "nd_api_lab_history";
+const ENV_KEY = "nd_api_lab_env";
+const HISTORY_LIMIT = 50;
 
 let _currentCollection = null;
-let _currentRequests   = [];
-let _currentReqIndex   = -1;
-let _lastResponse      = null;
-let _initialized       = false;
+let _currentRequests = [];
+let _currentReqIndex = -1;
+let _lastResponse = null;
+let _initialized = false;
 
 // ── Public init ────────────────────────────────────────────────────────────────
 export function initApiLabView() {
@@ -32,10 +32,10 @@ export function initApiLabView() {
 
 // ── Sidebar tabs ──────────────────────────────────────────────────────────────
 function _wireSidebarTabs() {
-  document.querySelectorAll(".api-lab-stab").forEach(tab => {
+  document.querySelectorAll(".api-lab-stab").forEach((tab) => {
     tab.addEventListener("click", () => {
-      document.querySelectorAll(".api-lab-stab").forEach(t => t.classList.remove("active"));
-      document.querySelectorAll(".api-lab-stab-panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".api-lab-stab").forEach((t) => t.classList.remove("active"));
+      document.querySelectorAll(".api-lab-stab-panel").forEach((p) => p.classList.remove("active"));
       tab.classList.add("active");
       document.getElementById(`api-stab-${tab.dataset.stab}`)?.classList.add("active");
     });
@@ -44,13 +44,13 @@ function _wireSidebarTabs() {
 
 // ── Request tabs ──────────────────────────────────────────────────────────────
 function _wireRequestTabs() {
-  document.querySelectorAll(".api-lab-tab").forEach(tab => {
+  document.querySelectorAll(".api-lab-tab").forEach((tab) => {
     tab.addEventListener("click", () => {
-      document.querySelectorAll(".api-lab-tab").forEach(t => {
+      document.querySelectorAll(".api-lab-tab").forEach((t) => {
         t.classList.remove("active");
         t.setAttribute("aria-selected", "false");
       });
-      document.querySelectorAll(".api-lab-tab-panel").forEach(p => p.classList.remove("active"));
+      document.querySelectorAll(".api-lab-tab-panel").forEach((p) => p.classList.remove("active"));
       tab.classList.add("active");
       tab.setAttribute("aria-selected", "true");
       document.getElementById(`api-tab-${tab.dataset.apiTab}`)?.classList.add("active");
@@ -60,9 +60,9 @@ function _wireRequestTabs() {
 
 // ── Response tabs ─────────────────────────────────────────────────────────────
 function _wireRespTabs() {
-  document.querySelectorAll(".api-lab-resp-tab").forEach(tab => {
+  document.querySelectorAll(".api-lab-resp-tab").forEach((tab) => {
     tab.addEventListener("click", () => {
-      document.querySelectorAll(".api-lab-resp-tab").forEach(t => {
+      document.querySelectorAll(".api-lab-resp-tab").forEach((t) => {
         t.classList.remove("active");
         t.setAttribute("aria-selected", "false");
       });
@@ -70,7 +70,9 @@ function _wireRespTabs() {
       tab.setAttribute("aria-selected", "true");
       const target = tab.dataset.respTab;
       document.getElementById("api-response-body")?.classList.toggle("hidden", target !== "body");
-      document.getElementById("api-response-headers")?.classList.toggle("hidden", target !== "headers");
+      document
+        .getElementById("api-response-headers")
+        ?.classList.toggle("hidden", target !== "headers");
     });
   });
 }
@@ -78,9 +80,13 @@ function _wireRespTabs() {
 // ── Actions ───────────────────────────────────────────────────────────────────
 function _wireActions() {
   document.getElementById("api-send-btn")?.addEventListener("click", _sendRequest);
-  document.getElementById("api-add-header-btn")?.addEventListener("click", () => _addKvRow("api-headers-list", "", ""));
+  document
+    .getElementById("api-add-header-btn")
+    ?.addEventListener("click", () => _addKvRow("api-headers-list", "", ""));
   document.getElementById("api-new-collection-btn")?.addEventListener("click", _createCollection);
-  document.getElementById("api-save-request-btn")?.addEventListener("click", _saveRequestToCollection);
+  document
+    .getElementById("api-save-request-btn")
+    ?.addEventListener("click", _saveRequestToCollection);
   document.getElementById("api-ai-generate-btn")?.addEventListener("click", _generateRequest);
   document.getElementById("api-export-curl-btn")?.addEventListener("click", _exportCurl);
   document.getElementById("api-import-curl-btn")?.addEventListener("click", _importCurl);
@@ -89,7 +95,7 @@ function _wireActions() {
   document.getElementById("api-clear-history-btn")?.addEventListener("click", _clearHistory);
 
   // URL bar: Enter to send
-  document.getElementById("api-url-input")?.addEventListener("keydown", e => {
+  document.getElementById("api-url-input")?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") _sendRequest();
   });
 }
@@ -101,7 +107,7 @@ function _wireAuth() {
 
 function _syncAuthFields() {
   const type = document.getElementById("api-auth-type")?.value || "none";
-  ["bearer", "basic", "apikey"].forEach(t => {
+  ["bearer", "basic", "apikey"].forEach((t) => {
     document.getElementById(`api-auth-${t}`)?.classList.toggle("hidden", type !== t);
   });
 }
@@ -121,7 +127,7 @@ function _getAuthHeaders() {
     }
     case "apikey": {
       const name = document.getElementById("api-auth-key-name")?.value.trim();
-      const val  = document.getElementById("api-auth-key-value")?.value.trim();
+      const val = document.getElementById("api-auth-key-value")?.value.trim();
       return name && val ? [[name, val]] : [];
     }
     default:
@@ -142,7 +148,9 @@ function _syncBodyMode() {
 }
 
 function _wireFormAdd() {
-  document.getElementById("api-add-form-btn")?.addEventListener("click", () => _addKvRow("api-form-list", "", ""));
+  document
+    .getElementById("api-add-form-btn")
+    ?.addEventListener("click", () => _addKvRow("api-form-list", "", ""));
 }
 
 function _getBody() {
@@ -153,7 +161,7 @@ function _getBody() {
   if (mode === "form") {
     const rows = document.querySelectorAll("#api-form-list .api-lab-kv-row");
     const parts = [];
-    rows.forEach(row => {
+    rows.forEach((row) => {
       const k = row.querySelector(".api-lab-kv-key")?.value.trim();
       const v = row.querySelector(".api-lab-kv-value")?.value.trim();
       if (k) parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(v || "")}`);
@@ -174,7 +182,7 @@ function _wireEnv() {
 function _saveEnvToStorage() {
   const rows = document.querySelectorAll("#api-env-list .api-lab-kv-row");
   const vars = {};
-  rows.forEach(row => {
+  rows.forEach((row) => {
     const k = row.querySelector(".api-lab-kv-key")?.value.trim();
     const v = row.querySelector(".api-lab-kv-value")?.value.trim();
     if (k) vars[k] = v || "";
@@ -194,7 +202,9 @@ function _loadEnvFromStorage() {
 function _resolveEnv(text) {
   const raw = localStorage.getItem(ENV_KEY) || "{}";
   let vars = {};
-  try { vars = JSON.parse(raw); } catch {}
+  try {
+    vars = JSON.parse(raw);
+  } catch {}
   return text.replace(/\{\{(\w+)\}\}/g, (_, name) => vars[name] ?? `{{${name}}}`);
 }
 
@@ -214,7 +224,7 @@ function _addKvRow(listId, key = "", value = "") {
     if (listId === "api-env-list") _saveEnvToStorage();
   });
   if (listId === "api-env-list") {
-    row.querySelectorAll("input").forEach(i => i.addEventListener("input", _saveEnvToStorage));
+    row.querySelectorAll("input").forEach((i) => i.addEventListener("input", _saveEnvToStorage));
   }
   list.appendChild(row);
 }
@@ -228,7 +238,7 @@ function _addDefaultHeader() {
 function _getHeaders() {
   const rows = document.querySelectorAll("#api-headers-list .api-lab-kv-row");
   const headers = [];
-  rows.forEach(row => {
+  rows.forEach((row) => {
     const k = _resolveEnv(row.querySelector(".api-lab-kv-key")?.value.trim() || "");
     const v = _resolveEnv(row.querySelector(".api-lab-kv-value")?.value.trim() || "");
     if (k) headers.push([k, v]);
@@ -254,11 +264,11 @@ function _hideLoadingBar(bar) {
 
 // ── Send request ──────────────────────────────────────────────────────────────
 async function _sendRequest() {
-  const method  = document.getElementById("api-method-select")?.value || "GET";
-  const rawUrl  = document.getElementById("api-url-input")?.value.trim() || "";
-  const url     = _resolveEnv(rawUrl);
+  const method = document.getElementById("api-method-select")?.value || "GET";
+  const rawUrl = document.getElementById("api-url-input")?.value.trim() || "";
+  const url = _resolveEnv(rawUrl);
   const statusEl = document.getElementById("api-response-status");
-  const bodyEl   = document.getElementById("api-response-body");
+  const bodyEl = document.getElementById("api-response-body");
   const headersEl = document.getElementById("api-response-headers");
 
   if (!url) {
@@ -279,7 +289,11 @@ async function _sendRequest() {
 
   try {
     const resp = await invoke("api_request", {
-      method, url, headers: allHeaders, body, timeoutSecs: 30
+      method,
+      url,
+      headers: allHeaders,
+      body,
+      timeoutSecs: 30,
     });
     _lastResponse = resp;
 
@@ -288,21 +302,25 @@ async function _sendRequest() {
     statusEl.style.color = statusColor;
 
     let formatted = resp.body;
-    try { formatted = JSON.stringify(JSON.parse(resp.body), null, 2); } catch {}
+    try {
+      formatted = JSON.stringify(JSON.parse(resp.body), null, 2);
+    } catch {}
     bodyEl.textContent = formatted;
 
     // Render response headers
     if (headersEl && resp.headers && resp.headers.length) {
       headersEl.innerHTML = resp.headers
-        .map(([k, v]) => `<div class="api-resp-header-row"><span class="api-resp-hkey">${_esc(k)}</span><span class="api-resp-hval">${_esc(v)}</span></div>`)
+        .map(
+          ([k, v]) =>
+            `<div class="api-resp-header-row"><span class="api-resp-hkey">${_esc(k)}</span><span class="api-resp-hval">${_esc(v)}</span></div>`
+        )
         .join("");
     }
 
     // Add to history
     _addToHistory({ method, url: rawUrl, status: resp.status, duration_ms: resp.duration_ms });
-
   } catch (e) {
-    statusEl.textContent = `Error: ${String(e).split('\n')[0]}`;
+    statusEl.textContent = `Error: ${String(e).split("\n")[0]}`;
     statusEl.style.color = "#fca5a5";
     bodyEl.textContent = String(e);
     _lastResponse = null;
@@ -315,15 +333,18 @@ async function _sendRequest() {
 // ── Generate request via AI ───────────────────────────────────────────────────
 async function _generateRequest() {
   const input = document.getElementById("api-ai-input");
-  const btn   = document.getElementById("api-ai-generate-btn");
-  if (!input?.value.trim()) { input?.focus(); return; }
+  const btn = document.getElementById("api-ai-generate-btn");
+  if (!input?.value.trim()) {
+    input?.focus();
+    return;
+  }
   btn.textContent = "Generating…";
   btn.disabled = true;
   try {
     const req = await invoke("api_generate_request", { description: input.value.trim() });
     _setFormRequest(req, true);
   } catch (e) {
-    addNotification('Generate Failed', String(e), 'error');
+    addNotification("Generate Failed", String(e), "error");
   } finally {
     btn.textContent = "✨ Generate Request";
     btn.disabled = false;
@@ -332,29 +353,35 @@ async function _generateRequest() {
 
 // ── cURL import/export ────────────────────────────────────────────────────────
 async function _exportCurl() {
-  const method  = document.getElementById("api-method-select")?.value || "GET";
-  const url     = document.getElementById("api-url-input")?.value.trim() || "";
+  const method = document.getElementById("api-method-select")?.value || "GET";
+  const url = document.getElementById("api-url-input")?.value.trim() || "";
   const headers = _getHeaders();
-  const body    = _getBody();
-  const reqStr  = JSON.stringify({ method, url, headers, body });
+  const body = _getBody();
+  const reqStr = JSON.stringify({ method, url, headers, body });
   try {
     const curl = await invoke("api_export_curl", { request: reqStr });
     const area = document.getElementById("api-curl-area");
-    if (area) { area.value = curl; area.select(); }
+    if (area) {
+      area.value = curl;
+      area.select();
+    }
   } catch (e) {
-    addNotification('Export Failed', String(e), 'error');
+    addNotification("Export Failed", String(e), "error");
   }
 }
 
 async function _importCurl() {
   const area = document.getElementById("api-curl-area");
   const curl = area?.value.trim();
-  if (!curl) { area?.focus(); return; }
+  if (!curl) {
+    area?.focus();
+    return;
+  }
   try {
     const req = await invoke("api_curl_import", { curl });
     _setFormRequest(req, true);
   } catch (e) {
-    addNotification('Import Failed', String(e), 'error');
+    addNotification("Import Failed", String(e), "error");
   }
 }
 
@@ -376,7 +403,10 @@ function _sendToCanvas() {
       editor.setValue(body);
     } else {
       const textarea = document.querySelector("#canvas-editor textarea");
-      if (textarea) { textarea.value = body; textarea.dispatchEvent(new Event("input")); }
+      if (textarea) {
+        textarea.value = body;
+        textarea.dispatchEvent(new Event("input"));
+      }
     }
   }, 150);
 }
@@ -385,7 +415,9 @@ function _sendToCanvas() {
 function _addToHistory(entry) {
   const raw = localStorage.getItem(HISTORY_KEY) || "[]";
   let hist = [];
-  try { hist = JSON.parse(raw); } catch {}
+  try {
+    hist = JSON.parse(raw);
+  } catch {}
   hist.unshift({ ...entry, ts: Date.now() });
   if (hist.length > HISTORY_LIMIT) hist = hist.slice(0, HISTORY_LIMIT);
   localStorage.setItem(HISTORY_KEY, JSON.stringify(hist));
@@ -397,21 +429,27 @@ function _renderHistory() {
   if (!listEl) return;
   const raw = localStorage.getItem(HISTORY_KEY) || "[]";
   let hist = [];
-  try { hist = JSON.parse(raw); } catch {}
+  try {
+    hist = JSON.parse(raw);
+  } catch {}
   if (!hist.length) {
     listEl.innerHTML = '<div class="api-lab-empty">No history yet.</div>';
     return;
   }
-  listEl.innerHTML = hist.map((h, i) => `
+  listEl.innerHTML = hist
+    .map(
+      (h, i) => `
     <div class="api-history-item" data-idx="${i}" role="button" tabindex="0"
          aria-label="Load ${h.method} ${h.url}">
       <span class="api-hist-method">${_esc(h.method)}</span>
-      <span class="api-hist-status" style="color:${h.status < 400 ? '#86efac' : '#fca5a5'}">${h.status || '—'}</span>
+      <span class="api-hist-status" style="color:${h.status < 400 ? "#86efac" : "#fca5a5"}">${h.status || "—"}</span>
       <span class="api-hist-url">${_esc(h.url)}</span>
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 
-  listEl.querySelectorAll(".api-history-item").forEach(el => {
+  listEl.querySelectorAll(".api-history-item").forEach((el) => {
     const load = () => {
       const h = hist[Number(el.dataset.idx)];
       if (!h) return;
@@ -419,12 +457,21 @@ function _renderHistory() {
       document.getElementById("api-url-input").value = h.url || "";
     };
     el.addEventListener("click", load);
-    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); load(); } });
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        load();
+      }
+    });
   });
 }
 
 async function _clearHistory() {
-  const confirmed = await showConfirm("Clear all request history?", { confirmText: "Clear", cancelText: "Keep" }); if (!confirmed) return;
+  const confirmed = await showConfirm("Clear all request history?", {
+    confirmText: "Clear",
+    cancelText: "Keep",
+  });
+  if (!confirmed) return;
   localStorage.removeItem(HISTORY_KEY);
   _renderHistory();
 }
@@ -439,15 +486,19 @@ async function _loadCollections() {
       listEl.innerHTML = '<div class="api-lab-empty">No collections yet.</div>';
       return;
     }
-    listEl.innerHTML = names.map(n => `
-      <div class="api-collection-item${_currentCollection === n ? ' active' : ''}"
+    listEl.innerHTML = names
+      .map(
+        (n) => `
+      <div class="api-collection-item${_currentCollection === n ? " active" : ""}"
            data-name="${_esc(n)}" role="listitem">
         <span class="api-collection-name">${_esc(n)}</span>
         <button class="api-lab-btn-small" data-action="delete" title="Delete" aria-label="Delete ${_esc(n)}">×</button>
       </div>
-    `).join("");
-    listEl.querySelectorAll(".api-collection-item").forEach(el => {
-      el.addEventListener("click", e => {
+    `
+      )
+      .join("");
+    listEl.querySelectorAll(".api-collection-item").forEach((el) => {
+      el.addEventListener("click", (e) => {
         if (e.target.dataset.action === "delete") {
           _deleteCollection(el.dataset.name);
         } else {
@@ -466,7 +517,9 @@ async function _createCollection() {
   try {
     await invoke("api_save_collection", { name: name.trim(), requests: "[]" });
     _loadCollections();
-  } catch (e) { addNotification('Save Failed', String(e), 'error'); }
+  } catch (e) {
+    addNotification("Save Failed", String(e), "error");
+  }
 }
 
 async function _loadCollection(name) {
@@ -476,41 +529,67 @@ async function _loadCollection(name) {
     _currentCollection = name;
     _renderRequestList();
     _loadCollections();
-  } catch (e) { addNotification('Load Failed', String(e), 'error'); }
+  } catch (e) {
+    addNotification("Load Failed", String(e), "error");
+  }
 }
 
 async function _deleteCollection(name) {
-  const confirmed = await showConfirm(`Delete collection "${name}"?`, { confirmText: "Delete", cancelText: "Keep" }); if (!confirmed) return;
+  const confirmed = await showConfirm(`Delete collection "${name}"?`, {
+    confirmText: "Delete",
+    cancelText: "Keep",
+  });
+  if (!confirmed) return;
   try {
     await invoke("api_delete_collection", { name });
-    if (_currentCollection === name) { _currentCollection = null; _currentRequests = []; _renderRequestList(); }
+    if (_currentCollection === name) {
+      _currentCollection = null;
+      _currentRequests = [];
+      _renderRequestList();
+    }
     _loadCollections();
-  } catch (e) { addNotification('Delete Failed', String(e), 'error'); }
+  } catch (e) {
+    addNotification("Delete Failed", String(e), "error");
+  }
 }
 
 async function _saveRequestToCollection() {
   if (!_currentCollection) {
-    const name = await showPrompt("Save to collection (name):", "", { title: "Save to Collection" });
+    const name = await showPrompt("Save to collection (name):", "", {
+      title: "Save to Collection",
+    });
     if (!name?.trim()) return;
     _currentCollection = name.trim();
     try {
       await invoke("api_save_collection", { name: _currentCollection, requests: "[]" });
     } catch {}
   }
-  const method  = document.getElementById("api-method-select")?.value || "GET";
-  const url     = document.getElementById("api-url-input")?.value.trim() || "";
-  const body    = document.getElementById("api-body-input")?.value || "";
+  const method = document.getElementById("api-method-select")?.value || "GET";
+  const url = document.getElementById("api-url-input")?.value.trim() || "";
+  const body = document.getElementById("api-body-input")?.value || "";
   const headers = _getHeaders();
-  const entry   = { id: `req_${Date.now()}`, method, url, body, headers, name: `${method} ${url.split("/").pop() || url}` };
+  const entry = {
+    id: `req_${Date.now()}`,
+    method,
+    url,
+    body,
+    headers,
+    name: `${method} ${url.split("/").pop() || url}`,
+  };
   if (_currentReqIndex >= 0) {
     _currentRequests[_currentReqIndex] = entry;
   } else {
     _currentRequests.push(entry);
   }
   try {
-    await invoke("api_save_collection", { name: _currentCollection, requests: JSON.stringify(_currentRequests) });
+    await invoke("api_save_collection", {
+      name: _currentCollection,
+      requests: JSON.stringify(_currentRequests),
+    });
     _renderRequestList();
-  } catch (e) { addNotification('Save Failed', String(e), 'error'); }
+  } catch (e) {
+    addNotification("Save Failed", String(e), "error");
+  }
 }
 
 function _renderRequestList() {
@@ -527,22 +606,29 @@ function _renderRequestList() {
   reqEl.className = "api-req-list";
   reqEl.innerHTML = `
     <div class="api-req-list-header">${_esc(_currentCollection)}</div>
-    ${_currentRequests.map((r, i) => `
+    ${_currentRequests
+      .map(
+        (r, i) => `
       <div class="api-req-item" data-idx="${i}" role="button" tabindex="0"
            aria-label="Load ${_esc(r.name || r.url)}">
         <span class="api-req-method">${_esc(r.method)}</span>
         <span class="api-req-name">${_esc(r.name || r.url)}</span>
         <button class="api-lab-btn-small api-req-del" data-idx="${i}" title="Delete" aria-label="Delete request">×</button>
       </div>
-    `).join("")}
+    `
+      )
+      .join("")}
   `;
 
-  reqEl.querySelectorAll(".api-req-item").forEach(el => {
-    const activate = e => {
+  reqEl.querySelectorAll(".api-req-item").forEach((el) => {
+    const activate = (e) => {
       if (e && e.target.classList.contains("api-req-del")) {
         const idx = Number(e.target.dataset.idx);
         _currentRequests.splice(idx, 1);
-        invoke("api_save_collection", { name: _currentCollection, requests: JSON.stringify(_currentRequests) }).catch(() => {});
+        invoke("api_save_collection", {
+          name: _currentCollection,
+          requests: JSON.stringify(_currentRequests),
+        }).catch(() => {});
         _renderRequestList();
         return;
       }
@@ -552,7 +638,12 @@ function _renderRequestList() {
       _setFormRequest(r, false);
     };
     el.addEventListener("click", activate);
-    el.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); } });
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        activate();
+      }
+    });
   });
 
   listEl.after(reqEl);

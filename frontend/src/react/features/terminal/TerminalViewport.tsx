@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import { Terminal as XTerm } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { AlertTriangle, Copy, RefreshCw, Trash2 } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
@@ -43,7 +44,10 @@ type Props = {
   autoInputs?: AutoInputRule[];
 };
 
-function fallbackShell(profile: TerminalProfileAvailability | null, environment: TerminalEnvironmentReport | null) {
+function fallbackShell(
+  profile: TerminalProfileAvailability | null,
+  environment: TerminalEnvironmentReport | null
+) {
   if (profile?.shellAvailable) return profile.detectedPath ?? profile.shellPath;
   const plat = environment?.platform ?? "";
   if (plat.includes("win")) return "powershell.exe";
@@ -98,9 +102,9 @@ export function TerminalViewport({
       scrollback: 4000,
       convertEol: true,
       theme: {
-        background:          getVar("--nd-surface-app", "#0A0D10"),
-        foreground:          getVar("--nd-text-primary", "#E8F4FF"),
-        cursor:              getVar("--nd-accent-primary", "#5EEBFF"),
+        background: getVar("--nd-surface-app", "#0A0D10"),
+        foreground: getVar("--nd-text-primary", "#E8F4FF"),
+        cursor: getVar("--nd-accent-primary", "#5EEBFF"),
         selectionBackground: `rgba(${getVar("--nd-cyan-rgb", "94, 235, 255")}, 0.25)`,
       },
     });
@@ -145,8 +149,22 @@ export function TerminalViewport({
 
     termRef.current = term;
     fitRef.current = fit;
-    (window as Window & { __terminalInstances?: Record<string, { fit?: () => void; clear?: () => void; focus?: () => void; term?: XTerm }> }).__terminalInstances ??= {};
-    (window as Window & { __terminalInstances?: Record<string, { fit?: () => void; clear?: () => void; focus?: () => void; term?: XTerm }> }).__terminalInstances![pane.id] = {
+    (
+      window as Window & {
+        __terminalInstances?: Record<
+          string,
+          { fit?: () => void; clear?: () => void; focus?: () => void; term?: XTerm }
+        >;
+      }
+    ).__terminalInstances ??= {};
+    (
+      window as Window & {
+        __terminalInstances?: Record<
+          string,
+          { fit?: () => void; clear?: () => void; focus?: () => void; term?: XTerm }
+        >;
+      }
+    ).__terminalInstances![pane.id] = {
       fit: () => {
         try {
           fit.fit();
@@ -164,7 +182,14 @@ export function TerminalViewport({
     };
 
     return () => {
-      const instances = (window as Window & { __terminalInstances?: Record<string, { fit?: () => void; clear?: () => void; focus?: () => void; term?: XTerm }> }).__terminalInstances;
+      const instances = (
+        window as Window & {
+          __terminalInstances?: Record<
+            string,
+            { fit?: () => void; clear?: () => void; focus?: () => void; term?: XTerm }
+          >;
+        }
+      ).__terminalInstances;
       if (instances) delete instances[pane.id];
       term.dispose();
       termRef.current = null;
@@ -234,7 +259,21 @@ export function TerminalViewport({
       };
       void run();
     }
-  }, [pane.cols, pane.cwd, pane.id, pane.profileId, pane.rows, pane.sessionId, pane.shell, pane.shellArgs, pane.state, pane.tabId, pane.title, onPanePatch, shell]);
+  }, [
+    pane.cols,
+    pane.cwd,
+    pane.id,
+    pane.profileId,
+    pane.rows,
+    pane.sessionId,
+    pane.shell,
+    pane.shellArgs,
+    pane.state,
+    pane.tabId,
+    pane.title,
+    onPanePatch,
+    shell,
+  ]);
 
   useEffect(() => {
     const unsubOutput = listenBridge("pty_output", (payload) => {
@@ -319,12 +358,7 @@ export function TerminalViewport({
           <span className="truncate">{pane.cwd || "cwd unavailable"}</span>
         </div>
         <div className="flex items-center gap-1">
-          <IconButton
-            aria-label="Copy selection"
-            variant="ghost"
-            size="sm"
-            onClick={copySelection}
-          >
+          <IconButton aria-label="Copy selection" variant="ghost" size="sm" onClick={copySelection}>
             <Copy className="h-4 w-4" aria-hidden="true" />
           </IconButton>
           <IconButton
@@ -362,21 +396,31 @@ export function TerminalViewport({
         <div className="absolute inset-0 flex items-center justify-center bg-nd-surface-app/65 p-4 backdrop-blur-sm">
           <div className="max-w-md rounded-2xl border border-nd-border-subtle bg-nd-surface-modal p-4 shadow-nd-elevation-card">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-warning" aria-hidden="true" />
+              <AlertTriangle
+                className="mt-0.5 h-5 w-5 shrink-0 text-nd-accent-warning"
+                aria-hidden="true"
+              />
               <div className="min-w-0">
                 <div className="text-sm font-semibold text-nd-text-primary">
-                  {pane.state === "blocked" ? "Session blocked" : pane.state === "error" ? "Session error" : "Session exited"}
+                  {pane.state === "blocked"
+                    ? "Session blocked"
+                    : pane.state === "error"
+                      ? "Session error"
+                      : "Session exited"}
                 </div>
                 <div className="mt-1 text-xs text-nd-text-muted">
-                  {pane.lastErrorMessage || pane.lastExitReason || pane.stateMessage || "The PTY is not currently running."}
+                  {pane.lastErrorMessage ||
+                    pane.lastExitReason ||
+                    pane.stateMessage ||
+                    "The PTY is not currently running."}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={onRequestRestart} className="rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-xs font-semibold text-nd-accent-primary hover:bg-nd-accent-primary/20">
+                  <Button variant="secondary" size="sm" onClick={onRequestRestart}>
                     Restart
-                  </button>
-                  <button type="button" onClick={onRequestClose} className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs font-semibold text-nd-danger hover:bg-nd-danger/20">
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={onRequestClose}>
                     Close
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

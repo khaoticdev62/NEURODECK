@@ -1,6 +1,12 @@
 {
   "schemaVersion": "1.0.0",
   "features": {
+    "academy": {
+      "dependencies": ["electron-runtime", "rust-sidecar"],
+      "runtimeChecks": ["runtime.bridge.health", "runtime.paths.writable"],
+      "installerNotes": ["Academy progress and portfolio data persist locally and use bridge-backed storage when available."],
+      "validationRefs": ["validate-runtime.sh"]
+    },
     "agents": {
       "dependencies": ["rust-sidecar", "model-runtimes"],
       "runtimeChecks": ["runtime.bridge.health", "feature.models.warningOnly"],
@@ -37,6 +43,12 @@
     "graph": { "dependencies": ["electron-runtime"], "runtimeChecks": ["runtime.assets.present"], "installerNotes": ["Graph view is renderer-only."], "validationRefs": ["validate-runtime.sh"] },
     "ide": { "dependencies": ["electron-runtime", "rust-sidecar"], "runtimeChecks": ["runtime.bridge.health"], "installerNotes": ["IDE depends on PTY and bridge services."], "validationRefs": ["validate-runtime.sh"] },
     "maintenance": { "dependencies": ["electron-runtime"], "runtimeChecks": ["runtime.paths.writable"], "installerNotes": ["Maintenance tools write only to XDG paths."], "validationRefs": ["repair.sh", "validate-runtime.sh"] },
+    "mcp": {
+      "dependencies": ["electron-runtime", "rust-sidecar"],
+      "runtimeChecks": ["runtime.bridge.health"],
+      "installerNotes": ["MCP server controls are available when the sidecar bridge is healthy."],
+      "validationRefs": ["validate-runtime.sh"]
+    },
     "memory": { "dependencies": ["electron-runtime", "rust-sidecar"], "runtimeChecks": ["runtime.bridge.health"], "installerNotes": ["Vector memory relies on the packaged sidecar."], "validationRefs": ["validate-runtime.sh"] },
     "models": { "dependencies": ["electron-runtime", "rust-sidecar", "model-runtimes"], "runtimeChecks": ["feature.models.warningOnly"], "installerNotes": ["Provider credentials are optional for install, required for live model calls."], "validationRefs": ["validate-runtime.sh"] },
     "orchestrator": { "dependencies": ["electron-runtime", "rust-sidecar"], "runtimeChecks": ["runtime.bridge.health"], "installerNotes": ["Orchestrator depends on bridge health."], "validationRefs": ["validate-runtime.sh"] },
@@ -51,6 +63,12 @@
     "settings": { "dependencies": ["electron-runtime", "gamescope"], "runtimeChecks": ["launch.gamemode.defaultResolution"], "installerNotes": ["Settings surfaces runtime manifest and Game Mode state."], "validationRefs": ["validate-game-mode.sh", "validate-runtime.sh"] },
     "share": { "dependencies": ["electron-runtime"], "runtimeChecks": ["runtime.paths.writable"], "installerNotes": ["Share exports remain local."], "validationRefs": ["validate-runtime.sh"] },
     "ssh": { "dependencies": ["electron-runtime", "rust-sidecar"], "runtimeChecks": ["runtime.bridge.health"], "installerNotes": ["SSH profiles use XDG config/data."], "validationRefs": ["validate-runtime.sh"] },
+    "sync": {
+      "dependencies": ["electron-runtime", "rust-sidecar"],
+      "runtimeChecks": ["runtime.bridge.health", "runtime.paths.writable"],
+      "installerNotes": ["Sync, transfer, and trusted-device state persist under user-writable XDG paths."],
+      "validationRefs": ["validate-runtime.sh"]
+    },
     "terminal": { "dependencies": ["electron-runtime", "rust-sidecar", "gamescope", "steam-client", "proton"], "runtimeChecks": ["runtime.bridge.health", "launch.gamemode.defaultResolution", "proton.launch.attempted"], "installerNotes": ["Terminal smoke test must pass after install."], "validationRefs": ["validate-runtime.sh", "validate-game-mode.sh", "validate-proton.sh"] },
     "themes": { "dependencies": ["electron-runtime"], "runtimeChecks": ["runtime.themeAssets.present"], "installerNotes": ["Theme assets must ship with the frontend bundle."], "validationRefs": ["validate-runtime.sh"] },
     "torrent": { "dependencies": ["electron-runtime"], "runtimeChecks": ["runtime.paths.writable"], "installerNotes": ["Torrent UI requires local storage only."], "validationRefs": ["validate-runtime.sh"] },

@@ -1,15 +1,15 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import type { NeurodeckTheme } from '../../../../shared/theme/themeContracts';
-import { StepFinish } from '../../../components/onboarding/steps/StepFinish';
+import { describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import type { NeurodeckTheme } from "../../../../shared/theme/themeContracts";
+import { StepFinish } from "../../../components/onboarding/steps/StepFinish";
 
 const THEMES = [
-  { id: 'blacksite', name: 'Blacksite' },
-  { id: 'hologrid', name: 'Hologrid' },
+  { id: "blacksite", name: "Blacksite" },
+  { id: "hologrid", name: "Hologrid" },
 ] as unknown as NeurodeckTheme[];
 
-describe('StepFinish', () => {
-  it('renders heading', () => {
+describe("StepFinish", () => {
+  it("renders heading", () => {
     render(
       <StepFinish
         availableThemes={THEMES}
@@ -18,12 +18,12 @@ describe('StepFinish', () => {
         providerType="ollama"
         diagnosticsErrors={[]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.getByRole('heading', { level: 2 })).toBeDefined();
+    expect(screen.getByRole("heading", { level: 2 })).toBeDefined();
   });
 
-  it('shows active theme name', () => {
+  it("shows active theme name", () => {
     render(
       <StepFinish
         availableThemes={THEMES}
@@ -32,9 +32,9 @@ describe('StepFinish', () => {
         providerType="ollama"
         diagnosticsErrors={[]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.getByText('Hologrid')).toBeDefined();
+    expect(screen.getByText("Hologrid")).toBeDefined();
   });
 
   it('falls back to "Blacksite" if themeId not found in available themes', () => {
@@ -46,12 +46,12 @@ describe('StepFinish', () => {
         providerType="ollama"
         diagnosticsErrors={[]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.getByText('Blacksite')).toBeDefined();
+    expect(screen.getByText("Blacksite")).toBeDefined();
   });
 
-  it('shows font scale value', () => {
+  it("shows font scale value", () => {
     render(
       <StepFinish
         availableThemes={THEMES}
@@ -60,12 +60,12 @@ describe('StepFinish', () => {
         providerType="ollama"
         diagnosticsErrors={[]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.getByText('110%')).toBeDefined();
+    expect(screen.getByText("110%")).toBeDefined();
   });
 
-  it('shows provider type', () => {
+  it("shows provider type", () => {
     render(
       <StepFinish
         availableThemes={THEMES}
@@ -74,9 +74,9 @@ describe('StepFinish', () => {
         providerType="ollama"
         diagnosticsErrors={[]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.getByText('ollama')).toBeDefined();
+    expect(screen.getByText("ollama")).toBeDefined();
   });
 
   it('shows "Offline Planner" for skip provider', () => {
@@ -88,12 +88,12 @@ describe('StepFinish', () => {
         providerType="skip"
         diagnosticsErrors={[]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.getByText('Offline Planner')).toBeDefined();
+    expect(screen.getByText("Offline Planner")).toBeDefined();
   });
 
-  it('shows Healthy status when no errors', () => {
+  it("shows Healthy status when no errors", () => {
     render(
       <StepFinish
         availableThemes={THEMES}
@@ -102,26 +102,26 @@ describe('StepFinish', () => {
         providerType="ollama"
         diagnosticsErrors={[]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.getByText('Healthy')).toBeDefined();
+    expect(screen.getByText("Healthy")).toBeDefined();
   });
 
-  it('shows Degraded status when errors are present', () => {
+  it("shows Degraded status when errors are present", () => {
     render(
       <StepFinish
         availableThemes={THEMES}
         themeId="blacksite"
         fontScale={100}
         providerType="ollama"
-        diagnosticsErrors={[{ code: 'PTY_FAIL', message: 'PTY failed', fix: 'Fix it' }]}
+        diagnosticsErrors={[{ code: "PTY_FAIL", message: "PTY failed", fix: "Fix it" }]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.getByText('Degraded')).toBeDefined();
+    expect(screen.getByText("Degraded")).toBeDefined();
   });
 
-  it('does not show warnings section when no warnings', () => {
+  it("does not show warnings section when no warnings", () => {
     render(
       <StepFinish
         availableThemes={THEMES}
@@ -130,12 +130,12 @@ describe('StepFinish', () => {
         providerType="ollama"
         diagnosticsErrors={[]}
         diagnosticsWarnings={[]}
-      />,
+      />
     );
-    expect(screen.queryByText('Warnings Pending Verification:')).toBeNull();
+    expect(screen.queryByText("Warnings Pending Verification:")).toBeNull();
   });
 
-  it('shows warnings section when warnings are present', () => {
+  it("shows warnings section when warnings are present", () => {
     render(
       <StepFinish
         availableThemes={THEMES}
@@ -143,10 +143,12 @@ describe('StepFinish', () => {
         fontScale={100}
         providerType="ollama"
         diagnosticsErrors={[]}
-        diagnosticsWarnings={[{ code: 'SSH_MISSING', message: 'SSH not found', fix: 'Install ssh' }]}
-      />,
+        diagnosticsWarnings={[
+          { code: "SSH_MISSING", message: "SSH not found", fix: "Install ssh" },
+        ]}
+      />
     );
-    expect(screen.getByText('Warnings Pending Verification:')).toBeDefined();
-    expect(screen.getByText('SSH not found')).toBeDefined();
+    expect(screen.getByText("Warnings Pending Verification:")).toBeDefined();
+    expect(screen.getByText("SSH not found")).toBeDefined();
   });
 });

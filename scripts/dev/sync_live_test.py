@@ -27,6 +27,7 @@ import threading
 
 # ── mDNS Discovery (optional) ─────────────────────────────────────────────────
 
+
 def try_mdns_discover(group_code: str, timeout: int = 10) -> list[dict]:
     """
     Minimal mDNS PTR query for _neurodeck._tcp.local.
@@ -48,28 +49,38 @@ def try_mdns_discover(group_code: str, timeout: int = 10) -> list[dict]:
             info = zeroconf.get_service_info(service_type, name)
             if info:
                 addresses = [socket.inet_ntoa(addr) for addr in info.addresses]
-                props = {k.decode(): v.decode() if isinstance(v, bytes) else v
-                         for k, v in (info.properties or {}).items()}
+                props = {
+                    k.decode(): v.decode() if isinstance(v, bytes) else v
+                    for k, v in (info.properties or {}).items()
+                }
                 peer_group = props.get("group_code", "DEFAULT")
                 if peer_group.upper() == group_code.upper() and addresses:
-                    print(f"[DISCOVERY] Found peer: {name} at {addresses[0]}:{info.port} (group={peer_group})")
+                    print(
+                        f"[DISCOVERY] Found peer: {name} at {addresses[0]}:{info.port} (group={peer_group})"
+                    )
                     with lock:
-                        peers.append({
-                            "hostname": props.get("hostname", name),
-                            "ip": addresses[0],
-                            "port": info.port,
-                            "is_warpinator": False,
-                        })
+                        peers.append(
+                            {
+                                "hostname": props.get("hostname", name),
+                                "ip": addresses[0],
+                                "port": info.port,
+                                "is_warpinator": False,
+                            }
+                        )
 
     zc = Zeroconf()
     browser = ServiceBrowser(zc, "_neurodeck._tcp.local.", handlers=[on_service_state_change])
-    print(f"[DISCOVERY] Listening for _neurodeck._tcp.local. peers for {timeout}s (group={group_code})...")
+    _ = browser  # keep reference so the browser thread stays alive
+    print(
+        f"[DISCOVERY] Listening for _neurodeck._tcp.local. peers for {timeout}s (group={group_code})..."
+    )
     time.sleep(timeout)
     zc.close()
     return peers
 
 
 # ── TCP Transfer Protocol ──────────────────────────────────────────────────────
+
 
 def send_file_to_peer(host: str, port: int, file_path: str) -> bool:
     """
@@ -164,6 +175,7 @@ def send_file_to_peer(host: str, port: int, file_path: str) -> bool:
 
 # ── Diagnostics Check ─────────────────────────────────────────────────────────
 
+
 def check_bridge_diagnostics(bridge_port: int = 9477) -> None:
     """
     Calls the NEURODECK bridge's transfer_diagnostics HTTP endpoint
@@ -178,7 +190,9 @@ def check_bridge_diagnostics(bridge_port: int = 9477) -> None:
     for port in ports_to_try:
         url = f"http://127.0.0.1:{port}/api/transfer_diagnostics"
         payload = json.dumps({}).encode()
-        req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(
+            url, data=payload, headers={"Content-Type": "application/json"}
+        )
         try:
             with urllib.request.urlopen(req, timeout=3) as resp:
                 result = json.loads(resp.read())
@@ -194,8 +208,8 @@ def check_bridge_diagnostics(bridge_port: int = 9477) -> None:
     print("[DIAGNOSTICS] Make sure NEURODECK is running (npm run dev from project root)")
 
 
-
 # ── Main ──────────────────────────────────────────────────────────────────────
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -214,17 +228,30 @@ Examples:
 
   # Send to a custom port (for dual-instance testing)
   python sync_live_test.py --host 127.0.0.1 --port 18339 --file test.txt
-        """
+        """,
     )
-    parser.add_argument("--host", default="127.0.0.1", help="Target NEURODECK IP (default: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=18338, help="TCP transfer port (default: 18338)")
+    parser.add_argument(
+        "--host", default="127.0.0.1", help="Target NEURODECK IP (default: 127.0.0.1)"
+    )
+    parser.add_argument(
+        "--port", type=int, default=18338, help="TCP transfer port (default: 18338)"
+    )
     parser.add_argument("--file", help="Path to file to send")
     parser.add_argument("--discover", action="store_true", help="Discover peers via mDNS first")
-    parser.add_argument("--group-code", default="DEFAULT", help="Group code to match (default: DEFAULT)")
-    parser.add_argument("--diagnostics", action="store_true", help="Query NEURODECK bridge diagnostics")
-    parser.add_argument("--bridge-port", type=int, default=9477, help="NEURODECK bridge HTTP port (default: 9477)")
-    parser.add_argument("--create-test-file", action="store_true",
-                        help="Create a small test file 'neurodeck_test.txt' and send it")
+    parser.add_argument(
+        "--group-code", default="DEFAULT", help="Group code to match (default: DEFAULT)"
+    )
+    parser.add_argument(
+        "--diagnostics", action="store_true", help="Query NEURODECK bridge diagnostics"
+    )
+    parser.add_argument(
+        "--bridge-port", type=int, default=9477, help="NEURODECK bridge HTTP port (default: 9477)"
+    )
+    parser.add_argument(
+        "--create-test-file",
+        action="store_true",
+        help="Create a small test file 'neurodeck_test.txt' and send it",
+    )
 
     args = parser.parse_args()
 
@@ -234,7 +261,7 @@ Examples:
     if args.create_test_file:
         test_path = "neurodeck_test.txt"
         with open(test_path, "w") as f:
-            f.write(f"NEURODECK Sync Live Test\n")
+            f.write("NEURODECK Sync Live Test\n")
             f.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n")
             f.write(f"From: {socket.gethostname()}\n")
             f.write(f"Transfer Port: {args.port}\n")

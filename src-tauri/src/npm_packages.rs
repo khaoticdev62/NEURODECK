@@ -119,7 +119,15 @@ pub fn validate_package_name(name: &str) -> Result<(), String> {
 /// Detect Node.js and npm on the host PATH.
 pub async fn get_npm_status() -> NpmStatus {
     let node = detect_binary_version("node", &["--version"]).await;
-    let npm = detect_binary_version(if cfg!(target_os = "windows") { "npm.cmd" } else { "npm" }, &["--version"]).await;
+    let npm = detect_binary_version(
+        if cfg!(target_os = "windows") {
+            "npm.cmd"
+        } else {
+            "npm"
+        },
+        &["--version"],
+    )
+    .await;
 
     NpmStatus {
         node: node.is_some(),
@@ -130,11 +138,7 @@ pub async fn get_npm_status() -> NpmStatus {
 }
 
 async fn detect_binary_version(binary: &str, args: &[&str]) -> Option<String> {
-    let output = Command::new(binary)
-        .args(args)
-        .output()
-        .await
-        .ok()?;
+    let output = Command::new(binary).args(args).output().await.ok()?;
     if !output.status.success() {
         return None;
     }
@@ -170,8 +174,7 @@ pub fn write_manifest(manifest: &[ManagedPackage]) -> Result<(), String> {
     let json = serde_json::to_string_pretty(manifest)
         .map_err(|e| format!("Failed to serialize npm manifest: {}", e))?;
     std::fs::write(&tmp, json).map_err(|e| format!("Failed to write npm manifest: {}", e))?;
-    std::fs::rename(&tmp, &path)
-        .map_err(|e| format!("Failed to finalize npm manifest: {}", e))?;
+    std::fs::rename(&tmp, &path).map_err(|e| format!("Failed to finalize npm manifest: {}", e))?;
     Ok(())
 }
 
@@ -202,7 +205,7 @@ pub fn list_packages() -> Result<Vec<ManagedPackage>, String> {
             // We only auto-add if we can resolve them to a real package directory.
             if let Ok(meta) = std::fs::symlink_metadata(entry.path()) {
                 if meta.file_type().is_symlink() {
-                    if let Ok(target) = std::fs::read_link(&entry.path()) {
+                    if let Ok(target) = std::fs::read_link(entry.path()) {
                         if let Some(pkg_name) = infer_package_from_binary_path(&target) {
                             if !manifest.iter().any(|p| p.name == pkg_name) {
                                 manifest.push(ManagedPackage {
@@ -260,7 +263,9 @@ pub async fn install_package(
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-    let mut child = cmd.spawn().map_err(|e| format!("Failed to spawn npm install: {}", e))?;
+    let mut child = cmd
+        .spawn()
+        .map_err(|e| format!("Failed to spawn npm install: {}", e))?;
 
     emit_progress(
         &broadcaster,
@@ -387,7 +392,10 @@ pub async fn uninstall_package(name: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to spawn npm uninstall: {}", e))?;
 
     if !status.success() {
-        return Err(format!("npm uninstall exited with code {:?}", status.code()));
+        return Err(format!(
+            "npm uninstall exited with code {:?}",
+            status.code()
+        ));
     }
 
     let mut manifest = read_manifest()?;
@@ -530,8 +538,8 @@ fn npm_binary() -> String {
 
 fn sanitize_version_constraint(v: &str) -> Result<String, String> {
     // Allow simple semver ranges: 1.2.3, ^1.2.3, ~1.2.3, >=1.2.3, latest, etc.
-    let allowed = Regex::new(r"^[a-zA-Z0-9._~^>=<\-*]+$")
-        .map_err(|e| format!("Regex error: {}", e))?;
+    let allowed =
+        Regex::new(r"^[a-zA-Z0-9._~^>=<\-*]+$").map_err(|e| format!("Regex error: {}", e))?;
     if !allowed.is_match(v) {
         return Err(format!("Invalid version constraint '{}'", v));
     }
@@ -547,7 +555,9 @@ fn strip_scope_prefix(name: &str) -> String {
 }
 
 fn read_installed_version(name: &str) -> Result<Option<String>, String> {
-    let pkg_dir = npm_prefix_dir().join("node_modules").join(strip_scope_prefix(name));
+    let pkg_dir = npm_prefix_dir()
+        .join("node_modules")
+        .join(strip_scope_prefix(name));
     let package_json = pkg_dir.join("package.json");
     if !package_json.exists() {
         return Ok(None);

@@ -2,10 +2,10 @@
  * Integration tests for the useNeuroDeckState hook.
  * Tests hydration, persistence debounce, resetLocalState, and selectors.
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook, act, waitFor } from "@testing-library/react";
 
-vi.mock('../../services/bridgeAdapter', () => ({
+vi.mock("../../services/bridgeAdapter", () => ({
   neurodeckApi: {
     store: {
       get: vi.fn().mockResolvedValue(null),
@@ -22,8 +22,8 @@ vi.mock('../../services/bridgeAdapter', () => ({
   listenBridge: vi.fn().mockReturnValue(() => {}),
 }));
 
-import { useNeuroDeckState } from '../../state/useNeuroDeckState';
-import { neurodeckApi } from '../../services/bridgeAdapter';
+import { useNeuroDeckState } from "../../state/useNeuroDeckState";
+import { neurodeckApi } from "../../services/bridgeAdapter";
 
 const storeMock = neurodeckApi.store as unknown as {
   get: ReturnType<typeof vi.fn>;
@@ -47,108 +47,120 @@ afterEach(() => {
 });
 
 // ---- hydration ----
-describe('useNeuroDeckState — hydration', () => {
-  it('starts as not hydrated', () => {
+describe("useNeuroDeckState — hydration", () => {
+  it("starts as not hydrated", () => {
     const { result } = renderHook(() => useNeuroDeckState());
     expect(result.current.state.hydrated).toBe(false);
   });
 
-  it('becomes hydrated after store.get resolves', async () => {
+  it("becomes hydrated after store.get resolves", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
   });
 
-  it('calls store.get once on mount', async () => {
+  it("calls store.get once on mount", async () => {
     renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(storeMock.get).toHaveBeenCalledOnce());
   });
 
-  it('applies stored preferences from store.get', async () => {
-    storeMock.get.mockResolvedValueOnce({ selectedTheme: 'Hologrid', selectedFont: 'jetbrains' });
+  it("applies stored preferences from store.get", async () => {
+    storeMock.get.mockResolvedValueOnce({ selectedTheme: "Hologrid", selectedFont: "jetbrains" });
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
-    expect(result.current.state.selectedTheme).toBe('Hologrid');
-    expect(result.current.state.selectedFont).toBe('jetbrains');
+    expect(result.current.state.selectedTheme).toBe("Hologrid");
+    expect(result.current.state.selectedFont).toBe("jetbrains");
   });
 
-  it('does not restore busyLabel from stored state (sanitised out)', async () => {
-    storeMock.get.mockResolvedValueOnce({ busyLabel: 'leftover', selectedTheme: 'Blacksite' });
+  it("does not restore busyLabel from stored state (sanitised out)", async () => {
+    storeMock.get.mockResolvedValueOnce({ busyLabel: "leftover", selectedTheme: "Blacksite" });
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
     expect(result.current.state.busyLabel).toBeNull();
   });
 
-  it('does not restore commandOpen from stored state', async () => {
+  it("does not restore commandOpen from stored state", async () => {
     storeMock.get.mockResolvedValueOnce({ commandOpen: true });
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
     expect(result.current.state.commandOpen).toBe(false);
   });
 
-  it('hydrates to defaults when store.get rejects', async () => {
-    storeMock.get.mockRejectedValueOnce(new Error('storage unavailable'));
+  it("hydrates to defaults when store.get rejects", async () => {
+    storeMock.get.mockRejectedValueOnce(new Error("storage unavailable"));
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
-    expect(result.current.state.selectedTheme).toBe('Blacksite');
+    expect(result.current.state.selectedTheme).toBe("Blacksite");
   });
 
-  it('hydrates to defaults when store.get returns null', async () => {
+  it("hydrates to defaults when store.get returns null", async () => {
     storeMock.get.mockResolvedValueOnce(null);
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
-    expect(result.current.state.selectedProvider).toBe('ollama');
-    expect(result.current.state.selectedModelId).toBe('');
+    expect(result.current.state.selectedProvider).toBe("ollama");
+    expect(result.current.state.selectedModelId).toBe("");
   });
 });
 
 // ---- persistence debounce ----
-describe('useNeuroDeckState — persistence', () => {
-  it('calls store.set after 250ms debounce following a state change', async () => {
+describe("useNeuroDeckState — persistence", () => {
+  it("calls store.set after 250ms debounce following a state change", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     // Drain the initial post-hydration persist tick
-    act(() => { vi.advanceTimersByTime(300); });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     const callsAfterHydrate = storeMock.set.mock.calls.length;
 
     act(() => {
-      result.current.dispatch({ type: 'set-theme', theme: 'Hologrid' });
+      result.current.dispatch({ type: "set-theme", theme: "Hologrid" });
     });
-    act(() => { vi.advanceTimersByTime(249); });
+    act(() => {
+      vi.advanceTimersByTime(249);
+    });
     expect(storeMock.set.mock.calls.length).toBe(callsAfterHydrate);
 
-    act(() => { vi.advanceTimersByTime(1); });
+    act(() => {
+      vi.advanceTimersByTime(1);
+    });
     expect(storeMock.set.mock.calls.length).toBeGreaterThan(callsAfterHydrate);
   });
 
-  it('persists the updated value in the payload', async () => {
+  it("persists the updated value in the payload", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     act(() => {
-      result.current.dispatch({ type: 'set-theme', theme: 'Night Watch' });
+      result.current.dispatch({ type: "set-theme", theme: "Night Watch" });
     });
-    act(() => { vi.advanceTimersByTime(300); });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
 
     const lastCall = storeMock.set.mock.calls[storeMock.set.mock.calls.length - 1];
-    expect(lastCall[1].selectedTheme).toBe('Night Watch');
+    expect(lastCall[1].selectedTheme).toBe("Night Watch");
   });
 
-  it('does NOT call store.set before hydration completes', () => {
+  it("does NOT call store.set before hydration completes", () => {
     // Don't await — keep in un-hydrated window
     renderHook(() => useNeuroDeckState());
-    act(() => { vi.advanceTimersByTime(300); });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
     expect(storeMock.set).not.toHaveBeenCalled();
   });
 
-  it('strips transient fields from persisted payload', async () => {
+  it("strips transient fields from persisted payload", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     act(() => {
-      result.current.dispatch({ type: 'set-busy', label: 'processing' });
+      result.current.dispatch({ type: "set-busy", label: "processing" });
     });
-    act(() => { vi.advanceTimersByTime(300); });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
 
     const lastCall = storeMock.set.mock.calls[storeMock.set.mock.calls.length - 1];
     expect(lastCall[1].busyLabel).toBeUndefined();
@@ -158,24 +170,26 @@ describe('useNeuroDeckState — persistence', () => {
     expect(lastCall[1].lastError).toBeUndefined();
   });
 
-  it('includes a lastSavedAt ISO timestamp in persisted payload', async () => {
+  it("includes a lastSavedAt ISO timestamp in persisted payload", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     act(() => {
-      result.current.dispatch({ type: 'set-persona', persona: 'BMAD' });
+      result.current.dispatch({ type: "set-persona", persona: "BMAD" });
     });
-    act(() => { vi.advanceTimersByTime(300); });
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
 
     const lastCall = storeMock.set.mock.calls[storeMock.set.mock.calls.length - 1];
-    expect(typeof lastCall[1].lastSavedAt).toBe('string');
+    expect(typeof lastCall[1].lastSavedAt).toBe("string");
     expect(() => new Date(lastCall[1].lastSavedAt)).not.toThrow();
   });
 });
 
 // ---- resetLocalState ----
-describe('useNeuroDeckState — resetLocalState', () => {
-  it('calls store.reset', async () => {
+describe("useNeuroDeckState — resetLocalState", () => {
+  it("calls store.reset", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
@@ -185,25 +199,25 @@ describe('useNeuroDeckState — resetLocalState', () => {
     expect(storeMock.reset).toHaveBeenCalledOnce();
   });
 
-  it('resets state to initial values after user changes', async () => {
+  it("resets state to initial values after user changes", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     act(() => {
-      result.current.dispatch({ type: 'set-theme', theme: 'Broadcast' });
-      result.current.dispatch({ type: 'toggle-deck-mode' });
+      result.current.dispatch({ type: "set-theme", theme: "Broadcast" });
+      result.current.dispatch({ type: "toggle-deck-mode" });
     });
-    expect(result.current.state.selectedTheme).toBe('Broadcast');
+    expect(result.current.state.selectedTheme).toBe("Broadcast");
 
     await act(async () => {
       await result.current.resetLocalState();
     });
 
-    expect(result.current.state.selectedTheme).toBe('Blacksite');
+    expect(result.current.state.selectedTheme).toBe("Blacksite");
     expect(result.current.state.deckMode).toBe(false);
   });
 
-  it('leaves state hydrated=true after reset', async () => {
+  it("leaves state hydrated=true after reset", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
@@ -215,26 +229,26 @@ describe('useNeuroDeckState — resetLocalState', () => {
 });
 
 // ---- selectors ----
-describe('useNeuroDeckState — selectors', () => {
-  it('activeAgents counts agents with status=thinking', async () => {
+describe("useNeuroDeckState — selectors", () => {
+  it("activeAgents counts agents with status=thinking", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
-    const expected = result.current.state.agents.filter((a) => a.status === 'thinking').length;
+    const expected = result.current.state.agents.filter((a) => a.status === "thinking").length;
     expect(result.current.selectors.activeAgents).toBe(expected);
   });
 
-  it('readyModels counts models with status ready or indexed', async () => {
+  it("readyModels counts models with status ready or indexed", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     const expected = result.current.state.models.filter(
-      (m) => m.status === 'ready' || m.status === 'indexed',
+      (m) => m.status === "ready" || m.status === "indexed"
     ).length;
     expect(result.current.selectors.readyModels).toBe(expected);
   });
 
-  it('pinnedMemories counts pinned memories', async () => {
+  it("pinnedMemories counts pinned memories", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
@@ -242,58 +256,58 @@ describe('useNeuroDeckState — selectors', () => {
     expect(result.current.selectors.pinnedMemories).toBe(expected);
   });
 
-  it('enabledPlugins counts enabled plugins', async () => {
+  it("enabledPlugins counts enabled plugins", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
-    const expected = result.current.state.plugins.filter((p) => p.status === 'enabled').length;
+    const expected = result.current.state.plugins.filter((p) => p.status === "enabled").length;
     expect(result.current.selectors.enabledPlugins).toBe(expected);
   });
 
-  it('messageCount equals messages array length', async () => {
+  it("messageCount equals messages array length", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     expect(result.current.selectors.messageCount).toBe(result.current.state.messages.length);
   });
 
-  it('completedRuns is 0 with empty aiRuns', async () => {
+  it("completedRuns is 0 with empty aiRuns", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     expect(result.current.selectors.completedRuns).toBe(0);
   });
 
-  it('riskCount is 0 with no active project', async () => {
+  it("riskCount is 0 with no active project", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     expect(result.current.selectors.riskCount).toBe(0);
   });
 
-  it('riskCount updates when a project with risks is scanned', async () => {
+  it("riskCount updates when a project with risks is scanned", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
     act(() => {
       result.current.dispatch({
-        type: 'set-project-scan',
-        project: { path: '/app', name: 'app', risks: ['dep-vuln', 'open-port'] } as any,
+        type: "set-project-scan",
+        project: { path: "/app", name: "app", risks: ["dep-vuln", "open-port"] } as any,
       });
     });
     expect(result.current.selectors.riskCount).toBe(2);
   });
 
-  it('activeAgents increments when an idle agent is toggled', async () => {
+  it("activeAgents increments when an idle agent is toggled", async () => {
     const { result } = renderHook(() => useNeuroDeckState());
     await waitFor(() => expect(result.current.state.hydrated).toBe(true));
 
-    const idleAgent = result.current.state.agents.find((a) => a.status === 'idle');
+    const idleAgent = result.current.state.agents.find((a) => a.status === "idle");
     if (!idleAgent) return;
 
     const before = result.current.selectors.activeAgents;
     act(() => {
-      result.current.dispatch({ type: 'toggle-agent', id: idleAgent.id });
+      result.current.dispatch({ type: "toggle-agent", id: idleAgent.id });
     });
     expect(result.current.selectors.activeAgents).toBe(before + 1);
   });

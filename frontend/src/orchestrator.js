@@ -47,35 +47,17 @@ export async function initOrchestrator() {
 
 // ── UI binding ────────────────────────────────────────────────────────────────
 function _bindUI() {
-  document
-    .getElementById("orch-add-node-btn")
-    ?.addEventListener("click", _addNode);
-  document
-    .getElementById("orch-run-btn")
-    ?.addEventListener("click", _runPipeline);
-  document
-    .getElementById("orch-pause-btn")
-    ?.addEventListener("click", _pausePipeline);
-  document
-    .getElementById("orch-stop-btn")
-    ?.addEventListener("click", _stopPipeline);
-  document
-    .getElementById("orch-save-btn")
-    ?.addEventListener("click", _savePipeline);
-  document
-    .getElementById("orch-new-btn")
-    ?.addEventListener("click", _newPipeline);
-  document
-    .getElementById("orch-clear-btn")
-    ?.addEventListener("click", _clearCanvas);
-  document
-    .getElementById("orch-auto-btn")
-    ?.addEventListener("click", _runAutoOrchestration);
-  document
-    .getElementById("orch-auto-goal")
-    ?.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") _runAutoOrchestration();
-    });
+  document.getElementById("orch-add-node-btn")?.addEventListener("click", _addNode);
+  document.getElementById("orch-run-btn")?.addEventListener("click", _runPipeline);
+  document.getElementById("orch-pause-btn")?.addEventListener("click", _pausePipeline);
+  document.getElementById("orch-stop-btn")?.addEventListener("click", _stopPipeline);
+  document.getElementById("orch-save-btn")?.addEventListener("click", _savePipeline);
+  document.getElementById("orch-new-btn")?.addEventListener("click", _newPipeline);
+  document.getElementById("orch-clear-btn")?.addEventListener("click", _clearCanvas);
+  document.getElementById("orch-auto-btn")?.addEventListener("click", _runAutoOrchestration);
+  document.getElementById("orch-auto-goal")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") _runAutoOrchestration();
+  });
 }
 
 // ── Event wiring ──────────────────────────────────────────────────────────────
@@ -319,7 +301,7 @@ async function _runPipelineNode(node, completed) {
   _renderCanvas();
   _appendLog(`▶ ${node.label} starting…`, "info");
   const contextParts = (node.inputs || [])
-    .map(fromId => completed.get(fromId))
+    .map((fromId) => completed.get(fromId))
     .filter(Boolean)
     .map((r, i) => `[Input ${i + 1}]:\n${r}`)
     .join("\n\n");
@@ -341,8 +323,8 @@ async function _runPipelineNode(node, completed) {
 
 function _renderPipelineSummary(ordered, output) {
   const outputs = ordered
-    .filter(n => n._status === "done")
-    .map(n => `**${n.label}**:\n${n._result || ""}`)
+    .filter((n) => n._status === "done")
+    .map((n) => `**${n.label}**:\n${n._result || ""}`)
     .join("\n\n---\n\n");
   if (output) {
     output.innerHTML = `<div class="orch-summary">
@@ -372,7 +354,9 @@ async function _runPipeline() {
   const ordered = _topoSort(_nodes, _connections);
   for (const node of ordered) {
     if (!_running) break;
-    while (_paused && _running) { await _sleep(200); }
+    while (_paused && _running) {
+      await _sleep(200);
+    }
     if (!_running) break;
     await _runPipelineNode(node, completed);
     _renderCanvas();
@@ -421,7 +405,8 @@ async function _runAutoOrchestration() {
   const log = document.getElementById("orch-log");
   if (log) log.innerHTML = "";
   const output = document.getElementById("orch-output");
-  if (output) output.innerHTML = `<div class="orch-running">Generating plan for: ${_esc(goal)}…</div>`;
+  if (output)
+    output.innerHTML = `<div class="orch-running">Generating plan for: ${_esc(goal)}…</div>`;
   _appendLog(`Auto-orchestration: ${goal}`, "info");
 
   try {
@@ -647,8 +632,7 @@ function _onCanvasMouseMove(e) {
   if (_dragState.type === "node") {
     const node = _nodes.find((n) => n.id === _dragState.nodeId);
     if (!node) return;
-    let nx =
-      e.clientX - _dragState.canvasLeft - _dragState.offsetX;
+    let nx = e.clientX - _dragState.canvasLeft - _dragState.offsetX;
     let ny = e.clientY - _dragState.canvasTop - _dragState.offsetY;
     nx = Math.round(nx / GRID_SNAP) * GRID_SNAP;
     ny = Math.round(ny / GRID_SNAP) * GRID_SNAP;
@@ -675,14 +659,10 @@ function _onCanvasMouseUp(e) {
       .querySelector(`[data-node-id="${_dragState.nodeId}"]`)
       ?.classList.remove("orch-node-dragging");
   } else if (_dragState.type === "connect") {
-    const target = document
-      .elementFromPoint(e.clientX, e.clientY)
-      ?.closest("[data-node-id]");
+    const target = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-node-id]");
     if (target && target.dataset.nodeId !== _dragState.fromId) {
       const toId = target.dataset.nodeId;
-      const alreadyExists = _connections.some(
-        (c) => c.from === _dragState.fromId && c.to === toId
-      );
+      const alreadyExists = _connections.some((c) => c.from === _dragState.fromId && c.to === toId);
       if (!alreadyExists) {
         _connections.push({ from: _dragState.fromId, to: toId });
         const toNode = _nodes.find((n) => n.id === toId);
@@ -729,7 +709,11 @@ function _esc(str) {
 }
 
 function _ts() {
-  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
 function _sleep(ms) {

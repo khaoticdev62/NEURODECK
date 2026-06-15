@@ -82,7 +82,9 @@ declare global {
         hardReload: (tabId: string) => Promise<{ success: boolean }>;
         stop: (tabId: string) => Promise<{ success: boolean }>;
         getTabState: (tabId: string) => Promise<any>;
-        clearBrowserData: (scope: "currentTab" | "browserProfile" | "all") => Promise<{ success: boolean }>;
+        clearBrowserData: (
+          scope: "currentTab" | "browserProfile" | "all"
+        ) => Promise<{ success: boolean }>;
         findInPage: (
           tabId: string,
           text: string,
@@ -142,8 +144,14 @@ declare global {
         getEvidence: (profileId?: string) => Promise<unknown[]>;
         getRecoveryEvents: () => Promise<unknown[]>;
         setKillSwitch: (profileId: string, enabled: boolean) => Promise<unknown | null>;
-        applyBrowserProxy: (profileId: string, browserProfileId?: string) => Promise<unknown | null>;
-        clearBrowserProxy: (profileId: string, browserProfileId?: string) => Promise<unknown | null>;
+        applyBrowserProxy: (
+          profileId: string,
+          browserProfileId?: string
+        ) => Promise<unknown | null>;
+        clearBrowserProxy: (
+          profileId: string,
+          browserProfileId?: string
+        ) => Promise<unknown | null>;
         getProviderMatrix: () => Promise<unknown[]>;
         exportRedactedProfile: (profileId: string) => Promise<unknown | null>;
       };

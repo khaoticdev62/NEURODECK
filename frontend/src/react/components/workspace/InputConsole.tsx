@@ -1,19 +1,14 @@
-import { useRef, useEffect, useCallback, useState } from 'react';
-import {
-  Keyboard,
-  Mic,
-  Paperclip,
-  ScanLine,
-  SendHorizontal,
-} from 'lucide-react';
-import { Badge } from '../../components/primitives/Badge';
-import { IconButton } from '../../components/primitives/IconButton';
-import { bridgeInvoke, neurodeckApi } from '../../services/bridgeAdapter';
+import { useRef, useEffect, useCallback, useState } from "react";
+import { Keyboard, Mic, Paperclip, ScanLine, SendHorizontal } from "lucide-react";
+import { Badge } from "../../components/primitives/Badge";
+import { IconButton } from "../../components/primitives/IconButton";
+import { bridgeInvoke, neurodeckApi } from "../../services/bridgeAdapter";
 
 interface InputConsoleProps {
   value: string;
   onChange: (value: string) => void;
   onSend: (value?: string) => void;
+  isBusy?: boolean;
   provider: string;
   model?: string;
   hasContext: boolean;
@@ -25,6 +20,7 @@ export function InputConsole({
   value,
   onChange,
   onSend,
+  isBusy = false,
   provider,
   model,
   hasContext,
@@ -37,7 +33,7 @@ export function InputConsole({
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
     if (!el) return;
-    el.style.height = 'auto';
+    el.style.height = "auto";
     const next = Math.min(el.scrollHeight, 128);
     el.style.height = `${Math.max(next, 40)}px`;
   }, []);
@@ -47,12 +43,12 @@ export function InputConsole({
   }, [value, adjustHeight]);
 
   const handleSend = useCallback(() => {
-    if (!value.trim()) return;
+    if (!value.trim() || isBusy) return;
     onSend(value);
     if (textareaRef.current) {
-      textareaRef.current.style.height = '40px';
+      textareaRef.current.style.height = "40px";
     }
-  }, [onSend, value]);
+  }, [onSend, value, isBusy]);
 
   return (
     <div
@@ -69,11 +65,11 @@ export function InputConsole({
             {model}
           </Badge>
         )}
-        <Badge tone={hasContext ? 'success' : 'warning'}>
-          {hasContext ? 'context attached' : 'no context'}
+        <Badge tone={hasContext ? "success" : "warning"}>
+          {hasContext ? "context attached" : "no context"}
         </Badge>
-        <Badge tone={providerCount > 1 ? 'success' : 'neutral'}>
-          {providerCount} provider{providerCount === 1 ? '' : 's'} ready
+        <Badge tone={providerCount > 1 ? "success" : "neutral"}>
+          {providerCount} provider{providerCount === 1 ? "" : "s"} ready
         </Badge>
         <span className="ml-auto inline-flex items-center gap-1 text-nd-text-muted">
           <Keyboard className="h-3 w-3" aria-hidden="true" />
@@ -91,13 +87,37 @@ export function InputConsole({
             size="md"
             variant="subtle"
             onClick={async () => {
-              const api = (window as unknown as { electronAPI?: { showOpenDialog?: (opts: unknown) => Promise<{ canceled: boolean; filePaths: string[] }> } }).electronAPI;
+              const api = (
+                window as unknown as {
+                  electronAPI?: {
+                    showOpenDialog?: (
+                      opts: unknown
+                    ) => Promise<{ canceled: boolean; filePaths: string[] }>;
+                  };
+                }
+              ).electronAPI;
               if (!api?.showOpenDialog) return;
               const result = await api.showOpenDialog({
-                properties: ['openFile', 'multiSelections'],
+                properties: ["openFile", "multiSelections"],
                 filters: [
-                  { name: 'Code & Text', extensions: ['ts', 'tsx', 'js', 'jsx', 'py', 'rs', 'go', 'md', 'txt', 'json', 'toml', 'yaml'] },
-                  { name: 'All Files', extensions: ['*'] },
+                  {
+                    name: "Code & Text",
+                    extensions: [
+                      "ts",
+                      "tsx",
+                      "js",
+                      "jsx",
+                      "py",
+                      "rs",
+                      "go",
+                      "md",
+                      "txt",
+                      "json",
+                      "toml",
+                      "yaml",
+                    ],
+                  },
+                  { name: "All Files", extensions: ["*"] },
                 ],
               });
               if (!result.canceled && result.filePaths.length > 0) {
@@ -108,18 +128,22 @@ export function InputConsole({
             <Paperclip className="h-4 w-4" />
           </IconButton>
           <IconButton
-            aria-label={isRecording ? 'Stop recording' : 'Voice input'}
-            title={isRecording ? 'Stop recording' : 'Voice input'}
+            aria-label={isRecording ? "Stop recording" : "Voice input"}
+            title={isRecording ? "Stop recording" : "Voice input"}
             size="md"
-            variant={isRecording ? 'accent' : 'subtle'}
+            variant={isRecording ? "accent" : "subtle"}
             onClick={async () => {
-              if (isRecording) {
+              try {
+                if (isRecording) {
+                  setIsRecording(false);
+                  const { transcript } = await neurodeckApi.voice.stop();
+                  if (transcript) onChange(value ? `${value} ${transcript}` : transcript);
+                } else {
+                  const { ok } = await neurodeckApi.voice.start();
+                  if (ok) setIsRecording(true);
+                }
+              } catch {
                 setIsRecording(false);
-                const { transcript } = await neurodeckApi.voice.stop();
-                if (transcript) onChange(value ? `${value} ${transcript}` : transcript);
-              } else {
-                const { ok } = await neurodeckApi.voice.start();
-                if (ok) setIsRecording(true);
               }
             }}
           >
@@ -132,12 +156,14 @@ export function InputConsole({
             variant="subtle"
             onClick={async () => {
               try {
-                const result = await bridgeInvoke<{ base64?: string }>('read_last_screenshot');
+                const result = await bridgeInvoke<{ base64?: string }>("read_last_screenshot");
                 if (result?.base64) {
-                  const tag = '[screenshot attached]';
+                  const tag = "[screenshot attached]";
                   onChange(value ? `${value}\n${tag}` : tag);
                 }
-              } catch (_) { /* no screenshot available */ }
+              } catch (_) {
+                /* no screenshot available */
+              }
             }}
           >
             <ScanLine className="h-4 w-4" />
@@ -152,27 +178,29 @@ export function InputConsole({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onKeyDown={(e) => {
-            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
               e.preventDefault();
               handleSend();
-            } else if (e.key === 'Enter' && !e.shiftKey) {
+            } else if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
               handleSend();
             }
           }}
-          placeholder="Command NEURODECK: ask anything, run /commands, or describe what you want to build..."
+          placeholder="Ask anything or describe what you want to build — Ctrl+K for commands..."
           aria-label="Message input"
+          aria-disabled={isBusy}
+          disabled={isBusy}
           rows={1}
-          className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-nd-text-primary outline-none placeholder:text-nd-text-muted/70"
+          className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-nd-text-primary outline-none placeholder:text-nd-text-muted/70 disabled:cursor-not-allowed disabled:opacity-50"
         />
 
         {/* Send */}
         <IconButton
-          aria-label="Send message"
-          title="Send message"
+          aria-label={isBusy ? "Waiting for response" : "Send message"}
+          title={isBusy ? "Waiting for response" : "Send message"}
           size="md"
           variant="accent"
-          disabled={!value.trim()}
+          disabled={!value.trim() || isBusy}
           onClick={handleSend}
           data-testid="chat-send-btn"
         >

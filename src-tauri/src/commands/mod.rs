@@ -304,7 +304,10 @@ pub async fn dispatch_send_command(
             {
                 Ok(response) => {
                     full_response = response.clone();
-                    broadcaster.emit("command_token", serde_json::json!({ "token": response.clone() }));
+                    broadcaster.emit(
+                        "command_token",
+                        serde_json::json!({ "token": response.clone() }),
+                    );
                     // Single-shot image response — emit as one TTS chunk
                     let clean = clean_for_tts(&response);
                     if !clean.is_empty() {
@@ -325,7 +328,10 @@ pub async fn dispatch_send_command(
                 match chunk_res {
                     Ok(chunk) => {
                         full_response.push_str(&chunk);
-                        broadcaster.emit("command_token", serde_json::json!({ "token": chunk.clone() }));
+                        broadcaster.emit(
+                            "command_token",
+                            serde_json::json!({ "token": chunk.clone() }),
+                        );
                         tts_buf.push_str(&chunk);
                         while let Some(sentence) = drain_tts_sentence(&mut tts_buf) {
                             broadcaster.emit("tts_chunk", serde_json::json!({ "text": sentence }));
@@ -352,7 +358,10 @@ pub async fn dispatch_send_command(
             app.messages.push(format!("AI: {}", full_response));
         }
 
-        broadcaster.emit("command_done", serde_json::json!({ "status": "complete", "full_text": full_response }));
+        broadcaster.emit(
+            "command_done",
+            serde_json::json!({ "status": "complete", "full_text": full_response }),
+        );
     });
 
     Ok(serde_json::json!({
@@ -3125,7 +3134,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .get("path")
                 .and_then(|v| v.as_str())
                 .map(|s| s.to_string())
-                .unwrap_or_else(|| crate::user_config_dir().join("workspace").to_string_lossy().to_string());
+                .unwrap_or_else(|| {
+                    crate::user_config_dir()
+                        .join("workspace")
+                        .to_string_lossy()
+                        .to_string()
+                });
 
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path)
@@ -4204,11 +4218,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'content'")?
                 .to_string();
-            let version = args
-                .get("version")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(1) as u32;
-            crate::lsp::lsp_change_document(language, uri, content, version, state.lsp.clone()).await?;
+            let version = args.get("version").and_then(|v| v.as_u64()).unwrap_or(1) as u32;
+            crate::lsp::lsp_change_document(language, uri, content, version, state.lsp.clone())
+                .await?;
             Ok(serde_json::json!({ "ok": true }))
         }
 
@@ -4225,7 +4237,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .to_string();
             let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
             let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-            let items = crate::lsp::lsp_get_completions(language, uri, line, character, state.lsp.clone()).await?;
+            let items =
+                crate::lsp::lsp_get_completions(language, uri, line, character, state.lsp.clone())
+                    .await?;
             Ok(serde_json::json!(items))
         }
 
@@ -4242,7 +4256,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .to_string();
             let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
             let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-            let hover = crate::lsp::lsp_get_hover(language, uri, line, character, state.lsp.clone()).await?;
+            let hover =
+                crate::lsp::lsp_get_hover(language, uri, line, character, state.lsp.clone())
+                    .await?;
             Ok(serde_json::json!(hover))
         }
 
@@ -4259,7 +4275,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .to_string();
             let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
             let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
-            let locs = crate::lsp::lsp_get_definitions(language, uri, line, character, state.lsp.clone()).await?;
+            let locs =
+                crate::lsp::lsp_get_definitions(language, uri, line, character, state.lsp.clone())
+                    .await?;
             Ok(serde_json::json!(locs))
         }
 
@@ -4840,7 +4858,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             // start immediately without waiting for the previous one to finish.
             #[cfg(target_os = "linux")]
             {
-                let _ = std::process::Command::new("pkill").args(["-f", "espeak"]).spawn();
+                let _ = std::process::Command::new("pkill")
+                    .args(["-f", "espeak"])
+                    .spawn();
             }
             #[cfg(target_os = "macos")]
             {
@@ -4848,7 +4868,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
             // Windows SAPI runs inside PowerShell; killing arbitrary powershell.exe
             // processes is unsafe — skip platform interrupt, rely on frontend gating.
-            state.broadcaster.emit("tts_interrupted", serde_json::json!({}));
+            state
+                .broadcaster
+                .emit("tts_interrupted", serde_json::json!({}));
             Ok(serde_json::json!({ "status": "interrupted" }))
         }
 
@@ -6333,7 +6355,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             if query.len() > 512 {
                 return Err("Query too long (max 512 characters)".to_string());
             }
-            let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(5).min(20) as usize;
+            let limit = args
+                .get("limit")
+                .and_then(|v| v.as_u64())
+                .unwrap_or(5)
+                .min(20) as usize;
             let lambda = args
                 .get("lambda")
                 .and_then(|v| v.as_f64())
@@ -6351,40 +6377,66 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             match provider.generate_embedding(&query).await {
                 Ok(embedding) if !embedding.is_empty() => {
                     let fetch = (limit * 4).max(10);
-                    let results = db.search_mmr(&embedding, limit, lambda, fetch)
+                    let results = db
+                        .search_mmr(&embedding, limit, lambda, fetch)
                         .map_err(|e| e.to_string())?;
-                    let top: Vec<_> = results.iter().map(|r| serde_json::json!({
-                        "id": r.id,
-                        "content": r.content,
-                        "metadata": r.metadata,
-                        "source_file": r.metadata.get("path").cloned().unwrap_or_default()
-                    })).collect();
+                    let top: Vec<_> = results
+                        .iter()
+                        .map(|r| {
+                            serde_json::json!({
+                                "id": r.id,
+                                "content": r.content,
+                                "metadata": r.metadata,
+                                "source_file": r.metadata.get("path").cloned().unwrap_or_default()
+                            })
+                        })
+                        .collect();
                     Ok(serde_json::json!({ "query": query, "results": top, "method": "mmr" }))
                 }
                 _ => {
                     // Keyword fallback when embedding unavailable (Ollama / offline mode).
                     let all = db.list_all().map_err(|e| e.to_string())?;
                     let qwords: Vec<_> = query.split_whitespace().collect();
-                    let mut hits: Vec<_> = all.into_iter().filter_map(|r| {
-                        let lower = r.content.to_lowercase();
-                        let n = qwords.iter().filter(|w| lower.contains(&w.to_lowercase()[..])).count();
-                        if n > 0 { Some((n, r)) } else { None }
-                    }).collect();
+                    let mut hits: Vec<_> = all
+                        .into_iter()
+                        .filter_map(|r| {
+                            let lower = r.content.to_lowercase();
+                            let n = qwords
+                                .iter()
+                                .filter(|w| lower.contains(&w.to_lowercase()[..]))
+                                .count();
+                            if n > 0 {
+                                Some((n, r))
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
                     hits.sort_by(|a, b| b.0.cmp(&a.0));
-                    let top: Vec<_> = hits.into_iter().take(limit).map(|(score, r)| serde_json::json!({
-                        "id": r.id,
-                        "content": r.content,
-                        "metadata": r.metadata,
-                        "source_file": r.metadata.get("path").cloned().unwrap_or_default(),
-                        "score": score
-                    })).collect();
-                    Ok(serde_json::json!({ "query": query, "results": top, "method": "keyword_fallback" }))
+                    let top: Vec<_> = hits
+                        .into_iter()
+                        .take(limit)
+                        .map(|(score, r)| {
+                            serde_json::json!({
+                                "id": r.id,
+                                "content": r.content,
+                                "metadata": r.metadata,
+                                "source_file": r.metadata.get("path").cloned().unwrap_or_default(),
+                                "score": score
+                            })
+                        })
+                        .collect();
+                    Ok(
+                        serde_json::json!({ "query": query, "results": top, "method": "keyword_fallback" }),
+                    )
                 }
             }
         }
 
         "get_indexed_dirs" => {
-            let dirs_path = crate::user_config_dir().join("data").join("indexed_dirs.json");
+            let dirs_path = crate::user_config_dir()
+                .join("data")
+                .join("indexed_dirs.json");
             let dirs: Vec<serde_json::Value> = if dirs_path.exists() {
                 std::fs::read_to_string(&dirs_path)
                     .ok()
@@ -6397,8 +6449,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let doc_counts: std::collections::HashMap<String, usize> = {
                 let app = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
                 if let Some(ref db) = app.mem_db {
-                    db.list_all().unwrap_or_default().into_iter()
-                        .filter_map(|r| r.metadata.get("path").cloned().map(|p| p))
+                    db.list_all()
+                        .unwrap_or_default()
+                        .into_iter()
+                        .filter_map(|r| r.metadata.get("path").cloned())
                         .fold(std::collections::HashMap::new(), |mut map, path| {
                             // Find which indexed dir this path belongs to
                             *map.entry(path).or_insert(0) += 1;
@@ -6408,30 +6462,47 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     std::collections::HashMap::new()
                 }
             };
-            let enriched: Vec<_> = dirs.iter().map(|d| {
-                let dir_path = d.get("path").and_then(|v| v.as_str()).unwrap_or("");
-                let count = doc_counts.iter()
-                    .filter(|(p, _)| p.starts_with(dir_path))
-                    .map(|(_, n)| n)
-                    .sum::<usize>();
-                serde_json::json!({ "path": dir_path, "doc_count": count })
-            }).collect();
+            let enriched: Vec<_> = dirs
+                .iter()
+                .map(|d| {
+                    let dir_path = d.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                    let count = doc_counts
+                        .iter()
+                        .filter(|(p, _)| p.starts_with(dir_path))
+                        .map(|(_, n)| n)
+                        .sum::<usize>();
+                    serde_json::json!({ "path": dir_path, "doc_count": count })
+                })
+                .collect();
             Ok(serde_json::json!({ "dirs": enriched }))
         }
 
         "remove_indexed_dir" => {
-            let path = args.get("path").and_then(|v| v.as_str()).ok_or("Missing 'path'")?.to_string();
-            let dirs_path = crate::user_config_dir().join("data").join("indexed_dirs.json");
+            let path = args
+                .get("path")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'path'")?
+                .to_string();
+            let dirs_path = crate::user_config_dir()
+                .join("data")
+                .join("indexed_dirs.json");
             let mut dirs: Vec<serde_json::Value> = if dirs_path.exists() {
-                std::fs::read_to_string(&dirs_path).ok()
-                    .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default()
-            } else { vec![] };
+                std::fs::read_to_string(&dirs_path)
+                    .ok()
+                    .and_then(|s| serde_json::from_str(&s).ok())
+                    .unwrap_or_default()
+            } else {
+                vec![]
+            };
             let before = dirs.len();
             dirs.retain(|d| d.get("path").and_then(|v| v.as_str()) != Some(&path));
             if let Some(parent) = dirs_path.parent() {
                 let _ = std::fs::create_dir_all(parent);
             }
-            let _ = std::fs::write(&dirs_path, serde_json::to_string_pretty(&dirs).unwrap_or_default());
+            let _ = std::fs::write(
+                &dirs_path,
+                serde_json::to_string_pretty(&dirs).unwrap_or_default(),
+            );
             Ok(serde_json::json!({ "removed": before - dirs.len(), "remaining": dirs.len() }))
         }
 
@@ -7373,9 +7444,6 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }
         }
 
-
-
-
         "set_group_code" => {
             let code = args
                 .get("code")
@@ -7394,17 +7462,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Transfer — Extended commands (Sync UI surface)
         // ────────────────────────────────────────────────────────────────────
-
         "transfer_manual_add_peer" => {
             let ip = args
                 .get("ip")
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'ip'")?
                 .to_string();
-            let port = args
-                .get("port")
-                .and_then(|v| v.as_u64())
-                .unwrap_or(42000) as u16;
+            let port = args.get("port").and_then(|v| v.as_u64()).unwrap_or(42000) as u16;
             let hostname = args
                 .get("hostname")
                 .and_then(|v| v.as_str())
@@ -7418,8 +7482,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 port,
                 is_warpinator: true,
             };
-            ts.peers.insert(ip.clone(), (peer, std::time::Instant::now()));
-            state.broadcaster.emit("peers_updated", serde_json::json!({ "reason": "manual_add" }));
+            ts.peers
+                .insert(ip.clone(), (peer, std::time::Instant::now()));
+            state.broadcaster.emit(
+                "peers_updated",
+                serde_json::json!({ "reason": "manual_add" }),
+            );
             Ok(serde_json::json!({ "status": "ok", "peer_ip": ip }))
         }
 
@@ -7431,10 +7499,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .to_string();
             let (peer_ip, file_path) = {
                 let ts = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
-                let xfer = ts
-                    .transfers
-                    .get(&transfer_id)
-                    .ok_or("Transfer not found")?;
+                let xfer = ts.transfers.get(&transfer_id).ok_or("Transfer not found")?;
                 if xfer.direction != "Outgoing" {
                     return Err("Can only retry outgoing transfers".to_string());
                 }
@@ -7477,7 +7542,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 Vec::new()
             };
 
-            let action = args.get("action").and_then(|v| v.as_str()).unwrap_or("list");
+            let action = args
+                .get("action")
+                .and_then(|v| v.as_str())
+                .unwrap_or("list");
             match action {
                 "add" => {
                     let ip = args
@@ -7497,8 +7565,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         group_code_hash: String::new(),
                         added_at: chrono::Utc::now().to_rfc3339(),
                     });
-                    let json = serde_json::to_string_pretty(&trusted)
-                        .map_err(|e| e.to_string())?;
+                    let json = serde_json::to_string_pretty(&trusted).map_err(|e| e.to_string())?;
                     std::fs::write(&peers_path, json).map_err(|e| e.to_string())?;
                     Ok(serde_json::json!({ "status": "ok", "peers": trusted }))
                 }
@@ -7508,8 +7575,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         .and_then(|v| v.as_str())
                         .ok_or("Missing 'ip'")?;
                     trusted.retain(|p| p.ip != ip);
-                    let json = serde_json::to_string_pretty(&trusted)
-                        .map_err(|e| e.to_string())?;
+                    let json = serde_json::to_string_pretty(&trusted).map_err(|e| e.to_string())?;
                     std::fs::write(&peers_path, json).map_err(|e| e.to_string())?;
                     Ok(serde_json::json!({ "status": "ok", "peers": trusted }))
                 }
@@ -7551,7 +7617,10 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 std::fs::write(&profiles_path, json).map_err(|e| e.to_string())
             };
 
-            let action = args.get("action").and_then(|v| v.as_str()).unwrap_or("list");
+            let action = args
+                .get("action")
+                .and_then(|v| v.as_str())
+                .unwrap_or("list");
             match action {
                 "add" => {
                     let profile = args
@@ -7564,7 +7633,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         .and_then(|v| v.as_str())
                         .filter(|s| !s.trim().is_empty())
                         .map(|s| s.to_string())
-                        .unwrap_or_else(|| format!("sync-profile-{}", chrono::Utc::now().timestamp_millis()));
+                        .unwrap_or_else(|| {
+                            format!("sync-profile-{}", chrono::Utc::now().timestamp_millis())
+                        });
                     let name = profile
                         .get("name")
                         .and_then(|v| v.as_str())
@@ -7618,7 +7689,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     profiles.retain(|p| p.id != id);
                     profiles.push(new_profile.clone());
                     persist_profiles(&profiles)?;
-                    Ok(serde_json::json!({ "status": "ok", "profile": new_profile, "profiles": profiles }))
+                    Ok(
+                        serde_json::json!({ "status": "ok", "profile": new_profile, "profiles": profiles }),
+                    )
                 }
                 "update" => {
                     let profile = args
@@ -7641,13 +7714,17 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     if let Some(enabled) = profile.get("enabled").and_then(|v| v.as_bool()) {
                         existing.enabled = enabled;
                     }
-                    if let Some(interface) = profile.get("preferred_interface").and_then(|v| v.as_str()) {
+                    if let Some(interface) =
+                        profile.get("preferred_interface").and_then(|v| v.as_str())
+                    {
                         existing.preferred_interface = interface.to_string();
                     }
                     if let Some(folder) = profile.get("incoming_folder").and_then(|v| v.as_str()) {
                         existing.incoming_folder = folder.to_string();
                     }
-                    if let Some(auto_accept) = profile.get("auto_accept_trusted").and_then(|v| v.as_bool()) {
+                    if let Some(auto_accept) =
+                        profile.get("auto_accept_trusted").and_then(|v| v.as_bool())
+                    {
                         existing.auto_accept_trusted = auto_accept;
                     }
                     if let Some(compression) = profile.get("compression").and_then(|v| v.as_str()) {
@@ -7659,7 +7736,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     existing.updated_at = chrono::Utc::now().to_rfc3339();
                     let updated = existing.clone();
                     persist_profiles(&profiles)?;
-                    Ok(serde_json::json!({ "status": "ok", "profile": updated, "profiles": profiles }))
+                    Ok(
+                        serde_json::json!({ "status": "ok", "profile": updated, "profiles": profiles }),
+                    )
                 }
                 "remove" => {
                     let id = args
@@ -7711,10 +7790,23 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .unwrap_or(false);
             let mut ts = state.transfer.0.lock().unwrap_or_else(|e| e.into_inner());
             let terminal_statuses = ["Completed", "Failed", "Cancelled", "Rejected"];
-            let all_statuses = ["Completed", "Failed", "Cancelled", "Pending", "Rejected", "Accepted", "Transferring"];
-            let remove_statuses = if include_active { &all_statuses[..] } else { &terminal_statuses[..] };
+            let all_statuses = [
+                "Completed",
+                "Failed",
+                "Cancelled",
+                "Pending",
+                "Rejected",
+                "Accepted",
+                "Transferring",
+            ];
+            let remove_statuses = if include_active {
+                &all_statuses[..]
+            } else {
+                &terminal_statuses[..]
+            };
             let before = ts.transfers.len();
-            ts.transfers.retain(|_, t| !remove_statuses.contains(&t.status.as_str()));
+            ts.transfers
+                .retain(|_, t| !remove_statuses.contains(&t.status.as_str()));
             let cleared = before - ts.transfers.len();
             Ok(serde_json::json!({ "status": "ok", "cleared": cleared }))
         }
@@ -8061,11 +8153,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| v.as_str())
                 .ok_or("Missing 'name'")?
                 .to_string();
-            let package = crate::npm_packages::update_package(
-                name,
-                Some(state.broadcaster.clone()),
-            )
-            .await?;
+            let package =
+                crate::npm_packages::update_package(name, Some(state.broadcaster.clone())).await?;
             Ok(serde_json::to_value(package).map_err(|e| e.to_string())?)
         }
 
@@ -8488,18 +8577,29 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 );
 
                 // Persist this directory to the indexed-dirs list so get_indexed_dirs can show it.
-                let dirs_path = crate::user_config_dir().join("data").join("indexed_dirs.json");
+                let dirs_path = crate::user_config_dir()
+                    .join("data")
+                    .join("indexed_dirs.json");
                 let mut dirs: Vec<serde_json::Value> = if dirs_path.exists() {
-                    std::fs::read_to_string(&dirs_path).ok()
-                        .and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default()
-                } else { vec![] };
-                let already = dirs.iter().any(|d| d.get("path").and_then(|v| v.as_str()) == Some(&path));
+                    std::fs::read_to_string(&dirs_path)
+                        .ok()
+                        .and_then(|s| serde_json::from_str(&s).ok())
+                        .unwrap_or_default()
+                } else {
+                    vec![]
+                };
+                let already = dirs
+                    .iter()
+                    .any(|d| d.get("path").and_then(|v| v.as_str()) == Some(&path));
                 if !already {
                     dirs.push(serde_json::json!({ "path": path }));
                     if let Some(parent) = dirs_path.parent() {
                         let _ = std::fs::create_dir_all(parent);
                     }
-                    let _ = std::fs::write(&dirs_path, serde_json::to_string_pretty(&dirs).unwrap_or_default());
+                    let _ = std::fs::write(
+                        &dirs_path,
+                        serde_json::to_string_pretty(&dirs).unwrap_or_default(),
+                    );
                 }
             });
 

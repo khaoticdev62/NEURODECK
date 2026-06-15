@@ -1,5 +1,5 @@
-import { AlertCircle, RefreshCcw } from 'lucide-react';
-import { Button } from './Button';
+import { AlertCircle, RefreshCcw } from "lucide-react";
+import { Button } from "./Button";
 
 interface ErrorStateProps {
   title?: string;
@@ -10,10 +10,10 @@ interface ErrorStateProps {
 }
 
 export function ErrorState({
-  title = 'Something went wrong',
+  title = "Something went wrong",
   message,
   onRetry,
-  retryLabel = 'Try again',
+  retryLabel = "Try again",
   fullHeight = false,
 }: ErrorStateProps) {
   return (
@@ -21,9 +21,9 @@ export function ErrorState({
       role="alert"
       aria-live="assertive"
       className={[
-        'flex flex-col items-center justify-center gap-3 text-center',
-        fullHeight ? 'h-full min-h-48' : 'py-10',
-      ].join(' ')}
+        "flex flex-col items-center justify-center gap-3 text-center",
+        fullHeight ? "h-full min-h-48" : "py-10",
+      ].join(" ")}
     >
       <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-nd-accent-error/20 bg-nd-accent-error/10">
         <AlertCircle className="h-6 w-6 text-nd-accent-error" aria-hidden="true" />

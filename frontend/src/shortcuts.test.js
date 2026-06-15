@@ -1,9 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import {
-  KEYBOARD_SHORTCUTS,
-  GAMEPAD_COMMANDS,
-  validateShortcuts,
-} from "./shortcuts.js";
+import { KEYBOARD_SHORTCUTS, GAMEPAD_COMMANDS, validateShortcuts } from "./shortcuts.js";
 
 describe("KEYBOARD_SHORTCUTS", () => {
   it("has at least one entry", () => {

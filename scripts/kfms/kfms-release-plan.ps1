@@ -36,6 +36,10 @@ $preserveFiles = @(
     "LICENSE",
     "tsconfig.json",
     "vitest.config.ts",
+    "ui-checkpoints.json",
+    "NEURODECK_DEEP_COSMETIC_UI_ENHANCEMENT_AAAA_PASS_PROMPT.md",
+    "NEURODECK_E2E_UI_UX_Audit_Cleanup_Refactor_Prompt.md",
+    "NEURODECK_Onboarding_Wizard_Upgrade_PRD.md",
     "neurodeck_win_release.zip",
     "neurodeck_installer.exe",
     "neurodeck_1.3.0_amd64.AppImage"

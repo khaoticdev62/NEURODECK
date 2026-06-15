@@ -1,21 +1,21 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from "react";
 
-type PanelVariant = 'glass' | 'flat' | 'elevated' | 'surface';
+type PanelVariant = "glass" | "flat" | "elevated" | "surface";
 
 const variantClasses: Record<PanelVariant, string> = {
-  glass:    'glass-panel',
-  elevated: 'glass-panel-elevated',
-  flat:     'glass-panel-flat',
-  surface:  'bg-nd-surface-base border border-nd-border-subtle',
+  glass: "glass-panel",
+  elevated: "glass-panel-elevated",
+  flat: "glass-panel-flat",
+  surface: "bg-nd-surface-base border border-nd-border-subtle",
 };
 
 export function Panel({
   title,
   eyebrow,
   action,
-  variant = 'glass',
+  variant = "glass",
   children,
-  className = '',
+  className = "",
 }: {
   title?: string;
   eyebrow?: string;
@@ -34,11 +34,7 @@ export function Panel({
                 {eyebrow}
               </p>
             )}
-            {title && (
-              <h3 className="mt-1 text-sm font-semibold text-nd-text-primary">
-                {title}
-              </h3>
-            )}
+            {title && <h3 className="mt-1 text-sm font-semibold text-nd-text-primary">{title}</h3>}
           </div>
           {action}
         </header>

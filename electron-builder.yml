@@ -54,13 +54,6 @@ linux:
   extraResources:
     - from: target/release/app
       to: neurodeck
-  desktop:
-    Name: NEURODECK
-    Comment: AI Terminal OS for Steam Deck
-    Categories: Development;Utility;Game;
-    Keywords: AI;terminal;LLM;chatbot;SteamDeck;
-    StartupWMClass: NEURODECK
-    MimeType: text/plain;text/x-lua;
 mac:
   target:
     - dmg

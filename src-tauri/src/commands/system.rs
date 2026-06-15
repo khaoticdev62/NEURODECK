@@ -272,7 +272,7 @@ pub fn generate_support_bundle(state: Arc<Mutex<AppState>>) -> Result<SupportBun
     #[cfg(target_os = "linux")]
     {
         if let Ok(stat) = nix::sys::statvfs::statvfs(&config_dir) {
-            let free_mb = stat.blocks_free() * stat.block_size() as u64 / 1024 / 1024;
+            let free_mb = stat.blocks_free() * stat.block_size() / 1024 / 1024;
             buf.push_str(&format!("Free disk:    {} MB\n", free_mb));
         }
     }

@@ -1,29 +1,63 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
-  TerminalSquare, Plus, Copy, Play, Trash2, Save, Upload, Code, Sparkles,
-  Command, Check, AlertCircle, Globe, Layers
-} from 'lucide-react';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { CliCommandDef, CliAction } from '../../types/neurodeck';
-import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { TextInput } from '../../components/primitives/TextInput';
-import { Select } from '../../components/primitives/Select';
-import { Badge } from '../../components/primitives/Badge';
-import { Panel } from '../../components/primitives/Panel';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { LoadingState } from '../../components/primitives/LoadingState';
+  TerminalSquare,
+  Plus,
+  Copy,
+  Play,
+  Trash2,
+  Save,
+  Upload,
+  Code,
+  Sparkles,
+  Command,
+  Check,
+  AlertCircle,
+  Globe,
+  Layers,
+} from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { CliCommandDef, CliAction } from "../../types/neurodeck";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { TextInput } from "../../components/primitives/TextInput";
+import { Select } from "../../components/primitives/Select";
+import { Badge } from "../../components/primitives/Badge";
+import { Panel } from "../../components/primitives/Panel";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { LoadingState } from "../../components/primitives/LoadingState";
 
-const LOCAL_STORAGE_KEY = 'neurodeck:cli_commands_fallback';
+const LOCAL_STORAGE_KEY = "neurodeck:cli_commands_fallback";
 
 const AVAILABLE_ICONS = [
-  'zap', 'message-square', 'code-2', 'terminal', 'server', 'route', 'globe',
-  'bot', 'brain', 'share-2', 'panel-right-open', 'sparkles', 'file-text', 'git-branch', 'send',
-  'copy', 'play', 'settings-2', 'search', 'trash-2', 'cpu', 'layers', 'box', 'rocket', 'activity'
+  "zap",
+  "message-square",
+  "code-2",
+  "terminal",
+  "server",
+  "route",
+  "globe",
+  "bot",
+  "brain",
+  "share-2",
+  "panel-right-open",
+  "sparkles",
+  "file-text",
+  "git-branch",
+  "send",
+  "copy",
+  "play",
+  "settings-2",
+  "search",
+  "trash-2",
+  "cpu",
+  "layers",
+  "box",
+  "rocket",
+  "activity",
 ];
 
-const CATEGORIES = ['all', 'prompt', 'shell', 'view', 'chain', 'plugin'];
+const CATEGORIES = ["all", "prompt", "shell", "view", "chain", "plugin"];
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   prompt: <Sparkles className="h-4 w-4" aria-hidden="true" />,
@@ -34,17 +68,34 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const VIEW_OPTIONS = [
-  'chat', 'canvas', 'terminal', 'ssh', 'tunnel', 'share', 'browser', 'agent', 'memory',
-  'prompt-lab', 'remote', 'docs', 'git', 'api-lab', 'cli-maker', 'graph', 'scheduler',
-  'workflow', 'ide', 'orchestrator'
+  "chat",
+  "canvas",
+  "terminal",
+  "ssh",
+  "tunnel",
+  "share",
+  "browser",
+  "agent",
+  "memory",
+  "prompt-lab",
+  "remote",
+  "docs",
+  "git",
+  "api-lab",
+  "cli-maker",
+  "graph",
+  "scheduler",
+  "workflow",
+  "ide",
+  "orchestrator",
 ].map((v) => ({ value: v, label: v }));
 
 const CATEGORY_OPTIONS = [
-  { value: 'prompt', label: 'AI Prompt Template' },
-  { value: 'shell', label: 'Shell Command' },
-  { value: 'view', label: 'View Switcher' },
-  { value: 'chain', label: 'Command Chain' },
-  { value: 'plugin', label: 'Lua Plugin Script' },
+  { value: "prompt", label: "AI Prompt Template" },
+  { value: "shell", label: "Shell Command" },
+  { value: "view", label: "View Switcher" },
+  { value: "chain", label: "Command Chain" },
+  { value: "plugin", label: "Lua Plugin Script" },
 ];
 
 const ICON_OPTIONS = AVAILABLE_ICONS.map((i) => ({ value: i, label: i }));
@@ -58,25 +109,28 @@ function getFallbackCommands(): CliCommandDef[] {
   }
   return [
     {
-      id: 'cmd-hello',
-      name: 'hello',
-      description: 'Say hello to NEURODECK',
-      icon: 'zap',
-      category: 'prompt',
-      action: { type: 'Prompt', data: { template: 'Hello user, welcome to NEURODECK!', use_llm: false } },
-      shortcut: 'Ctrl+H',
-      radial_bind: 1
+      id: "cmd-hello",
+      name: "hello",
+      description: "Say hello to NEURODECK",
+      icon: "zap",
+      category: "prompt",
+      action: {
+        type: "Prompt",
+        data: { template: "Hello user, welcome to NEURODECK!", use_llm: false },
+      },
+      shortcut: "Ctrl+H",
+      radial_bind: 1,
     },
     {
-      id: 'cmd-status',
-      name: 'status',
-      description: 'Check sidecar system health',
-      icon: 'activity',
-      category: 'shell',
-      action: { type: 'Shell', data: { command: 'get_system_health', cwd: null } },
+      id: "cmd-status",
+      name: "status",
+      description: "Check sidecar system health",
+      icon: "activity",
+      category: "shell",
+      action: { type: "Shell", data: { command: "get_system_health", cwd: null } },
       shortcut: null,
-      radial_bind: null
-    }
+      radial_bind: null,
+    },
   ];
 }
 
@@ -86,34 +140,36 @@ function saveFallbackCommands(cmds: CliCommandDef[]) {
 
 export function CliMakerView() {
   const [commands, setCommands] = useState<CliCommandDef[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [icon, setIcon] = useState('zap');
-  const [category, setCategory] = useState('prompt');
-  const [shortcut, setShortcut] = useState('');
-  const [radialBind, setRadialBind] = useState<string>('');
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [icon, setIcon] = useState("zap");
+  const [category, setCategory] = useState("prompt");
+  const [shortcut, setShortcut] = useState("");
+  const [radialBind, setRadialBind] = useState<string>("");
 
-  const [promptTemplate, setPromptTemplate] = useState('');
+  const [promptTemplate, setPromptTemplate] = useState("");
   const [promptUseLlm, setPromptUseLlm] = useState(false);
-  const [shellCommand, setShellCommand] = useState('');
-  const [shellCwd, setShellCwd] = useState('');
-  const [viewName, setViewName] = useState('chat');
+  const [shellCommand, setShellCommand] = useState("");
+  const [shellCwd, setShellCwd] = useState("");
+  const [viewName, setViewName] = useState("chat");
   const [chainSteps, setChainSteps] = useState<string[]>([]);
-  const [pluginLuaCode, setPluginLuaCode] = useState('-- Lua code\nregisterCommand("mycommand", function(args)\n  return args\nend)');
+  const [pluginLuaCode, setPluginLuaCode] = useState(
+    '-- Lua code\nregisterCommand("mycommand", function(args)\n  return args\nend)'
+  );
 
-  const [testArgs, setTestArgs] = useState('');
-  const [testOutput, setTestOutput] = useState('');
+  const [testArgs, setTestArgs] = useState("");
+  const [testOutput, setTestOutput] = useState("");
   const [testError, setTestError] = useState(false);
   const [loadingTest, setLoadingTest] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('');
+  const [statusMessage, setStatusMessage] = useState("");
   const [statusIsError, setStatusIsError] = useState(false);
 
-  const [importPath, setImportPath] = useState('');
+  const [importPath, setImportPath] = useState("");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const loadCommands = useCallback(async () => {
@@ -136,40 +192,40 @@ export function CliMakerView() {
     setStatusMessage(text);
     setStatusIsError(isErr);
     setTimeout(() => {
-      setStatusMessage('');
+      setStatusMessage("");
     }, 5000);
   };
 
   const handleShortcutKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const parts: string[] = [];
-    if (e.ctrlKey) parts.push('Ctrl');
-    if (e.altKey) parts.push('Alt');
-    if (e.shiftKey) parts.push('Shift');
+    if (e.ctrlKey) parts.push("Ctrl");
+    if (e.altKey) parts.push("Alt");
+    if (e.shiftKey) parts.push("Shift");
     if (e.key.length === 1) {
       parts.push(e.key.toUpperCase());
-    } else if (!['Control', 'Alt', 'Shift'].includes(e.key)) {
+    } else if (!["Control", "Alt", "Shift"].includes(e.key)) {
       parts.push(e.key);
     }
-    setShortcut(parts.join('+'));
+    setShortcut(parts.join("+"));
   };
 
   const gatherDef = (forcedId?: string | null): CliCommandDef => {
     const activeId = forcedId !== undefined ? forcedId : editingId;
     const finalId = activeId || `cmd-${Date.now()}`;
-    const cleanName = name.trim() || 'untitled';
+    const cleanName = name.trim() || "untitled";
 
-    let action: CliAction = { type: 'Prompt', data: { template: '', use_llm: false } };
-    if (category === 'prompt') {
-      action = { type: 'Prompt', data: { template: promptTemplate, use_llm: promptUseLlm } };
-    } else if (category === 'shell') {
-      action = { type: 'Shell', data: { command: shellCommand, cwd: shellCwd.trim() || null } };
-    } else if (category === 'view') {
-      action = { type: 'View', data: { view_name: viewName } };
-    } else if (category === 'chain') {
-      action = { type: 'Chain', data: { steps: chainSteps } };
-    } else if (category === 'plugin') {
-      action = { type: 'Plugin', data: { lua_code: pluginLuaCode } };
+    let action: CliAction = { type: "Prompt", data: { template: "", use_llm: false } };
+    if (category === "prompt") {
+      action = { type: "Prompt", data: { template: promptTemplate, use_llm: promptUseLlm } };
+    } else if (category === "shell") {
+      action = { type: "Shell", data: { command: shellCommand, cwd: shellCwd.trim() || null } };
+    } else if (category === "view") {
+      action = { type: "View", data: { view_name: viewName } };
+    } else if (category === "chain") {
+      action = { type: "Chain", data: { steps: chainSteps } };
+    } else if (category === "plugin") {
+      action = { type: "Plugin", data: { lua_code: pluginLuaCode } };
     }
 
     return {
@@ -180,56 +236,58 @@ export function CliMakerView() {
       category,
       action,
       shortcut: shortcut.trim() || null,
-      radial_bind: radialBind ? parseInt(radialBind, 10) : null
+      radial_bind: radialBind ? parseInt(radialBind, 10) : null,
     };
   };
 
   const handleNewCommand = () => {
     setEditingId(null);
-    setName('');
-    setDescription('');
-    setIcon('zap');
-    setCategory('prompt');
-    setShortcut('');
-    setRadialBind('');
-    setPromptTemplate('');
+    setName("");
+    setDescription("");
+    setIcon("zap");
+    setCategory("prompt");
+    setShortcut("");
+    setRadialBind("");
+    setPromptTemplate("");
     setPromptUseLlm(false);
-    setShellCommand('');
-    setShellCwd('');
-    setViewName('chat');
+    setShellCommand("");
+    setShellCwd("");
+    setViewName("chat");
     setChainSteps([]);
-    setPluginLuaCode('-- Lua code\nregisterCommand("mycommand", function(args)\n  return args\nend)');
-    setTestOutput('');
+    setPluginLuaCode(
+      '-- Lua code\nregisterCommand("mycommand", function(args)\n  return args\nend)'
+    );
+    setTestOutput("");
   };
 
   const handleEditCommand = (cmd: CliCommandDef) => {
     setEditingId(cmd.id);
     setName(cmd.name);
     setDescription(cmd.description);
-    setIcon(cmd.icon || 'zap');
+    setIcon(cmd.icon || "zap");
     setCategory(cmd.category);
-    setShortcut(cmd.shortcut || '');
-    setRadialBind(cmd.radial_bind != null ? String(cmd.radial_bind) : '');
+    setShortcut(cmd.shortcut || "");
+    setRadialBind(cmd.radial_bind != null ? String(cmd.radial_bind) : "");
 
-    if (cmd.action.type === 'Prompt') {
-      setPromptTemplate(cmd.action.data.template || '');
+    if (cmd.action.type === "Prompt") {
+      setPromptTemplate(cmd.action.data.template || "");
       setPromptUseLlm(cmd.action.data.use_llm || false);
-    } else if (cmd.action.type === 'Shell') {
-      setShellCommand(cmd.action.data.command || '');
-      setShellCwd(cmd.action.data.cwd || '');
-    } else if (cmd.action.type === 'View') {
-      setViewName(cmd.action.data.view_name || 'chat');
-    } else if (cmd.action.type === 'Chain') {
+    } else if (cmd.action.type === "Shell") {
+      setShellCommand(cmd.action.data.command || "");
+      setShellCwd(cmd.action.data.cwd || "");
+    } else if (cmd.action.type === "View") {
+      setViewName(cmd.action.data.view_name || "chat");
+    } else if (cmd.action.type === "Chain") {
       setChainSteps(cmd.action.data.steps || []);
-    } else if (cmd.action.type === 'Plugin') {
-      setPluginLuaCode(cmd.action.data.lua_code || '');
+    } else if (cmd.action.type === "Plugin") {
+      setPluginLuaCode(cmd.action.data.lua_code || "");
     }
-    setTestOutput('');
+    setTestOutput("");
   };
 
   const handleSaveCommand = async () => {
     if (!name.trim()) {
-      showStatus('Command name is required', true);
+      showStatus("Command name is required", true);
       return;
     }
     const def = gatherDef();
@@ -247,7 +305,7 @@ export function CliMakerView() {
       const currentFallback = getFallbackCommands();
       let updatedFallback: CliCommandDef[];
       if (editingId) {
-        updatedFallback = currentFallback.map(c => c.id === editingId ? def : c);
+        updatedFallback = currentFallback.map((c) => (c.id === editingId ? def : c));
       } else {
         updatedFallback = [...currentFallback, def];
         setEditingId(def.id);
@@ -269,22 +327,22 @@ export function CliMakerView() {
     setConfirmDeleteId(null);
     try {
       await neurodeckApi.cliMaker.delete(id);
-      showStatus('Deleted command successfully');
+      showStatus("Deleted command successfully");
       if (editingId === id) handleNewCommand();
       await loadCommands();
     } catch (_) {
-      const updatedFallback = getFallbackCommands().filter(c => c.id !== id);
+      const updatedFallback = getFallbackCommands().filter((c) => c.id !== id);
       saveFallbackCommands(updatedFallback);
       setCommands(updatedFallback);
       if (editingId === id) handleNewCommand();
-      showStatus('Deleted locally (Offline Mode)');
+      showStatus("Deleted locally (Offline Mode)");
     }
   };
 
   const handleTestCommand = async () => {
     const def = gatherDef();
     setLoadingTest(true);
-    setTestOutput('Executing command...');
+    setTestOutput("Executing command...");
     setTestError(false);
     try {
       let runId = editingId;
@@ -308,13 +366,13 @@ export function CliMakerView() {
 
   const handleCopyLua = async () => {
     if (!editingId) {
-      showStatus('Save the command first', true);
+      showStatus("Save the command first", true);
       return;
     }
     try {
       const res = await neurodeckApi.cliMaker.exportLua(editingId);
       await navigator.clipboard.writeText(res.lua);
-      showStatus('Lua script copied to clipboard');
+      showStatus("Lua script copied to clipboard");
     } catch (err) {
       showStatus(`Copy failed: ${err}`, true);
     }
@@ -336,7 +394,7 @@ export function CliMakerView() {
     }
   };
 
-  const handleExportScript = async (format: 'sh' | 'py' | 'lua') => {
+  const handleExportScript = async (format: "sh" | "py" | "lua") => {
     const def = gatherDef();
     try {
       let runId = editingId;
@@ -355,13 +413,13 @@ export function CliMakerView() {
   const handleImportLua = async (overridePath?: string) => {
     const path = (overridePath ?? importPath).trim();
     if (!path) {
-      showStatus('Please enter a file path', true);
+      showStatus("Please enter a file path", true);
       return;
     }
     try {
       const imported = await neurodeckApi.cliMaker.importLua(path);
       showStatus(`Successfully imported ${imported.length} command(s)`);
-      setImportPath('');
+      setImportPath("");
       await loadCommands();
       if (imported.length > 0) handleEditCommand(imported[0]);
     } catch (err) {
@@ -370,59 +428,64 @@ export function CliMakerView() {
   };
 
   const handleBrowseImport = async () => {
-    const api = (window as unknown as {
-      electronAPI?: { showOpenDialog?: (opts: unknown) => Promise<{ canceled: boolean; filePaths: string[] }> };
-    }).electronAPI;
+    const api = (
+      window as unknown as {
+        electronAPI?: {
+          showOpenDialog?: (opts: unknown) => Promise<{ canceled: boolean; filePaths: string[] }>;
+        };
+      }
+    ).electronAPI;
     if (!api?.showOpenDialog) {
-      showStatus('File picker unavailable — enter path manually', true);
+      showStatus("File picker unavailable — enter path manually", true);
       return;
     }
     const result = await api.showOpenDialog({
-      title: 'Import Lua Plugin',
-      properties: ['openFile'],
+      title: "Import Lua Plugin",
+      properties: ["openFile"],
       filters: [
-        { name: 'Lua Scripts', extensions: ['lua'] },
-        { name: 'All Files', extensions: ['*'] },
+        { name: "Lua Scripts", extensions: ["lua"] },
+        { name: "All Files", extensions: ["*"] },
       ],
     });
     if (result.canceled || !result.filePaths?.[0]) return;
     await handleImportLua(result.filePaths[0]);
   };
 
-  const filteredCommands = commands.filter(cmd => {
-    const matchesSearch = cmd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredCommands = commands.filter((cmd) => {
+    const matchesSearch =
+      cmd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       cmd.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || cmd.category === categoryFilter;
+    const matchesCategory = categoryFilter === "all" || cmd.category === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
   const getHelpPreview = () => {
-    const cmdName = name.trim() || 'mycommand';
-    const cmdDesc = description.trim() || '(no description)';
+    const cmdName = name.trim() || "mycommand";
+    const cmdDesc = description.trim() || "(no description)";
     const lines = [
-      'USAGE',
-      `  /${cmdName} [OPTIONS]${chainSteps.length ? ' <steps>' : ''} [ARGS...]`,
-      '',
-      'DESCRIPTION',
-      `  ${cmdDesc}`
+      "USAGE",
+      `  /${cmdName} [OPTIONS]${chainSteps.length ? " <steps>" : ""} [ARGS...]`,
+      "",
+      "DESCRIPTION",
+      `  ${cmdDesc}`,
     ];
 
     if (shortcut) {
-      lines.push('', 'SHORTCUT', `  ${shortcut}`);
+      lines.push("", "SHORTCUT", `  ${shortcut}`);
     }
 
     if (radialBind) {
-      lines.push('', 'RADIAL BIND', `  Segment #${radialBind}`);
+      lines.push("", "RADIAL BIND", `  Segment #${radialBind}`);
     }
 
-    if (category === 'shell' && shellCommand) {
-      lines.push('', 'EXECUTES', `  ${shellCommand}`);
+    if (category === "shell" && shellCommand) {
+      lines.push("", "EXECUTES", `  ${shellCommand}`);
       if (shellCwd) {
         lines.push(`  CWD: ${shellCwd}`);
       }
     }
 
-    return lines.join('\n');
+    return lines.join("\n");
   };
 
   return (
@@ -433,20 +496,30 @@ export function CliMakerView() {
             <TerminalSquare className="h-5 w-5 text-accent-primary" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">CLI Maker</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
+              CLI Maker
+            </p>
             <h2 className="text-lg font-semibold text-text-primary">Command Builder</h2>
-            <p className="text-xs text-text-muted">Build custom commands, macros, and plugin scripts.</p>
+            <p className="text-xs text-text-muted">
+              Build custom commands, macros, and plugin scripts.
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {statusMessage && (
-            <div className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
-              statusIsError
-                ? 'border-accent-error/30 bg-accent-error/10 text-accent-error'
-                : 'border-accent-success/30 bg-accent-success/10 text-accent-success'
-            }`}>
-              {statusIsError ? <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" /> : <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+            <div
+              className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
+                statusIsError
+                  ? "border-accent-error/30 bg-accent-error/10 text-accent-error"
+                  : "border-accent-success/30 bg-accent-success/10 text-accent-success"
+              }`}
+            >
+              {statusIsError ? (
+                <AlertCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              ) : (
+                <Check className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
               <span>{statusMessage}</span>
             </div>
           )}
@@ -473,8 +546,8 @@ export function CliMakerView() {
                 onClick={() => setCategoryFilter(filter)}
                 className={`rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                   categoryFilter === filter
-                    ? 'border-accent-primary/40 bg-accent-primary/15 text-accent-primary'
-                    : 'border-border-subtle bg-surface-secondary text-text-muted hover:border-border-strong'
+                    ? "border-accent-primary/40 bg-accent-primary/15 text-accent-primary"
+                    : "border-border-subtle bg-surface-secondary text-text-muted hover:border-border-strong"
                 }`}
               >
                 {filter}
@@ -500,27 +573,31 @@ export function CliMakerView() {
                     key={cmd.id}
                     onClick={() => handleEditCommand(cmd)}
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && handleEditCommand(cmd)}
+                    onKeyDown={(e) => e.key === "Enter" && handleEditCommand(cmd)}
                     className={`group relative flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                       editingId === cmd.id
-                        ? 'border-accent-primary/40 bg-accent-primary/5'
-                        : 'border-border-subtle bg-surface-secondary hover:border-border-strong hover:bg-surface-tertiary'
+                        ? "border-accent-primary/40 bg-accent-primary/5"
+                        : "border-border-subtle bg-surface-secondary hover:border-border-strong hover:bg-surface-tertiary"
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-app text-accent-primary">
-                        {CATEGORY_ICONS[cmd.category] ?? <TerminalSquare className="h-4 w-4" aria-hidden="true" />}
+                        {CATEGORY_ICONS[cmd.category] ?? (
+                          <TerminalSquare className="h-4 w-4" aria-hidden="true" />
+                        )}
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-text-primary">/{cmd.name}</div>
                         <div className="text-[10px] text-text-muted truncate max-w-[160px]">
-                          {cmd.description || 'No description'}
+                          {cmd.description || "No description"}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-1.5">
-                      <Badge tone="neutral" variant="outline" size="sm">{cmd.category}</Badge>
+                      <Badge tone="neutral" variant="outline" size="sm">
+                        {cmd.category}
+                      </Badge>
                       <IconButton
                         aria-label="Delete command"
                         variant="ghost"
@@ -542,7 +619,9 @@ export function CliMakerView() {
           <Panel eyebrow="Profile" title="Command Profile">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-text-muted" htmlFor="cli-name">Command Trigger</label>
+                <label className="text-xs font-medium text-text-muted" htmlFor="cli-name">
+                  Command Trigger
+                </label>
                 <div className="relative flex items-center">
                   <span className="absolute left-3.5 text-sm font-semibold text-text-muted">/</span>
                   <input
@@ -550,7 +629,7 @@ export function CliMakerView() {
                     type="text"
                     aria-label="Command trigger"
                     value={name}
-                    onChange={(e) => setName(e.target.value.replace(/\s+/g, '-').toLowerCase())}
+                    onChange={(e) => setName(e.target.value.replace(/\s+/g, "-").toLowerCase())}
                     placeholder="my-command"
                     className="w-full h-10 rounded-xl border border-border-subtle bg-surface-app pl-6 pr-4 text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40 min-h-[40px]"
                   />
@@ -580,8 +659,11 @@ export function CliMakerView() {
                 value={radialBind}
                 onChange={(e) => setRadialBind(e.target.value)}
                 options={[
-                  { value: '', label: 'No Radial Bind' },
-                  ...Array.from({ length: 12 }, (_, i) => ({ value: String(i + 1), label: `Slot ${i + 1}` }))
+                  { value: "", label: "No Radial Bind" },
+                  ...Array.from({ length: 12 }, (_, i) => ({
+                    value: String(i + 1),
+                    label: `Slot ${i + 1}`,
+                  })),
                 ]}
               />
 
@@ -605,10 +687,12 @@ export function CliMakerView() {
           </Panel>
 
           <Panel eyebrow="Implementation" title="Action Details">
-            {category === 'prompt' && (
+            {category === "prompt" && (
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="cli-prompt" className="text-xs font-medium text-text-muted">Prompt Template</label>
+                  <label htmlFor="cli-prompt" className="text-xs font-medium text-text-muted">
+                    Prompt Template
+                  </label>
                   <textarea
                     id="cli-prompt"
                     value={promptTemplate}
@@ -626,12 +710,14 @@ export function CliMakerView() {
                     onChange={(e) => setPromptUseLlm(e.target.checked)}
                     className="rounded border-border-subtle bg-surface-app text-accent-primary focus-visible:ring-2 focus-visible:ring-accent-primary/40 h-4 w-4"
                   />
-                  <span className="text-xs text-text-muted">Send output directly to LLM for response streaming</span>
+                  <span className="text-xs text-text-muted">
+                    Send output directly to LLM for response streaming
+                  </span>
                 </label>
               </div>
             )}
 
-            {category === 'shell' && (
+            {category === "shell" && (
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <TextInput
@@ -651,12 +737,16 @@ export function CliMakerView() {
                 </div>
                 <div className="flex items-start gap-2.5 rounded-xl border border-accent-warning/20 bg-accent-warning/5 p-3 text-xs text-accent-warning/90">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
-                  <span>Shell commands are executed directly on the host machine. Ensure you audit inputs properly. Use <code className="font-mono">{"{{input}}"}</code> to safely pass runner arguments.</span>
+                  <span>
+                    Shell commands are executed directly on the host machine. Ensure you audit
+                    inputs properly. Use <code className="font-mono">{"{{input}}"}</code> to safely
+                    pass runner arguments.
+                  </span>
                 </div>
               </div>
             )}
 
-            {category === 'view' && (
+            {category === "view" && (
               <Select
                 label="Target Screen View"
                 aria-label="Target screen view"
@@ -666,7 +756,7 @@ export function CliMakerView() {
               />
             )}
 
-            {category === 'chain' && (
+            {category === "chain" && (
               <div className="space-y-3">
                 <label className="text-xs font-medium text-text-muted">Step Sequences</label>
                 <div className="space-y-2">
@@ -684,9 +774,13 @@ export function CliMakerView() {
                         className="flex-1 h-9 rounded-xl border border-border-subtle bg-surface-app px-3 text-xs text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
                       >
                         <option value="">Select Command...</option>
-                        {commands.filter(c => c.id !== editingId).map(c => (
-                          <option key={c.id} value={c.id}>/{c.name} ({c.description || 'No description'})</option>
-                        ))}
+                        {commands
+                          .filter((c) => c.id !== editingId)
+                          .map((c) => (
+                            <option key={c.id} value={c.id}>
+                              /{c.name} ({c.description || "No description"})
+                            </option>
+                          ))}
                       </select>
                       <IconButton
                         aria-label={`Remove chain step ${idx + 1}`}
@@ -699,15 +793,22 @@ export function CliMakerView() {
                     </div>
                   ))}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setChainSteps([...chainSteps, ''])} icon={Plus}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setChainSteps([...chainSteps, ""])}
+                  icon={Plus}
+                >
                   Add Chain Step
                 </Button>
               </div>
             )}
 
-            {category === 'plugin' && (
+            {category === "plugin" && (
               <div className="space-y-1.5">
-                <label htmlFor="cli-lua" className="text-xs font-medium text-text-muted">Lua Code Snippet</label>
+                <label htmlFor="cli-lua" className="text-xs font-medium text-text-muted">
+                  Lua Code Snippet
+                </label>
                 <textarea
                   id="cli-lua"
                   value={pluginLuaCode}
@@ -776,8 +877,10 @@ export function CliMakerView() {
                     size="sm"
                     fullWidth
                     onClick={() => {
-                      const sel = document.getElementById('export-script-format') as HTMLSelectElement;
-                      handleExportScript((sel?.value || 'sh') as 'sh' | 'py' | 'lua');
+                      const sel = document.getElementById(
+                        "export-script-format"
+                      ) as HTMLSelectElement;
+                      handleExportScript((sel?.value || "sh") as "sh" | "py" | "lua");
                     }}
                   >
                     Export Script
@@ -785,8 +888,19 @@ export function CliMakerView() {
                 </div>
 
                 <div className="space-y-2 pt-4 border-t border-border-subtle">
-                  <label htmlFor="cli-import-path" className="text-[10px] font-medium uppercase tracking-wider text-text-muted">Import from Lua File</label>
-                  <Button variant="primary" size="sm" fullWidth onClick={() => void handleBrowseImport()} icon={Upload}>
+                  <label
+                    htmlFor="cli-import-path"
+                    className="text-[10px] font-medium uppercase tracking-wider text-text-muted"
+                  >
+                    Import from Lua File
+                  </label>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    fullWidth
+                    onClick={() => void handleBrowseImport()}
+                    icon={Upload}
+                  >
                     Browse & Import Lua
                   </Button>
                   <div className="flex gap-2 items-center">
@@ -814,10 +928,13 @@ export function CliMakerView() {
             </Panel>
 
             <Panel eyebrow="Output" title="Test Execution Output" className="h-64 flex flex-col">
-              <pre className={`flex-1 overflow-auto rounded-xl bg-surface-app p-3 font-mono text-[11px] leading-relaxed select-text whitespace-pre-wrap ${
-                testError ? 'text-accent-error' : 'text-accent-success'
-              }`}>
-                {testOutput || 'No execution outputs recorded yet. Fill out parameters and click "Run Test".'}
+              <pre
+                className={`flex-1 overflow-auto rounded-xl bg-surface-app p-3 font-mono text-[11px] leading-relaxed select-text whitespace-pre-wrap ${
+                  testError ? "text-accent-error" : "text-accent-success"
+                }`}
+              >
+                {testOutput ||
+                  'No execution outputs recorded yet. Fill out parameters and click "Run Test".'}
               </pre>
             </Panel>
           </div>
@@ -827,7 +944,7 @@ export function CliMakerView() {
       <ConfirmDialog
         open={!!confirmDeleteId}
         title="Delete command?"
-        message={`Remove '${confirmDeleteId ?? ''}' permanently. This cannot be undone.`}
+        message={`Remove '${confirmDeleteId ?? ""}' permanently. This cannot be undone.`}
         confirmLabel="Delete"
         destructive
         onConfirm={() => void confirmDeleteCommand()}

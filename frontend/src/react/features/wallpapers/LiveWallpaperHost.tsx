@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { useTheme } from "../../theme/useTheme";
 import { CanvasWallpaperRenderer } from "./CanvasWallpaperRenderer";
 
@@ -29,7 +29,8 @@ export const LiveWallpaperHost: React.FC = () => {
 
   // Toggle body wallpaper-active class when wallpaper is active
   useEffect(() => {
-    const isActive = settings.liveWallpaperEnabled && !reducedMotion && settings.activeWallpaperId !== "none";
+    const isActive =
+      settings.liveWallpaperEnabled && !reducedMotion && settings.activeWallpaperId !== "none";
     if (isActive) {
       document.body.classList.add("wallpaper-active");
     } else {
@@ -79,7 +80,7 @@ export const LiveWallpaperHost: React.FC = () => {
         />
       ) : effectiveWallpaperId === "neural_aurora" ? (
         <div
-          className="absolute inset-0 h-full w-full opacity-30 animate-pulse bg-gradient-to-tr from-nd-accent/20 via-nd-surface to-nd-accent-secondary/10"
+          className="absolute inset-0 h-full w-full opacity-30 animate-pulse bg-gradient-to-tr from-nd-accent-primary/20 via-nd-surface to-nd-accent-secondary/10"
           style={{
             animationDuration: "12s",
             opacity: settings.wallpaperOpacity / 100,
@@ -87,7 +88,7 @@ export const LiveWallpaperHost: React.FC = () => {
         />
       ) : effectiveWallpaperId === "kernel_heatmap" ? (
         <div
-          className="absolute inset-0 h-full w-full opacity-20 animate-pulse bg-gradient-to-br from-nd-danger/15 via-nd-surface to-nd-warning/10"
+          className="absolute inset-0 h-full w-full opacity-20 animate-pulse bg-gradient-to-br from-nd-accent-error/15 via-nd-surface to-nd-accent-warning/10"
           style={{
             animationDuration: "15s",
             opacity: settings.wallpaperOpacity / 100,

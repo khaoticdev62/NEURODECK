@@ -1,5 +1,5 @@
-import { forwardRef } from 'react';
-import { Toggle as DSToggle } from '../../../design-system/components/core/Toggle';
+import { forwardRef } from "react";
+import { Toggle as DSToggle } from "../../../design-system/components/core/Toggle";
 
 interface ToggleProps {
   checked: boolean;
@@ -10,8 +10,8 @@ interface ToggleProps {
 }
 
 export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(function Toggle(
-  { checked, onChange, label, disabled = false, className = '' },
-  ref,
+  { checked, onChange, label, disabled = false, className = "" },
+  ref
 ) {
   return (
     <DSToggle

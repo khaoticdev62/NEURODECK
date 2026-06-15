@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 import {
   CheckCircle2,
   KeyRound,
@@ -8,22 +8,33 @@ import {
   ShieldCheck,
   Trash2,
   Users,
-} from 'lucide-react';
-import { Badge } from '../../components/primitives/Badge';
-import { Button } from '../../components/primitives/Button';
-import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { LoadingState } from '../../components/primitives/LoadingState';
-import { MetricCard } from '../../components/primitives/MetricCard';
-import { Panel } from '../../components/primitives/Panel';
-import { Select } from '../../components/primitives/Select';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { PermissionRegistry } from '../../services/bridgeAdapter';
-import type { NeuroDeckAppActions, NeuroDeckState, SecurityReport, CredentialStatus } from '../../types/neurodeck';
+} from "lucide-react";
+import { Badge } from "../../components/primitives/Badge";
+import { Button } from "../../components/primitives/Button";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { LoadingState } from "../../components/primitives/LoadingState";
+import { MetricCard } from "../../components/primitives/MetricCard";
+import { Panel } from "../../components/primitives/Panel";
+import { Select } from "../../components/primitives/Select";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { PermissionRegistry } from "../../services/bridgeAdapter";
+import type {
+  NeuroDeckAppActions,
+  NeuroDeckState,
+  SecurityReport,
+  CredentialStatus,
+} from "../../types/neurodeck";
 
 function getElectronAPI() {
-  return (window as Window & { electronAPI?: { getSecurityFlags?: () => Promise<ElectronSecurityFlags> | ElectronSecurityFlags } }).electronAPI;
+  return (
+    window as Window & {
+      electronAPI?: {
+        getSecurityFlags?: () => Promise<ElectronSecurityFlags> | ElectronSecurityFlags;
+      };
+    }
+  ).electronAPI;
 }
 
 type ElectronSecurityFlags = {
@@ -36,13 +47,21 @@ type ElectronSecurityFlags = {
   cspActive: boolean;
 };
 
-export function SecurityView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
+export function SecurityView({
+  state,
+  actions,
+}: {
+  state: NeuroDeckState;
+  actions: NeuroDeckAppActions;
+}) {
   const report = state.diagnostics;
   const [securityReport, setSecurityReport] = useState<SecurityReport | null>(null);
   const [credentialStatus, setCredentialStatus] = useState<CredentialStatus | null>(null);
   const [electronFlags, setElectronFlags] = useState<ElectronSecurityFlags | null>(null);
   const [permissionRegistry, setPermissionRegistry] = useState<PermissionRegistry | null>(null);
-  const [agents, setAgents] = useState<Array<{ id: string; name: string; description: string }>>([]);
+  const [agents, setAgents] = useState<Array<{ id: string; name: string; description: string }>>(
+    []
+  );
   const [agentMapSaving, setAgentMapSaving] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -54,7 +73,9 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
         neurodeckApi.diagnostics.securityReport(),
         neurodeckApi.diagnostics.getCredentialStatus(),
         neurodeckApi.permissions.listProfiles().catch(() => null),
-        neurodeckApi.agents.list().catch(() => [] as Array<{ id: string; name: string; description: string }>),
+        neurodeckApi.agents
+          .list()
+          .catch(() => [] as Array<{ id: string; name: string; description: string }>),
       ]);
       setSecurityReport(nextSecurity);
       setCredentialStatus(nextCredentials);
@@ -83,42 +104,42 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
 
   const hardeningRows = [
     {
-      label: 'IPC payload validation',
+      label: "IPC payload validation",
       ok: (securityReport?.permission_registry_count ?? 0) > 0,
       unknown: !securityReport,
     },
     {
-      label: 'Renderer Node access blocked',
+      label: "Renderer Node access blocked",
       ok: !!electronFlags && !electronFlags.nodeIntegration,
       unknown: !electronFlags,
     },
     {
-      label: 'Secrets stored in OS keychain only',
+      label: "Secrets stored in OS keychain only",
       ok: !!securityReport?.keychain_ok,
       unknown: !securityReport,
     },
     {
-      label: 'Context isolation enabled',
+      label: "Context isolation enabled",
       ok: !!electronFlags?.contextIsolation,
       unknown: !electronFlags,
     },
     {
-      label: 'Sandbox enabled',
+      label: "Sandbox enabled",
       ok: !!electronFlags?.sandbox,
       unknown: !electronFlags,
     },
     {
-      label: 'Remote module disabled',
+      label: "Remote module disabled",
       ok: electronFlags ? electronFlags.remoteModuleDisabled : true,
       unknown: !electronFlags,
     },
     {
-      label: 'CSP policy active',
+      label: "CSP policy active",
       ok: !!electronFlags?.cspActive,
       unknown: !electronFlags,
     },
     {
-      label: 'Safe error messages (no stack traces)',
+      label: "Safe error messages (no stack traces)",
       ok: true,
       unknown: false,
     },
@@ -128,15 +149,18 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
 
   function formatCapability(cap: string): string {
     return cap
-      .split('_')
+      .split("_")
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
+      .join(" ");
   }
 
   const handleAgentProfileChange = async (agentId: string, value: string) => {
     setAgentMapSaving((prev) => ({ ...prev, [agentId]: true }));
     try {
-      await neurodeckApi.permissions.setAgentProfile(agentId, value === '__default__' ? null : value);
+      await neurodeckApi.permissions.setAgentProfile(
+        agentId,
+        value === "__default__" ? null : value
+      );
       const next = await neurodeckApi.permissions.listProfiles();
       setPermissionRegistry(next);
     } finally {
@@ -167,8 +191,8 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
               <div
                 className={`mt-2 rounded-xl border px-3 py-2 text-xs ${
                   allPass
-                    ? 'border-accent-success/20 bg-accent-success/10 text-accent-success'
-                    : 'border-accent-warning/20 bg-accent-warning/10 text-accent-warning'
+                    ? "border-accent-success/20 bg-accent-success/10 text-accent-success"
+                    : "border-accent-warning/20 bg-accent-warning/10 text-accent-warning"
                 }`}
               >
                 <span className="flex items-center gap-2 font-semibold">
@@ -178,8 +202,8 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                     <ShieldAlert className="h-4 w-4" aria-hidden="true" />
                   )}
                   {allPass
-                    ? 'v6 hardening active — all gates passing'
-                    : 'One or more hardening gates are not confirmed.'}
+                    ? "v6 hardening active — all gates passing"
+                    : "One or more hardening gates are not confirmed."}
                 </span>
               </div>
             )}
@@ -191,19 +215,37 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
           <div className="space-y-3 p-4">
             <CredentialRow
               label="Gemini API Key"
-              status={credentialStatus === null ? 'optional' : credentialStatus.gemini ? 'keychain' : 'missing'}
+              status={
+                credentialStatus === null
+                  ? "optional"
+                  : credentialStatus.gemini
+                    ? "keychain"
+                    : "missing"
+              }
             />
             <CredentialRow
               label="HuggingFace Token"
-              status={credentialStatus === null ? 'keychain' : credentialStatus.huggingface ? 'keychain' : 'missing'}
+              status={
+                credentialStatus === null
+                  ? "keychain"
+                  : credentialStatus.huggingface
+                    ? "keychain"
+                    : "missing"
+              }
             />
             <CredentialRow
               label="OpenAI Compat Key"
-              status={credentialStatus === null ? 'optional' : credentialStatus.openai_compat ? 'keychain' : 'missing'}
+              status={
+                credentialStatus === null
+                  ? "optional"
+                  : credentialStatus.openai_compat
+                    ? "keychain"
+                    : "missing"
+              }
             />
             <p className="text-2xs leading-5 text-text-muted/80">
-              All API keys are stored exclusively in the OS keychain. They are never written to disk files,
-              localStorage, or log output.
+              All API keys are stored exclusively in the OS keychain. They are never written to disk
+              files, localStorage, or log output.
             </p>
           </div>
         </Panel>
@@ -219,12 +261,14 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                       key={profile.id}
                       className={`rounded-xl border px-3 py-2.5 transition duration-fast ${
                         profile.id === permissionRegistry.default_profile_id
-                          ? 'border-accent-primary/30 bg-accent-primary/10'
-                          : 'border-border-subtle bg-surface-secondary/40 hover:bg-surface-tertiary/30'
+                          ? "border-accent-primary/30 bg-accent-primary/10"
+                          : "border-border-subtle bg-surface-secondary/40 hover:bg-surface-tertiary/30"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-text-primary">{profile.name}</span>
+                        <span className="text-xs font-semibold text-text-primary">
+                          {profile.name}
+                        </span>
                         {profile.id === permissionRegistry.default_profile_id && (
                           <Badge tone="accent" size="sm">
                             default
@@ -234,7 +278,9 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                       <p className="mt-1 text-2xs text-text-secondary">{profile.description}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
                         {profile.granted.length === 0 && (
-                          <span className="text-2xs text-text-muted/70">No capabilities granted</span>
+                          <span className="text-2xs text-text-muted/70">
+                            No capabilities granted
+                          </span>
                         )}
                         {profile.granted.map((cap) => (
                           <Badge key={cap} tone="success" size="sm">
@@ -250,12 +296,16 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                   <div className="rounded-xl border border-border-subtle bg-surface-secondary/30 p-3">
                     <div className="mb-2 flex items-center gap-2">
                       <Users className="h-3.5 w-3.5 text-accent-primary" aria-hidden="true" />
-                      <span className="text-xs font-semibold text-text-primary">Agent Profile Mapping</span>
+                      <span className="text-xs font-semibold text-text-primary">
+                        Agent Profile Mapping
+                      </span>
                     </div>
                     <div className="space-y-2">
                       {agents.map((agent) => {
-                        const mappedProfileId = (permissionRegistry.agent_profile_map || {})[agent.id];
-                        const value = mappedProfileId ?? '__default__';
+                        const mappedProfileId = (permissionRegistry.agent_profile_map || {})[
+                          agent.id
+                        ];
+                        const value = mappedProfileId ?? "__default__";
                         return (
                           <div
                             key={agent.id}
@@ -265,18 +315,22 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
                               <p className="truncate text-xs font-medium text-text-primary">
                                 {agent.name || agent.id}
                               </p>
-                              <p className="truncate text-2xs text-text-muted">{agent.description}</p>
+                              <p className="truncate text-2xs text-text-muted">
+                                {agent.description}
+                              </p>
                             </div>
                             <Select
                               id={`agent-profile-${agent.id}`}
                               value={value}
                               disabled={agentMapSaving[agent.id]}
                               aria-label={`Permission profile for ${agent.name || agent.id}`}
-                              onChange={(e) => void handleAgentProfileChange(agent.id, e.target.value)}
+                              onChange={(e) =>
+                                void handleAgentProfileChange(agent.id, e.target.value)
+                              }
                               className="min-w-[140px]"
                               options={[
                                 {
-                                  value: '__default__',
+                                  value: "__default__",
                                   label: `Default (${permissionRegistry.default_profile_id})`,
                                 },
                                 ...permissionRegistry.profiles.map((p) => ({
@@ -329,8 +383,8 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
               </Button>
             </div>
             <p className="text-2xs leading-5 text-text-muted/80">
-              Clearing local state removes session history, memories, and preferences. Keys stored in the OS
-              keychain are preserved.
+              Clearing local state removes session history, memories, and preferences. Keys stored
+              in the OS keychain are preserved.
             </p>
           </div>
         </Panel>
@@ -341,16 +395,28 @@ export function SecurityView({ state, actions }: { state: NeuroDeckState; action
         <div className="h-full space-y-3 overflow-y-auto p-4 scrollbar-thin">
           {report ? (
             <>
-              <MetricCard label="Schema version" value={`v${report.schemaVersion ?? '?'}`} icon={ShieldCheck} hint="Runtime schema" />
-              <MetricCard label="Platform" value={`${report.platform}/${report.arch}`} icon={Shield} hint="OS / architecture" />
+              <MetricCard
+                label="Schema version"
+                value={`v${report.schemaVersion ?? "?"}`}
+                icon={ShieldCheck}
+                hint="Runtime schema"
+              />
+              <MetricCard
+                label="Platform"
+                value={`${report.platform}/${report.arch}`}
+                icon={Shield}
+                hint="OS / architecture"
+              />
               <MetricCard
                 label="Packaged build"
-                value={report.packaged ? 'yes' : 'dev mode'}
+                value={report.packaged ? "yes" : "dev mode"}
                 icon={report.packaged ? CheckCircle2 : ShieldAlert}
                 hint="Build configuration"
               />
               <div className="rounded-xl border border-border-subtle bg-surface-secondary/40 p-3">
-                <p className="text-2xs font-semibold uppercase tracking-[0.18em] text-text-muted">User Data</p>
+                <p className="text-2xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+                  User Data
+                </p>
                 <p className="mt-1 break-all text-xs text-text-secondary">{report.userData}</p>
               </div>
             </>
@@ -390,21 +456,38 @@ function HardeningRow({ label, ok, unknown }: { label: string; ok: boolean; unkn
           unknown
         </StatusChip>
       ) : ok ? (
-        <CheckCircle2 className="h-4 w-4 shrink-0 text-accent-success" role="img" aria-label="Pass" />
+        <CheckCircle2
+          className="h-4 w-4 shrink-0 text-accent-success"
+          role="img"
+          aria-label="Pass"
+        />
       ) : (
-        <ShieldAlert className="h-4 w-4 shrink-0 text-accent-warning" role="img" aria-label="Warning" />
+        <ShieldAlert
+          className="h-4 w-4 shrink-0 text-accent-warning"
+          role="img"
+          aria-label="Warning"
+        />
       )}
     </div>
   );
 }
 
-function CredentialRow({ label, status }: { label: string; status: 'keychain' | 'optional' | 'missing' }) {
+function CredentialRow({
+  label,
+  status,
+}: {
+  label: string;
+  status: "keychain" | "optional" | "missing";
+}) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2.5">
       <span className="flex items-center gap-2 text-xs text-text-primary">
         <KeyRound className="h-3.5 w-3.5 text-accent-primary" aria-hidden="true" /> {label}
       </span>
-      <Badge tone={status === 'keychain' ? 'success' : status === 'optional' ? 'neutral' : 'danger'} size="sm">
+      <Badge
+        tone={status === "keychain" ? "success" : status === "optional" ? "neutral" : "danger"}
+        size="sm"
+      >
         {status}
       </Badge>
     </div>

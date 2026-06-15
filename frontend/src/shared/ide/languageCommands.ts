@@ -7,22 +7,22 @@ import type {
   LanguageProfile,
   PackageManager,
   ProjectContext,
-} from '../contracts/ide.contracts';
+} from "../contracts/ide.contracts";
 
 const LOCKFILE_TO_PACKAGE_MANAGER: Record<string, PackageManager> = {
-  'package-lock.json': 'npm',
-  'pnpm-lock.yaml': 'pnpm',
-  'yarn.lock': 'yarn',
-  'bun.lockb': 'bun',
+  "package-lock.json": "npm",
+  "pnpm-lock.yaml": "pnpm",
+  "yarn.lock": "yarn",
+  "bun.lockb": "bun",
 };
 
 export function detectPackageManager(configFiles: string[]): PackageManager {
   for (const file of configFiles) {
-    const base = file.split('/').pop() ?? file;
+    const base = file.split("/").pop() ?? file;
     const pm = LOCKFILE_TO_PACKAGE_MANAGER[base];
     if (pm) return pm;
   }
-  return 'none';
+  return "none";
 }
 
 function commandApplies(cmd: CommandTemplate, ctx: ProjectContext): boolean {
@@ -33,16 +33,12 @@ function commandApplies(cmd: CommandTemplate, ctx: ProjectContext): boolean {
   }
 
   if (w.configFilesAny && w.configFilesAny.length > 0) {
-    const hasAny = w.configFilesAny.some((f) =>
-      ctx.configFiles.some((c) => c.endsWith(f))
-    );
+    const hasAny = w.configFilesAny.some((f) => ctx.configFiles.some((c) => c.endsWith(f)));
     if (!hasAny) return false;
   }
 
   if (w.configFilesAll && w.configFilesAll.length > 0) {
-    const hasAll = w.configFilesAll.every((f) =>
-      ctx.configFiles.some((c) => c.endsWith(f))
-    );
+    const hasAll = w.configFilesAll.every((f) => ctx.configFiles.some((c) => c.endsWith(f)));
     if (!hasAll) return false;
   }
 
@@ -61,7 +57,7 @@ function filterByPackageManager(
   const pmCommands = commands.filter((cmd) => cmd.command === pm);
   if (pmCommands.length > 0) return pmCommands;
   // Fall back to npm commands if no specific pm match
-  const npmFallback = commands.filter((cmd) => cmd.command === 'npm');
+  const npmFallback = commands.filter((cmd) => cmd.command === "npm");
   if (npmFallback.length > 0) return npmFallback;
   return commands;
 }
@@ -69,12 +65,12 @@ function filterByPackageManager(
 export function getCommandsForContext(
   profile: LanguageProfile,
   ctx: ProjectContext,
-  category?: keyof LanguageProfile['commands']
+  category?: keyof LanguageProfile["commands"]
 ): CommandTemplate[] {
   const allCommands: CommandTemplate[] = [];
   const categories = category
     ? [category]
-    : (Object.keys(profile.commands) as Array<keyof LanguageProfile['commands']>);
+    : (Object.keys(profile.commands) as Array<keyof LanguageProfile["commands"]>);
 
   for (const cat of categories) {
     const cmds = profile.commands[cat];
@@ -83,13 +79,13 @@ export function getCommandsForContext(
     allCommands.push(...applicable);
   }
 
-  if (ctx.packageManager !== 'none') {
+  if (ctx.packageManager !== "none") {
     const pmFiltered = filterByPackageManager(
-      allCommands.filter((c) => ['npm', 'pnpm', 'yarn', 'bun'].includes(c.command)),
+      allCommands.filter((c) => ["npm", "pnpm", "yarn", "bun"].includes(c.command)),
       ctx.packageManager
     );
     const nonPmCommands = allCommands.filter(
-      (c) => !['npm', 'pnpm', 'yarn', 'bun'].includes(c.command)
+      (c) => !["npm", "pnpm", "yarn", "bun"].includes(c.command)
     );
     return [...pmFiltered, ...nonPmCommands];
   }
@@ -102,15 +98,15 @@ export function getTopCommands(
   ctx: ProjectContext,
   limit = 6
 ): CommandTemplate[] {
-  const priority: Array<keyof LanguageProfile['commands']> = [
-    'runProject',
-    'runFile',
-    'testProject',
-    'build',
-    'lint',
-    'format',
-    'typecheck',
-    'packageInstall',
+  const priority: Array<keyof LanguageProfile["commands"]> = [
+    "runProject",
+    "runFile",
+    "testProject",
+    "build",
+    "lint",
+    "format",
+    "typecheck",
+    "packageInstall",
   ];
 
   const result: CommandTemplate[] = [];
@@ -133,7 +129,7 @@ export function resolveCommandArgs(
   placeholder?: string
 ): string[] {
   return cmd.args.map((arg) => {
-    let resolved = arg.replace('${file}', filePath);
+    let resolved = arg.replace("${file}", filePath);
     if (placeholder) resolved = resolved.replace(/\$\{1:[^}]*\}/, placeholder);
     return resolved;
   });

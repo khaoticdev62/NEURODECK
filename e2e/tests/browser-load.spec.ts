@@ -4,7 +4,7 @@ test('creates a tab and navigates to google when clicking Go with no existing ta
   test.skip(testInfo.project.name !== 'chromium-desktop', 'Native WebContentsView overlay is verified on desktop viewport');
 
   // Wait for the app shell and switch to the browser view
-  const browserTab = page.locator('.nav-tab[data-view="browser"]');
+  const browserTab = page.locator('button[data-view="browser"]');
   await expect(browserTab).toBeVisible({ timeout: 20000 });
 
   // Dismiss the onboarding modal if it appears

@@ -27,9 +27,21 @@ export const onboardingLottieSignal = {
           ty: "gr",
           it: [
             { ty: "rc", s: { a: 0, k: [168, 52] }, p: { a: 0, k: [0, 0] }, r: { a: 0, k: 8 } },
-            { ty: "st", c: { a: 0, k: [0.37, 0.92, 1, 1] }, o: { a: 0, k: 100 }, w: { a: 0, k: 3 } },
+            {
+              ty: "st",
+              c: { a: 0, k: [0.37, 0.92, 1, 1] },
+              o: { a: 0, k: 100 },
+              w: { a: 0, k: 3 },
+            },
             { ty: "fl", c: { a: 0, k: [0.37, 0.92, 1, 0.12] }, o: { a: 0, k: 20 } },
-            { ty: "tr", p: { a: 0, k: [0, 0] }, a: { a: 0, k: [0, 0] }, s: { a: 0, k: [100, 100] }, r: { a: 0, k: 0 }, o: { a: 0, k: 100 } },
+            {
+              ty: "tr",
+              p: { a: 0, k: [0, 0] },
+              a: { a: 0, k: [0, 0] },
+              s: { a: 0, k: [100, 100] },
+              r: { a: 0, k: 0 },
+              o: { a: 0, k: 100 },
+            },
           ],
         },
       ],
@@ -49,7 +61,7 @@ export const onboardingFallbackSvg =
       <rect x="42" y="42" width="236" height="96" rx="12" fill="none" stroke="#68f1ff" stroke-width="3"/>
       <path d="M70 92h58l18-24 25 50 18-26h62" fill="none" stroke="#7cffb2" stroke-width="4" stroke-linecap="round"/>
       <text x="54" y="150" fill="#9bb5c8" font-family="monospace" font-size="13">ONBOARDING SIGNAL READY</text>
-    </svg>`,
+    </svg>`
   );
 
 export const onboardingShaderSource = `

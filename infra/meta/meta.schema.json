@@ -83,6 +83,15 @@
         "dirty": {
           "type": "boolean",
           "description": "True if the working tree had uncommitted changes at stamp time."
+        },
+        "release_manifest_url": {
+          "type": ["string", "null"],
+          "format": "uri",
+          "description": "URL to the release-manifest.json for this build, if published."
+        },
+        "rollback_to": {
+          "type": ["string", "null"],
+          "description": "Previous release tag to roll back to if this release is retracted."
         }
       }
     },

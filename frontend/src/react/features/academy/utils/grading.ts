@@ -1,8 +1,8 @@
-import type { LabTask } from '../types';
+import type { LabTask } from "../types";
 
 export interface GradeResult {
-  score: number;            // 0–100
-  passed: boolean;          // score >= 60
+  score: number; // 0–100
+  passed: boolean; // score >= 60
   matchedKeywords: string[];
   missedKeywords: string[];
   feedback: string;
@@ -26,7 +26,7 @@ export function gradeAnswer(task: LabTask, answer: string): GradeResult {
       passed: false,
       matchedKeywords: [],
       missedKeywords: task.gradingKeywords,
-      feedback: 'No answer provided.',
+      feedback: "No answer provided.",
     };
   }
 
@@ -43,8 +43,8 @@ export function gradeAnswer(task: LabTask, answer: string): GradeResult {
     matchedKeywords = task.gradingKeywords.filter((kw) =>
       normalizedAnswer.includes(kw.toLowerCase())
     );
-    missedKeywords = task.gradingKeywords.filter((kw) =>
-      !normalizedAnswer.includes(kw.toLowerCase())
+    missedKeywords = task.gradingKeywords.filter(
+      (kw) => !normalizedAnswer.includes(kw.toLowerCase())
     );
     keywordScore = Math.round((matchedKeywords.length / task.gradingKeywords.length) * 80);
   }
@@ -57,7 +57,7 @@ export function gradeAnswer(task: LabTask, answer: string): GradeResult {
   } else {
     const patternHits = task.gradingPatterns.filter((pattern) => {
       try {
-        return new RegExp(pattern, 'i').test(answer);
+        return new RegExp(pattern, "i").test(answer);
       } catch {
         return false;
       }
@@ -74,16 +74,16 @@ export function gradeAnswer(task: LabTask, answer: string): GradeResult {
 }
 
 function buildFeedback(score: number, missed: string[]): string {
-  if (score >= 90) return 'Excellent — all key indicators identified.';
-  if (score >= 75) return 'Good — most key indicators found.';
+  if (score >= 90) return "Excellent — all key indicators identified.";
+  if (score >= 75) return "Good — most key indicators found.";
   if (score >= 60) {
-    const hint = missed.length > 0 ? ` Consider mentioning: ${missed.slice(0, 2).join(', ')}.` : '';
+    const hint = missed.length > 0 ? ` Consider mentioning: ${missed.slice(0, 2).join(", ")}.` : "";
     return `Passing — a few indicators were missing.${hint}`;
   }
   if (missed.length > 0) {
-    return `Needs work — key terms missing: ${missed.slice(0, 3).join(', ')}.`;
+    return `Needs work — key terms missing: ${missed.slice(0, 3).join(", ")}.`;
   }
-  return 'Needs work — review the sample answer and try again.';
+  return "Needs work — review the sample answer and try again.";
 }
 
 export function labOverallScore(scores: number[]): number {
@@ -92,15 +92,15 @@ export function labOverallScore(scores: number[]): number {
 }
 
 export function scoreLabel(score: number): string {
-  if (score >= 90) return 'Excellent';
-  if (score >= 75) return 'Good';
-  if (score >= 60) return 'Pass';
-  return 'Needs Review';
+  if (score >= 90) return "Excellent";
+  if (score >= 75) return "Good";
+  if (score >= 60) return "Pass";
+  return "Needs Review";
 }
 
-export function scoreTone(score: number): 'success' | 'accent' | 'warning' | 'danger' {
-  if (score >= 75) return 'success';
-  if (score >= 60) return 'accent';
-  if (score >= 40) return 'warning';
-  return 'danger';
+export function scoreTone(score: number): "success" | "accent" | "warning" | "danger" {
+  if (score >= 75) return "success";
+  if (score >= 60) return "accent";
+  if (score >= 40) return "warning";
+  return "danger";
 }

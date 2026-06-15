@@ -4,7 +4,7 @@ interface DeckButtonHintProps {
   className?: string;
 }
 
-export function DeckButtonHint({ button, label, className = '' }: DeckButtonHintProps) {
+export function DeckButtonHint({ button, label, className = "" }: DeckButtonHintProps) {
   return (
     <span
       data-testid="deck-button-hint"

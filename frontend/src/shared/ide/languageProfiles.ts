@@ -3,17 +3,17 @@
  * the assets/language-profiles/ JSON files.
  * Follows the same pattern as modelSupportRegistry.ts.
  */
-import type { LanguageProfile } from '../contracts/ide.contracts';
-import { isLanguageProfile } from './ideSchemas';
+import type { LanguageProfile } from "../contracts/ide.contracts";
+import { isLanguageProfile } from "./ideSchemas";
 
-import typescriptRaw from '../../../../assets/language-profiles/typescript.json';
-import pythonRaw from '../../../../assets/language-profiles/python.json';
-import rustRaw from '../../../../assets/language-profiles/rust.json';
-import goRaw from '../../../../assets/language-profiles/go.json';
-import luaRaw from '../../../../assets/language-profiles/lua.json';
-import bashRaw from '../../../../assets/language-profiles/bash.json';
-import htmlCssRaw from '../../../../assets/language-profiles/html-css.json';
-import configRaw from '../../../../assets/language-profiles/config.json';
+import typescriptRaw from "../../../../assets/language-profiles/typescript.json";
+import pythonRaw from "../../../../assets/language-profiles/python.json";
+import rustRaw from "../../../../assets/language-profiles/rust.json";
+import goRaw from "../../../../assets/language-profiles/go.json";
+import luaRaw from "../../../../assets/language-profiles/lua.json";
+import bashRaw from "../../../../assets/language-profiles/bash.json";
+import htmlCssRaw from "../../../../assets/language-profiles/html-css.json";
+import configRaw from "../../../../assets/language-profiles/config.json";
 
 export type LanguageProfileRegistry = {
   version: string;
@@ -54,7 +54,7 @@ export function createLanguageProfileRegistry(): LanguageProfileRegistry {
   }
 
   return {
-    version: '1.0.0',
+    version: "1.0.0",
     updatedAt: new Date().toISOString(),
     profiles,
   };
@@ -77,15 +77,13 @@ export function getLanguageProfileById(id: string): LanguageProfile | undefined 
 
 export function getProfileForFile(filename: string): LanguageProfile | undefined {
   const lower = filename.toLowerCase();
-  const dot = lower.lastIndexOf('.');
+  const dot = lower.lastIndexOf(".");
   if (dot === -1) return undefined;
   const ext = lower.slice(dot);
   return getRegistry().profiles.find((p) => p.fileExtensions.includes(ext));
 }
 
 export function getProfilesForExtension(ext: string): LanguageProfile[] {
-  const normalized = ext.startsWith('.') ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
-  return getRegistry().profiles.filter((p) =>
-    p.fileExtensions.includes(normalized)
-  );
+  const normalized = ext.startsWith(".") ? ext.toLowerCase() : `.${ext.toLowerCase()}`;
+  return getRegistry().profiles.filter((p) => p.fileExtensions.includes(normalized));
 }

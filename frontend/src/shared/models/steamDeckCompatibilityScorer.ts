@@ -2,13 +2,13 @@ import type {
   SupportedModelProfile,
   SteamDeckModelScore,
   ModelCapability,
-} from '../contracts/models.contracts';
+} from "../contracts/models.contracts";
 import {
   isLocalAllowed,
   requiresUserOptIn,
   recommendedContextTokens,
   hasAllCapabilities,
-} from './modelCompatibilityPolicy';
+} from "./modelCompatibilityPolicy";
 
 export type SteamDeckScoreOptions = {
   installed?: boolean;
@@ -36,62 +36,62 @@ export function scoreSteamDeckCompatibility(
   let score = 50;
 
   switch (profile.compatibilityTier) {
-    case 'deck_default':
+    case "deck_default":
       score += 40;
-      reasons.push('Steam Deck default tier');
+      reasons.push("Steam Deck default tier");
       break;
-    case 'deck_balanced':
+    case "deck_balanced":
       score += 25;
-      reasons.push('Steam Deck balanced tier');
+      reasons.push("Steam Deck balanced tier");
       break;
-    case 'deck_heavy':
+    case "deck_heavy":
       score += 10;
-      warnings.push('Heavy model: may thermal-throttle on battery');
+      warnings.push("Heavy model: may thermal-throttle on battery");
       break;
-    case 'remote_or_docked_only':
+    case "remote_or_docked_only":
       score -= 20;
-      warnings.push('Too large for comfortable local use; remote or docked recommended');
+      warnings.push("Too large for comfortable local use; remote or docked recommended");
       break;
-    case 'unsupported':
+    case "unsupported":
       score -= 50;
-      warnings.push('Unsupported on Steam Deck');
+      warnings.push("Unsupported on Steam Deck");
       break;
-    case 'unknown':
+    case "unknown":
       score -= 30;
-      warnings.push('Compatibility unknown');
+      warnings.push("Compatibility unknown");
       break;
   }
 
   if (installed) {
     score += 10;
-    reasons.push('Model is installed locally');
+    reasons.push("Model is installed locally");
   }
 
-  const smallClasses = ['sub_1b', '1b', '1_5b', '2b', '3b'];
+  const smallClasses = ["sub_1b", "1b", "1_5b", "2b", "3b"];
   if (smallClasses.includes(profile.parameterClass)) {
     score += 10;
     reasons.push(`Small parameter class (${profile.parameterClass})`);
-  } else if (['7b', '8b'].includes(profile.parameterClass)) {
+  } else if (["7b", "8b"].includes(profile.parameterClass)) {
     score -= 10;
-    warnings.push('Medium-large model may exceed comfortable Deck RAM');
-  } else if (profile.parameterClass !== 'unknown') {
+    warnings.push("Medium-large model may exceed comfortable Deck RAM");
+  } else if (profile.parameterClass !== "unknown") {
     score -= 20;
-    warnings.push('Large model not recommended for handheld use');
+    warnings.push("Large model not recommended for handheld use");
   }
 
-  if (batteryMode && profile.steamDeckPolicy.expectedThermalPressure !== 'low') {
+  if (batteryMode && profile.steamDeckPolicy.expectedThermalPressure !== "low") {
     score -= 10;
     warnings.push(`Expected thermal pressure: ${profile.steamDeckPolicy.expectedThermalPressure}`);
   }
 
-  if (hostMemoryGb < 16 && profile.steamDeckPolicy.expectedMemoryPressure === 'high') {
+  if (hostMemoryGb < 16 && profile.steamDeckPolicy.expectedMemoryPressure === "high") {
     score -= 10;
-    warnings.push('High memory pressure on 8 GB Deck');
+    warnings.push("High memory pressure on 8 GB Deck");
   }
 
-  if (profile.compatibilityTier === 'deck_heavy' && !allowHeavyModels) {
+  if (profile.compatibilityTier === "deck_heavy" && !allowHeavyModels) {
     score -= 15;
-    warnings.push('Heavy model opt-in required');
+    warnings.push("Heavy model opt-in required");
   }
 
   score = Math.max(0, Math.min(100, score));
@@ -104,11 +104,11 @@ export function scoreSteamDeckCompatibility(
     warnings,
     recommendedContextTokens: recommendedContextTokens(profile),
     recommendedBatchSize: 1,
-    recommendedGpuLayers: profile.parameterClass === 'sub_1b' ? 33 : undefined,
+    recommendedGpuLayers: profile.parameterClass === "sub_1b" ? 33 : undefined,
     allowAutoLoad:
-      profile.compatibilityTier === 'deck_default' ||
-      (profile.compatibilityTier === 'deck_balanced' && installed),
-    requiresUserOptIn: requiresUserOptIn(profile) || profile.compatibilityTier === 'deck_heavy',
+      profile.compatibilityTier === "deck_default" ||
+      (profile.compatibilityTier === "deck_balanced" && installed),
+    requiresUserOptIn: requiresUserOptIn(profile) || profile.compatibilityTier === "deck_heavy",
   };
 }
 

@@ -1,11 +1,11 @@
-import * as React from 'react';
-import { StatusChip } from '../core/StatusChip';
-import { Badge } from '../core/Badge';
-import { Button } from '../core/Button';
+import * as React from "react";
+import { StatusChip } from "../core/StatusChip";
+import { Badge } from "../core/Badge";
+import { Button } from "../core/Button";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-modelcard-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-modelcard-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-modelcard-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-modelcard-css";
   s.textContent = `
   .nd-modelcard{background:var(--nd-surface-secondary);border:1px solid var(--nd-border-subtle);
     border-radius:var(--nd-radius-lg);box-shadow:var(--nd-elevation-card);padding:14px 16px;
@@ -26,18 +26,30 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-modelcard-cs
   document.head.appendChild(s);
 }
 
-const STATUS_TONE: Record<ModelStatus, import('../core/StatusChip').StatusTone> = {
-  available: 'info', selected: 'success', missing: 'error',
-  unavailable: 'warning', 'auth-required': 'warning', degraded: 'warning',
+const STATUS_TONE: Record<ModelStatus, import("../core/StatusChip").StatusTone> = {
+  available: "info",
+  selected: "success",
+  missing: "error",
+  unavailable: "warning",
+  "auth-required": "warning",
+  degraded: "warning",
 };
 const STATUS_LABEL = {
-  available: 'Available', selected: 'Connected', missing: 'Missing',
-  unavailable: 'Unavailable', 'auth-required': 'Auth required', degraded: 'Degraded',
+  available: "Available",
+  selected: "Connected",
+  missing: "Missing",
+  unavailable: "Unavailable",
+  "auth-required": "Auth required",
+  degraded: "Degraded",
 };
 
 export type ModelStatus =
-  | 'available' | 'selected' | 'missing'
-  | 'unavailable' | 'auth-required' | 'degraded';
+  | "available"
+  | "selected"
+  | "missing"
+  | "unavailable"
+  | "auth-required"
+  | "degraded";
 
 /**
  * Displays a local or remote AI model's configuration and health.
@@ -47,7 +59,7 @@ export interface ModelCardProps {
   /** Provider label, e.g. "Meta", "Anthropic", "Ollama". */
   provider: string;
   /** @default 'local' */
-  location?: 'local' | 'remote';
+  location?: "local" | "remote";
   /** @default 'available' */
   status?: ModelStatus;
   /** Context window, e.g. "8192" or "200k". */
@@ -68,49 +80,81 @@ export interface ModelCardProps {
 export function ModelCard({
   name,
   provider,
-  location = 'local',
-  status = 'available',
+  location = "local",
+  status = "available",
   contextSize,
   vram,
   throughput,
   capabilities = [],
   onSelect,
   onFix,
-  className = '',
+  className = "",
 }: ModelCardProps): React.ReactNode {
-  const selected = status === 'selected';
-  const needsFix = status === 'missing' || status === 'auth-required';
+  const selected = status === "selected";
+  const needsFix = status === "missing" || status === "auth-required";
   return (
-    <div className={['nd-modelcard', selected ? 'nd-modelcard--selected' : '', className].filter(Boolean).join(' ')}>
+    <div
+      className={["nd-modelcard", selected ? "nd-modelcard--selected" : "", className]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <div className="nd-modelcard__top">
         <div>
           <div className="nd-modelcard__name">{name}</div>
-          <div className="nd-modelcard__provider">{provider} · {location}</div>
+          <div className="nd-modelcard__provider">
+            {provider} · {location}
+          </div>
         </div>
-        <StatusChip tone={STATUS_TONE[status]} size="sm" pulse={status === 'selected'}>
+        <StatusChip tone={STATUS_TONE[status]} size="sm" pulse={status === "selected"}>
           {STATUS_LABEL[status]}
         </StatusChip>
       </div>
-      {(contextSize || vram || throughput) ? (
+      {contextSize || vram || throughput ? (
         <div className="nd-modelcard__meta">
-          {contextSize ? <div className="nd-modelcard__stat"><b>{contextSize}</b><span>Context</span></div> : null}
-          {vram ? <div className="nd-modelcard__stat"><b>{vram}</b><span>VRAM est.</span></div> : null}
-          {throughput ? <div className="nd-modelcard__stat"><b>{throughput}</b><span>Tok/s</span></div> : null}
+          {contextSize ? (
+            <div className="nd-modelcard__stat">
+              <b>{contextSize}</b>
+              <span>Context</span>
+            </div>
+          ) : null}
+          {vram ? (
+            <div className="nd-modelcard__stat">
+              <b>{vram}</b>
+              <span>VRAM est.</span>
+            </div>
+          ) : null}
+          {throughput ? (
+            <div className="nd-modelcard__stat">
+              <b>{throughput}</b>
+              <span>Tok/s</span>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {capabilities.length ? (
         <div className="nd-modelcard__caps">
-          {capabilities.map((c) => <Badge key={c} tone="neutral">{c}</Badge>)}
+          {capabilities.map((c) => (
+            <Badge key={c} tone="neutral">
+              {c}
+            </Badge>
+          ))}
         </div>
       ) : null}
       <div className="nd-modelcard__foot">
-        {needsFix
-          ? <Button variant="primary" size="sm" fullWidth onClick={onFix}>
-              {status === 'missing' ? 'Download model' : 'Add API key'}
-            </Button>
-          : <Button variant={selected ? 'secondary' : 'primary'} size="sm" fullWidth onClick={onSelect}>
-              {selected ? 'Selected' : 'Select model'}
-            </Button>}
+        {needsFix ? (
+          <Button variant="primary" size="sm" fullWidth onClick={onFix}>
+            {status === "missing" ? "Download model" : "Add API key"}
+          </Button>
+        ) : (
+          <Button
+            variant={selected ? "secondary" : "primary"}
+            size="sm"
+            fullWidth
+            onClick={onSelect}
+          >
+            {selected ? "Selected" : "Select model"}
+          </Button>
+        )}
       </div>
     </div>
   );

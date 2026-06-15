@@ -5,13 +5,13 @@
 :root {
   /* ---- Spacing scale (4px grid) ---- */
   --nd-space-0: 0px;
-  --nd-space-1: 4px;   /* micro gap */
-  --nd-space-2: 8px;   /* small gap */
-  --nd-space-3: 12px;  /* compact padding */
-  --nd-space-4: 16px;  /* default padding */
-  --nd-space-5: 20px;  /* roomy padding */
-  --nd-space-6: 24px;  /* section gap */
-  --nd-space-8: 32px;  /* major section gap */
+  --nd-space-1: 4px; /* micro gap */
+  --nd-space-2: 8px; /* small gap */
+  --nd-space-3: 12px; /* compact padding */
+  --nd-space-4: 16px; /* default padding */
+  --nd-space-5: 20px; /* roomy padding */
+  --nd-space-6: 24px; /* section gap */
+  --nd-space-8: 32px; /* major section gap */
   --nd-space-10: 40px; /* layout gap */
   --nd-space-12: 48px; /* major layout gap */
 
@@ -23,11 +23,11 @@
   --nd-shell-input-max: 148px;
 
   /* ---- Radius ---- */
-  --nd-radius-none: 0px;   /* terminal blocks */
-  --nd-radius-sm: 6px;     /* compact controls */
-  --nd-radius-md: 10px;    /* buttons / cards */
-  --nd-radius-lg: 14px;    /* large panels */
-  --nd-radius-xl: 20px;    /* modals */
+  --nd-radius-none: 0px; /* terminal blocks */
+  --nd-radius-sm: 6px; /* compact controls */
+  --nd-radius-md: 10px; /* buttons / cards */
+  --nd-radius-lg: 14px; /* large panels */
+  --nd-radius-xl: 20px; /* modals */
   --nd-radius-full: 999px; /* pills / badges */
 
   /* ---- Elevation ---- */
@@ -39,10 +39,10 @@
   --nd-elevation-glow: 0 0 16px rgba(var(--nd-cyan-rgb), 0.18);
 
   /* ---- Motion ---- */
-  --nd-motion-instant: 0ms;  /* @kind other */ /* reduced-motion / critical */
-  --nd-motion-fast: 90ms;    /* @kind other */ /* focus / hover */
+  --nd-motion-instant: 0ms; /* @kind other */ /* reduced-motion / critical */
+  --nd-motion-fast: 90ms; /* @kind other */ /* focus / hover */
   --nd-motion-normal: 140ms; /* @kind other */ /* panel reveal */
-  --nd-motion-slow: 220ms;   /* @kind other */ /* modal / route */
+  --nd-motion-slow: 220ms; /* @kind other */ /* modal / route */
 
   --nd-ease-standard: cubic-bezier(0.2, 0, 0, 1); /* @kind other */
   --nd-ease-out: cubic-bezier(0, 0, 0.2, 1); /* @kind other */

@@ -14,7 +14,6 @@ interface ModelCardProps {
   onMarkReady: (id: string) => void;
   onMarkIndexed: (id: string) => void;
   onDisable: (id: string) => void;
-  onSelect: (id: string) => void;
 }
 
 const statusTone: Record<ModelStatus, "info" | "success" | "warning" | "error"> = {
@@ -33,34 +32,32 @@ export function ModelCard({
   onMarkReady,
   onMarkIndexed,
   onDisable,
-  onSelect,
 }: ModelCardProps) {
   const status = model.status ?? "missing";
   const panelBorder = selected
     ? "border-nd-accent-primary/40"
     : policyAllowed === false
-      ? "border-nd-danger/30"
+      ? "border-nd-accent-error/30"
       : "border-nd-border-subtle";
   const panelBg = selected
     ? "bg-nd-accent-primary/[0.05]"
     : policyAllowed === false
-      ? "bg-nd-danger/[0.03]"
+      ? "bg-nd-accent-error/[0.03]"
       : "bg-transparent";
 
   return (
-    <Panel
-      className={`transition hover:border-[rgba(var(--nd-cyan-rgb),0.3)] ${panelBorder} ${panelBg}`}
-    >
+    <Panel className={`transition hover:border-nd-accent-primary/30 ${panelBorder} ${panelBg}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-3">
           <div
+            aria-hidden="true"
             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border ${
               policyAllowed === false
-                ? "border-nd-danger/30 bg-nd-danger/10 text-nd-danger"
-                : "border-nd-purple-400/30 bg-nd-purple-400/10 text-nd-purple-400"
+                ? "border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error"
+                : "border-accent-agent/30 bg-accent-agent/10 text-accent-agent"
             }`}
           >
-            <BrainCircuit className="h-6 w-6" aria-hidden="true" />
+            <BrainCircuit className="h-6 w-6" />
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold text-nd-text-primary">{model.name}</h3>
@@ -74,21 +71,36 @@ export function ModelCard({
             {status}
           </StatusChip>
           <div className="flex flex-wrap justify-end gap-1">
-            {agentPreferred && <Badge tone="accent" size="sm">Preferred</Badge>}
-            {policyAllowed === false && <Badge tone="danger" size="sm">Blocked</Badge>}
-            {selected && <Badge tone="accent" size="sm">Selected</Badge>}
+            {agentPreferred && (
+              <Badge tone="accent" size="sm">
+                Preferred
+              </Badge>
+            )}
+            {policyAllowed === false && (
+              <Badge tone="danger" size="sm">
+                Blocked
+              </Badge>
+            )}
+            {selected && (
+              <Badge tone="accent" size="sm">
+                Selected
+              </Badge>
+            )}
           </div>
         </div>
       </div>
 
       <div className="mt-4 grid gap-2 text-xs text-nd-text-muted sm:grid-cols-3">
-        <ModelSpec label="Context" value={model.context ? model.context.toLocaleString() : "runtime"} />
+        <ModelSpec
+          label="Context"
+          value={model.context ? model.context.toLocaleString() : "runtime"}
+        />
         <ModelSpec label="RAM" value={model.ramEstimate} />
         <ModelSpec label="Best For" value={model.bestFor.join(", ")} />
       </div>
 
       {policyAllowed === false && policyReason && (
-        <p className="mt-3 rounded-[var(--nd-radius-md)] border border-nd-danger/20 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger">
+        <p className="mt-3 rounded-[var(--nd-radius-md)] border border-nd-accent-error/20 bg-nd-accent-error/10 px-3 py-2 text-xs text-nd-accent-error">
           {policyReason}
         </p>
       )}
@@ -98,10 +110,8 @@ export function ModelCard({
           size="sm"
           disabled={policyAllowed === false}
           icon={CheckCircle2}
-          onClick={() => {
-            onMarkReady(model.id);
-            onSelect(model.id);
-          }}
+          aria-label={`Mark ${model.name} as ready`}
+          onClick={() => onMarkReady(model.id)}
         >
           Mark Ready
         </Button>
@@ -109,17 +119,16 @@ export function ModelCard({
           variant="primary"
           size="sm"
           icon={DownloadCloud}
-          onClick={() => {
-            onMarkIndexed(model.id);
-            onSelect(model.id);
-          }}
+          aria-label={`Mark ${model.name} as indexed`}
+          onClick={() => onMarkIndexed(model.id)}
         >
-          Indexed
+          Mark Indexed
         </Button>
         <Button
           variant="secondary"
           size="sm"
           icon={Power}
+          aria-label={`Disable ${model.name}`}
           onClick={() => onDisable(model.id)}
         >
           Disable
@@ -135,7 +144,7 @@ function ModelSpec({ label, value }: { label: string; value: string }) {
       <p className="text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-nd-text-muted">
         {label}
       </p>
-      <p className="mt-1 text-nd-text-secondary">{value}</p>
+      <p className="mt-1 text-nd-text-secondary">{value || "—"}</p>
     </div>
   );
 }

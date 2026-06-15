@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import type { LucideIcon } from 'lucide-react';
+import type { ReactNode } from "react";
+import type { LucideIcon } from "lucide-react";
 
 /**
  * Wraps a group of related form controls with a section heading and
@@ -11,7 +11,7 @@ export function FormSection({
   description,
   icon: Icon,
   children,
-  className = '',
+  className = "",
 }: {
   title?: string;
   description?: string;
@@ -32,7 +32,9 @@ export function FormSection({
           <Icon className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
         )}
         <div className="min-w-0">
-          {title && <span className="block text-sm font-semibold text-nd-text-primary">{title}</span>}
+          {title && (
+            <span className="block text-sm font-semibold text-nd-text-primary">{title}</span>
+          )}
           {description && <span className="block text-xs text-nd-text-muted">{description}</span>}
         </div>
       </legend>
@@ -60,10 +62,13 @@ export function FormRow({
   return (
     <div className="flex items-start justify-between gap-4 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3.5 py-3">
       <div className="min-w-0">
-        <label htmlFor={htmlFor} className="block cursor-pointer text-sm font-medium text-nd-text-primary">
+        <label
+          htmlFor={htmlFor}
+          className="block cursor-pointer text-sm font-medium text-nd-text-primary"
+        >
           {label}
           {required && (
-            <span className="ml-1" style={{ color: 'var(--nd-accent-warning)' }} aria-hidden="true">
+            <span className="ml-1" style={{ color: "var(--nd-accent-warning)" }} aria-hidden="true">
               *
             </span>
           )}

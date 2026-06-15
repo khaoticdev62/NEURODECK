@@ -1,0 +1,249 @@
+name: Visual Regression
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "frontend/src/**"
+      - "electron/**"
+      - "frontend/public/**"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "frontend/src/**"
+      - "electron/**"
+      - "frontend/public/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  SCREENSHOT_ROUTES: "/ /settings /chat /canvas /terminal /memory /agent"
+
+jobs:
+  baseline:
+    name: Capture baseline screenshots
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run frontend:build
+      - name: Capture baseline screenshots
+        working-directory: e2e
+        run: |
+          cat > capture.js <<'EOF'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          const path = require('path');
+
+          const routes = process.env.SCREENSHOT_ROUTES.split(' ').filter(Boolean);
+
+          (async () => {
+            const server = require('child_process').spawn('python3', ['-c', "import http.server, socketserver, pathlib\nclass SPAHandler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory='../frontend/dist', **kwargs)\n    def do_GET(self):\n        target = pathlib.Path('../frontend/dist') / self.path.lstrip('/')\n        if not target.exists():\n            self.path = '/index.html'\n        return super().do_GET()\nwith socketserver.TCPServer(('', 4173), SPAHandler) as httpd:\n    httpd.serve_forever()"], { stdio: 'inherit' });
+            await new Promise(r => setTimeout(r, 3000));
+
+            const browser = await chromium.launch();
+            const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+            const outDir = path.join(__dirname, '.regression', 'baseline');
+            fs.mkdirSync(outDir, { recursive: true });
+            for (const route of routes) {
+              await page.goto(`http://localhost:4173${route}`);
+              await page.waitForLoadState('networkidle');
+              const name = route.replace(/\//g, '_') || 'root';
+              await page.screenshot({ path: path.join(outDir, `${name}.png`), fullPage: false });
+            }
+            await browser.close();
+            server.kill();
+          })();
+          EOF
+          node capture.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-baseline
+          path: e2e/.regression/baseline/*.png
+          retention-days: 30
+
+  compare:
+    name: Compare screenshots
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          path: pr
+
+      - name: Checkout baseline (master)
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          path: baseline
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies and Playwright
+        run: |
+          cd pr && npm ci
+          cd e2e && npm ci
+          cd ../../baseline && npm ci
+          cd e2e && npm ci
+          cd ../../pr/e2e
+          npx playwright install --with-deps chromium
+
+      - name: Build PR and capture screenshots
+        working-directory: pr/e2e
+        run: |
+          cd ..
+          npm run frontend:build
+          cd e2e
+          cat > capture.js <<'EOF'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          const path = require('path');
+
+          const routes = process.env.SCREENSHOT_ROUTES.split(' ').filter(Boolean);
+
+          (async () => {
+            const server = require('child_process').spawn('python3', ['-c', "import http.server, socketserver, pathlib\nclass SPAHandler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory='../frontend/dist', **kwargs)\n    def do_GET(self):\n        target = pathlib.Path('../frontend/dist') / self.path.lstrip('/')\n        if not target.exists():\n            self.path = '/index.html'\n        return super().do_GET()\nwith socketserver.TCPServer(('', 4173), SPAHandler) as httpd:\n    httpd.serve_forever()"], { stdio: 'inherit' });
+            await new Promise(r => setTimeout(r, 3000));
+
+            const browser = await chromium.launch();
+            const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+            const outDir = path.join(__dirname, '.regression', 'pr');
+            fs.mkdirSync(outDir, { recursive: true });
+            for (const route of routes) {
+              await page.goto(`http://localhost:4173${route}`);
+              await page.waitForLoadState('networkidle');
+              const name = route.replace(/\//g, '_') || 'root';
+              await page.screenshot({ path: path.join(outDir, `${name}.png`), fullPage: false });
+            }
+            await browser.close();
+            server.kill();
+          })();
+          EOF
+          node capture.js
+
+      - name: Build baseline and capture screenshots
+        working-directory: baseline/e2e
+        run: |
+          cd ..
+          npm run frontend:build
+          cd e2e
+          cat > capture.js <<'EOF'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          const path = require('path');
+
+          const routes = process.env.SCREENSHOT_ROUTES.split(' ').filter(Boolean);
+
+          (async () => {
+            const server = require('child_process').spawn('python3', ['-c', "import http.server, socketserver, pathlib\nclass SPAHandler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory='../frontend/dist', **kwargs)\n    def do_GET(self):\n        target = pathlib.Path('../frontend/dist') / self.path.lstrip('/')\n        if not target.exists():\n            self.path = '/index.html'\n        return super().do_GET()\nwith socketserver.TCPServer(('', 4174), SPAHandler) as httpd:\n    httpd.serve_forever()"], { stdio: 'inherit' });
+            await new Promise(r => setTimeout(r, 3000));
+
+            const browser = await chromium.launch();
+            const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
+            const outDir = path.join(__dirname, '.regression', 'baseline');
+            fs.mkdirSync(outDir, { recursive: true });
+            for (const route of routes) {
+              await page.goto(`http://localhost:4174${route}`);
+              await page.waitForLoadState('networkidle');
+              const name = route.replace(/\//g, '_') || 'root';
+              await page.screenshot({ path: path.join(outDir, `${name}.png`), fullPage: false });
+            }
+            await browser.close();
+            server.kill();
+          })();
+          EOF
+          node capture.js
+
+      - name: Compare with pixelmatch
+        id: compare
+        run: |
+          cd pr/e2e
+          npm install pixelmatch pngjs
+          cat > compare.mjs <<'EOF'
+          import fs from 'fs';
+          import path from 'path';
+          import { fileURLToPath } from 'url';
+          import { PNG } from 'pngjs';
+          import pixelmatch from 'pixelmatch';
+
+          const __dirname = path.dirname(fileURLToPath(import.meta.url));
+          const baselineDir = path.join(__dirname, '..', '..', 'baseline', 'e2e', '.regression', 'baseline');
+          const prDir = path.join(__dirname, '.regression', 'pr');
+          const diffDir = path.join(__dirname, '.regression', 'diff');
+          fs.mkdirSync(diffDir, { recursive: true });
+
+          const files = fs.readdirSync(baselineDir).filter(f => f.endsWith('.png'));
+          let diffCount = 0;
+          for (const file of files) {
+            const basePath = path.join(baselineDir, file);
+            const prPath = path.join(prDir, file);
+            if (!fs.existsSync(prPath)) {
+              console.log(`⚠️ Missing PR screenshot: ${file}`);
+              continue;
+            }
+            const base = PNG.sync.read(fs.readFileSync(basePath));
+            const pr = PNG.sync.read(fs.readFileSync(prPath));
+            if (base.width !== pr.width || base.height !== pr.height) {
+              console.log(`❌ ${file}: dimensions changed (${base.width}x${base.height} vs ${pr.width}x${pr.height})`);
+              diffCount++;
+              continue;
+            }
+            const diff = new PNG({ width: base.width, height: base.height });
+            const mismatch = pixelmatch(base.data, pr.data, diff.data, base.width, base.height, { threshold: 0.1 });
+            const total = base.width * base.height;
+            const ratio = mismatch / total;
+            const diffPath = path.join(diffDir, file);
+            fs.writeFileSync(diffPath, PNG.sync.write(diff));
+            console.log(`${file}: ${(ratio * 100).toFixed(3)}% pixels differ`);
+            if (ratio > 0.001) {
+              diffCount++;
+            }
+          }
+          if (diffCount > 0) {
+            console.log(`⚠️ ${diffCount} screenshot(s) differ from master baseline. Review the diff artifact before merging.`);
+            fs.writeFileSync(path.join(diffDir, '.has_differences'), '');
+          } else {
+            console.log('✅ No visual differences detected against master baseline.');
+          }
+          // Informational only: PRs with intentional UI changes will diverge from master.
+          // Diff images are uploaded as artifacts and a comment is posted when differences exist.
+          EOF
+          node compare.mjs
+          node compare.js
+          if [ -f "pr/e2e/.regression/diff/.has_differences" ]; then
+            echo "has_differences=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_differences=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload regression artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diff
+          path: pr/e2e/.regression/diff/*.png
+          if-no-files-found: ignore
+
+      - name: Comment PR on differences
+        if: steps.compare.outputs.has_differences == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ Visual regression detected against `master`. Download the diff artifact and verify the changes are intentional.'
+            }).catch(() => {});

@@ -1,0 +1,124 @@
+# KFMS Universal AI Agent GitOps Rules
+# Governs all automated (agent) contributors to the NEURODECK repository.
+
+agent:
+  # Identifiers used in Co-authored-by trailers and PR agent reports.
+  allowed_names:
+    - silk
+    - amadeus
+    - cho
+    - sam
+    - alexander
+    - bmad-orchestrator
+    - bmad-dev
+    - bmad-architect
+    - bmad-analyst
+    - bmad-pm
+    - bmad-qa
+    - bmad-tech-writer
+    - bmad-ux-designer
+
+  # Branch naming. Agents may only push to branches that start with one of these prefixes.
+  allowed_branch_prefixes:
+    - agent/
+    - feature/
+    - ui/
+    - bugfix/
+    - hotfix/
+    - docs/
+    - kfms/
+    - release/
+
+  # Branches that are NEVER pushed directly by agents or humans without a PR.
+  protected_branches:
+    - master
+    - main
+    - release/*
+
+  # Maximum number of files an agent may touch in a single commit.
+  # Exceeding this requires a MASS-REFACTOR: or BREAKING: token in the commit message
+  # with a justification paragraph.
+  max_files_per_commit: 35
+
+  # Paths agents must not create or modify without explicit human approval.
+  forbidden_paths:
+    - ".github/workflows/*"
+    - "infra/meta/meta.json"
+    - "infra/telemetry/health.json"
+    - "Cargo.lock"            # allowed only if dependency bump is the sole purpose
+    - "package-lock.json"     # allowed only if dependency bump is the sole purpose
+    - "electron-builder.yml"
+    - "flatpak/*"
+    - "aur/*"
+
+  commit_message:
+    # Require a type prefix.
+    required_type_prefixes:
+      - "feat:"
+      - "fix:"
+      - "docs:"
+      - "style:"
+      - "refactor:"
+      - "test:"
+      - "chore:"
+      - "ci:"
+      - "kfms:"
+      - "agent:"
+    # Optional trailer added by agent-commit-guard.sh when AGENT_NAME is set.
+    co_author_trailer: "Co-authored-by: {{agent_name}} <agent@khaoticlabs.com>"
+
+pull_request:
+  required_title_prefixes:
+    - "[UI]"
+    - "[AGENT]"
+    - "[CI]"
+    - "[HOTFIX]"
+    - "[BUGFIX]"
+    - "[FEATURE]"
+    - "[DOCS]"
+    - "[KFMS]"
+    - "[RELEASE]"
+
+  required_sections:
+    - "## What does this PR do?"
+    - "## Type of change"
+    - "## Checklist"
+    - "## Testing"
+    - "## Agent report"
+
+  # Labels automatically applied by the branch-policy workflow based on title prefix.
+  label_map:
+    "[UI]": ui
+    "[AGENT]": agent
+    "[CI]": ci-cd
+    "[HOTFIX]": hotfix
+    "[BUGFIX]": bugfix
+    "[FEATURE]": feature
+    "[DOCS]": documentation
+    "[KFMS]": kfms
+    "[RELEASE]": release
+
+ui:
+  # Any CI failure on a ui/* branch triggers an automatic comment with this recommendation.
+  auto_rollback_recommendation: |
+    ⚠️ UI checkpoint gate failed.
+    Recommended next steps:
+      1. Run `npm run rollback:ui:list` to see available checkpoints.
+      2. Run `npm run rollback:ui:preview <tag>` to inspect the last good state.
+      3. Run `npm run rollback:ui:apply <tag>` to revert protected UI paths locally.
+      4. Push the restored branch, or close this PR and open a new one from the checkpoint tag.
+
+  # Default paths protected by a UI checkpoint rollback.
+  protected_paths:
+    - "frontend/src/**/*.css"
+    - "frontend/src/**/*.tsx"
+    - "frontend/src/**/*.ts"
+    - "electron/**/*.css"
+    - "electron/**/*.js"
+    - "frontend/public/**/*"
+
+emergency:
+  # Label that allows a hotfix branch to bypass normal branch-policy checks.
+  bypass_label: "BYPASS_BRANCH_POLICY"
+  # GitHub environment that requires human reviewers before any rollback release is drafted.
+  rollback_environment: "production-rollback"

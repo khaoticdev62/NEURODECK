@@ -81,6 +81,13 @@ fn sanitize_relative_transfer_path(relative_path: &str) -> Result<PathBuf, Strin
         return Err("Transfer path was empty".to_string());
     }
 
+    // Reject Windows-style drive prefixes (e.g. "C:\") even on non-Windows hosts,
+    // because incoming transfer paths may originate from Windows peers.
+    let bytes = relative_path.as_bytes();
+    if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {
+        return Err("Transfer path attempted to escape the destination directory".to_string());
+    }
+
     let mut sanitized = PathBuf::new();
     for component in candidate.components() {
         match component {
@@ -632,11 +639,16 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
 
     let callbacks_clone = callbacks.clone();
     tokio::spawn(async move {
-        if let Err(e) =
-            neurodeck_infrastructure::warpinator::start_warpinator_service(callbacks_clone, warpinator_port)
-                .await
+        if let Err(e) = neurodeck_infrastructure::warpinator::start_warpinator_service(
+            callbacks_clone,
+            warpinator_port,
+        )
+        .await
         {
-            println!("Failed to start Warpinator service on port {}: {}", warpinator_port, e);
+            println!(
+                "Failed to start Warpinator service on port {}: {}",
+                warpinator_port, e
+            );
         }
     });
 

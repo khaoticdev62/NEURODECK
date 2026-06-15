@@ -1,8 +1,8 @@
-import * as React from 'react';
+import * as React from "react";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-select-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-select-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-select-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-select-css";
   s.textContent = `
   .nd-select{display:flex;flex-direction:column;gap:6px;font-family:var(--nd-font-ui);}
   .nd-select__label{font-family:var(--nd-font-hud);text-transform:uppercase;letter-spacing:0.14em;
@@ -33,7 +33,10 @@ export interface SelectOption {
  * Choose from a constrained list. Wraps a native <select> for reliable
  * keyboard/controller behaviour.
  */
-export interface SelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, 'value' | 'onChange'> {
+export interface SelectProps extends Omit<
+  React.SelectHTMLAttributes<HTMLSelectElement>,
+  "value" | "onChange"
+> {
   label?: string;
   /** Controlled value. */
   value: string;
@@ -55,30 +58,46 @@ export function Select({
   placeholder,
   error,
   disabled = false,
-  className = '',
+  className = "",
   ...rest
 }: SelectProps): React.ReactNode {
   const id = React.useMemo(() => `nd-select-${++ndSelectSeq}`, []);
   return (
-    <div className={['nd-select', className].filter(Boolean).join(' ')}>
-      {label ? <label className="nd-select__label" htmlFor={id}>{label}</label> : null}
+    <div className={["nd-select", className].filter(Boolean).join(" ")}>
+      {label ? (
+        <label className="nd-select__label" htmlFor={id}>
+          {label}
+        </label>
+      ) : null}
       <div className="nd-select__wrap">
         <select
           id={id}
-          className={['nd-select__field', error ? 'nd-select__field--error' : ''].filter(Boolean).join(' ')}
+          className={["nd-select__field", error ? "nd-select__field--error" : ""]
+            .filter(Boolean)
+            .join(" ")}
           value={value}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
           onChange={(e) => onChange && onChange(e.target.value)}
           {...rest}
         >
-          {placeholder ? <option value="" disabled>{placeholder}</option> : null}
+          {placeholder ? (
+            <option value="" disabled>
+              {placeholder}
+            </option>
+          ) : null}
           {options.map((o) => {
-            const opt = typeof o === 'string' ? { value: o, label: o } : o;
-            return <option key={opt.value} value={opt.value} disabled={opt.disabled}>{opt.label}</option>;
+            const opt = typeof o === "string" ? { value: o, label: o } : o;
+            return (
+              <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+                {opt.label}
+              </option>
+            );
           })}
         </select>
-        <span className="nd-select__caret" aria-hidden="true">▾</span>
+        <span className="nd-select__caret" aria-hidden="true">
+          ▾
+        </span>
       </div>
       {error ? <span className="nd-select__msg">{error}</span> : null}
     </div>

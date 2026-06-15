@@ -1,11 +1,11 @@
-import { useState } from 'react';
-import { Send, FolderOpen } from 'lucide-react';
-import { Button } from '../../../components/primitives/Button';
-import { Panel } from '../../../components/primitives/Panel';
-import { Select } from '../../../components/primitives/Select';
-import { TextInput } from '../../../components/primitives/TextInput';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import type { TransferPeer } from '../../../services/bridgeAdapter';
+import { useState } from "react";
+import { Send, FolderOpen } from "lucide-react";
+import { Button } from "../../../components/primitives/Button";
+import { Panel } from "../../../components/primitives/Panel";
+import { Select } from "../../../components/primitives/Select";
+import { TextInput } from "../../../components/primitives/TextInput";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import type { TransferPeer } from "../../../services/bridgeAdapter";
 
 interface Props {
   peers: TransferPeer[];
@@ -14,8 +14,8 @@ interface Props {
 }
 
 export function SendTab({ peers, onSuccess, onError }: Props) {
-  const [filePath, setFilePath] = useState('');
-  const [selectedPeerIp, setSelectedPeerIp] = useState('');
+  const [filePath, setFilePath] = useState("");
+  const [selectedPeerIp, setSelectedPeerIp] = useState("");
   const [sending, setSending] = useState(false);
 
   const canSend = filePath.trim() && selectedPeerIp;
@@ -26,7 +26,7 @@ export function SendTab({ peers, onSuccess, onError }: Props) {
     try {
       const result = await neurodeckApi.transfer.sendFile(selectedPeerIp, filePath.trim());
       onSuccess(`Transfer started: ${result.transfer_id}`);
-      setFilePath('');
+      setFilePath("");
     } catch (e) {
       onError(`Send failed: ${e}`);
     } finally {
@@ -51,7 +51,9 @@ export function SendTab({ peers, onSuccess, onError }: Props) {
             />
 
             {peers.length === 0 ? (
-              <p className="text-xs text-nd-text-muted">No peers discovered yet — check the Devices tab.</p>
+              <p className="text-xs text-nd-text-muted">
+                No peers discovered yet — check the Devices tab.
+              </p>
             ) : (
               <Select
                 id="sync-peer-select"
@@ -74,7 +76,7 @@ export function SendTab({ peers, onSuccess, onError }: Props) {
               disabled={!canSend || sending}
               onClick={() => void handleSend()}
             >
-              {sending ? 'Sending…' : 'Send'}
+              {sending ? "Sending…" : "Send"}
             </Button>
           </div>
         </div>

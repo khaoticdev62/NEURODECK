@@ -51,7 +51,10 @@ export function ControllerDebugOverlay() {
             <p className="text-xs text-nd-text-muted">No gamepad detected.</p>
           )}
           {runtime.devices.map((device) => (
-            <div key={device.id} className="rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-2">
+            <div
+              key={device.id}
+              className="rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 p-2"
+            >
               <div className="text-xs font-semibold text-nd-text">{device.name}</div>
               <div className="mt-1 flex flex-wrap gap-2 text-[11px] text-nd-text-muted">
                 <span>{device.kind}</span>

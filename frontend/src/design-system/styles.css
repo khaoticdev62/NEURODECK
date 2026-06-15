@@ -2,9 +2,9 @@
    Consumers link THIS file. It imports the canonical v1.0 token layer,
    webfonts, and the bundled theme modifiers.
    Source repo: https://github.com/khaoticdev62/NEURODECK */
-@import url('./tokens/fonts.css');
-@import url('./tokens/tokens.css');
-@import url('./themes/blacksite.css');
-@import url('./themes/tactical-glass.css');
-@import url('./themes/high-contrast.css');
-@import url('./themes/colorblind-safe.css');
+@import url("./tokens/fonts.css");
+@import url("./tokens/tokens.css");
+@import url("./themes/blacksite.css");
+@import url("./themes/tactical-glass.css");
+@import url("./themes/high-contrast.css");
+@import url("./themes/colorblind-safe.css");

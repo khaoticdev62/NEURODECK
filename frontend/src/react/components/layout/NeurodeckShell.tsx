@@ -1,13 +1,13 @@
-/* NEURODECK v6 workspace shell — functional shell that wires the v6 layout
+﻿/* NEURODECK v6 workspace shell — functional shell that wires the v6 layout
    components (TitleBar, PrimarySidebar, SecondaryRail) to the live React app
    state and preserves all existing feature views. */
 
-import { useEffect, useMemo, useState } from 'react';
-import { TitleBar } from './TitleBar';
-import { PrimarySidebar } from './PrimarySidebar';
-import { SecondaryRail } from './SecondaryRail';
-import { ChatWorkspace } from '../../../design-system/ui_kits/workstation/ChatWorkspace';
-import { InputConsole } from '../../../design-system/ui_kits/workstation/InputConsole';
+import { useEffect, useMemo, useState } from "react";
+import { TitleBar } from "./TitleBar";
+import { PrimarySidebar } from "./PrimarySidebar";
+import { SecondaryRail } from "./SecondaryRail";
+import { ChatWorkspace } from "../../../design-system/ui_kits/workstation/ChatWorkspace";
+import { InputConsole } from "../../../design-system/ui_kits/workstation/InputConsole";
 import type {
   AIMessage,
   LocalModel,
@@ -16,26 +16,26 @@ import type {
   NeuroDeckSelectors,
   NeuroDeckState,
   ViewId,
-} from '../../types/neurodeck';
-import type { NeurodeckTheme } from '../../../shared/theme/themeContracts';
-import type { ChatMessage } from '../../../design-system/ui_kits/workstation/ChatWorkspace';
+} from "../../types/neurodeck";
+import type { NeurodeckTheme } from "../../../shared/theme/themeContracts";
+import type { ChatMessage } from "../../../design-system/ui_kits/workstation/ChatWorkspace";
 
 function shortSessionId(id: string): string {
-  if (!id) return '—';
+  if (!id) return "—";
   if (id.length <= 10) return id;
   return `${id.slice(0, 6)}…${id.slice(-4)}`;
 }
 
 function formatClock(): string {
   const now = new Date();
-  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 }
 
 function formatMessageTime(iso?: string): string | undefined {
   if (!iso) return undefined;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return undefined;
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function adaptMessages(messages: AIMessage[]): ChatMessage[] {
@@ -44,7 +44,7 @@ function adaptMessages(messages: AIMessage[]): ChatMessage[] {
     role: m.role,
     model: m.model,
     text: m.content,
-    streaming: m.role === 'assistant' && m.content === '',
+    streaming: m.role === "assistant" && m.content === "",
     time: formatMessageTime(m.createdAt),
     tokens: m.latencyMs ? undefined : undefined,
     latency: m.latencyMs ? `${m.latencyMs}ms` : undefined,
@@ -82,17 +82,17 @@ export function NeurodeckShell(props: NeurodeckShellProps): React.ReactNode {
   }, []);
 
   const activeView = state.activeView;
-  const isChat = activeView === 'chat' || activeView === 'workspace';
-  const normalizedViewId: ViewId = isChat ? 'chat' : activeView;
+  const isChat = activeView === "chat" || activeView === "workspace";
+  const normalizedViewId: ViewId = isChat ? "chat" : activeView;
 
   const chatMessages = useMemo(() => adaptMessages(state.messages), [state.messages]);
 
   const handleComposerChange = (value: string) => {
-    dispatch({ type: 'set-composer', value });
+    dispatch({ type: "set-composer", value });
   };
 
   const handleOpenPalette = () => {
-    dispatch({ type: 'toggle-command', open: true });
+    dispatch({ type: "toggle-command", open: true });
   };
 
   const handleRunAssistant = () => {
@@ -101,7 +101,7 @@ export function NeurodeckShell(props: NeurodeckShellProps): React.ReactNode {
 
   const sessionName = state.statusBar?.session?.id
     ? shortSessionId(state.statusBar.session.id)
-    : state.activeProject?.name ?? 'NEURODECK';
+    : (state.activeProject?.name ?? "NEURODECK");
 
   const subtitle = `${sessionName} · ${modelName} · ${clock}`;
 
@@ -128,13 +128,18 @@ export function NeurodeckShell(props: NeurodeckShellProps): React.ReactNode {
     <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-surface-primary text-text-primary">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-lg focus:bg-nd-accent focus:px-4 focus:py-2 focus:text-nd-bg focus:font-semibold focus:shadow-glow-md"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-lg focus:bg-nd-accent-primary focus:px-4 focus:py-2 focus:text-nd-bg focus:font-semibold focus:shadow-glow-md"
       >
         Skip to main content
       </a>
       <TitleBar subtitle={subtitle} />
       <div className="flex min-h-0 flex-1">
-        <PrimarySidebar state={state} dispatch={dispatch} />
+        <PrimarySidebar
+          state={state}
+          dispatch={dispatch}
+          onOpenSettings={() => props.openSettings("general")}
+          onOpenNotifications={() => props.setNotificationsOpen(true)}
+        />
         <main
           id="main-content"
           data-controller-zone="content"

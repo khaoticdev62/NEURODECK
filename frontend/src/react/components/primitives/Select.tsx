@@ -1,5 +1,5 @@
-import { type SelectHTMLAttributes, forwardRef } from 'react';
-import '../../../design-system/components/core/Select';
+﻿import { type SelectHTMLAttributes, forwardRef } from "react";
+import "../../../design-system/components/core/Select";
 
 interface SelectOption {
   value: string;
@@ -17,18 +17,18 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { label, error, hint, options, placeholder, fullWidth = false, className = '', id, ...rest },
-  ref,
+  { label, error, hint, options, placeholder, fullWidth = false, className = "", id, ...rest },
+  ref
 ) {
-  const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
+  const selectId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className={['nd-select', fullWidth ? 'w-full' : '', className].filter(Boolean).join(' ')}>
+    <div className={["nd-select", fullWidth ? "w-full" : "", className].filter(Boolean).join(" ")}>
       {label && (
         <label htmlFor={selectId} className="nd-select__label">
           {label}
           {rest.required && (
-            <span className="ml-1 text-nd-warning" aria-hidden="true">
+            <span className="ml-1 text-nd-accent-warning" aria-hidden="true">
               *
             </span>
           )}
@@ -40,7 +40,9 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
           id={selectId}
           aria-invalid={!!error}
           aria-describedby={error ? `${selectId}-error` : hint ? `${selectId}-hint` : undefined}
-          className={['nd-select__field', error ? 'nd-select__field--error' : ''].filter(Boolean).join(' ')}
+          className={["nd-select__field", error ? "nd-select__field--error" : ""]
+            .filter(Boolean)
+            .join(" ")}
           {...rest}
         >
           {placeholder && (

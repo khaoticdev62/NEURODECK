@@ -1,10 +1,10 @@
-import { useState } from 'react';
-import { ShieldCheck, Eye, EyeOff, Copy, Check } from 'lucide-react';
-import { Button } from '../../../components/primitives/Button';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { Panel } from '../../../components/primitives/Panel';
-import { Badge } from '../../../components/primitives/Badge';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
+﻿import { useState } from "react";
+import { ShieldCheck, Eye, EyeOff, Copy, Check } from "lucide-react";
+import { Button } from "../../../components/primitives/Button";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { Panel } from "../../../components/primitives/Panel";
+import { Badge } from "../../../components/primitives/Badge";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
 
 interface Props {
   groupCode: string;
@@ -23,11 +23,11 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
     setSaving(true);
     try {
       if (codeInput.trim()) {
-        await neurodeckApi.transfer.groupCode('set', codeInput.trim());
+        await neurodeckApi.transfer.groupCode("set", codeInput.trim());
         onGroupCodeChange(codeInput.trim());
       } else {
-        await neurodeckApi.transfer.groupCode('clear');
-        onGroupCodeChange('');
+        await neurodeckApi.transfer.groupCode("clear");
+        onGroupCodeChange("");
       }
     } catch (e) {
       onError(`Failed to update group code: ${e}`);
@@ -56,13 +56,14 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
           </h3>
           <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 space-y-3">
             <p className="text-xs text-nd-text-muted">
-              The group code is broadcast via mDNS. Only peers with a matching group code can initiate transfers. Set a unique code for added security.
+              The group code is broadcast via mDNS. Only peers with a matching group code can
+              initiate transfers. Set a unique code for added security.
             </p>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
                   id="sync-group-code"
-                  type={showCode ? 'text' : 'password'}
+                  type={showCode ? "text" : "password"}
                   value={codeInput}
                   onChange={(e) => setCodeInput(e.target.value)}
                   placeholder="Enter group code…"
@@ -73,7 +74,7 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
                   type="button"
                   size="sm"
                   variant="ghost"
-                  aria-label={showCode ? 'Hide group code' : 'Show group code'}
+                  aria-label={showCode ? "Hide group code" : "Show group code"}
                   onClick={() => setShowCode((v) => !v)}
                   className="absolute right-1 top-1/2 -translate-y-1/2"
                 >
@@ -93,7 +94,7 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
                   onClick={() => void handleCopy()}
                 >
                   {copied ? (
-                    <Check className="h-4 w-4 text-nd-success" aria-hidden="true" />
+                    <Check className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />
                   ) : (
                     <Copy className="h-4 w-4" aria-hidden="true" />
                   )}
@@ -107,20 +108,23 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
                 disabled={saving}
                 onClick={() => void handleSave()}
               >
-                {saving ? 'Saving…' : 'Save'}
+                {saving ? "Saving…" : "Save"}
               </Button>
             </div>
             {groupCode && (
-              <p className="flex items-center gap-1.5 text-xs text-nd-success">
+              <p className="flex items-center gap-1.5 text-xs text-nd-accent-success">
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                 Group code is active. Only peers with the same code can connect.
-                <Badge tone="success" variant="outline" size="sm">Active</Badge>
+                <Badge tone="success" variant="outline" size="sm">
+                  Active
+                </Badge>
               </p>
             )}
             {!groupCode && (
-              <p className="flex items-center gap-1.5 text-xs text-nd-warning">
+              <p className="flex items-center gap-1.5 text-xs text-nd-accent-warning">
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                No group code set — using DEFAULT. Any Warpinator peer on the network can discover this device.
+                No group code set — using DEFAULT. Any Warpinator peer on the network can discover
+                this device.
               </p>
             )}
           </div>
@@ -132,9 +136,10 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
             Receive Folder
           </h3>
           <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-3">
-            <p className="break-all font-mono text-xs text-nd-text-secondary">{inboxPath || '—'}</p>
+            <p className="break-all font-mono text-xs text-nd-text-secondary">{inboxPath || "—"}</p>
             <p className="mt-1 text-xs text-nd-text-muted">
-              All incoming files are saved here. The folder is created automatically if it does not exist.
+              All incoming files are saved here. The folder is created automatically if it does not
+              exist.
             </p>
           </div>
         </section>
@@ -146,9 +151,17 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
           </h3>
           <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 space-y-1 text-xs text-nd-text-muted">
             <p>• Incoming files land in the isolated receive folder — not your home directory.</p>
-            <p>• Symlinks, hardlinks, device nodes, and path traversal attempts (<code className="font-mono">../</code>) are blocked by the backend.</p>
-            <p>• Unknown peers cannot send files silently — you must explicitly Accept each request.</p>
-            <p>• WAN transfers require VPN or manual peer entry — NEURODECK Sync does not expose a public endpoint.</p>
+            <p>
+              • Symlinks, hardlinks, device nodes, and path traversal attempts (
+              <code className="font-mono">../</code>) are blocked by the backend.
+            </p>
+            <p>
+              • Unknown peers cannot send files silently — you must explicitly Accept each request.
+            </p>
+            <p>
+              • WAN transfers require VPN or manual peer entry — NEURODECK Sync does not expose a
+              public endpoint.
+            </p>
           </div>
         </section>
       </div>

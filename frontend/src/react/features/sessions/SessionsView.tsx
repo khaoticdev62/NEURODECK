@@ -40,8 +40,8 @@ export function SessionsView({
   return (
     <Panel eyebrow="Session History" title="Saved Sessions" className="h-full overflow-hidden">
       <div className="grid h-full gap-4 overflow-y-auto p-4 scrollbar-thin xl:grid-cols-[360px_1fr]">
-        <div className="rounded-3xl border border-nd-accent/25 bg-nd-accent/[0.045] p-5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent/20 bg-nd-accent/10">
+        <div className="rounded-3xl border border-nd-accent-primary/25 bg-nd-accent-primary/[0.045] p-5">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
             <Archive className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
           </div>
           <h3 className="mt-4 text-xl font-semibold text-nd-text-primary">Session History</h3>
@@ -56,7 +56,7 @@ export function SessionsView({
             onClick={() => void fetchSessions()}
             icon={loading ? undefined : RefreshCw}
           >
-            {loading ? 'Refreshing…' : 'Refresh List'}
+            {loading ? "Refreshing…" : "Refresh List"}
           </Button>
 
           <div className="mt-8 border-t border-nd-text-muted/15 pt-5">
@@ -103,9 +103,11 @@ export function SessionsView({
               description="Start a conversation to create your first session."
             />
           )}
-          {!loading && !error && sessionsList.map((node) => (
-            <SessionCard key={node.id} node={node} onRefresh={fetchSessions} />
-          ))}
+          {!loading &&
+            !error &&
+            sessionsList.map((node) => (
+              <SessionCard key={node.id} node={node} onRefresh={fetchSessions} />
+            ))}
         </div>
       </div>
     </Panel>

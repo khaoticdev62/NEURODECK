@@ -1,8 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { RecoveryView } from '../../features/recovery/RecoveryView';
-import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { RecoveryView } from "../../features/recovery/RecoveryView";
+import type { NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
 
 const makeActions = (overrides: Partial<NeuroDeckAppActions> = {}): NeuroDeckAppActions => ({
   scanProject: vi.fn().mockResolvedValue(undefined),
@@ -22,7 +22,7 @@ const makeActions = (overrides: Partial<NeuroDeckAppActions> = {}): NeuroDeckApp
   refreshModelScores: vi.fn().mockResolvedValue(undefined),
   refreshAgentPolicies: vi.fn().mockResolvedValue(undefined),
   refreshRecoveryEvents: vi.fn().mockResolvedValue(undefined),
-  validateAgentModel: vi.fn().mockResolvedValue({ allowed: true, reason: '' }),
+  validateAgentModel: vi.fn().mockResolvedValue({ allowed: true, reason: "" }),
   ...overrides,
 });
 
@@ -34,33 +34,37 @@ const makeState = (overrides: Partial<NeuroDeckState> = {}): NeuroDeckState =>
     aiHealth: [],
     diagnosticLogs: [],
     ...overrides,
-  } as unknown as NeuroDeckState);
+  }) as unknown as NeuroDeckState;
 
 const dispatch = vi.fn();
 
-describe('RecoveryView', () => {
+describe("RecoveryView", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('renders with data-testid', () => {
+  it("renders with data-testid", () => {
     render(<RecoveryView state={makeState()} dispatch={dispatch} actions={makeActions()} />);
-    expect(screen.getByTestId('recovery-view')).toBeDefined();
+    expect(screen.getByTestId("recovery-view")).toBeDefined();
   });
 
   it('shows "No active errors" when lastError is null', () => {
     render(<RecoveryView state={makeState()} dispatch={dispatch} actions={makeActions()} />);
-    expect(screen.getByText('No active errors')).toBeDefined();
+    expect(screen.getByText("No active errors")).toBeDefined();
   });
 
-  it('shows error details when lastError is set', () => {
+  it("shows error details when lastError is set", () => {
     const state = makeState({
-      lastError: { title: 'Bridge timeout', message: 'The sidecar did not respond within 5s.', action: 'Restart the bridge.' },
+      lastError: {
+        title: "Bridge timeout",
+        message: "The sidecar did not respond within 5s.",
+        action: "Restart the bridge.",
+      },
     });
     render(<RecoveryView state={state} dispatch={dispatch} actions={makeActions()} />);
-    expect(screen.getByText('Bridge timeout')).toBeDefined();
+    expect(screen.getByText("Bridge timeout")).toBeDefined();
     expect(screen.getByText(/sidecar did not respond/i)).toBeDefined();
   });
 
-  it('shows empty state when no recovery events', () => {
+  it("shows empty state when no recovery events", () => {
     render(<RecoveryView state={makeState()} dispatch={dispatch} actions={makeActions()} />);
     expect(screen.getByText(/no recovery events logged yet/i)).toBeDefined();
   });
@@ -68,38 +72,65 @@ describe('RecoveryView', () => {
   it('renders recovery events list with role="log"', () => {
     const state = makeState({
       recoveryEvents: [
-        { id: 'ev1', action: 'send_command', runtimeId: 'ollama', modelId: 'llama3', allowed: true, reason: 'within quota', state: 'healthy', timestamp: new Date().toISOString() },
+        {
+          id: "ev1",
+          action: "send_command",
+          runtimeId: "ollama",
+          modelId: "llama3",
+          allowed: true,
+          reason: "within quota",
+          state: "healthy",
+          timestamp: new Date().toISOString(),
+        },
       ],
     });
     render(<RecoveryView state={state} dispatch={dispatch} actions={makeActions()} />);
-    const log = screen.getByRole('log');
+    const log = screen.getByRole("log");
     expect(log).toBeDefined();
-    expect(log.getAttribute('aria-live')).toBe('polite');
+    expect(log.getAttribute("aria-live")).toBe("polite");
     expect(screen.getByText(/send_command/)).toBeDefined();
   });
 
-  it('does NOT call resetLocalState on first click — shows confirm dialog', async () => {
+  it("does NOT call resetLocalState on first click — shows confirm dialog", async () => {
     const resetLocalState = vi.fn().mockResolvedValue(undefined);
-    render(<RecoveryView state={makeState()} dispatch={dispatch} actions={makeActions({ resetLocalState })} />);
-    await userEvent.click(screen.getByRole('button', { name: /clear local state/i }));
+    render(
+      <RecoveryView
+        state={makeState()}
+        dispatch={dispatch}
+        actions={makeActions({ resetLocalState })}
+      />
+    );
+    await userEvent.click(screen.getByRole("button", { name: /clear local state/i }));
     expect(resetLocalState).not.toHaveBeenCalled();
-    expect(screen.getByRole('dialog')).toBeDefined();
+    expect(screen.getByRole("dialog")).toBeDefined();
   });
 
-  it('calls resetLocalState after confirm', async () => {
+  it("calls resetLocalState after confirm", async () => {
     const resetLocalState = vi.fn().mockResolvedValue(undefined);
-    render(<RecoveryView state={makeState()} dispatch={dispatch} actions={makeActions({ resetLocalState })} />);
-    await userEvent.click(screen.getByRole('button', { name: /clear local state/i }));
-    await userEvent.click(screen.getByRole('button', { name: /clear state/i }));
+    render(
+      <RecoveryView
+        state={makeState()}
+        dispatch={dispatch}
+        actions={makeActions({ resetLocalState })}
+      />
+    );
+    await userEvent.click(screen.getByRole("button", { name: /clear local state/i }));
+    await userEvent.click(screen.getByRole("button", { name: /clear state/i }));
     expect(resetLocalState).toHaveBeenCalledOnce();
   });
 
-  it('closes dialog without calling reset when cancel clicked', async () => {
+  it("closes dialog without calling reset when cancel clicked", async () => {
     const resetLocalState = vi.fn().mockResolvedValue(undefined);
-    render(<RecoveryView state={makeState()} dispatch={dispatch} actions={makeActions({ resetLocalState })} />);
-    await userEvent.click(screen.getByRole('button', { name: /clear local state/i }));
-    await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
+    render(
+      <RecoveryView
+        state={makeState()}
+        dispatch={dispatch}
+        actions={makeActions({ resetLocalState })}
+      />
+    );
+    await userEvent.click(screen.getByRole("button", { name: /clear local state/i }));
+    await userEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(resetLocalState).not.toHaveBeenCalled();
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

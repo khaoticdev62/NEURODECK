@@ -1,13 +1,13 @@
-import { GraduationCap } from 'lucide-react';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { Panel } from '../../../components/primitives/Panel';
-import { Button } from '../../../components/primitives/Button';
-import { SkillBar } from '../components/SkillBar';
-import { PathCard } from '../components/PathCard';
-import { LabCard } from '../components/LabCard';
-import { LEARNING_PATHS, ALL_LABS, pathCompletionPercent } from '../data/curricula';
-import { SKILL_KEYS, SKILL_LABELS } from '../types';
-import type { LearnerProgress, AcademyTab } from '../types';
+﻿import { GraduationCap } from "lucide-react";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { Panel } from "../../../components/primitives/Panel";
+import { Button } from "../../../components/primitives/Button";
+import { SkillBar } from "../components/SkillBar";
+import { PathCard } from "../components/PathCard";
+import { LabCard } from "../components/LabCard";
+import { LEARNING_PATHS, ALL_LABS, pathCompletionPercent } from "../data/curricula";
+import { SKILL_KEYS, SKILL_LABELS } from "../types";
+import type { LearnerProgress, AcademyTab } from "../types";
 
 interface AcademyHomeProps {
   progress: LearnerProgress;
@@ -24,20 +24,20 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
   return (
     <div className="space-y-5">
       {/* Welcome banner */}
-      <div className="rounded-2xl border border-nd-accent/20 bg-nd-accent/[0.06] px-5 py-4">
+      <div className="rounded-2xl border border-nd-accent-primary/20 bg-nd-accent-primary/[0.06] px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent/30 bg-nd-accent/10">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/30 bg-nd-accent-primary/10">
             <GraduationCap className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
           </div>
           <div>
             <p className="text-sm font-semibold text-nd-text-primary">
               {totalCompleted === 0
-                ? 'Welcome to SOC Forge'
-                : `${totalCompleted} lab${totalCompleted !== 1 ? 's' : ''} completed`}
+                ? "Welcome to SOC Forge"
+                : `${totalCompleted} lab${totalCompleted !== 1 ? "s" : ""} completed`}
             </p>
             <p className="text-xs text-nd-text-muted">
               {totalCompleted === 0
-                ? 'Start a lab below to begin building your SOC skillset.'
+                ? "Start a lab below to begin building your SOC skillset."
                 : `Overall skill score: ${overallScore} / 100`}
             </p>
           </div>
@@ -58,7 +58,7 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
         eyebrow="Quick Start"
         title="Starter Labs"
         action={
-          <Button size="xs" variant="ghost" onClick={() => onNavigate('labs')}>
+          <Button size="xs" variant="ghost" onClick={() => onNavigate("labs")}>
             View all
           </Button>
         }
@@ -80,7 +80,7 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
         eyebrow="Tracks"
         title="Learning Paths"
         action={
-          <Button size="xs" variant="ghost" onClick={() => onNavigate('paths')}>
+          <Button size="xs" variant="ghost" onClick={() => onNavigate("paths")}>
             View all
           </Button>
         }
@@ -91,7 +91,7 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
               key={path.id}
               path={path}
               completionPct={pathCompletionPercent(path.id, progress.completedLabs)}
-              onSelect={() => onNavigate('paths')}
+              onSelect={() => onNavigate("paths")}
             />
           ))}
         </div>

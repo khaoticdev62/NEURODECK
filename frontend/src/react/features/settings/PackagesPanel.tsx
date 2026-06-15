@@ -1,29 +1,22 @@
-import { useCallback, useEffect, useState } from 'react';
-import {
-  Package,
-  PackagePlus,
-  Trash2,
-  RefreshCw,
-  AlertTriangle,
-  Check,
-} from 'lucide-react';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import { Button } from '../../components/primitives/Button';
-import { Badge } from '../../components/primitives/Badge';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { LoadingState } from '../../components/primitives/LoadingState';
-import { Panel } from '../../components/primitives/Panel';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import { TextInput } from '../../components/primitives/TextInput';
-import { Toggle } from '../../components/primitives/Toggle';
-import type { NpmPackage, NpmStatus, NpmInstallProgress } from '../../types/neurodeck';
+﻿import { useCallback, useEffect, useState } from "react";
+import { Package, PackagePlus, Trash2, RefreshCw, AlertTriangle, Check } from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import { Button } from "../../components/primitives/Button";
+import { Badge } from "../../components/primitives/Badge";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { LoadingState } from "../../components/primitives/LoadingState";
+import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import { TextInput } from "../../components/primitives/TextInput";
+import { Toggle } from "../../components/primitives/Toggle";
+import type { NpmPackage, NpmStatus, NpmInstallProgress } from "../../types/neurodeck";
 
 export function PackagesPanel() {
   const [status, setStatus] = useState<NpmStatus | null>(null);
   const [packages, setPackages] = useState<NpmPackage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [installName, setInstallName] = useState('');
-  const [installVersion, setInstallVersion] = useState('');
+  const [installName, setInstallName] = useState("");
+  const [installVersion, setInstallVersion] = useState("");
   const [installing, setInstalling] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,10 +26,7 @@ export function PackagesPanel() {
     setLoading(true);
     setError(null);
     try {
-      const [s, list] = await Promise.all([
-        neurodeckApi.npm.getStatus(),
-        neurodeckApi.npm.list(),
-      ]);
+      const [s, list] = await Promise.all([neurodeckApi.npm.getStatus(), neurodeckApi.npm.list()]);
       setStatus(s);
       setPackages(list);
     } catch (e) {
@@ -50,7 +40,7 @@ export function PackagesPanel() {
     void load();
     const unsubscribe = neurodeckApi.npm.onProgress((data) => {
       setProgress((prev) => ({ ...prev, [data.name]: data }));
-      if (data.state === 'completed' || data.state === 'failed') {
+      if (data.state === "completed" || data.state === "failed") {
         void load();
       }
     });
@@ -64,8 +54,8 @@ export function PackagesPanel() {
     setError(null);
     try {
       await neurodeckApi.npm.install(name, installVersion.trim() || undefined);
-      setInstallName('');
-      setInstallVersion('');
+      setInstallName("");
+      setInstallVersion("");
       await load();
     } catch (e) {
       setError(String(e));
@@ -115,14 +105,14 @@ export function PackagesPanel() {
         <div className="p-4">
           {status ? (
             <div className="flex flex-wrap items-center gap-3">
-              <StatusChip tone={status.node ? 'success' : 'error'} size="sm">
-                Node {status.nodeVersion ?? 'not found'}
+              <StatusChip tone={status.node ? "success" : "error"} size="sm">
+                Node {status.nodeVersion ?? "not found"}
               </StatusChip>
-              <StatusChip tone={status.npm ? 'success' : 'error'} size="sm">
-                npm {status.npmVersion ?? 'not found'}
+              <StatusChip tone={status.npm ? "success" : "error"} size="sm">
+                npm {status.npmVersion ?? "not found"}
               </StatusChip>
               {!nodeAvailable && (
-                <p className="w-full text-xs text-nd-warning">
+                <p className="w-full text-xs text-nd-accent-warning">
                   <AlertTriangle className="inline h-3 w-3 mr-1" aria-hidden="true" />
                   Node.js and npm are required to install packages. Install Node from nodejs.org and
                   restart NEURODECK.
@@ -176,7 +166,7 @@ export function PackagesPanel() {
       </Panel>
 
       {error && (
-        <div className="rounded-xl border border-nd-danger/20 bg-nd-danger/10 p-3 text-xs text-nd-danger flex items-start gap-2">
+        <div className="rounded-xl border border-nd-accent-error/20 bg-nd-accent-error/10 p-3 text-xs text-nd-accent-error flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="break-all">{error}</span>
         </div>
@@ -219,14 +209,18 @@ export function PackagesPanel() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-nd-text truncate">
+                        <span className="font-semibold text-sm text-nd-text-primary truncate">
                           {pkg.name}
                         </span>
                         {pkg.installedVersion && (
-                          <Badge tone="accent" size="sm" variant="outline">{pkg.installedVersion}</Badge>
+                          <Badge tone="accent" size="sm" variant="outline">
+                            {pkg.installedVersion}
+                          </Badge>
                         )}
                         {pkg.category && (
-                          <Badge tone="neutral" size="sm" variant="outline">{pkg.category}</Badge>
+                          <Badge tone="neutral" size="sm" variant="outline">
+                            {pkg.category}
+                          </Badge>
                         )}
                       </div>
                       {pkg.installedVersion ? (
@@ -234,13 +228,15 @@ export function PackagesPanel() {
                           <Check className="h-3 w-3" aria-hidden="true" /> Installed
                         </Badge>
                       ) : (
-                        <Badge tone="warning" size="sm" variant="outline" className="mt-1.5 w-fit">Not installed on disk</Badge>
+                        <Badge tone="warning" size="sm" variant="outline" className="mt-1.5 w-fit">
+                          Not installed on disk
+                        </Badge>
                       )}
                       {prog && isBusy && (
                         <p className="text-[10px] text-nd-text-muted truncate mt-0.5">
                           {prog.state}
-                          {prog.details ? `: ${prog.details}` : ''}
-                          {prog.error ? ` — ${prog.error}` : ''}
+                          {prog.details ? `: ${prog.details}` : ""}
+                          {prog.error ? ` — ${prog.error}` : ""}
                         </p>
                       )}
                     </div>
@@ -280,14 +276,17 @@ export function PackagesPanel() {
       <Panel eyebrow="About" title="Feature Tools">
         <div className="p-4 space-y-1.5 text-xs text-nd-text-muted">
           {[
-            ['Install root', '~/.config/neurodeck/npm/'],
-            ['Binaries', '~/.config/neurodeck/npm/node_modules/.bin/'],
-            ['Use in Terminal', 'Installed CLIs are added to PATH automatically.'],
-            ['Use in IDE', 'Language servers are discovered from the managed prefix.'],
+            ["Install root", "~/.config/neurodeck/npm/"],
+            ["Binaries", "~/.config/neurodeck/npm/node_modules/.bin/"],
+            ["Use in Terminal", "Installed CLIs are added to PATH automatically."],
+            ["Use in IDE", "Language servers are discovered from the managed prefix."],
           ].map(([label, value]) => (
-            <div key={label} className="flex items-start justify-between gap-3 rounded-lg px-2 py-1">
-              <span className="text-nd-text/60 shrink-0">{label}</span>
-              <span className="font-mono text-nd-text text-right">{value}</span>
+            <div
+              key={label}
+              className="flex items-start justify-between gap-3 rounded-lg px-2 py-1"
+            >
+              <span className="text-nd-text-primary/60 shrink-0">{label}</span>
+              <span className="font-mono text-nd-text-primary text-right">{value}</span>
             </div>
           ))}
         </div>
@@ -295,4 +294,3 @@ export function PackagesPanel() {
     </div>
   );
 }
-

@@ -24,25 +24,93 @@ const controllerBasics: InputHint[] = [
 ];
 
 const anchors = [
-  { id: "app-shell", selector: "[data-onboarding-anchor='app-shell']", fallbackLabel: "NEURODECK shell" },
-  { id: "main-content", selector: "[data-onboarding-anchor='main-content']", fallbackLabel: "active workspace" },
-  { id: "command-palette-trigger", selector: "[data-onboarding-anchor='command-palette-trigger']", fallbackLabel: "command palette trigger" },
-  { id: "command-palette-input", selector: "[data-onboarding-anchor='command-palette-input']", fallbackLabel: "command palette input" },
-  { id: "nav-chat", selector: "[data-onboarding-anchor='nav-chat']", fallbackLabel: "chat navigation" },
-  { id: "nav-models", selector: "[data-onboarding-anchor='nav-models']", fallbackLabel: "model navigation" },
-  { id: "nav-agent", selector: "[data-onboarding-anchor='nav-agent']", fallbackLabel: "agent navigation" },
-  { id: "nav-memory", selector: "[data-onboarding-anchor='nav-memory']", fallbackLabel: "memory navigation" },
-  { id: "nav-sessions", selector: "[data-onboarding-anchor='nav-sessions']", fallbackLabel: "sessions navigation" },
-  { id: "nav-browser", selector: "[data-onboarding-anchor='nav-browser']", fallbackLabel: "browser navigation" },
-  { id: "nav-terminal", selector: "[data-onboarding-anchor='nav-terminal']", fallbackLabel: "terminal navigation" },
-  { id: "nav-sync", selector: "[data-onboarding-anchor='nav-sync']", fallbackLabel: "sync navigation" },
-  { id: "nav-plugins", selector: "[data-onboarding-anchor='nav-plugins']", fallbackLabel: "plugins navigation" },
-  { id: "nav-themes", selector: "[data-onboarding-anchor='nav-themes']", fallbackLabel: "theme navigation" },
-  { id: "nav-diagnostics", selector: "[data-onboarding-anchor='nav-diagnostics']", fallbackLabel: "diagnostics navigation" },
-  { id: "nav-settings", selector: "[data-onboarding-anchor='nav-settings']", fallbackLabel: "settings navigation" },
+  {
+    id: "app-shell",
+    selector: "[data-onboarding-anchor='app-shell']",
+    fallbackLabel: "NEURODECK shell",
+  },
+  {
+    id: "main-content",
+    selector: "[data-onboarding-anchor='main-content']",
+    fallbackLabel: "active workspace",
+  },
+  {
+    id: "command-palette-trigger",
+    selector: "[data-onboarding-anchor='command-palette-trigger']",
+    fallbackLabel: "command palette trigger",
+  },
+  {
+    id: "command-palette-input",
+    selector: "[data-onboarding-anchor='command-palette-input']",
+    fallbackLabel: "command palette input",
+  },
+  {
+    id: "nav-chat",
+    selector: "[data-onboarding-anchor='nav-chat']",
+    fallbackLabel: "chat navigation",
+  },
+  {
+    id: "nav-models",
+    selector: "[data-onboarding-anchor='nav-models']",
+    fallbackLabel: "model navigation",
+  },
+  {
+    id: "nav-agent",
+    selector: "[data-onboarding-anchor='nav-agent']",
+    fallbackLabel: "agent navigation",
+  },
+  {
+    id: "nav-memory",
+    selector: "[data-onboarding-anchor='nav-memory']",
+    fallbackLabel: "memory navigation",
+  },
+  {
+    id: "nav-sessions",
+    selector: "[data-onboarding-anchor='nav-sessions']",
+    fallbackLabel: "sessions navigation",
+  },
+  {
+    id: "nav-browser",
+    selector: "[data-onboarding-anchor='nav-browser']",
+    fallbackLabel: "browser navigation",
+  },
+  {
+    id: "nav-terminal",
+    selector: "[data-onboarding-anchor='nav-terminal']",
+    fallbackLabel: "terminal navigation",
+  },
+  {
+    id: "nav-sync",
+    selector: "[data-onboarding-anchor='nav-sync']",
+    fallbackLabel: "sync navigation",
+  },
+  {
+    id: "nav-plugins",
+    selector: "[data-onboarding-anchor='nav-plugins']",
+    fallbackLabel: "plugins navigation",
+  },
+  {
+    id: "nav-themes",
+    selector: "[data-onboarding-anchor='nav-themes']",
+    fallbackLabel: "theme navigation",
+  },
+  {
+    id: "nav-diagnostics",
+    selector: "[data-onboarding-anchor='nav-diagnostics']",
+    fallbackLabel: "diagnostics navigation",
+  },
+  {
+    id: "nav-settings",
+    selector: "[data-onboarding-anchor='nav-settings']",
+    fallbackLabel: "settings navigation",
+  },
 ];
 
-function media(type: OnboardingMediaType, label: string, caption: string): OnboardingStep["animation"] {
+function media(
+  type: OnboardingMediaType,
+  label: string,
+  caption: string
+): OnboardingStep["animation"] {
   if (type === "lottie") {
     return {
       type,
@@ -107,7 +175,7 @@ function step(
   viewfinderType: OnboardingStep["viewfinderType"],
   animationType: OnboardingMediaType,
   safetyNote?: string,
-  conditions: OnboardingCondition[] = [{ kind: "always" }],
+  conditions: OnboardingCondition[] = [{ kind: "always" }]
 ): OnboardingStep {
   return {
     id: `${featureId}.${id}`,
@@ -142,7 +210,7 @@ const manifests: OnboardingManifest[] = [
         "This is your main workbench. Conversations, commands, tools, and AI responses live here.",
         "main-content",
         "panel",
-        "lottie",
+        "lottie"
       ),
     ],
   },
@@ -161,7 +229,7 @@ const manifests: OnboardingManifest[] = [
         "The command palette is the fast way to jump anywhere or run actions without digging through menus.",
         "command-palette-trigger",
         "spotlight",
-        "css",
+        "css"
       ),
     ],
   },
@@ -173,9 +241,17 @@ const manifests: OnboardingManifest[] = [
     category: "tool",
     anchors,
     steps: [
-      step("models", "connect", "Models", "Models are the AI brains NEURODECK can use. Connect, test, and switch them here.", "nav-models", "panel", "webm", undefined, [
-        { kind: "hasNoModels" },
-      ]),
+      step(
+        "models",
+        "connect",
+        "Models",
+        "Models are the AI brains NEURODECK can use. Connect, test, and switch them here.",
+        "nav-models",
+        "panel",
+        "webm",
+        undefined,
+        [{ kind: "hasNoModels" }]
+      ),
     ],
   },
   {
@@ -186,7 +262,15 @@ const manifests: OnboardingManifest[] = [
     category: "tool",
     anchors,
     steps: [
-      step("agents", "roles", "Agents", "Agents are specialized helpers. One can code, one can test, one can write docs, and one can check security.", "nav-agent", "split", "svg"),
+      step(
+        "agents",
+        "roles",
+        "Agents",
+        "Agents are specialized helpers. One can code, one can test, one can write docs, and one can check security.",
+        "nav-agent",
+        "split",
+        "svg"
+      ),
     ],
   },
   {
@@ -197,7 +281,16 @@ const manifests: OnboardingManifest[] = [
     category: "security",
     anchors,
     steps: [
-      step("memory", "privacy", "Memory", "Memory stores useful context only when you allow it. You can control what is saved and reused.", "nav-memory", "safety", "audio", "Memory tutorials never show private memory content."),
+      step(
+        "memory",
+        "privacy",
+        "Memory",
+        "Memory stores useful context only when you allow it. You can control what is saved and reused.",
+        "nav-memory",
+        "safety",
+        "audio",
+        "Memory tutorials never show private memory content."
+      ),
     ],
   },
   {
@@ -208,9 +301,17 @@ const manifests: OnboardingManifest[] = [
     category: "tool",
     anchors,
     steps: [
-      step("sessions", "resume", "Sessions", "Sessions are saved workspaces. They let you return to a project, chat, or tool setup later.", "nav-sessions", "emptyState", "css", undefined, [
-        { kind: "hasNoSessions" },
-      ]),
+      step(
+        "sessions",
+        "resume",
+        "Sessions",
+        "Sessions are saved workspaces. They let you return to a project, chat, or tool setup later.",
+        "nav-sessions",
+        "emptyState",
+        "css",
+        undefined,
+        [{ kind: "hasNoSessions" }]
+      ),
     ],
   },
   {
@@ -221,7 +322,15 @@ const manifests: OnboardingManifest[] = [
     category: "tool",
     anchors,
     steps: [
-      step("browser", "safe-browsing", "Browser", "The browser lets you use web tools inside NEURODECK without breaking your workflow.", "nav-browser", "panel", "webm"),
+      step(
+        "browser",
+        "safe-browsing",
+        "Browser",
+        "The browser lets you use web tools inside NEURODECK without breaking your workflow.",
+        "nav-browser",
+        "panel",
+        "webm"
+      ),
     ],
   },
   {
@@ -232,7 +341,16 @@ const manifests: OnboardingManifest[] = [
     category: "security",
     anchors,
     steps: [
-      step("terminal", "safe-command", "Terminal", "The terminal runs real commands. Check commands before running anything risky.", "nav-terminal", "safety", "shader", "Terminal demos never include real command output or secrets."),
+      step(
+        "terminal",
+        "safe-command",
+        "Terminal",
+        "The terminal runs real commands. Check commands before running anything risky.",
+        "nav-terminal",
+        "safety",
+        "shader",
+        "Terminal demos never include real command output or secrets."
+      ),
     ],
   },
   {
@@ -243,7 +361,16 @@ const manifests: OnboardingManifest[] = [
     category: "security",
     anchors,
     steps: [
-      step("sync", "transfer", "Sync", "Sync moves files between devices. You choose what to send and confirm the destination.", "nav-sync", "timeline", "css", "Sync demos use generic file names only."),
+      step(
+        "sync",
+        "transfer",
+        "Sync",
+        "Sync moves files between devices. You choose what to send and confirm the destination.",
+        "nav-sync",
+        "timeline",
+        "css",
+        "Sync demos use generic file names only."
+      ),
     ],
   },
   {
@@ -254,7 +381,16 @@ const manifests: OnboardingManifest[] = [
     category: "plugin",
     anchors,
     steps: [
-      step("plugins", "trust", "Plugins", "Plugins add tools. Only enable plugins you trust and review their permissions first.", "nav-plugins", "safety", "svg", "Plugin tutorials are shown only after trust decisions."),
+      step(
+        "plugins",
+        "trust",
+        "Plugins",
+        "Plugins add tools. Only enable plugins you trust and review their permissions first.",
+        "nav-plugins",
+        "safety",
+        "svg",
+        "Plugin tutorials are shown only after trust decisions."
+      ),
     ],
   },
   {
@@ -265,7 +401,15 @@ const manifests: OnboardingManifest[] = [
     category: "tool",
     anchors,
     steps: [
-      step("themes", "preview", "Themes", "Themes change how NEURODECK looks, including high contrast and reduced motion choices.", "nav-themes", "split", "lottie"),
+      step(
+        "themes",
+        "preview",
+        "Themes",
+        "Themes change how NEURODECK looks, including high contrast and reduced motion choices.",
+        "nav-themes",
+        "split",
+        "lottie"
+      ),
     ],
   },
   {
@@ -276,7 +420,15 @@ const manifests: OnboardingManifest[] = [
     category: "core",
     anchors,
     steps: [
-      step("diagnostics", "health", "Diagnostics", "Diagnostics show what is working, what is slow, and what needs attention.", "nav-diagnostics", "panel", "css"),
+      step(
+        "diagnostics",
+        "health",
+        "Diagnostics",
+        "Diagnostics show what is working, what is slow, and what needs attention.",
+        "nav-diagnostics",
+        "panel",
+        "css"
+      ),
     ],
   },
   {
@@ -287,7 +439,15 @@ const manifests: OnboardingManifest[] = [
     category: "core",
     anchors,
     steps: [
-      step("settings", "control", "Settings", "Settings are where you control behavior, privacy, appearance, models, shortcuts, and accessibility.", "nav-settings", "panel", "svg"),
+      step(
+        "settings",
+        "control",
+        "Settings",
+        "Settings are where you control behavior, privacy, appearance, models, shortcuts, and accessibility.",
+        "nav-settings",
+        "panel",
+        "svg"
+      ),
     ],
   },
 ];
@@ -300,7 +460,11 @@ export function getCoreOnboardingManifests(): OnboardingManifest[] {
   return manifests.filter((manifest) => validateOnboardingManifest(manifest).length === 0);
 }
 
-function conditionPasses(condition: OnboardingCondition, state: NeuroDeckState, activeView?: ViewId): boolean {
+function conditionPasses(
+  condition: OnboardingCondition,
+  state: NeuroDeckState,
+  activeView?: ViewId
+): boolean {
   switch (condition.kind) {
     case "always":
       return true;
@@ -331,7 +495,10 @@ export function buildOnboardingSteps(options: OnboardingRuntimeOptions): Onboard
     const exactFeature = all.filter((item) => item.featureId === active);
     if (exactFeature.length) return exactFeature;
     const byActiveCondition = all.filter((item) =>
-      item.conditions?.some((condition) => condition.kind === "activeView" && conditionPasses(condition, options.state, active))
+      item.conditions?.some(
+        (condition) =>
+          condition.kind === "activeView" && conditionPasses(condition, options.state, active)
+      )
     );
     return byActiveCondition.length ? byActiveCondition : all.slice(0, 2);
   }
@@ -340,5 +507,11 @@ export function buildOnboardingSteps(options: OnboardingRuntimeOptions): Onboard
     return all.slice(0, 3);
   }
 
-  return all.filter((item) => !item.conditions || item.conditions.some((condition) => conditionPasses(condition, options.state, options.activeView)));
+  return all.filter(
+    (item) =>
+      !item.conditions ||
+      item.conditions.some((condition) =>
+        conditionPasses(condition, options.state, options.activeView)
+      )
+  );
 }

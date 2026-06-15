@@ -1,8 +1,8 @@
-import { InboxIcon, FolderOpen } from 'lucide-react';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { Panel } from '../../../components/primitives/Panel';
-import { Badge } from '../../../components/primitives/Badge';
-import type { FileTransfer } from '../../../services/bridgeAdapter';
+﻿import { InboxIcon, FolderOpen } from "lucide-react";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { Panel } from "../../../components/primitives/Panel";
+import { Badge } from "../../../components/primitives/Badge";
+import type { FileTransfer } from "../../../services/bridgeAdapter";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -17,8 +17,8 @@ interface Props {
 }
 
 export function InboxTab({ inboxPath, transfers }: Props) {
-  const received = transfers.filter((t) => t.direction === 'Incoming' && t.status === 'Completed');
-  const pending = transfers.filter((t) => t.direction === 'Incoming' && t.status === 'Pending');
+  const received = transfers.filter((t) => t.direction === "Incoming" && t.status === "Completed");
+  const pending = transfers.filter((t) => t.direction === "Incoming" && t.status === "Pending");
 
   return (
     <Panel eyebrow="Inbox" title="Incoming Transfers" className="h-full">
@@ -26,21 +26,23 @@ export function InboxTab({ inboxPath, transfers }: Props) {
         {/* Pending incoming (shown but respond happens via the root ConfirmDialog) */}
         {pending.length > 0 && (
           <section aria-label="Pending incoming transfers">
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-nd-warning">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-nd-accent-warning">
               Awaiting Your Decision
             </h3>
             <ul role="list" className="flex flex-col gap-2">
               {pending.map((t) => (
                 <li
                   key={t.id}
-                  className="rounded-xl border border-nd-warning/25 bg-nd-warning/5 px-4 py-3"
+                  className="rounded-xl border border-nd-accent-warning/25 bg-nd-accent-warning/5 px-4 py-3"
                 >
                   <div className="flex items-start gap-3">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-warning/20 bg-nd-warning/10">
-                      <InboxIcon className="h-4 w-4 text-nd-warning" aria-hidden="true" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-accent-warning/20 bg-nd-accent-warning/10">
+                      <InboxIcon className="h-4 w-4 text-nd-accent-warning" aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-nd-text-primary">{t.filename}</p>
+                      <p className="truncate text-sm font-medium text-nd-text-primary">
+                        {t.filename}
+                      </p>
                       <p className="text-xs text-nd-text-muted">
                         {formatBytes(t.size)} from {t.peer_name || t.peer_ip}
                       </p>
@@ -64,7 +66,9 @@ export function InboxTab({ inboxPath, transfers }: Props) {
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60">
               <FolderOpen className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
             </div>
-            <p className="break-all text-xs text-nd-text-secondary font-mono">{inboxPath || 'Loading…'}</p>
+            <p className="break-all text-xs text-nd-text-secondary font-mono">
+              {inboxPath || "Loading…"}
+            </p>
           </div>
         </section>
 
@@ -85,18 +89,22 @@ export function InboxTab({ inboxPath, transfers }: Props) {
               {received.map((t) => (
                 <li
                   key={t.id}
-                  className="flex items-center gap-3 rounded-xl border border-nd-success/20 bg-nd-success/5 px-4 py-3"
+                  className="flex items-center gap-3 rounded-xl border border-nd-accent-success/20 bg-nd-accent-success/5 px-4 py-3"
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-success/20 bg-nd-success/10">
-                    <InboxIcon className="h-4 w-4 text-nd-success" aria-hidden="true" />
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-accent-success/20 bg-nd-accent-success/10">
+                    <InboxIcon className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-nd-text-primary">{t.filename}</p>
+                    <p className="truncate text-sm font-medium text-nd-text-primary">
+                      {t.filename}
+                    </p>
                     <p className="text-xs text-nd-text-muted">
                       {formatBytes(t.size)} from {t.peer_name || t.peer_ip}
                     </p>
                   </div>
-                  <Badge tone="success" variant="outline" size="sm">Received</Badge>
+                  <Badge tone="success" variant="outline" size="sm">
+                    Received
+                  </Badge>
                 </li>
               ))}
             </ul>

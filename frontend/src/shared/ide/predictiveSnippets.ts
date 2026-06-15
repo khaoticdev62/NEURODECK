@@ -1,8 +1,8 @@
 /**
  * Predictive snippet utilities — loads and indexes snippets from language profiles.
  */
-import type { PredictiveSnippet } from '../contracts/ide.contracts';
-import { getAllProfiles } from './languageProfiles';
+import type { PredictiveSnippet } from "../contracts/ide.contracts";
+import { getAllProfiles } from "./languageProfiles";
 
 let _snippetIndex: Map<string, PredictiveSnippet[]> | null = null;
 
@@ -33,11 +33,7 @@ export function getSnippetById(id: string): PredictiveSnippet | undefined {
   return undefined;
 }
 
-export function searchSnippets(
-  languageId: string,
-  query: string,
-  limit = 5
-): PredictiveSnippet[] {
+export function searchSnippets(languageId: string, query: string, limit = 5): PredictiveSnippet[] {
   const all = getSnippetsForLanguage(languageId);
   if (!query) return all.slice(0, limit);
 
@@ -69,21 +65,15 @@ export function expandSnippetPlaceholders(
   for (const [indexStr, value] of Object.entries(values)) {
     const idx = Number(indexStr);
     // Replace ${N:label} and ${N} patterns
-    text = text.replace(new RegExp(`\\$\\{${idx}:[^}]*\\}`, 'g'), value);
-    text = text.replace(new RegExp(`\\$\\{${idx}\\}`, 'g'), value);
+    text = text.replace(new RegExp(`\\$\\{${idx}:[^}]*\\}`, "g"), value);
+    text = text.replace(new RegExp(`\\$\\{${idx}\\}`, "g"), value);
   }
   // Fill remaining placeholders with default values
   for (const placeholder of snippet.placeholders) {
     if (!(placeholder.index in values)) {
-      const defaultVal = placeholder.defaultValue ?? '';
-      text = text.replace(
-        new RegExp(`\\$\\{${placeholder.index}:[^}]*\\}`, 'g'),
-        defaultVal
-      );
-      text = text.replace(
-        new RegExp(`\\$\\{${placeholder.index}\\}`, 'g'),
-        defaultVal
-      );
+      const defaultVal = placeholder.defaultValue ?? "";
+      text = text.replace(new RegExp(`\\$\\{${placeholder.index}:[^}]*\\}`, "g"), defaultVal);
+      text = text.replace(new RegExp(`\\$\\{${placeholder.index}\\}`, "g"), defaultVal);
     }
   }
   return text;

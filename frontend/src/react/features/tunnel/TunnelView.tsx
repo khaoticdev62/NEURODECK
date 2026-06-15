@@ -1,16 +1,16 @@
-import { useState } from 'react';
-import { ArrowLeftRight, Power, PowerOff, Send, FolderOpen } from 'lucide-react';
-import { Button } from '../../components/primitives/Button';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { Panel } from '../../components/primitives/Panel';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import { TextInput } from '../../components/primitives/TextInput';
-import { neurodeckApi } from '../../services/bridgeAdapter';
+import { useState } from "react";
+import { ArrowLeftRight, Power, PowerOff, Send, FolderOpen } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import { TextInput } from "../../components/primitives/TextInput";
+import { neurodeckApi } from "../../services/bridgeAdapter";
 
 export function TunnelView() {
   const [running, setRunning] = useState(false);
-  const [command, setCommand] = useState('');
-  const [dirPath, setDirPath] = useState('');
+  const [command, setCommand] = useState("");
+  const [dirPath, setDirPath] = useState("");
   const [log, setLog] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -21,11 +21,11 @@ export function TunnelView() {
     try {
       if (running) {
         await neurodeckApi.tunnel.stop();
-        addLog('Tunnel stopped');
+        addLog("Tunnel stopped");
         setRunning(false);
       } else {
         await neurodeckApi.tunnel.start();
-        addLog('Tunnel started');
+        addLog("Tunnel started");
         setRunning(true);
       }
     } catch (e) {
@@ -41,7 +41,7 @@ export function TunnelView() {
       const res = await neurodeckApi.tunnel.sendRequest(command.trim());
       addLog(`> ${command}`);
       addLog(res.output);
-      setCommand('');
+      setCommand("");
     } catch (e) {
       addLog(`Error: ${String(e)}`);
     }
@@ -59,11 +59,7 @@ export function TunnelView() {
   };
 
   return (
-    <Panel
-      eyebrow="Bridge"
-      title="SteamOS Tunnel"
-      className="flex h-full flex-col"
-    >
+    <Panel eyebrow="Bridge" title="SteamOS Tunnel" className="flex h-full flex-col">
       <div className="flex flex-col gap-4 p-4">
         {/* Connection card */}
         <div className="flex items-center gap-3 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
@@ -74,17 +70,21 @@ export function TunnelView() {
             <div className="text-sm font-semibold text-nd-text-primary">SteamOS Bridge</div>
             <p className="text-xs text-nd-text-muted">Game Mode ↔ Desktop Mode tunnel</p>
           </div>
-          <StatusChip tone={running ? 'success' : 'error'} pulse={running} icon={running ? undefined : PowerOff}>
-            {running ? 'Active' : 'Offline'}
+          <StatusChip
+            tone={running ? "success" : "error"}
+            pulse={running}
+            icon={running ? undefined : PowerOff}
+          >
+            {running ? "Active" : "Offline"}
           </StatusChip>
           <Button
-            variant={running ? 'danger' : 'success'}
+            variant={running ? "danger" : "success"}
             size="sm"
             icon={running ? PowerOff : Power}
             onClick={() => void toggle()}
             loading={loading}
           >
-            {running ? 'Stop' : 'Start'}
+            {running ? "Stop" : "Start"}
           </Button>
         </div>
 
@@ -94,7 +94,7 @@ export function TunnelView() {
             <TextInput
               value={command}
               onChange={(e) => setCommand(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendCmd()}
+              onKeyDown={(e) => e.key === "Enter" && sendCmd()}
               placeholder="Shell command..."
               aria-label="Shell command"
               fullWidth
@@ -108,7 +108,7 @@ export function TunnelView() {
             <TextInput
               value={dirPath}
               onChange={(e) => setDirPath(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && listDir()}
+              onKeyDown={(e) => e.key === "Enter" && listDir()}
               placeholder="Directory path..."
               aria-label="Directory path to list"
               fullWidth
@@ -135,11 +135,11 @@ export function TunnelView() {
               <div
                 key={i}
                 className={`py-0.5 ${
-                  line.startsWith('>')
-                    ? 'text-nd-accent-primary'
-                    : line.startsWith('Error')
-                      ? 'text-nd-accent-error'
-                      : 'text-nd-text-muted'
+                  line.startsWith(">")
+                    ? "text-nd-accent-primary"
+                    : line.startsWith("Error")
+                      ? "text-nd-accent-error"
+                      : "text-nd-text-muted"
                 }`}
               >
                 {line}

@@ -1,21 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Share2, Users, ArrowUpDown, Send, Radio,
-  CheckCircle2, XCircle, X, Download, Upload,
-  Wifi, AlertTriangle, KeyRound, ArrowLeftRight
-} from 'lucide-react';
-import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
-import type { DiscoveredPeer, FileTransfer } from '../../services/bridgeAdapter';
-import { TorrentView } from '../torrent/TorrentView';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { Panel } from '../../components/primitives/Panel';
-import { Select } from '../../components/primitives/Select';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import { TextInput } from '../../components/primitives/TextInput';
-import { Badge } from '../../components/primitives/Badge';
-
+  Share2,
+  Users,
+  ArrowUpDown,
+  Send,
+  Radio,
+  CheckCircle2,
+  XCircle,
+  X,
+  Download,
+  Upload,
+  Wifi,
+  AlertTriangle,
+  KeyRound,
+  ArrowLeftRight,
+} from "lucide-react";
+import { neurodeckApi, listenBridge } from "../../services/bridgeAdapter";
+import type { DiscoveredPeer, FileTransfer } from "../../services/bridgeAdapter";
+import { TorrentView } from "../torrent/TorrentView";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { Panel } from "../../components/primitives/Panel";
+import { Select } from "../../components/primitives/Select";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import { TextInput } from "../../components/primitives/TextInput";
+import { Badge } from "../../components/primitives/Badge";
 
 // ── LAN P2P Panel ─────────────────────────────────────────────────────────────
 
@@ -35,7 +45,7 @@ interface LegacyTransfer {
 function LanPanel() {
   const [peers, setPeers] = useState<LegacyPeer[]>([]);
   const [transfers, setTransfers] = useState<LegacyTransfer[]>([]);
-  const [filePath, setFilePath] = useState('');
+  const [filePath, setFilePath] = useState("");
   const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
@@ -52,7 +62,7 @@ function LanPanel() {
       );
       setTransfers(
         rawTransfers
-          .filter((t) => !['Pending'].includes(t.status))
+          .filter((t) => !["Pending"].includes(t.status))
           .map((t) => ({
             id: t.id,
             filename: t.filename,
@@ -60,7 +70,9 @@ function LanPanel() {
             status: t.status,
           }))
       );
-    } catch (_) { /* ignore — backend may not be ready */ }
+    } catch (_) {
+      /* ignore — backend may not be ready */
+    }
   }, []);
 
   useEffect(() => {
@@ -74,7 +86,7 @@ function LanPanel() {
     setLoading(true);
     try {
       await neurodeckApi.share.startTransfer(filePath.trim());
-      setFilePath('');
+      setFilePath("");
       await load();
     } catch (_) {
       // Transfer errors surface in the transfers list from the backend
@@ -90,7 +102,7 @@ function LanPanel() {
           <TextInput
             value={filePath}
             onChange={(e) => setFilePath(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && void sendFile()}
+            onKeyDown={(e) => e.key === "Enter" && void sendFile()}
             placeholder="File path to send..."
             aria-label="File path to send"
             fullWidth
@@ -147,8 +159,19 @@ function LanPanel() {
                   className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-2.5"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-xs font-medium text-nd-text-primary">{t.filename}</span>
-                    <StatusChip size="sm" tone={t.status === 'Completed' ? 'success' : t.status === 'Failed' ? 'error' : 'info'}>
+                    <span className="truncate text-xs font-medium text-nd-text-primary">
+                      {t.filename}
+                    </span>
+                    <StatusChip
+                      size="sm"
+                      tone={
+                        t.status === "Completed"
+                          ? "success"
+                          : t.status === "Failed"
+                            ? "error"
+                            : "info"
+                      }
+                    >
                       {t.status}
                     </StatusChip>
                   </div>
@@ -181,16 +204,16 @@ function LanPanel() {
 function WarpinatorPanel() {
   const [peers, setPeers] = useState<DiscoveredPeer[]>([]);
   const [transfers, setTransfers] = useState<FileTransfer[]>([]);
-  const [groupCode, setGroupCode] = useState('');
-  const [codeInput, setCodeInput] = useState('');
+  const [groupCode, setGroupCode] = useState("");
+  const [codeInput, setCodeInput] = useState("");
   const [savingCode, setSavingCode] = useState(false);
-  const [sendPath, setSendPath] = useState('');
-  const [selectedPeerIp, setSelectedPeerIp] = useState('');
+  const [sendPath, setSendPath] = useState("");
+  const [selectedPeerIp, setSelectedPeerIp] = useState("");
   const [sending, setSending] = useState(false);
-  const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const showNotice = (kind: 'ok' | 'error', text: string) => {
+  const showNotice = (kind: "ok" | "error", text: string) => {
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
     setNotice({ kind, text });
     noticeTimer.current = setTimeout(() => setNotice(null), 4000);
@@ -206,12 +229,14 @@ function WarpinatorPanel() {
       const warpPeers = rawPeers.filter((p) => p.is_warpinator);
       setPeers(warpPeers);
       setTransfers(rawTransfers);
-      setGroupCode(codeRes.code ?? '');
-      setCodeInput(codeRes.code ?? '');
+      setGroupCode(codeRes.code ?? "");
+      setCodeInput(codeRes.code ?? "");
       if (warpPeers.length > 0 && !selectedPeerIp) {
         setSelectedPeerIp(warpPeers[0].ip);
       }
-    } catch (_) { /* backend may not be ready */ }
+    } catch (_) {
+      /* backend may not be ready */
+    }
   }, [selectedPeerIp]);
 
   // Initial load
@@ -221,7 +246,7 @@ function WarpinatorPanel() {
 
   // WebSocket event subscriptions
   useEffect(() => {
-    const unsubPeers = listenBridge('peers_updated', (payload) => {
+    const unsubPeers = listenBridge("peers_updated", (payload) => {
       const list = payload as DiscoveredPeer[];
       const warpPeers = list.filter((p) => p.is_warpinator);
       setPeers(warpPeers);
@@ -230,38 +255,34 @@ function WarpinatorPanel() {
       }
     });
 
-    const unsubIncoming = listenBridge('transfer_incoming', (payload) => {
+    const unsubIncoming = listenBridge("transfer_incoming", (payload) => {
       const t = payload as FileTransfer;
       setTransfers((prev) => {
         const exists = prev.some((x) => x.id === t.id);
         return exists ? prev.map((x) => (x.id === t.id ? t : x)) : [...prev, t];
       });
-      showNotice('ok', `Incoming: ${t.filename} from ${t.peer_name}`);
+      showNotice("ok", `Incoming: ${t.filename} from ${t.peer_name}`);
     });
 
-    const unsubProgress = listenBridge('transfer_progress', (payload) => {
+    const unsubProgress = listenBridge("transfer_progress", (payload) => {
       const [id, bytesTransferred] = payload as [string, number];
       setTransfers((prev) =>
         prev.map((t) =>
-          t.id === id
-            ? { ...t, progress: bytesTransferred, status: 'Transferring' }
-            : t
+          t.id === id ? { ...t, progress: bytesTransferred, status: "Transferring" } : t
         )
       );
     });
 
-    const unsubCompleted = listenBridge('transfer_completed', (payload) => {
+    const unsubCompleted = listenBridge("transfer_completed", (payload) => {
       const id = payload as string;
       setTransfers((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, status: 'Completed', progress: t.size } : t))
+        prev.map((t) => (t.id === id ? { ...t, status: "Completed", progress: t.size } : t))
       );
     });
 
-    const unsubFailed = listenBridge('transfer_failed', (payload) => {
+    const unsubFailed = listenBridge("transfer_failed", (payload) => {
       const id = payload as string;
-      setTransfers((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, status: 'Failed' } : t))
-      );
+      setTransfers((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Failed" } : t)));
     });
 
     return () => {
@@ -279,9 +300,9 @@ function WarpinatorPanel() {
     try {
       await neurodeckApi.share.setGroupCode(codeInput.trim());
       setGroupCode(codeInput.trim());
-      showNotice('ok', 'Group code updated. Warpinator peers on the same code will appear below.');
+      showNotice("ok", "Group code updated. Warpinator peers on the same code will appear below.");
     } catch (e) {
-      showNotice('error', `Failed to set group code: ${e}`);
+      showNotice("error", `Failed to set group code: ${e}`);
     } finally {
       setSavingCode(false);
     }
@@ -292,10 +313,10 @@ function WarpinatorPanel() {
     setSending(true);
     try {
       await neurodeckApi.share.startTransfer(sendPath.trim(), selectedPeerIp);
-      setSendPath('');
-      showNotice('ok', 'Transfer started.');
+      setSendPath("");
+      showNotice("ok", "Transfer started.");
     } catch (e) {
-      showNotice('error', `Send failed: ${e}`);
+      showNotice("error", `Send failed: ${e}`);
     } finally {
       setSending(false);
     }
@@ -304,22 +325,18 @@ function WarpinatorPanel() {
   const accept = async (id: string) => {
     try {
       await neurodeckApi.share.respondToTransfer(id, true);
-      setTransfers((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, status: 'Accepted' } : t))
-      );
+      setTransfers((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Accepted" } : t)));
     } catch (e) {
-      showNotice('error', `Accept failed: ${e}`);
+      showNotice("error", `Accept failed: ${e}`);
     }
   };
 
   const reject = async (id: string) => {
     try {
       await neurodeckApi.share.respondToTransfer(id, false);
-      setTransfers((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, status: 'Rejected' } : t))
-      );
+      setTransfers((prev) => prev.map((t) => (t.id === id ? { ...t, status: "Rejected" } : t)));
     } catch (e) {
-      showNotice('error', `Reject failed: ${e}`);
+      showNotice("error", `Reject failed: ${e}`);
     }
   };
 
@@ -328,12 +345,18 @@ function WarpinatorPanel() {
       await neurodeckApi.share.cancelTransfer(id);
       setTransfers((prev) => prev.filter((t) => t.id !== id));
     } catch (e) {
-      showNotice('error', `Cancel failed: ${e}`);
+      showNotice("error", `Cancel failed: ${e}`);
     }
   };
 
-  const pendingIncoming = transfers.filter((t) => t.direction === 'Incoming' && t.status === 'Pending');
-  const activeTransfers = transfers.filter((t) => !['Rejected', 'Cancelled'].includes(t.status) && !(t.direction === 'Incoming' && t.status === 'Pending'));
+  const pendingIncoming = transfers.filter(
+    (t) => t.direction === "Incoming" && t.status === "Pending"
+  );
+  const activeTransfers = transfers.filter(
+    (t) =>
+      !["Rejected", "Cancelled"].includes(t.status) &&
+      !(t.direction === "Incoming" && t.status === "Pending")
+  );
 
   const peerOptions = peers.map((p) => ({ value: p.ip, label: `${p.hostname} (${p.ip})` }));
 
@@ -346,9 +369,9 @@ function WarpinatorPanel() {
             role="status"
             aria-live="polite"
             className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
-              notice.kind === 'ok'
-                ? 'border-nd-success/25 bg-nd-success/10 text-nd-success'
-                : 'border-nd-accent-error/25 bg-nd-accent-error/10 text-nd-accent-error'
+              notice.kind === "ok"
+                ? "border-nd-accent-success/25 bg-nd-accent-success/10 text-nd-accent-success"
+                : "border-nd-accent-error/25 bg-nd-accent-error/10 text-nd-accent-error"
             }`}
           >
             {notice.text}
@@ -371,7 +394,9 @@ function WarpinatorPanel() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-xs font-semibold text-nd-text-primary">Warpinator gRPC Service</p>
-            <p className="text-[10px] text-nd-text-muted">Listening on port 42000 · mDNS discovery active</p>
+            <p className="text-[10px] text-nd-text-muted">
+              Listening on port 42000 · mDNS discovery active
+            </p>
           </div>
           <Badge tone="success" variant="outline" dot>
             RUNNING
@@ -390,13 +415,14 @@ function WarpinatorPanel() {
             )}
           </div>
           <p className="mb-3 text-[10px] text-nd-text-muted">
-            Warpinator peers on the same group code are discoverable. Leave blank to use the default group.
+            Warpinator peers on the same group code are discoverable. Leave blank to use the default
+            group.
           </p>
           <div className="flex gap-2">
             <TextInput
               value={codeInput}
               onChange={(e) => setCodeInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void saveGroupCode()}
+              onKeyDown={(e) => e.key === "Enter" && void saveGroupCode()}
               placeholder="e.g. NEURODECK"
               aria-label="Warpinator group code"
               fullWidth
@@ -416,9 +442,9 @@ function WarpinatorPanel() {
 
         {/* Incoming transfer requests */}
         {pendingIncoming.length > 0 && (
-          <div className="rounded-xl border border-nd-warning/25 bg-nd-warning/5 p-4">
+          <div className="rounded-xl border border-nd-accent-warning/25 bg-nd-accent-warning/5 p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Download className="h-4 w-4 text-nd-warning" aria-hidden="true" />
+              <Download className="h-4 w-4 text-nd-accent-warning" aria-hidden="true" />
               <h3 className="text-xs font-semibold text-nd-text-primary">
                 Incoming Requests ({pendingIncoming.length})
               </h3>
@@ -427,12 +453,14 @@ function WarpinatorPanel() {
               {pendingIncoming.map((t) => (
                 <div
                   key={t.id}
-                  className="flex items-center gap-3 rounded-lg border border-nd-warning/20 bg-nd-warning/5 p-3"
+                  className="flex items-center gap-3 rounded-lg border border-nd-accent-warning/20 bg-nd-accent-warning/5 p-3"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-semibold text-nd-text-primary">{t.filename}</p>
+                    <p className="truncate text-xs font-semibold text-nd-text-primary">
+                      {t.filename}
+                    </p>
                     <p className="text-[10px] text-nd-text-muted">
-                      From {t.peer_name} · {t.size > 0 ? formatBytes(t.size) : 'unknown size'}
+                      From {t.peer_name} · {t.size > 0 ? formatBytes(t.size) : "unknown size"}
                     </p>
                   </div>
                   <Button
@@ -487,23 +515,29 @@ function WarpinatorPanel() {
                     aria-pressed={selectedPeerIp === peer.ip}
                     className={`w-full rounded-lg border p-2.5 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                       selectedPeerIp === peer.ip
-                        ? 'border-nd-accent-primary/40 bg-nd-accent-primary/[0.06]'
-                        : 'border-nd-border-subtle bg-nd-surface-secondary/60 hover:border-nd-accent-primary/25'
+                        ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.06]"
+                        : "border-nd-border-subtle bg-nd-surface-secondary/60 hover:border-nd-accent-primary/25"
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       <span
                         className={`h-2 w-2 shrink-0 rounded-full ${
-                          selectedPeerIp === peer.ip ? 'bg-nd-accent-primary' : 'bg-nd-text-muted/40'
+                          selectedPeerIp === peer.ip
+                            ? "bg-nd-accent-primary"
+                            : "bg-nd-text-muted/40"
                         }`}
                         aria-hidden="true"
                       />
-                      <p className="truncate text-xs font-semibold text-nd-text-primary">{peer.hostname}</p>
+                      <p className="truncate text-xs font-semibold text-nd-text-primary">
+                        {peer.hostname}
+                      </p>
                       <span className="ml-auto shrink-0 rounded px-1 py-0.5 text-[9px] font-mono text-nd-text-muted">
                         {peer.os}
                       </span>
                     </div>
-                    <p className="mt-0.5 pl-4 text-[10px] font-mono text-nd-text-muted">{peer.ip}:{peer.port}</p>
+                    <p className="mt-0.5 pl-4 text-[10px] font-mono text-nd-text-muted">
+                      {peer.ip}:{peer.port}
+                    </p>
                   </button>
                 ))}
               </div>
@@ -522,7 +556,7 @@ function WarpinatorPanel() {
                 label="File path"
                 value={sendPath}
                 onChange={(e) => setSendPath(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && void sendFile()}
+                onKeyDown={(e) => e.key === "Enter" && void sendFile()}
                 placeholder="/path/to/file"
                 fullWidth
               />
@@ -557,14 +591,16 @@ function WarpinatorPanel() {
           <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
             <div className="mb-3 flex items-center gap-2">
               <ArrowUpDown className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
-              <h3 className="text-xs font-semibold text-nd-text-primary">Transfers ({activeTransfers.length})</h3>
+              <h3 className="text-xs font-semibold text-nd-text-primary">
+                Transfers ({activeTransfers.length})
+              </h3>
             </div>
             <div className="flex flex-col gap-2">
               {activeTransfers.map((t) => {
                 const pct = t.size > 0 ? Math.min(100, Math.round((t.progress / t.size) * 100)) : 0;
-                const isActive = t.status === 'Transferring';
-                const isDone = t.status === 'Completed';
-                const isFailed = t.status === 'Failed';
+                const isActive = t.status === "Transferring";
+                const isDone = t.status === "Completed";
+                const isFailed = t.status === "Failed";
                 return (
                   <div
                     key={t.id}
@@ -572,16 +608,28 @@ function WarpinatorPanel() {
                   >
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5 shrink-0">
-                        {t.direction === 'Incoming'
-                          ? <Download className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
-                          : <Upload className="h-4 w-4 text-nd-success" aria-hidden="true" />}
+                        {t.direction === "Incoming" ? (
+                          <Download className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+                        ) : (
+                          <Upload className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-xs font-semibold text-nd-text-primary">{t.filename}</p>
+                          <p className="truncate text-xs font-semibold text-nd-text-primary">
+                            {t.filename}
+                          </p>
                           <StatusChip
                             size="sm"
-                            tone={isDone ? 'success' : isFailed ? 'error' : isActive ? 'info' : 'warning'}
+                            tone={
+                              isDone
+                                ? "success"
+                                : isFailed
+                                  ? "error"
+                                  : isActive
+                                    ? "info"
+                                    : "warning"
+                            }
                             pulse={isActive}
                           >
                             {t.status}
@@ -593,13 +641,19 @@ function WarpinatorPanel() {
                         {(isActive || pct > 0) && (
                           <div className="mt-2">
                             <div className="mb-1 flex justify-between text-[10px] text-nd-text-muted">
-                              <span>{formatBytes(t.progress)} / {formatBytes(t.size)}</span>
+                              <span>
+                                {formatBytes(t.progress)} / {formatBytes(t.size)}
+                              </span>
                               <span>{pct}%</span>
                             </div>
                             <div className="h-1.5 overflow-hidden rounded-full bg-nd-surface-tertiary/60">
                               <div
                                 className={`h-full rounded-full transition-all duration-normal motion-reduce:transition-none ${
-                                  isDone ? 'bg-nd-success' : isFailed ? 'bg-nd-accent-error' : 'bg-nd-accent-primary'
+                                  isDone
+                                    ? "bg-nd-accent-success"
+                                    : isFailed
+                                      ? "bg-nd-accent-error"
+                                      : "bg-nd-accent-primary"
                                 }`}
                                 style={{ width: `${pct}%` }}
                               />
@@ -631,24 +685,24 @@ function WarpinatorPanel() {
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 B';
+  if (bytes === 0) return "0 B";
   const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const sizes = ["B", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
 // ── ShareView ─────────────────────────────────────────────────────────────────
 
-type SharePanel = 'lan' | 'warpinator' | 'torrent';
+type SharePanel = "lan" | "warpinator" | "torrent";
 
 export function ShareView() {
-  const [activePanel, setActivePanel] = useState<SharePanel>('lan');
+  const [activePanel, setActivePanel] = useState<SharePanel>("lan");
 
   const tabs: { id: SharePanel; label: string }[] = [
-    { id: 'lan', label: 'LAN P2P' },
-    { id: 'warpinator', label: 'Warpinator' },
-    { id: 'torrent', label: 'Torrent' },
+    { id: "lan", label: "LAN P2P" },
+    { id: "warpinator", label: "Warpinator" },
+    { id: "torrent", label: "Torrent" },
   ];
 
   return (
@@ -659,14 +713,20 @@ export function ShareView() {
           <Share2 className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-nd-text-muted">Share</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-nd-text-muted">
+            Share
+          </p>
           <h2 className="text-lg font-semibold text-nd-text-primary">Share & Transfer</h2>
           <p className="text-xs text-nd-text-muted">LAN P2P · Warpinator · Torrent</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div role="tablist" aria-label="Share panels" className="mb-3 flex gap-1 overflow-x-auto rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-1">
+      <div
+        role="tablist"
+        aria-label="Share panels"
+        className="mb-3 flex gap-1 overflow-x-auto rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-1"
+      >
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -677,8 +737,8 @@ export function ShareView() {
             data-panel={tab.id}
             className={`relative flex min-h-[40px] shrink-0 items-center justify-center rounded-md px-3 py-1.5 text-xs font-medium outline-none transition-colors duration-fast focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
               activePanel === tab.id
-                ? 'bg-nd-surface-tertiary text-nd-text-primary shadow-sm'
-                : 'text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary'
+                ? "bg-nd-surface-tertiary text-nd-text-primary shadow-sm"
+                : "text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary"
             }`}
           >
             {tab.label}
@@ -687,13 +747,18 @@ export function ShareView() {
       </div>
 
       {/* Panel areas — keep all mounted to preserve state */}
-      <div className={`flex min-h-0 flex-1 flex-col ${activePanel === 'lan' ? '' : 'hidden'}`}>
+      <div className={`flex min-h-0 flex-1 flex-col ${activePanel === "lan" ? "" : "hidden"}`}>
         <LanPanel />
       </div>
-      <div className={`flex min-h-0 flex-1 flex-col ${activePanel === 'warpinator' ? '' : 'hidden'}`}>
+      <div
+        className={`flex min-h-0 flex-1 flex-col ${activePanel === "warpinator" ? "" : "hidden"}`}
+      >
         <WarpinatorPanel />
       </div>
-      <div id="share-panel-torrent" className={`flex min-h-0 flex-1 flex-col ${activePanel === 'torrent' ? 'active' : 'hidden'}`}>
+      <div
+        id="share-panel-torrent"
+        className={`flex min-h-0 flex-1 flex-col ${activePanel === "torrent" ? "active" : "hidden"}`}
+      >
         <TorrentView />
       </div>
     </div>

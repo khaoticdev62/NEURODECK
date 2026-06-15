@@ -1,26 +1,40 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Magnet, Plus, Pause, Play, Trash2, RefreshCw, ArrowDown, ArrowUp,
-  FolderOpen, ArrowUpRight, Copy, Search, CheckSquare, Square as SquareIcon,
-  PauseCircle, PlayCircle, Trash
-} from 'lucide-react';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { TorrentItem } from '../../services/bridgeAdapter';
-import { useToast } from '../../components/primitives/Toast';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { LoadingState } from '../../components/primitives/LoadingState';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { Panel } from '../../components/primitives/Panel';
-import { Modal } from '../../components/primitives/Modal';
-import { Select } from '../../components/primitives/Select';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import { TextInput } from '../../components/primitives/TextInput';
+  Magnet,
+  Plus,
+  Pause,
+  Play,
+  Trash2,
+  RefreshCw,
+  ArrowDown,
+  ArrowUp,
+  FolderOpen,
+  ArrowUpRight,
+  Copy,
+  Search,
+  CheckSquare,
+  Square as SquareIcon,
+  PauseCircle,
+  PlayCircle,
+  Trash,
+} from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { TorrentItem } from "../../services/bridgeAdapter";
+import { useToast } from "../../components/primitives/Toast";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { LoadingState } from "../../components/primitives/LoadingState";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { Panel } from "../../components/primitives/Panel";
+import { Modal } from "../../components/primitives/Modal";
+import { Select } from "../../components/primitives/Select";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import { TextInput } from "../../components/primitives/TextInput";
 
 function formatBytes(bytes?: number) {
   const value = Number(bytes || 0);
-  if (!Number.isFinite(value) || value <= 0) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  if (!Number.isFinite(value) || value <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
   let scaled = value;
   let unitIndex = 0;
   while (scaled >= 1024 && unitIndex < units.length - 1) {
@@ -36,10 +50,10 @@ function formatRate(bps?: number) {
 }
 
 function formatEta(seconds?: number | null) {
-  if (seconds === null || seconds === undefined) return '—';
+  if (seconds === null || seconds === undefined) return "—";
   const totalSeconds = Number(seconds);
-  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return '—';
-  if (totalSeconds === 0) return 'done';
+  if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "—";
+  if (totalSeconds === 0) return "done";
   if (totalSeconds < 60) return `${Math.round(totalSeconds)}s`;
   if (totalSeconds < 3600) {
     const minutes = Math.floor(totalSeconds / 60);
@@ -52,68 +66,75 @@ function formatEta(seconds?: number | null) {
 }
 
 function torrentStatusKey(entry: TorrentItem) {
-  if (!entry) return 'unknown';
-  if (entry.completed && entry.paused) return 'paused-complete';
-  if (entry.completed) return 'completed';
-  if (entry.paused) return 'paused';
-  if (!entry.metadata_known) return 'metadata';
-  if (entry.status === 'waiting' && Number(entry.peers || 0) === 0) return 'stalled';
-  if (entry.status === 'waiting') return 'waiting';
-  return entry.status || 'running';
+  if (!entry) return "unknown";
+  if (entry.completed && entry.paused) return "paused-complete";
+  if (entry.completed) return "completed";
+  if (entry.paused) return "paused";
+  if (!entry.metadata_known) return "metadata";
+  if (entry.status === "waiting" && Number(entry.peers || 0) === 0) return "stalled";
+  if (entry.status === "waiting") return "waiting";
+  return entry.status || "running";
 }
 
 function torrentStatusLabel(entry: TorrentItem) {
   switch (torrentStatusKey(entry)) {
-    case 'paused-complete': return 'paused complete';
-    case 'completed': return 'completed';
-    case 'paused': return 'paused';
-    case 'metadata': return 'fetching metadata';
-    case 'waiting': return 'waiting for peers';
-    case 'stalled': return 'stalled';
-    case 'running':
-    default: return 'downloading';
+    case "paused-complete":
+      return "paused complete";
+    case "completed":
+      return "completed";
+    case "paused":
+      return "paused";
+    case "metadata":
+      return "fetching metadata";
+    case "waiting":
+      return "waiting for peers";
+    case "stalled":
+      return "stalled";
+    case "running":
+    default:
+      return "downloading";
   }
 }
 
-function torrentStatusTone(entry: TorrentItem): 'info' | 'success' | 'warning' | 'error' {
+function torrentStatusTone(entry: TorrentItem): "info" | "success" | "warning" | "error" {
   const key = torrentStatusKey(entry);
-  if (key === 'completed') return 'success';
-  if (key === 'paused' || key === 'paused-complete') return 'warning';
-  if (key === 'stalled' || key === 'metadata') return 'warning';
-  return 'info';
+  if (key === "completed") return "success";
+  if (key === "paused" || key === "paused-complete") return "warning";
+  if (key === "stalled" || key === "metadata") return "warning";
+  return "info";
 }
 
-type FilterKey = 'all' | 'running' | 'paused' | 'completed' | 'metadata' | 'stalled';
-type SortKey = 'recent' | 'progress' | 'name' | 'peers' | 'status';
+type FilterKey = "all" | "running" | "paused" | "completed" | "metadata" | "stalled";
+type SortKey = "recent" | "progress" | "name" | "peers" | "status";
 
 const FILTER_OPTIONS: { value: FilterKey; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'running', label: 'Running' },
-  { value: 'paused', label: 'Paused' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'metadata', label: 'Metadata' },
-  { value: 'stalled', label: 'Stalled' },
+  { value: "all", label: "All" },
+  { value: "running", label: "Running" },
+  { value: "paused", label: "Paused" },
+  { value: "completed", label: "Completed" },
+  { value: "metadata", label: "Metadata" },
+  { value: "stalled", label: "Stalled" },
 ];
 
 const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: 'recent', label: 'Recent' },
-  { value: 'progress', label: 'Progress' },
-  { value: 'name', label: 'Name' },
-  { value: 'peers', label: 'Peers' },
-  { value: 'status', label: 'Status' },
+  { value: "recent", label: "Recent" },
+  { value: "progress", label: "Progress" },
+  { value: "name", label: "Name" },
+  { value: "peers", label: "Peers" },
+  { value: "status", label: "Status" },
 ];
 
 export function TorrentView() {
   const { toast } = useToast();
   const [torrents, setTorrents] = useState<TorrentItem[]>([]);
-  const [downloadRoot, setDownloadRoot] = useState('');
-  const [input, setInput] = useState('');
+  const [downloadRoot, setDownloadRoot] = useState("");
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<FilterKey>('all');
-  const [sort, setSort] = useState<SortKey>('recent');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const [sort, setSort] = useState<SortKey>("recent");
   const [confirmRemove, setConfirmRemove] = useState<{ id?: string; ids?: string[] } | null>(null);
   const [deleteData, setDeleteData] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -126,18 +147,20 @@ export function TorrentView() {
       const status = await neurodeckApi.torrent.getStatus();
       const list = status.torrents || [];
       setTorrents(list);
-      setDownloadRoot(status.download_root || '');
+      setDownloadRoot(status.download_root || "");
 
       // Detect completions
       const nowCompleted = new Set(list.filter((t) => t.completed).map((t) => t.id));
       for (const id of nowCompleted) {
         if (!prevCompleted.current.has(id)) {
           const t = list.find((x) => x.id === id);
-          if (t) toast(`Download complete: ${t.name || t.id}`, 'success', 6000);
+          if (t) toast(`Download complete: ${t.name || t.id}`, "success", 6000);
         }
       }
       prevCompleted.current = nowCompleted;
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
     setLoading(false);
   }, [toast]);
 
@@ -150,14 +173,14 @@ export function TorrentView() {
   // Paste handler for magnet links
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
-      const text = e.clipboardData?.getData('text') || '';
-      if (text.startsWith('magnet:?')) {
+      const text = e.clipboardData?.getData("text") || "";
+      if (text.startsWith("magnet:?")) {
         setInput(text);
-        toast('Magnet link detected — press Add to start', 'info', 3000);
+        toast("Magnet link detected — press Add to start", "info", 3000);
       }
     };
-    window.addEventListener('paste', onPaste);
-    return () => window.removeEventListener('paste', onPaste);
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
   }, [toast]);
 
   const addTorrent = async (source?: string) => {
@@ -166,9 +189,11 @@ export function TorrentView() {
     setLoading(true);
     try {
       await neurodeckApi.torrent.add(src);
-      setInput('');
+      setInput("");
       await load();
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
     setLoading(false);
   };
 
@@ -177,7 +202,9 @@ export function TorrentView() {
       if (t.paused) await neurodeckApi.torrent.resume(t.id);
       else await neurodeckApi.torrent.pause(t.id);
       await load();
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
   };
 
   const removeTorrent = async (id: string, withData: boolean) => {
@@ -189,20 +216,30 @@ export function TorrentView() {
         return next;
       });
       await load();
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
   };
 
   const pauseAll = async () => {
-    try { await neurodeckApi.torrent.pauseAll(); await load(); } catch (_) {}
+    try {
+      await neurodeckApi.torrent.pauseAll();
+      await load();
+    } catch (_) {}
   };
 
   const resumeAll = async () => {
-    try { await neurodeckApi.torrent.resumeAll(); await load(); } catch (_) {}
+    try {
+      await neurodeckApi.torrent.resumeAll();
+      await load();
+    } catch (_) {}
   };
 
   const batchRemove = async (ids: string[], withData: boolean) => {
     for (const id of ids) {
-      try { await neurodeckApi.torrent.remove(id, withData); } catch (_) {}
+      try {
+        await neurodeckApi.torrent.remove(id, withData);
+      } catch (_) {}
     }
     setSelectedIds(new Set());
     await load();
@@ -231,14 +268,15 @@ export function TorrentView() {
     }
 
     // Filter
-    if (filter !== 'all') {
+    if (filter !== "all") {
       list = list.filter((t) => {
         const key = torrentStatusKey(t);
-        if (filter === 'running') return key === 'running' || key === 'waiting' || key === 'stalled';
-        if (filter === 'paused') return key === 'paused' || key === 'paused-complete';
-        if (filter === 'completed') return key === 'completed';
-        if (filter === 'metadata') return key === 'metadata';
-        if (filter === 'stalled') return key === 'stalled';
+        if (filter === "running")
+          return key === "running" || key === "waiting" || key === "stalled";
+        if (filter === "paused") return key === "paused" || key === "paused-complete";
+        if (filter === "completed") return key === "completed";
+        if (filter === "metadata") return key === "metadata";
+        if (filter === "stalled") return key === "stalled";
         return true;
       });
     }
@@ -246,21 +284,23 @@ export function TorrentView() {
     // Sort
     list = [...list];
     switch (sort) {
-      case 'progress':
+      case "progress":
         list.sort((a, b) => (b.progress_pct || 0) - (a.progress_pct || 0));
         break;
-      case 'name':
+      case "name":
         list.sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
         break;
-      case 'peers':
+      case "peers":
         list.sort((a, b) => (b.peers || 0) - (a.peers || 0));
         break;
-      case 'status':
+      case "status":
         list.sort((a, b) => torrentStatusKey(a).localeCompare(torrentStatusKey(b)));
         break;
-      case 'recent':
+      case "recent":
       default:
-        list.sort((a, b) => new Date(b.added_at_utc).getTime() - new Date(a.added_at_utc).getTime());
+        list.sort(
+          (a, b) => new Date(b.added_at_utc).getTime() - new Date(a.added_at_utc).getTime()
+        );
         break;
     }
 
@@ -279,27 +319,32 @@ export function TorrentView() {
   const selected = torrents.find((t) => t.id === selectedId) || null;
 
   // Drag and drop
-  const onDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
-  const onDragLeave = () => { setIsDragging(false); };
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const onDragLeave = () => {
+    setIsDragging(false);
+  };
   const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const text = e.dataTransfer.getData('text');
-    if (text && (text.startsWith('magnet:?') || text.endsWith('.torrent'))) {
+    const text = e.dataTransfer.getData("text");
+    if (text && (text.startsWith("magnet:?") || text.endsWith(".torrent"))) {
       await addTorrent(text);
-      toast('Torrent added from drop', 'success', 3000);
+      toast("Torrent added from drop", "success", 3000);
       return;
     }
     const files = Array.from(e.dataTransfer.files);
     for (const file of files) {
-      if (file.name.endsWith('.torrent')) {
+      if (file.name.endsWith(".torrent")) {
         const reader = new FileReader();
         reader.onload = async (ev) => {
           const content = ev.target?.result;
-          if (typeof content === 'string') {
+          if (typeof content === "string") {
             // For file drops, we'd need a file path or content upload —
             // bridge doesn't support raw content upload yet, so show a message
-            toast('File drop: use magnet links or paste file paths for now', 'warning', 4000);
+            toast("File drop: use magnet links or paste file paths for now", "warning", 4000);
           }
         };
         reader.readAsText(file);
@@ -311,7 +356,7 @@ export function TorrentView() {
     <Panel
       eyebrow="BitTorrent"
       title="Torrent Client"
-      className={`h-full ${isDragging ? 'ring-2 ring-nd-accent-primary/50' : ''}`}
+      className={`h-full ${isDragging ? "ring-2 ring-nd-accent-primary/50" : ""}`}
     >
       <div
         ref={containerRef}
@@ -324,14 +369,16 @@ export function TorrentView() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3 text-xs text-nd-text-muted">
             <span className="flex items-center gap-1">
-              <ArrowDown className="h-3.5 w-3.5 text-nd-success" aria-hidden="true" />
+              <ArrowDown className="h-3.5 w-3.5 text-nd-accent-success" aria-hidden="true" />
               {formatRate(torrents.reduce((sum, t) => sum + (t.download_rate_bps || 0), 0))}
             </span>
             <span className="flex items-center gap-1">
               <ArrowUp className="h-3.5 w-3.5 text-nd-accent-primary" aria-hidden="true" />
               {formatRate(torrents.reduce((sum, t) => sum + (t.upload_rate_bps || 0), 0))}
             </span>
-            <span>{counts.running}/{counts.total} active</span>
+            <span>
+              {counts.running}/{counts.total} active
+            </span>
           </div>
           <IconButton
             type="button"
@@ -341,7 +388,10 @@ export function TorrentView() {
             onClick={load}
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin motion-reduce:animate-none' : ''}`} aria-hidden="true" />
+            <RefreshCw
+              className={`h-4 w-4 ${loading ? "animate-spin motion-reduce:animate-none" : ""}`}
+              aria-hidden="true"
+            />
           </IconButton>
         </div>
 
@@ -351,7 +401,7 @@ export function TorrentView() {
             id="torrent-source-input"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addTorrent()}
+            onKeyDown={(e) => e.key === "Enter" && addTorrent()}
             placeholder="Magnet link or .torrent file path..."
             aria-label="Magnet link or torrent file path"
             fullWidth
@@ -402,10 +452,22 @@ export function TorrentView() {
         {selectedIds.size > 0 && (
           <div className="mb-3 flex items-center gap-2 rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/5 px-3 py-2">
             <span className="text-xs text-nd-text-muted">{selectedIds.size} selected</span>
-            <Button type="button" size="xs" variant="secondary" icon={PauseCircle} onClick={pauseAll}>
+            <Button
+              type="button"
+              size="xs"
+              variant="secondary"
+              icon={PauseCircle}
+              onClick={pauseAll}
+            >
               Pause All
             </Button>
-            <Button type="button" size="xs" variant="secondary" icon={PlayCircle} onClick={resumeAll}>
+            <Button
+              type="button"
+              size="xs"
+              variant="secondary"
+              icon={PlayCircle}
+              onClick={resumeAll}
+            >
               Resume All
             </Button>
             <Button
@@ -448,8 +510,8 @@ export function TorrentView() {
                 onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
                 className={`rounded-xl border p-3 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                   selectedId === t.id
-                    ? 'border-nd-accent-primary/30 bg-nd-accent-primary/[0.05]'
-                    : 'border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/25'
+                    ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.05]"
+                    : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/25"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -458,22 +520,37 @@ export function TorrentView() {
                     type="button"
                     size="sm"
                     variant="ghost"
-                    aria-label={selectedIds.has(t.id) ? `Deselect ${t.name || t.id}` : `Select ${t.name || t.id}`}
+                    aria-label={
+                      selectedIds.has(t.id)
+                        ? `Deselect ${t.name || t.id}`
+                        : `Select ${t.name || t.id}`
+                    }
                     aria-pressed={selectedIds.has(t.id)}
-                    onClick={(e) => { e.stopPropagation(); toggleSelection(t.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleSelection(t.id);
+                    }}
                   >
-                    {selectedIds.has(t.id)
-                      ? <CheckSquare className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
-                      : <SquareIcon className="h-4 w-4" aria-hidden="true" />}
+                    {selectedIds.has(t.id) ? (
+                      <CheckSquare className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
+                    ) : (
+                      <SquareIcon className="h-4 w-4" aria-hidden="true" />
+                    )}
                   </IconButton>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-nd-text-primary">{t.name || t.id}</p>
+                    <p className="truncate text-sm font-medium text-nd-text-primary">
+                      {t.name || t.id}
+                    </p>
                     <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-nd-text-muted">
                       <StatusChip size="sm" tone={torrentStatusTone(t)}>
                         {torrentStatusLabel(t)}
                       </StatusChip>
-                      <span>{t.peers} peers · {t.trackers} trackers</span>
-                      <span>{formatRate(t.download_rate_bps)} ↓ · {formatRate(t.upload_rate_bps)} ↑</span>
+                      <span>
+                        {t.peers} peers · {t.trackers} trackers
+                      </span>
+                      <span>
+                        {formatRate(t.download_rate_bps)} ↓ · {formatRate(t.upload_rate_bps)} ↑
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -481,19 +558,27 @@ export function TorrentView() {
                       type="button"
                       size="md"
                       variant="subtle"
-                      aria-label={t.paused ? 'Resume torrent' : 'Pause torrent'}
-                      onClick={(e) => { e.stopPropagation(); toggleTorrent(t); }}
+                      aria-label={t.paused ? "Resume torrent" : "Pause torrent"}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleTorrent(t);
+                      }}
                     >
-                      {t.paused
-                        ? <Play className="h-4 w-4" aria-hidden="true" />
-                        : <Pause className="h-4 w-4" aria-hidden="true" />}
+                      {t.paused ? (
+                        <Play className="h-4 w-4" aria-hidden="true" />
+                      ) : (
+                        <Pause className="h-4 w-4" aria-hidden="true" />
+                      )}
                     </IconButton>
                     <IconButton
                       type="button"
                       size="md"
                       variant="danger"
                       aria-label="Remove torrent"
-                      onClick={(e) => { e.stopPropagation(); setConfirmRemove({ id: t.id }); }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmRemove({ id: t.id });
+                      }}
                     >
                       <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </IconButton>
@@ -501,12 +586,14 @@ export function TorrentView() {
                 </div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-nd-surface-tertiary/60">
                   <div
-                    className={`h-full rounded-full transition-all duration-normal motion-reduce:transition-none ${t.completed ? 'bg-nd-success' : 'bg-nd-accent-primary'}`}
+                    className={`h-full rounded-full transition-all duration-normal motion-reduce:transition-none ${t.completed ? "bg-nd-accent-success" : "bg-nd-accent-primary"}`}
                     style={{ width: `${Math.min(100, Math.max(0, t.progress_pct || 0))}%` }}
                   />
                 </div>
                 <div className="mt-1 flex justify-between text-[10px] text-nd-text-muted">
-                  <span>{t.progress_pct?.toFixed(1) ?? 0}% · {t.pieces_done}/{t.pieces_total} pieces</span>
+                  <span>
+                    {t.progress_pct?.toFixed(1) ?? 0}% · {t.pieces_done}/{t.pieces_total} pieces
+                  </span>
                   <span>ETA {formatEta(t.eta_seconds)}</span>
                 </div>
               </button>
@@ -519,32 +606,57 @@ export function TorrentView() {
               <h3 className="text-sm font-semibold text-nd-text-primary">Torrent Inspector</h3>
               <div className="space-y-3">
                 <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3">
-                  <p className="truncate text-xs font-medium text-nd-text-primary">{selected.name || selected.id}</p>
-                  <p className="text-[10px] text-nd-text-muted">{selected.source_kind?.toUpperCase()} · {selected.source_display || selected.source_value}</p>
+                  <p className="truncate text-xs font-medium text-nd-text-primary">
+                    {selected.name || selected.id}
+                  </p>
+                  <p className="text-[10px] text-nd-text-muted">
+                    {selected.source_kind?.toUpperCase()} ·{" "}
+                    {selected.source_display || selected.source_value}
+                  </p>
                   <div className="mt-2 flex items-center justify-between">
                     <StatusChip size="sm" tone={torrentStatusTone(selected)}>
                       {torrentStatusLabel(selected)}
                     </StatusChip>
-                    <span className="text-xs font-semibold text-nd-text-primary">{(selected.progress_pct || 0).toFixed(1)}%</span>
+                    <span className="text-xs font-semibold text-nd-text-primary">
+                      {(selected.progress_pct || 0).toFixed(1)}%
+                    </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <InspectorRow label="Progress" value={`${(selected.progress_pct || 0).toFixed(1)}%`} />
-                  <InspectorRow label="Pieces" value={`${selected.pieces_done}/${selected.pieces_total}`} />
+                  <InspectorRow
+                    label="Progress"
+                    value={`${(selected.progress_pct || 0).toFixed(1)}%`}
+                  />
+                  <InspectorRow
+                    label="Pieces"
+                    value={`${selected.pieces_done}/${selected.pieces_total}`}
+                  />
                   <InspectorRow label="Peers" value={String(selected.peers)} />
                   <InspectorRow label="Trackers" value={String(selected.trackers)} />
                   <InspectorRow label="Downloaded" value={formatBytes(selected.downloaded_bytes)} />
                   <InspectorRow label="Uploaded" value={formatBytes(selected.uploaded_bytes)} />
                   <InspectorRow label="Remaining" value={formatBytes(selected.bytes_remaining)} />
                   <InspectorRow label="ETA" value={formatEta(selected.eta_seconds)} />
-                  <InspectorRow label="Info Hash" value={selected.info_hash || '—'} />
+                  <InspectorRow label="Info Hash" value={selected.info_hash || "—"} />
                 </div>
 
                 <div className="flex flex-wrap gap-1">
-                  <MiniBtn icon={Copy} label="Copy Hash" onClick={() => navigator.clipboard.writeText(selected.info_hash || '')} />
-                  <MiniBtn icon={FolderOpen} label="Open Root" onClick={() => neurodeckApi.torrent.openDownloadRoot().catch(() => {})} />
-                  <MiniBtn icon={ArrowUpRight} label="Reveal" onClick={() => neurodeckApi.torrent.openSavePath(selected.id).catch(() => {})} />
+                  <MiniBtn
+                    icon={Copy}
+                    label="Copy Hash"
+                    onClick={() => navigator.clipboard.writeText(selected.info_hash || "")}
+                  />
+                  <MiniBtn
+                    icon={FolderOpen}
+                    label="Open Root"
+                    onClick={() => neurodeckApi.torrent.openDownloadRoot().catch(() => {})}
+                  />
+                  <MiniBtn
+                    icon={ArrowUpRight}
+                    label="Reveal"
+                    onClick={() => neurodeckApi.torrent.openSavePath(selected.id).catch(() => {})}
+                  />
                 </div>
               </div>
             </div>
@@ -553,13 +665,21 @@ export function TorrentView() {
 
         {/* Count summary bar */}
         <div className="mt-3 flex flex-wrap items-center gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2 text-[11px] text-nd-text-muted">
-          <span>Total <strong className="text-nd-text-primary">{counts.total}</strong></span>
+          <span>
+            Total <strong className="text-nd-text-primary">{counts.total}</strong>
+          </span>
           <span className="text-nd-text-muted/30">·</span>
-          <span className="text-nd-accent-primary">Running <strong>{counts.running}</strong></span>
+          <span className="text-nd-accent-primary">
+            Running <strong>{counts.running}</strong>
+          </span>
           <span className="text-nd-text-muted/30">·</span>
-          <span className="text-nd-text-muted">Paused <strong>{counts.paused}</strong></span>
+          <span className="text-nd-text-muted">
+            Paused <strong>{counts.paused}</strong>
+          </span>
           <span className="text-nd-text-muted/30">·</span>
-          <span className="text-nd-success">Completed <strong>{counts.completed}</strong></span>
+          <span className="text-nd-accent-success">
+            Completed <strong>{counts.completed}</strong>
+          </span>
           {downloadRoot && (
             <span className="ml-auto truncate text-nd-text-muted/60">{downloadRoot}</span>
           )}
@@ -569,8 +689,11 @@ export function TorrentView() {
       {/* Remove confirmation modal */}
       <Modal
         open={confirmRemove !== null}
-        onClose={() => { setConfirmRemove(null); setDeleteData(false); }}
-        title={`Remove torrent${confirmRemove?.ids ? 's' : ''}?`}
+        onClose={() => {
+          setConfirmRemove(null);
+          setDeleteData(false);
+        }}
+        title={`Remove torrent${confirmRemove?.ids ? "s" : ""}?`}
         size="sm"
         footer={
           <div className="flex w-full justify-end gap-2">
@@ -578,7 +701,10 @@ export function TorrentView() {
               type="button"
               variant="secondary"
               size="sm"
-              onClick={() => { setConfirmRemove(null); setDeleteData(false); }}
+              onClick={() => {
+                setConfirmRemove(null);
+                setDeleteData(false);
+              }}
             >
               Cancel
             </Button>
@@ -623,20 +749,25 @@ function InspectorRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between text-xs">
       <span className="text-nd-text-muted">{label}</span>
-      <span className="truncate max-w-[140px] font-mono text-nd-text-secondary" title={value}>{value}</span>
+      <span className="truncate max-w-[140px] font-mono text-nd-text-secondary" title={value}>
+        {value}
+      </span>
     </div>
   );
 }
 
-function MiniBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
+function MiniBtn({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  onClick: () => void;
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-1 rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 px-2 py-1 text-[10px] text-nd-text-muted transition-colors duration-fast hover:bg-nd-surface-secondary hover:text-nd-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
-      title={label}
-    >
+    <Button size="xs" variant="ghost" onClick={onClick}>
       <Icon className="h-3 w-3" aria-hidden="true" /> {label}
-    </button>
+    </Button>
   );
 }

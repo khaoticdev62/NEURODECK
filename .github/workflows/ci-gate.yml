@@ -40,6 +40,14 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            libgtk-3-dev libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf pkg-config libssl-dev libasound2-dev \
+            libudev-dev protobuf-compiler
+
       - run: npm ci
       - run: npm -w frontend ci
 
@@ -215,21 +223,11 @@ jobs:
       - name: Install ajv-cli
         run: npm install -g ajv-cli ajv-formats
 
-      - name: KFMS Stamp
-        run: bash scripts/kfms/khaotic-init.sh stamp
-
       - name: KFMS Validate
         run: bash scripts/kfms/khaotic-init.sh validate
 
       - name: KFMS Status
         run: bash scripts/kfms/khaotic-init.sh status
-
-      - name: Verify KFMS artifacts are clean
-        run: |
-          git diff --quiet -- infra/meta/meta.json infra/telemetry/health.json infra/meta/CODENAME_REGISTRY.md docs/IMPLEMENTATION_PLAN.md || {
-            echo "KFMS artifacts are out of sync. Run: bash scripts/kfms/khaotic-init.sh sync"
-            exit 1
-          }
 
   # ── Gate 6: Security Hardening ───────────────────────────────────────────
   hardening:

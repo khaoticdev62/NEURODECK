@@ -1,35 +1,35 @@
-import { Badge } from '../../../components/primitives/Badge';
-import { alertScoreTone } from '../utils/socGrading';
-import type { SocAlert, AlertAnalysisState } from '../types';
+﻿import { Badge } from "../../../components/primitives/Badge";
+import { alertScoreTone } from "../utils/socGrading";
+import type { SocAlert, AlertAnalysisState } from "../types";
 
 const SEVERITY_DOT: Record<string, string> = {
-  critical: 'bg-nd-accent-error',
-  high: 'bg-nd-accent-warning',
-  medium: 'bg-nd-accent-primary',
-  low: 'bg-nd-text-muted/40',
+  critical: "bg-nd-accent-error",
+  high: "bg-nd-accent-warning",
+  medium: "bg-nd-accent-primary",
+  low: "bg-nd-text-muted/40",
 };
 
 const SEVERITY_LABEL: Record<string, string> = {
-  critical: 'CRIT',
-  high: 'HIGH',
-  medium: 'MED',
-  low: 'LOW',
+  critical: "CRIT",
+  high: "HIGH",
+  medium: "MED",
+  low: "LOW",
 };
 
-const SEVERITY_TONE: Record<string, 'danger' | 'warning' | 'accent' | 'neutral'> = {
-  critical: 'danger',
-  high: 'warning',
-  medium: 'accent',
-  low: 'neutral',
+const SEVERITY_TONE: Record<string, "danger" | "warning" | "accent" | "neutral"> = {
+  critical: "danger",
+  high: "warning",
+  medium: "accent",
+  low: "neutral",
 };
 
 const SOURCE_LABEL: Record<string, string> = {
-  edr: 'EDR',
-  siem: 'SIEM',
-  ids: 'IDS',
-  firewall: 'FW',
-  av: 'AV',
-  'email-gw': 'Email',
+  edr: "EDR",
+  siem: "SIEM",
+  ids: "IDS",
+  firewall: "FW",
+  av: "AV",
+  "email-gw": "Email",
 };
 
 interface AlertQueuePanelProps {
@@ -72,8 +72,8 @@ export function AlertQueuePanel({ alerts, selectedId, analyses, onSelect }: Aler
                 onClick={() => onSelect(alert.id)}
                 className={`w-full px-3 py-3 text-left transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/50 focus-visible:ring-inset ${
                   isSelected
-                    ? 'border-l-2 border-nd-accent-primary bg-nd-accent/10'
-                    : 'border-l-2 border-transparent hover:bg-nd-surface/40'
+                    ? "border-l-2 border-nd-accent-primary bg-nd-accent-primary/10"
+                    : "border-l-2 border-transparent hover:bg-nd-surface/40"
                 }`}
               >
                 {/* Severity + source row */}
@@ -93,7 +93,7 @@ export function AlertQueuePanel({ alerts, selectedId, analyses, onSelect }: Aler
                 {/* Title */}
                 <p
                   className={`text-[11px] leading-4 ${
-                    isSelected ? 'font-semibold text-nd-text-primary' : 'text-nd-text-secondary'
+                    isSelected ? "font-semibold text-nd-text-primary" : "text-nd-text-secondary"
                   }`}
                 >
                   {alert.title}
@@ -103,8 +103,8 @@ export function AlertQueuePanel({ alerts, selectedId, analyses, onSelect }: Aler
                 <div className="mt-1 flex items-center justify-between">
                   <span className="text-[10px] text-nd-text-muted/50">
                     {new Date(alert.timestamp).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </span>
                   {isGraded && score !== null && (

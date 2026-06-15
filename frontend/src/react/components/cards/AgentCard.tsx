@@ -6,24 +6,28 @@ import type { Agent, AgentStatus } from "../../types/neurodeck";
 
 interface AgentCardProps {
   agent: Agent;
+  isBusy?: boolean;
   onRun: (id: string) => void;
   onCycle: (id: string) => void;
 }
 
-const statusTone: Record<AgentStatus, "info" | "success" | "error"> = {
+const statusTone: Record<AgentStatus, "info" | "success" | "warning" | "error"> = {
   thinking: "info",
   complete: "success",
   blocked: "error",
-  idle: "info",
+  idle: "warning",
 };
 
-export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
+export function AgentCard({ agent, isBusy = false, onRun, onCycle }: AgentCardProps) {
   return (
-    <Panel className="transition hover:border-[rgba(var(--nd-cyan-rgb),0.3)]">
+    <Panel className="transition hover:border-nd-accent-primary/30">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border border-nd-purple-400/30 bg-nd-purple-400/10 text-nd-purple-400">
-            <Bot className="h-5 w-5" aria-hidden="true" />
+          <div
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border border-accent-agent/30 bg-accent-agent/10 text-accent-agent"
+            aria-hidden="true"
+          >
+            <Bot className="h-5 w-5" />
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold text-nd-text-primary">{agent.name}</h3>
@@ -48,6 +52,8 @@ export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
           size="sm"
           fullWidth
           icon={PlayCircle}
+          disabled={isBusy}
+          aria-label={`Run ${agent.name}`}
           onClick={() => onRun(agent.id)}
         >
           Run Agent
@@ -57,6 +63,7 @@ export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
           size="sm"
           fullWidth
           icon={RotateCcw}
+          aria-label={`Cycle ${agent.name} status`}
           onClick={() => onCycle(agent.id)}
         >
           Cycle
@@ -72,7 +79,7 @@ function AgentRow({ label, value }: { label: string; value: string }) {
       <dt className="w-16 shrink-0 uppercase tracking-[var(--nd-tracking-hud)] text-nd-text-muted">
         {label}
       </dt>
-      <dd className="min-w-0 flex-1 text-nd-text-secondary">{value}</dd>
+      <dd className="min-w-0 flex-1 text-nd-text-secondary">{value || "—"}</dd>
     </div>
   );
 }

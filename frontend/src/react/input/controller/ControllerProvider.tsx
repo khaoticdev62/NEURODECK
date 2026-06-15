@@ -27,7 +27,7 @@ interface ControllerContextValue {
   requestAction: (action: ControllerAction) => Promise<boolean>;
   registerActionHandler: (
     action: ControllerAction,
-    handler: () => boolean | void | Promise<boolean | void>,
+    handler: () => boolean | void | Promise<boolean | void>
   ) => () => void;
   setHelpOverlayOpen: (open: boolean) => void;
   setDebugOverlayOpen: (open: boolean) => void;
@@ -124,10 +124,8 @@ export function ControllerProvider({
     const focused = applyFocusGraph(null) ?? focusDefault(root);
     updateRuntime({
       currentFocusNodeId: focused?.id || undefined,
-      currentFocusZone:
-        focused?.closest<HTMLElement>("[data-controller-zone]")?.dataset.controllerZone as
-          | ControllerRuntimeState["currentFocusZone"]
-          | undefined,
+      currentFocusZone: focused?.closest<HTMLElement>("[data-controller-zone]")?.dataset
+        .controllerZone as ControllerRuntimeState["currentFocusZone"] | undefined,
       currentScreenId:
         focused?.closest<HTMLElement>("[data-controller-screen]")?.dataset.controllerScreen ??
         activeView,
@@ -173,8 +171,8 @@ export function ControllerProvider({
           const root = findInteractiveRoot();
           const items = Array.from(
             root.querySelectorAll<HTMLElement>(
-              'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
-            ),
+              'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+            )
           );
           const index = items.findIndex((item) => item === document.activeElement);
           const target = items[index + 1] ?? items[0];
@@ -186,8 +184,8 @@ export function ControllerProvider({
           const root = findInteractiveRoot();
           const items = Array.from(
             root.querySelectorAll<HTMLElement>(
-              'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
-            ),
+              'button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+            )
           );
           const index = items.findIndex((item) => item === document.activeElement);
           const target = items[index - 1] ?? items[items.length - 1];
@@ -210,13 +208,19 @@ export function ControllerProvider({
         case "scrollUp":
         case "pageUp": {
           const root = findInteractiveRoot();
-          root.scrollBy({ top: -180 * settings.scrollSpeed, behavior: settings.reducedMotion ? "auto" : "smooth" });
+          root.scrollBy({
+            top: -180 * settings.scrollSpeed,
+            behavior: settings.reducedMotion ? "auto" : "smooth",
+          });
           return true;
         }
         case "scrollDown":
         case "pageDown": {
           const root = findInteractiveRoot();
-          root.scrollBy({ top: 180 * settings.scrollSpeed, behavior: settings.reducedMotion ? "auto" : "smooth" });
+          root.scrollBy({
+            top: 180 * settings.scrollSpeed,
+            behavior: settings.reducedMotion ? "auto" : "smooth",
+          });
           return true;
         }
         case "previousTab":
@@ -265,7 +269,7 @@ export function ControllerProvider({
       settings.reducedMotion,
       settings.scrollSpeed,
       updateRuntime,
-    ],
+    ]
   );
 
   const requestAction = useCallback(
@@ -277,16 +281,17 @@ export function ControllerProvider({
       updateRuntime({
         lastAction: action,
         currentFocusNodeId: (document.activeElement as HTMLElement | null)?.id || undefined,
-        currentFocusZone:
-          (document.activeElement as HTMLElement | null)?.closest<HTMLElement>("[data-controller-zone]")
-            ?.dataset.controllerZone as ControllerRuntimeState["currentFocusZone"] | undefined,
+        currentFocusZone: (document.activeElement as HTMLElement | null)?.closest<HTMLElement>(
+          "[data-controller-zone]"
+        )?.dataset.controllerZone as ControllerRuntimeState["currentFocusZone"] | undefined,
         currentScreenId:
-          (document.activeElement as HTMLElement | null)?.closest<HTMLElement>("[data-controller-screen]")
-            ?.dataset.controllerScreen ?? activeView,
+          (document.activeElement as HTMLElement | null)?.closest<HTMLElement>(
+            "[data-controller-screen]"
+          )?.dataset.controllerScreen ?? activeView,
       });
       return true;
     },
-    [activeView, defaultActionHandler, updateRuntime],
+    [activeView, defaultActionHandler, updateRuntime]
   );
 
   useEffect(() => {
@@ -312,15 +317,14 @@ export function ControllerProvider({
   useEffect(() => {
     if (!settings.enabled || typeof navigator.getGamepads !== "function") {
       updateRuntime({
-        connectionStatus:
-          typeof navigator.getGamepads !== "function" ? "unsupported" : "none",
+        connectionStatus: typeof navigator.getGamepads !== "function" ? "unsupported" : "none",
       });
       return;
     }
 
     const scan = async () => {
       const gamepads = Array.from(navigator.getGamepads?.() ?? []).filter(
-        (item): item is Gamepad => item !== null,
+        (item): item is Gamepad => item !== null
       );
       const devices = gamepads.map(mapGamepadDevice);
       const activePad = gamepads[0] ?? null;
@@ -339,7 +343,7 @@ export function ControllerProvider({
       const actions = mapButtonsToActions(
         activePad,
         settings.confirmButton,
-        settings.triggerThreshold,
+        settings.triggerThreshold
       );
       const now = performance.now();
 
@@ -358,7 +362,7 @@ export function ControllerProvider({
             true,
             now,
             settings.initialRepeatDelayMs,
-            settings.repeatIntervalMs,
+            settings.repeatIntervalMs
           );
           if (!decision.fire) continue;
         } else {
@@ -379,7 +383,7 @@ export function ControllerProvider({
           true,
           now,
           settings.initialRepeatDelayMs,
-          settings.repeatIntervalMs,
+          settings.repeatIntervalMs
         );
         if (decision.fire) await requestAction("focusLeft");
       }
@@ -389,7 +393,7 @@ export function ControllerProvider({
           true,
           now,
           settings.initialRepeatDelayMs,
-          settings.repeatIntervalMs,
+          settings.repeatIntervalMs
         );
         if (decision.fire) await requestAction("focusRight");
       }
@@ -399,7 +403,7 @@ export function ControllerProvider({
           true,
           now,
           settings.initialRepeatDelayMs,
-          settings.repeatIntervalMs,
+          settings.repeatIntervalMs
         );
         if (decision.fire) await requestAction("focusUp");
       }
@@ -409,7 +413,7 @@ export function ControllerProvider({
           true,
           now,
           settings.initialRepeatDelayMs,
-          settings.repeatIntervalMs,
+          settings.repeatIntervalMs
         );
         if (decision.fire) await requestAction("focusDown");
       }
@@ -451,7 +455,7 @@ export function ControllerProvider({
       setDebugOverlayOpen: (open) => updateRuntime({ debugOverlayOpen: open }),
       focusDefaultElement,
     }),
-    [focusDefaultElement, requestAction, runtime, settings, updateRuntime],
+    [focusDefaultElement, requestAction, runtime, settings, updateRuntime]
   );
 
   return <ControllerContext.Provider value={contextValue}>{children}</ControllerContext.Provider>;

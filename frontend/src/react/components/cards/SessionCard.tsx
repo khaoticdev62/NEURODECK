@@ -1,6 +1,7 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
 import { Button } from "../../components/primitives/Button";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
 import { IconButton } from "../../components/primitives/IconButton";
 import { Modal } from "../../components/primitives/Modal";
 import { Panel } from "../../components/primitives/Panel";
@@ -17,6 +18,8 @@ interface SessionCardProps {
 export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [exportedFile, setExportedFile] = useState<string | null>(null);
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameValue, setRenameValue] = useState(node.name || "");
 
@@ -24,7 +27,6 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
   const displayName = node.name || node.id;
 
   const handleDelete = async () => {
-    if (!confirm(`Delete session "${displayName}"?`)) return;
     setLoading(true);
     setError(null);
     try {
@@ -60,7 +62,8 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
         { session_id: node.id }
       );
       if (result?.file) {
-        alert(`Exported to: ${result.file}`);
+        setExportedFile(result.file);
+        setTimeout(() => setExportedFile(null), 4000);
       }
     } catch (e) {
       setError(String(e));
@@ -75,7 +78,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
         className={[
           "transition",
           selected
-            ? "border-nd-accent/40 bg-nd-accent/[0.07]"
+            ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]"
             : "hover:border-[rgba(var(--nd-cyan-rgb),0.25)]",
         ].join(" ")}
       >
@@ -85,10 +88,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
               <MessageSquareText className="h-5 w-5" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
-              <h4
-                className="truncate font-semibold text-nd-text-primary"
-                title={displayName}
-              >
+              <h4 className="truncate font-semibold text-nd-text-primary" title={displayName}>
                 {displayName}
               </h4>
               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-nd-text-muted">
@@ -101,7 +101,12 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
                   {node.preview}
                 </p>
               )}
-              {error && <p className="mt-2 text-xs text-nd-danger">{error}</p>}
+              {error && <p className="mt-2 text-xs text-nd-accent-error">{error}</p>}
+              {exportedFile && (
+                <p role="status" aria-live="polite" className="mt-2 text-xs text-nd-accent-success">
+                  Exported to: {exportedFile}
+                </p>
+              )}
             </div>
           </div>
 
@@ -138,7 +143,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
               disabled={loading}
               onClick={(e) => {
                 e.stopPropagation();
-                void handleDelete();
+                setDeleteOpen(true);
               }}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -146,6 +151,17 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
           </div>
         </div>
       </Panel>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete Session"
+        message={`Permanently delete "${displayName}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteOpen(false)}
+      />
 
       <Modal
         open={renameOpen}
@@ -167,9 +183,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
           </>
         }
       >
-        <p className="mb-3 text-sm text-nd-text-secondary">
-          Update the saved session label.
-        </p>
+        <p className="mb-3 text-sm text-nd-text-secondary">Update the saved session label.</p>
         <TextInput
           value={renameValue}
           onChange={(e) => setRenameValue(e.target.value)}

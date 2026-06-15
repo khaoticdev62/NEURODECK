@@ -1,28 +1,28 @@
-import type { LucideIcon } from 'lucide-react';
+import type { LucideIcon } from "lucide-react";
 import {
   StatusChip as DSStatusChip,
   type StatusTone as DSStatusTone,
-} from '../../../design-system/components/core/StatusChip';
+} from "../../../design-system/components/core/StatusChip";
 
-type StatusTone = 'info' | 'success' | 'warning' | 'error';
+type StatusTone = "info" | "success" | "warning" | "error";
 
 const toneMap: Record<StatusTone, DSStatusTone> = {
-  info: 'info',
-  success: 'success',
-  warning: 'warning',
-  error: 'error',
+  info: "info",
+  success: "success",
+  warning: "warning",
+  error: "error",
 };
 
 export function StatusChip({
-  tone = 'info',
-  size = 'md',
+  tone = "info",
+  size = "md",
   icon: Icon,
   pulse = false,
   children,
-  className = '',
+  className = "",
 }: {
   tone?: StatusTone;
-  size?: 'sm' | 'md';
+  size?: "sm" | "md";
   icon?: LucideIcon;
   pulse?: boolean;
   children: React.ReactNode;

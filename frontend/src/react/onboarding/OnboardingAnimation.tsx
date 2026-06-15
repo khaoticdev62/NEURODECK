@@ -1,7 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw, Volume2 } from "lucide-react";
 import { getOnboardingLottieSample } from "./OnboardingRegistry";
-import type { OnboardingAnimation, OnboardingFidelityMode, OnboardingMotionMode } from "./onboarding.types";
+import type {
+  OnboardingAnimation,
+  OnboardingFidelityMode,
+  OnboardingMotionMode,
+} from "./onboarding.types";
 
 type Props = {
   animation?: OnboardingAnimation;
@@ -9,7 +13,11 @@ type Props = {
   fidelityMode: OnboardingFidelityMode;
 };
 
-function shouldUseRich(animation: OnboardingAnimation | undefined, motionMode: OnboardingMotionMode, fidelityMode: OnboardingFidelityMode) {
+function shouldUseRich(
+  animation: OnboardingAnimation | undefined,
+  motionMode: OnboardingMotionMode,
+  fidelityMode: OnboardingFidelityMode
+) {
   if (!animation) return false;
   if (motionMode !== "full") return false;
   if (!animation.requiresRichMedia) return true;
@@ -25,7 +33,8 @@ export function OnboardingAnimationPanel({ animation, motionMode, fidelityMode }
 
   useEffect(() => {
     let destroyed = false;
-    let lottieInstance: { destroy: () => void; pause?: () => void; play?: () => void } | null = null;
+    let lottieInstance: { destroy: () => void; pause?: () => void; play?: () => void } | null =
+      null;
     if (!animation || animation.type !== "lottie" || !rich || !lottieRef.current) return;
 
     void import("lottie-web/build/player/esm/lottie_light.min.js")
@@ -36,7 +45,8 @@ export function OnboardingAnimationPanel({ animation, motionMode, fidelityMode }
           renderer: "svg",
           loop: animation.loop ?? true,
           autoplay: playing,
-          animationData: animation.src === "local:lottie-signal" ? getOnboardingLottieSample() : undefined,
+          animationData:
+            animation.src === "local:lottie-signal" ? getOnboardingLottieSample() : undefined,
           path: animation.src !== "local:lottie-signal" ? animation.src : undefined,
         });
       })

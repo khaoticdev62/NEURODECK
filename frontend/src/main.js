@@ -15,12 +15,7 @@ import {
   getMessageText,
   getMessageElements,
 } from "./chat.js";
-import {
-  initCanvasView,
-  initCanvasCollab,
-  loadCanvasCode,
-  initCanvas,
-} from "./canvas.js";
+import { initCanvasView, initCanvasCollab, loadCanvasCode, initCanvas } from "./canvas.js";
 import {
   initSettings,
   applySettings,
@@ -55,16 +50,19 @@ import "./app.css";
 import { invoke } from "./neurobridge.js";
 import QRCode from "qrcode";
 import { applyNeurodeckIconography, createIcon } from "./icons.js";
-import {
-  addNotification,
-  updateNotifBadge,
-  renderNotificationsList,
-} from "./notifications.js";
+import { addNotification, updateNotifBadge, renderNotificationsList } from "./notifications.js";
 import { initAgentView } from "./agent.js";
 import { initMemoryView } from "./memory.js";
 import { initDashboardView } from "./dashboard.js";
 import { FocusTrap } from "./focus-trap.js";
-import { renderShortcutsOverlay, KEYBOARD_SHORTCUTS, getShortcutOverrides, saveShortcutOverride, resetShortcutOverride, getEffectiveKeys } from "./shortcuts.js";
+import {
+  renderShortcutsOverlay,
+  KEYBOARD_SHORTCUTS,
+  getShortcutOverrides,
+  saveShortcutOverride,
+  resetShortcutOverride,
+  getEffectiveKeys,
+} from "./shortcuts.js";
 import { RADIAL_SEGMENTS } from "./radial.js";
 import { COMMAND_PALETTE_ACTIONS } from "./palette-commands.js";
 import { initGitView } from "./git.js";
@@ -154,7 +152,11 @@ async function _oauthShowDeviceInfo(data, chatViewport) {
   document.getElementById("oauth-url").href = data.verification_uri;
   document.getElementById("oauth-url").innerText = data.verification_uri;
   document.getElementById("oauth-code").innerText = data.user_code;
-  await QRCode.toCanvas(document.getElementById("oauth-qr"), data.verification_uri_complete || data.verification_uri, { width: 200, margin: 1 });
+  await QRCode.toCanvas(
+    document.getElementById("oauth-qr"),
+    data.verification_uri_complete || data.verification_uri,
+    { width: 200, margin: 1 }
+  );
   chatViewport.scrollTop = chatViewport.scrollHeight;
 }
 
@@ -168,14 +170,21 @@ async function triggerOAuthLogin() {
     const data = await invoke("start_oauth_flow");
     await _oauthShowDeviceInfo(data, chatViewport);
     await invoke("poll_oauth_token", { deviceCode: data.device_code, interval: data.interval });
-    document.getElementById("oauth-status").innerText = "Authentication successful! Token saved to OS Keychain.";
+    document.getElementById("oauth-status").innerText =
+      "Authentication successful! Token saved to OS Keychain.";
     document.getElementById("oauth-status").style.color = "#00ff41";
   } catch (err) {
     console.error(err);
     const statusEl = document.getElementById("oauth-status");
-    if (statusEl) { statusEl.innerText = "Authentication failed: " + String(err); statusEl.style.color = "red"; }
+    if (statusEl) {
+      statusEl.innerText = "Authentication failed: " + String(err);
+      statusEl.style.color = "red";
+    }
   } finally {
-    if (oauthFocusTrap) { oauthFocusTrap.deactivate(false); oauthFocusTrap = null; }
+    if (oauthFocusTrap) {
+      oauthFocusTrap.deactivate(false);
+      oauthFocusTrap = null;
+    }
   }
 }
 
@@ -227,28 +236,14 @@ window.sanitizeHtml = function (html) {
       "hr",
     ]);
 
-    const allowedAttrs = new Set([
-      "class",
-      "href",
-      "src",
-      "alt",
-      "title",
-      "target",
-    ]);
+    const allowedAttrs = new Set(["class", "href", "src", "alt", "title", "target"]);
     const allowedUrlSchemes = /^(https?:|mailto:|#|\/)/i;
 
     function _cleanUnallowedNode(child, tagName, cleanNodeFn) {
       if (
-        [
-          "script",
-          "style",
-          "iframe",
-          "object",
-          "embed",
-          "noscript",
-          "meta",
-          "link",
-        ].includes(tagName)
+        ["script", "style", "iframe", "object", "embed", "noscript", "meta", "link"].includes(
+          tagName
+        )
       ) {
         child.remove();
       } else {
@@ -356,10 +351,7 @@ window.applyThemeColors = function (theme) {
   // Expose pulse gradient stops as CSS variables for animation use
   if (Array.isArray(pulse)) {
     for (let i = 0; i < 10; i++) {
-      document.documentElement.style.setProperty(
-        `--pulse-${i}`,
-        pulse[i] || accent,
-      );
+      document.documentElement.style.setProperty(`--pulse-${i}`, pulse[i] || accent);
     }
   }
 
@@ -377,8 +369,6 @@ window.applyThemeColors = function (theme) {
   }
 };
 
-
-
 // ==========================================================================
 // LIVE & STATIC BACKGROUNDS SYSTEM
 // ==========================================================================
@@ -387,8 +377,7 @@ const LIVE_BACKGROUNDS = [
     id: "matrix",
     name: "Matrix Rain",
     desc: "Digital rain streaming in accent color",
-    preview:
-      "linear-gradient(180deg, #050505 0%, rgba(0, 255, 136, 0.15) 100%)",
+    preview: "linear-gradient(180deg, #050505 0%, rgba(0, 255, 136, 0.15) 100%)",
   },
   {
     id: "starfield",
@@ -400,8 +389,7 @@ const LIVE_BACKGROUNDS = [
     id: "particles",
     name: "Quantum Net",
     desc: "Drifting nodes with interactive links",
-    preview:
-      "radial-gradient(circle at 30% 20%, rgba(0, 240, 255, 0.15) 0%, #050505 80%)",
+    preview: "radial-gradient(circle at 30% 20%, rgba(0, 240, 255, 0.15) 0%, #050505 80%)",
   },
   {
     id: "grid",
@@ -413,8 +401,7 @@ const LIVE_BACKGROUNDS = [
     id: "radar",
     name: "Tactical HUD",
     desc: "Military scanlines & radar telemetry",
-    preview:
-      "radial-gradient(circle, transparent 50%, rgba(0, 240, 255, 0.1) 90%), #050505",
+    preview: "radial-gradient(circle, transparent 50%, rgba(0, 240, 255, 0.1) 90%), #050505",
   },
   {
     id: "circuit",
@@ -433,8 +420,7 @@ const LIVE_BACKGROUNDS = [
     id: "ascii",
     name: "Console Stream",
     desc: "Scrolling terminal kernel logs",
-    preview:
-      "linear-gradient(180deg, #000000 0%, rgba(0, 255, 136, 0.08) 100%)",
+    preview: "linear-gradient(180deg, #000000 0%, rgba(0, 255, 136, 0.08) 100%)",
   },
   {
     id: "css-nebula",
@@ -461,15 +447,13 @@ const LIVE_BACKGROUNDS = [
     id: "dna",
     name: "DNA Helix",
     desc: "Rotating dual-strand DNA helix",
-    preview:
-      "linear-gradient(180deg, rgba(0,240,255,0.12) 0%, rgba(0,255,136,0.12) 100%)",
+    preview: "linear-gradient(180deg, rgba(0,240,255,0.12) 0%, rgba(0,255,136,0.12) 100%)",
   },
   {
     id: "glitch",
     name: "Digital Glitch",
     desc: "Screen corruption scanline artifacts",
-    preview:
-      "linear-gradient(0deg, rgba(255,0,80,0.18) 0%, rgba(0,240,255,0.1) 50%, #050505 100%)",
+    preview: "linear-gradient(0deg, rgba(255,0,80,0.18) 0%, rgba(0,240,255,0.1) 50%, #050505 100%)",
   },
   {
     id: "blackhole",
@@ -489,8 +473,7 @@ const LIVE_BACKGROUNDS = [
     id: "css-void",
     name: "Void Breath",
     desc: "CSS minimalist breathing darkness",
-    preview:
-      "radial-gradient(ellipse at center, rgba(40,0,60,0.4) 0%, #030005 100%)",
+    preview: "radial-gradient(ellipse at center, rgba(40,0,60,0.4) 0%, #030005 100%)",
   },
   {
     id: "css-prism",
@@ -705,8 +688,7 @@ class LiveBackgroundManager {
 
   start(type) {
     if (this.currentType === type) {
-      const opacity =
-        parseFloat(localStorage.getItem("bgOpacity") || "10") / 100;
+      const opacity = parseFloat(localStorage.getItem("bgOpacity") || "10") / 100;
       const canvasEl = document.getElementById("app-background-canvas");
       const cssEl = document.getElementById("app-background-css");
       if (canvasEl) canvasEl.style.opacity = opacity.toString();
@@ -757,10 +739,7 @@ class LiveBackgroundManager {
           x: Math.random() * w - w / 2,
           y: Math.random() * h - h / 2,
           z: Math.random() * w,
-          color:
-            Math.random() > 0.5
-              ? "var(--accent-color)"
-              : "var(--response-color)",
+          color: Math.random() > 0.5 ? "var(--accent-color)" : "var(--response-color)",
         }));
     } else if (type === "particles") {
       const numParticles = 60;
@@ -807,33 +786,37 @@ class LiveBackgroundManager {
         }));
     } else if (type === "plasma") {
       const numBlobs = 6;
-      this.particles = Array(numBlobs).fill(0).map(() => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.6,
-        vy: (Math.random() - 0.5) * 0.6,
-        r: 120 + Math.random() * 160,
-        hue: Math.random() * 360,
-        hueSpeed: (Math.random() - 0.5) * 0.4,
-      }));
+      this.particles = Array(numBlobs)
+        .fill(0)
+        .map(() => ({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vx: (Math.random() - 0.5) * 0.6,
+          vy: (Math.random() - 0.5) * 0.6,
+          r: 120 + Math.random() * 160,
+          hue: Math.random() * 360,
+          hueSpeed: (Math.random() - 0.5) * 0.4,
+        }));
     } else if (type === "dna") {
       this.angle = 0;
     } else if (type === "glitch") {
       this.particles = [];
       this.angle = 0;
     } else if (type === "blackhole") {
-      this.particles = Array(200).fill(0).map(() => {
-        const theta = Math.random() * Math.PI * 2;
-        const dist = 60 + Math.random() * Math.min(w, h) * 0.38;
-        return {
-          theta,
-          dist,
-          speed: 0.002 + (1 / dist) * 0.8,
-          alpha: 0.15 + Math.random() * 0.5,
-          size: 0.6 + Math.random() * 1.8,
-          hue: 20 + Math.random() * 40,
-        };
-      });
+      this.particles = Array(200)
+        .fill(0)
+        .map(() => {
+          const theta = Math.random() * Math.PI * 2;
+          const dist = 60 + Math.random() * Math.min(w, h) * 0.38;
+          return {
+            theta,
+            dist,
+            speed: 0.002 + (1 / dist) * 0.8,
+            alpha: 0.15 + Math.random() * 0.5,
+            size: 0.6 + Math.random() * 1.8,
+            hue: 20 + Math.random() * 40,
+          };
+        });
       this.angle = 0;
     }
   }
@@ -849,8 +832,7 @@ class LiveBackgroundManager {
       growSpeed: 2 + Math.random() * 2,
       stepsRemaining: Math.floor(Math.random() * 15) + 10,
       alpha: 1.0,
-      color:
-        Math.random() > 0.4 ? "var(--accent-color)" : "var(--response-color)",
+      color: Math.random() > 0.4 ? "var(--accent-color)" : "var(--response-color)",
     };
   }
 
@@ -899,19 +881,19 @@ class LiveBackgroundManager {
   draw(w, h) {
     const ctx = this.ctx;
     const cs = getComputedStyle(document.documentElement);
-    const ac = cs.getPropertyValue("--accent-color").trim()   || "#00F0FF";
+    const ac = cs.getPropertyValue("--accent-color").trim() || "#00F0FF";
     const rc = cs.getPropertyValue("--response-color").trim() || "#00FF88";
-    if      (this.currentType === "matrix")    this._drawMatrix(ctx, w, h, ac);
+    if (this.currentType === "matrix") this._drawMatrix(ctx, w, h, ac);
     else if (this.currentType === "starfield") this._drawStarfield(ctx, w, h, ac, rc);
     else if (this.currentType === "particles") this._drawParticles(ctx, w, h, ac);
-    else if (this.currentType === "grid")      this._drawGrid(ctx, w, h, ac, rc);
-    else if (this.currentType === "radar")     this._drawRadar(ctx, w, h, ac, rc);
-    else if (this.currentType === "circuit")   this._drawCircuit(ctx, w, h, ac, rc);
-    else if (this.currentType === "wave")      this._drawWave(ctx, w, h, ac, rc);
-    else if (this.currentType === "ascii")     this._drawAscii(ctx, w, h, ac);
-    else if (this.currentType === "plasma")    this._drawPlasma(ctx, w, h);
-    else if (this.currentType === "dna")       this._drawDna(ctx, w, h, ac, rc);
-    else if (this.currentType === "glitch")    this._drawGlitch(ctx, w, h, ac, rc);
+    else if (this.currentType === "grid") this._drawGrid(ctx, w, h, ac, rc);
+    else if (this.currentType === "radar") this._drawRadar(ctx, w, h, ac, rc);
+    else if (this.currentType === "circuit") this._drawCircuit(ctx, w, h, ac, rc);
+    else if (this.currentType === "wave") this._drawWave(ctx, w, h, ac, rc);
+    else if (this.currentType === "ascii") this._drawAscii(ctx, w, h, ac);
+    else if (this.currentType === "plasma") this._drawPlasma(ctx, w, h);
+    else if (this.currentType === "dna") this._drawDna(ctx, w, h, ac, rc);
+    else if (this.currentType === "glitch") this._drawGlitch(ctx, w, h, ac, rc);
     else if (this.currentType === "blackhole") this._drawBlackhole(ctx, w, h, ac, rc);
   }
 
@@ -935,7 +917,9 @@ class LiveBackgroundManager {
   _drawStarfield(ctx, w, h, ac, rc) {
     ctx.fillStyle = "#050505";
     ctx.fillRect(0, 0, w, h);
-    const cx = w / 2, cy = h / 2, speed = 4;
+    const cx = w / 2,
+      cy = h / 2,
+      speed = 4;
     for (let i = 0; i < this.particles.length; i++) {
       const star = this.particles[i];
       const px = (star.x / star.z) * cx + cx;
@@ -952,11 +936,16 @@ class LiveBackgroundManager {
       if (nx >= 0 && nx <= w && ny >= 0 && ny <= h) {
         const alpha = 1 - star.z / w;
         ctx.strokeStyle = star.color.startsWith("var")
-          ? star.color.includes("accent") ? ac : rc
+          ? star.color.includes("accent")
+            ? ac
+            : rc
           : star.color;
         ctx.lineWidth = alpha * 2;
         ctx.globalAlpha = alpha;
-        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(nx, ny); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(nx, ny);
+        ctx.stroke();
       }
     }
     ctx.globalAlpha = 1.0;
@@ -966,11 +955,13 @@ class LiveBackgroundManager {
     ctx.clearRect(0, 0, w, h);
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
-      p.x += p.vx; p.y += p.vy;
+      p.x += p.vx;
+      p.y += p.vy;
       if (p.x < 0 || p.x > w) p.vx *= -1;
       if (p.y < 0 || p.y > h) p.vy *= -1;
       if (this.mouseX > 0 && this.mouseY > 0) {
-        const dx = p.x - this.mouseX, dy = p.y - this.mouseY;
+        const dx = p.x - this.mouseX,
+          dy = p.y - this.mouseY;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 120) {
           const force = (120 - dist) / 120;
@@ -978,20 +969,27 @@ class LiveBackgroundManager {
           p.y += (dy / dist) * force * 2;
         }
       }
-      ctx.fillStyle = ac; ctx.globalAlpha = 0.4;
-      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = ac;
+      ctx.globalAlpha = 0.4;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.strokeStyle = ac;
     for (let i = 0; i < this.particles.length; i++) {
       const p1 = this.particles[i];
       for (let j = i + 1; j < this.particles.length; j++) {
         const p2 = this.particles[j];
-        const dx = p1.x - p2.x, dy = p1.y - p2.y;
+        const dx = p1.x - p2.x,
+          dy = p1.y - p2.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 100) {
           ctx.globalAlpha = ((100 - dist) / 100) * 0.15;
           ctx.lineWidth = 0.8;
-          ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
         }
       }
     }
@@ -1000,89 +998,138 @@ class LiveBackgroundManager {
 
   _drawGrid(ctx, w, h, ac, rc) {
     ctx.clearRect(0, 0, w, h);
-    const horizon = h * 0.45, gridHeight = h - horizon;
+    const horizon = h * 0.45,
+      gridHeight = h - horizon;
     this.angle = (this.angle + 0.8) % 40;
     const glowGrad = ctx.createLinearGradient(0, horizon - 50, 0, horizon + 50);
     glowGrad.addColorStop(0, "transparent");
     glowGrad.addColorStop(0.5, rc + "1a");
     glowGrad.addColorStop(1, "transparent");
-    ctx.fillStyle = glowGrad; ctx.fillRect(0, horizon - 50, w, 100);
-    ctx.strokeStyle = rc; ctx.globalAlpha = 0.3; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.moveTo(0, horizon); ctx.lineTo(w, horizon); ctx.stroke();
+    ctx.fillStyle = glowGrad;
+    ctx.fillRect(0, horizon - 50, w, 100);
+    ctx.strokeStyle = rc;
+    ctx.globalAlpha = 0.3;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(0, horizon);
+    ctx.lineTo(w, horizon);
+    ctx.stroke();
     const numVerts = 30;
     for (let i = 0; i <= numVerts; i++) {
       const xTop = (w / numVerts) * i;
       const xBottom = w / 2 + (xTop - w / 2) * 3;
-      ctx.strokeStyle = ac; ctx.globalAlpha = 0.12;
-      ctx.beginPath(); ctx.moveTo(xTop, horizon); ctx.lineTo(xBottom, h); ctx.stroke();
+      ctx.strokeStyle = ac;
+      ctx.globalAlpha = 0.12;
+      ctx.beginPath();
+      ctx.moveTo(xTop, horizon);
+      ctx.lineTo(xBottom, h);
+      ctx.stroke();
     }
-    const speedRatio = this.angle / 40, numHoriz = 12;
+    const speedRatio = this.angle / 40,
+      numHoriz = 12;
     for (let i = 0; i < numHoriz; i++) {
       const ratio = (i + speedRatio) / numHoriz;
       const y = horizon + Math.pow(ratio, 2.5) * gridHeight;
-      ctx.strokeStyle = ac; ctx.globalAlpha = Math.pow(ratio, 1.5) * 0.25; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      ctx.strokeStyle = ac;
+      ctx.globalAlpha = Math.pow(ratio, 1.5) * 0.25;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
     }
     ctx.globalAlpha = 1.0;
   }
 
   _drawRadar(ctx, w, h, ac, rc) {
     ctx.clearRect(0, 0, w, h);
-    const cx = w * 0.75, cy = h * 0.6, maxRadius = Math.min(w, h) * 0.45;
+    const cx = w * 0.75,
+      cy = h * 0.6,
+      maxRadius = Math.min(w, h) * 0.45;
     this.angle = (this.angle + 0.005) % (Math.PI * 2);
-    ctx.save(); ctx.translate(cx, cy); ctx.rotate(this.angle);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(this.angle);
     const radarSweep = ctx.createRadialGradient(0, 0, 10, 0, 0, maxRadius);
-    radarSweep.addColorStop(0, rc + "33"); radarSweep.addColorStop(1, "transparent");
+    radarSweep.addColorStop(0, rc + "33");
+    radarSweep.addColorStop(1, "transparent");
     ctx.fillStyle = radarSweep;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, maxRadius, -0.4, 0); ctx.lineTo(0, 0); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, maxRadius, -0.4, 0);
+    ctx.lineTo(0, 0);
+    ctx.fill();
     ctx.restore();
-    ctx.strokeStyle = ac; ctx.lineWidth = 1;
+    ctx.strokeStyle = ac;
+    ctx.lineWidth = 1;
     for (let r = 50; r <= maxRadius; r += 80) {
-      ctx.globalAlpha = 0.08; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
-      ctx.globalAlpha = 0.2; ctx.fillStyle = ac; ctx.font = "8px monospace";
+      ctx.globalAlpha = 0.08;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 0.2;
+      ctx.fillStyle = ac;
+      ctx.font = "8px monospace";
       ctx.fillText(`R_${r}KM`, cx + r + 3, cy - 3);
     }
-    ctx.strokeStyle = ac; ctx.globalAlpha = 0.06;
+    ctx.strokeStyle = ac;
+    ctx.globalAlpha = 0.06;
     ctx.beginPath();
-    ctx.moveTo(cx - maxRadius, cy); ctx.lineTo(cx + maxRadius, cy);
-    ctx.moveTo(cx, cy - maxRadius); ctx.lineTo(cx, cy + maxRadius);
+    ctx.moveTo(cx - maxRadius, cy);
+    ctx.lineTo(cx + maxRadius, cy);
+    ctx.moveTo(cx, cy - maxRadius);
+    ctx.lineTo(cx, cy + maxRadius);
     ctx.stroke();
     ctx.font = "8px monospace";
     for (let i = 0; i < this.particles.length; i++) {
       const node = this.particles[i];
       node.alpha += node.speed;
       if (node.alpha > 1 || node.alpha < 0) node.speed *= -1;
-      ctx.fillStyle = rc; ctx.globalAlpha = node.alpha * 0.3;
-      ctx.beginPath(); ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = ac; ctx.globalAlpha = node.alpha * 0.2;
+      ctx.fillStyle = rc;
+      ctx.globalAlpha = node.alpha * 0.3;
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, node.size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = ac;
+      ctx.globalAlpha = node.alpha * 0.2;
       ctx.fillText(node.label, node.x + 6, node.y + 3);
     }
     ctx.globalAlpha = 1.0;
   }
 
   _drawCircuit(ctx, w, h, ac, rc) {
-    ctx.clearRect(0, 0, w, h); ctx.lineWidth = 1.2;
-    const resolveColor = (c) => c.startsWith("var") ? (c.includes("accent") ? ac : rc) : c;
+    ctx.clearRect(0, 0, w, h);
+    ctx.lineWidth = 1.2;
+    const resolveColor = (c) => (c.startsWith("var") ? (c.includes("accent") ? ac : rc) : c);
     for (let i = 0; i < this.particles.length; i++) {
       const line = this.particles[i];
       if (line.points.length > 0 && line.stepsRemaining > 0) {
         const lastPt = line.points[line.points.length - 1];
         line.stepsRemaining--;
-        line.points.push({ x: lastPt.x + line.dirX * line.growSpeed, y: lastPt.y + line.dirY * line.growSpeed });
+        line.points.push({
+          x: lastPt.x + line.dirX * line.growSpeed,
+          y: lastPt.y + line.dirY * line.growSpeed,
+        });
         if (line.stepsRemaining <= 0 && Math.random() > 0.3 && line.points.length < 80) {
           line.stepsRemaining = Math.floor(Math.random() * 15) + 10;
           const angle = (Math.floor(Math.random() * 8) * Math.PI) / 4;
-          line.dirX = Math.cos(angle); line.dirY = Math.sin(angle);
+          line.dirX = Math.cos(angle);
+          line.dirY = Math.sin(angle);
         }
       }
       if (line.points.length > 1) {
-        ctx.strokeStyle = resolveColor(line.color); ctx.globalAlpha = line.alpha * 0.15;
-        ctx.beginPath(); ctx.moveTo(line.points[0].x, line.points[0].y);
+        ctx.strokeStyle = resolveColor(line.color);
+        ctx.globalAlpha = line.alpha * 0.15;
+        ctx.beginPath();
+        ctx.moveTo(line.points[0].x, line.points[0].y);
         for (let j = 1; j < line.points.length; j++) ctx.lineTo(line.points[j].x, line.points[j].y);
         ctx.stroke();
         const head = line.points[line.points.length - 1];
-        ctx.fillStyle = resolveColor(line.color); ctx.globalAlpha = line.alpha * 0.4;
-        ctx.beginPath(); ctx.arc(head.x, head.y, 2.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = resolveColor(line.color);
+        ctx.globalAlpha = line.alpha * 0.4;
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, 2.5, 0, Math.PI * 2);
+        ctx.fill();
       }
       line.alpha -= 0.001;
       if (line.alpha <= 0 || (line.points.length >= 80 && line.stepsRemaining <= 0))
@@ -1095,17 +1142,22 @@ class LiveBackgroundManager {
     ctx.clearRect(0, 0, w, h);
     this.angle += 0.02;
     const configs = [
-      { amp: 40, freq: 0.003, phase: this.angle,       color: ac,        opacity: 0.1  },
-      { amp: 25, freq: 0.005, phase: this.angle * 1.5,  color: rc,        opacity: 0.08 },
-      { amp: 15, freq: 0.008, phase: this.angle * 0.8,  color: "#A855F7", opacity: 0.06 },
+      { amp: 40, freq: 0.003, phase: this.angle, color: ac, opacity: 0.1 },
+      { amp: 25, freq: 0.005, phase: this.angle * 1.5, color: rc, opacity: 0.08 },
+      { amp: 15, freq: 0.008, phase: this.angle * 0.8, color: "#A855F7", opacity: 0.06 },
     ];
     for (const cfg of configs) {
-      ctx.strokeStyle = cfg.color; ctx.lineWidth = 1.5; ctx.globalAlpha = cfg.opacity;
+      ctx.strokeStyle = cfg.color;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = cfg.opacity;
       ctx.beginPath();
       const midY = h / 2 + Math.sin(cfg.phase * 0.2) * 50;
       ctx.moveTo(0, midY);
       for (let x = 0; x < w; x += 10) {
-        ctx.lineTo(x, midY + Math.sin(x * cfg.freq + cfg.phase) * cfg.amp * Math.sin((x / w) * Math.PI));
+        ctx.lineTo(
+          x,
+          midY + Math.sin(x * cfg.freq + cfg.phase) * cfg.amp * Math.sin((x / w) * Math.PI)
+        );
       }
       ctx.stroke();
     }
@@ -1113,8 +1165,10 @@ class LiveBackgroundManager {
   }
 
   _drawAscii(ctx, w, h, ac) {
-    ctx.fillStyle = "#020305"; ctx.fillRect(0, 0, w, h);
-    ctx.font = "12px monospace"; ctx.fillStyle = ac;
+    ctx.fillStyle = "#020305";
+    ctx.fillRect(0, 0, w, h);
+    ctx.font = "12px monospace";
+    ctx.fillStyle = ac;
     for (let i = 0; i < this.particles.length; i++) {
       const line = this.particles[i];
       ctx.globalAlpha = line.alpha;
@@ -1134,14 +1188,15 @@ class LiveBackgroundManager {
     ctx.clearRect(0, 0, w, h);
     for (let i = 0; i < this.particles.length; i++) {
       const b = this.particles[i];
-      b.x += b.vx; b.y += b.vy;
+      b.x += b.vx;
+      b.y += b.vy;
       if (b.x < -b.r || b.x > w + b.r) b.vx *= -1;
       if (b.y < -b.r || b.y > h + b.r) b.vy *= -1;
       b.hue = (b.hue + b.hueSpeed + 360) % 360;
       const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-      grad.addColorStop(0,   `hsla(${b.hue}, 100%, 60%, 0.22)`);
+      grad.addColorStop(0, `hsla(${b.hue}, 100%, 60%, 0.22)`);
       grad.addColorStop(0.5, `hsla(${(b.hue + 60) % 360}, 90%, 45%, 0.1)`);
-      grad.addColorStop(1,   "transparent");
+      grad.addColorStop(1, "transparent");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
     }
@@ -1150,7 +1205,9 @@ class LiveBackgroundManager {
   _drawDna(ctx, w, h, ac, rc) {
     ctx.clearRect(0, 0, w, h);
     this.angle += 0.018;
-    const cx = w / 2, amplitude = Math.min(w * 0.12, 80), freq = 0.025;
+    const cx = w / 2,
+      amplitude = Math.min(w * 0.12, 80),
+      freq = 0.025;
     const rungs = Math.floor(h / 18) + 2;
     for (let i = 0; i < rungs; i++) {
       const y = (i / rungs) * h;
@@ -1159,19 +1216,32 @@ class LiveBackgroundManager {
       const x2 = cx + Math.sin(phase + Math.PI) * amplitude;
       const progress = Math.abs(Math.sin(phase));
       ctx.globalAlpha = 0.08 + progress * 0.18;
-      ctx.strokeStyle = ac; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(x1 - 4, y); ctx.lineTo(x2 + 4, y); ctx.stroke();
-      ctx.fillStyle = ac; ctx.globalAlpha = 0.35;
-      ctx.beginPath(); ctx.arc(x1, y, 3.5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = rc; ctx.globalAlpha = 0.35;
-      ctx.beginPath(); ctx.arc(x2, y, 3.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = ac;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(x1 - 4, y);
+      ctx.lineTo(x2 + 4, y);
+      ctx.stroke();
+      ctx.fillStyle = ac;
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.arc(x1, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = rc;
+      ctx.globalAlpha = 0.35;
+      ctx.beginPath();
+      ctx.arc(x2, y, 3.5, 0, Math.PI * 2);
+      ctx.fill();
     }
-    ctx.globalAlpha = 0.12; ctx.strokeStyle = ac; ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.12;
+    ctx.strokeStyle = ac;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     for (let i = 0; i <= rungs; i++) {
       const y = (i / rungs) * h;
       const x = cx + Math.sin(freq * y + this.angle) * amplitude;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
     ctx.stroke();
     ctx.strokeStyle = rc;
@@ -1179,14 +1249,18 @@ class LiveBackgroundManager {
     for (let i = 0; i <= rungs; i++) {
       const y = (i / rungs) * h;
       const x = cx + Math.sin(freq * y + this.angle + Math.PI) * amplitude;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
     }
     ctx.stroke();
     ctx.globalAlpha = 1.0;
   }
 
   _drawGlitch(ctx, w, h, ac, rc) {
-    if (Math.random() > 0.35) { ctx.globalAlpha = 1.0; return; }
+    if (Math.random() > 0.35) {
+      ctx.globalAlpha = 1.0;
+      return;
+    }
     ctx.globalAlpha = 1.0;
     const numSlices = Math.floor(Math.random() * 6) + 2;
     for (let i = 0; i < numSlices; i++) {
@@ -1210,15 +1284,17 @@ class LiveBackgroundManager {
 
   _drawBlackhole(ctx, w, h, ac, rc) {
     ctx.clearRect(0, 0, w, h);
-    const cx = w / 2, cy = h / 2;
+    const cx = w / 2,
+      cy = h / 2;
     this.angle += 0.003;
     const diskGrad = ctx.createRadialGradient(cx, cy, 28, cx, cy, Math.min(w, h) * 0.42);
-    diskGrad.addColorStop(0,   "rgba(0,0,0,1)");
-    diskGrad.addColorStop(0.18,"rgba(255,140,0,0.22)");
-    diskGrad.addColorStop(0.38,"rgba(255,80,0,0.14)");
-    diskGrad.addColorStop(0.65,"rgba(180,0,80,0.08)");
-    diskGrad.addColorStop(1,   "transparent");
-    ctx.fillStyle = diskGrad; ctx.fillRect(0, 0, w, h);
+    diskGrad.addColorStop(0, "rgba(0,0,0,1)");
+    diskGrad.addColorStop(0.18, "rgba(255,140,0,0.22)");
+    diskGrad.addColorStop(0.38, "rgba(255,80,0,0.14)");
+    diskGrad.addColorStop(0.65, "rgba(180,0,80,0.08)");
+    diskGrad.addColorStop(1, "transparent");
+    ctx.fillStyle = diskGrad;
+    ctx.fillRect(0, 0, w, h);
     for (let i = 0; i < this.particles.length; i++) {
       const p = this.particles[i];
       p.theta += p.speed * (1 + 30 / p.dist) + this.angle * 0.002;
@@ -1226,13 +1302,18 @@ class LiveBackgroundManager {
       const py = cy + Math.sin(p.theta) * p.dist * 0.32;
       ctx.fillStyle = `hsl(${p.hue}, 100%, 65%)`;
       ctx.globalAlpha = p.alpha * 0.35 * Math.min(1, (p.dist - 55) / 40);
-      ctx.beginPath(); ctx.arc(px, py, p.size, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath();
+      ctx.arc(px, py, p.size, 0, Math.PI * 2);
+      ctx.fill();
     }
     const eventHorizon = ctx.createRadialGradient(cx, cy, 0, cx, cy, 30);
     eventHorizon.addColorStop(0, "rgba(0,0,0,1)");
     eventHorizon.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = eventHorizon; ctx.globalAlpha = 1.0;
-    ctx.beginPath(); ctx.arc(cx, cy, 30, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = eventHorizon;
+    ctx.globalAlpha = 1.0;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = 1.0;
   }
 }
@@ -1246,9 +1327,13 @@ function _bgCreateCard(bg, isLive) {
   if (!isLive) card.setAttribute("data-url", bg.url);
   const preview = document.createElement("div");
   preview.className = "bg-gallery-card-preview";
-  if (isLive) { preview.style.background = bg.preview; }
-  else if (bg.url) { preview.style.backgroundImage = "url('" + bg.url + "')"; }
-  else { preview.style.background = "#050505"; }
+  if (isLive) {
+    preview.style.background = bg.preview;
+  } else if (bg.url) {
+    preview.style.backgroundImage = "url('" + bg.url + "')";
+  } else {
+    preview.style.background = "#050505";
+  }
   const title = document.createElement("div");
   title.className = "bg-gallery-card-title";
   title.innerText = bg.name;
@@ -1265,9 +1350,16 @@ function _bgCreateCard(bg, isLive) {
     localStorage.setItem("bgUrl", url);
     const tvpBgLayer = document.getElementById("tvp-bg-layer");
     if (tvpBgLayer) {
-      if (isLive) { tvpBgLayer.style.backgroundImage = "none"; tvpBgLayer.style.backgroundColor = bg.preview || "#050505"; }
-      else if (bg.url) { tvpBgLayer.style.backgroundColor = "transparent"; tvpBgLayer.style.backgroundImage = "url('" + bg.url + "')"; }
-      else { tvpBgLayer.style.backgroundImage = "none"; tvpBgLayer.style.backgroundColor = "transparent"; }
+      if (isLive) {
+        tvpBgLayer.style.backgroundImage = "none";
+        tvpBgLayer.style.backgroundColor = bg.preview || "#050505";
+      } else if (bg.url) {
+        tvpBgLayer.style.backgroundColor = "transparent";
+        tvpBgLayer.style.backgroundImage = "url('" + bg.url + "')";
+      } else {
+        tvpBgLayer.style.backgroundImage = "none";
+        tvpBgLayer.style.backgroundColor = "transparent";
+      }
     }
     applySettings();
   };
@@ -1277,12 +1369,30 @@ function _bgCreateCard(bg, isLive) {
 function _bgUpdateThemePreview() {
   const tvpPreview = document.getElementById("theme-viewport-preview");
   if (!tvpPreview) return;
-  tvpPreview.style.setProperty("--preview-bg", document.getElementById("ct-bg")?.value || "#050505");
-  tvpPreview.style.setProperty("--preview-fg", document.getElementById("ct-fg")?.value || "#D9F7FF");
-  tvpPreview.style.setProperty("--preview-accent", document.getElementById("ct-accent")?.value || "#00F0FF");
-  tvpPreview.style.setProperty("--preview-response", document.getElementById("ct-response")?.value || "#00FF88");
-  tvpPreview.style.setProperty("--preview-warning", document.getElementById("ct-warning")?.value || "#FFB000");
-  tvpPreview.style.setProperty("--preview-error", document.getElementById("ct-error")?.value || "#FF3C5A");
+  tvpPreview.style.setProperty(
+    "--preview-bg",
+    document.getElementById("ct-bg")?.value || "#050505"
+  );
+  tvpPreview.style.setProperty(
+    "--preview-fg",
+    document.getElementById("ct-fg")?.value || "#D9F7FF"
+  );
+  tvpPreview.style.setProperty(
+    "--preview-accent",
+    document.getElementById("ct-accent")?.value || "#00F0FF"
+  );
+  tvpPreview.style.setProperty(
+    "--preview-response",
+    document.getElementById("ct-response")?.value || "#00FF88"
+  );
+  tvpPreview.style.setProperty(
+    "--preview-warning",
+    document.getElementById("ct-warning")?.value || "#FFB000"
+  );
+  tvpPreview.style.setProperty(
+    "--preview-error",
+    document.getElementById("ct-error")?.value || "#FF3C5A"
+  );
 }
 
 function renderBackgroundGallery() {
@@ -1292,19 +1402,44 @@ function renderBackgroundGallery() {
 
   liveContainer.innerHTML = "";
   staticContainer.innerHTML = "";
-  liveContainer.appendChild(_bgCreateCard({ id: "", name: "None (Solid Black)", desc: "Deep matte black battery-saver mode", preview: "#050505" }, true));
+  liveContainer.appendChild(
+    _bgCreateCard(
+      {
+        id: "",
+        name: "None (Solid Black)",
+        desc: "Deep matte black battery-saver mode",
+        preview: "#050505",
+      },
+      true
+    )
+  );
   LIVE_BACKGROUNDS.forEach((bg) => liveContainer.appendChild(_bgCreateCard(bg, true)));
-  staticContainer.appendChild(_bgCreateCard({ id: "", name: "None (Solid Black)", url: "", desc: "Deep matte black battery-saver mode" }, false));
+  staticContainer.appendChild(
+    _bgCreateCard(
+      { id: "", name: "None (Solid Black)", url: "", desc: "Deep matte black battery-saver mode" },
+      false
+    )
+  );
   STATIC_BACKGROUNDS.forEach((bg) => staticContainer.appendChild(_bgCreateCard(bg, false)));
 
   const tabLive = document.getElementById("bg-tab-live");
   const tabStatic = document.getElementById("bg-tab-static");
   if (tabLive && tabStatic) {
-    tabLive.onclick = function () { tabLive.classList.add("active"); tabStatic.classList.remove("active"); liveContainer.style.display = "grid"; staticContainer.style.display = "none"; };
-    tabStatic.onclick = function () { tabStatic.classList.add("active"); tabLive.classList.remove("active"); staticContainer.style.display = "grid"; liveContainer.style.display = "none"; };
+    tabLive.onclick = function () {
+      tabLive.classList.add("active");
+      tabStatic.classList.remove("active");
+      liveContainer.style.display = "grid";
+      staticContainer.style.display = "none";
+    };
+    tabStatic.onclick = function () {
+      tabStatic.classList.add("active");
+      tabLive.classList.remove("active");
+      staticContainer.style.display = "grid";
+      liveContainer.style.display = "none";
+    };
   }
 
-  ["ct-bg","ct-fg","ct-accent","ct-response","ct-warning","ct-error"].forEach((id) => {
+  ["ct-bg", "ct-fg", "ct-accent", "ct-response", "ct-warning", "ct-error"].forEach((id) => {
     const el = document.getElementById(id);
     if (el) el.addEventListener("input", _bgUpdateThemePreview);
   });
@@ -1348,14 +1483,8 @@ function initTouchpadCursorDOM() {
 initTouchpadCursorDOM();
 
 function moveTpCursor(dx, dy) {
-  state.tpCursorX = Math.max(
-    0,
-    Math.min(window.innerWidth - 1, state.tpCursorX + dx),
-  );
-  state.tpCursorY = Math.max(
-    0,
-    Math.min(window.innerHeight - 1, state.tpCursorY + dy),
-  );
+  state.tpCursorX = Math.max(0, Math.min(window.innerWidth - 1, state.tpCursorX + dx));
+  state.tpCursorY = Math.max(0, Math.min(window.innerHeight - 1, state.tpCursorY + dy));
   const el = document.getElementById("tp-cursor");
   if (el) {
     el.style.left = state.tpCursorX + "px";
@@ -1393,11 +1522,7 @@ function tpClick(button = 0) {
   el.dispatchEvent(new MouseEvent("mouseup", opts));
   el.dispatchEvent(new MouseEvent("click", opts));
   // Focus text inputs on click
-  if (
-    el.tagName === "INPUT" ||
-    el.tagName === "TEXTAREA" ||
-    el.isContentEditable
-  ) {
+  if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable) {
     el.focus();
   }
 }
@@ -1414,8 +1539,7 @@ function getActiveScrollContainer() {
   ];
   for (const id of views) {
     const el = document.getElementById(id);
-    if (el && el.offsetParent !== null && el.scrollHeight > el.clientHeight)
-      return el;
+    if (el && el.offsetParent !== null && el.scrollHeight > el.clientHeight) return el;
   }
   // Fallback: any overflow-y element under cursor
   return null;
@@ -1462,46 +1586,83 @@ const _GP_FOCUSABLE_SELECTORS = [
   "#sidebar:not(.collapsed) #sidebar-close-btn",
   "#sidebar:not(.collapsed) #new-chat-btn",
   "#sidebar:not(.collapsed) .history-item",
-  "#sidebar-toggle-btn", ".nav-tab", "#mute-btn", "#notif-btn", "#settings-btn",
-  "#view-chat.active #user-input", "#view-chat.active #mic-btn",
-  "#view-chat.active #toggle-drawer-btn", "#view-chat.active #send-btn",
-  "#view-chat.active .code-header-btn", "#view-chat.active .message",
-  "#view-canvas.active #canvas-run-btn", "#view-canvas.active #canvas-clear-btn",
-  "#view-canvas.active #canvas-copy-btn", "#view-canvas.active #canvas-lang-select",
+  "#sidebar-toggle-btn",
+  ".nav-tab",
+  "#mute-btn",
+  "#notif-btn",
+  "#settings-btn",
+  "#view-chat.active #user-input",
+  "#view-chat.active #mic-btn",
+  "#view-chat.active #toggle-drawer-btn",
+  "#view-chat.active #send-btn",
+  "#view-chat.active .code-header-btn",
+  "#view-chat.active .message",
+  "#view-canvas.active #canvas-run-btn",
+  "#view-canvas.active #canvas-clear-btn",
+  "#view-canvas.active #canvas-copy-btn",
+  "#view-canvas.active #canvas-lang-select",
   "#view-canvas.active #canvas-collab-btn",
   "#view-terminal.active #pty-reconnect-btn",
-  "#view-tunnel.active #tunnel-check-btn", "#view-tunnel.active #tunnel-toggle-btn",
-  "#view-tunnel.active #tunnel-cmd-input", "#view-tunnel.active #tunnel-cmd-send",
-  "#view-tunnel.active #tunnel-filepath-input", "#view-tunnel.active #tunnel-filecontent-input",
-  "#view-tunnel.active #tunnel-file-send", "#view-tunnel.active #tunnel-dirpath-input",
+  "#view-tunnel.active #tunnel-check-btn",
+  "#view-tunnel.active #tunnel-toggle-btn",
+  "#view-tunnel.active #tunnel-cmd-input",
+  "#view-tunnel.active #tunnel-cmd-send",
+  "#view-tunnel.active #tunnel-filepath-input",
+  "#view-tunnel.active #tunnel-filecontent-input",
+  "#view-tunnel.active #tunnel-file-send",
+  "#view-tunnel.active #tunnel-dirpath-input",
   "#view-tunnel.active #tunnel-dir-send",
-  "#view-share.active .peer-item", "#view-share.active #share-dropzone",
-  "#view-share.active #share-filepath-input", "#view-share.active #share-send-btn",
-  "#view-memory.active #memory-search-input", "#view-memory.active #memory-refresh-btn",
-  "#view-memory.active #memory-fact-input", "#view-memory.active #memory-fact-save-btn",
-  "#view-agent.active #agent-task-input", "#view-agent.active #agent-run-btn",
-  "#view-agent.active #agent-stop-btn", "#view-agent.active #agent-send-canvas-btn",
-  "#view-docs.active #docs-search-input", "#view-docs.active #docs-search-btn",
-  "#view-docs.active #docs-index-btn", "#view-docs.active #docs-clear-btn",
+  "#view-share.active .peer-item",
+  "#view-share.active #share-dropzone",
+  "#view-share.active #share-filepath-input",
+  "#view-share.active #share-send-btn",
+  "#view-memory.active #memory-search-input",
+  "#view-memory.active #memory-refresh-btn",
+  "#view-memory.active #memory-fact-input",
+  "#view-memory.active #memory-fact-save-btn",
+  "#view-agent.active #agent-task-input",
+  "#view-agent.active #agent-run-btn",
+  "#view-agent.active #agent-stop-btn",
+  "#view-agent.active #agent-send-canvas-btn",
+  "#view-docs.active #docs-search-input",
+  "#view-docs.active #docs-search-btn",
+  "#view-docs.active #docs-index-btn",
+  "#view-docs.active #docs-clear-btn",
   "#view-docs.active .docs-remove-btn",
-  "#view-ssh.active .ssh-btn", "#view-ssh.active .ssh-profile-btn",
-  "#view-browser.active .browser-btn", "#view-browser.active #browser-url-input",
+  "#view-ssh.active .ssh-btn",
+  "#view-ssh.active .ssh-profile-btn",
+  "#view-browser.active .browser-btn",
+  "#view-browser.active #browser-url-input",
   "#view-dashboard.active .dashboard-card",
-  "#view-prompt-lab.active .prompt-lab-btn", "#view-prompt-lab.active #prompt-lab-input",
-  "#view-remote.active .remote-btn", "#view-remote.active #remote-connect-btn",
-  "#view-workflow.active .wf-toolbar-btn", "#view-workflow.active .wf-palette-item",
-  "#view-scheduler.active .scheduler-btn", "#view-scheduler.active #scheduler-add-btn",
-  "#view-git.active .git-btn", "#view-git.active #git-commit-btn",
-  "#view-api-lab.active .api-lab-btn", "#view-api-lab.active #api-url-input",
-  "#view-cli-maker.active .cli-maker-btn", "#view-cli-maker.active #cli-run-btn",
+  "#view-prompt-lab.active .prompt-lab-btn",
+  "#view-prompt-lab.active #prompt-lab-input",
+  "#view-remote.active .remote-btn",
+  "#view-remote.active #remote-connect-btn",
+  "#view-workflow.active .wf-toolbar-btn",
+  "#view-workflow.active .wf-palette-item",
+  "#view-scheduler.active .scheduler-btn",
+  "#view-scheduler.active #scheduler-add-btn",
+  "#view-git.active .git-btn",
+  "#view-git.active #git-commit-btn",
+  "#view-api-lab.active .api-lab-btn",
+  "#view-api-lab.active #api-url-input",
+  "#view-cli-maker.active .cli-maker-btn",
+  "#view-cli-maker.active #cli-run-btn",
   "#view-graph.active .graph-btn",
-  "#view-orchestrator.active .orch-btn", "#view-orchestrator.active #orch-run-btn",
+  "#view-orchestrator.active .orch-btn",
+  "#view-orchestrator.active #orch-run-btn",
   "#view-ide.active .ide-toolbar-btn",
   "#inspect-drawer:not(.collapsed) #inspect-close-btn",
 ];
 
 function _gpCheckModalFocusable() {
-  const modals = ["notif-modal", "game-context-panel", "computer-use-modal", "transfer-modal", "permission-profile-edit-modal"];
+  const modals = [
+    "notif-modal",
+    "game-context-panel",
+    "computer-use-modal",
+    "transfer-modal",
+    "permission-profile-edit-modal",
+  ];
   for (const id of modals) {
     const els = getActiveModalFocusableElements(id);
     if (els) return els;
@@ -1566,7 +1727,10 @@ document.addEventListener("mousedown", () => {
   state.gamepadFocusIndex = -1;
 });
 
-const _RADIAL_R_OUTER = 130, _RADIAL_R_INNER = 52, _RADIAL_CX = 150, _RADIAL_CY = 150;
+const _RADIAL_R_OUTER = 130,
+  _RADIAL_R_INNER = 52,
+  _RADIAL_CX = 150,
+  _RADIAL_CY = 150;
 
 function _radialPolarToXY(angleDeg, r) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -1710,7 +1874,11 @@ function activateRadialSegment(segIdx) {
 }
 
 function _gpButtonPressed(gp, index) {
-  return !!(gp.buttons[index] && gp.buttons[index].pressed && !state.previousGamepadState.buttons[index]);
+  return !!(
+    gp.buttons[index] &&
+    gp.buttons[index].pressed &&
+    !state.previousGamepadState.buttons[index]
+  );
 }
 
 function _gpFaceButtonA(gp) {
@@ -1726,8 +1894,12 @@ function _gpFaceButtonA(gp) {
   } else {
     const els = getGamepadFocusableElements();
     const activeEl = els[state.gamepadFocusIndex];
-    if (activeEl) { activeEl.click(); if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") activeEl.focus(); }
-    else { updateGamepadFocus(0); }
+    if (activeEl) {
+      activeEl.click();
+      if (activeEl.tagName === "INPUT" || activeEl.tagName === "TEXTAREA") activeEl.focus();
+    } else {
+      updateGamepadFocus(0);
+    }
   }
 }
 
@@ -1739,8 +1911,11 @@ function _gpFaceButtonB(gp) {
     return;
   }
   triggerHaptic("medium");
-  if (getCtrlPromptVisible()) { getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay(); }
-  else { closeTopmostOverlay(); }
+  if (getCtrlPromptVisible()) {
+    getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
+  } else {
+    closeTopmostOverlay();
+  }
 }
 
 function _gpFaceButtonX(gp) {
@@ -1759,7 +1934,9 @@ function _gpFaceButtonX(gp) {
       focused.style.transition = "background 0.2s";
       const oldBg = focused.style.background;
       focused.style.background = "rgba(94, 235, 255, 0.15)";
-      setTimeout(() => { focused.style.background = oldBg; }, 400);
+      setTimeout(() => {
+        focused.style.background = oldBg;
+      }, 400);
     }
   } else {
     triggerHaptic("light");
@@ -1794,18 +1971,30 @@ function _gpFaceButtonY(gp) {
         if (text) {
           const input = document.getElementById("user-input");
           if (input) {
-            input.value = text; input.style.height = "auto";
-            input.style.height = Math.min(input.scrollHeight, 300) + "px"; input.focus();
+            input.value = text;
+            input.style.height = "auto";
+            input.style.height = Math.min(input.scrollHeight, 300) + "px";
+            input.focus();
           }
-          setTimeout(() => { const s = document.getElementById("send-btn"); if (s) s.click(); }, 300);
+          setTimeout(() => {
+            const s = document.getElementById("send-btn");
+            if (s) s.click();
+          }, 300);
         }
         break;
       }
     }
   } else if (state.availablePersonas && state.availablePersonas.length > 0) {
-    const nextPersona = state.availablePersonas[(state.availablePersonas.indexOf(state.activePersona) + 1) % state.availablePersonas.length];
+    const nextPersona =
+      state.availablePersonas[
+        (state.availablePersonas.indexOf(state.activePersona) + 1) % state.availablePersonas.length
+      ];
     invoke("set_persona", { name: nextPersona })
-      .then(() => { state.activePersona = nextPersona; const sel = document.getElementById("persona-select"); if (sel) sel.value = nextPersona; })
+      .then(() => {
+        state.activePersona = nextPersona;
+        const sel = document.getElementById("persona-select");
+        if (sel) sel.value = nextPersona;
+      })
       .catch((err) => console.error("Error setting persona via Gamepad:", err));
   }
 }
@@ -1823,22 +2012,38 @@ function _gpShoulderL2R2(gp) {
     if (shareView && shareView.classList.contains("active")) {
       const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
       const idx = subtabs.findIndex((t) => t.classList.contains("active"));
-      if (idx !== -1) { subtabs[_gpButtonPressed(gp, 6) ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click(); triggerHaptic("light"); }
+      if (idx !== -1) {
+        subtabs[
+          _gpButtonPressed(gp, 6)
+            ? (idx - 1 + subtabs.length) % subtabs.length
+            : (idx + 1) % subtabs.length
+        ].click();
+        triggerHaptic("light");
+      }
     }
   }
   if (_gpButtonPressed(gp, 7)) {
     const shareView = document.getElementById("view-share");
     if (!(shareView && shareView.classList.contains("active"))) {
       if (isTerminalViewActive()) {
-        isTerminalCommandPickerVisible() ? closeTerminalCommandPicker() : openTerminalCommandPicker();
+        isTerminalCommandPickerVisible()
+          ? closeTerminalCommandPicker()
+          : openTerminalCommandPicker();
         triggerHaptic("medium");
       } else if (getCtrlPromptVisible()) {
         triggerHaptic("light");
         getCtrlPromptTemplateMode() ? exitTemplateMode() : closeCtrlPromptOverlay();
       } else {
-        openCtrlPromptOverlay(); triggerHaptic("medium");
+        openCtrlPromptOverlay();
+        triggerHaptic("medium");
         if (state.gamepadActive && window.showVirtualKeyboard) {
-          setTimeout(() => { const s = document.getElementById("ctrl-prompt-search"); if (s) { s.focus(); window.showVirtualKeyboard(s); } }, 120);
+          setTimeout(() => {
+            const s = document.getElementById("ctrl-prompt-search");
+            if (s) {
+              s.focus();
+              window.showVirtualKeyboard(s);
+            }
+          }, 120);
         }
       }
     }
@@ -1846,7 +2051,7 @@ function _gpShoulderL2R2(gp) {
 }
 
 function _gpShoulderL1R1_CtrlPrompt(isL1) {
-  triggerHaptic("light"); 
+  triggerHaptic("light");
   navigateCtrlPromptCat(isL1 ? -1 : 1);
 }
 
@@ -1854,7 +2059,8 @@ function _gpShoulderL1R1_ChatScroll(isL1) {
   const chatView = document.getElementById("view-chat");
   if (chatView && chatView.classList.contains("active")) {
     const workspace = document.getElementById("chat-workspace");
-    if (workspace) workspace.scrollTop += isL1 ? -(workspace.clientHeight * 0.8) : (workspace.clientHeight * 0.8);
+    if (workspace)
+      workspace.scrollTop += isL1 ? -(workspace.clientHeight * 0.8) : workspace.clientHeight * 0.8;
   }
 }
 
@@ -1870,12 +2076,16 @@ function _gpShoulderL1R1_NavTabs(isL1) {
   const tabs = Array.from(document.querySelectorAll(".nav-tab"));
   const activeTabIdx = tabs.findIndex((tab) => tab.classList.contains("active"));
   if (activeTabIdx !== -1) {
-    const nextIdx = isL1 ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
-    if (nextIdx !== activeTabIdx) { 
-      tabs[nextIdx].click(); 
-      triggerHaptic("light"); 
-      state.gamepadFocusIndex = -1; 
-      document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused")); 
+    const nextIdx = isL1
+      ? (activeTabIdx - 1 + tabs.length) % tabs.length
+      : (activeTabIdx + 1) % tabs.length;
+    if (nextIdx !== activeTabIdx) {
+      tabs[nextIdx].click();
+      triggerHaptic("light");
+      state.gamepadFocusIndex = -1;
+      document
+        .querySelectorAll(".gamepad-focused")
+        .forEach((el) => el.classList.remove("gamepad-focused"));
     }
   }
 }
@@ -1916,12 +2126,14 @@ function _gpHandleMenuButtons(gp) {
   if (isTerminalViewActive() && !getCtrlPromptVisible()) {
     if (_gpButtonPressed(gp, 8)) {
       triggerHaptic("medium");
-      if (state.activeTerminalSessionId) invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x12" }).catch(() => {});
+      if (state.activeTerminalSessionId)
+        invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x12" }).catch(() => {});
       return;
     }
     if (_gpButtonPressed(gp, 9)) {
       triggerHaptic("medium");
-      if (state.activeTerminalSessionId) invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x04" }).catch(() => {});
+      if (state.activeTerminalSessionId)
+        invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x04" }).catch(() => {});
       return;
     }
   }
@@ -1934,7 +2146,8 @@ function _gpHandleMenuButtons(gp) {
     triggerHaptic("medium");
     const settingsOverlay = document.getElementById("settings-overlay");
     if (settingsOverlay) {
-      if (settingsOverlay.classList.contains("active")) document.getElementById("close-settings").click();
+      if (settingsOverlay.classList.contains("active"))
+        document.getElementById("close-settings").click();
       else document.getElementById("settings-btn").click();
     }
   }
@@ -1948,14 +2161,19 @@ function _gpDpadVerticalCtrlPrompt(goUp) {
 function _gpDpadVerticalShare(goUp) {
   const subtabs = Array.from(document.querySelectorAll(".share-inner-tab"));
   const idx = subtabs.findIndex((t) => t.classList.contains("active"));
-  if (idx !== -1) subtabs[goUp ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length].click();
+  if (idx !== -1)
+    subtabs[
+      goUp ? (idx - 1 + subtabs.length) % subtabs.length : (idx + 1) % subtabs.length
+    ].click();
 }
 
 function _gpDpadVerticalSsh(goUp) {
   const items = Array.from(document.querySelectorAll("#ssh-profiles-list .ssh-profile-item"));
   if (items.length > 0) {
     const selIdx = items.findIndex((el) => el.classList.contains("gamepad-focused"));
-    const nextIdx = goUp ? Math.max(0, selIdx === -1 ? items.length - 1 : selIdx - 1) : Math.min(items.length - 1, selIdx === -1 ? 0 : selIdx + 1);
+    const nextIdx = goUp
+      ? Math.max(0, selIdx === -1 ? items.length - 1 : selIdx - 1)
+      : Math.min(items.length - 1, selIdx === -1 ? 0 : selIdx + 1);
     items.forEach((el) => el.classList.remove("gamepad-focused"));
     items[nextIdx].classList.add("gamepad-focused");
     items[nextIdx].scrollIntoView({ block: "nearest" });
@@ -2004,41 +2222,56 @@ function _gpDpadHorizontal(gp, goLeft) {
   }
   const els = getGamepadFocusableElements();
   const activeEl = els[state.gamepadFocusIndex];
-  const handled = activeEl && (() => {
-    if (activeEl.tagName === "INPUT" && activeEl.type === "range") {
-      const step = parseInt(activeEl.step, 10) || 5;
-      activeEl.value = goLeft
-        ? Math.max(parseInt(activeEl.min, 10) || 0, parseInt(activeEl.value, 10) - step)
-        : Math.min(parseInt(activeEl.max, 10) || 100, parseInt(activeEl.value, 10) + step);
-      activeEl.dispatchEvent(new Event("input", { bubbles: true })); return true;
-    }
-    if (activeEl.tagName === "SELECT") {
-      const idx = goLeft ? Math.max(0, activeEl.selectedIndex - 1) : Math.min(activeEl.options.length - 1, activeEl.selectedIndex + 1);
-      if (idx !== activeEl.selectedIndex) { activeEl.selectedIndex = idx; activeEl.dispatchEvent(new Event("change", { bubbles: true })); }
-      return true;
-    }
-    return false;
-  })();
+  const handled =
+    activeEl &&
+    (() => {
+      if (activeEl.tagName === "INPUT" && activeEl.type === "range") {
+        const step = parseInt(activeEl.step, 10) || 5;
+        activeEl.value = goLeft
+          ? Math.max(parseInt(activeEl.min, 10) || 0, parseInt(activeEl.value, 10) - step)
+          : Math.min(parseInt(activeEl.max, 10) || 100, parseInt(activeEl.value, 10) + step);
+        activeEl.dispatchEvent(new Event("input", { bubbles: true }));
+        return true;
+      }
+      if (activeEl.tagName === "SELECT") {
+        const idx = goLeft
+          ? Math.max(0, activeEl.selectedIndex - 1)
+          : Math.min(activeEl.options.length - 1, activeEl.selectedIndex + 1);
+        if (idx !== activeEl.selectedIndex) {
+          activeEl.selectedIndex = idx;
+          activeEl.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        return true;
+      }
+      return false;
+    })();
   if (!handled) {
     const tabs = Array.from(document.querySelectorAll(".nav-tab"));
     const activeTabIdx = tabs.findIndex((t) => t.classList.contains("active"));
     if (activeTabIdx !== -1) {
-      const nextIdx = goLeft ? (activeTabIdx - 1 + tabs.length) % tabs.length : (activeTabIdx + 1) % tabs.length;
-      tabs[nextIdx].click(); state.gamepadFocusIndex = -1;
-      document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
+      const nextIdx = goLeft
+        ? (activeTabIdx - 1 + tabs.length) % tabs.length
+        : (activeTabIdx + 1) % tabs.length;
+      tabs[nextIdx].click();
+      state.gamepadFocusIndex = -1;
+      document
+        .querySelectorAll(".gamepad-focused")
+        .forEach((el) => el.classList.remove("gamepad-focused"));
     }
   }
 }
 
 function _gpHandleDpad(gp) {
-  if (_gpButtonPressed(gp, 12) || _gpButtonPressed(gp, 13)) _gpDpadVertical(gp, _gpButtonPressed(gp, 12));
-  if (_gpButtonPressed(gp, 14) || _gpButtonPressed(gp, 15)) _gpDpadHorizontal(gp, _gpButtonPressed(gp, 14));
+  if (_gpButtonPressed(gp, 12) || _gpButtonPressed(gp, 13))
+    _gpDpadVertical(gp, _gpButtonPressed(gp, 12));
+  if (_gpButtonPressed(gp, 14) || _gpButtonPressed(gp, 15))
+    _gpDpadHorizontal(gp, _gpButtonPressed(gp, 14));
 }
 
 function _cycleTerminalTabRight() {
   const tabs = Array.from(document.querySelectorAll("#terminal-tabs-list .terminal-tab"));
   if (tabs.length < 2) return;
-  const ai = tabs.findIndex(t => t.classList.contains("active"));
+  const ai = tabs.findIndex((t) => t.classList.contains("active"));
   tabs[((ai < 0 ? 0 : ai) + 1) % tabs.length].click();
   triggerHaptic("light");
 }
@@ -2046,15 +2279,47 @@ function _cycleTerminalTabRight() {
 function _gpHandleGripButtons(gp) {
   if (getCtrlPromptVisible() || isTerminalCommandPickerVisible()) return;
   if (isTerminalViewActive()) {
-    if (_gpButtonPressed(gp, 17)) { triggerHaptic("medium"); createTerminalSession(); return; }
-    if (_gpButtonPressed(gp, 18)) { _cycleTerminalTabRight(); return; }
-    if (_gpButtonPressed(gp, 19)) { triggerHaptic("medium"); if (state.activeTerminalSessionId) invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x15" }).catch(() => {}); return; }
-    if (_gpButtonPressed(gp, 20)) { triggerHaptic("light"); if (state.activeTerminalSessionId) invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x17" }).catch(() => {}); return; }
+    if (_gpButtonPressed(gp, 17)) {
+      triggerHaptic("medium");
+      createTerminalSession();
+      return;
+    }
+    if (_gpButtonPressed(gp, 18)) {
+      _cycleTerminalTabRight();
+      return;
+    }
+    if (_gpButtonPressed(gp, 19)) {
+      triggerHaptic("medium");
+      if (state.activeTerminalSessionId)
+        invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x15" }).catch(() => {});
+      return;
+    }
+    if (_gpButtonPressed(gp, 20)) {
+      triggerHaptic("light");
+      if (state.activeTerminalSessionId)
+        invoke("pty_write", { id: state.activeTerminalSessionId, data: "\x17" }).catch(() => {});
+      return;
+    }
   }
-  if (_gpButtonPressed(gp, 17)) { triggerHaptic("light"); const s = document.getElementById("sidebar"); if (s) s.classList.toggle("collapsed"); }
-  if (_gpButtonPressed(gp, 18)) { triggerHaptic("light"); const d = document.getElementById("inspect-drawer"); if (d) d.classList.toggle("collapsed"); }
-  if (_gpButtonPressed(gp, 19)) { triggerHaptic("heavy"); const c = document.getElementById("canvas-clear-btn"); if (c) c.click(); }
-  if (_gpButtonPressed(gp, 20)) { triggerHaptic("light"); cycleTheme(); }
+  if (_gpButtonPressed(gp, 17)) {
+    triggerHaptic("light");
+    const s = document.getElementById("sidebar");
+    if (s) s.classList.toggle("collapsed");
+  }
+  if (_gpButtonPressed(gp, 18)) {
+    triggerHaptic("light");
+    const d = document.getElementById("inspect-drawer");
+    if (d) d.classList.toggle("collapsed");
+  }
+  if (_gpButtonPressed(gp, 19)) {
+    triggerHaptic("heavy");
+    const c = document.getElementById("canvas-clear-btn");
+    if (c) c.click();
+  }
+  if (_gpButtonPressed(gp, 20)) {
+    triggerHaptic("light");
+    cycleTheme();
+  }
 }
 
 function _gpHandleRadialMenu(gp, l2Held, l2WasHeld) {
@@ -2062,7 +2327,10 @@ function _gpHandleRadialMenu(gp, l2Held, l2WasHeld) {
     showRadialMenu();
   } else if (l2Held) {
     const seg = getRadialSegmentFromStick(gp.axes[0] || 0, gp.axes[1] || 0);
-    if (seg !== state.radialSelectedSegment) { updateRadialDisplay(seg); triggerHaptic("tick"); }
+    if (seg !== state.radialSelectedSegment) {
+      updateRadialDisplay(seg);
+      triggerHaptic("tick");
+    }
   } else if (!l2Held && l2WasHeld) {
     activateRadialSegment(state.radialSelectedSegment);
     hideRadialMenu();
@@ -2070,15 +2338,23 @@ function _gpHandleRadialMenu(gp, l2Held, l2WasHeld) {
 }
 
 function _gpHandleTouchpadAndScroll(gp, l2Held) {
-  const rtX = gp.axes[2] || 0, rtY = gp.axes[3] || 0;
-  if (Math.sqrt(rtX * rtX + rtY * rtY) > TP_DEADZONE && !l2Held) moveTpCursor(rtX * TP_SENSITIVITY, rtY * TP_SENSITIVITY);
-  if (_gpButtonPressed(gp, 11) && state.tpCursorVisible) { triggerHaptic("medium"); tpClick(0); }
+  const rtX = gp.axes[2] || 0,
+    rtY = gp.axes[3] || 0;
+  if (Math.sqrt(rtX * rtX + rtY * rtY) > TP_DEADZONE && !l2Held)
+    moveTpCursor(rtX * TP_SENSITIVITY, rtY * TP_SENSITIVITY);
+  if (_gpButtonPressed(gp, 11) && state.tpCursorVisible) {
+    triggerHaptic("medium");
+    tpClick(0);
+  }
   if (!l2Held && Math.abs(gp.axes[1] || 0) > 0.2) {
     if (isTerminalViewActive() && !isTerminalCommandPickerVisible() && window.ptyTerminal) {
       window.ptyTerminal.scrollLines(Math.round((gp.axes[1] || 0) * 3));
     } else {
       const scrollEl = getActiveScrollContainer();
-      if (scrollEl) { scrollEl.scrollTop += (gp.axes[1] || 0) * TP_SCROLL_SPEED; showTpScrollIndicator(true); }
+      if (scrollEl) {
+        scrollEl.scrollTop += (gp.axes[1] || 0) * TP_SCROLL_SPEED;
+        showTpScrollIndicator(true);
+      }
     }
   }
   if (_gpButtonPressed(gp, 1) && state.tpCursorVisible) {
@@ -2088,7 +2364,8 @@ function _gpHandleTouchpadAndScroll(gp, l2Held) {
   }
   if (_gpButtonPressed(gp, 1) && !getCtrlPromptVisible()) {
     const vkEl = document.getElementById("vk-overlay");
-    if (vkEl && vkEl.classList.contains("vk-visible") && window.hideVirtualKeyboard) window.hideVirtualKeyboard();
+    if (vkEl && vkEl.classList.contains("vk-visible") && window.hideVirtualKeyboard)
+      window.hideVirtualKeyboard();
   }
 }
 
@@ -2096,12 +2373,17 @@ function pollGamepads() {
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
   let gp = null;
   for (let i = 0; i < gamepads.length; i++) {
-    if (gamepads[i]) { gp = gamepads[i]; break; }
+    if (gamepads[i]) {
+      gp = gamepads[i];
+      break;
+    }
   }
   if (!gp) {
     if (state.gamepadActive) {
       state.gamepadActive = false;
-      document.querySelectorAll(".gamepad-focused").forEach((el) => el.classList.remove("gamepad-focused"));
+      document
+        .querySelectorAll(".gamepad-focused")
+        .forEach((el) => el.classList.remove("gamepad-focused"));
       state.gamepadFocusIndex = -1;
     }
     requestAnimationFrame(pollGamepads);
@@ -2109,7 +2391,7 @@ function pollGamepads() {
   }
   state.gamepadActive = true;
 
-  const l2Held    = (gp.buttons[6] ? gp.buttons[6].value : 0) > 0.5;
+  const l2Held = (gp.buttons[6] ? gp.buttons[6].value : 0) > 0.5;
   const l2WasHeld = state.previousGamepadState.l2Held;
 
   _gpHandleFaceButtons(gp);
@@ -2304,7 +2586,10 @@ sidebarCloseBtn.onclick = function () {
 sidebar.addEventListener("keydown", (e) => {
   if (e.key !== "Enter" && e.key !== " ") return;
   const item = e.target.closest(".history-item");
-  if (item) { e.preventDefault(); item.click(); }
+  if (item) {
+    e.preventDefault();
+    item.click();
+  }
 });
 
 const inspectDrawer = document.getElementById("inspect-drawer");
@@ -2315,10 +2600,10 @@ function updateContextDrawer() {
   invoke("get_context_stats")
     .then((stats) => {
       // get_context_stats returns { chat, memory, agent, system }
-      const sys  = stats.system  || {};
-      const chat = stats.chat    || {};
-      const mem  = stats.memory  || {};
-      const agt  = stats.agent   || {};
+      const sys = stats.system || {};
+      const chat = stats.chat || {};
+      const mem = stats.memory || {};
+      const agt = stats.agent || {};
 
       const set = (id, val) => {
         const el = document.getElementById(id);
@@ -2326,14 +2611,14 @@ function updateContextDrawer() {
       };
 
       set("drawer-active-provider", (sys.provider || "--").toUpperCase());
-      set("drawer-active-model",    sys.model     || "--");
-      set("drawer-ram-val",         sys.ram_mb != null ? sys.ram_mb + " MB" : "--");
-      set("drawer-memory-records",  mem.facts     ?? 0);
-      set("drawer-memory-pinned",   mem.pinned    ?? 0);
-      set("drawer-session-id",      chat.session_id ? chat.session_id.slice(0, 8) + "…" : "--");
+      set("drawer-active-model", sys.model || "--");
+      set("drawer-ram-val", sys.ram_mb != null ? sys.ram_mb + " MB" : "--");
+      set("drawer-memory-records", mem.facts ?? 0);
+      set("drawer-memory-pinned", mem.pinned ?? 0);
+      set("drawer-session-id", chat.session_id ? chat.session_id.slice(0, 8) + "…" : "--");
       set("drawer-session-created", chat.created_at || "--");
-      set("drawer-session-messages",chat.messages   ?? 0);
-      set("drawer-active-persona",  chat.persona    || "Default");
+      set("drawer-session-messages", chat.messages ?? 0);
+      set("drawer-active-persona", chat.persona || "Default");
 
       // Agent status indicator
       const agentStatusEl = document.getElementById("drawer-agent-status");
@@ -2382,9 +2667,7 @@ function updateGameBadge(ctx) {
   }
 
   nameEl.textContent = name;
-  badge.title = running
-    ? `🎮 ${name} — currently running`
-    : `🎮 ${name} — recently played`;
+  badge.title = running ? `🎮 ${name} — currently running` : `🎮 ${name} — recently played`;
 
   dotEl.classList.toggle("game-badge-dot--running", running);
   badge.classList.remove("hidden");
@@ -2421,7 +2704,12 @@ function _initSetupStateAndListeners(initialState) {
   state.activePersona = initialState.active_persona || "Default";
   state.activeProvider = initialState.provider || "gemini";
   state.activeAgentId = initialState.active_agent_id || "";
-  invoke("list_agents").then((agents) => { state.agents = Array.isArray(agents) ? agents : (agents?.agents || []); renderAgentSwitcher(); }).catch(() => {});
+  invoke("list_agents")
+    .then((agents) => {
+      state.agents = Array.isArray(agents) ? agents : agents?.agents || [];
+      renderAgentSwitcher();
+    })
+    .catch(() => {});
   listen("agent_changed", (event) => {
     const agent = event.payload;
     state.activeAgentId = agent.id;
@@ -2431,8 +2719,18 @@ function _initSetupStateAndListeners(initialState) {
     renderAgentSwitcher();
   });
   updateContextDrawer();
-  updateGameBadge({ name: initialState.game_name || "", app_id: initialState.game_app_id || "", is_running: initialState.game_running || "false" });
-  invoke("get_personas").then((personas) => { state.availablePersonas = personas; }).catch((err) => { console.error("Error loading personas:", err); });
+  updateGameBadge({
+    name: initialState.game_name || "",
+    app_id: initialState.game_app_id || "",
+    is_running: initialState.game_running || "false",
+  });
+  invoke("get_personas")
+    .then((personas) => {
+      state.availablePersonas = personas;
+    })
+    .catch((err) => {
+      console.error("Error loading personas:", err);
+    });
 }
 
 async function _initRunDiskMigration() {
@@ -2449,7 +2747,12 @@ async function _initRunDiskMigration() {
       if (raw && raw !== "[]") await invoke("save_custom_themes", { data: raw });
     } catch (_) {}
   };
-  await Promise.all([migrateProfiles("sshProfiles", "ssh"), migrateProfiles("ftpProfiles", "ftp"), migrateProfiles("sftpProfiles", "sftp"), migrateThemes()]);
+  await Promise.all([
+    migrateProfiles("sshProfiles", "ssh"),
+    migrateProfiles("ftpProfiles", "ftp"),
+    migrateProfiles("sftpProfiles", "sftp"),
+    migrateThemes(),
+  ]);
   localStorage.setItem("neurodeck_disk_migrated_v1", "true");
 }
 
@@ -2458,13 +2761,26 @@ function _initRunOriginMigration() {
   if (!localStorage.getItem("selectedTheme")) localStorage.setItem("selectedTheme", "BLACKSITE");
   if (!localStorage.getItem("neurodeckTheme")) localStorage.setItem("neurodeckTheme", "BLACKSITE");
   localStorage.setItem("neurodeck_origin_migrated_v2", "true");
-  if (typeof addNotification === "function") addNotification("Updated", "App origin changed — UI preferences reset to defaults.", "info");
+  if (typeof addNotification === "function")
+    addNotification("Updated", "App origin changed — UI preferences reset to defaults.", "info");
 }
 
 function _initBootHealthNotification(initialState) {
-  if (!initialState.boot_health_status || initialState.boot_health_status === "healthy" || typeof addNotification !== "function") return;
-  const level = initialState.boot_health_warning_count && Number(initialState.boot_health_warning_count) > 0 ? "warning" : "info";
-  addNotification("Boot Recovery", initialState.boot_health_summary || "Startup self-heal applied recovery actions.", level);
+  if (
+    !initialState.boot_health_status ||
+    initialState.boot_health_status === "healthy" ||
+    typeof addNotification !== "function"
+  )
+    return;
+  const level =
+    initialState.boot_health_warning_count && Number(initialState.boot_health_warning_count) > 0
+      ? "warning"
+      : "info";
+  addNotification(
+    "Boot Recovery",
+    initialState.boot_health_summary || "Startup self-heal applied recovery actions.",
+    level
+  );
 }
 
 async function _applyInitialState(initialState) {
@@ -2473,16 +2789,34 @@ async function _applyInitialState(initialState) {
   await _initRunDiskMigration();
   _initRunOriginMigration();
   const savedTheme = localStorage.getItem("selectedTheme");
-  if (savedTheme) invoke("set_theme", { name: savedTheme }).then((theme) => { if (theme) applyThemeColors(theme); });
-  initChat(); initSettings(); initTerminal(); initCanvas(); initNotificationCenter();
+  if (savedTheme)
+    invoke("set_theme", { name: savedTheme }).then((theme) => {
+      if (theme) applyThemeColors(theme);
+    });
+  initChat();
+  initSettings();
+  initTerminal();
+  initCanvas();
+  initNotificationCenter();
   initTerminalGamepad();
-  initSessionBrowser(); initShortcutsOverlay(); initShortcutCustomization(); initOsThemeSync();
+  initSessionBrowser();
+  initShortcutsOverlay();
+  initShortcutCustomization();
+  initOsThemeSync();
   const initialActiveTab = document.querySelector(".nav-tab.active");
   if (initialActiveTab) updateTabGlide(initialActiveTab);
   _initBootHealthNotification(initialState);
-  initCommandPalette(); initQuickSwitcher(); initGameContextPanel();
-  initTunnelClient(); initFileShare(); initBrowser();
-  initAgentView(); initMemoryView(); initDashboardView(); initRadialMenu(); initManualModal();
+  initCommandPalette();
+  initQuickSwitcher();
+  initGameContextPanel();
+  initTunnelClient();
+  initFileShare();
+  initBrowser();
+  initAgentView();
+  initMemoryView();
+  initDashboardView();
+  initRadialMenu();
+  initManualModal();
   checkOnboarding();
 }
 
@@ -2507,9 +2841,7 @@ function ensureTabVisible(tab) {
   const tabRect = tab.getBoundingClientRect();
   const currentLeft = navTabRow.scrollLeft;
   const targetLeft =
-    currentLeft +
-    (tabRect.left - rowRect.left) -
-    (rowRect.width - tabRect.width) / 2;
+    currentLeft + (tabRect.left - rowRect.left) - (rowRect.width - tabRect.width) / 2;
   navTabRow.scrollTo({
     left: Math.max(0, targetLeft),
     behavior: "smooth",
@@ -2561,7 +2893,8 @@ function _navAnimateTransition(outgoing, incoming, direction, currentViewId) {
       outgoing.classList.remove(`view-exit-${direction}`);
       outgoing.style.willChange = "";
     }, 300);
-    if (currentViewId === "view-ide" && typeof window._deactivateIdeView === "function") window._deactivateIdeView();
+    if (currentViewId === "view-ide" && typeof window._deactivateIdeView === "function")
+      window._deactivateIdeView();
   }
   if (incoming) {
     incoming.style.willChange = "opacity, transform";
@@ -2571,7 +2904,9 @@ function _navAnimateTransition(outgoing, incoming, direction, currentViewId) {
     void incoming.offsetWidth;
     incoming.classList.add("active");
     incoming.classList.remove(`view-enter-${enterDir}`);
-    setTimeout(() => { incoming.style.willChange = ""; }, 320);
+    setTimeout(() => {
+      incoming.style.willChange = "";
+    }, 320);
   }
 }
 
@@ -2586,44 +2921,70 @@ function _navActivateSideEffects(targetViewName) {
     }
   }
   if (targetViewName === "terminal" && window.ptyTerminalFitAddon) {
-    setTimeout(() => { try { window.ptyTerminalFitAddon.fit(); } catch (e) { console.error("Error fitting terminal:", e); } }, 50);
+    setTimeout(() => {
+      try {
+        window.ptyTerminalFitAddon.fit();
+      } catch (e) {
+        console.error("Error fitting terminal:", e);
+      }
+    }, 50);
   }
   updateHintBarVisibility();
   if (targetViewName === "ssh") {
     if (!window.sshTerminal) initSshTerminal();
-    setTimeout(() => { try { window.sshTerminalFitAddon?.fit(); } catch (e) {} }, 50);
+    setTimeout(() => {
+      try {
+        window.sshTerminalFitAddon?.fit();
+      } catch (e) {}
+    }, 50);
   }
   if (targetViewName === "share") {
-    Promise.all([initSshProfilesFromDisk(), initFtpProfilesFromDisk(), initSftpProfilesFromDisk()])
-      .then(() => { renderSshProfilesSettings(); renderFtpProfiles(); renderSftpProfiles(); });
+    Promise.all([
+      initSshProfilesFromDisk(),
+      initFtpProfilesFromDisk(),
+      initSftpProfilesFromDisk(),
+    ]).then(() => {
+      renderSshProfilesSettings();
+      renderFtpProfiles();
+      renderSftpProfiles();
+    });
   }
   if (targetViewName === "git" && typeof initGitView === "function") initGitView();
   if (targetViewName === "api-lab" && typeof initApiLabView === "function") initApiLabView();
   if (targetViewName === "cli-maker" && typeof initCliMakerView === "function") initCliMakerView();
   if (targetViewName === "graph" && typeof initGraphView === "function") initGraphView();
-  if (targetViewName === "scheduler" && typeof initSchedulerView === "function") initSchedulerView();
+  if (targetViewName === "scheduler" && typeof initSchedulerView === "function")
+    initSchedulerView();
   if (targetViewName === "prompt-lab" && typeof initPromptLab === "function") initPromptLab();
   if (targetViewName === "workflow") {
-    import("./workflow_view.js").then((m) => {
-      if (typeof m.initWorkflowView === "function") m.initWorkflowView();
-    }).catch(e => console.error("Failed to load workflow view", e));
+    import("./workflow_view.js")
+      .then((m) => {
+        if (typeof m.initWorkflowView === "function") m.initWorkflowView();
+      })
+      .catch((e) => console.error("Failed to load workflow view", e));
   }
   if (targetViewName === "ide") {
-    import("./ide_view.js").then((m) => {
-      window._deactivateIdeView = m.deactivateIdeView;
-      if (typeof m.initIdeView === "function") m.initIdeView();
-    }).catch(e => console.error("Failed to load ide view", e));
+    import("./ide_view.js")
+      .then((m) => {
+        window._deactivateIdeView = m.deactivateIdeView;
+        if (typeof m.initIdeView === "function") m.initIdeView();
+      })
+      .catch((e) => console.error("Failed to load ide view", e));
   }
-function _loadTorrentClient() {
-  import("./torrent.js").then((m) => {
-    if (typeof m.initTorrentClient === "function") m.initTorrentClient();
-  }).catch(e => console.error("Failed to load torrent client", e));
-}
+  function _loadTorrentClient() {
+    import("./torrent.js")
+      .then((m) => {
+        if (typeof m.initTorrentClient === "function") m.initTorrentClient();
+      })
+      .catch((e) => console.error("Failed to load torrent client", e));
+  }
 
   if (targetViewName === "orchestrator") {
-    import("./orchestrator.js").then((m) => {
-      if (typeof m.initOrchestrator === "function") m.initOrchestrator();
-    }).catch(e => console.error("Failed to load orchestrator", e));
+    import("./orchestrator.js")
+      .then((m) => {
+        if (typeof m.initOrchestrator === "function") m.initOrchestrator();
+      })
+      .catch((e) => console.error("Failed to load orchestrator", e));
   }
   if (targetViewName === "share") {
     _loadTorrentClient();
@@ -2651,7 +3012,9 @@ function _navTabClick(tab, navTabs) {
   if (targetViewId === currentViewId) return;
 
   const tabsArray = Array.from(navTabs);
-  const currentIdx = tabsArray.findIndex((t) => t.getAttribute("data-view") === currentViewId.replace("view-", ""));
+  const currentIdx = tabsArray.findIndex(
+    (t) => t.getAttribute("data-view") === currentViewId.replace("view-", "")
+  );
   const targetIdx = tabsArray.indexOf(tab);
   const direction = targetIdx > currentIdx ? "right" : "left";
 
@@ -2680,14 +3043,18 @@ function _navTabClick(tab, navTabs) {
 }
 
 navTabs.forEach((tab) => {
-  tab.onclick = function () { _navTabClick(tab, navTabs); };
+  tab.onclick = function () {
+    _navTabClick(tab, navTabs);
+  };
   tab.addEventListener("keydown", (event) => {
     const tabsArray = Array.from(navTabs);
     const currentIndex = tabsArray.indexOf(tab);
     const nextIndex =
-      event.key === "ArrowRight" ? (currentIndex + 1) % tabsArray.length :
-      event.key === "ArrowLeft" ? (currentIndex - 1 + tabsArray.length) % tabsArray.length :
-      -1;
+      event.key === "ArrowRight"
+        ? (currentIndex + 1) % tabsArray.length
+        : event.key === "ArrowLeft"
+          ? (currentIndex - 1 + tabsArray.length) % tabsArray.length
+          : -1;
     if (nextIndex >= 0) {
       event.preventDefault();
       tabsArray[nextIndex].focus();
@@ -2711,8 +3078,10 @@ const CONTEXTUAL_TIPS = {
   tunnel: "Use the tunnel to <strong>bridge Desktop Mode and Game Mode</strong> on SteamOS.",
   remote: "<strong>Scan the QR code</strong> with your iPhone to send commands remotely.",
   git: "<strong>Stage files</strong> and press ✨ to generate a commit message with AI.",
-  "api-lab": "Describe an API in natural language and let <strong>AI generate the request</strong>.",
-  "cli-maker": "Create custom commands that appear in the <strong>palette and radial menu</strong>.",
+  "api-lab":
+    "Describe an API in natural language and let <strong>AI generate the request</strong>.",
+  "cli-maker":
+    "Create custom commands that appear in the <strong>palette and radial menu</strong>.",
 };
 
 let activeTipTimer = null;
@@ -2946,13 +3315,13 @@ async function _cpRunUniversalSearch(query) {
     const res = await invoke("universal_search", { query, limit: 10 });
     const results = [];
     if (res.messages) {
-      res.messages.forEach(r => results.push({ source: 'messages', ...r }));
+      res.messages.forEach((r) => results.push({ source: "messages", ...r }));
     }
     if (res.memory) {
-      res.memory.forEach(r => results.push({ source: 'memory', ...r }));
+      res.memory.forEach((r) => results.push({ source: "memory", ...r }));
     }
     if (res.projects) {
-      res.projects.forEach(r => results.push({ source: 'projects', ...r }));
+      res.projects.forEach((r) => results.push({ source: "projects", ...r }));
     }
     commandPaletteState.searchResults = results;
   } catch (e) {
@@ -2962,19 +3331,19 @@ async function _cpRunUniversalSearch(query) {
 }
 
 function _cpSearchResultIcon(source) {
-  if (source === 'messages') return 'messageSquare';
-  if (source === 'memory') return 'brain';
-  if (source === 'projects') return 'folder';
-  return 'search';
+  if (source === "messages") return "messageSquare";
+  if (source === "memory") return "brain";
+  if (source === "projects") return "folder";
+  return "search";
 }
 
 function _cpActivateSearchResult(result) {
-  if (result.source === 'messages') {
-    switchView('chat');
-  } else if (result.source === 'memory') {
-    switchView('memory');
-  } else if (result.source === 'projects') {
-    switchView('memory');
+  if (result.source === "messages") {
+    switchView("chat");
+  } else if (result.source === "memory") {
+    switchView("memory");
+  } else if (result.source === "projects") {
+    switchView("memory");
   }
 }
 
@@ -3016,7 +3385,8 @@ function fuzzyScore(text, query) {
   const q = query.toLowerCase();
   if (!q) return { score: 0, matches: [] };
   if (t === q) return { score: 1000, matches: Array.from({ length: t.length }, (_, i) => i) };
-  if (t.startsWith(q)) return { score: 500, matches: Array.from({ length: q.length }, (_, i) => i) };
+  if (t.startsWith(q))
+    return { score: 500, matches: Array.from({ length: q.length }, (_, i) => i) };
 
   let score = 0;
   const matches = [];
@@ -3164,7 +3534,9 @@ function getCommandPaletteFilteredActions() {
     keywords: [r.source, r.snippet],
     _labelMatches: [],
     _searchResult: r,
-    run() { _cpActivateSearchResult(r); },
+    run() {
+      _cpActivateSearchResult(r);
+    },
   }));
 
   return [...commandResults, ...searchResults];
@@ -3233,7 +3605,8 @@ function renderCommandPalette() {
     const empty = document.createElement("div");
     empty.className = "command-palette-empty";
     empty.textContent = `No commands match "${input.value}".`;
-    list.replaceChildren(empty); return;
+    list.replaceChildren(empty);
+    return;
   }
   list.replaceChildren();
   let lastGroup = null;
@@ -3265,8 +3638,7 @@ function openCommandPalette(initialQuery = "") {
   overlay.setAttribute("aria-hidden", "false");
   input.value = initialQuery;
   renderCommandPalette();
-  if (!commandPaletteFocusTrap)
-    commandPaletteFocusTrap = new FocusTrap(overlay);
+  if (!commandPaletteFocusTrap) commandPaletteFocusTrap = new FocusTrap(overlay);
   commandPaletteFocusTrap.activate();
   setTimeout(() => {
     try {
@@ -3298,16 +3670,12 @@ function closeCommandPalette() {
 function moveCommandPaletteSelection(delta) {
   if (!commandPaletteState.filtered.length) return;
   const next =
-    (commandPaletteState.activeIndex +
-      delta +
-      commandPaletteState.filtered.length) %
+    (commandPaletteState.activeIndex + delta + commandPaletteState.filtered.length) %
     commandPaletteState.filtered.length;
   commandPaletteState.activeIndex = next;
   renderCommandPalette();
   const list = document.getElementById("command-palette-list");
-  const item = list?.querySelector(
-    `.command-palette-item[data-command-index="${next}"]`,
-  );
+  const item = list?.querySelector(`.command-palette-item[data-command-index="${next}"]`);
   if (item) {
     item.scrollIntoView({ block: "nearest" });
   }
@@ -3341,25 +3709,45 @@ function _cpWireInputEl(input) {
     }
   });
   input.addEventListener("keydown", (event) => {
-    if (event.key === "ArrowDown") { event.preventDefault(); moveCommandPaletteSelection(1); }
-    else if (event.key === "ArrowUp") { event.preventDefault(); moveCommandPaletteSelection(-1); }
-    else if (event.key === "Enter") { event.preventDefault(); runCommandPaletteActiveAction(); }
-    else if (event.key === "Escape") { event.preventDefault(); closeCommandPalette(); }
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      moveCommandPaletteSelection(1);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      moveCommandPaletteSelection(-1);
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      runCommandPaletteActiveAction();
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      closeCommandPalette();
+    }
   });
 }
 
 function _cpWireGlobalKeydown() {
-  document.addEventListener("keydown", (event) => {
-    const isShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
-    if (isShortcut) {
-      event.preventDefault();
-      if (commandPaletteState.open) { closeCommandPalette(); }
-      else { if (quickSwitcherState.open) closeQuickSwitcher(); openCommandPalette(); }
-      return;
-    }
-    if (!commandPaletteState.open) return;
-    if (event.key === "Escape") { event.preventDefault(); closeCommandPalette(); }
-  }, true);
+  document.addEventListener(
+    "keydown",
+    (event) => {
+      const isShortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k";
+      if (isShortcut) {
+        event.preventDefault();
+        if (commandPaletteState.open) {
+          closeCommandPalette();
+        } else {
+          if (quickSwitcherState.open) closeQuickSwitcher();
+          openCommandPalette();
+        }
+        return;
+      }
+      if (!commandPaletteState.open) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeCommandPalette();
+      }
+    },
+    true
+  );
 }
 
 function initCommandPalette() {
@@ -3369,11 +3757,13 @@ function initCommandPalette() {
   const input = document.getElementById("command-palette-input");
   if (openBtn) openBtn.onclick = () => openCommandPalette();
   if (closeBtn) closeBtn.onclick = closeCommandPalette;
-  if (overlay) overlay.addEventListener("click", (e) => { if (e.target === overlay) closeCommandPalette(); });
+  if (overlay)
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeCommandPalette();
+    });
   _cpWireInputEl(input);
   _cpWireGlobalKeydown();
 }
-
 
 /* ── Quick Switcher ─────────────────────────────────────────────────────── */
 
@@ -3525,7 +3915,8 @@ function closeQuickSwitcher() {
 function cycleQuickSwitcher(delta) {
   const actions = getRecentViewActions();
   if (!actions.length) return;
-  quickSwitcherState.activeIndex = (quickSwitcherState.activeIndex + delta + actions.length) % actions.length;
+  quickSwitcherState.activeIndex =
+    (quickSwitcherState.activeIndex + delta + actions.length) % actions.length;
   renderQuickSwitcher();
 }
 
@@ -3567,7 +3958,7 @@ function initQuickSwitcher() {
         cycleQuickSwitcher(-1);
       }
     },
-    true,
+    true
   );
 }
 
@@ -3603,10 +3994,7 @@ function checkTunnelServerStatus(silent = false) {
             indicator.className = "tunnel-status-indicator online";
           }
           if (!silent || oldStatus !== "online") {
-            logTunnel(
-              "system",
-              `Tunnel server is alive. Running as: ${resp.output.trim()}`,
-            );
+            logTunnel("system", `Tunnel server is alive. Running as: ${resp.output.trim()}`);
           }
         } else {
           const oldStatus = state.tunnelStatus;
@@ -3666,7 +4054,10 @@ function _tunnelWireToggle(toggleBtn) {
     if (state.tunnelStatus === "offline") {
       logTunnel("system", "Starting local loopback tunnel server...");
       invoke("start_tunnel_server")
-        .then((msg) => { logTunnel("received", msg); setTimeout(checkTunnelServerStatus, 500); })
+        .then((msg) => {
+          logTunnel("received", msg);
+          setTimeout(checkTunnelServerStatus, 500);
+        })
         .catch((err) => logTunnel("error", "Failed to start server: " + err));
     } else {
       logTunnel("system", "Stopping local loopback tunnel server...");
@@ -3675,7 +4066,10 @@ function _tunnelWireToggle(toggleBtn) {
           logTunnel("received", msg);
           state.tunnelStatus = "offline";
           const indicator = document.getElementById("tunnel-status-indicator");
-          if (indicator) { indicator.innerText = "OFFLINE"; indicator.className = "tunnel-status-indicator offline"; }
+          if (indicator) {
+            indicator.innerText = "OFFLINE";
+            indicator.className = "tunnel-status-indicator offline";
+          }
         })
         .catch((err) => logTunnel("error", "Failed to stop server: " + err));
     }
@@ -3689,7 +4083,12 @@ function initTunnelClient() {
   const fileSend = document.getElementById("tunnel-file-send");
   const dirSend = document.getElementById("tunnel-dir-send");
 
-  if (checkBtn) { checkBtn.onclick = function () { logTunnel("system", "Checking tunnel server status..."); checkTunnelServerStatus(); }; }
+  if (checkBtn) {
+    checkBtn.onclick = function () {
+      logTunnel("system", "Checking tunnel server status...");
+      checkTunnelServerStatus();
+    };
+  }
   _tunnelWireToggle(toggleBtn);
   if (cmdSend) {
     cmdSend.onclick = function () {
@@ -3710,7 +4109,8 @@ function initTunnelClient() {
       if (!path) return;
       logTunnel("sent", "Write file: " + path + " (" + content.length + " chars)");
       sendAndLogTunnelRequest(JSON.stringify({ type: "write_file", path, content }));
-      pathInput.value = ""; contentArea.value = "";
+      pathInput.value = "";
+      contentArea.value = "";
     };
   }
   if (dirSend) {
@@ -3733,17 +4133,13 @@ function initTunnelClient() {
 document.querySelectorAll(".share-inner-tab").forEach((tab) => {
   tab.onclick = function () {
     const panel = this.getAttribute("data-panel");
-    document
-      .querySelectorAll(".share-inner-tab")
-      .forEach((t) => {
-        t.classList.remove("active");
-        t.setAttribute("aria-selected", "false");
-      });
+    document.querySelectorAll(".share-inner-tab").forEach((t) => {
+      t.classList.remove("active");
+      t.setAttribute("aria-selected", "false");
+    });
     this.classList.add("active");
     this.setAttribute("aria-selected", "true");
-    document
-      .querySelectorAll(".share-panel-section")
-      .forEach((s) => s.classList.remove("active"));
+    document.querySelectorAll(".share-panel-section").forEach((s) => s.classList.remove("active"));
     const el = document.getElementById(`share-panel-${panel}`);
     if (el) el.classList.add("active");
     if (panel === "torrent") {
@@ -3797,9 +4193,7 @@ function renderPeers(peers) {
     status.textContent = "Online";
     item.append(info, status);
     item.addEventListener("click", function () {
-      document
-        .querySelectorAll(".peer-item")
-        .forEach((el) => el.classList.remove("selected"));
+      document.querySelectorAll(".peer-item").forEach((el) => el.classList.remove("selected"));
       item.classList.add("selected");
       state.selectedPeerIp = peer.ip;
       updateSendButtonState();
@@ -3874,9 +4268,14 @@ function _buildTransferItem(t) {
   item.className = "transfer-item";
   item.id = "transfer-" + t.id;
   const percent = t.size > 0 ? Math.round((t.progress / t.size) * 100) : 0;
-  const progressClass = t.status === "Completed" ? "completed" : (t.status === "Failed" || t.status === "Rejected") ? "failed" : "";
+  const progressClass =
+    t.status === "Completed"
+      ? "completed"
+      : t.status === "Failed" || t.status === "Rejected"
+        ? "failed"
+        : "";
   const { speedText, etaText } = calculateTransferSpeedAndEta(t, t.progress);
-  const isCancelable = ["Pending","Accepted","Transferring"].includes(t.status);
+  const isCancelable = ["Pending", "Accepted", "Transferring"].includes(t.status);
 
   const header = document.createElement("div");
   header.className = "transfer-header";
@@ -3896,7 +4295,10 @@ function _buildTransferItem(t) {
     cancelBtn.title = "Cancel Transfer";
     cancelBtn.setAttribute("aria-label", "Cancel Transfer");
     cancelBtn.innerHTML = createIcon("x", { size: 12 });
-    cancelBtn.addEventListener("click", (e) => { e.stopPropagation(); window.cancelTransfer(t.id); });
+    cancelBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      window.cancelTransfer(t.id);
+    });
     headerRight.appendChild(cancelBtn);
   }
   header.append(filename, headerRight);
@@ -3917,7 +4319,8 @@ function _buildTransferItem(t) {
   const meta = document.createElement("div");
   meta.className = "transfer-meta";
   const peer = document.createElement("span");
-  peer.textContent = (t.direction === "Incoming" ? "From" : "To") + ": " + String(t.peer_name || t.peer_ip || "");
+  peer.textContent =
+    (t.direction === "Incoming" ? "From" : "To") + ": " + String(t.peer_name || t.peer_ip || "");
   const stats = document.createElement("span");
   stats.className = "transfer-stats-text";
   stats.textContent = formatBytes(t.progress) + " / " + formatBytes(t.size) + speedText + etaText;
@@ -3941,7 +4344,10 @@ function renderTransfers(transfers) {
   if (!window.activeTransfersMap) window.activeTransfersMap = new Map();
   window.activeTransfersMap.clear();
   transfers.sort((a, b) => b.id.localeCompare(a.id));
-  transfers.forEach((t) => { window.activeTransfersMap.set(t.id, t); listEl.appendChild(_buildTransferItem(t)); });
+  transfers.forEach((t) => {
+    window.activeTransfersMap.set(t.id, t);
+    listEl.appendChild(_buildTransferItem(t));
+  });
 }
 
 function updateTransferCardProgress(transferId, progress) {
@@ -3966,8 +4372,7 @@ function updateTransferCardProgress(transferId, progress) {
     statusEl.innerText = t.status;
   }
 
-  const percent =
-    t.size > 0 ? Math.min(100, Math.round((progress / t.size) * 100)) : 0;
+  const percent = t.size > 0 ? Math.min(100, Math.round((progress / t.size) * 100)) : 0;
 
   const barEl = item.querySelector(".transfer-progress-bar-fill");
   if (barEl) {
@@ -4004,9 +4409,9 @@ function updateSendButtonState() {
 function _fsWireGroupCode(groupCodeInput, saveGroupCodeBtn) {
   invoke("get_group_code")
     .then((code) => {
-        const resolved = typeof code === 'string' ? code : (code?.code ?? code?.data ?? null);
-        groupCodeInput.value = resolved || "DEFAULT";
-      })
+      const resolved = typeof code === "string" ? code : (code?.code ?? code?.data ?? null);
+      groupCodeInput.value = resolved || "DEFAULT";
+    })
     .catch((err) => console.error("Error fetching group code:", err));
   saveGroupCodeBtn.onclick = function () {
     const code = groupCodeInput.value.trim();
@@ -4036,15 +4441,24 @@ function _fsHandleTransferResponse(accept, ftCtx) {
     invoke("respond_to_transfer", { transferId: state.pendingTransferId, accept })
       .then(() => {
         const modal = document.getElementById("transfer-modal");
-        if (modal) { modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); }
+        if (modal) {
+          modal.classList.remove("active");
+          modal.setAttribute("aria-hidden", "true");
+        }
         if (ftCtx.trap) ftCtx.trap.deactivate();
         state.pendingTransferId = null;
         invoke("get_active_transfers").then(renderTransfers);
       })
-      .catch((err) => { console.error(`Error ${action} transfer:`, err); alert("Error: " + err); });
+      .catch((err) => {
+        console.error(`Error ${action} transfer:`, err);
+        alert("Error: " + err);
+      });
   } else {
     const modal = document.getElementById("transfer-modal");
-    if (modal) { modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); }
+    if (modal) {
+      modal.classList.remove("active");
+      modal.setAttribute("aria-hidden", "true");
+    }
     if (ftCtx.trap) ftCtx.trap.deactivate();
   }
 }
@@ -4073,7 +4487,11 @@ function _fsWireTransferModal(ftCtx) {
       ftCtx.trap.activate();
     }
     if (typeof addNotification === "function") {
-      addNotification("Incoming Transfer Request", `From ${transfer.peer_name || "Unknown"} (${transfer.peer_ip}): ${transfer.filename}`, "info");
+      addNotification(
+        "Incoming Transfer Request",
+        `From ${transfer.peer_name || "Unknown"} (${transfer.peer_ip}): ${transfer.filename}`,
+        "info"
+      );
     }
     invoke("get_active_transfers").then(renderTransfers);
   });
@@ -4089,30 +4507,53 @@ function _fsWireGlobalListeners() {
     }
   });
   listen("transfer_completed", () => {
-    if (typeof addNotification === "function") addNotification("File Transfer Complete", "A LAN file transfer completed successfully.", "success");
+    if (typeof addNotification === "function")
+      addNotification(
+        "File Transfer Complete",
+        "A LAN file transfer completed successfully.",
+        "success"
+      );
     invoke("get_active_transfers").then(renderTransfers);
   });
   listen("transfer_failed", () => {
-    if (typeof addNotification === "function") addNotification("File Transfer Failed", "A LAN file transfer has failed.", "error");
+    if (typeof addNotification === "function")
+      addNotification("File Transfer Failed", "A LAN file transfer has failed.", "error");
     invoke("get_active_transfers").then(renderTransfers);
   });
-  listen("agent_thinking", () => { document.getElementById("tool-status").innerText = "Agent thinking..."; });
-  listen("agent_step_complete", () => { document.getElementById("tool-status").innerText = "Idle"; });
+  listen("agent_thinking", () => {
+    document.getElementById("tool-status").innerText = "Agent thinking...";
+  });
+  listen("agent_step_complete", () => {
+    document.getElementById("tool-status").innerText = "Idle";
+  });
   listen("agent_step_error", (event) => {
     const err = event.payload?.error || "Agent step failed";
     if (typeof addNotification === "function") addNotification("Agent Error", err, "error");
   });
-  listen("plugin_reload_start", () => { if (typeof addNotification === "function") addNotification("Plugins", "Reloading plugin runtime...", "info"); });
-  listen("plugin_reload_done", () => { if (typeof addNotification === "function") addNotification("Plugins", "Plugin runtime reloaded.", "success"); });
+  listen("plugin_reload_start", () => {
+    if (typeof addNotification === "function")
+      addNotification("Plugins", "Reloading plugin runtime...", "info");
+  });
+  listen("plugin_reload_done", () => {
+    if (typeof addNotification === "function")
+      addNotification("Plugins", "Plugin runtime reloaded.", "success");
+  });
   listen("plugin_reload_error", (event) => {
     const err = event.payload || "Plugin reload failed";
     if (typeof addNotification === "function") addNotification("Plugins", String(err), "error");
   });
   listen("bmad_install_progress", (event) => {
     const payload = event.payload || {};
-    if (payload.stage === "start") { if (typeof addNotification === "function") addNotification("BMAD", `Installing to ${payload.target}...`, "info"); }
-    else if (payload.stage === "done") { if (typeof addNotification === "function") addNotification("BMAD", "Installation complete.", "success"); }
-    else if (payload.stage === "error") { if (typeof addNotification === "function") addNotification("BMAD", `Install failed: ${payload.reason}`, "error"); }
+    if (payload.stage === "start") {
+      if (typeof addNotification === "function")
+        addNotification("BMAD", `Installing to ${payload.target}...`, "info");
+    } else if (payload.stage === "done") {
+      if (typeof addNotification === "function")
+        addNotification("BMAD", "Installation complete.", "success");
+    } else if (payload.stage === "error") {
+      if (typeof addNotification === "function")
+        addNotification("BMAD", `Install failed: ${payload.reason}`, "error");
+    }
   });
 }
 
@@ -4121,7 +4562,9 @@ function _fsWireDropzoneSend(dropzone, pathInput, sendBtn) {
     wireDragAndDrop(dropzone, pathInput, () => {
       updateSendButtonState();
     });
-    pathInput.oninput = function () { updateSendButtonState(); };
+    pathInput.oninput = function () {
+      updateSendButtonState();
+    };
   }
   if (sendBtn) {
     sendBtn.onclick = function () {
@@ -4157,14 +4600,20 @@ function initFileShare() {
   const closeXBtn = document.getElementById("transfer-modal-close-x");
   const ftCtx = { trap: null };
 
-  invoke("get_discovered_peers").then(renderPeers).catch((err) => console.error("Error fetching peers:", err));
-  invoke("get_active_transfers").then(renderTransfers).catch((err) => console.error("Error fetching transfers:", err));
+  invoke("get_discovered_peers")
+    .then(renderPeers)
+    .catch((err) => console.error("Error fetching peers:", err));
+  invoke("get_active_transfers")
+    .then(renderTransfers)
+    .catch((err) => console.error("Error fetching transfers:", err));
 
   const groupCodeInput = document.getElementById("share-group-code-input");
   const saveGroupCodeBtn = document.getElementById("share-group-code-save-btn");
   if (groupCodeInput && saveGroupCodeBtn) _fsWireGroupCode(groupCodeInput, saveGroupCodeBtn);
 
-  listen("peers_updated", (event) => { renderPeers(event.payload); });
+  listen("peers_updated", (event) => {
+    renderPeers(event.payload);
+  });
   _fsWireTransferModal(ftCtx);
   _fsWireGlobalListeners();
   _fsWireModalBtns(acceptBtn, rejectBtn, closeXBtn, ftCtx);
@@ -4180,7 +4629,9 @@ function _browserParseUrlOrSearch(input) {
     /^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/.test(trimmed) ||
     /^localhost(:\d+)?(\/.*)?$/.test(trimmed) ||
     /^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/.*)?$/.test(trimmed);
-  return isDomain ? "https://" + trimmed : "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(trimmed);
+  return isDomain
+    ? "https://" + trimmed
+    : "https://html.duckduckgo.com/html/?q=" + encodeURIComponent(trimmed);
 }
 
 // Returns the browser viewport area in logical CSS pixels, viewport-relative.
@@ -4218,11 +4669,20 @@ async function _browserNavigateTo(raw, bCtx, urlInput, homeScreen) {
     if (bCtx.open) {
       await invoke("browser_navigate", { url });
     } else {
-      await invoke("browser_open", { url, viewportX: r.x, viewportY: r.y, width: r.width, height: r.height });
+      await invoke("browser_open", {
+        url,
+        viewportX: r.x,
+        viewportY: r.y,
+        width: r.width,
+        height: r.height,
+      });
       bCtx.open = true;
       if (homeScreen) homeScreen.classList.add("hidden");
     }
-    if (iframe) { iframe.src = url; iframe.style.display = "block"; }
+    if (iframe) {
+      iframe.src = url;
+      iframe.style.display = "block";
+    }
   } catch (e) {
     console.error("[Browser] Navigation error:", e);
     window.addNotification("Browser Error", String(e), "error");
@@ -4236,7 +4696,12 @@ function _browserStartSync(urlInput, bCtx) {
     const r = _browserGetViewportRect();
     if (r && !_browserRectsEqual(r, bCtx.lastRect)) {
       bCtx.lastRect = r;
-      await invoke("browser_show", { viewportX: r.x, viewportY: r.y, width: r.width, height: r.height }).catch(() => {});
+      await invoke("browser_show", {
+        viewportX: r.x,
+        viewportY: r.y,
+        width: r.width,
+        height: r.height,
+      }).catch(() => {});
     }
     try {
       const liveUrl = await invoke("browser_get_url");
@@ -4267,7 +4732,10 @@ function _browserStartSync(urlInput, bCtx) {
 }
 
 function _browserStopSync(bCtx) {
-  if (bCtx.syncInt) { clearInterval(bCtx.syncInt); bCtx.syncInt = null; }
+  if (bCtx.syncInt) {
+    clearInterval(bCtx.syncInt);
+    bCtx.syncInt = null;
+  }
   bCtx.lastRect = null;
 }
 
@@ -4276,7 +4744,13 @@ function _browserWireTabViz(browserTab, bCtx, urlInput, homeScreen) {
     browserTab.addEventListener("click", async () => {
       if (bCtx.open && bCtx.url !== "neurodeck://home") {
         const r = _browserGetViewportRect();
-        if (r) await invoke("browser_show", { viewportX: r.x, viewportY: r.y, width: r.width, height: r.height }).catch(() => {});
+        if (r)
+          await invoke("browser_show", {
+            viewportX: r.x,
+            viewportY: r.y,
+            width: r.width,
+            height: r.height,
+          }).catch(() => {});
       }
       _browserStartSync(urlInput, bCtx);
     });
@@ -4293,19 +4767,39 @@ function _browserWireNavBtns(els, bCtx, urlInput, homeScreen) {
   const { backBtn, forwardBtn, refreshBtn, homeBtn, hfBtn, goBtn, clearBtn, openExtBtn } = els;
   if (goBtn && urlInput) {
     goBtn.onclick = () => _browserNavigateTo(urlInput.value, bCtx, urlInput, homeScreen);
-    urlInput.addEventListener("keydown", (e) => { if (e.key === "Enter") _browserNavigateTo(urlInput.value, bCtx, urlInput, homeScreen); });
+    urlInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") _browserNavigateTo(urlInput.value, bCtx, urlInput, homeScreen);
+    });
   }
-  if (clearBtn && urlInput) { clearBtn.onclick = () => { urlInput.value = ""; urlInput.focus(); }; }
-  if (backBtn) backBtn.onclick = () => { if (bCtx.open) invoke("browser_exec", { js: "window.history.back()" }).catch(() => {}); };
-  if (forwardBtn) forwardBtn.onclick = () => { if (bCtx.open) invoke("browser_exec", { js: "window.history.forward()" }).catch(() => {}); };
-  if (refreshBtn) refreshBtn.onclick = () => { if (bCtx.open) invoke("browser_exec", { js: "window.location.reload()" }).catch(() => {}); };
-  if (homeBtn) homeBtn.onclick = () => _browserNavigateTo("neurodeck://home", bCtx, urlInput, homeScreen);
-  if (hfBtn) hfBtn.onclick = () => _browserNavigateTo("https://huggingface.co/models", bCtx, urlInput, homeScreen);
+  if (clearBtn && urlInput) {
+    clearBtn.onclick = () => {
+      urlInput.value = "";
+      urlInput.focus();
+    };
+  }
+  if (backBtn)
+    backBtn.onclick = () => {
+      if (bCtx.open) invoke("browser_exec", { js: "window.history.back()" }).catch(() => {});
+    };
+  if (forwardBtn)
+    forwardBtn.onclick = () => {
+      if (bCtx.open) invoke("browser_exec", { js: "window.history.forward()" }).catch(() => {});
+    };
+  if (refreshBtn)
+    refreshBtn.onclick = () => {
+      if (bCtx.open) invoke("browser_exec", { js: "window.location.reload()" }).catch(() => {});
+    };
+  if (homeBtn)
+    homeBtn.onclick = () => _browserNavigateTo("neurodeck://home", bCtx, urlInput, homeScreen);
+  if (hfBtn)
+    hfBtn.onclick = () =>
+      _browserNavigateTo("https://huggingface.co/models", bCtx, urlInput, homeScreen);
   if (openExtBtn) {
     openExtBtn.onclick = () => {
       const url = urlInput ? urlInput.value.trim() : bCtx.url;
       const parsed = _browserParseUrlOrSearch(url || bCtx.url);
-      if (parsed && parsed !== "neurodeck://home") invoke("open_external", { url: parsed }).catch(() => {});
+      if (parsed && parsed !== "neurodeck://home")
+        invoke("open_external", { url: parsed }).catch(() => {});
     };
   }
 }
@@ -4330,12 +4824,19 @@ function _browserWireSaveMemory(btn, urlInput, bCtx) {
     const originalHtml = _browserDisableButtonAndGetOriginal(btn, "database", "Saving");
     try {
       const res = await invoke("browser_save_to_memory", { url: parsed });
-      btn.innerHTML = createIcon("check", { size: 14 }) + "<span>Saved (" + res.indexed + " chunks)</span>";
-      setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 3000);
+      btn.innerHTML =
+        createIcon("check", { size: 14 }) + "<span>Saved (" + res.indexed + " chunks)</span>";
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }, 3000);
     } catch (e) {
       console.error("Save memory error:", e);
       btn.innerHTML = createIcon("x", { size: 14 }) + "<span>Failed</span>";
-      setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 3000);
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }, 3000);
     }
   };
 }
@@ -4350,11 +4851,17 @@ function _browserWireCopyCitation(btn, urlInput, bCtx) {
       const citation = await invoke("browser_get_citation", { url: parsed });
       await navigator.clipboard.writeText(citation);
       btn.innerHTML = createIcon("check", { size: 14 }) + "<span>Copied</span>";
-      setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 2000);
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }, 2000);
     } catch (e) {
       console.error("Copy citation error:", e);
       btn.innerHTML = createIcon("x", { size: 14 }) + "<span>Failed</span>";
-      setTimeout(() => { btn.disabled = false; btn.innerHTML = originalHtml; }, 2000);
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }, 2000);
     }
   };
 }
@@ -4381,20 +4888,34 @@ function _browserWireDownloadModel(btn, bCtx) {
       .then((modelInfo) => {
         if (!modelInfo.steam_deck_compat) {
           const ok = window.confirm(
-            "\u26A0\uFE0F Compatibility Warning\n\nThe model \"" + repo + "\" might not run flawlessly on the Steam Deck.\n" +
-            "\u2022 Steam Deck has 16GB of unified RAM.\n\u2022 Flawlessly compatible models are usually < 6GB in size and <= 7B parameters.\n\n" +
-            "Do you still want to proceed with downloading it?"
+            '\u26A0\uFE0F Compatibility Warning\n\nThe model "' +
+              repo +
+              '" might not run flawlessly on the Steam Deck.\n' +
+              "\u2022 Steam Deck has 16GB of unified RAM.\n\u2022 Flawlessly compatible models are usually < 6GB in size and <= 7B parameters.\n\n" +
+              "Do you still want to proceed with downloading it?"
           );
-          if (!ok) { if (btnSpan) btnSpan.textContent = originalText; btn.disabled = false; return; }
+          if (!ok) {
+            if (btnSpan) btnSpan.textContent = originalText;
+            btn.disabled = false;
+            return;
+          }
         }
         proceedToModelSearch();
       })
       .catch((err) => {
         const ok = window.confirm(
-          "\u26A0\uFE0F Compatibility Check Failed\n\nCould not verify Steam Deck compatibility for \"" + repo + "\" (Error: " + err + ").\n\n" +
-          "Do you still want to proceed to the Model Library?"
+          '\u26A0\uFE0F Compatibility Check Failed\n\nCould not verify Steam Deck compatibility for "' +
+            repo +
+            '" (Error: ' +
+            err +
+            ").\n\n" +
+            "Do you still want to proceed to the Model Library?"
         );
-        if (!ok) { if (btnSpan) btnSpan.textContent = originalText; btn.disabled = false; return; }
+        if (!ok) {
+          if (btnSpan) btnSpan.textContent = originalText;
+          btn.disabled = false;
+          return;
+        }
         proceedToModelSearch();
       });
   };
@@ -4402,14 +4923,25 @@ function _browserWireDownloadModel(btn, bCtx) {
 
 function _browserWireSpeedDial(cards, bCtx, urlInput, homeScreen) {
   cards.forEach((card) => {
-    card.onclick = () => { const url = card.getAttribute("data-url"); if (url) _browserNavigateTo(url, bCtx, urlInput, homeScreen); };
+    card.onclick = () => {
+      const url = card.getAttribute("data-url");
+      if (url) _browserNavigateTo(url, bCtx, urlInput, homeScreen);
+    };
   });
 }
 
 function _browserWireHomeSearch(btn, input, bCtx, urlInput, homeScreen) {
   if (!btn || !input) return;
-  btn.onclick = () => { const q = input.value.trim(); if (q) _browserNavigateTo(q, bCtx, urlInput, homeScreen); };
-  input.addEventListener("keydown", (e) => { if (e.key === "Enter") { const q = input.value.trim(); if (q) _browserNavigateTo(q, bCtx, urlInput, homeScreen); } });
+  btn.onclick = () => {
+    const q = input.value.trim();
+    if (q) _browserNavigateTo(q, bCtx, urlInput, homeScreen);
+  };
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const q = input.value.trim();
+      if (q) _browserNavigateTo(q, bCtx, urlInput, homeScreen);
+    }
+  });
 }
 
 function _browserWireKeyboard(els, bCtx, urlInput) {
@@ -4417,10 +4949,25 @@ function _browserWireKeyboard(els, bCtx, urlInput) {
   document.addEventListener("keydown", (e) => {
     const bv = document.getElementById("view-browser");
     if (!bv || !bv.classList.contains("active")) return;
-    if (e.key === "F5") { e.preventDefault(); if (refreshBtn) refreshBtn.click(); }
-    if ((e.ctrlKey || e.metaKey) && e.key === "l") { e.preventDefault(); if (urlInput) { urlInput.focus(); urlInput.select(); } }
-    if (e.altKey && e.key === "ArrowLeft") { e.preventDefault(); if (backBtn) backBtn.click(); }
-    if (e.altKey && e.key === "ArrowRight") { e.preventDefault(); if (forwardBtn) forwardBtn.click(); }
+    if (e.key === "F5") {
+      e.preventDefault();
+      if (refreshBtn) refreshBtn.click();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === "l") {
+      e.preventDefault();
+      if (urlInput) {
+        urlInput.focus();
+        urlInput.select();
+      }
+    }
+    if (e.altKey && e.key === "ArrowLeft") {
+      e.preventDefault();
+      if (backBtn) backBtn.click();
+    }
+    if (e.altKey && e.key === "ArrowRight") {
+      e.preventDefault();
+      if (forwardBtn) forwardBtn.click();
+    }
   });
 }
 
@@ -4452,7 +4999,12 @@ function initBrowser() {
   window.browserNavigateTo = (raw) => _browserNavigateTo(raw, bCtx, urlInput, homeScreen);
 
   _browserWireTabViz(browserTab, bCtx, urlInput, homeScreen);
-  _browserWireNavBtns({ backBtn, forwardBtn, refreshBtn, homeBtn, hfBtn, goBtn, clearBtn, openExtBtn }, bCtx, urlInput, homeScreen);
+  _browserWireNavBtns(
+    { backBtn, forwardBtn, refreshBtn, homeBtn, hfBtn, goBtn, clearBtn, openExtBtn },
+    bCtx,
+    urlInput,
+    homeScreen
+  );
   _browserWireSaveMemory(saveMemoryBtn, urlInput, bCtx);
   _browserWireCopyCitation(copyCitationBtn, urlInput, bCtx);
   _browserWireDownloadModel(downloadModelBtn, bCtx);
@@ -4472,14 +5024,30 @@ function _buildOllamaModelRow(m, baseUrl) {
     m.name.includes(localStorage.getItem("settings-ollama-model") || "llama2") ||
     m.name === (document.getElementById("settings-ollama-model")?.value || "llama2");
   const row = document.createElement("div");
-  Object.assign(row.style, { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px", borderBottom: "1px solid rgba(255,255,255,0.03)" });
+  Object.assign(row.style, {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "4px",
+    borderBottom: "1px solid rgba(255,255,255,0.03)",
+  });
   const item = document.createElement("div");
-  Object.assign(item.style, { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: "1", cursor: "pointer" });
+  Object.assign(item.style, {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    flex: "1",
+    cursor: "pointer",
+  });
   item.className = "settings-ollama-model-item";
   item.setAttribute("data-model", m.name);
   if (isCurrent) {
     const active = document.createElement("span");
-    Object.assign(active.style, { color: "var(--accent-color)", fontWeight: "bold", marginRight: "6px" });
+    Object.assign(active.style, {
+      color: "var(--accent-color)",
+      fontWeight: "bold",
+      marginRight: "6px",
+    });
     active.textContent = "[Active]";
     item.appendChild(active);
   }
@@ -4490,19 +5058,31 @@ function _buildOllamaModelRow(m, baseUrl) {
   item.appendChild(size);
   item.onclick = () => {
     const modelInput = document.getElementById("settings-ollama-model");
-    if (modelInput) { modelInput.value = m.name; document.getElementById("settings-save-llm-btn")?.click(); }
+    if (modelInput) {
+      modelInput.value = m.name;
+      document.getElementById("settings-save-llm-btn")?.click();
+    }
   };
   const btn = document.createElement("button");
   btn.className = "canvas-btn settings-ollama-delete-btn";
-  Object.assign(btn.style, { padding: "2px 8px", fontSize: "0.7rem", borderColor: "#ff3c5a", color: "#ff3c5a" });
+  Object.assign(btn.style, {
+    padding: "2px 8px",
+    fontSize: "0.7rem",
+    borderColor: "#ff3c5a",
+    color: "#ff3c5a",
+  });
   btn.setAttribute("data-model", m.name);
   btn.textContent = "Delete";
   btn.onclick = () => {
     if (confirm("Are you sure you want to delete local model " + m.name + "?")) {
-      btn.disabled = true; btn.innerText = "Deleting...";
+      btn.disabled = true;
+      btn.innerText = "Deleting...";
       invoke("ollama_delete_model", { baseUrl, model: m.name })
         .then(() => refreshOllamaModels())
-        .catch((err) => { alert("Delete failed: " + err); refreshOllamaModels(); });
+        .catch((err) => {
+          alert("Delete failed: " + err);
+          refreshOllamaModels();
+        });
     }
   };
   row.append(item, btn);
@@ -4538,49 +5118,42 @@ function refreshOllamaModels() {
     });
 }
 
-document
-  .getElementById("settings-ollama-pull-btn")
-  ?.addEventListener("click", () => {
-    const inputEl = document.getElementById("settings-ollama-pull-input");
-    const model = (inputEl?.value || "").trim();
-    if (!model) {
-      alert("Enter a model name to pull first.");
-      return;
-    }
+document.getElementById("settings-ollama-pull-btn")?.addEventListener("click", () => {
+  const inputEl = document.getElementById("settings-ollama-pull-input");
+  const model = (inputEl?.value || "").trim();
+  if (!model) {
+    alert("Enter a model name to pull first.");
+    return;
+  }
 
-    const baseUrlInput = document.getElementById("settings-ollama-url");
-    const baseUrl =
-      (baseUrlInput?.value || "").trim() || "http://localhost:11434";
-    const pullBtn = document.getElementById("settings-ollama-pull-btn");
-    const progressContainer = document.getElementById(
-      "settings-ollama-pull-progress-container",
-    );
-    const statusEl = document.getElementById("settings-ollama-pull-status");
-    const percentEl = document.getElementById("settings-ollama-pull-percent");
-    const barEl = document.getElementById("settings-ollama-pull-bar");
+  const baseUrlInput = document.getElementById("settings-ollama-url");
+  const baseUrl = (baseUrlInput?.value || "").trim() || "http://localhost:11434";
+  const pullBtn = document.getElementById("settings-ollama-pull-btn");
+  const progressContainer = document.getElementById("settings-ollama-pull-progress-container");
+  const statusEl = document.getElementById("settings-ollama-pull-status");
+  const percentEl = document.getElementById("settings-ollama-pull-percent");
+  const barEl = document.getElementById("settings-ollama-pull-bar");
 
-    if (pullBtn) pullBtn.disabled = true;
-    if (progressContainer) progressContainer.style.display = "block";
-    if (statusEl) statusEl.innerText = "Initiating pull...";
-    if (percentEl) percentEl.innerText = "0%";
-    if (barEl) barEl.style.width = "0%";
+  if (pullBtn) pullBtn.disabled = true;
+  if (progressContainer) progressContainer.style.display = "block";
+  if (statusEl) statusEl.innerText = "Initiating pull...";
+  if (percentEl) percentEl.innerText = "0%";
+  if (barEl) barEl.style.width = "0%";
 
-    invoke("ollama_pull_model", { baseUrl, model })
-      .then(() => {
-        // Background task started successfully
-      })
-      .catch((err) => {
-        alert(`Failed to start pull: ${err}`);
-        if (pullBtn) pullBtn.disabled = false;
-        if (progressContainer) progressContainer.style.display = "none";
-      });
-  });
+  invoke("ollama_pull_model", { baseUrl, model })
+    .then(() => {
+      // Background task started successfully
+    })
+    .catch((err) => {
+      alert(`Failed to start pull: ${err}`);
+      if (pullBtn) pullBtn.disabled = false;
+      if (progressContainer) progressContainer.style.display = "none";
+    });
+});
 
 listen("ollama_pull_progress", (event) => {
   const payload = event.payload;
-  const progressContainer = document.getElementById(
-    "settings-ollama-pull-progress-container",
-  );
+  const progressContainer = document.getElementById("settings-ollama-pull-progress-container");
   const statusEl = document.getElementById("settings-ollama-pull-status");
   const percentEl = document.getElementById("settings-ollama-pull-percent");
   const barEl = document.getElementById("settings-ollama-pull-bar");
@@ -4615,7 +5188,8 @@ listen("ollama_pull_progress", (event) => {
 function _buildPluginRow(p) {
   const row = document.createElement("div");
   row.className = "ssh-profile-item";
-  row.style.cssText = "padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:4px;border:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;";
+  row.style.cssText =
+    "padding:6px 8px;background:rgba(255,255,255,0.02);border-radius:4px;border:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px;";
   const left = document.createElement("div");
   left.style.cssText = "display:flex;align-items:center;gap:8px;";
   const chk = document.createElement("input");
@@ -4630,8 +5204,15 @@ function _buildPluginRow(p) {
     const statusEl = document.getElementById("settings-plugin-status");
     if (statusEl) statusEl.innerText = "Toggling plugin...";
     invoke("toggle_plugin", { fileName: p.file_name, enabled })
-      .then(() => { if (statusEl) statusEl.innerText = "Plugin " + (enabled ? "enabled" : "disabled") + " successfully."; loadPluginsList(); })
-      .catch((err) => { if (statusEl) statusEl.innerText = "Failed to toggle: " + err; chk.checked = !enabled; });
+      .then(() => {
+        if (statusEl)
+          statusEl.innerText = "Plugin " + (enabled ? "enabled" : "disabled") + " successfully.";
+        loadPluginsList();
+      })
+      .catch((err) => {
+        if (statusEl) statusEl.innerText = "Failed to toggle: " + err;
+        chk.checked = !enabled;
+      });
   };
   const name = document.createElement("span");
   name.style.fontWeight = "500";
@@ -4658,7 +5239,9 @@ function _buildPluginRow(p) {
         const canvasTab = document.querySelector('.nav-tab[data-view="canvas"]');
         if (canvasTab) canvasTab.click();
       })
-      .catch((err) => { if (statusEl) statusEl.innerText = "Failed to read plugin: " + err; });
+      .catch((err) => {
+        if (statusEl) statusEl.innerText = "Failed to read plugin: " + err;
+      });
   };
   row.append(left, btn);
   return row;
@@ -4715,11 +5298,22 @@ function _buildMarketplaceCard(plugin) {
   strong.textContent = String(plugin.name ?? "");
   const secondary = document.createElement("span");
   secondary.className = "plugin-marketplace-badge";
-  const hasUpdate = plugin.installed && plugin.installed_version && plugin.version && plugin.version !== plugin.installed_version;
-  if (plugin.installed && !plugin.enabled) { secondary.textContent = "Disabled"; }
-  else if (hasUpdate) { secondary.textContent = "Update → v" + plugin.version; secondary.style.cssText = "background:rgba(255,200,87,0.15);color:var(--warning-color);border-color:rgba(255,200,87,0.3);"; }
-  else if (plugin.installed) { secondary.textContent = "Installed"; }
-  else { secondary.textContent = "v" + String(plugin.version ?? ""); }
+  const hasUpdate =
+    plugin.installed &&
+    plugin.installed_version &&
+    plugin.version &&
+    plugin.version !== plugin.installed_version;
+  if (plugin.installed && !plugin.enabled) {
+    secondary.textContent = "Disabled";
+  } else if (hasUpdate) {
+    secondary.textContent = "Update → v" + plugin.version;
+    secondary.style.cssText =
+      "background:rgba(255,200,87,0.15);color:var(--warning-color);border-color:rgba(255,200,87,0.3);";
+  } else if (plugin.installed) {
+    secondary.textContent = "Installed";
+  } else {
+    secondary.textContent = "v" + String(plugin.version ?? "");
+  }
   title.append(strong, secondary);
   const meta = document.createElement("div");
   meta.className = "plugin-marketplace-meta";
@@ -4738,23 +5332,42 @@ function _buildMarketplaceCard(plugin) {
   const actions = document.createElement("div");
   actions.className = "plugin-marketplace-actions";
   const btn = document.createElement("button");
-  btn.className = plugin.installed ? "stv-btn-ghost marketplace-uninstall-btn" : "stv-btn-primary marketplace-install-btn";
+  btn.className = plugin.installed
+    ? "stv-btn-ghost marketplace-uninstall-btn"
+    : "stv-btn-primary marketplace-install-btn";
   btn.setAttribute("data-plugin-id", String(plugin.id));
   btn.textContent = plugin.installed ? "Uninstall" : "Install";
   btn.onclick = async () => {
     const statusEl = document.getElementById("plugin-marketplace-status");
     btn.disabled = true;
     if (plugin.installed) {
-      if (!confirm("Uninstall marketplace plugin '" + plugin.id + "'?")) { btn.disabled = false; return; }
+      if (!confirm("Uninstall marketplace plugin '" + plugin.id + "'?")) {
+        btn.disabled = false;
+        return;
+      }
       if (statusEl) statusEl.innerText = "Uninstalling marketplace plugin...";
-      try { await invoke("uninstall_plugin", { pluginId: plugin.id }); if (statusEl) statusEl.innerText = "Plugin uninstalled and Lua runtime reloaded."; await loadPluginMarketplace(); loadPluginsList(); }
-      catch (err) { if (statusEl) statusEl.innerText = "Uninstall failed: " + err; }
-      finally { btn.disabled = false; }
+      try {
+        await invoke("uninstall_plugin", { pluginId: plugin.id });
+        if (statusEl) statusEl.innerText = "Plugin uninstalled and Lua runtime reloaded.";
+        await loadPluginMarketplace();
+        loadPluginsList();
+      } catch (err) {
+        if (statusEl) statusEl.innerText = "Uninstall failed: " + err;
+      } finally {
+        btn.disabled = false;
+      }
     } else {
       if (statusEl) statusEl.innerText = "Installing marketplace plugin...";
-      try { await invoke("install_plugin_from_registry", { pluginId: plugin.id }); if (statusEl) statusEl.innerText = "Plugin installed and Lua runtime reloaded."; await loadPluginMarketplace(); loadPluginsList(); }
-      catch (err) { if (statusEl) statusEl.innerText = "Install failed: " + err; }
-      finally { btn.disabled = false; }
+      try {
+        await invoke("install_plugin_from_registry", { pluginId: plugin.id });
+        if (statusEl) statusEl.innerText = "Plugin installed and Lua runtime reloaded.";
+        await loadPluginMarketplace();
+        loadPluginsList();
+      } catch (err) {
+        if (statusEl) statusEl.innerText = "Install failed: " + err;
+      } finally {
+        btn.disabled = false;
+      }
     }
   };
   actions.appendChild(btn);
@@ -4771,8 +5384,16 @@ function renderPluginMarketplace() {
   if (tagSelect) {
     const selected = tagSelect.value || pluginMarketplaceState.tag;
     tagSelect.replaceChildren();
-    const allOpt = document.createElement("option"); allOpt.value = ""; allOpt.textContent = "All Tags"; tagSelect.appendChild(allOpt);
-    tags.forEach((tag) => { const opt = document.createElement("option"); opt.value = String(tag); opt.textContent = String(tag); tagSelect.appendChild(opt); });
+    const allOpt = document.createElement("option");
+    allOpt.value = "";
+    allOpt.textContent = "All Tags";
+    tagSelect.appendChild(allOpt);
+    tags.forEach((tag) => {
+      const opt = document.createElement("option");
+      opt.value = String(tag);
+      opt.textContent = String(tag);
+      tagSelect.appendChild(opt);
+    });
     tagSelect.value = tags.includes(selected) ? selected : "";
     pluginMarketplaceState.tag = tagSelect.value;
   }
@@ -4780,8 +5401,22 @@ function renderPluginMarketplace() {
   const selectedTag = pluginMarketplaceState.tag;
   const selectedCategory = categorySelect?.value || "";
   const filtered = pluginMarketplaceState.plugins.filter((plugin) => {
-    const haystack = (plugin.name + " " + plugin.description + " " + plugin.author + " " + (plugin.tags || []).join(" ") + " " + (plugin.category || "")).toLowerCase();
-    return (!query || haystack.includes(query)) && (!selectedTag || (plugin.tags || []).includes(selectedTag)) && (!selectedCategory || (plugin.category || "utility") === selectedCategory);
+    const haystack = (
+      plugin.name +
+      " " +
+      plugin.description +
+      " " +
+      plugin.author +
+      " " +
+      (plugin.tags || []).join(" ") +
+      " " +
+      (plugin.category || "")
+    ).toLowerCase();
+    return (
+      (!query || haystack.includes(query)) &&
+      (!selectedTag || (plugin.tags || []).includes(selectedTag)) &&
+      (!selectedCategory || (plugin.category || "utility") === selectedCategory)
+    );
   });
   if (filtered.length === 0) {
     const empty = document.createElement("div");
@@ -4833,13 +5468,25 @@ function _pluginsWireInstall(installBtn, urlInput, statusEl) {
   if (!installBtn || !urlInput) return;
   installBtn.onclick = () => {
     const url = urlInput.value.trim();
-    if (!url) { alert("Please enter a valid plugin URL."); return; }
+    if (!url) {
+      alert("Please enter a valid plugin URL.");
+      return;
+    }
     if (statusEl) statusEl.innerText = "Downloading and installing plugin...";
     installBtn.disabled = true;
     invoke("install_plugin", { url })
-      .then(() => { if (statusEl) statusEl.innerText = "Plugin installed successfully!"; urlInput.value = ""; loadPluginsList(); loadPluginMarketplace(); })
-      .catch((err) => { if (statusEl) statusEl.innerText = "Installation failed: " + err; })
-      .finally(() => { installBtn.disabled = false; });
+      .then(() => {
+        if (statusEl) statusEl.innerText = "Plugin installed successfully!";
+        urlInput.value = "";
+        loadPluginsList();
+        loadPluginMarketplace();
+      })
+      .catch((err) => {
+        if (statusEl) statusEl.innerText = "Installation failed: " + err;
+      })
+      .finally(() => {
+        installBtn.disabled = false;
+      });
   };
 }
 
@@ -4878,9 +5525,17 @@ function _pluginsWireReload(reloadBtn, statusEl) {
     if (statusEl) statusEl.innerText = "Reloading plugins in engine...";
     reloadBtn.disabled = true;
     invoke("reload_plugins")
-      .then(() => { if (statusEl) statusEl.innerText = "Plugins reloaded successfully!"; loadPluginsList(); loadPluginMarketplace(); })
-      .catch((err) => { if (statusEl) statusEl.innerText = "Reload failed: " + err; })
-      .finally(() => { reloadBtn.disabled = false; });
+      .then(() => {
+        if (statusEl) statusEl.innerText = "Plugins reloaded successfully!";
+        loadPluginsList();
+        loadPluginMarketplace();
+      })
+      .catch((err) => {
+        if (statusEl) statusEl.innerText = "Reload failed: " + err;
+      })
+      .finally(() => {
+        reloadBtn.disabled = false;
+      });
   };
 }
 
@@ -4898,8 +5553,16 @@ function initPluginsManager() {
   _pluginsWireNewBtn(newBtn);
   _pluginsWireReload(reloadBtn, statusEl);
 
-  if (marketplaceSearch) marketplaceSearch.oninput = () => { pluginMarketplaceState.search = marketplaceSearch.value || ""; renderPluginMarketplace(); };
-  if (marketplaceTag) marketplaceTag.onchange = () => { pluginMarketplaceState.tag = marketplaceTag.value || ""; renderPluginMarketplace(); };
+  if (marketplaceSearch)
+    marketplaceSearch.oninput = () => {
+      pluginMarketplaceState.search = marketplaceSearch.value || "";
+      renderPluginMarketplace();
+    };
+  if (marketplaceTag)
+    marketplaceTag.onchange = () => {
+      pluginMarketplaceState.tag = marketplaceTag.value || "";
+      renderPluginMarketplace();
+    };
   const marketplaceCategory = document.getElementById("plugin-marketplace-category");
   if (marketplaceCategory) marketplaceCategory.onchange = () => renderPluginMarketplace();
   if (marketplaceRefresh) marketplaceRefresh.onclick = () => loadPluginMarketplace();
@@ -4911,10 +5574,18 @@ async function _canvasSavePluginClick() {
   let activeFile = window.neurodeckCanvas.activePluginFile;
   if (activeFile) {
     invoke("save_plugin", { fileName: activeFile, content: code })
-      .then(() => { alert(`Plugin '${activeFile}' saved successfully.`); })
-      .catch((err) => { alert(`Failed to save plugin: ${err}`); });
+      .then(() => {
+        alert(`Plugin '${activeFile}' saved successfully.`);
+      })
+      .catch((err) => {
+        alert(`Failed to save plugin: ${err}`);
+      });
   } else {
-    const fileNameInput = await showPrompt("Enter filename for the new plugin (must end with .lua):", "my_plugin.lua", { title: "New Plugin" });
+    const fileNameInput = await showPrompt(
+      "Enter filename for the new plugin (must end with .lua):",
+      "my_plugin.lua",
+      { title: "New Plugin" }
+    );
     if (!fileNameInput) return;
     let sanitized = fileNameInput.trim();
     if (!sanitized.endsWith(".lua")) sanitized += ".lua";
@@ -4929,7 +5600,9 @@ async function _canvasSavePluginClick() {
         if (fileTitle) fileTitle.textContent = sanitized;
         alert(`Plugin '${sanitized}' saved successfully.`);
       })
-      .catch((err) => { alert(`Failed to save plugin: ${err}`); });
+      .catch((err) => {
+        alert(`Failed to save plugin: ${err}`);
+      });
   }
 }
 
@@ -5053,8 +5726,7 @@ async function requestComputerUseApproval({ action, details, target } = {}) {
   }
 
   actionEl.textContent = action || "Desktop action requested";
-  detailsEl.textContent =
-    details || "Review the desktop screenshot before approving.";
+  detailsEl.textContent = details || "Review the desktop screenshot before approving.";
   computerUseState.pendingTarget = target || null;
 
   try {
@@ -5064,8 +5736,7 @@ async function requestComputerUseApproval({ action, details, target } = {}) {
     img.src = `data:${screenshot.mime || "image/png"};base64,${screenshot.base64}`;
     img.classList.add("active");
     empty.style.display = "none";
-    img.onload = () =>
-      positionComputerTargetBox(computerUseState.pendingTarget);
+    img.onload = () => positionComputerTargetBox(computerUseState.pendingTarget);
   } catch (err) {
     img.removeAttribute("src");
     img.classList.remove("active");
@@ -5078,10 +5749,7 @@ async function requestComputerUseApproval({ action, details, target } = {}) {
   modal.setAttribute("aria-hidden", "false");
   if (!computerUseFocusTrap) computerUseFocusTrap = new FocusTrap(modal);
   computerUseFocusTrap.activate();
-  setTimeout(
-    () => document.getElementById("computer-use-approve-btn")?.focus(),
-    50,
-  );
+  setTimeout(() => document.getElementById("computer-use-approve-btn")?.focus(), 50);
 
   return new Promise((resolve) => {
     computerUseState.pendingResolve = resolve;
@@ -5095,7 +5763,10 @@ function finishComputerUseApproval(approved, approveSession = false) {
     if (toggle) toggle.checked = true;
   }
   const modal = document.getElementById("computer-use-modal");
-  if (modal) { modal.classList.remove("active"); modal.setAttribute("aria-hidden", "true"); }
+  if (modal) {
+    modal.classList.remove("active");
+    modal.setAttribute("aria-hidden", "true");
+  }
   if (computerUseFocusTrap) computerUseFocusTrap.deactivate();
   positionComputerTargetBox(null);
   const resolve = computerUseState.pendingResolve;
@@ -5116,10 +5787,45 @@ function _cuBuildApi() {
   return {
     captureScreenshot: captureComputerScreenshot,
     requestApproval: requestComputerUseApproval,
-    mouseMove: (x, y) => invokeApprovedComputerAction("computer_mouse_move", { x, y }, { action: "Move mouse pointer", details: "Move pointer to " + x + ", " + y + ".", target: { x, y, width: 28, height: 28 } }),
-    click: (button = "left") => invokeApprovedComputerAction("computer_mouse_click", { button }, { action: "Mouse click", details: "Perform a " + button + " click at the current pointer position." }),
-    type: (text) => invokeApprovedComputerAction("computer_type", { text }, { action: "Type text", details: "Type " + String(text || "").length + " character" + (String(text || "").length === 1 ? "" : "s") + " into the focused application." }),
-    key: (key) => invokeApprovedComputerAction("computer_key", { key }, { action: "Press keyboard key", details: "Send key: " + key + "." }),
+    mouseMove: (x, y) =>
+      invokeApprovedComputerAction(
+        "computer_mouse_move",
+        { x, y },
+        {
+          action: "Move mouse pointer",
+          details: "Move pointer to " + x + ", " + y + ".",
+          target: { x, y, width: 28, height: 28 },
+        }
+      ),
+    click: (button = "left") =>
+      invokeApprovedComputerAction(
+        "computer_mouse_click",
+        { button },
+        {
+          action: "Mouse click",
+          details: "Perform a " + button + " click at the current pointer position.",
+        }
+      ),
+    type: (text) =>
+      invokeApprovedComputerAction(
+        "computer_type",
+        { text },
+        {
+          action: "Type text",
+          details:
+            "Type " +
+            String(text || "").length +
+            " character" +
+            (String(text || "").length === 1 ? "" : "s") +
+            " into the focused application.",
+        }
+      ),
+    key: (key) =>
+      invokeApprovedComputerAction(
+        "computer_key",
+        { key },
+        { action: "Press keyboard key", details: "Send key: " + key + "." }
+      ),
     findText: (text) => invoke("computer_find_text", { text }),
   };
 }
@@ -5136,27 +5842,59 @@ function initComputerUse() {
 
   if (approveAllToggle) {
     approveAllToggle.checked = computerUseState.approveAll;
-    approveAllToggle.onchange = () => { computerUseState.approveAll = approveAllToggle.checked; setComputerStatus(computerUseState.approveAll ? "Computer use auto-approval is active for this session." : "Computer use approval modal is active.", "info"); };
+    approveAllToggle.onchange = () => {
+      computerUseState.approveAll = approveAllToggle.checked;
+      setComputerStatus(
+        computerUseState.approveAll
+          ? "Computer use auto-approval is active for this session."
+          : "Computer use approval modal is active.",
+        "info"
+      );
+    };
   }
   if (captureBtn) {
     captureBtn.onclick = async () => {
-      captureBtn.disabled = true; setComputerStatus("Capturing desktop screenshot...");
-      try { await captureComputerScreenshot({ showInAgentLog: true }); setComputerStatus("Screenshot captured.", "ok"); }
-      catch (err) { setComputerStatus("Screenshot failed: " + err, "error"); }
-      finally { captureBtn.disabled = false; }
+      captureBtn.disabled = true;
+      setComputerStatus("Capturing desktop screenshot...");
+      try {
+        await captureComputerScreenshot({ showInAgentLog: true });
+        setComputerStatus("Screenshot captured.", "ok");
+      } catch (err) {
+        setComputerStatus("Screenshot failed: " + err, "error");
+      } finally {
+        captureBtn.disabled = false;
+      }
     };
   }
   if (ocrBtn && ocrInput) {
     ocrBtn.onclick = async () => {
       const text = ocrInput.value.trim();
-      if (!text) { ocrInput.focus(); return; }
-      ocrBtn.disabled = true; setComputerStatus("Running OCR over the current desktop...");
+      if (!text) {
+        ocrInput.focus();
+        return;
+      }
+      ocrBtn.disabled = true;
+      setComputerStatus("Running OCR over the current desktop...");
       try {
         const match = await invoke("computer_find_text", { text });
-        await requestComputerUseApproval({ action: "Found text: " + match.text, details: "Coordinates " + match.x + ", " + match.y + "; confidence " + Math.round(match.confidence) + "%.", target: match });
+        await requestComputerUseApproval({
+          action: "Found text: " + match.text,
+          details:
+            "Coordinates " +
+            match.x +
+            ", " +
+            match.y +
+            "; confidence " +
+            Math.round(match.confidence) +
+            "%.",
+          target: match,
+        });
         setComputerStatus('Found "' + match.text + '" at ' + match.x + ", " + match.y + ".", "ok");
-      } catch (err) { setComputerStatus("OCR failed: " + err, "error"); }
-      finally { ocrBtn.disabled = false; }
+      } catch (err) {
+        setComputerStatus("OCR failed: " + err, "error");
+      } finally {
+        ocrBtn.disabled = false;
+      }
     };
   }
   if (approveBtn) approveBtn.onclick = () => finishComputerUseApproval(true, false);
@@ -5311,12 +6049,14 @@ function _recBuildModelCard(m) {
 
   const tags = document.createElement("div");
   tags.className = "agent-rec-tags";
-  (m.tags || []).filter((t) => ["recommended", "long-context", "multilingual", "code"].includes(t)).forEach((tag) => {
-    const span = document.createElement("span");
-    span.className = "agent-tag";
-    span.textContent = String(tag);
-    tags.appendChild(span);
-  });
+  (m.tags || [])
+    .filter((t) => ["recommended", "long-context", "multilingual", "code"].includes(t))
+    .forEach((tag) => {
+      const span = document.createElement("span");
+      span.className = "agent-tag";
+      span.textContent = String(tag);
+      tags.appendChild(span);
+    });
 
   const modelId = document.createElement("div");
   modelId.className = "agent-rec-model-id";
@@ -5347,13 +6087,8 @@ function activateAgent(id) {
       state.activeProvider = agent.provider;
       renderAgentSwitcher();
       const modelNameEl = document.getElementById("model-name");
-      if (modelNameEl)
-        modelNameEl.innerText = `[ ${agent.name.toUpperCase()} ]`;
-      addNotification(
-        "Agent switched",
-        `Now using ${agent.name} (${agent.model})`,
-        "info",
-      );
+      if (modelNameEl) modelNameEl.innerText = `[ ${agent.name.toUpperCase()} ]`;
+      addNotification("Agent switched", `Now using ${agent.name} (${agent.model})`, "info");
     })
     .catch((err) => addNotification("Agent switch failed", err, "error"));
 }
@@ -5408,8 +6143,7 @@ window.instantiateRecommended = instantiateRecommended;
 document.addEventListener("change", (e) => {
   if (e.target.id === "new-agent-provider") {
     const urlRow = document.getElementById("new-agent-url-row");
-    if (urlRow)
-      urlRow.style.display = e.target.value === "ollama" ? "" : "none";
+    if (urlRow) urlRow.style.display = e.target.value === "ollama" ? "" : "none";
   }
 });
 
@@ -5422,14 +6156,11 @@ document.addEventListener("click", (e) => {
 function handleAddAgent() {
   const id = document.getElementById("new-agent-id")?.value.trim() || "";
   const name = document.getElementById("new-agent-name")?.value.trim() || "";
-  const provider =
-    document.getElementById("new-agent-provider")?.value || "gemini";
+  const provider = document.getElementById("new-agent-provider")?.value || "gemini";
   const model = document.getElementById("new-agent-model")?.value.trim() || "";
   const base_url =
-    document.getElementById("new-agent-url")?.value.trim() ||
-    "http://localhost:11434";
-  const description =
-    document.getElementById("new-agent-desc")?.value.trim() || "";
+    document.getElementById("new-agent-url")?.value.trim() || "http://localhost:11434";
+  const description = document.getElementById("new-agent-desc")?.value.trim() || "";
   const statusEl = document.getElementById("new-agent-status");
 
   if (!id || !name || !model) {
@@ -5445,7 +6176,7 @@ function handleAddAgent() {
   })
     .then(() => {
       invoke("list_agents").then((agents) => {
-        state.agents = Array.isArray(agents) ? agents : (agents?.agents || []);
+        state.agents = Array.isArray(agents) ? agents : agents?.agents || [];
         renderAgentSwitcher();
         if (statusEl) {
           statusEl.className = "agent-form-status ok";
@@ -5482,9 +6213,7 @@ document.addEventListener("click", (e) => {
   panel
     .querySelectorAll(".agent-tab")
     .forEach((t) => t.classList.toggle("active", t.dataset.atab === target));
-  panel
-    .querySelectorAll(".agent-tab-body")
-    .forEach((b) => b.classList.add("hidden"));
+  panel.querySelectorAll(".agent-tab-body").forEach((b) => b.classList.add("hidden"));
   const body = document.getElementById(`agent-tab-${target}`);
   if (body) body.classList.remove("hidden");
   if (target === "recommended") renderRecommendedModels();
@@ -5511,8 +6240,7 @@ function closeShortcutsOverlay() {
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     const panel = document.getElementById("agent-switcher-panel");
-    if (panel && !panel.classList.contains("hidden"))
-      panel.classList.add("hidden");
+    if (panel && !panel.classList.contains("hidden")) panel.classList.add("hidden");
     const shortcuts = document.getElementById("shortcuts-overlay");
     if (shortcuts && !shortcuts.classList.contains("hidden")) {
       e.preventDefault();
@@ -5528,9 +6256,7 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "?" && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const tag = document.activeElement?.tagName;
     const isEditable =
-      tag === "INPUT" ||
-      tag === "TEXTAREA" ||
-      document.activeElement?.isContentEditable;
+      tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
     if (!isEditable) {
       e.preventDefault();
       openShortcutsOverlay();
@@ -5562,11 +6288,16 @@ document.addEventListener("click", (e) => {
 // ═══════════════════════════════════════════════════════════════════════════
 function _sbFormatDate(isoStr) {
   try {
-    const d = new Date(isoStr), now = new Date(), diff = now - d;
+    const d = new Date(isoStr),
+      now = new Date(),
+      diff = now - d;
     if (diff < 86_400_000) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    if (diff < 7 * 86_400_000) return d.toLocaleDateString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
+    if (diff < 7 * 86_400_000)
+      return d.toLocaleDateString([], { weekday: "short", hour: "2-digit", minute: "2-digit" });
     return d.toLocaleDateString([], { month: "short", day: "numeric" });
-  } catch { return isoStr || ""; }
+  } catch {
+    return isoStr || "";
+  }
 }
 
 function _sbBuildSessionItem(session, loadSessions) {
@@ -5578,31 +6309,49 @@ function _sbBuildSessionItem(session, loadSessions) {
   title.textContent = session.name || _sbFormatDate(session.created_at);
   const meta = document.createElement("div");
   meta.className = "session-browser-meta";
-  meta.textContent = session.message_count + " msgs" + (session.preview ? " · " + session.preview : "");
+  meta.textContent =
+    session.message_count + " msgs" + (session.preview ? " · " + session.preview : "");
   const actions = document.createElement("div");
   actions.className = "session-browser-actions";
   const openBtn = document.createElement("button");
-  openBtn.className = "session-browser-btn"; openBtn.title = "Restore session"; openBtn.innerHTML = createIcon("cornerDownLeft", { size: 12 });
+  openBtn.className = "session-browser-btn";
+  openBtn.title = "Restore session";
+  openBtn.innerHTML = createIcon("cornerDownLeft", { size: 12 });
   openBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     invoke("load_session_by_id", { id: session.id })
-      .then((data) => { activateViewByName("chat"); if (typeof window.restoreSessionMessages === "function") window.restoreSessionMessages(data); addNotification("Session Restored", "Loaded: " + (session.name || session.id), "success"); })
+      .then((data) => {
+        activateViewByName("chat");
+        if (typeof window.restoreSessionMessages === "function")
+          window.restoreSessionMessages(data);
+        addNotification("Session Restored", "Loaded: " + (session.name || session.id), "success");
+      })
       .catch((err) => addNotification("Session Error", String(err), "error"));
   });
   const renameBtn = document.createElement("button");
-  renameBtn.className = "session-browser-btn"; renameBtn.title = "Rename"; renameBtn.innerHTML = createIcon("pencil", { size: 12 });
+  renameBtn.className = "session-browser-btn";
+  renameBtn.title = "Rename";
+  renameBtn.innerHTML = createIcon("pencil", { size: 12 });
   renameBtn.addEventListener("click", async (e) => {
     e.stopPropagation();
-    const newName = await showPrompt("Rename session:", session.name || "", { title: "Rename Session" });
+    const newName = await showPrompt("Rename session:", session.name || "", {
+      title: "Rename Session",
+    });
     if (newName === null) return;
-    invoke("rename_session", { id: session.id, name: newName.trim() }).then(() => loadSessions()).catch((err) => addNotification("Rename Error", String(err), "error"));
+    invoke("rename_session", { id: session.id, name: newName.trim() })
+      .then(() => loadSessions())
+      .catch((err) => addNotification("Rename Error", String(err), "error"));
   });
   const deleteBtn = document.createElement("button");
-  deleteBtn.className = "session-browser-btn session-browser-btn--danger"; deleteBtn.title = "Delete"; deleteBtn.innerHTML = createIcon("trash2", { size: 12 });
+  deleteBtn.className = "session-browser-btn session-browser-btn--danger";
+  deleteBtn.title = "Delete";
+  deleteBtn.innerHTML = createIcon("trash2", { size: 12 });
   deleteBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     if (!confirm('Delete session "' + (session.name || session.id) + '"?')) return;
-    invoke("delete_session", { id: session.id }).then(() => loadSessions()).catch((err) => addNotification("Delete Error", String(err), "error"));
+    invoke("delete_session", { id: session.id })
+      .then(() => loadSessions())
+      .catch((err) => addNotification("Delete Error", String(err), "error"));
   });
   actions.append(openBtn, renameBtn, deleteBtn);
   item.append(title, meta, actions);
@@ -5613,9 +6362,13 @@ function _sbBuildSessionItem(session, loadSessions) {
 function _sbRenderSessionList(sessions, list, loadSessions) {
   list.innerHTML = "";
   if (!sessions || sessions.length === 0) {
-    const empty = document.createElement("div"); empty.className = "session-browser-empty"; empty.textContent = "No saved sessions yet."; list.appendChild(empty); return;
+    const empty = document.createElement("div");
+    empty.className = "session-browser-empty";
+    empty.textContent = "No saved sessions yet.";
+    list.appendChild(empty);
+    return;
   }
-  sessions.forEach(session => list.appendChild(_sbBuildSessionItem(session, loadSessions)));
+  sessions.forEach((session) => list.appendChild(_sbBuildSessionItem(session, loadSessions)));
 }
 
 function initSessionBrowser() {
@@ -5624,19 +6377,28 @@ function initSessionBrowser() {
   const chevron = document.getElementById("session-browser-chevron");
   if (!toggleBtn || !list) return;
   let loaded = false;
-  const loadSessions = () => invoke("list_sessions_meta").then(sessions => _sbRenderSessionList(sessions, list, loadSessions)).catch(() => { list.innerHTML = '<div class="session-browser-empty" style="color:var(--error-color)">Failed to load sessions.</div>'; });
+  const loadSessions = () =>
+    invoke("list_sessions_meta")
+      .then((sessions) => _sbRenderSessionList(sessions, list, loadSessions))
+      .catch(() => {
+        list.innerHTML =
+          '<div class="session-browser-empty" style="color:var(--error-color)">Failed to load sessions.</div>';
+      });
   toggleBtn.addEventListener("click", () => {
     const isHidden = list.classList.contains("hidden");
     list.classList.toggle("hidden", !isHidden);
     toggleBtn.setAttribute("aria-expanded", String(isHidden));
     if (chevron) chevron.style.transform = isHidden ? "rotate(90deg)" : "rotate(0deg)";
-    if (isHidden && !loaded) { loaded = true; loadSessions(); }
+    if (isHidden && !loaded) {
+      loaded = true;
+      loadSessions();
+    }
   });
   document.addEventListener("neurodeck:session-saved", loadSessions);
 }
 
 // expose for chat.js to refresh the list after auto-save
-window.refreshSessionBrowser = function() {
+window.refreshSessionBrowser = function () {
   const list = document.getElementById("session-browser-list");
   if (list && !list.classList.contains("hidden")) {
     invoke("list_sessions_meta")
@@ -5695,7 +6457,14 @@ function initNotificationCenter() {
 // SHORTCUT CUSTOMIZATION — Sprint 9.6
 // ═══════════════════════════════════════════════════════════════════════════
 function _scFormatKeys(keys) {
-  return keys.map((k) => '<kbd style="font-size:0.7rem;padding:2px 6px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.06);font-family:var(--font-mono)">' + escapeHtml(k) + '</kbd>').join(" + ");
+  return keys
+    .map(
+      (k) =>
+        '<kbd style="font-size:0.7rem;padding:2px 6px;border:1px solid rgba(255,255,255,0.15);border-radius:4px;background:rgba(255,255,255,0.06);font-family:var(--font-mono)">' +
+        escapeHtml(k) +
+        "</kbd>"
+    )
+    .join(" + ");
 }
 
 function _scBuildShortcutRow(sc, overrides, table) {
@@ -5703,13 +6472,16 @@ function _scBuildShortcutRow(sc, overrides, table) {
   const isCustom = !!overrides[sc.action];
   const row = document.createElement("div");
   row.className = "shortcut-row-custom";
-  row.style.cssText = "display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;transition:background 0.12s,border-color 0.12s;";
+  row.style.cssText =
+    "display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;cursor:pointer;border:1px solid transparent;transition:background 0.12s,border-color 0.12s;";
   const actionSpan = document.createElement("span");
-  actionSpan.style.cssText = "flex:1;font-size:0.78rem;color:rgba(255,255,255,0.7);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
+  actionSpan.style.cssText =
+    "flex:1;font-size:0.78rem;color:rgba(255,255,255,0.7);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;";
   actionSpan.textContent = sc.action;
   if (sc.scope !== "global") {
     const scope = document.createElement("span");
-    scope.style.cssText = "font-size:0.65rem;opacity:0.4;margin-left:6px;font-family:var(--font-mono)";
+    scope.style.cssText =
+      "font-size:0.65rem;opacity:0.4;margin-left:6px;font-family:var(--font-mono)";
     scope.textContent = "[" + sc.scope + "]";
     actionSpan.appendChild(scope);
   }
@@ -5718,39 +6490,68 @@ function _scBuildShortcutRow(sc, overrides, table) {
   keysSpan.innerHTML = _scFormatKeys(effectiveKeys);
   if (isCustom) {
     const badge = document.createElement("span");
-    badge.style.cssText = "font-size:0.6rem;color:var(--warning-color);margin-left:4px;opacity:0.8;";
+    badge.style.cssText =
+      "font-size:0.6rem;color:var(--warning-color);margin-left:4px;opacity:0.8;";
     badge.textContent = "✎";
     keysSpan.appendChild(badge);
   }
   const resetBtn = document.createElement("button");
-  resetBtn.style.cssText = "background:transparent;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:2px 5px;border-radius:4px;font-size:0.65rem;display:" + (isCustom ? "block" : "none") + ";";
-  resetBtn.title = "Reset to default"; resetBtn.textContent = "↺";
-  resetBtn.addEventListener("click", (e) => { e.stopPropagation(); resetShortcutOverride(sc.action); _scRenderTable(table); });
+  resetBtn.style.cssText =
+    "background:transparent;border:none;color:rgba(255,255,255,0.3);cursor:pointer;padding:2px 5px;border-radius:4px;font-size:0.65rem;display:" +
+    (isCustom ? "block" : "none") +
+    ";";
+  resetBtn.title = "Reset to default";
+  resetBtn.textContent = "↺";
+  resetBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    resetShortcutOverride(sc.action);
+    _scRenderTable(table);
+  });
   row.append(actionSpan, keysSpan, resetBtn);
   row.addEventListener("click", () => {
     row.style.background = "rgba(var(--accent-rgb),0.1)";
     row.style.borderColor = "rgba(var(--accent-rgb),0.3)";
-    keysSpan.innerHTML = '<span style="font-size:0.72rem;color:var(--accent-color);font-family:var(--font-mono)">Press keys…</span>';
+    keysSpan.innerHTML =
+      '<span style="font-size:0.72rem;color:var(--accent-color);font-family:var(--font-mono)">Press keys…</span>';
     const onKey = (e) => {
-      if (e.key === "Escape") { document.removeEventListener("keydown", onKey, true); _scRenderTable(table); return; }
+      if (e.key === "Escape") {
+        document.removeEventListener("keydown", onKey, true);
+        _scRenderTable(table);
+        return;
+      }
       const keys = [];
       if (e.ctrlKey || e.metaKey) keys.push("Ctrl");
       if (e.shiftKey) keys.push("Shift");
       if (e.altKey) keys.push("Alt");
-      if (!["Control","Shift","Alt","Meta"].includes(e.key)) keys.push(e.key.length === 1 ? e.key.toUpperCase() : e.key);
-      if (keys.length > 0 && !keys.every((k) => ["Ctrl","Shift","Alt"].includes(k))) { e.preventDefault(); e.stopPropagation(); document.removeEventListener("keydown", onKey, true); saveShortcutOverride(sc.action, keys); _scRenderTable(table); }
+      if (!["Control", "Shift", "Alt", "Meta"].includes(e.key))
+        keys.push(e.key.length === 1 ? e.key.toUpperCase() : e.key);
+      if (keys.length > 0 && !keys.every((k) => ["Ctrl", "Shift", "Alt"].includes(k))) {
+        e.preventDefault();
+        e.stopPropagation();
+        document.removeEventListener("keydown", onKey, true);
+        saveShortcutOverride(sc.action, keys);
+        _scRenderTable(table);
+      }
     };
     document.addEventListener("keydown", onKey, true);
   });
-  row.addEventListener("mouseenter", () => { row.style.background = "rgba(255,255,255,0.03)"; row.style.borderColor = "var(--border-color)"; });
-  row.addEventListener("mouseleave", () => { row.style.background = ""; row.style.borderColor = "transparent"; });
+  row.addEventListener("mouseenter", () => {
+    row.style.background = "rgba(255,255,255,0.03)";
+    row.style.borderColor = "var(--border-color)";
+  });
+  row.addEventListener("mouseleave", () => {
+    row.style.background = "";
+    row.style.borderColor = "transparent";
+  });
   return row;
 }
 
 function _scRenderTable(table) {
   const overrides = getShortcutOverrides();
   table.innerHTML = "";
-  KEYBOARD_SHORTCUTS.filter((s) => s.scope !== "radial" && s.scope !== "browser").forEach((sc) => table.appendChild(_scBuildShortcutRow(sc, overrides, table)));
+  KEYBOARD_SHORTCUTS.filter((s) => s.scope !== "radial" && s.scope !== "browser").forEach((sc) =>
+    table.appendChild(_scBuildShortcutRow(sc, overrides, table))
+  );
 }
 
 function initShortcutCustomization() {
@@ -5843,15 +6644,23 @@ function _gcHandleBadgeClick(gameBadge, gameModal, headerImg, fallbackEl, fallba
         }
         if (sessionNotesEl && appId !== "-") {
           invoke("get_game_notes", { appId })
-            .then((savedNotes) => { sessionNotesEl.value = savedNotes || ""; sessionNotesEl.dataset.appId = appId; })
-            .catch(() => { sessionNotesEl.value = ""; sessionNotesEl.dataset.appId = appId; });
+            .then((savedNotes) => {
+              sessionNotesEl.value = savedNotes || "";
+              sessionNotesEl.dataset.appId = appId;
+            })
+            .catch(() => {
+              sessionNotesEl.value = "";
+              sessionNotesEl.dataset.appId = appId;
+            });
         }
         gameModal.classList.add("active");
         gameModal.setAttribute("aria-hidden", "false");
         if (!gcCtx.trap) gcCtx.trap = new FocusTrap(gameModal);
         gcCtx.trap.activate();
       })
-      .catch((err) => { console.error("Error loading game context panel:", err); });
+      .catch((err) => {
+        console.error("Error loading game context panel:", err);
+      });
   };
 }
 
@@ -5865,11 +6674,23 @@ function initGameContextPanel() {
   const fallbackNameEl = document.getElementById("game-context-fallback-name");
   const gcCtx = { trap: null };
 
-  const dismiss = () => { if (gameModal) { gameModal.classList.remove("active"); gameModal.setAttribute("aria-hidden", "true"); if (gcCtx.trap) gcCtx.trap.deactivate(); } };
+  const dismiss = () => {
+    if (gameModal) {
+      gameModal.classList.remove("active");
+      gameModal.setAttribute("aria-hidden", "true");
+      if (gcCtx.trap) gcCtx.trap.deactivate();
+    }
+  };
 
   if (headerImg && fallbackEl) {
-    headerImg.addEventListener("load", () => { fallbackEl.classList.remove("active"); headerImg.style.display = "block"; });
-    headerImg.addEventListener("error", () => { headerImg.style.display = "none"; fallbackEl.classList.add("active"); });
+    headerImg.addEventListener("load", () => {
+      fallbackEl.classList.remove("active");
+      headerImg.style.display = "block";
+    });
+    headerImg.addEventListener("error", () => {
+      headerImg.style.display = "none";
+      fallbackEl.classList.add("active");
+    });
   }
 
   _gcHandleBadgeClick(gameBadge, gameModal, headerImg, fallbackEl, fallbackNameEl, gcCtx);
@@ -5881,25 +6702,54 @@ function initGameContextPanel() {
       const appId = sessionNotesEl.dataset.appId;
       if (!appId || appId === "-") return;
       invoke("save_game_note", { appId, content: sessionNotesEl.value })
-        .then(() => { if (saveIndicator) { saveIndicator.style.opacity = "1"; setTimeout(() => { saveIndicator.style.opacity = "0"; }, 1500); } })
-        .catch((err) => { console.error("Failed to save game note:", err); });
+        .then(() => {
+          if (saveIndicator) {
+            saveIndicator.style.opacity = "1";
+            setTimeout(() => {
+              saveIndicator.style.opacity = "0";
+            }, 1500);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to save game note:", err);
+        });
     });
   }
 
   if (closeX) closeX.onclick = dismiss;
   if (closeBtn) closeBtn.onclick = dismiss;
-  if (gameModal) gameModal.addEventListener("click", (e) => { if (e.target === gameModal) dismiss(); });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && gameModal?.classList.contains("active")) dismiss(); });
+  if (gameModal)
+    gameModal.addEventListener("click", (e) => {
+      if (e.target === gameModal) dismiss();
+    });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && gameModal?.classList.contains("active")) dismiss();
+  });
 }
 
 const _MANUAL_VIEW_MAPPING = {
-  "chat": "chat", "canvas": "canvas", "terminal": "terminal",
-  "ssh": "ssh", "tunnel": "tunnel", "share": "share", "browser": "browser",
-  "agent": "agent", "memory": "memory", "prompt lab": "prompt-lab",
-  "remote": "remote", "docs": "docs", "git": "git", "api lab": "api-lab",
-  "cli maker": "cli-maker", "graph": "graph", "scheduler": "scheduler",
-  "flow": "workflow", "ide": "ide", "settings": "settings",
-  "plugins marketplace": "plugins", "prompt sidebar": "prompt-sidebar"
+  chat: "chat",
+  canvas: "canvas",
+  terminal: "terminal",
+  ssh: "ssh",
+  tunnel: "tunnel",
+  share: "share",
+  browser: "browser",
+  agent: "agent",
+  memory: "memory",
+  "prompt lab": "prompt-lab",
+  remote: "remote",
+  docs: "docs",
+  git: "git",
+  "api lab": "api-lab",
+  "cli maker": "cli-maker",
+  graph: "graph",
+  scheduler: "scheduler",
+  flow: "workflow",
+  ide: "ide",
+  settings: "settings",
+  "plugins marketplace": "plugins",
+  "prompt sidebar": "prompt-sidebar",
 };
 
 function _mmCloseManual(mmCtx) {
@@ -5908,14 +6758,16 @@ function _mmCloseManual(mmCtx) {
 }
 
 function _mmWireAccordions(contentContainer) {
-  contentContainer.querySelectorAll(".manual-accordion-header").forEach(header => {
+  contentContainer.querySelectorAll(".manual-accordion-header").forEach((header) => {
     header.addEventListener("click", () => {
       const card = header.closest(".manual-accordion-card");
       const wasExpanded = card.classList.contains("expanded");
-      contentContainer.querySelectorAll(".manual-accordion-card.expanded").forEach(otherCard => {
+      contentContainer.querySelectorAll(".manual-accordion-card.expanded").forEach((otherCard) => {
         if (otherCard !== card) {
           otherCard.classList.remove("expanded");
-          otherCard.querySelector(".manual-accordion-header").setAttribute("aria-expanded", "false");
+          otherCard
+            .querySelector(".manual-accordion-header")
+            .setAttribute("aria-expanded", "false");
           otherCard.querySelector(".manual-accordion-body").style.maxHeight = null;
         }
       });
@@ -5928,21 +6780,28 @@ function _mmWireAccordions(contentContainer) {
 }
 
 function _mmWireLaunchBtns(contentContainer, mmCtx) {
-  contentContainer.querySelectorAll(".launch-btn").forEach(btn => {
+  contentContainer.querySelectorAll(".launch-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const vid = btn.getAttribute("data-view");
       _mmCloseManual(mmCtx);
-      if (vid === "settings") { openSettingsModal(); }
-      else if (vid === "plugins") { openSettingsModal(); setTimeout(() => activateSettingsPanel("sp-extensions"), 50); }
-      else if (vid === "prompt-sidebar") { openCtrlPromptOverlay(); }
-      else { const tab = document.querySelector('.nav-tab[data-view="' + vid + '"]'); if (tab) tab.click(); }
+      if (vid === "settings") {
+        openSettingsModal();
+      } else if (vid === "plugins") {
+        openSettingsModal();
+        setTimeout(() => activateSettingsPanel("sp-extensions"), 50);
+      } else if (vid === "prompt-sidebar") {
+        openCtrlPromptOverlay();
+      } else {
+        const tab = document.querySelector('.nav-tab[data-view="' + vid + '"]');
+        if (tab) tab.click();
+      }
     });
   });
 }
 
 function _mmWireAiBtns(contentContainer, mmCtx) {
-  contentContainer.querySelectorAll(".ai-btn").forEach(btn => {
+  contentContainer.querySelectorAll(".ai-btn").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const feature = btn.getAttribute("data-feature");
@@ -5965,7 +6824,7 @@ function _mmBuildUI(contentContainer, mmCtx) {
   const introMarkdown = parts[0];
   const sections = parts.slice(1);
 
-  let html = '<div class="manual-intro-banner">' + marked.parse(introMarkdown) + '</div>';
+  let html = '<div class="manual-intro-banner">' + marked.parse(introMarkdown) + "</div>";
   html += '<div class="manual-accordions-list">';
 
   sections.forEach((sec) => {
@@ -5973,9 +6832,19 @@ function _mmBuildUI(contentContainer, mmCtx) {
     const headingLine = secLines[0].trim();
     const contentMarkdown = secLines.slice(1).join("\n").trim();
     const headingMatch = headingLine.match(/^(\d+)\.\s*([^\s]+)\s+(.*)$/);
-    let number = "", emoji = "\u{1F4D6}", title = headingLine;
-    if (headingMatch) { number = headingMatch[1]; emoji = headingMatch[2]; title = headingMatch[3]; }
-    const cleanTitle = title.toLowerCase().replace(/\([^)]*\)/g, "").replace(/[^a-z0-9\s]/g, "").trim();
+    let number = "",
+      emoji = "\u{1F4D6}",
+      title = headingLine;
+    if (headingMatch) {
+      number = headingMatch[1];
+      emoji = headingMatch[2];
+      title = headingMatch[3];
+    }
+    const cleanTitle = title
+      .toLowerCase()
+      .replace(/\([^)]*\)/g, "")
+      .replace(/[^a-z0-9\s]/g, "")
+      .trim();
     const viewId = _MANUAL_VIEW_MAPPING[cleanTitle] || "";
     const renderedContent = marked.parse(contentMarkdown);
     html += `
@@ -5998,7 +6867,7 @@ function _mmBuildUI(contentContainer, mmCtx) {
     `;
   });
 
-  html += '</div>';
+  html += "</div>";
   contentContainer.innerHTML = html;
   _mmWireAccordions(contentContainer);
   _mmWireLaunchBtns(contentContainer, mmCtx);
@@ -6020,12 +6889,19 @@ async function _mmRunHealthDiagnostics() {
     ptyDot.className = "health-dot " + (result.pty_ok ? "success" : "error");
     ptyDot.title = result.pty_details || (result.pty_ok ? "PTY working correctly" : "PTY failed");
     netDot.className = "health-dot " + (result.network_ok ? "success" : "error");
-    netDot.title = result.network_details || (result.network_ok ? "Network working correctly" : "Network failed");
+    netDot.title =
+      result.network_details ||
+      (result.network_ok ? "Network working correctly" : "Network failed");
     keyDot.className = "health-dot " + (result.keychain_ok ? "success" : "error");
-    keyDot.title = result.keychain_details || (result.keychain_ok ? "Keychain working correctly" : "Keychain failed");
+    keyDot.title =
+      result.keychain_details ||
+      (result.keychain_ok ? "Keychain working correctly" : "Keychain failed");
   } catch (err) {
     console.error("Manual health diagnostics failed:", err);
-    [ptyDot, netDot, keyDot].forEach(dot => { dot.className = "health-dot error"; dot.title = String(err); });
+    [ptyDot, netDot, keyDot].forEach((dot) => {
+      dot.className = "health-dot error";
+      dot.title = String(err);
+    });
   } finally {
     if (refreshBtn) refreshBtn.classList.remove("spinning");
   }
@@ -6037,10 +6913,10 @@ function _mmWireSearch(searchInput, contentContainer) {
     const query = e.target.value.toLowerCase().trim();
     const introBanner = contentContainer.querySelector(".manual-intro-banner");
     if (introBanner) introBanner.style.display = query ? "none" : "";
-    contentContainer.querySelectorAll(".manual-accordion-card").forEach(card => {
+    contentContainer.querySelectorAll(".manual-accordion-card").forEach((card) => {
       const title = card.getAttribute("data-title").toLowerCase();
       const content = card.getAttribute("data-content");
-      card.style.display = (title.includes(query) || content.includes(query)) ? "" : "none";
+      card.style.display = title.includes(query) || content.includes(query) ? "" : "none";
     });
   });
 }
@@ -6059,7 +6935,8 @@ function initManualModal() {
     manualModal.classList.add("active");
     if (!mmCtx.trap) mmCtx.trap = new FocusTrap(manualModal);
     mmCtx.trap.activate();
-    if (contentContainer && contentContainer.innerHTML.trim() === "") _mmBuildUI(contentContainer, mmCtx);
+    if (contentContainer && contentContainer.innerHTML.trim() === "")
+      _mmBuildUI(contentContainer, mmCtx);
     _mmRunHealthDiagnostics();
   });
 
@@ -6077,21 +6954,96 @@ function initManualModal() {
 
 // ── Prompt Lab: Formula Definitions (module-scope constant) ──────────────────
 const PROMPT_LAB_FORMULAS = [
-  { id: "default",  icon: "fileText",    label: "Default",  desc: "Standard structure: Persona → Task → Context → Constraints → Format." },
-  { id: "aida",     icon: "messageSquare", label: "AIDA",   desc: "Attention, Interest, Desire, Action. Best for persuasive copy and marketing." },
-  { id: "scqa",     icon: "search",      label: "SCQA",     desc: "Situation, Complication, Question, Answer. Ideal for consulting and structured analysis." },
-  { id: "pastor",   icon: "sparkles",    label: "PASTOR",   desc: "Problem, Amplify, Story, Transformation, Offer, Response. Landing pages and pitches." },
-  { id: "pas",      icon: "zap",         label: "PAS",      desc: "Problem, Agitate, Solution. Punchy copywriting that highlights pain points." },
-  { id: "cot",      icon: "brain",       label: "CoT",      desc: "Chain of Thought. Decomposes complex reasoning step-by-step. Great for logic and code." },
-  { id: "tot",      icon: "sparkles",    label: "ToT",      desc: "Tree of Thought. Branches, evaluates, and searches solution paths. Best for design." },
-  { id: "star",     icon: "sparkles",    label: "STAR",     desc: "Situation, Task, Action, Result. Perfect for case studies and narrative examples." },
-  { id: "rice",     icon: "chartColumn", label: "RICE",     desc: "Reach, Impact, Confidence, Effort. Structured prioritization and product decisions." },
-  { id: "icio",     icon: "refreshCw",   label: "ICIO",     desc: "Input, Constraints, Instructions, Output. Precision engineering for technical tasks." },
-  { id: "react",    icon: "bot",         label: "ReAct",    desc: "Reason + Act loop. Forces explicit reasoning before each action step. Agent tasks." },
-  { id: "spin",     icon: "messageSquare", label: "SPIN",   desc: "Situation, Problem, Implication, Need-Payoff. Sales-grade interrogation framework." },
-  { id: "rtf",      icon: "fileText",    label: "RTF",      desc: "Role, Task, Format. Ultra-minimal 3-part prompt for quick structured generation." },
-  { id: "expert",   icon: "sparkles",    label: "Expert",   desc: "Expert persona activation with domain calibration, constraints, and output spec." },
-  { id: "socratic", icon: "brain",       label: "Socratic", desc: "Guided discovery through questions. Forces the AI to reason by questioning assumptions." },
+  {
+    id: "default",
+    icon: "fileText",
+    label: "Default",
+    desc: "Standard structure: Persona → Task → Context → Constraints → Format.",
+  },
+  {
+    id: "aida",
+    icon: "messageSquare",
+    label: "AIDA",
+    desc: "Attention, Interest, Desire, Action. Best for persuasive copy and marketing.",
+  },
+  {
+    id: "scqa",
+    icon: "search",
+    label: "SCQA",
+    desc: "Situation, Complication, Question, Answer. Ideal for consulting and structured analysis.",
+  },
+  {
+    id: "pastor",
+    icon: "sparkles",
+    label: "PASTOR",
+    desc: "Problem, Amplify, Story, Transformation, Offer, Response. Landing pages and pitches.",
+  },
+  {
+    id: "pas",
+    icon: "zap",
+    label: "PAS",
+    desc: "Problem, Agitate, Solution. Punchy copywriting that highlights pain points.",
+  },
+  {
+    id: "cot",
+    icon: "brain",
+    label: "CoT",
+    desc: "Chain of Thought. Decomposes complex reasoning step-by-step. Great for logic and code.",
+  },
+  {
+    id: "tot",
+    icon: "sparkles",
+    label: "ToT",
+    desc: "Tree of Thought. Branches, evaluates, and searches solution paths. Best for design.",
+  },
+  {
+    id: "star",
+    icon: "sparkles",
+    label: "STAR",
+    desc: "Situation, Task, Action, Result. Perfect for case studies and narrative examples.",
+  },
+  {
+    id: "rice",
+    icon: "chartColumn",
+    label: "RICE",
+    desc: "Reach, Impact, Confidence, Effort. Structured prioritization and product decisions.",
+  },
+  {
+    id: "icio",
+    icon: "refreshCw",
+    label: "ICIO",
+    desc: "Input, Constraints, Instructions, Output. Precision engineering for technical tasks.",
+  },
+  {
+    id: "react",
+    icon: "bot",
+    label: "ReAct",
+    desc: "Reason + Act loop. Forces explicit reasoning before each action step. Agent tasks.",
+  },
+  {
+    id: "spin",
+    icon: "messageSquare",
+    label: "SPIN",
+    desc: "Situation, Problem, Implication, Need-Payoff. Sales-grade interrogation framework.",
+  },
+  {
+    id: "rtf",
+    icon: "fileText",
+    label: "RTF",
+    desc: "Role, Task, Format. Ultra-minimal 3-part prompt for quick structured generation.",
+  },
+  {
+    id: "expert",
+    icon: "sparkles",
+    label: "Expert",
+    desc: "Expert persona activation with domain calibration, constraints, and output spec.",
+  },
+  {
+    id: "socratic",
+    icon: "brain",
+    label: "Socratic",
+    desc: "Guided discovery through questions. Forces the AI to reason by questioning assumptions.",
+  },
 ];
 
 // ── Prompt Lab: Template Gallery Data (module-scope constant) ────────────────
@@ -6099,58 +7051,258 @@ const PROMPT_LAB_TEMPLATES = [
   {
     label: "Game Design",
     templates: [
-      { title: "Endless Runner Concept", desc: "Mobile cyberpunk endless runner for kids 8-14", tag: "Game Dev",
-        data: { persona: "You are a creative game designer.", task: "Design an endless runner game concept for mobile devices.", context: "Target audience: kids, ages 8-14. Theme: Cyberpunk.", tone: "Upbeat, energetic, and concise.", constraints: "- List 3 unique gameplay mechanics\n- Max 150 words total", format: "JSON with keys: title, mechanics, art_style", formula: "default" } },
-      { title: "Roguelike Dungeon System", desc: "Procedural dungeon generation design doc", tag: "Game Dev",
-        data: { persona: "You are a senior game systems designer.", task: "Design a procedural dungeon generation system for a 2D roguelike.", context: "Unity engine, pixel art aesthetic. Single dev project.", tone: "Technical and detailed.", constraints: "- Cover room types, corridors, and difficulty scaling\n- Include spawner logic", format: "Markdown with H2 sections", formula: "cot" } },
-      { title: "Game Economy Balancer", desc: "Balance a free-to-play currency economy", tag: "F2P",
-        data: { persona: "You are an expert game economist.", task: "Analyze and balance a free-to-play game economy with two currencies.", context: "Soft currency earned via gameplay. Hard currency purchased. Retention focus.", tone: "Analytical, structured.", constraints: "- Avoid pay-to-win\n- Include daily login bonuses and event structures", format: "Table + written rationale", formula: "rice" } },
+      {
+        title: "Endless Runner Concept",
+        desc: "Mobile cyberpunk endless runner for kids 8-14",
+        tag: "Game Dev",
+        data: {
+          persona: "You are a creative game designer.",
+          task: "Design an endless runner game concept for mobile devices.",
+          context: "Target audience: kids, ages 8-14. Theme: Cyberpunk.",
+          tone: "Upbeat, energetic, and concise.",
+          constraints: "- List 3 unique gameplay mechanics\n- Max 150 words total",
+          format: "JSON with keys: title, mechanics, art_style",
+          formula: "default",
+        },
+      },
+      {
+        title: "Roguelike Dungeon System",
+        desc: "Procedural dungeon generation design doc",
+        tag: "Game Dev",
+        data: {
+          persona: "You are a senior game systems designer.",
+          task: "Design a procedural dungeon generation system for a 2D roguelike.",
+          context: "Unity engine, pixel art aesthetic. Single dev project.",
+          tone: "Technical and detailed.",
+          constraints:
+            "- Cover room types, corridors, and difficulty scaling\n- Include spawner logic",
+          format: "Markdown with H2 sections",
+          formula: "cot",
+        },
+      },
+      {
+        title: "Game Economy Balancer",
+        desc: "Balance a free-to-play currency economy",
+        tag: "F2P",
+        data: {
+          persona: "You are an expert game economist.",
+          task: "Analyze and balance a free-to-play game economy with two currencies.",
+          context: "Soft currency earned via gameplay. Hard currency purchased. Retention focus.",
+          tone: "Analytical, structured.",
+          constraints: "- Avoid pay-to-win\n- Include daily login bonuses and event structures",
+          format: "Table + written rationale",
+          formula: "rice",
+        },
+      },
     ],
   },
   {
     label: "Engineering",
     templates: [
-      { title: "Lua Script Template", desc: "Extract email addresses from text with Lua", tag: "Lua",
-        data: { persona: "You are a senior Lua developer.", task: "Write a Lua script that parses a string and extracts all email addresses.", context: "Data processing pipeline. No external libraries.", tone: "Technical and precise.", constraints: "- Comment the regex\n- Single function: extract_emails(text)", format: "Lua code block only", formula: "default" } },
-      { title: "Rust API Endpoint", desc: "Design a RESTful endpoint in Tauri/Axum", tag: "Rust",
-        data: { persona: "You are a Rust systems engineer.", task: "Design a REST API endpoint for user authentication with JWT.", context: "Tauri desktop app. Axum framework. Async Rust.", tone: "Precise, security-conscious.", constraints: "- Include error handling\n- Use map_err, no unwrap()\n- Include request/response types", format: "Complete Rust code with types", formula: "icio" } },
-      { title: "SQL Query Optimizer", desc: "Optimize a slow database query", tag: "SQL",
-        data: { persona: "You are a database performance engineer.", task: "Analyze and optimize a slow SQL query for a user activity dashboard.", context: "PostgreSQL 15. Table has 10M+ rows. No query cache.", tone: "Technical, explanatory.", constraints: "- Explain each optimization\n- Show EXPLAIN ANALYZE output interpretation", format: "SQL + Markdown explanation", formula: "scqa" } },
-      { title: "Code Review Checklist", desc: "Generate a thorough code review", tag: "DevOps",
-        data: { persona: "You are a senior software engineer and CISO.", task: "Review the following code for bugs, security vulnerabilities, and performance issues.", context: "Production Rust/TypeScript codebase. Solo developer.", tone: "Methodical, constructive.", constraints: "- Prioritize by severity (Critical > High > Medium)\n- Include fix suggestions", format: "Markdown table with columns: Issue, Severity, Fix", formula: "expert" } },
+      {
+        title: "Lua Script Template",
+        desc: "Extract email addresses from text with Lua",
+        tag: "Lua",
+        data: {
+          persona: "You are a senior Lua developer.",
+          task: "Write a Lua script that parses a string and extracts all email addresses.",
+          context: "Data processing pipeline. No external libraries.",
+          tone: "Technical and precise.",
+          constraints: "- Comment the regex\n- Single function: extract_emails(text)",
+          format: "Lua code block only",
+          formula: "default",
+        },
+      },
+      {
+        title: "Rust API Endpoint",
+        desc: "Design a RESTful endpoint in Tauri/Axum",
+        tag: "Rust",
+        data: {
+          persona: "You are a Rust systems engineer.",
+          task: "Design a REST API endpoint for user authentication with JWT.",
+          context: "Tauri desktop app. Axum framework. Async Rust.",
+          tone: "Precise, security-conscious.",
+          constraints:
+            "- Include error handling\n- Use map_err, no unwrap()\n- Include request/response types",
+          format: "Complete Rust code with types",
+          formula: "icio",
+        },
+      },
+      {
+        title: "SQL Query Optimizer",
+        desc: "Optimize a slow database query",
+        tag: "SQL",
+        data: {
+          persona: "You are a database performance engineer.",
+          task: "Analyze and optimize a slow SQL query for a user activity dashboard.",
+          context: "PostgreSQL 15. Table has 10M+ rows. No query cache.",
+          tone: "Technical, explanatory.",
+          constraints: "- Explain each optimization\n- Show EXPLAIN ANALYZE output interpretation",
+          format: "SQL + Markdown explanation",
+          formula: "scqa",
+        },
+      },
+      {
+        title: "Code Review Checklist",
+        desc: "Generate a thorough code review",
+        tag: "DevOps",
+        data: {
+          persona: "You are a senior software engineer and CISO.",
+          task: "Review the following code for bugs, security vulnerabilities, and performance issues.",
+          context: "Production Rust/TypeScript codebase. Solo developer.",
+          tone: "Methodical, constructive.",
+          constraints:
+            "- Prioritize by severity (Critical > High > Medium)\n- Include fix suggestions",
+          format: "Markdown table with columns: Issue, Severity, Fix",
+          formula: "expert",
+        },
+      },
     ],
   },
   {
     label: "Product & Strategy",
     templates: [
-      { title: "Product Feature List", desc: "Minimalist to-do app feature breakdown", tag: "Product",
-        data: { persona: "You are an expert product manager.", task: "Create a feature list for a minimalist To-Do list app.", context: "Target: busy professionals who hate complexity.", tone: "Professional and structured.", constraints: "- Exactly 5 features\n- Short name + 1 sentence description each", format: "Markdown bulleted list", formula: "default" } },
-      { title: "Competitive Analysis", desc: "SCQA-structured competitor teardown", tag: "Strategy",
-        data: { persona: "You are a strategic consultant.", task: "Analyze the competitive landscape for a solo-dev AI terminal app.", context: "Competitors: GitHub Copilot CLI, Cursor, Warp terminal.", tone: "Executive, data-driven.", constraints: "- Focus on gaps and opportunities\n- Max 400 words", format: "Markdown with SWOT table", formula: "scqa" } },
-      { title: "Sprint Backlog Generator", desc: "Convert a feature idea into sprint tasks", tag: "Agile",
-        data: { persona: "You are an Agile coach and staff engineer.", task: "Convert a feature description into a prioritized sprint backlog.", context: "Solo developer, 2-week sprints, Tauri desktop app.", tone: "Structured, actionable.", constraints: "- Max 8 tasks\n- Include acceptance criteria per task\n- Mark dependencies", format: "Markdown checklist with AC and deps", formula: "rice" } },
+      {
+        title: "Product Feature List",
+        desc: "Minimalist to-do app feature breakdown",
+        tag: "Product",
+        data: {
+          persona: "You are an expert product manager.",
+          task: "Create a feature list for a minimalist To-Do list app.",
+          context: "Target: busy professionals who hate complexity.",
+          tone: "Professional and structured.",
+          constraints: "- Exactly 5 features\n- Short name + 1 sentence description each",
+          format: "Markdown bulleted list",
+          formula: "default",
+        },
+      },
+      {
+        title: "Competitive Analysis",
+        desc: "SCQA-structured competitor teardown",
+        tag: "Strategy",
+        data: {
+          persona: "You are a strategic consultant.",
+          task: "Analyze the competitive landscape for a solo-dev AI terminal app.",
+          context: "Competitors: GitHub Copilot CLI, Cursor, Warp terminal.",
+          tone: "Executive, data-driven.",
+          constraints: "- Focus on gaps and opportunities\n- Max 400 words",
+          format: "Markdown with SWOT table",
+          formula: "scqa",
+        },
+      },
+      {
+        title: "Sprint Backlog Generator",
+        desc: "Convert a feature idea into sprint tasks",
+        tag: "Agile",
+        data: {
+          persona: "You are an Agile coach and staff engineer.",
+          task: "Convert a feature description into a prioritized sprint backlog.",
+          context: "Solo developer, 2-week sprints, Tauri desktop app.",
+          tone: "Structured, actionable.",
+          constraints: "- Max 8 tasks\n- Include acceptance criteria per task\n- Mark dependencies",
+          format: "Markdown checklist with AC and deps",
+          formula: "rice",
+        },
+      },
     ],
   },
   {
     label: "✍️ Content & Copy",
     templates: [
-      { title: "Landing Page Hero Copy", desc: "AIDA-structured hero section for a SaaS", tag: "Marketing",
-        data: { persona: "You are a world-class conversion copywriter.", task: "Write hero section copy for a solo-dev AI terminal application.", context: "Product: NEURODECK — AI-native terminal OS for Steam Deck.", tone: "Bold, energetic, technical-cool.", constraints: "- Headline ≤12 words\n- Subheadline ≤25 words\n- 3 CTA variants", format: "Structured copy block", formula: "aida" } },
-      { title: "Tech Blog Post Outline", desc: "Structured outline for a technical article", tag: "Content",
-        data: { persona: "You are a senior developer and technical writer.", task: "Create a detailed outline for a blog post about building a Tauri desktop app.", context: "Target audience: intermediate Rust developers.", tone: "Educational, engaging.", constraints: "- 6-8 sections\n- Include code snippet placeholders\n- End with key takeaways", format: "Markdown H2/H3 outline", formula: "star" } },
-      { title: "Cold Email Sequence", desc: "3-email outreach sequence (SPIN framework)", tag: "Sales",
-        data: { persona: "You are a B2B sales strategist.", task: "Write a 3-email cold outreach sequence for an indie dev selling a productivity tool.", context: "Target: CTOs and engineering leads at 10-50 person startups.", tone: "Professional, empathetic, direct.", constraints: "- Each email ≤150 words\n- Progressive value escalation\n- Clear CTAs", format: "Email 1 / Email 2 / Email 3 blocks", formula: "spin" } },
+      {
+        title: "Landing Page Hero Copy",
+        desc: "AIDA-structured hero section for a SaaS",
+        tag: "Marketing",
+        data: {
+          persona: "You are a world-class conversion copywriter.",
+          task: "Write hero section copy for a solo-dev AI terminal application.",
+          context: "Product: NEURODECK — AI-native terminal OS for Steam Deck.",
+          tone: "Bold, energetic, technical-cool.",
+          constraints: "- Headline ≤12 words\n- Subheadline ≤25 words\n- 3 CTA variants",
+          format: "Structured copy block",
+          formula: "aida",
+        },
+      },
+      {
+        title: "Tech Blog Post Outline",
+        desc: "Structured outline for a technical article",
+        tag: "Content",
+        data: {
+          persona: "You are a senior developer and technical writer.",
+          task: "Create a detailed outline for a blog post about building a Tauri desktop app.",
+          context: "Target audience: intermediate Rust developers.",
+          tone: "Educational, engaging.",
+          constraints:
+            "- 6-8 sections\n- Include code snippet placeholders\n- End with key takeaways",
+          format: "Markdown H2/H3 outline",
+          formula: "star",
+        },
+      },
+      {
+        title: "Cold Email Sequence",
+        desc: "3-email outreach sequence (SPIN framework)",
+        tag: "Sales",
+        data: {
+          persona: "You are a B2B sales strategist.",
+          task: "Write a 3-email cold outreach sequence for an indie dev selling a productivity tool.",
+          context: "Target: CTOs and engineering leads at 10-50 person startups.",
+          tone: "Professional, empathetic, direct.",
+          constraints: "- Each email ≤150 words\n- Progressive value escalation\n- Clear CTAs",
+          format: "Email 1 / Email 2 / Email 3 blocks",
+          formula: "spin",
+        },
+      },
     ],
   },
   {
     label: "🧪 AI & Research",
     templates: [
-      { title: "Socratic Reasoning Session", desc: "Guide AI through a problem via questions", tag: "Research",
-        data: { persona: "You are a Socratic tutor.", task: "Guide me through understanding transformer attention mechanisms using only questions.", context: "I have intermediate ML knowledge but haven't built a transformer from scratch.", tone: "Patient, inquisitive, Socratic.", constraints: "- Never state answers directly\n- Ask only one question at a time\n- Build towards understanding", format: "Dialogue format", formula: "socratic" } },
-      { title: "ReAct Agent Task", desc: "Multi-step reasoning + action agent prompt", tag: "Agents",
-        data: { persona: "You are an autonomous AI agent.", task: "Research and summarize the latest developments in Rust async runtimes.", context: "I need a decision on whether to switch from tokio to async-std for a new project.", tone: "Methodical, evidence-based.", constraints: "- Show Thought/Action/Observation steps\n- Cite sources\n- End with Recommendation", format: "ReAct trace + Final Answer", formula: "react" } },
-      { title: "Dataset Generation Prompt", desc: "Generate synthetic training data", tag: "ML",
-        data: { persona: "You are an ML data engineer.", task: "Generate 20 synthetic question-answer pairs for fine-tuning a coding assistant.", context: "Focus on Rust error handling patterns. Difficulty: intermediate to advanced.", tone: "Technical, precise.", constraints: "- Diverse error types (Result, Option, ?, panic)\n- Realistic code snippets\n- Include edge cases", format: "JSONL with fields: question, answer, difficulty", formula: "icio" } },
+      {
+        title: "Socratic Reasoning Session",
+        desc: "Guide AI through a problem via questions",
+        tag: "Research",
+        data: {
+          persona: "You are a Socratic tutor.",
+          task: "Guide me through understanding transformer attention mechanisms using only questions.",
+          context: "I have intermediate ML knowledge but haven't built a transformer from scratch.",
+          tone: "Patient, inquisitive, Socratic.",
+          constraints:
+            "- Never state answers directly\n- Ask only one question at a time\n- Build towards understanding",
+          format: "Dialogue format",
+          formula: "socratic",
+        },
+      },
+      {
+        title: "ReAct Agent Task",
+        desc: "Multi-step reasoning + action agent prompt",
+        tag: "Agents",
+        data: {
+          persona: "You are an autonomous AI agent.",
+          task: "Research and summarize the latest developments in Rust async runtimes.",
+          context:
+            "I need a decision on whether to switch from tokio to async-std for a new project.",
+          tone: "Methodical, evidence-based.",
+          constraints:
+            "- Show Thought/Action/Observation steps\n- Cite sources\n- End with Recommendation",
+          format: "ReAct trace + Final Answer",
+          formula: "react",
+        },
+      },
+      {
+        title: "Dataset Generation Prompt",
+        desc: "Generate synthetic training data",
+        tag: "ML",
+        data: {
+          persona: "You are an ML data engineer.",
+          task: "Generate 20 synthetic question-answer pairs for fine-tuning a coding assistant.",
+          context: "Focus on Rust error handling patterns. Difficulty: intermediate to advanced.",
+          tone: "Technical, precise.",
+          constraints:
+            "- Diverse error types (Result, Option, ?, panic)\n- Realistic code snippets\n- Include edge cases",
+          format: "JSONL with fields: question, answer, difficulty",
+          formula: "icio",
+        },
+      },
     ],
   },
 ];
@@ -6167,36 +7319,61 @@ function _plTokenCount(tokenCounter, text) {
 
 function _plGetSchema(ctx) {
   return {
-    persona:     ctx.personaInput.value.trim(),
-    task:        ctx.taskInput.value.trim(),
-    context:     ctx.contextInput.value.trim(),
-    tone:        ctx.toneInput.value.trim(),
+    persona: ctx.personaInput.value.trim(),
+    task: ctx.taskInput.value.trim(),
+    context: ctx.contextInput.value.trim(),
+    tone: ctx.toneInput.value.trim(),
     constraints: ctx.constraintsInput.value.trim(),
-    format:      ctx.formatInput.value.trim(),
-    examples:    ctx.examplesInput.value.trim(),
-    formula:     ctx.formulaHidden.value,
+    format: ctx.formatInput.value.trim(),
+    examples: ctx.examplesInput.value.trim(),
+    formula: ctx.formulaHidden.value,
   };
 }
 
 async function _plAssemblePrompt(ctx) {
-  const { personaInput: pi, taskInput: ti, contextInput: ci, toneInput: ni,
-          constraintsInput: ki, formatInput: fi, examplesInput: ei,
-          formulaHidden, resultPrompt, tokenCounter } = ctx;
-  const [persona, task, context, tone, constraints, format, examples, formula] =
-    [pi.value, ti.value, ci.value, ni.value, ki.value, fi.value, ei.value, formulaHidden.value];
+  const {
+    personaInput: pi,
+    taskInput: ti,
+    contextInput: ci,
+    toneInput: ni,
+    constraintsInput: ki,
+    formatInput: fi,
+    examplesInput: ei,
+    formulaHidden,
+    resultPrompt,
+    tokenCounter,
+  } = ctx;
+  const [persona, task, context, tone, constraints, format, examples, formula] = [
+    pi.value,
+    ti.value,
+    ci.value,
+    ni.value,
+    ki.value,
+    fi.value,
+    ei.value,
+    formulaHidden.value,
+  ];
   try {
-    const assembled = await invoke("assemble_prompt_via_lua_cmd",
-      { persona, task, context, tone, constraints, format, examples, formula });
+    const assembled = await invoke("assemble_prompt_via_lua_cmd", {
+      persona,
+      task,
+      context,
+      tone,
+      constraints,
+      format,
+      examples,
+      formula,
+    });
     resultPrompt.value = assembled;
     _plTokenCount(tokenCounter, assembled);
   } catch {
     const parts = [];
-    if (persona.trim())     parts.push(`**Role/Persona:**\n${persona.trim()}`);
-    if (task.trim())        parts.push(`**Task/Objective:**\n${task.trim()}`);
-    if (context.trim())     parts.push(`**Context/Background:**\n${context.trim()}`);
-    if (tone.trim())        parts.push(`**Tone/Style:**\n${tone.trim()}`);
+    if (persona.trim()) parts.push(`**Role/Persona:**\n${persona.trim()}`);
+    if (task.trim()) parts.push(`**Task/Objective:**\n${task.trim()}`);
+    if (context.trim()) parts.push(`**Context/Background:**\n${context.trim()}`);
+    if (tone.trim()) parts.push(`**Tone/Style:**\n${tone.trim()}`);
     if (constraints.trim()) parts.push(`**Constraints:**\n${constraints.trim()}`);
-    if (format.trim())      parts.push(`**Output Format:**\n${format.trim()}`);
+    if (format.trim()) parts.push(`**Output Format:**\n${format.trim()}`);
     const fallback = parts.join("\n\n");
     resultPrompt.value = fallback;
     _plTokenCount(tokenCounter, fallback);
@@ -6204,26 +7381,42 @@ async function _plAssemblePrompt(ctx) {
 }
 
 function _plUpdateStrength(ctx) {
-  const { personaInput, taskInput, contextInput, toneInput,
-          constraintsInput, formatInput, strengthBarFill, strengthLabel } = ctx;
+  const {
+    personaInput,
+    taskInput,
+    contextInput,
+    toneInput,
+    constraintsInput,
+    formatInput,
+    strengthBarFill,
+    strengthLabel,
+  } = ctx;
   let score = 0;
-  if (personaInput.value.trim().length > 5)     score++;
-  if (taskInput.value.trim().length > 5)         score++;
-  if (contextInput.value.trim().length > 5)      score++;
-  if (toneInput.value.trim().length > 2)         score++;
-  if (constraintsInput.value.trim().length > 5 ||
-      formatInput.value.trim().length > 5)       score++;
+  if (personaInput.value.trim().length > 5) score++;
+  if (taskInput.value.trim().length > 5) score++;
+  if (contextInput.value.trim().length > 5) score++;
+  if (toneInput.value.trim().length > 2) score++;
+  if (constraintsInput.value.trim().length > 5 || formatInput.value.trim().length > 5) score++;
   if (!strengthBarFill) return;
   strengthBarFill.style.width = (score / 5) * 100 + "%";
   if (score <= 2) {
     strengthBarFill.style.background = "var(--error-color)";
-    if (strengthLabel) { strengthLabel.style.color = "var(--error-color)";   strengthLabel.textContent = `Weak (${score}/5)`; }
+    if (strengthLabel) {
+      strengthLabel.style.color = "var(--error-color)";
+      strengthLabel.textContent = `Weak (${score}/5)`;
+    }
   } else if (score <= 4) {
     strengthBarFill.style.background = "var(--accent-color)";
-    if (strengthLabel) { strengthLabel.style.color = "var(--accent-color)";  strengthLabel.textContent = `Moderate (${score}/5)`; }
+    if (strengthLabel) {
+      strengthLabel.style.color = "var(--accent-color)";
+      strengthLabel.textContent = `Moderate (${score}/5)`;
+    }
   } else {
     strengthBarFill.style.background = "var(--response-color)";
-    if (strengthLabel) { strengthLabel.style.color = "var(--response-color)"; strengthLabel.textContent = `Optimized (${score}/5) ✨`; }
+    if (strengthLabel) {
+      strengthLabel.style.color = "var(--response-color)";
+      strengthLabel.textContent = `Optimized (${score}/5) ✨`;
+    }
   }
 }
 
@@ -6232,7 +7425,7 @@ function _plSelectFormula(id, ctx) {
   formulaHidden.value = id;
   const f = PROMPT_LAB_FORMULAS.find((x) => x.id === id);
   if (formulaBadge) formulaBadge.textContent = f ? f.label : id.toUpperCase();
-  if (formulaInfo)  formulaInfo.textContent  = f ? f.desc  : "";
+  if (formulaInfo) formulaInfo.textContent = f ? f.desc : "";
   formulaGrid.querySelectorAll(".pl-formula-card").forEach((card) => {
     card.classList.toggle("active", card.dataset.formulaId === id);
   });
@@ -6249,8 +7442,9 @@ function _plInitFormulaSection(ctx) {
     const card = document.createElement("div");
     card.className = "pl-formula-card" + (f.id === "default" ? " active" : "");
     card.dataset.formulaId = f.id;
-    card.innerHTML = `<div class="pl-formula-card-icon">${createIcon(f.icon, { size: 18 })}</div>` +
-                     `<div class="pl-formula-card-label">${f.label}</div>`;
+    card.innerHTML =
+      `<div class="pl-formula-card-icon">${createIcon(f.icon, { size: 18 })}</div>` +
+      `<div class="pl-formula-card-label">${f.label}</div>`;
     card.addEventListener("click", () => _plSelectFormula(f.id, ctx));
     formulaGrid.appendChild(card);
   });
@@ -6268,8 +7462,9 @@ function _plInitHistorySection(ctx) {
     ctx.promptHistory.forEach((p, i) => {
       const el = document.createElement("div");
       el.className = "pl-history-item";
-      el.innerHTML = `<div class="pl-history-item-meta">#${i + 1} · ${p.length} chars</div>` +
-                     `${p.substring(0, 90)}${p.length > 90 ? "…" : ""}`;
+      el.innerHTML =
+        `<div class="pl-history-item-meta">#${i + 1} · ${p.length} chars</div>` +
+        `${p.substring(0, 90)}${p.length > 90 ? "…" : ""}`;
       el.addEventListener("click", () => {
         resultPrompt.value = p;
         _plTokenCount(tokenCounter, p);
@@ -6279,13 +7474,24 @@ function _plInitHistorySection(ctx) {
     });
   }
   ctx._renderHistory = renderHistory;
-  if (historyBtn)   historyBtn.addEventListener("click",   () => historyDrawer.classList.toggle("hidden"));
-  if (historyClear) historyClear.addEventListener("click", () => { ctx.promptHistory = []; renderHistory(); });
+  if (historyBtn)
+    historyBtn.addEventListener("click", () => historyDrawer.classList.toggle("hidden"));
+  if (historyClear)
+    historyClear.addEventListener("click", () => {
+      ctx.promptHistory = [];
+      renderHistory();
+    });
 }
 
 function _plInitGallerySection(ctx) {
-  const { openGalleryBtn, galleryClose, galleryOverlay,
-          gallerySearch, galleryBody, galleryDrawer } = ctx;
+  const {
+    openGalleryBtn,
+    galleryClose,
+    galleryOverlay,
+    gallerySearch,
+    galleryBody,
+    galleryDrawer,
+  } = ctx;
 
   function renderGallery(query) {
     if (!galleryBody) return;
@@ -6293,10 +7499,12 @@ function _plInitGallerySection(ctx) {
     galleryBody.innerHTML = "";
     PROMPT_LAB_TEMPLATES.forEach((cat) => {
       const filtered = q
-        ? cat.templates.filter((t) =>
-            t.title.toLowerCase().includes(q) ||
-            t.desc.toLowerCase().includes(q) ||
-            t.tag.toLowerCase().includes(q))
+        ? cat.templates.filter(
+            (t) =>
+              t.title.toLowerCase().includes(q) ||
+              t.desc.toLowerCase().includes(q) ||
+              t.tag.toLowerCase().includes(q)
+          )
         : cat.templates;
       if (!filtered.length) return;
       const section = document.createElement("div");
@@ -6305,8 +7513,9 @@ function _plInitGallerySection(ctx) {
       filtered.forEach((tmpl) => {
         const card = document.createElement("div");
         card.className = "pl-gallery-card";
-        card.innerHTML = `<div class="pl-gallery-card-title">${tmpl.title}<span class="pl-gallery-card-tag">${tmpl.tag}</span></div>` +
-                         `<div class="pl-gallery-card-desc">${tmpl.desc}</div>`;
+        card.innerHTML =
+          `<div class="pl-gallery-card-title">${tmpl.title}<span class="pl-gallery-card-tag">${tmpl.tag}</span></div>` +
+          `<div class="pl-gallery-card-desc">${tmpl.desc}</div>`;
         card.addEventListener("click", () => _plApplyTemplate(tmpl.data, ctx, galleryDrawer));
         section.appendChild(card);
       });
@@ -6317,30 +7526,42 @@ function _plInitGallerySection(ctx) {
     }
   }
 
-  const openGallery  = () => {
+  const openGallery = () => {
     if (!galleryDrawer) return;
     galleryDrawer.classList.remove("hidden");
     renderGallery("");
-    if (gallerySearch) { gallerySearch.value = ""; gallerySearch.focus(); }
+    if (gallerySearch) {
+      gallerySearch.value = "";
+      gallerySearch.focus();
+    }
   };
-  const closeGallery = () => { if (galleryDrawer) galleryDrawer.classList.add("hidden"); };
+  const closeGallery = () => {
+    if (galleryDrawer) galleryDrawer.classList.add("hidden");
+  };
 
   if (openGalleryBtn) openGalleryBtn.addEventListener("click", openGallery);
-  if (galleryClose)   galleryClose.addEventListener("click", closeGallery);
+  if (galleryClose) galleryClose.addEventListener("click", closeGallery);
   if (galleryOverlay) galleryOverlay.addEventListener("click", closeGallery);
-  if (gallerySearch)  gallerySearch.addEventListener("input", (e) => renderGallery(e.target.value));
+  if (gallerySearch) gallerySearch.addEventListener("input", (e) => renderGallery(e.target.value));
 }
 
 function _plApplyTemplate(data, ctx, galleryDrawer) {
-  const { personaInput, taskInput, contextInput, toneInput,
-          constraintsInput, formatInput, examplesInput } = ctx;
-  if (personaInput)     personaInput.value     = data.persona     || "";
-  if (taskInput)        taskInput.value        = data.task        || "";
-  if (contextInput)     contextInput.value     = data.context     || "";
-  if (toneInput)        toneInput.value        = data.tone        || "";
+  const {
+    personaInput,
+    taskInput,
+    contextInput,
+    toneInput,
+    constraintsInput,
+    formatInput,
+    examplesInput,
+  } = ctx;
+  if (personaInput) personaInput.value = data.persona || "";
+  if (taskInput) taskInput.value = data.task || "";
+  if (contextInput) contextInput.value = data.context || "";
+  if (toneInput) toneInput.value = data.tone || "";
   if (constraintsInput) constraintsInput.value = data.constraints || "";
-  if (formatInput)      formatInput.value      = data.format      || "";
-  if (examplesInput)    examplesInput.value    = data.examples    || "";
+  if (formatInput) formatInput.value = data.format || "";
+  if (examplesInput) examplesInput.value = data.examples || "";
   _plSelectFormula(data.formula || "default", ctx);
   _plAssemblePrompt(ctx);
   _plUpdateStrength(ctx);
@@ -6365,7 +7586,9 @@ function _plInitPresetSection(ctx) {
   const { togglePresetInputBtn, presetNameInput, savePresetBtn } = ctx;
   function refreshPresets() {
     invoke("load_prompt_presets")
-      .then((p) => { ctx.loadedCustomPresets = p; })
+      .then((p) => {
+        ctx.loadedCustomPresets = p;
+      })
       .catch((err) => console.error("Error loading presets:", err));
   }
   refreshPresets();
@@ -6373,11 +7596,11 @@ function _plInitPresetSection(ctx) {
     togglePresetInputBtn.addEventListener("click", () => {
       if (presetNameInput.style.display === "none") {
         presetNameInput.style.display = "block";
-        savePresetBtn.style.display   = "block";
+        savePresetBtn.style.display = "block";
         togglePresetInputBtn.textContent = "Cancel";
       } else {
         presetNameInput.style.display = "none";
-        savePresetBtn.style.display   = "none";
+        savePresetBtn.style.display = "none";
         presetNameInput.value = "";
         togglePresetInputBtn.innerHTML = `${createIcon("upload", { size: 13 })}`;
       }
@@ -6386,12 +7609,15 @@ function _plInitPresetSection(ctx) {
   if (savePresetBtn) {
     savePresetBtn.addEventListener("click", () => {
       const name = presetNameInput.value.trim();
-      if (!name) { addNotification("Prompt Lab", "Enter a preset name.", "error"); return; }
+      if (!name) {
+        addNotification("Prompt Lab", "Enter a preset name.", "error");
+        return;
+      }
       invoke("save_prompt_preset", { name, schemaJson: JSON.stringify(_plGetSchema(ctx)) })
         .then(() => {
           addNotification("Prompt Lab", `Preset "${name}" saved!`, "success");
           presetNameInput.style.display = "none";
-          savePresetBtn.style.display   = "none";
+          savePresetBtn.style.display = "none";
           presetNameInput.value = "";
           togglePresetInputBtn.innerHTML = `${createIcon("upload", { size: 13 })}`;
           refreshPresets();
@@ -6402,38 +7628,58 @@ function _plInitPresetSection(ctx) {
 }
 
 function _plInitAiOptimize(ctx) {
-  const { optimizeAiBtn, personaInput, taskInput, contextInput,
-          toneInput, constraintsInput, formatInput } = ctx;
+  const {
+    optimizeAiBtn,
+    personaInput,
+    taskInput,
+    contextInput,
+    toneInput,
+    constraintsInput,
+    formatInput,
+  } = ctx;
   if (!optimizeAiBtn) return;
   optimizeAiBtn.addEventListener("click", async () => {
-    if (!taskInput.value.trim()) { addNotification("Prompt Lab", "Add a task first.", "error"); return; }
+    if (!taskInput.value.trim()) {
+      addNotification("Prompt Lab", "Add a task first.", "error");
+      return;
+    }
     optimizeAiBtn.disabled = true;
     const orig = optimizeAiBtn.innerHTML;
     optimizeAiBtn.innerHTML = `${createIcon("zap", { size: 13 })}<span>Working...</span>`;
     try {
       const schema = await invoke("optimize_raw_prompt", { rawText: taskInput.value.trim() });
-      personaInput.value     = schema.persona;
-      taskInput.value        = schema.task;
-      contextInput.value     = schema.context;
-      toneInput.value        = schema.tone;
+      personaInput.value = schema.persona;
+      taskInput.value = schema.task;
+      contextInput.value = schema.context;
+      toneInput.value = schema.tone;
       constraintsInput.value = schema.constraints;
-      formatInput.value      = schema.format;
+      formatInput.value = schema.format;
       addNotification("Prompt Lab", "AI Optimization done!", "success");
       _plAssemblePrompt(ctx);
       _plUpdateStrength(ctx);
     } catch (err) {
       addNotification("Prompt Lab", "Optimization failed: " + err, "error");
     } finally {
-      optimizeAiBtn.disabled  = false;
+      optimizeAiBtn.disabled = false;
       optimizeAiBtn.innerHTML = orig;
     }
   });
 }
 
 function _plInitAssemblySection(ctx) {
-  const { advancedToggle, advancedFields, generateBtn, resultPrompt,
-          personaInput, taskInput, contextInput, toneInput,
-          constraintsInput, formatInput, examplesInput } = ctx;
+  const {
+    advancedToggle,
+    advancedFields,
+    generateBtn,
+    resultPrompt,
+    personaInput,
+    taskInput,
+    contextInput,
+    toneInput,
+    constraintsInput,
+    formatInput,
+    examplesInput,
+  } = ctx;
   if (advancedToggle) {
     advancedToggle.addEventListener("click", () => {
       advancedFields.classList.toggle("hidden");
@@ -6454,9 +7700,19 @@ function _plInitAssemblySection(ctx) {
       addNotification("Prompt Lab", "Prompt generated.", "success");
     });
   });
-  [personaInput, taskInput, contextInput, toneInput,
-   constraintsInput, formatInput, examplesInput].forEach((el) => {
-    el.addEventListener("input", () => { _plAssemblePrompt(ctx); _plUpdateStrength(ctx); });
+  [
+    personaInput,
+    taskInput,
+    contextInput,
+    toneInput,
+    constraintsInput,
+    formatInput,
+    examplesInput,
+  ].forEach((el) => {
+    el.addEventListener("input", () => {
+      _plAssemblePrompt(ctx);
+      _plUpdateStrength(ctx);
+    });
   });
 }
 
@@ -6464,16 +7720,22 @@ function _plInitJpeSection(ctx) {
   const { explainBtn, jpeLevelSelect, resultPrompt, resultJpe } = ctx;
   explainBtn.addEventListener("click", async () => {
     const text = resultPrompt.value.trim();
-    if (!text) { addNotification("Prompt Lab", "Generate a prompt first.", "error"); return; }
+    if (!text) {
+      addNotification("Prompt Lab", "Generate a prompt first.", "error");
+      return;
+    }
     resultJpe.innerHTML = `<span class="pl-empty-text">Generating explanation…</span>`;
     explainBtn.disabled = true;
     const level = jpeLevelSelect ? jpeLevelSelect.value : "grade8";
     try {
-      const explanation = await invoke("generate_jpe_explanation_with_level",
-        { promptText: text, readingLevel: level });
+      const explanation = await invoke("generate_jpe_explanation_with_level", {
+        promptText: text,
+        readingLevel: level,
+      });
       resultJpe.innerHTML = `<div class="jpe-content"></div>`;
-      resultJpe.querySelector(".jpe-content").innerHTML =
-        window.sanitizeHtml(explanation).replace(/\n/g, "<br>");
+      resultJpe.querySelector(".jpe-content").innerHTML = window
+        .sanitizeHtml(explanation)
+        .replace(/\n/g, "<br>");
     } catch (err) {
       resultJpe.innerHTML = `<span class="pl-empty-text" style="color:var(--error-color)"></span>`;
       resultJpe.querySelector(".pl-empty-text").textContent = `Error: ${err}`;
@@ -6485,8 +7747,15 @@ function _plInitJpeSection(ctx) {
 }
 
 function _plInitOutputSection(ctx) {
-  const { copyPromptBtn, copyJpeBtn, sendChatBtn,
-          exportJsonBtn, exportLuaBtn, resultPrompt, resultJpe } = ctx;
+  const {
+    copyPromptBtn,
+    copyJpeBtn,
+    sendChatBtn,
+    exportJsonBtn,
+    exportLuaBtn,
+    resultPrompt,
+    resultJpe,
+  } = ctx;
   copyPromptBtn.addEventListener("click", () => {
     if (resultPrompt.value) {
       navigator.clipboard.writeText(resultPrompt.value);
@@ -6513,19 +7782,30 @@ function _plInitOutputSection(ctx) {
   });
   if (exportJsonBtn) {
     exportJsonBtn.addEventListener("click", () => {
-      if (!resultPrompt.value.trim()) { addNotification("Prompt Lab", "Generate first.", "error"); return; }
-      navigator.clipboard.writeText(JSON.stringify({ ..._plGetSchema(ctx), assembled_prompt: resultPrompt.value }, null, 2));
+      if (!resultPrompt.value.trim()) {
+        addNotification("Prompt Lab", "Generate first.", "error");
+        return;
+      }
+      navigator.clipboard.writeText(
+        JSON.stringify({ ..._plGetSchema(ctx), assembled_prompt: resultPrompt.value }, null, 2)
+      );
       addNotification("Prompt Lab", "JSON Schema copied.", "success");
     });
   }
   if (exportLuaBtn) {
     exportLuaBtn.addEventListener("click", () => {
-      if (!resultPrompt.value.trim()) { addNotification("Prompt Lab", "Generate first.", "error"); return; }
+      if (!resultPrompt.value.trim()) {
+        addNotification("Prompt Lab", "Generate first.", "error");
+        return;
+      }
       const esc = resultPrompt.value
-        .replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
-      const lua = `-- S-Term Prompt Lab Macro\n-- ${new Date().toISOString()}\n` +
-                  `local prompt = "${esc}"\nprint("[Macro] Sending prompt...")\n` +
-                  `local response = sendPrompt(prompt)\nprint("[Macro] Response:")\nprint(response)\n`;
+        .replace(/\\/g, "\\\\")
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, "\\n");
+      const lua =
+        `-- S-Term Prompt Lab Macro\n-- ${new Date().toISOString()}\n` +
+        `local prompt = "${esc}"\nprint("[Macro] Sending prompt...")\n` +
+        `local response = sendPrompt(prompt)\nprint("[Macro] Response:")\nprint(response)\n`;
       navigator.clipboard.writeText(lua);
       addNotification("Prompt Lab", "Lua macro copied.", "success");
     });
@@ -6534,46 +7814,46 @@ function _plInitOutputSection(ctx) {
 
 function _plBuildCtx() {
   return {
-    generateBtn:          document.getElementById("pl-generate-btn"),
-    explainBtn:           document.getElementById("pl-explain-jpe-btn"),
-    copyPromptBtn:        document.getElementById("pl-copy-prompt-btn"),
-    sendChatBtn:          document.getElementById("pl-send-chat-btn"),
-    copyJpeBtn:           document.getElementById("pl-copy-jpe-btn"),
-    personaInput:         document.getElementById("pl-persona"),
-    taskInput:            document.getElementById("pl-task"),
-    contextInput:         document.getElementById("pl-context"),
-    toneInput:            document.getElementById("pl-tone"),
-    constraintsInput:     document.getElementById("pl-constraints"),
-    formatInput:          document.getElementById("pl-format"),
-    examplesInput:        document.getElementById("pl-examples"),
-    formulaHidden:        document.getElementById("pl-formula"),
-    resultPrompt:         document.getElementById("pl-result-prompt"),
-    resultJpe:            document.getElementById("pl-result-jpe"),
-    advancedToggle:       document.getElementById("pl-advanced-toggle"),
-    advancedFields:       document.getElementById("pl-advanced-fields"),
-    optimizeAiBtn:        document.getElementById("pl-optimize-ai-btn"),
-    jpeLevelSelect:       document.getElementById("pl-jpe-level-select"),
-    savePresetBtn:        document.getElementById("pl-save-preset-btn"),
+    generateBtn: document.getElementById("pl-generate-btn"),
+    explainBtn: document.getElementById("pl-explain-jpe-btn"),
+    copyPromptBtn: document.getElementById("pl-copy-prompt-btn"),
+    sendChatBtn: document.getElementById("pl-send-chat-btn"),
+    copyJpeBtn: document.getElementById("pl-copy-jpe-btn"),
+    personaInput: document.getElementById("pl-persona"),
+    taskInput: document.getElementById("pl-task"),
+    contextInput: document.getElementById("pl-context"),
+    toneInput: document.getElementById("pl-tone"),
+    constraintsInput: document.getElementById("pl-constraints"),
+    formatInput: document.getElementById("pl-format"),
+    examplesInput: document.getElementById("pl-examples"),
+    formulaHidden: document.getElementById("pl-formula"),
+    resultPrompt: document.getElementById("pl-result-prompt"),
+    resultJpe: document.getElementById("pl-result-jpe"),
+    advancedToggle: document.getElementById("pl-advanced-toggle"),
+    advancedFields: document.getElementById("pl-advanced-fields"),
+    optimizeAiBtn: document.getElementById("pl-optimize-ai-btn"),
+    jpeLevelSelect: document.getElementById("pl-jpe-level-select"),
+    savePresetBtn: document.getElementById("pl-save-preset-btn"),
     togglePresetInputBtn: document.getElementById("pl-toggle-preset-input-btn"),
-    presetNameInput:      document.getElementById("pl-preset-name"),
-    exportJsonBtn:        document.getElementById("pl-export-json-btn"),
-    exportLuaBtn:         document.getElementById("pl-export-lua-btn"),
-    strengthBarFill:      document.getElementById("pl-strength-bar-fill"),
-    strengthLabel:        document.getElementById("pl-strength-label"),
-    tokenCounter:         document.getElementById("pl-token-counter"),
-    formulaBadge:         document.getElementById("pl-formula-badge"),
-    formulaGrid:          document.getElementById("pl-formula-grid"),
-    formulaInfo:          document.getElementById("pl-formula-info"),
-    historyBtn:           document.getElementById("pl-history-btn"),
-    historyDrawer:        document.getElementById("pl-history-drawer"),
-    historyClear:         document.getElementById("pl-history-clear"),
-    historyList:          document.getElementById("pl-history-list"),
-    openGalleryBtn:       document.getElementById("pl-open-gallery-btn"),
-    galleryOverlay:       document.getElementById("pl-gallery-overlay"),
-    galleryClose:         document.getElementById("pl-gallery-close"),
-    galleryDrawer:        document.getElementById("pl-template-gallery"),
-    galleryBody:          document.getElementById("pl-gallery-body"),
-    gallerySearch:        document.getElementById("pl-gallery-search"),
+    presetNameInput: document.getElementById("pl-preset-name"),
+    exportJsonBtn: document.getElementById("pl-export-json-btn"),
+    exportLuaBtn: document.getElementById("pl-export-lua-btn"),
+    strengthBarFill: document.getElementById("pl-strength-bar-fill"),
+    strengthLabel: document.getElementById("pl-strength-label"),
+    tokenCounter: document.getElementById("pl-token-counter"),
+    formulaBadge: document.getElementById("pl-formula-badge"),
+    formulaGrid: document.getElementById("pl-formula-grid"),
+    formulaInfo: document.getElementById("pl-formula-info"),
+    historyBtn: document.getElementById("pl-history-btn"),
+    historyDrawer: document.getElementById("pl-history-drawer"),
+    historyClear: document.getElementById("pl-history-clear"),
+    historyList: document.getElementById("pl-history-list"),
+    openGalleryBtn: document.getElementById("pl-open-gallery-btn"),
+    galleryOverlay: document.getElementById("pl-gallery-overlay"),
+    galleryClose: document.getElementById("pl-gallery-close"),
+    galleryDrawer: document.getElementById("pl-template-gallery"),
+    galleryBody: document.getElementById("pl-gallery-body"),
+    gallerySearch: document.getElementById("pl-gallery-search"),
     promptHistory: [],
     loadedCustomPresets: {},
     _renderHistory: null,
@@ -6774,7 +8054,13 @@ function _pdRenderTemplates(ctx) {
   const query = (ctx.templateSearch.value || "").trim().toLowerCase();
   ctx.templateList.innerHTML = "";
   ctx.templates
-    .filter((template) => !query || `${template.title} ${template.description} ${template.category}`.toLowerCase().includes(query))
+    .filter(
+      (template) =>
+        !query ||
+        `${template.title} ${template.description} ${template.category}`
+          .toLowerCase()
+          .includes(query)
+    )
     .forEach((template) => {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -6799,9 +8085,10 @@ function _pdRenderSlots(ctx) {
     field.className = "pl-field promptdrive-slot-field";
     const inputId = `pd-slot-${slot.id}`;
     const value = ctx.slotValues[slot.id] || "";
-    const control = slot.kind === "textarea"
-      ? `<textarea id="${inputId}" rows="3" data-slot-id="${slot.id}" placeholder="${window.sanitizeHtml(slot.label)}">${window.sanitizeHtml(value)}</textarea>`
-      : `<input id="${inputId}" type="text" data-slot-id="${slot.id}" value="${window.sanitizeHtml(value)}" placeholder="${window.sanitizeHtml(slot.label)}" />`;
+    const control =
+      slot.kind === "textarea"
+        ? `<textarea id="${inputId}" rows="3" data-slot-id="${slot.id}" placeholder="${window.sanitizeHtml(slot.label)}">${window.sanitizeHtml(value)}</textarea>`
+        : `<input id="${inputId}" type="text" data-slot-id="${slot.id}" value="${window.sanitizeHtml(value)}" placeholder="${window.sanitizeHtml(slot.label)}" />`;
     field.innerHTML =
       `<div class="pl-field-header"><label for="${inputId}">${window.sanitizeHtml(slot.label)}${slot.required ? " *" : ""}</label></div>` +
       control +
@@ -6852,7 +8139,8 @@ async function _pdSelectTemplate(ctx, templateId) {
 function _pdRenderSelectedTemplate(ctx) {
   const template = ctx.selectedTemplate;
   ctx.templateTitle.textContent = template?.title || "Select a template";
-  ctx.templateDesc.textContent = template?.description || "Choose a pack and template to start composing.";
+  ctx.templateDesc.textContent =
+    template?.description || "Choose a pack and template to start composing.";
   ctx.riskBadge.textContent = template?.risk_level || "low";
 }
 
@@ -6862,7 +8150,9 @@ async function _pdPreview(ctx) {
     template_id: ctx.selectedTemplate.id,
     slot_values: ctx.slotValues,
   });
-  ctx.validationStatus.textContent = result.valid ? "Valid" : `Missing ${result.missing_slots?.length || 0}`;
+  ctx.validationStatus.textContent = result.valid
+    ? "Valid"
+    : `Missing ${result.missing_slots?.length || 0}`;
   ctx.validationStatus.classList.toggle("valid", !!result.valid);
   ctx.preview.value = result.rendered_prompt || "";
   ctx.tokenCounter.textContent = `~${_pdTokenCount(ctx.preview.value)} tokens`;
@@ -6903,7 +8193,9 @@ async function _pdLoadSuggestions(ctx) {
 async function _pdAcceptSuggestion(ctx) {
   const suggestion = ctx.suggestions[ctx.selectedSuggestionIndex];
   if (!suggestion || !ctx.selectedTemplate) return;
-  const requiredEmpty = ctx.selectedTemplate.slots.find((slot) => slot.required && !String(ctx.slotValues[slot.id] || "").trim());
+  const requiredEmpty = ctx.selectedTemplate.slots.find(
+    (slot) => slot.required && !String(ctx.slotValues[slot.id] || "").trim()
+  );
   const targetSlot = requiredEmpty || ctx.selectedTemplate.slots[0];
   if (!targetSlot) return;
   ctx.slotValues[targetSlot.id] = suggestion.insert_text;
@@ -6927,7 +8219,10 @@ async function _pdExecute(ctx) {
     pack_id: ctx.selectedPackId,
     slot_values: ctx.slotValues,
   });
-  _pdRecordStep(ctx, "execute_prompt", { template_id: ctx.selectedTemplate.id, slot_values: { ...ctx.slotValues } });
+  _pdRecordStep(ctx, "execute_prompt", {
+    template_id: ctx.selectedTemplate.id,
+    slot_values: { ...ctx.slotValues },
+  });
   addNotification("PromptDrive", "Prompt sent to chat stream.", "success");
 }
 
@@ -7125,7 +8420,7 @@ async function checkOnboarding() {
         clearTimeout(timer);
         resolve();
       },
-      { once: true },
+      { once: true }
     );
   });
 
@@ -7160,12 +8455,18 @@ async function showOnboardingWizard() {
   onboardingFocusTrap.activate();
 
   const obs = {
-    currentStep: 1, selectedProvider: "gemini-key", selectedPersona: "Default",
-    selectedThemeName: "BLACKSITE", isProviderVerified: false,
-    isDiagnosticsPassed: false, oauthPollAbortController: null,
-    diagRunning: false, overlay, onboardingFocusTrap,
-    btnPrev:     document.getElementById("ob-btn-prev"),
-    btnNext:     document.getElementById("ob-btn-next"),
+    currentStep: 1,
+    selectedProvider: "gemini-key",
+    selectedPersona: "Default",
+    selectedThemeName: "BLACKSITE",
+    isProviderVerified: false,
+    isDiagnosticsPassed: false,
+    oauthPollAbortController: null,
+    diagRunning: false,
+    overlay,
+    onboardingFocusTrap,
+    btnPrev: document.getElementById("ob-btn-prev"),
+    btnNext: document.getElementById("ob-btn-next"),
     logViewport: document.getElementById("ob-validation-log"),
   };
   obs.resetActiveState = (selector) => {
@@ -7176,7 +8477,10 @@ async function showOnboardingWizard() {
   };
 
   overlay.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { e.preventDefault(); if (obs.currentStep > 1) obs.btnPrev.click(); }
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (obs.currentStep > 1) obs.btnPrev.click();
+    }
   });
 
   _obInitSlide1Animations();
@@ -7252,23 +8556,58 @@ function _obSlide1() {
 
 function _obSlide2() {
   const cards = [
-    ["messageSquare","Chat","LLM streaming chat with RAG memory injection and game context awareness."],
-    ["sparkles","Canvas","Live HTML/JS preview. Run Python, Bash, Lua. LAN collaboration mode."],
-    ["squareTerminal","Terminal","Multi-session real shell. AI autocomplete Ctrl+Space. History search Ctrl+H."],
-    ["server","SSH","Full SSH client. Password + key auth. Saved profiles. Session tab per connection."],
-    ["route","Tunnel","TCP bridge between SteamOS Desktop Mode and Game Mode."],
-    ["globe","Browser","Native WebView overlay. Speed-dial bookmarks, URL bar, DuckDuckGo search."],
-    ["bot","Agent","5-step autonomous loop: plan → write → run → check → iterate. Roundtable mode."],
-    ["brain","Memory","Vector DB with cosine similarity. RAG search + local doc indexing."],
-    ["share2","Share","LAN P2P mDNS transfer. FTP/SFTP browser. Warpinator gRPC server."],
-    ["sparkles","Prompt Lab","Visual prompt engineering studio. 7 formulas (AIDA, SCQA, CoT, ToT…). JPE explain mode."],
-    ["panelRightOpen","Remote","iPhone WebSocket control. QR pairing. Send commands from Safari on your LAN."],
-    ["fileText","Docs","Knowledge Base with semantic search. Index local folders and query documents via RAG embeddings."],
-  ].map(([ic, name, desc], i) =>
-    `<div class="ob-feature-card" style="animation-delay:${0.02 + i * 0.05}s">` +
-    `<span class="ob-feature-icon">${createIcon(ic, { size: 18 })}</span>` +
-    `<span class="ob-feature-name">${name}</span><span class="ob-feature-desc">${desc}</span></div>`
-  ).join("");
+    [
+      "messageSquare",
+      "Chat",
+      "LLM streaming chat with RAG memory injection and game context awareness.",
+    ],
+    ["sparkles", "Canvas", "Live HTML/JS preview. Run Python, Bash, Lua. LAN collaboration mode."],
+    [
+      "squareTerminal",
+      "Terminal",
+      "Multi-session real shell. AI autocomplete Ctrl+Space. History search Ctrl+H.",
+    ],
+    [
+      "server",
+      "SSH",
+      "Full SSH client. Password + key auth. Saved profiles. Session tab per connection.",
+    ],
+    ["route", "Tunnel", "TCP bridge between SteamOS Desktop Mode and Game Mode."],
+    [
+      "globe",
+      "Browser",
+      "Native WebView overlay. Speed-dial bookmarks, URL bar, DuckDuckGo search.",
+    ],
+    [
+      "bot",
+      "Agent",
+      "5-step autonomous loop: plan → write → run → check → iterate. Roundtable mode.",
+    ],
+    ["brain", "Memory", "Vector DB with cosine similarity. RAG search + local doc indexing."],
+    ["share2", "Share", "LAN P2P mDNS transfer. FTP/SFTP browser. Warpinator gRPC server."],
+    [
+      "sparkles",
+      "Prompt Lab",
+      "Visual prompt engineering studio. 7 formulas (AIDA, SCQA, CoT, ToT…). JPE explain mode.",
+    ],
+    [
+      "panelRightOpen",
+      "Remote",
+      "iPhone WebSocket control. QR pairing. Send commands from Safari on your LAN.",
+    ],
+    [
+      "fileText",
+      "Docs",
+      "Knowledge Base with semantic search. Index local folders and query documents via RAG embeddings.",
+    ],
+  ]
+    .map(
+      ([ic, name, desc], i) =>
+        `<div class="ob-feature-card" style="animation-delay:${0.02 + i * 0.05}s">` +
+        `<span class="ob-feature-icon">${createIcon(ic, { size: 18 })}</span>` +
+        `<span class="ob-feature-name">${name}</span><span class="ob-feature-desc">${desc}</span></div>`
+    )
+    .join("");
   return `
                 <div class="onboarding-slide" id="slide-2">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">SYSTEM_FEATURE_MANIFEST</h3>
@@ -7444,16 +8783,31 @@ function _obSlide7() {
 
 function _obSlide8() {
   const cards = [
-    ["shieldCheck","OS Keychain","API keys live in your OS secure store — never on disk as plain text."],
-    ["globe","Offline Ready","Ollama runs entirely on-device with zero network access."],
-    ["x","No Telemetry","No analytics, crash reporters, or remote logging. Ever."],
-    ["server","MCP Auth","Tool-server connections require a Bearer token with constant-time validation."],
-    ["brain","Local RAG","Embeddings and chat history persist only on your local disk."],
-    ["zap","CSP Hardened","Content Security Policy blocks inline scripts and restricts network origins."],
-  ].map(([ic, name, desc]) =>
-    `<div class="ob-sec-card"><div class="ob-sec-icon">${createIcon(ic, { size: 20 })}</div>` +
-    `<span class="ob-sec-name">${name}</span><span class="ob-sec-desc">${desc}</span></div>`
-  ).join("");
+    [
+      "shieldCheck",
+      "OS Keychain",
+      "API keys live in your OS secure store — never on disk as plain text.",
+    ],
+    ["globe", "Offline Ready", "Ollama runs entirely on-device with zero network access."],
+    ["x", "No Telemetry", "No analytics, crash reporters, or remote logging. Ever."],
+    [
+      "server",
+      "MCP Auth",
+      "Tool-server connections require a Bearer token with constant-time validation.",
+    ],
+    ["brain", "Local RAG", "Embeddings and chat history persist only on your local disk."],
+    [
+      "zap",
+      "CSP Hardened",
+      "Content Security Policy blocks inline scripts and restricts network origins.",
+    ],
+  ]
+    .map(
+      ([ic, name, desc]) =>
+        `<div class="ob-sec-card"><div class="ob-sec-icon">${createIcon(ic, { size: 20 })}</div>` +
+        `<span class="ob-sec-name">${name}</span><span class="ob-sec-desc">${desc}</span></div>`
+    )
+    .join("");
   return `
                 <div class="onboarding-slide" id="slide-8">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">TRUST & PRIVACY</h3>
@@ -7479,20 +8833,31 @@ function _obSlide9() {
 
 function _obSlide10() {
   const rows = [
-    ["plusCircle","Plugin Marketplace","One-click install Lua plugins from the community registry."],
-    ["users","Canvas Collaboration","Host or join a live coding session over your LAN."],
-    ["zap","AI Terminal Autocomplete","Ctrl+Space ghost-text completion in any PTY session."],
-    ["clock3","AI History Search","Ctrl+H semantic search across bash/zsh/fish history."],
-    ["gamepad2","Game-Aware Mode","Auto-detects your Steam game and injects optimization context."],
-    ["columns","Model Switcher","Compare Gemini vs Ollama outputs side-by-side in chat."],
-    ["search","Command Palette","Ctrl+K for instant navigation to any tab or settings panel."],
-    ["folderOpen","Document Indexing","Point at a folder — embeddings generate in one click."],
-    ["bot","Cinematic Boot","Animated startup sequence showing real system state."],
-    ["squareTerminal","Virtual Keyboard","Full QWERTY overlay with sticky modifiers for touch."],
-  ].map(([ic, name, desc]) =>
-    `<div class="ob-deep-row"><div class="ob-deep-icon">${createIcon(ic, { size: 14 })}</div>` +
-    `<div class="ob-deep-text"><span class="ob-deep-name">${name}</span><span class="ob-deep-desc">${desc}</span></div></div>`
-  ).join("");
+    [
+      "plusCircle",
+      "Plugin Marketplace",
+      "One-click install Lua plugins from the community registry.",
+    ],
+    ["users", "Canvas Collaboration", "Host or join a live coding session over your LAN."],
+    ["zap", "AI Terminal Autocomplete", "Ctrl+Space ghost-text completion in any PTY session."],
+    ["clock3", "AI History Search", "Ctrl+H semantic search across bash/zsh/fish history."],
+    [
+      "gamepad2",
+      "Game-Aware Mode",
+      "Auto-detects your Steam game and injects optimization context.",
+    ],
+    ["columns", "Model Switcher", "Compare Gemini vs Ollama outputs side-by-side in chat."],
+    ["search", "Command Palette", "Ctrl+K for instant navigation to any tab or settings panel."],
+    ["folderOpen", "Document Indexing", "Point at a folder — embeddings generate in one click."],
+    ["bot", "Cinematic Boot", "Animated startup sequence showing real system state."],
+    ["squareTerminal", "Virtual Keyboard", "Full QWERTY overlay with sticky modifiers for touch."],
+  ]
+    .map(
+      ([ic, name, desc]) =>
+        `<div class="ob-deep-row"><div class="ob-deep-icon">${createIcon(ic, { size: 14 })}</div>` +
+        `<div class="ob-deep-text"><span class="ob-deep-name">${name}</span><span class="ob-deep-desc">${desc}</span></div></div>`
+    )
+    .join("");
   return `
                 <div class="onboarding-slide" id="slide-10">
                     <h3 style="color: var(--accent-color); margin-top: 0; margin-bottom: 4px;">POWER USER TOOLKIT</h3>
@@ -7537,12 +8902,12 @@ function _obUpdateStepUI(obs) {
   });
   document.querySelectorAll(".onboarding-step-dot").forEach((dot, idx) => {
     const n = idx + 1;
-    dot.classList.toggle("active",    n === obs.currentStep);
+    dot.classList.toggle("active", n === obs.currentStep);
     dot.classList.toggle("completed", n < obs.currentStep);
   });
   const progressEl = document.getElementById("onboarding-progress");
   if (progressEl) {
-    progressEl.setAttribute("aria-valuenow",   obs.currentStep);
+    progressEl.setAttribute("aria-valuenow", obs.currentStep);
     progressEl.setAttribute("aria-valuetext", `Step ${obs.currentStep} of 11`);
   }
   btnPrev.disabled = obs.currentStep === 1;
@@ -7554,13 +8919,15 @@ function _obUpdateStepUI(obs) {
   } else {
     btnNext.innerText = "Next";
     btnNext.classList.remove("primary");
-    const needsVerify = obs.currentStep === 3 && !obs.isProviderVerified && obs.selectedProvider !== "ollama";
+    const needsVerify =
+      obs.currentStep === 3 && !obs.isProviderVerified && obs.selectedProvider !== "ollama";
     btnNext.disabled = needsVerify;
   }
 }
 
 function _obInitSlide1Animations() {
-  const welcomeText = "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live canvas, real shell, SSH client, browser, Prompt Lab, vector memory, and a Lua plugin marketplace — all in one 1280×800 window.";
+  const welcomeText =
+    "NEURODECK is a fullscreen AI OS for Steam Deck. LLM chat, autonomous agent, live canvas, real shell, SSH client, browser, Prompt Lab, vector memory, and a Lua plugin marketplace — all in one 1280×800 window.";
   const typingEl = document.getElementById("onboarding-welcome-typing");
   if (!typingEl) return;
   let charIdx = 0;
@@ -7598,8 +8965,15 @@ function _obFocusFirstInSlide(step) {
 function _obInitNavigation(obs) {
   const { btnPrev, btnNext, overlay, onboardingFocusTrap } = obs;
   btnPrev.onclick = () => {
-    if (obs.oauthPollAbortController) { obs.oauthPollAbortController.abort(); obs.oauthPollAbortController = null; }
-    if (obs.currentStep > 1) { obs.currentStep--; _obUpdateStepUI(obs); _obFocusFirstInSlide(obs.currentStep); }
+    if (obs.oauthPollAbortController) {
+      obs.oauthPollAbortController.abort();
+      obs.oauthPollAbortController = null;
+    }
+    if (obs.currentStep > 1) {
+      obs.currentStep--;
+      _obUpdateStepUI(obs);
+      _obFocusFirstInSlide(obs.currentStep);
+    }
   };
   btnNext.onclick = () => {
     if (obs.currentStep === 11) {
@@ -7631,19 +9005,29 @@ function _obInitProviderCards(obs) {
   choiceCards.forEach((card) => {
     const select = () => {
       obs.resetActiveState(".onboarding-choice-card");
-      card.classList.add("active"); card.setAttribute("aria-pressed", "true");
+      card.classList.add("active");
+      card.setAttribute("aria-pressed", "true");
       obs.selectedProvider = card.dataset.provider;
-      document.getElementById("container-gemini-key").style.display   = obs.selectedProvider === "gemini-key"   ? "block" : "none";
-      document.getElementById("container-gemini-oauth").style.display = obs.selectedProvider === "gemini-oauth" ? "block" : "none";
-      document.getElementById("container-kimi").style.display         = obs.selectedProvider === "kimi"         ? "block" : "none";
-      document.getElementById("container-ollama").style.display       = obs.selectedProvider === "ollama"       ? "block" : "none";
+      document.getElementById("container-gemini-key").style.display =
+        obs.selectedProvider === "gemini-key" ? "block" : "none";
+      document.getElementById("container-gemini-oauth").style.display =
+        obs.selectedProvider === "gemini-oauth" ? "block" : "none";
+      document.getElementById("container-kimi").style.display =
+        obs.selectedProvider === "kimi" ? "block" : "none";
+      document.getElementById("container-ollama").style.display =
+        obs.selectedProvider === "ollama" ? "block" : "none";
       obs.isProviderVerified = false;
       obs.btnNext.disabled = obs.selectedProvider !== "ollama";
       obs.logViewport.innerHTML = `<div class="onboarding-log-line">[SYS] Awaiting input credentials for ${obs.selectedProvider.toUpperCase()}...</div>`;
       if (obs.selectedProvider === "ollama") _obCheckOllama(obs);
     };
     card.onclick = select;
-    card.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(); } };
+    card.onkeydown = (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        select();
+      }
+    };
   });
 }
 
@@ -7654,235 +9038,362 @@ function _obCheckOllama(obs) {
   invoke("test_llm_connection", {
     provider: "ollama",
     model: document.getElementById("ob-ollama-model").value.trim() || "hermes3:8b",
-    url:   document.getElementById("ob-ollama-url").value.trim()   || "http://localhost:11434",
+    url: document.getElementById("ob-ollama-url").value.trim() || "http://localhost:11434",
     key: null,
-  }).catch(() => { banner.style.display = "block"; });
+  }).catch(() => {
+    banner.style.display = "block";
+  });
 }
 
 function _obInitOllamaButtons(obs) {
   const btnInstall = document.getElementById("ob-btn-install-ollama");
   const btnRecheck = document.getElementById("ob-btn-recheck-ollama");
-  const btnPull    = document.getElementById("ob-btn-pull-model");
+  const btnPull = document.getElementById("ob-btn-pull-model");
   const pullStatus = document.getElementById("ob-pull-status");
-  if (btnInstall) btnInstall.onclick = () => {
-    try { invoke("open_external", { url: "https://ollama.com/download" }); } catch (_) {}
-    _obAppendLog(obs.logViewport, "Opening Ollama download page... Install it, run 'ollama serve', then click Re-check.");
-  };
+  if (btnInstall)
+    btnInstall.onclick = () => {
+      try {
+        invoke("open_external", { url: "https://ollama.com/download" });
+      } catch (_) {}
+      _obAppendLog(
+        obs.logViewport,
+        "Opening Ollama download page... Install it, run 'ollama serve', then click Re-check."
+      );
+    };
   if (btnRecheck) btnRecheck.onclick = () => _obCheckOllama(obs);
-  if (btnPull) btnPull.onclick = async () => {
-    const url   = document.getElementById("ob-ollama-url").value.trim()   || "http://localhost:11434";
-    const model = document.getElementById("ob-ollama-model").value.trim() || "hermes3:8b";
-    btnPull.disabled = true;
-    if (pullStatus) pullStatus.textContent = "Starting pull...";
-    _obAppendLog(obs.logViewport, `Pulling model '${model}' from Ollama registry. This may take a while...`);
-    try {
-      const unlisten = await listen("ollama_pull_progress", (ev) => {
-        const p = ev.payload;
-        if (pullStatus) {
-          const pct = p.total ? Math.round(((p.completed || 0) / p.total) * 100) : 0;
-          pullStatus.textContent = p.status === "success" ? "Done!" : `${p.status}${p.total ? ` ${pct}%` : ""}`;
-        }
-        if (p.status === "success") {
-          _obAppendLog(obs.logViewport, `Model '${model}' pulled successfully. Ready to use.`);
-          btnPull.disabled = false; _obCheckOllama(obs); if (unlisten) unlisten();
-        }
-      });
-      await invoke("ollama_pull_model", { baseUrl: url, model });
-    } catch (err) {
-      _obAppendLog(obs.logViewport, `Pull failed: ${err}. Ensure Ollama is running ('ollama serve').`, true);
-      btnPull.disabled = false;
-      if (pullStatus) pullStatus.textContent = "Failed";
-    }
-  };
+  if (btnPull)
+    btnPull.onclick = async () => {
+      const url = document.getElementById("ob-ollama-url").value.trim() || "http://localhost:11434";
+      const model = document.getElementById("ob-ollama-model").value.trim() || "hermes3:8b";
+      btnPull.disabled = true;
+      if (pullStatus) pullStatus.textContent = "Starting pull...";
+      _obAppendLog(
+        obs.logViewport,
+        `Pulling model '${model}' from Ollama registry. This may take a while...`
+      );
+      try {
+        const unlisten = await listen("ollama_pull_progress", (ev) => {
+          const p = ev.payload;
+          if (pullStatus) {
+            const pct = p.total ? Math.round(((p.completed || 0) / p.total) * 100) : 0;
+            pullStatus.textContent =
+              p.status === "success" ? "Done!" : `${p.status}${p.total ? ` ${pct}%` : ""}`;
+          }
+          if (p.status === "success") {
+            _obAppendLog(obs.logViewport, `Model '${model}' pulled successfully. Ready to use.`);
+            btnPull.disabled = false;
+            _obCheckOllama(obs);
+            if (unlisten) unlisten();
+          }
+        });
+        await invoke("ollama_pull_model", { baseUrl: url, model });
+      } catch (err) {
+        _obAppendLog(
+          obs.logViewport,
+          `Pull failed: ${err}. Ensure Ollama is running ('ollama serve').`,
+          true
+        );
+        btnPull.disabled = false;
+        if (pullStatus) pullStatus.textContent = "Failed";
+      }
+    };
 }
 
 async function _obVerifyGeminiKey(obs) {
   const keyInput = document.getElementById("ob-gemini-key").value.trim();
-  if (!keyInput) { _obAppendLog(obs.logViewport, "Error: Please enter a Gemini API Key.", true); return; }
+  if (!keyInput) {
+    _obAppendLog(obs.logViewport, "Error: Please enter a Gemini API Key.", true);
+    return;
+  }
   _obAppendLog(obs.logViewport, "Initiating live validation request...");
   try {
-    const status = await invoke("test_llm_connection", { provider: "gemini", model: "gemini-1.5-flash", url: "", key: keyInput });
+    const status = await invoke("test_llm_connection", {
+      provider: "gemini",
+      model: "gemini-1.5-flash",
+      url: "",
+      key: keyInput,
+    });
     _obAppendLog(obs.logViewport, status);
     _obAppendLog(obs.logViewport, "Saving Gemini API Key to secure OS Keychain...");
     await invoke("save_gemini_api_key", { key: keyInput });
     await invoke("set_config", { key: "llm.default_provider", value: "gemini" });
     _obAppendLog(obs.logViewport, "Success! Configuration finalized.");
-    obs.isProviderVerified = true; obs.btnNext.disabled = false;
-  } catch (err) { _obAppendLog(obs.logViewport, `Failed to verify key: ${err}`, true); }
+    obs.isProviderVerified = true;
+    obs.btnNext.disabled = false;
+  } catch (err) {
+    _obAppendLog(obs.logViewport, `Failed to verify key: ${err}`, true);
+  }
 }
 
 async function _obVerifyKimiKey(obs) {
-  const keyInput   = document.getElementById("ob-kimi-key").value.trim();
+  const keyInput = document.getElementById("ob-kimi-key").value.trim();
   const modelInput = document.getElementById("ob-kimi-model").value.trim();
-  if (!keyInput) { _obAppendLog(obs.logViewport, "Error: Please enter a Kimi API Key.", true); return; }
+  if (!keyInput) {
+    _obAppendLog(obs.logViewport, "Error: Please enter a Kimi API Key.", true);
+    return;
+  }
   _obAppendLog(obs.logViewport, "Initiating live validation request...");
   try {
-    const status = await invoke("test_llm_connection", { provider: "kimi", model: modelInput || "kimi-k2.5", url: "", key: keyInput });
+    const status = await invoke("test_llm_connection", {
+      provider: "kimi",
+      model: modelInput || "kimi-k2.5",
+      url: "",
+      key: keyInput,
+    });
     _obAppendLog(obs.logViewport, status);
     _obAppendLog(obs.logViewport, "Saving Kimi API Key to secure OS Keychain...");
     await invoke("save_kimi_api_key", { key: keyInput });
     await invoke("set_config", { key: "llm.default_provider", value: "kimi" });
     await invoke("set_config", { key: "llm.kimi_model", value: modelInput || "kimi-k2.5" });
     _obAppendLog(obs.logViewport, "Success! Configuration finalized.");
-    obs.isProviderVerified = true; obs.btnNext.disabled = false;
-  } catch (err) { _obAppendLog(obs.logViewport, `Failed to verify key: ${err}`, true); }
+    obs.isProviderVerified = true;
+    obs.btnNext.disabled = false;
+  } catch (err) {
+    _obAppendLog(obs.logViewport, `Failed to verify key: ${err}`, true);
+  }
 }
 
 async function _obVerifyOAuth(obs) {
   _obAppendLog(obs.logViewport, "Initializing OAuth 2.0 Device Authorization flow...");
   try {
     const data = await invoke("start_oauth_flow");
-    document.getElementById("ob-oauth-url").href      = data.verification_uri;
+    document.getElementById("ob-oauth-url").href = data.verification_uri;
     document.getElementById("ob-oauth-url").innerText = data.verification_uri;
     document.getElementById("ob-oauth-code-box").innerText = `CODE: ${data.user_code}`;
-    await QRCode.toCanvas(document.getElementById("ob-oauth-qr"),
-      data.verification_uri_complete || data.verification_uri, { width: 140, margin: 1 });
+    await QRCode.toCanvas(
+      document.getElementById("ob-oauth-qr"),
+      data.verification_uri_complete || data.verification_uri,
+      { width: 140, margin: 1 }
+    );
     _obAppendLog(obs.logViewport, "OAuth device flow active. Awaiting user authorization...");
     obs.oauthPollAbortController = new AbortController();
     invoke("poll_oauth_token", { deviceCode: data.device_code, interval: data.interval })
       .then(async () => {
         _obAppendLog(obs.logViewport, "OAuth code approved! Retrieving access token...");
-        _obAppendLog(obs.logViewport, "Retrieved token successfully validated and saved to OS Keychain!");
+        _obAppendLog(
+          obs.logViewport,
+          "Retrieved token successfully validated and saved to OS Keychain!"
+        );
         await invoke("set_config", { key: "llm.default_provider", value: "gemini" });
-        obs.isProviderVerified = true; obs.btnNext.disabled = false;
+        obs.isProviderVerified = true;
+        obs.btnNext.disabled = false;
       })
-      .catch((err) => { if (obs.oauthPollAbortController) _obAppendLog(obs.logViewport, `OAuth failed or canceled: ${err}`, true); });
-  } catch (err) { _obAppendLog(obs.logViewport, `Failed to initialize OAuth: ${err}`, true); }
+      .catch((err) => {
+        if (obs.oauthPollAbortController)
+          _obAppendLog(obs.logViewport, `OAuth failed or canceled: ${err}`, true);
+      });
+  } catch (err) {
+    _obAppendLog(obs.logViewport, `Failed to initialize OAuth: ${err}`, true);
+  }
 }
 
 async function _obVerifyOllama(obs) {
-  const urlInput   = document.getElementById("ob-ollama-url").value.trim();
+  const urlInput = document.getElementById("ob-ollama-url").value.trim();
   const modelInput = document.getElementById("ob-ollama-model").value.trim();
-  if (!urlInput || !modelInput) { _obAppendLog(obs.logViewport, "Error: Both url and model name are required.", true); return; }
-  _obAppendLog(obs.logViewport, `Pinging local Ollama service at ${urlInput} with model ${modelInput}...`);
+  if (!urlInput || !modelInput) {
+    _obAppendLog(obs.logViewport, "Error: Both url and model name are required.", true);
+    return;
+  }
+  _obAppendLog(
+    obs.logViewport,
+    `Pinging local Ollama service at ${urlInput} with model ${modelInput}...`
+  );
   try {
     await invoke("set_config", { key: "llm.default_provider", value: "ollama" });
     await invoke("set_config", { key: "llm.ollama_base_url", value: urlInput });
-    await invoke("set_config", { key: "llm.ollama_model",    value: modelInput });
+    await invoke("set_config", { key: "llm.ollama_model", value: modelInput });
     _obAppendLog(obs.logViewport, "Ollama configuration saved.");
-  } catch (saveErr) { _obAppendLog(obs.logViewport, `Config save error: ${saveErr}`, true); }
+  } catch (saveErr) {
+    _obAppendLog(obs.logViewport, `Config save error: ${saveErr}`, true);
+  }
   try {
-    const status = await invoke("test_llm_connection", { provider: "ollama", model: modelInput, url: urlInput, key: null });
+    const status = await invoke("test_llm_connection", {
+      provider: "ollama",
+      model: modelInput,
+      url: urlInput,
+      key: null,
+    });
     _obAppendLog(obs.logViewport, `Connection test: ${status}`);
   } catch (_) {
-    _obAppendLog(obs.logViewport, "WARNING: Ollama not reachable right now. Start it before chatting.");
+    _obAppendLog(
+      obs.logViewport,
+      "WARNING: Ollama not reachable right now. Start it before chatting."
+    );
     _obAppendLog(obs.logViewport, "Config saved. You can start Ollama after launch.");
   }
-  obs.isProviderVerified = true; obs.btnNext.disabled = false;
+  obs.isProviderVerified = true;
+  obs.btnNext.disabled = false;
 }
 
 function _obInitProviders(obs) {
   _obInitProviderCards(obs);
   _obInitOllamaButtons(obs);
   document.getElementById("ob-btn-verify").onclick = async () => {
-    obs.isProviderVerified = false; obs.btnNext.disabled = true;
-    if      (obs.selectedProvider === "gemini-key")   await _obVerifyGeminiKey(obs);
-    else if (obs.selectedProvider === "kimi")         await _obVerifyKimiKey(obs);
+    obs.isProviderVerified = false;
+    obs.btnNext.disabled = true;
+    if (obs.selectedProvider === "gemini-key") await _obVerifyGeminiKey(obs);
+    else if (obs.selectedProvider === "kimi") await _obVerifyKimiKey(obs);
     else if (obs.selectedProvider === "gemini-oauth") await _obVerifyOAuth(obs);
-    else if (obs.selectedProvider === "ollama")       await _obVerifyOllama(obs);
+    else if (obs.selectedProvider === "ollama") await _obVerifyOllama(obs);
     const tryRadial = document.getElementById("ob-btn-try-radial");
-    if (tryRadial) tryRadial.onclick = () => {
-      if (window.showRadialMenu) { window.showRadialMenu(); setTimeout(() => { if (window.hideRadialMenu) window.hideRadialMenu(); }, 3000); }
-    };
+    if (tryRadial)
+      tryRadial.onclick = () => {
+        if (window.showRadialMenu) {
+          window.showRadialMenu();
+          setTimeout(() => {
+            if (window.hideRadialMenu) window.hideRadialMenu();
+          }, 3000);
+        }
+      };
   };
 }
 
 function _obInitVoice() {
-  const btnTestMic  = document.getElementById("ob-btn-test-mic");
-  const micStatus   = document.getElementById("ob-mic-status");
-  const micResult   = document.getElementById("ob-mic-result");
+  const btnTestMic = document.getElementById("ob-btn-test-mic");
+  const micStatus = document.getElementById("ob-mic-status");
+  const micResult = document.getElementById("ob-mic-result");
   const micWaveform = document.getElementById("ob-mic-waveform");
-  if (btnTestMic) btnTestMic.onclick = async () => {
-    btnTestMic.disabled = true;
-    if (micResult)   micResult.textContent = "";
-    if (micWaveform) micWaveform.classList.add("active");
-    try {
-      const startMsg = await invoke("start_recording");
-      if (startMsg.includes("only supported on Linux")) {
-        if (micStatus)   micStatus.textContent = "Voice recording requires Linux / SteamOS.";
+  if (btnTestMic)
+    btnTestMic.onclick = async () => {
+      btnTestMic.disabled = true;
+      if (micResult) micResult.textContent = "";
+      if (micWaveform) micWaveform.classList.add("active");
+      try {
+        const startMsg = await invoke("start_recording");
+        if (startMsg.includes("only supported on Linux")) {
+          if (micStatus) micStatus.textContent = "Voice recording requires Linux / SteamOS.";
+          if (micWaveform) micWaveform.classList.remove("active");
+          btnTestMic.disabled = false;
+          return;
+        }
+        if (micStatus) micStatus.textContent = "Recording... speak now!";
+        await new Promise((r) => setTimeout(r, 3000));
+        if (micStatus) micStatus.textContent = "Transcribing...";
+        const text = await invoke("stop_recording");
         if (micWaveform) micWaveform.classList.remove("active");
-        btnTestMic.disabled = false; return;
+        if (micStatus) micStatus.textContent = "Microphone working!";
+        if (micResult)
+          micResult.innerHTML = `<span style="color:var(--response-color)">"${text}"</span>`;
+      } catch (err) {
+        if (micWaveform) micWaveform.classList.remove("active");
+        if (micStatus) micStatus.textContent = "Mic test failed.";
+        if (micResult)
+          micResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
       }
-      if (micStatus) micStatus.textContent = "Recording... speak now!";
-      await new Promise((r) => setTimeout(r, 3000));
-      if (micStatus) micStatus.textContent = "Transcribing...";
-      const text = await invoke("stop_recording");
-      if (micWaveform) micWaveform.classList.remove("active");
-      if (micStatus)   micStatus.textContent = "Microphone working!";
-      if (micResult)   micResult.innerHTML = `<span style="color:var(--response-color)">"${text}"</span>`;
-    } catch (err) {
-      if (micWaveform) micWaveform.classList.remove("active");
-      if (micStatus)   micStatus.textContent = "Mic test failed.";
-      if (micResult)   micResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
-    }
-    btnTestMic.disabled = false;
-  };
+      btnTestMic.disabled = false;
+    };
 
   const btnTestTts = document.getElementById("ob-btn-test-tts");
-  const ttsStatus  = document.getElementById("ob-tts-status");
-  const ttsResult  = document.getElementById("ob-tts-result");
+  const ttsStatus = document.getElementById("ob-tts-status");
+  const ttsResult = document.getElementById("ob-tts-result");
   const ttsSpeaker = document.getElementById("ob-tts-speaker");
-  if (btnTestTts) btnTestTts.onclick = async () => {
-    btnTestTts.disabled = true;
-    if (ttsResult)  ttsResult.textContent = "";
-    if (ttsSpeaker) ttsSpeaker.classList.add("active");
-    if (ttsStatus)  ttsStatus.textContent = "Speaking...";
-    try {
-      await invoke("speak_text", { text: "NEURODECK voice output test. Your TTS engine is working." });
-      if (ttsSpeaker) ttsSpeaker.classList.remove("active");
-      if (ttsStatus)  ttsStatus.textContent = "TTS engine ready!";
-      if (ttsResult)  ttsResult.innerHTML = `<span style="color:var(--response-color);font-size:0.7rem;">✓ Audio played successfully</span>`;
-    } catch (err) {
-      if (ttsSpeaker) ttsSpeaker.classList.remove("active");
-      if (ttsStatus)  ttsStatus.textContent = "TTS test failed.";
-      if (ttsResult)  ttsResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
-    }
-    btnTestTts.disabled = false;
-  };
+  if (btnTestTts)
+    btnTestTts.onclick = async () => {
+      btnTestTts.disabled = true;
+      if (ttsResult) ttsResult.textContent = "";
+      if (ttsSpeaker) ttsSpeaker.classList.add("active");
+      if (ttsStatus) ttsStatus.textContent = "Speaking...";
+      try {
+        await invoke("speak_text", {
+          text: "NEURODECK voice output test. Your TTS engine is working.",
+        });
+        if (ttsSpeaker) ttsSpeaker.classList.remove("active");
+        if (ttsStatus) ttsStatus.textContent = "TTS engine ready!";
+        if (ttsResult)
+          ttsResult.innerHTML = `<span style="color:var(--response-color);font-size:0.7rem;">✓ Audio played successfully</span>`;
+      } catch (err) {
+        if (ttsSpeaker) ttsSpeaker.classList.remove("active");
+        if (ttsStatus) ttsStatus.textContent = "TTS test failed.";
+        if (ttsResult)
+          ttsResult.innerHTML = `<span style="color:var(--error-color);font-size:0.7rem;">${err}</span>`;
+      }
+      btnTestTts.disabled = false;
+    };
 }
 
 async function _obInitPersonaTheme(obs) {
   const personaCarousel = document.getElementById("ob-persona-carousel");
-  const themeGrid       = document.getElementById("ob-theme-grid");
-  const personaIconMap = { Default:"bot", Developer:"squareTerminal", Cyberpunk:"zap", John:"fileText", Sally:"sparkles", Winston:"panelRightOpen", Amelia:"server", Paige:"fileText", Mary:"chartColumn" };
-  const personaDescMap = { Default:"Helpful, balanced assistant.", Developer:"Clean code, engineering precision.", Cyberpunk:"Terminal lingo, edgy AI construct.", John:"Product Manager — PRDs & user stories.", Sally:"UX Designer — elegant interfaces.", Winston:"System Architect — modular design.", Amelia:"Senior Dev — Rust & JS expert.", Paige:"Technical Writer — docs & wikis.", Mary:"Business Analyst — epics & acceptance criteria." };
+  const themeGrid = document.getElementById("ob-theme-grid");
+  const personaIconMap = {
+    Default: "bot",
+    Developer: "squareTerminal",
+    Cyberpunk: "zap",
+    John: "fileText",
+    Sally: "sparkles",
+    Winston: "panelRightOpen",
+    Amelia: "server",
+    Paige: "fileText",
+    Mary: "chartColumn",
+  };
+  const personaDescMap = {
+    Default: "Helpful, balanced assistant.",
+    Developer: "Clean code, engineering precision.",
+    Cyberpunk: "Terminal lingo, edgy AI construct.",
+    John: "Product Manager — PRDs & user stories.",
+    Sally: "UX Designer — elegant interfaces.",
+    Winston: "System Architect — modular design.",
+    Amelia: "Senior Dev — Rust & JS expert.",
+    Paige: "Technical Writer — docs & wikis.",
+    Mary: "Business Analyst — epics & acceptance criteria.",
+  };
 
   let allPersonas = ["Default"];
-  try { allPersonas = await invoke("get_personas"); } catch (_) {}
-  personaCarousel.innerHTML = allPersonas.map((name) =>
-    `<div class="onboarding-persona-card ${name === obs.selectedPersona ? "active" : ""}" data-name="${name}" role="button" tabindex="0" aria-pressed="${name === obs.selectedPersona ? "true" : "false"}">` +
-    `<span class="onboarding-persona-icon">${createIcon(personaIconMap[name] || "bot", { size: 18 })}</span>` +
-    `<span class="onboarding-persona-name">${name}</span>` +
-    `<span class="onboarding-persona-desc">${personaDescMap[name] || "Custom persona."}</span></div>`
-  ).join("");
+  try {
+    allPersonas = await invoke("get_personas");
+  } catch (_) {}
+  personaCarousel.innerHTML = allPersonas
+    .map(
+      (name) =>
+        `<div class="onboarding-persona-card ${name === obs.selectedPersona ? "active" : ""}" data-name="${name}" role="button" tabindex="0" aria-pressed="${name === obs.selectedPersona ? "true" : "false"}">` +
+        `<span class="onboarding-persona-icon">${createIcon(personaIconMap[name] || "bot", { size: 18 })}</span>` +
+        `<span class="onboarding-persona-name">${name}</span>` +
+        `<span class="onboarding-persona-desc">${personaDescMap[name] || "Custom persona."}</span></div>`
+    )
+    .join("");
   _obBindPersonaCards(obs);
 
   let allThemeNames = ["BLACKSITE"];
-  try { allThemeNames = await invoke("get_themes"); } catch (_) {}
+  try {
+    allThemeNames = await invoke("get_themes");
+  } catch (_) {}
   const themeColorCache = {};
   for (const tname of allThemeNames) {
-    try { const colors = await invoke("set_theme", { name: tname }); if (colors) themeColorCache[tname] = colors; } catch (_) {}
+    try {
+      const colors = await invoke("set_theme", { name: tname });
+      if (colors) themeColorCache[tname] = colors;
+    } catch (_) {}
   }
   const currentTheme = localStorage.getItem("selectedTheme") || "BLACKSITE";
   if (themeColorCache[currentTheme]) {
     const tc = themeColorCache[currentTheme];
-    document.documentElement.style.setProperty("--bg-color",       tc.Background);
-    document.documentElement.style.setProperty("--accent-color",   tc.Accent);
+    document.documentElement.style.setProperty("--bg-color", tc.Background);
+    document.documentElement.style.setProperty("--accent-color", tc.Accent);
     document.documentElement.style.setProperty("--response-color", tc.Response);
   }
-  themeGrid.innerHTML = allThemeNames.map((tname) => {
-    const tc = themeColorCache[tname] || {};
-    return `<div class="onboarding-theme-card ${tname === obs.selectedThemeName ? "active" : ""}" data-name="${tname}" role="button" tabindex="0" aria-pressed="${tname === obs.selectedThemeName ? "true" : "false"}">` +
-           `<div style="font-weight:bold;margin-bottom:4px;font-size:0.7rem;">${tname}</div>` +
-           `<div class="onboarding-theme-swatch"><span style="background:${tc.Accent||"#00f0ff"}"></span><span style="background:${tc.Background||"#050505"}"></span><span style="background:${tc.Foreground||"#d9f7ff"}"></span></div></div>`;
-  }).join("");
+  themeGrid.innerHTML = allThemeNames
+    .map((tname) => {
+      const tc = themeColorCache[tname] || {};
+      return (
+        `<div class="onboarding-theme-card ${tname === obs.selectedThemeName ? "active" : ""}" data-name="${tname}" role="button" tabindex="0" aria-pressed="${tname === obs.selectedThemeName ? "true" : "false"}">` +
+        `<div style="font-weight:bold;margin-bottom:4px;font-size:0.7rem;">${tname}</div>` +
+        `<div class="onboarding-theme-swatch"><span style="background:${tc.Accent || "#00f0ff"}"></span><span style="background:${tc.Background || "#050505"}"></span><span style="background:${tc.Foreground || "#d9f7ff"}"></span></div></div>`
+      );
+    })
+    .join("");
   _obBindThemeCards(obs);
 }
 
 function _obCardKeydownHandler(e, index, cards, selectFn) {
-  if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectFn(); }
-  else if (e.key === "ArrowRight") { e.preventDefault(); (cards[index + 1] || cards[0]).focus(); }
-  else if (e.key === "ArrowLeft")  { e.preventDefault(); (cards[index - 1] || cards[cards.length - 1]).focus(); }
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    selectFn();
+  } else if (e.key === "ArrowRight") {
+    e.preventDefault();
+    (cards[index + 1] || cards[0]).focus();
+  } else if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    (cards[index - 1] || cards[cards.length - 1]).focus();
+  }
 }
 
 function _obBindPersonaCards(obs) {
@@ -7890,9 +9401,14 @@ function _obBindPersonaCards(obs) {
   cards.forEach((card, index) => {
     const select = async () => {
       obs.resetActiveState(".onboarding-persona-card");
-      card.classList.add("active"); card.setAttribute("aria-pressed", "true");
+      card.classList.add("active");
+      card.setAttribute("aria-pressed", "true");
       obs.selectedPersona = card.dataset.name;
-      try { await invoke("set_persona", { name: obs.selectedPersona }); } catch (e) { console.error("Failed to set persona", e); }
+      try {
+        await invoke("set_persona", { name: obs.selectedPersona });
+      } catch (e) {
+        console.error("Failed to set persona", e);
+      }
     };
     card.onclick = select;
     card.onkeydown = (e) => _obCardKeydownHandler(e, index, cards, select);
@@ -7904,11 +9420,16 @@ function _obBindThemeCards(obs) {
   cards.forEach((card, index) => {
     const select = async () => {
       obs.resetActiveState(".onboarding-theme-card");
-      card.classList.add("active"); card.setAttribute("aria-pressed", "true");
+      card.classList.add("active");
+      card.setAttribute("aria-pressed", "true");
       obs.selectedThemeName = card.dataset.name;
       localStorage.setItem("selectedTheme", obs.selectedThemeName);
-      try { const theme = await invoke("set_theme", { name: obs.selectedThemeName }); if (theme) window.applyThemeColors(theme); }
-      catch (e) { console.error("Failed to apply theme live", e); }
+      try {
+        const theme = await invoke("set_theme", { name: obs.selectedThemeName });
+        if (theme) window.applyThemeColors(theme);
+      } catch (e) {
+        console.error("Failed to apply theme live", e);
+      }
     };
     card.onclick = select;
     card.onkeydown = (e) => _obCardKeydownHandler(e, index, cards, select);
@@ -7922,9 +9443,17 @@ async function _obRunDiagnostics(obs) {
   obs.btnNext.disabled = true;
   const diagLog = document.getElementById("ob-diagnostic-log");
   diagLog.innerHTML = `<div class="onboarding-log-line">[SYS] Initiating diagnostics sequence...</div>`;
-  ["ob-diag-pty","ob-diag-net","ob-diag-key","ob-diag-audio","ob-diag-ssh","ob-diag-tts"].forEach((id) => {
+  [
+    "ob-diag-pty",
+    "ob-diag-net",
+    "ob-diag-key",
+    "ob-diag-audio",
+    "ob-diag-ssh",
+    "ob-diag-tts",
+  ].forEach((id) => {
     const el = document.getElementById(id);
-    el.className = "onboarding-diagnostic-status pending"; el.innerText = "RUNNING";
+    el.className = "onboarding-diagnostic-status pending";
+    el.innerText = "RUNNING";
   });
   await new Promise((r) => setTimeout(r, 700));
   try {
@@ -7935,38 +9464,56 @@ async function _obRunDiagnostics(obs) {
       el.innerText = ok ? "OK" : "WARN";
       _obAppendLog(diagLog, `${ok ? "✓" : "!"} ${detail}`);
     }
-    applyCheck("ob-diag-pty",   result.pty_ok,      result.pty_details      || "PTY allocation test");
+    applyCheck("ob-diag-pty", result.pty_ok, result.pty_details || "PTY allocation test");
     await new Promise((r) => setTimeout(r, 350));
-    applyCheck("ob-diag-net",   result.network_ok,  result.network_details  || "Network reachability");
+    applyCheck("ob-diag-net", result.network_ok, result.network_details || "Network reachability");
     await new Promise((r) => setTimeout(r, 350));
-    applyCheck("ob-diag-key",   result.keychain_ok, result.keychain_details || "OS keychain access");
+    applyCheck("ob-diag-key", result.keychain_ok, result.keychain_details || "OS keychain access");
     await new Promise((r) => setTimeout(r, 350));
-    const audioOk  = result.audio_ok  !== undefined ? result.audio_ok  : true;
-    const sshOk    = result.ssh_ok    !== undefined ? result.ssh_ok    : true;
-    const ttsOk    = result.tts_ok    !== undefined ? result.tts_ok    : true;
-    applyCheck("ob-diag-audio", audioOk, result.audio_details || (audioOk ? "arecord available"  : "arecord not found — Voice STT unavailable"));
+    const audioOk = result.audio_ok !== undefined ? result.audio_ok : true;
+    const sshOk = result.ssh_ok !== undefined ? result.ssh_ok : true;
+    const ttsOk = result.tts_ok !== undefined ? result.tts_ok : true;
+    applyCheck(
+      "ob-diag-audio",
+      audioOk,
+      result.audio_details ||
+        (audioOk ? "arecord available" : "arecord not found — Voice STT unavailable")
+    );
     await new Promise((r) => setTimeout(r, 350));
-    applyCheck("ob-diag-ssh",   sshOk,   result.ssh_details   || (sshOk   ? "ssh binary found"   : "ssh not found — install OpenSSH client"));
+    applyCheck(
+      "ob-diag-ssh",
+      sshOk,
+      result.ssh_details || (sshOk ? "ssh binary found" : "ssh not found — install OpenSSH client")
+    );
     await new Promise((r) => setTimeout(r, 350));
-    applyCheck("ob-diag-tts",   ttsOk,   result.tts_details   || (ttsOk   ? "espeak available"   : "espeak not found — Voice TTS unavailable"));
+    applyCheck(
+      "ob-diag-tts",
+      ttsOk,
+      result.tts_details ||
+        (ttsOk ? "espeak available" : "espeak not found — Voice TTS unavailable")
+    );
     await new Promise((r) => setTimeout(r, 400));
     if (result.pty_ok && result.keychain_ok) {
-      obs.isDiagnosticsPassed = true; obs.btnNext.disabled = false;
+      obs.isDiagnosticsPassed = true;
+      obs.btnNext.disabled = false;
       const warn = !result.network_ok || !audioOk || !sshOk || !ttsOk;
-      _obAppendLog(diagLog, warn ? "CORE SYSTEMS OK. Some optional features have warnings — see above." : "ALL SYSTEMS NOMINAL. READY TO LAUNCH.");
+      _obAppendLog(
+        diagLog,
+        warn
+          ? "CORE SYSTEMS OK. Some optional features have warnings — see above."
+          : "ALL SYSTEMS NOMINAL. READY TO LAUNCH."
+      );
     } else {
       _obAppendLog(diagLog, "CRITICAL CHECK FAILED. Review errors above.", true);
     }
   } catch (e) {
     _obAppendLog(diagLog, `Diagnostics engine error: ${e}`, true);
-    obs.isDiagnosticsPassed = true; obs.btnNext.disabled = false;
+    obs.isDiagnosticsPassed = true;
+    obs.btnNext.disabled = false;
   } finally {
     obs.diagRunning = false;
   }
 }
-
-
-
 
 // ==========================================================================
 
@@ -8016,7 +9563,7 @@ async function _obRunDiagnostics(obs) {
         lastT = Date.now();
         velocityY = 0;
       },
-      { passive: true },
+      { passive: true }
     );
 
     el.addEventListener(
@@ -8030,7 +9577,7 @@ async function _obRunDiagnostics(obs) {
         lastY = e.touches[0].clientY;
         lastT = now;
       },
-      { passive: true },
+      { passive: true }
     );
 
     el.addEventListener(
@@ -8046,7 +9593,7 @@ async function _obRunDiagnostics(obs) {
         }
         fling();
       },
-      { passive: true },
+      { passive: true }
     );
   }
 
@@ -8088,7 +9635,7 @@ async function _obRunDiagnostics(obs) {
       }
       lastTap = t;
     },
-    { passive: true },
+    { passive: true }
   );
 })();
 
@@ -8103,7 +9650,7 @@ async function _obRunDiagnostics(obs) {
     () => {
       lastInputWasTouch = true;
     },
-    { passive: true },
+    { passive: true }
   );
   document.addEventListener("keydown", () => {
     lastInputWasTouch = false;
@@ -8270,12 +9817,8 @@ async function _obRunDiagnostics(obs) {
           btn.classList.add("vk-pressed");
           handleKeyPress(btn);
         });
-        btn.addEventListener("pointerup", () =>
-          btn.classList.remove("vk-pressed"),
-        );
-        btn.addEventListener("pointerleave", () =>
-          btn.classList.remove("vk-pressed"),
-        );
+        btn.addEventListener("pointerup", () => btn.classList.remove("vk-pressed"));
+        btn.addEventListener("pointerleave", () => btn.classList.remove("vk-pressed"));
 
         rowEl.appendChild(btn);
       });
@@ -8365,8 +9908,7 @@ async function _obRunDiagnostics(obs) {
       const start = el.selectionStart ?? el.value.length;
       const end = el.selectionEnd ?? el.value.length;
       if (char === "Backspace") {
-        el.value =
-          el.value.slice(0, Math.max(0, start - 1)) + el.value.slice(end);
+        el.value = el.value.slice(0, Math.max(0, start - 1)) + el.value.slice(end);
         el.setSelectionRange(Math.max(0, start - 1), Math.max(0, start - 1));
       } else if (char.length === 1) {
         el.value = el.value.slice(0, start) + char + el.value.slice(end);
@@ -8382,24 +9924,14 @@ async function _obRunDiagnostics(obs) {
   function updateModifierVisuals() {
     // Update shifted labels on character keys
     const isShifted = vkShift !== vkCapsLock;
-    document
-      .querySelectorAll("#vk-overlay .vk-key[data-normal]")
-      .forEach((btn) => {
-        btn.textContent = isShifted ? btn.dataset.shifted : btn.dataset.normal;
-      });
+    document.querySelectorAll("#vk-overlay .vk-key[data-normal]").forEach((btn) => {
+      btn.textContent = isShifted ? btn.dataset.shifted : btn.dataset.normal;
+    });
     // Toggle active class on modifier keys
-    const shiftBtns = document.querySelectorAll(
-      "#vk-overlay [data-action='Shift']",
-    );
-    const capsBtns = document.querySelectorAll(
-      "#vk-overlay [data-action='CapsLock']",
-    );
-    const ctrlBtns = document.querySelectorAll(
-      "#vk-overlay [data-action='Ctrl']",
-    );
-    const altBtns = document.querySelectorAll(
-      "#vk-overlay [data-action='Alt']",
-    );
+    const shiftBtns = document.querySelectorAll("#vk-overlay [data-action='Shift']");
+    const capsBtns = document.querySelectorAll("#vk-overlay [data-action='CapsLock']");
+    const ctrlBtns = document.querySelectorAll("#vk-overlay [data-action='Ctrl']");
+    const altBtns = document.querySelectorAll("#vk-overlay [data-action='Alt']");
     shiftBtns.forEach((b) => b.classList.toggle("vk-active", vkShift));
     capsBtns.forEach((b) => b.classList.toggle("vk-active", vkCapsLock));
     ctrlBtns.forEach((b) => b.classList.toggle("vk-active", vkCtrl));
@@ -8437,15 +9969,7 @@ async function _obRunDiagnostics(obs) {
       const el = e.target;
       const isTextInput =
         (el.tagName === "INPUT" &&
-          ![
-            "button",
-            "submit",
-            "reset",
-            "checkbox",
-            "radio",
-            "file",
-            "range",
-          ].includes(el.type)) ||
+          !["button", "submit", "reset", "checkbox", "radio", "file", "range"].includes(el.type)) ||
         el.tagName === "TEXTAREA" ||
         el.isContentEditable;
       if (isTextInput && shouldShowKeyboard()) {
@@ -8463,15 +9987,9 @@ async function _obRunDiagnostics(obs) {
         const stillInput =
           active &&
           ((active.tagName === "INPUT" &&
-            ![
-              "button",
-              "submit",
-              "reset",
-              "checkbox",
-              "radio",
-              "file",
-              "range",
-            ].includes(active.type)) ||
+            !["button", "submit", "reset", "checkbox", "radio", "file", "range"].includes(
+              active.type
+            )) ||
             active.tagName === "TEXTAREA" ||
             active.isContentEditable);
         if (!stillInput) hideVirtualKeyboard();
@@ -8531,19 +10049,43 @@ function _bootAddLine(logScroll, addr, html, extraClass) {
   logScroll.scrollTop = logScroll.scrollHeight;
 }
 
-function _bootAdvanceProgress(bCtx, progressFill, progressPct, progressLabel, totalSteps, labelText) {
+function _bootAdvanceProgress(
+  bCtx,
+  progressFill,
+  progressPct,
+  progressLabel,
+  totalSteps,
+  labelText
+) {
   bCtx.step += 1;
   const pct = Math.min((bCtx.step / Math.max(totalSteps, 1)) * 100, 97);
   _bootSetProgress(progressFill, progressPct, progressLabel, pct, labelText);
 }
 
-async function _bootRenderPipeline(bCtx, logScroll, progressFill, progressPct, progressLabel, pipeline, totalSteps, delay) {
-  const toneMap = { ok: "boot-ok", warn: "boot-warn", err: "boot-err", info: "boot-info", neutral: "boot-neutral" };
+async function _bootRenderPipeline(
+  bCtx,
+  logScroll,
+  progressFill,
+  progressPct,
+  progressLabel,
+  pipeline,
+  totalSteps,
+  delay
+) {
+  const toneMap = {
+    ok: "boot-ok",
+    warn: "boot-warn",
+    err: "boot-err",
+    info: "boot-info",
+    neutral: "boot-neutral",
+  };
   for (const entry of pipeline) {
     const tone = toneMap[entry.status] || "boot-ok";
     let html;
     if (entry.category === "plugin") {
-      const detail = entry.detail ? ` <span style="opacity:0.42">// ${_bootEscapeHtml(entry.detail)}</span>` : "";
+      const detail = entry.detail
+        ? ` <span style="opacity:0.42">// ${_bootEscapeHtml(entry.detail)}</span>`
+        : "";
       html = `${_bootEscapeHtml(entry.label)}${detail}`;
     } else {
       const detail = entry.detail ? ` · ${_bootEscapeHtml(entry.detail)}` : "";
@@ -8555,18 +10097,47 @@ async function _bootRenderPipeline(bCtx, logScroll, progressFill, progressPct, p
   }
 }
 
-async function _bootLlmHandshake(bCtx, logScroll, progressFill, progressPct, progressLabel, diag, totalSteps, delay) {
+async function _bootLlmHandshake(
+  bCtx,
+  logScroll,
+  progressFill,
+  progressPct,
+  progressLabel,
+  diag,
+  totalSteps,
+  delay
+) {
   const provider = diag?.provider ?? "ollama";
   const model = diag?.model ?? "llama2";
-  _bootAddLine(logScroll, _bootNextAddr(bCtx), `Running provider handshake against ${_bootToken(provider.toUpperCase())}…`);
-  _bootAdvanceProgress(bCtx, progressFill, progressPct, progressLabel, totalSteps, "Provider handshake");
+  _bootAddLine(
+    logScroll,
+    _bootNextAddr(bCtx),
+    `Running provider handshake against ${_bootToken(provider.toUpperCase())}…`
+  );
+  _bootAdvanceProgress(
+    bCtx,
+    progressFill,
+    progressPct,
+    progressLabel,
+    totalSteps,
+    "Provider handshake"
+  );
   await delay(120);
-  const llmResult = await invoke("test_llm_connection", { provider, model, url: diag?.ollama_base_url ?? "http://localhost:11434", key: null })
+  const llmResult = await invoke("test_llm_connection", {
+    provider,
+    model,
+    url: diag?.ollama_base_url ?? "http://localhost:11434",
+    key: null,
+  })
     .then((message) => ({ ok: true, message }))
     .catch((error) => ({ ok: false, message: String(error) }));
   const llmTone = llmResult.ok ? "boot-ok" : "boot-warn";
   const llmLabel = llmResult.ok ? "CONNECTED" : "DEGRADED";
-  _bootAddLine(logScroll, _bootNextAddr(bCtx), `LLM session ${_bootStatusToken(llmLabel, llmTone)} · ${_bootToken(model)} <span style="opacity:0.52">${_bootEscapeHtml(llmResult.message)}</span>`);
+  _bootAddLine(
+    logScroll,
+    _bootNextAddr(bCtx),
+    `LLM session ${_bootStatusToken(llmLabel, llmTone)} · ${_bootToken(model)} <span style="opacity:0.52">${_bootEscapeHtml(llmResult.message)}</span>`
+  );
   _bootAdvanceProgress(bCtx, progressFill, progressPct, progressLabel, totalSteps, "LLM session");
   await delay(200);
   return llmResult;
@@ -8595,12 +10166,35 @@ async function _bootLlmHandshake(bCtx, logScroll, progressFill, progressPct, pro
     const pipeline = Array.isArray(diag?.pipeline) ? diag.pipeline : [];
     const totalSteps = Math.max(pipeline.length, 1) + 2;
 
-    await _bootRenderPipeline(bCtx, logScroll, progressFill, progressPct, progressLabel, pipeline, totalSteps, delay);
-    const llmResult = await _bootLlmHandshake(bCtx, logScroll, progressFill, progressPct, progressLabel, diag, totalSteps, delay);
+    await _bootRenderPipeline(
+      bCtx,
+      logScroll,
+      progressFill,
+      progressPct,
+      progressLabel,
+      pipeline,
+      totalSteps,
+      delay
+    );
+    const llmResult = await _bootLlmHandshake(
+      bCtx,
+      logScroll,
+      progressFill,
+      progressPct,
+      progressLabel,
+      diag,
+      totalSteps,
+      delay
+    );
 
     const memoryReady = diag?.memory_ready ?? false;
     const finalTone = llmResult.ok && memoryReady ? "boot-ok" : "boot-warn";
-    _bootAddLine(logScroll, _bootNextAddr(bCtx), `<strong class="${finalTone}" style="letter-spacing:0.06em">NEURODECK ONLINE · STARTUP DIAGNOSTICS COMPLETE</strong>`, "boot-final");
+    _bootAddLine(
+      logScroll,
+      _bootNextAddr(bCtx),
+      `<strong class="${finalTone}" style="letter-spacing:0.06em">NEURODECK ONLINE · STARTUP DIAGNOSTICS COMPLETE</strong>`,
+      "boot-final"
+    );
     _bootSetProgress(progressFill, progressPct, progressLabel, 100, "NEURODECK ONLINE");
     await delay(1100);
 
@@ -8622,8 +10216,7 @@ async function _bootLlmHandshake(bCtx, logScroll, progressFill, progressPct, pro
     // 1. PTY Status
     const ptyDot = document.getElementById("diag-dot-pty");
     const ptyOk =
-      typeof state.terminalSessions !== "undefined" &&
-      state.terminalSessions.length > 0;
+      typeof state.terminalSessions !== "undefined" && state.terminalSessions.length > 0;
     if (ptyDot) {
       ptyDot.className = ptyOk ? "diag-dot online" : "diag-dot offline";
     }
@@ -8784,9 +10377,13 @@ async function _docsRunSearch(ctx) {
 
 function _docsWireButtons(searchBtn, indexBtn, clearBtn, ctx) {
   searchBtn.addEventListener("click", () => _docsRunSearch(ctx));
-  ctx.searchInput.addEventListener("keydown", (e) => { if (e.key === "Enter") _docsRunSearch(ctx); });
+  ctx.searchInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") _docsRunSearch(ctx);
+  });
   indexBtn.addEventListener("click", async () => {
-    const dir = await showPrompt("Enter absolute folder path to index:", "", { title: "Index Directory" });
+    const dir = await showPrompt("Enter absolute folder path to index:", "", {
+      title: "Index Directory",
+    });
     if (!dir || !dir.trim()) return;
     try {
       indexBtn.disabled = true;
@@ -8794,7 +10391,11 @@ function _docsWireButtons(searchBtn, indexBtn, clearBtn, ctx) {
       await invoke("index_directory", { path: dir.trim() });
       await _docsRefreshFileList(ctx);
       if (window.addNotification)
-        window.addNotification("Docs Indexed", `Folder indexed: ${dir.trim().split(/[\\/]/).pop()}`, "success");
+        window.addNotification(
+          "Docs Indexed",
+          `Folder indexed: ${dir.trim().split(/[\\/]/).pop()}`,
+          "success"
+        );
     } catch (err) {
       alert(`Indexing failed: ${err}`);
     } finally {
@@ -8806,10 +10407,13 @@ function _docsWireButtons(searchBtn, indexBtn, clearBtn, ctx) {
     if (!confirm("Remove all indexed documents from the knowledge base?")) return;
     await invoke("clear_doc_index");
     await _docsRefreshFileList(ctx);
-    ctx.resultsList.innerHTML = '<div class="docs-empty-msg">Search to find relevant passages.</div>';
+    ctx.resultsList.innerHTML =
+      '<div class="docs-empty-msg">Search to find relevant passages.</div>';
     ctx.resultsLabel.textContent = "Results";
   });
-  document.querySelector('.nav-tab[data-view="docs"]')?.addEventListener("click", () => _docsRefreshFileList(ctx));
+  document
+    .querySelector('.nav-tab[data-view="docs"]')
+    ?.addEventListener("click", () => _docsRefreshFileList(ctx));
 }
 
 function initDocsView() {
@@ -8833,7 +10437,9 @@ initDocsView();
 listen("deckcode-action", (event) => {
   const actionId = event.payload;
   const promptDriveCtx = window.__promptDriveComposer;
-  const promptDriveActive = document.getElementById("view-prompt-lab")?.classList.contains("active");
+  const promptDriveActive = document
+    .getElementById("view-prompt-lab")
+    ?.classList.contains("active");
 
   if (promptDriveActive && promptDriveCtx && typeof actionId === "string") {
     const normalized = actionId.toLowerCase();
@@ -8862,7 +10468,7 @@ listen("deckcode-action", (event) => {
   if (typeof actionId === "string" && actionId.startsWith("insert_snippet:")) {
     const snippetTemplate = actionId.substring("insert_snippet:".length);
     const activeEl = document.activeElement;
-    
+
     // Check if we are in a textarea or input
     if (activeEl && (activeEl.tagName === "TEXTAREA" || activeEl.tagName === "INPUT")) {
       const start = activeEl.selectionStart;
@@ -8874,23 +10480,23 @@ listen("deckcode-action", (event) => {
       // We will just strip out named placeholders except ${cursor} for now to make it valid code,
       // or replace them with empty strings/defaults.
       let snippet = snippetTemplate;
-      
+
       // If we have ${cursor}, we want to place the cursor there.
       let cursorOffset = snippet.indexOf("${cursor}");
       if (cursorOffset !== -1) {
-          snippet = snippet.replace("${cursor}", "");
+        snippet = snippet.replace("${cursor}", "");
       } else {
-          cursorOffset = snippet.length; // Default to end of snippet
+        cursorOffset = snippet.length; // Default to end of snippet
       }
 
       // Strip remaining ${...} placeholders (keep them empty for manual typing)
       // A more complex implementation could select the first placeholder
       snippet = snippet.replace(/\$\{[^}]+\}/g, "");
-      
+
       // Insert the snippet natively (works for Monaco and standard textareas)
       const selectionBefore = activeEl.selectionStart || 0;
       document.execCommand("insertText", false, snippet);
-      
+
       // Move cursor back if ${cursor} placeholder was placed earlier in the string
       if (cursorOffset < snippet.length) {
         activeEl.selectionStart = activeEl.selectionEnd = selectionBefore + cursorOffset;
@@ -8898,12 +10504,8 @@ listen("deckcode-action", (event) => {
       return;
     }
   }
-  
+
   if (window.addNotification) {
-    window.addNotification(
-      "DeckCode Action",
-      `Triggered: ${actionId}`,
-      "info"
-    );
+    window.addNotification("DeckCode Action", `Triggered: ${actionId}`, "info");
   }
 });

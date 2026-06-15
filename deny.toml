@@ -27,12 +27,15 @@ allow = [
     "BSD-3-Clause",
     "ISC",
     "Unicode-DFS-2016",
+    "Unicode-3.0",
     "MPL-2.0",
     "CC0-1.0",
     "Unlicense",
     "Zlib",
     "BSL-1.0",
     "OpenSSL",
+    "CDLA-Permissive-2.0",
+    "LicenseRef-Proprietary",
 ]
 confidence-threshold = 0.8
 
@@ -45,6 +48,38 @@ license-files = [{ path = "LICENSE", hash = 0xbd0eed23 }]
 name = "webpki-root-certs"
 expression = "MPL-2.0"
 license-files = [{ path = "LICENSE", hash = 0x0 }]
+
+[[licenses.clarify]]
+# NEURODECK root binary — proprietary, not distributed as open-source
+name = "app"
+version = "*"
+expression = "LicenseRef-Proprietary"
+license-files = []
+
+[[licenses.clarify]]
+name = "neurodeck_bootstrapper"
+version = "*"
+expression = "LicenseRef-Proprietary"
+license-files = []
+
+[[licenses.clarify]]
+name = "neurodeck_core"
+version = "*"
+expression = "LicenseRef-Proprietary"
+license-files = []
+
+[[licenses.clarify]]
+name = "neurodeck_infrastructure"
+version = "*"
+expression = "LicenseRef-Proprietary"
+license-files = []
+
+[[licenses.exceptions]]
+# auto_generate_cdp is a build-time code-generation dep of headless_chrome
+# GPL-3.0-or-later does not propagate to the binary due to build-only usage
+name = "auto_generate_cdp"
+version = "*"
+allow = ["GPL-3.0-only", "GPL-3.0-or-later"]
 
 # ------------------------------------------------------------------------------
 # Security advisories

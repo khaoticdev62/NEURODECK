@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Dispatch } from "react";
 import {
   BrainCircuit,
@@ -7,6 +7,7 @@ import {
   FileDown,
   Gamepad2,
   FolderOpen,
+  Loader2,
   Palette,
   RefreshCcw,
   Rocket,
@@ -120,47 +121,162 @@ function ThemePreviewMockup({ name, color }: { name: string; color: ThemePreview
       aria-hidden="true"
       title={`Preview: ${name}`}
       className="relative overflow-hidden rounded-xl border select-none transition-all duration-200"
-      style={{ height: '150px', background: c.surface.app, borderColor: c.border.default }}
+      style={{ height: "150px", background: c.surface.app, borderColor: c.border.default }}
     >
       {/* Sidebar strip */}
       <div
         className="absolute inset-y-0 left-0 flex flex-col items-center gap-2 py-3"
-        style={{ width: '36px', background: c.surface.sidebar, borderRight: `1px solid ${c.border.subtle}` }}
+        style={{
+          width: "36px",
+          background: c.surface.sidebar,
+          borderRight: `1px solid ${c.border.subtle}`,
+        }}
       >
-        <div style={{ width: '14px', height: '14px', borderRadius: '4px', background: c.accent.primary }} />
+        <div
+          style={{
+            width: "14px",
+            height: "14px",
+            borderRadius: "4px",
+            background: c.accent.primary,
+          }}
+        />
         {[0.35, 0.25, 0.2].map((op, i) => (
-          <div key={i} style={{ width: '14px', height: '14px', borderRadius: '4px', background: c.text.muted, opacity: op }} />
+          <div
+            key={i}
+            style={{
+              width: "14px",
+              height: "14px",
+              borderRadius: "4px",
+              background: c.text.muted,
+              opacity: op,
+            }}
+          />
         ))}
       </div>
 
       {/* Main pane */}
-      <div className="absolute inset-0" style={{ left: '36px', padding: '10px 10px 8px' }}>
+      <div className="absolute inset-0" style={{ left: "36px", padding: "10px 10px 8px" }}>
         {/* Topbar */}
         <div className="flex items-center gap-1.5 mb-2">
-          <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: c.accent.primary }} />
-          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '50px', opacity: 0.45 }} />
-          <div style={{ marginLeft: 'auto', width: '32px', height: '13px', borderRadius: '5px', background: c.accent.primary, opacity: 0.85 }} />
+          <div
+            style={{
+              width: "5px",
+              height: "5px",
+              borderRadius: "50%",
+              background: c.accent.primary,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              background: c.text.muted,
+              width: "50px",
+              opacity: 0.45,
+            }}
+          />
+          <div
+            style={{
+              marginLeft: "auto",
+              width: "32px",
+              height: "13px",
+              borderRadius: "5px",
+              background: c.accent.primary,
+              opacity: 0.85,
+            }}
+          />
         </div>
 
         {/* Response card */}
-        <div className="mb-2 rounded-lg p-1.5" style={{ background: c.surface.raised, border: `1px solid ${c.border.subtle}` }}>
-          <div style={{ height: '3px', borderRadius: '2px', background: c.text.primary, width: '78%', marginBottom: '4px', opacity: 0.75 }} />
-          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '60%', marginBottom: '3px', opacity: 0.5 }} />
-          <div style={{ height: '3px', borderRadius: '2px', background: c.text.muted, width: '42%', opacity: 0.35 }} />
+        <div
+          className="mb-2 rounded-lg p-1.5"
+          style={{ background: c.surface.raised, border: `1px solid ${c.border.subtle}` }}
+        >
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              background: c.text.primary,
+              width: "78%",
+              marginBottom: "4px",
+              opacity: 0.75,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              background: c.text.muted,
+              width: "60%",
+              marginBottom: "3px",
+              opacity: 0.5,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              background: c.text.muted,
+              width: "42%",
+              opacity: 0.35,
+            }}
+          />
         </div>
 
         {/* Input row */}
         <div className="flex items-center gap-1.5 mb-2">
-          <div style={{ flex: 1, height: '16px', borderRadius: '5px', background: c.surface.input, border: `1px solid ${c.border.default}` }} />
-          <div style={{ width: '20px', height: '16px', borderRadius: '5px', background: c.accent.primary, opacity: 0.9 }} />
+          <div
+            style={{
+              flex: 1,
+              height: "16px",
+              borderRadius: "5px",
+              background: c.surface.input,
+              border: `1px solid ${c.border.default}`,
+            }}
+          />
+          <div
+            style={{
+              width: "20px",
+              height: "16px",
+              borderRadius: "5px",
+              background: c.accent.primary,
+              opacity: 0.9,
+            }}
+          />
         </div>
 
         {/* State pills */}
         <div className="flex gap-1">
-          <div style={{ height: '3px', borderRadius: '2px', flex: 3, background: c.accent.primary }} />
-          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.success, opacity: 0.75 }} />
-          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.warning, opacity: 0.75 }} />
-          <div style={{ height: '3px', borderRadius: '2px', flex: 1, background: c.state.error, opacity: 0.75 }} />
+          <div
+            style={{ height: "3px", borderRadius: "2px", flex: 3, background: c.accent.primary }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              flex: 1,
+              background: c.state.success,
+              opacity: 0.75,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              flex: 1,
+              background: c.state.warning,
+              opacity: 0.75,
+            }}
+          />
+          <div
+            style={{
+              height: "3px",
+              borderRadius: "2px",
+              flex: 1,
+              background: c.state.error,
+              opacity: 0.75,
+            }}
+          />
         </div>
       </div>
     </div>
@@ -197,12 +313,17 @@ export function SettingsView({
   const [compactMode, setCompactMode] = useState(false);
   const [ttsMode, setTtsMode] = useState<"off" | "complete" | "stream">(() => {
     const saved = localStorage.getItem("neurodeck_tts_mode");
-    return (saved === "complete" || saved === "stream" ? saved : "off") as "off" | "complete" | "stream";
+    return (saved === "complete" || saved === "stream" ? saved : "off") as
+      | "off"
+      | "complete"
+      | "stream";
   });
   const [ttsTesting, setTtsTesting] = useState(false);
   const [pendingThemeId, setPendingThemeId] = useState<string | null>(null);
   const [hoveredThemeId, setHoveredThemeId] = useState<string | null>(null);
-  const [indexedDirs, setIndexedDirs] = useState<Array<{ path: string; doc_count: number }> | null>(null);
+  const [indexedDirs, setIndexedDirs] = useState<Array<{ path: string; doc_count: number }> | null>(
+    null
+  );
   const [kbBusy, setKbBusy] = useState<string | null>(null);
   const [kbStatus, setKbStatus] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -214,7 +335,9 @@ export function SettingsView({
   const handleTtsTest = async () => {
     setTtsTesting(true);
     try {
-      await bridgeInvoke("speak_text", { text: "NEURODECK voice output test. Text-to-speech is working." });
+      await bridgeInvoke("speak_text", {
+        text: "NEURODECK voice output test. Text-to-speech is working.",
+      });
     } catch (_) {
       // Ignore — TTS may not be available on this platform
     } finally {
@@ -292,6 +415,56 @@ export function SettingsView({
     void updateSettings({ fontScale: val });
     document.documentElement.style.fontSize = `${val}%`;
   };
+
+  const loadKbDirs = useCallback(async () => {
+    setKbBusy("load");
+    try {
+      const res = await neurodeckApi.memory.getIndexedDirs();
+      setIndexedDirs(res.dirs);
+    } catch (e) {
+      setKbStatus({ text: `Failed to load: ${e}`, ok: false });
+    } finally {
+      setKbBusy(null);
+    }
+  }, []);
+
+  const handleRemoveKbDir = useCallback(async (path: string) => {
+    setKbBusy(path);
+    try {
+      await neurodeckApi.memory.removeIndexedDir(path);
+      setIndexedDirs((prev) => prev?.filter((d) => d.path !== path) ?? null);
+      setKbStatus({ text: "Directory removed from index list", ok: true });
+    } catch (e) {
+      setKbStatus({ text: `Remove failed: ${e}`, ok: false });
+    } finally {
+      setKbBusy(null);
+    }
+  }, []);
+
+  const handleReindexAll = useCallback(async () => {
+    if (!indexedDirs?.length) return;
+    setKbBusy("reindex");
+    setKbStatus({ text: "Re-indexing all directories…", ok: true });
+    try {
+      for (const d of indexedDirs) {
+        await neurodeckApi.memory.indexDirectory(d.path);
+      }
+      setKbStatus({
+        text: `Queued ${indexedDirs.length} director${indexedDirs.length === 1 ? "y" : "ies"} for re-indexing`,
+        ok: true,
+      });
+    } catch (e) {
+      setKbStatus({ text: `Re-index failed: ${e}`, ok: false });
+    } finally {
+      setKbBusy(null);
+    }
+  }, [indexedDirs]);
+
+  useEffect(() => {
+    if (activePanel === "knowledge" && indexedDirs === null && kbBusy === null) {
+      void loadKbDirs();
+    }
+  }, [activePanel, indexedDirs, kbBusy, loadKbDirs]);
 
   const applyCompactMode = (val: boolean) => {
     setCompactMode(val);
@@ -395,133 +568,151 @@ export function SettingsView({
                     title="Theme settings unavailable."
                     description="Theme data could not be loaded. Reset appearance to restore defaults."
                     action={
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        icon={RotateCcw}
                         onClick={() => void resetToDefaults()}
-                        className="inline-flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent transition hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                       >
-                        <RotateCcw className="h-4 w-4" aria-hidden="true" /> Reset Appearance
-                      </button>
+                        Reset Appearance
+                      </Button>
                     }
                   />
                 </div>
-              ) : (() => {
-                // Resolve which theme to show in the preview pane:
-                // hovered > pending > currently active
-                const previewId = hoveredThemeId ?? pendingThemeId ?? settings.activeThemeId;
-                const previewTheme = availableThemes.find((t) => t.id === previewId) ?? activeTheme;
-                const hasPendingChange = pendingThemeId !== null && pendingThemeId !== settings.activeThemeId;
-                return (
-                  <div id="theme-cards-grid">
-                    <div className="grid gap-4 p-4 lg:grid-cols-[1fr_200px]">
-                      {/* Left: theme card grid */}
-                      <div
-                        className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
-                        onMouseLeave={() => setHoveredThemeId(null)}
-                      >
-                        {availableThemes.map((theme) => {
-                          const isActive = settings.activeThemeId === theme.id;
-                          const isPending = pendingThemeId === theme.id && !isActive;
-                          return (
-                            <button
-                              key={theme.id}
-                              type="button"
-                              data-testid="theme-card"
-                              onMouseEnter={() => setHoveredThemeId(theme.id)}
-                              onClick={() => setPendingThemeId((prev) => prev === theme.id ? null : theme.id)}
-                              aria-pressed={isActive}
-                              className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
-                                isActive
-                                  ? "border-nd-success/40 bg-nd-success/[0.06]"
-                                  : isPending
-                                  ? "border-nd-accent-primary/50 bg-nd-accent-primary/[0.08]"
-                                  : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/30"
-                              }`}
-                            >
-                              {isActive && (
-                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-success" aria-label="Active theme">
-                                  <Check className="h-3 w-3 text-nd-surface-app" />
-                                </span>
-                              )}
-                              {isPending && (
-                                <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-nd-accent-primary/40 bg-nd-accent-primary/20 text-[8px] font-bold text-nd-accent-primary">
-                                  ▶
-                                </span>
-                              )}
-                              <div className="mb-2 flex gap-1">
-                                {[
-                                  theme.tokens.color.accent.primary,
-                                  theme.tokens.color.accent.secondary,
-                                  theme.tokens.color.text.warning,
-                                  theme.tokens.color.text.danger,
-                                  theme.tokens.color.surface.raised,
-                                ].map((c, i) => (
-                                  <span key={i} className="h-3 flex-1 rounded-full" style={{ backgroundColor: c }} />
-                                ))}
-                              </div>
-                              <p className="text-xs font-semibold text-nd-text-primary truncate">{theme.name}</p>
-                              <p className="mt-1 text-[11px] leading-4 text-nd-text-muted line-clamp-2">
-                                {theme.description}
-                              </p>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Right: live preview pane */}
-                      <div className="flex flex-col gap-3">
-                        <ThemePreviewMockup
-                          name={previewTheme.name}
-                          color={previewTheme.tokens.color}
-                        />
-                        <div className="space-y-1">
-                          <p className="text-xs font-semibold text-nd-text-primary truncate">{previewTheme.name}</p>
-                          <p className="text-[11px] text-nd-text-muted leading-4 line-clamp-2">
-                            {hoveredThemeId
-                              ? "Hover to preview — click to select"
-                              : hasPendingChange
-                              ? "Selected — click Apply to switch"
-                              : "Currently active"}
-                          </p>
+              ) : (
+                (() => {
+                  // Resolve which theme to show in the preview pane:
+                  // hovered > pending > currently active
+                  const previewId = hoveredThemeId ?? pendingThemeId ?? settings.activeThemeId;
+                  const previewTheme =
+                    availableThemes.find((t) => t.id === previewId) ?? activeTheme;
+                  const hasPendingChange =
+                    pendingThemeId !== null && pendingThemeId !== settings.activeThemeId;
+                  return (
+                    <div id="theme-cards-grid">
+                      <div className="grid gap-4 p-4 lg:grid-cols-[1fr_200px]">
+                        {/* Left: theme card grid */}
+                        <div
+                          className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3"
+                          onMouseLeave={() => setHoveredThemeId(null)}
+                        >
+                          {availableThemes.map((theme) => {
+                            const isActive = settings.activeThemeId === theme.id;
+                            const isPending = pendingThemeId === theme.id && !isActive;
+                            return (
+                              <button
+                                key={theme.id}
+                                type="button"
+                                data-testid="theme-card"
+                                onMouseEnter={() => setHoveredThemeId(theme.id)}
+                                onClick={() =>
+                                  setPendingThemeId((prev) => (prev === theme.id ? null : theme.id))
+                                }
+                                aria-pressed={isActive}
+                                className={`onboarding-theme-card relative rounded-xl border p-3 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                                  isActive
+                                    ? "border-nd-accent-success/40 bg-nd-accent-success/[0.06]"
+                                    : isPending
+                                      ? "border-nd-accent-primary/50 bg-nd-accent-primary/[0.08]"
+                                      : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/30"
+                                }`}
+                              >
+                                {isActive && (
+                                  <span
+                                    className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent-success"
+                                    aria-label="Active theme"
+                                  >
+                                    <Check className="h-3 w-3 text-nd-surface-app" />
+                                  </span>
+                                )}
+                                {isPending && (
+                                  <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full border border-nd-accent-primary/40 bg-nd-accent-primary/20 text-[8px] font-bold text-nd-accent-primary">
+                                    ▶
+                                  </span>
+                                )}
+                                <div className="mb-2 flex gap-1">
+                                  {[
+                                    theme.tokens.color.accent.primary,
+                                    theme.tokens.color.accent.secondary,
+                                    theme.tokens.color.text.warning,
+                                    theme.tokens.color.text.danger,
+                                    theme.tokens.color.surface.raised,
+                                  ].map((c, i) => (
+                                    <span
+                                      key={i}
+                                      className="h-3 flex-1 rounded-full"
+                                      style={{ backgroundColor: c }}
+                                    />
+                                  ))}
+                                </div>
+                                <p className="text-xs font-semibold text-nd-text-primary truncate">
+                                  {theme.name}
+                                </p>
+                                <p className="mt-1 text-[11px] leading-4 text-nd-text-muted line-clamp-2">
+                                  {theme.description}
+                                </p>
+                              </button>
+                            );
+                          })}
                         </div>
 
-                        {/* Apply / Cancel controls */}
-                        <div className="flex flex-col gap-1.5">
-                          <Button
-                            variant="primary"
-                            size="sm"
-                            fullWidth
-                            disabled={!hasPendingChange}
-                            icon={Check}
-                            onClick={() => {
-                              if (pendingThemeId) {
-                                void updateSettings({ activeThemeId: pendingThemeId });
-                                setPendingThemeId(null);
-                              }
-                            }}
-                          >
-                            {hasPendingChange ? "Apply Theme" : "Applied"}
-                          </Button>
-                          {hasPendingChange && (
+                        {/* Right: live preview pane */}
+                        <div className="flex flex-col gap-3">
+                          <ThemePreviewMockup
+                            name={previewTheme.name}
+                            color={previewTheme.tokens.color}
+                          />
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-nd-text-primary truncate">
+                              {previewTheme.name}
+                            </p>
+                            <p className="text-[11px] text-nd-text-muted leading-4 line-clamp-2">
+                              {hoveredThemeId
+                                ? "Hover to preview — click to select"
+                                : hasPendingChange
+                                  ? "Selected — click Apply to switch"
+                                  : "Currently active"}
+                            </p>
+                          </div>
+
+                          {/* Apply / Cancel controls */}
+                          <div className="flex flex-col gap-1.5">
                             <Button
-                              variant="secondary"
+                              variant="primary"
                               size="sm"
                               fullWidth
-                              onClick={() => setPendingThemeId(null)}
+                              disabled={!hasPendingChange}
+                              icon={Check}
+                              onClick={() => {
+                                if (pendingThemeId) {
+                                  void updateSettings({ activeThemeId: pendingThemeId });
+                                  setPendingThemeId(null);
+                                }
+                              }}
                             >
-                              Cancel
+                              {hasPendingChange ? "Apply Theme" : "Applied"}
                             </Button>
-                          )}
-                        </div>
+                            {hasPendingChange && (
+                              <Button
+                                variant="secondary"
+                                size="sm"
+                                fullWidth
+                                onClick={() => setPendingThemeId(null)}
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
 
-                        <p className="text-[10px] text-nd-text-muted/70 leading-4">
-                          Full wallpaper and display tuning in the <strong className="text-nd-text-muted">Themes</strong> tab.
-                        </p>
+                          <p className="text-[10px] text-nd-text-muted/70 leading-4">
+                            Full wallpaper and display tuning in the{" "}
+                            <strong className="text-nd-text-muted">Themes</strong> tab.
+                          </p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })()}
+                  );
+                })()
+              )}
             </Panel>
           </div>
         )}
@@ -552,6 +743,8 @@ export function SettingsView({
                       <button
                         key={provider.runtimeId}
                         type="button"
+                        aria-pressed={active}
+                        aria-label={`Select ${provider.label} as AI provider`}
                         onClick={() => {
                           dispatch({ type: "set-provider", provider: provider.id });
                           void neurodeckApi.ai.setProvider(provider.id);
@@ -564,7 +757,10 @@ export function SettingsView({
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-2 min-w-0">
-                            <BrainCircuit className="h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
+                            <BrainCircuit
+                              className="h-4 w-4 shrink-0 text-nd-accent-primary"
+                              aria-hidden="true"
+                            />
                             <span className="font-semibold text-nd-text-primary text-sm truncate">
                               {provider.label}
                             </span>
@@ -656,136 +852,101 @@ export function SettingsView({
         )}
 
         {/* ── Knowledge Base ───────────────────────── */}
-        {activePanel === "knowledge" && (() => {
-          const loadDirs = async () => {
-            setKbBusy("load");
-            try {
-              const res = await neurodeckApi.memory.getIndexedDirs();
-              setIndexedDirs(res.dirs);
-            } catch (e) {
-              setKbStatus({ text: `Failed to load: ${e}`, ok: false });
-            } finally {
-              setKbBusy(null);
-            }
-          };
-          if (indexedDirs === null && kbBusy === null) void loadDirs();
+        {activePanel === "knowledge" && (
+          <div id="sp-knowledge" className="settings-panel active space-y-4">
+            <Panel eyebrow="Knowledge Base" title="Indexed Directories">
+              <div className="space-y-3 p-4">
+                <p className="text-xs text-nd-text-muted leading-5">
+                  Directories indexed into the vector memory via the Docs tab. Click{" "}
+                  <strong className="text-nd-text-primary">Re-index All</strong> to re-chunk all
+                  directories with fresh embeddings (monitors via WebSocket{" "}
+                  <code className="font-mono text-nd-accent-primary">doc_index_done</code> event).
+                </p>
 
-          const handleRemoveDir = async (path: string) => {
-            setKbBusy(path);
-            try {
-              await neurodeckApi.memory.removeIndexedDir(path);
-              setIndexedDirs((prev) => prev?.filter((d) => d.path !== path) ?? null);
-              setKbStatus({ text: "Directory removed from index list", ok: true });
-            } catch (e) {
-              setKbStatus({ text: `Remove failed: ${e}`, ok: false });
-            } finally {
-              setKbBusy(null);
-            }
-          };
-
-          const handleReindexAll = async () => {
-            if (!indexedDirs?.length) return;
-            setKbBusy("reindex");
-            setKbStatus({ text: "Re-indexing all directories…", ok: true });
-            try {
-              for (const d of indexedDirs) {
-                await neurodeckApi.memory.indexDirectory(d.path);
-              }
-              setKbStatus({ text: `Queued ${indexedDirs.length} director${indexedDirs.length === 1 ? 'y' : 'ies'} for re-indexing`, ok: true });
-            } catch (e) {
-              setKbStatus({ text: `Re-index failed: ${e}`, ok: false });
-            } finally {
-              setKbBusy(null);
-            }
-          };
-
-          return (
-            <div id="sp-knowledge" className="settings-panel active space-y-4">
-              <Panel eyebrow="Knowledge Base" title="Indexed Directories">
-                <div className="space-y-3 p-4">
-                  <p className="text-xs text-nd-text-muted leading-5">
-                    Directories indexed into the vector memory via the Docs tab. Click{" "}
-                    <strong className="text-nd-text">Re-index All</strong> to re-chunk all directories
-                    with fresh embeddings (monitors via WebSocket{" "}
-                    <code className="font-mono text-nd-accent">doc_index_done</code> event).
-                  </p>
-
-                  {kbStatus && (
-                    <div className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
+                {kbStatus && (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
                       kbStatus.ok
-                        ? "border-nd-success/30 bg-nd-success/10 text-nd-success"
-                        : "border-nd-danger/30 bg-nd-danger/10 text-nd-danger"
-                    }`}>
-                      {kbStatus.text}
-                    </div>
-                  )}
-
-                  {kbBusy === "load" ? (
-                    <div className="flex items-center gap-2 py-4 text-xs text-nd-text-muted">
-                      <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" aria-hidden="true" />
-                      Loading indexed directories…
-                    </div>
-                  ) : !indexedDirs || indexedDirs.length === 0 ? (
-                    <EmptyState
-                      icon={BookOpen}
-                      title="No indexed directories"
-                      description="Use Settings → Docs or the index_directory command to add directories to the vector memory."
-                    />
-                  ) : (
-                    <ul className="divide-y divide-nd-text-muted/10 rounded-xl border border-nd-text-muted/15 overflow-hidden">
-                      {indexedDirs.map((d) => (
-                        <li key={d.path} className="flex items-center gap-3 bg-nd-surface/30 px-4 py-3">
-                          <FolderOpen className="h-4 w-4 shrink-0 text-nd-accent/70" aria-hidden="true" />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-mono text-xs text-nd-text" title={d.path}>
-                              {d.path}
-                            </p>
-                            <p className="text-[10px] text-nd-text-muted mt-0.5">
-                              {d.doc_count} chunk{d.doc_count !== 1 ? "s" : ""} indexed
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => void handleRemoveDir(d.path)}
-                            disabled={kbBusy !== null}
-                            aria-label={`Remove ${d.path} from index list`}
-                            className="shrink-0 rounded-lg border border-nd-danger/25 bg-nd-danger/10 p-1.5 text-nd-danger hover:bg-nd-danger/20 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => void loadDirs()}
-                      disabled={kbBusy !== null}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs text-nd-text-muted hover:border-nd-accent/25 hover:text-nd-accent transition disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                    >
-                      <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" /> Refresh
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void handleReindexAll()}
-                      disabled={kbBusy !== null || !indexedDirs?.length}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent hover:bg-nd-accent/20 transition disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                    >
-                      {kbBusy === "reindex" ? (
-                        <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-nd-accent border-t-transparent" aria-hidden="true" />
-                      ) : (
-                        <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-                      )}
-                      Re-index All
-                    </button>
+                        ? "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
+                        : "border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error"
+                    }`}
+                  >
+                    {kbStatus.text}
                   </div>
+                )}
+
+                {kbBusy === "load" ? (
+                  <div className="flex items-center gap-2 py-4 text-xs text-nd-text-muted">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                    Loading indexed directories…
+                  </div>
+                ) : !indexedDirs || indexedDirs.length === 0 ? (
+                  <EmptyState
+                    icon={BookOpen}
+                    title="No indexed directories"
+                    description="Use Settings → Docs or the index_directory command to add directories to the vector memory."
+                  />
+                ) : (
+                  <ul className="divide-y divide-nd-text-muted/10 rounded-xl border border-nd-text-muted/15 overflow-hidden">
+                    {indexedDirs.map((d) => (
+                      <li
+                        key={d.path}
+                        className="flex items-center gap-3 bg-nd-surface/30 px-4 py-3"
+                      >
+                        <FolderOpen
+                          className="h-4 w-4 shrink-0 text-nd-accent-primary/70"
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className="truncate font-mono text-xs text-nd-text-primary"
+                            title={d.path}
+                          >
+                            {d.path}
+                          </p>
+                          <p className="text-[10px] text-nd-text-muted mt-0.5">
+                            {d.doc_count} chunk{d.doc_count !== 1 ? "s" : ""} indexed
+                          </p>
+                        </div>
+                        <Button
+                          variant="danger"
+                          size="xs"
+                          icon={Trash2}
+                          disabled={kbBusy !== null}
+                          aria-label={`Remove ${d.path} from index list`}
+                          onClick={() => void handleRemoveKbDir(d.path)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={RefreshCcw}
+                    disabled={kbBusy !== null}
+                    onClick={() => void loadKbDirs()}
+                  >
+                    Refresh
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={kbBusy === "reindex" ? Loader2 : BookOpen}
+                    disabled={kbBusy !== null || !indexedDirs?.length}
+                    onClick={() => void handleReindexAll()}
+                  >
+                    Re-index All
+                  </Button>
                 </div>
-              </Panel>
-            </div>
-          );
-        })()}
+              </div>
+            </Panel>
+          </div>
+        )}
 
         {/* ── Voice ────────────────────────────────── */}
         {activePanel === "voice" && (
@@ -793,14 +954,22 @@ export function SettingsView({
             <Panel eyebrow="Text-to-Speech" title="TTS Mode">
               <div className="space-y-3 p-4">
                 <p className="text-xs text-nd-text-muted leading-5">
-                  Choose when NEURODECK speaks AI responses aloud. Requires espeak-ng (Linux),
-                  say (macOS), or Windows Speech API.
+                  Choose when NEURODECK speaks AI responses aloud. Requires espeak-ng (Linux), say
+                  (macOS), or Windows Speech API.
                 </p>
                 {(
                   [
                     { value: "off", label: "Off", desc: "No voice output." },
-                    { value: "complete", label: "After Response", desc: "Speaks the full response once generation finishes." },
-                    { value: "stream", label: "Stream Sentences", desc: "Speaks each sentence as it arrives — minimum latency." },
+                    {
+                      value: "complete",
+                      label: "After Response",
+                      desc: "Speaks the full response once generation finishes.",
+                    },
+                    {
+                      value: "stream",
+                      label: "Stream Sentences",
+                      desc: "Speaks each sentence as it arrives — minimum latency.",
+                    },
                   ] as const
                 ).map(({ value, label, desc }) => (
                   <label
@@ -824,7 +993,10 @@ export function SettingsView({
                       <p className="text-xs text-nd-text-muted mt-0.5">{desc}</p>
                     </div>
                     {ttsMode === value && (
-                      <Check className="ml-auto h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
+                      <Check
+                        className="ml-auto h-4 w-4 shrink-0 text-nd-accent-primary"
+                        aria-hidden="true"
+                      />
                     )}
                   </label>
                 ))}
@@ -902,14 +1074,17 @@ export function SettingsView({
                 </SettingRow>
                 <div className="grid gap-3 md:grid-cols-2">
                   <label className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
-                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">Preferred profile</span>
+                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">
+                      Preferred profile
+                    </span>
                     <select
                       value={controllerSettings.preferredProfile}
                       onChange={(event) =>
                         dispatch({
                           type: "set-controller-settings",
                           settings: {
-                            preferredProfile: event.target.value as typeof controllerSettings.preferredProfile,
+                            preferredProfile: event.target
+                              .value as typeof controllerSettings.preferredProfile,
                           },
                         })
                       }
@@ -923,7 +1098,9 @@ export function SettingsView({
                     </select>
                   </label>
                   <label className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
-                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">Glyph style</span>
+                    <span className="mb-2 block text-xs font-semibold text-nd-text-primary">
+                      Glyph style
+                    </span>
                     <select
                       value={controllerSettings.glyphStyle}
                       onChange={(event) =>
@@ -946,12 +1123,43 @@ export function SettingsView({
                 </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   {[
-                    ["Stick deadzone", controllerSettings.stickDeadzone, 0.1, 0.5, 0.01, "stickDeadzone"],
-                    ["Trigger threshold", controllerSettings.triggerThreshold, 0.1, 1, 0.01, "triggerThreshold"],
-                    ["Repeat delay", controllerSettings.initialRepeatDelayMs, 150, 700, 10, "initialRepeatDelayMs"],
-                    ["Repeat rate", controllerSettings.repeatIntervalMs, 40, 180, 5, "repeatIntervalMs"],
+                    [
+                      "Stick deadzone",
+                      controllerSettings.stickDeadzone,
+                      0.1,
+                      0.5,
+                      0.01,
+                      "stickDeadzone",
+                    ],
+                    [
+                      "Trigger threshold",
+                      controllerSettings.triggerThreshold,
+                      0.1,
+                      1,
+                      0.01,
+                      "triggerThreshold",
+                    ],
+                    [
+                      "Repeat delay",
+                      controllerSettings.initialRepeatDelayMs,
+                      150,
+                      700,
+                      10,
+                      "initialRepeatDelayMs",
+                    ],
+                    [
+                      "Repeat rate",
+                      controllerSettings.repeatIntervalMs,
+                      40,
+                      180,
+                      5,
+                      "repeatIntervalMs",
+                    ],
                   ].map(([label, value, min, max, step, key]) => (
-                    <label key={String(key)} className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+                    <label
+                      key={String(key)}
+                      className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3"
+                    >
                       <span className="flex items-center justify-between text-xs font-semibold text-nd-text-primary">
                         <span>{label}</span>
                         <span className="font-mono text-nd-accent-primary">{value}</span>
@@ -1039,8 +1247,13 @@ export function SettingsView({
                     ["Screen", runtime.currentScreenId],
                     ["Focus zone", runtime.currentFocusZone ?? "unknown"],
                   ].map(([label, value]) => (
-                    <div key={label} className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2">
-                      <p className="text-[11px] uppercase tracking-[0.18em] text-nd-text-muted">{label}</p>
+                    <div
+                      key={label}
+                      className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2"
+                    >
+                      <p className="text-[11px] uppercase tracking-[0.18em] text-nd-text-muted">
+                        {label}
+                      </p>
                       <p className="mt-1 text-sm font-semibold text-nd-text-primary">{value}</p>
                     </div>
                   ))}
@@ -1053,7 +1266,7 @@ export function SettingsView({
                   {runtime.devices.map((device) => (
                     <div key={device.id} className="flex items-center justify-between gap-3">
                       <span>{device.name}</span>
-                      <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 font-mono text-nd-accent text-[10px]">
+                      <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 font-mono text-nd-accent-primary text-[10px]">
                         {device.kind}
                       </kbd>
                     </div>
@@ -1107,7 +1320,9 @@ export function SettingsView({
                       className={`rounded-xl border p-3.5 ${active ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]" : "border-nd-border-subtle bg-nd-surface-secondary/40"}`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-nd-text-primary text-sm">{meta.label}</span>
+                        <span className="font-semibold text-nd-text-primary text-sm">
+                          {meta.label}
+                        </span>
                         {active && <Badge tone="accent">Active</Badge>}
                       </div>
                       <p className="mt-1 text-xs text-nd-text-muted">{meta.desc}</p>
@@ -1131,7 +1346,9 @@ export function SettingsView({
                     className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-3"
                   >
                     <p className="text-xs text-nd-text-muted">{label}</p>
-                    <p className="mt-1 font-mono text-lg font-bold text-nd-accent-primary">{value}</p>
+                    <p className="mt-1 font-mono text-lg font-bold text-nd-accent-primary">
+                      {value}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -1215,7 +1432,7 @@ export function SettingsView({
             {state.lastExportPath && (
               <Panel eyebrow="Export" title="Last Export">
                 <div className="p-4">
-                  <p className="rounded-xl border border-nd-success/20 bg-nd-success/10 px-3 py-2 text-xs font-mono text-nd-success break-all">
+                  <p className="rounded-xl border border-nd-accent-success/20 bg-nd-accent-success/10 px-3 py-2 text-xs font-mono text-nd-accent-success break-all">
                     {state.lastExportPath}
                   </p>
                 </div>
@@ -1254,13 +1471,20 @@ export function SettingsView({
               </div>
             </Panel>
 
-            <Panel eyebrow="Danger Zone" title="Reset" className="border-nd-danger/30 bg-nd-danger/[0.02]">
+            <Panel
+              eyebrow="Danger Zone"
+              title="Reset"
+              className="border-nd-accent-error/30 bg-nd-accent-error/[0.02]"
+            >
               <div className="p-4 space-y-3">
                 <div className="flex items-start gap-2">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-nd-danger" aria-hidden="true" />
+                  <AlertTriangle
+                    className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-error"
+                    aria-hidden="true"
+                  />
                   <p className="text-xs text-nd-text-secondary">
-                    Clears stored UI preferences, active session, and cached context. Does not delete
-                    sessions or exports from disk.
+                    Clears stored UI preferences, active session, and cached context. Does not
+                    delete sessions or exports from disk.
                   </p>
                 </div>
                 <Button

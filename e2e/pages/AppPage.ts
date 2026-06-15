@@ -154,7 +154,8 @@ export class AppPage {
   }
 
   async openSettings() {
-    await this.settingsBtn.click();
+    await this.settingsBtn.scrollIntoViewIfNeeded();
+    await this.settingsBtn.evaluate((el) => (el as HTMLButtonElement).click());
     await expect(this.settingsOverlay).toHaveClass(/active/);
   }
 
@@ -192,5 +193,9 @@ export class AppPage {
 
   async mockTauriBackend() {
     await this.page.addInitScript(buildTauriMock);
+  }
+
+  async mockBridgeBackend() {
+    await this.mockTauriBackend();
   }
 }

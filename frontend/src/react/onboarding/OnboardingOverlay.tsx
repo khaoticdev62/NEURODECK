@@ -3,10 +3,7 @@ import { ArrowLeft, ArrowRight, Check, Gauge, MonitorPlay, Sparkles, X } from "l
 import { useControllerAction } from "../input/controller/useControllerAction";
 import type { NeuroDeckAction, NeuroDeckState } from "../types/neurodeck";
 import { OnboardingAnimationPanel } from "./OnboardingAnimation";
-import {
-  getCoreOnboardingManifests,
-  buildOnboardingSteps,
-} from "./OnboardingRegistry";
+import { getCoreOnboardingManifests, buildOnboardingSteps } from "./OnboardingRegistry";
 import {
   loadOnboardingProgress,
   markLegacyOnboardingComplete,
@@ -25,7 +22,10 @@ export function OnboardingOverlay({ mode, state, dispatch }: Props) {
   const [progress, setProgress] = useState<OnboardingProgressState | null>(null);
   const [index, setIndex] = useState(0);
   const manifests = useMemo(() => getCoreOnboardingManifests(), []);
-  const steps = useMemo(() => buildOnboardingSteps({ mode, state, activeView: state.activeView }), [mode, state]);
+  const steps = useMemo(
+    () => buildOnboardingSteps({ mode, state, activeView: state.activeView }),
+    [mode, state]
+  );
   const step = steps[Math.min(index, Math.max(0, steps.length - 1))];
   const anchors = useMemo(() => manifests.flatMap((manifest) => manifest.anchors), [manifests]);
 
@@ -34,7 +34,9 @@ export function OnboardingOverlay({ mode, state, dispatch }: Props) {
     loadOnboardingProgress().then((loaded) => {
       if (!mounted) return;
       setProgress(loaded);
-      const lastIndex = loaded.lastActiveStepId ? steps.findIndex((item) => item.id === loaded.lastActiveStepId) : -1;
+      const lastIndex = loaded.lastActiveStepId
+        ? steps.findIndex((item) => item.id === loaded.lastActiveStepId)
+        : -1;
       if (lastIndex >= 0) setIndex(lastIndex);
     });
     return () => {
@@ -96,21 +98,33 @@ export function OnboardingOverlay({ mode, state, dispatch }: Props) {
     await persist({ fidelityMode });
   };
 
-  useControllerAction("back", () => {
-    if (index > 0) setIndex((value) => value - 1);
-    else void close();
-    return true;
-  }, true);
+  useControllerAction(
+    "back",
+    () => {
+      if (index > 0) setIndex((value) => value - 1);
+      else void close();
+      return true;
+    },
+    true
+  );
 
-  useControllerAction("cancel", () => {
-    void close();
-    return true;
-  }, true);
+  useControllerAction(
+    "cancel",
+    () => {
+      void close();
+      return true;
+    },
+    true
+  );
 
-  useControllerAction("confirm", () => {
-    void completeCurrent();
-    return true;
-  }, true);
+  useControllerAction(
+    "confirm",
+    () => {
+      void completeCurrent();
+      return true;
+    },
+    true
+  );
 
   if (!step || !progress) return null;
 
@@ -125,13 +139,21 @@ export function OnboardingOverlay({ mode, state, dispatch }: Props) {
       aria-modal="true"
       aria-labelledby="onboarding-tour-title"
     >
-      <OnboardingViewfinder step={step} anchors={anchors} noDim={progress.fidelityMode === "deck_safe"} />
+      <OnboardingViewfinder
+        step={step}
+        anchors={anchors}
+        noDim={progress.fidelityMode === "deck_safe"}
+      />
       <section className="onboarding-tour-card no-drag">
         <header className="flex items-start justify-between gap-4 border-b border-nd-text-muted/15 p-4">
           <div>
             <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-nd-accent/20 bg-nd-accent/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.22em] text-nd-accent">
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              {mode === "contextual" ? "Show Me This" : mode === "whats-new" ? "What's New" : "Guided Tour"}
+              {mode === "contextual"
+                ? "Show Me This"
+                : mode === "whats-new"
+                  ? "What's New"
+                  : "Guided Tour"}
             </div>
             <h2 id="onboarding-tour-title" className="text-lg font-bold text-nd-text">
               {step.title}
@@ -170,7 +192,10 @@ export function OnboardingOverlay({ mode, state, dispatch }: Props) {
               </div>
               <div className="space-y-2">
                 {step.inputHints.map((hint) => (
-                  <div key={`${hint.device}-${hint.input}`} className="flex items-center justify-between gap-2 text-xs">
+                  <div
+                    key={`${hint.device}-${hint.input}`}
+                    className="flex items-center justify-between gap-2 text-xs"
+                  >
                     <span className="text-nd-text-muted">{hint.action}</span>
                     <kbd className="rounded border border-nd-text-muted/15 bg-nd-bg/60 px-2 py-0.5 font-mono text-nd-accent">
                       {hint.input}
@@ -186,16 +211,32 @@ export function OnboardingOverlay({ mode, state, dispatch }: Props) {
                 Media Policy
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => void setFidelityMode("deck_safe")} className={policyClass(!rich)}>
+                <button
+                  type="button"
+                  onClick={() => void setFidelityMode("deck_safe")}
+                  className={policyClass(!rich)}
+                >
                   Deck Safe
                 </button>
-                <button type="button" onClick={() => void setFidelityMode("rich")} className={policyClass(rich)}>
+                <button
+                  type="button"
+                  onClick={() => void setFidelityMode("rich")}
+                  className={policyClass(rich)}
+                >
                   Rich
                 </button>
-                <button type="button" onClick={() => void setMotionMode("full")} className={policyClass(progress.motionMode === "full")}>
+                <button
+                  type="button"
+                  onClick={() => void setMotionMode("full")}
+                  className={policyClass(progress.motionMode === "full")}
+                >
                   Motion
                 </button>
-                <button type="button" onClick={() => void setMotionMode("none")} className={policyClass(progress.motionMode === "none")}>
+                <button
+                  type="button"
+                  onClick={() => void setMotionMode("none")}
+                  className={policyClass(progress.motionMode === "none")}
+                >
                   No Motion
                 </button>
               </div>

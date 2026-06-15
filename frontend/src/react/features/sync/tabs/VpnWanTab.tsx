@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Network, Plus, Send, ShieldAlert } from 'lucide-react';
-import { Button } from '../../../components/primitives/Button';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { Panel } from '../../../components/primitives/Panel';
-import { TextInput } from '../../../components/primitives/TextInput';
-import { Toggle } from '../../../components/primitives/Toggle';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import type { TransferPeer } from '../../../services/bridgeAdapter';
+﻿import { useState } from "react";
+import { Network, Plus, Send, ShieldAlert } from "lucide-react";
+import { Button } from "../../../components/primitives/Button";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { Panel } from "../../../components/primitives/Panel";
+import { TextInput } from "../../../components/primitives/TextInput";
+import { Toggle } from "../../../components/primitives/Toggle";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import type { TransferPeer } from "../../../services/bridgeAdapter";
 
 interface Props {
   peers: TransferPeer[];
@@ -17,11 +17,13 @@ interface Props {
 }
 
 export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) {
-  const [host, setHost] = useState('');
-  const [port, setPort] = useState('42000');
-  const [label, setLabel] = useState('');
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState("42000");
+  const [label, setLabel] = useState("");
   const [strictVpn, setStrictVpn] = useState(true);
-  const manualPeers = peers.filter((peer) => peer.os === 'unknown' || peer.hostname.toLowerCase().includes('vpn'));
+  const manualPeers = peers.filter(
+    (peer) => peer.os === "unknown" || peer.hostname.toLowerCase().includes("vpn")
+  );
 
   const handleAdd = async () => {
     if (!host.trim()) return;
@@ -32,8 +34,8 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
         label.trim() || host.trim()
       );
       onPeerAdded();
-      setHost('');
-      setLabel('');
+      setHost("");
+      setLabel("");
     } catch (e) {
       onError(`Manual VPN peer add failed: ${e}`);
     }
@@ -42,21 +44,30 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
   return (
     <Panel eyebrow="VPN / WAN" title="Manual & VPN Peers" className="h-full">
       <div className="flex h-full flex-col gap-4 overflow-y-auto">
-        <section aria-label="VPN safety" className="rounded-xl border border-nd-warning/25 bg-nd-warning/5 p-4">
+        <section
+          aria-label="VPN safety"
+          className="rounded-xl border border-nd-accent-warning/25 bg-nd-accent-warning/5 p-4"
+        >
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-warning/20 bg-nd-warning/10">
-              <ShieldAlert className="h-4 w-4 text-nd-warning" aria-hidden="true" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-accent-warning/20 bg-nd-accent-warning/10">
+              <ShieldAlert className="h-4 w-4 text-nd-accent-warning" aria-hidden="true" />
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-nd-text-primary">VPN/WAN mode is manual and allowlist-first</h3>
+              <h3 className="text-sm font-semibold text-nd-text-primary">
+                VPN/WAN mode is manual and allowlist-first
+              </h3>
               <p className="mt-1 text-xs leading-5 text-nd-text-muted">
-                Public internet exposure is not enabled here. Add peers by VPN or mesh IP, keep strict mode on, and use Diagnostics to verify ports.
+                Public internet exposure is not enabled here. Add peers by VPN or mesh IP, keep
+                strict mode on, and use Diagnostics to verify ports.
               </p>
             </div>
           </div>
         </section>
 
-        <section aria-label="Add VPN peer" className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
+        <section
+          aria-label="Add VPN peer"
+          className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4"
+        >
           <div className="mb-3 flex items-center justify-between gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
               Manual VPN / Mesh Peer
@@ -69,7 +80,7 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
           </div>
           <div className="grid gap-3 lg:grid-cols-[1fr_100px_1fr_auto] lg:items-end">
             <TextInput
-              label="Host"
+              label="VPN Peer Host"
               value={host}
               onChange={(e) => setHost(e.target.value)}
               placeholder="VPN IP or hostname"
@@ -83,7 +94,7 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
               fullWidth
             />
             <TextInput
-              label="Alias"
+              label="VPN Peer Alias"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Optional"
@@ -102,7 +113,8 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
           </div>
           {strictVpn && (
             <p className="mt-2 text-xs text-nd-text-muted">
-              Strict mode records this as a manual peer only; it does not open public inbound listeners or enable mDNS relay.
+              Strict mode records this as a manual peer only; it does not open public inbound
+              listeners or enable mDNS relay.
             </p>
           )}
         </section>
@@ -129,8 +141,12 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
                     <Network className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-nd-text-primary">{peer.hostname}</p>
-                    <p className="text-xs text-nd-text-muted">{peer.ip}:{peer.port}</p>
+                    <p className="truncate text-sm font-medium text-nd-text-primary">
+                      {peer.hostname}
+                    </p>
+                    <p className="text-xs text-nd-text-muted">
+                      {peer.ip}:{peer.port}
+                    </p>
                   </div>
                   <IconButton
                     type="button"

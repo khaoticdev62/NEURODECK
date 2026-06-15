@@ -1,8 +1,8 @@
-import * as React from 'react';
+import * as React from "react";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-panel-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-panel-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-panel-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-panel-css";
   s.textContent = `
   .nd-panel{background:var(--nd-surface-secondary);border:1px solid var(--nd-border-subtle);
     border-radius:var(--nd-radius-lg);box-shadow:var(--nd-elevation-card);overflow:hidden;
@@ -24,8 +24,8 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-panel-css'))
   document.head.appendChild(s);
 }
 
-export type PanelEmphasis = 'default' | 'raised' | 'active' | 'critical';
-export type PanelDensity = 'compact' | 'normal' | 'spacious';
+export type PanelEmphasis = "default" | "raised" | "active" | "critical";
+export type PanelDensity = "compact" | "normal" | "spacious";
 
 /**
  * Reusable tactical-glass content surface with an optional titled header,
@@ -50,14 +50,15 @@ export function Panel({
   eyebrow,
   description,
   actions,
-  emphasis = 'default',
-  density = 'normal',
+  emphasis = "default",
+  density = "normal",
   children,
-  className = '',
+  className = "",
   ...rest
 }: PanelProps): React.ReactNode {
-  const cls = ['nd-panel', emphasis !== 'default' ? `nd-panel--${emphasis}` : '', className]
-    .filter(Boolean).join(' ');
+  const cls = ["nd-panel", emphasis !== "default" ? `nd-panel--${emphasis}` : "", className]
+    .filter(Boolean)
+    .join(" ");
   const hasHeader = title || eyebrow || description || actions;
   return (
     <section className={cls} {...rest}>

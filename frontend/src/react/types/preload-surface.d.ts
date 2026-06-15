@@ -85,7 +85,7 @@ export interface ElectronAPI {
   getIsKiosk(): Promise<boolean>;
 
   /** Returns the current notification permission status. */
-  requestNotificationPermission(): Promise<'granted' | 'denied'>;
+  requestNotificationPermission(): Promise<"granted" | "denied">;
 
   // Browser (WebContentsView)
   browserOpen(url: string): Promise<{ success: boolean }>;
@@ -96,7 +96,12 @@ export interface ElectronAPI {
   browserGetUrl(): Promise<{ url: string }>;
   browserHide(): Promise<{ success: boolean }>;
   browserShow(): Promise<{ success: boolean }>;
-  browserSetBounds(bounds: { x: number; y: number; width: number; height: number }): Promise<{ success: boolean }>;
+  browserSetBounds(bounds: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }): Promise<{ success: boolean }>;
   browserGetContent(): Promise<{ content: string }>;
   browserSaveToMemory(): Promise<{ success: boolean; note?: string }>;
   browserZoomIn(): Promise<{ zoomLevel: number }>;
@@ -106,12 +111,25 @@ export interface ElectronAPI {
   browserStopFind(): Promise<{ success: boolean }>;
 
   // Bookmarks
-  browserBookmarkAdd(title: string, url: string): Promise<{ success: boolean; bookmarks: Array<{ title: string; url: string; createdAt: number }> }>;
-  browserBookmarkRemove(url: string): Promise<{ success: boolean; bookmarks: Array<{ title: string; url: string; createdAt: number }> }>;
-  browserBookmarkList(): Promise<{ bookmarks: Array<{ title: string; url: string; createdAt: number }> }>;
+  browserBookmarkAdd(
+    title: string,
+    url: string
+  ): Promise<{
+    success: boolean;
+    bookmarks: Array<{ title: string; url: string; createdAt: number }>;
+  }>;
+  browserBookmarkRemove(url: string): Promise<{
+    success: boolean;
+    bookmarks: Array<{ title: string; url: string; createdAt: number }>;
+  }>;
+  browserBookmarkList(): Promise<{
+    bookmarks: Array<{ title: string; url: string; createdAt: number }>;
+  }>;
 
   // History
-  browserHistoryList(): Promise<{ history: Array<{ url: string; title: string; timestamp: number }> }>;
+  browserHistoryList(): Promise<{
+    history: Array<{ url: string; title: string; timestamp: number }>;
+  }>;
   browserHistoryClear(): Promise<{ success: boolean }>;
 
   // Reader mode
@@ -121,7 +139,9 @@ export interface ElectronAPI {
   browserAdblockToggle(): Promise<{ enabled: boolean }>;
   browserAdblockStatus(): Promise<{ enabled: boolean }>;
 
-  onBrowserEvent(callback: (data: { event: string; payload: Record<string, unknown> }) => void): () => void;
+  onBrowserEvent(
+    callback: (data: { event: string; payload: Record<string, unknown> }) => void
+  ): () => void;
 
   // Diagnostics roundtrip
   onDiagnosticsPing(callback: (data: { requestId: string; timestamp: string }) => void): () => void;
@@ -157,4 +177,11 @@ declare global {
   }
 }
 
-export type { ElectronAPI, ElectronVersions, RuntimeManifest, SafeStorageEncryptResult, SafeStorageDecryptResult, SafeStorageError };
+export type {
+  ElectronAPI,
+  ElectronVersions,
+  RuntimeManifest,
+  SafeStorageEncryptResult,
+  SafeStorageDecryptResult,
+  SafeStorageError,
+};

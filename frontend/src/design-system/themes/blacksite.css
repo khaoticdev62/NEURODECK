@@ -1,11 +1,11 @@
 /* NEURODECK v1.0 — Blacksite Theme (default dark tactical) */
 .theme-blacksite {
-  --nd-surface-app: #05070A;
-  --nd-surface-primary: #0A0D10;
-  --nd-surface-secondary: #11161C;
-  --nd-surface-tertiary: #18212B;
-  --nd-accent-primary: #5EEBFF;
-  --nd-accent-agent: #B28CFF;
+  --nd-surface-app: #05070a;
+  --nd-surface-primary: #0a0d10;
+  --nd-surface-secondary: #11161c;
+  --nd-surface-tertiary: #18212b;
+  --nd-accent-primary: #5eebff;
+  --nd-accent-agent: #b28cff;
   --nd-surface-hover: rgba(141, 161, 179, 0.08);
   --nd-surface-active: rgba(94, 235, 255, 0.12);
   --nd-surface-selected: rgba(94, 235, 255, 0.14);

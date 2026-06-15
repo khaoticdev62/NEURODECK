@@ -14,7 +14,7 @@ export class RepeatManager {
     pressed: boolean,
     now: number,
     initialDelayMs: number,
-    repeatIntervalMs: number,
+    repeatIntervalMs: number
   ): RepeatDecision {
     if (!pressed) {
       this.pressedAt.delete(action);

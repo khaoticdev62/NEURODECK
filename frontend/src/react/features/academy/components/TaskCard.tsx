@@ -1,16 +1,16 @@
-import { useState, useId } from 'react';
-import { ChevronDown, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
-import { Badge } from '../../../components/primitives/Badge';
-import { Button } from '../../../components/primitives/Button';
-import { gradeAnswer, scoreTone } from '../utils/grading';
-import type { LabTask } from '../types';
-import type { GradeResult } from '../utils/grading';
+﻿import { useState, useId } from "react";
+import { ChevronDown, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
+import { Badge } from "../../../components/primitives/Badge";
+import { Button } from "../../../components/primitives/Button";
+import { gradeAnswer, scoreTone } from "../utils/grading";
+import type { LabTask } from "../types";
+import type { GradeResult } from "../utils/grading";
 
 const TASK_KIND_LABEL: Record<string, string> = {
-  identify: 'Identify',
-  classify: 'Classify',
-  write: 'Write',
-  command: 'Command',
+  identify: "Identify",
+  classify: "Classify",
+  write: "Write",
+  command: "Command",
 };
 
 interface TaskCardProps {
@@ -32,7 +32,7 @@ export function TaskCard({
   onNext,
   existingResult,
 }: TaskCardProps) {
-  const [answer, setAnswer] = useState('');
+  const [answer, setAnswer] = useState("");
   const [result, setResult] = useState<GradeResult | undefined>(existingResult);
   const [hintOpen, setHintOpen] = useState(false);
   const promptId = useId();
@@ -80,7 +80,7 @@ export function TaskCard({
             rows={4}
             className="w-full resize-none rounded-xl border border-nd-border-subtle bg-nd-surface-base/60 px-3 py-2.5 text-sm text-nd-text-primary placeholder:text-nd-text-muted/40 focus:border-nd-accent-primary/40 focus:outline-none focus:ring-1 focus:ring-nd-accent-primary/20"
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmit();
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit();
             }}
           />
 
@@ -101,19 +101,14 @@ export function TaskCard({
             </button>
           )}
           {hintOpen && task.hint && (
-            <p className="rounded-xl border border-nd-accent/15 bg-nd-accent/[0.04] px-3 py-2 text-xs leading-5 text-nd-text-secondary">
+            <p className="rounded-xl border border-nd-accent-primary/15 bg-nd-accent-primary/[0.04] px-3 py-2 text-xs leading-5 text-nd-text-secondary">
               {task.hint}
             </p>
           )}
 
           {/* Submit */}
           <div className="flex justify-end">
-            <Button
-              size="sm"
-              variant="soft"
-              onClick={handleSubmit}
-              disabled={!answer.trim()}
-            >
+            <Button size="sm" variant="soft" onClick={handleSubmit} disabled={!answer.trim()}>
               Submit
               <span className="text-nd-accent-primary/60 font-normal">⌘↵</span>
             </Button>
@@ -127,29 +122,29 @@ export function TaskCard({
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-nd-text-muted/60">
               Your answer
             </p>
-            <p className="text-xs leading-5 text-nd-text-secondary">{answer || '(no answer)'}</p>
+            <p className="text-xs leading-5 text-nd-text-secondary">{answer || "(no answer)"}</p>
           </div>
 
           {/* Score badge + feedback */}
           <div
             className={`flex items-start gap-3 rounded-xl border px-3 py-3 ${
               result.passed
-                ? 'border-nd-accent-success/20 bg-nd-accent-success/[0.05]'
-                : 'border-nd-accent-error/20 bg-nd-accent-error/[0.05]'
+                ? "border-nd-accent-success/20 bg-nd-accent-success/[0.05]"
+                : "border-nd-accent-error/20 bg-nd-accent-error/[0.05]"
             }`}
           >
             <div
               className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border font-mono text-sm font-bold ${
                 result.passed
-                  ? 'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success'
-                  : 'border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error'
+                  ? "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
+                  : "border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error"
               }`}
             >
               {result.score}
             </div>
             <div>
               <Badge tone={scoreTone(result.score)}>
-                {result.score >= 60 ? 'Pass' : 'Needs Review'}
+                {result.score >= 60 ? "Pass" : "Needs Review"}
               </Badge>
               <p className="mt-1 text-xs leading-5 text-nd-text-secondary">{result.feedback}</p>
             </div>
@@ -165,8 +160,14 @@ export function TaskCard({
 
           {/* Next / Complete button */}
           <div className="flex justify-end">
-            <Button size="sm" variant="soft" icon={ChevronRight} iconPosition="right" onClick={onNext}>
-              {isLastTask ? 'View Results' : 'Next Task'}
+            <Button
+              size="sm"
+              variant="soft"
+              icon={ChevronRight}
+              iconPosition="right"
+              onClick={onNext}
+            >
+              {isLastTask ? "View Results" : "Next Task"}
             </Button>
           </div>
         </div>

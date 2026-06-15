@@ -1,8 +1,8 @@
-import * as React from 'react';
+import * as React from "react";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-toast-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-toast-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-toast-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-toast-css";
   s.textContent = `
   .nd-toast{display:flex;align-items:flex-start;gap:10px;min-width:280px;max-width:420px;
     background:var(--nd-surface-tertiary);border:1px solid var(--nd-border-default);border-left-width:3px;
@@ -30,15 +30,15 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-toast-css'))
   document.head.appendChild(s);
 }
 
-const TOAST_GLYPH = { info: '…', success: '✓', warning: '!', error: '×' };
+const TOAST_GLYPH = { info: "…", success: "✓", warning: "!", error: "×" };
 
-export type ToastTone = 'info' | 'success' | 'warning' | 'error';
+export type ToastTone = "info" | "success" | "warning" | "error";
 
 /**
  * Temporary notification. Readable at Deck distance; does not steal focus unless
  * an action is required. Critical errors should never be toast-only.
  */
-export interface ToastProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'title'> {
+export interface ToastProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
   /** @default 'info' */
   tone?: ToastTone;
   title?: React.ReactNode;
@@ -48,25 +48,31 @@ export interface ToastProps extends Omit<React.HTMLAttributes<HTMLDivElement>, '
 }
 
 export function Toast({
-  tone = 'info',
+  tone = "info",
   title,
   message,
   onClose,
-  className = '',
+  className = "",
   ...rest
 }: ToastProps): React.ReactNode {
   return (
     <div
-      className={['nd-toast', `nd-toast--${tone}`, className].filter(Boolean).join(' ')}
-      role={tone === 'error' || tone === 'warning' ? 'alert' : 'status'}
+      className={["nd-toast", `nd-toast--${tone}`, className].filter(Boolean).join(" ")}
+      role={tone === "error" || tone === "warning" ? "alert" : "status"}
       {...rest}
     >
-      <span className="nd-toast__glyph" aria-hidden="true">{TOAST_GLYPH[tone]}</span>
+      <span className="nd-toast__glyph" aria-hidden="true">
+        {TOAST_GLYPH[tone]}
+      </span>
       <div className="nd-toast__main">
         {title ? <div className="nd-toast__title">{title}</div> : null}
         {message ? <div className="nd-toast__msg">{message}</div> : null}
       </div>
-      {onClose ? <button className="nd-toast__close" aria-label="Dismiss" onClick={onClose}>×</button> : null}
+      {onClose ? (
+        <button className="nd-toast__close" aria-label="Dismiss" onClick={onClose}>
+          ×
+        </button>
+      ) : null}
     </div>
   );
 }

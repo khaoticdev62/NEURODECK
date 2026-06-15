@@ -159,13 +159,13 @@ export function BrowserView() {
   const [activeDownloadCount, setActiveDownloadCount] = useState(0);
   const [showDownloadsMenu, setShowDownloadsMenu] = useState(false);
   const [errorDetailsOpen, setErrorDetailsOpen] = useState(false);
-  const [notice, setNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
+  const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [zoomLevels, setZoomLevels] = useState<Record<string, number>>({});
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const urlInputRef = useRef<HTMLInputElement>(null);
 
-  const showNotice = (kind: 'ok' | 'error', text: string) => {
+  const showNotice = (kind: "ok" | "error", text: string) => {
     setNotice({ kind, text });
     setTimeout(() => setNotice(null), 4000);
   };
@@ -323,9 +323,9 @@ export function BrowserView() {
     if (window.neurodeck?.browser) {
       try {
         await window.neurodeck.browser.saveToMemory();
-        showNotice('ok', 'Page content captured and injected into vector memory.');
+        showNotice("ok", "Page content captured and injected into vector memory.");
       } catch (err: unknown) {
-        showNotice('error', `Failed to save: ${err instanceof Error ? err.message : String(err)}`);
+        showNotice("error", `Failed to save: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   };
@@ -445,7 +445,7 @@ export function BrowserView() {
         localStorage: true,
       });
       setShowProfilesMenu(false);
-      showNotice('ok', `Partition data purged for profile: ${profileId}`);
+      showNotice("ok", `Partition data purged for profile: ${profileId}`);
     }
   };
 
@@ -454,12 +454,18 @@ export function BrowserView() {
       try {
         const res = await window.neurodeck.browser.clearBrowserData(scope);
         if (res?.success) {
-          showNotice('ok', scope === "currentTab" ? "Current session data cleared." : "All profile storage purged.");
+          showNotice(
+            "ok",
+            scope === "currentTab" ? "Current session data cleared." : "All profile storage purged."
+          );
         } else {
-          showNotice('error', "Failed to clear data.");
+          showNotice("error", "Failed to clear data.");
         }
       } catch (err: unknown) {
-        showNotice('error', `Failed to clear data: ${err instanceof Error ? err.message : String(err)}`);
+        showNotice(
+          "error",
+          `Failed to clear data: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   };
@@ -642,16 +648,19 @@ export function BrowserView() {
   const activeProfile = profiles.find((p) => p.id === activeTab?.profileId);
 
   return (
-    <div className="browser-container flex h-full flex-col bg-nd-surface-app text-nd-text-primary select-none" data-controller-zone="browser">
+    <div
+      className="browser-container flex h-full flex-col bg-nd-surface-app text-nd-text-primary select-none"
+      data-controller-zone="browser"
+    >
       {/* Inline notice (replaces alert() calls) */}
       {notice && (
         <div
           role="status"
           aria-live="polite"
           className={`absolute bottom-4 left-1/2 z-[var(--z-toast)] -translate-x-1/2 flex items-center gap-2 rounded-xl border px-4 py-2 text-xs font-medium shadow-lg ${
-            notice.kind === 'ok'
-              ? 'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success'
-              : 'border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error'
+            notice.kind === "ok"
+              ? "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
+              : "border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error"
           }`}
         >
           {notice.text}
@@ -661,26 +670,50 @@ export function BrowserView() {
       {permissions.length > 0 && (
         <div className="absolute top-4 left-1/2 z-[var(--z-toast)] w-96 -translate-x-1/2 rounded-2xl border border-nd-accent-primary/30 bg-nd-surface-app/95 p-4 shadow-2xl flex flex-col gap-3">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-nd-accent-warning" aria-hidden="true" />
+            <AlertTriangle
+              className="mt-0.5 h-5 w-5 shrink-0 text-nd-accent-warning"
+              aria-hidden="true"
+            />
             <div>
               <h4 className="text-sm font-semibold text-nd-text-primary">Permission Request</h4>
               <p className="mt-1 text-xs leading-relaxed text-nd-text-muted">
-                The site <code className="text-nd-accent-primary">{permissions[0].origin}</code> requests
-                access to <code className="text-nd-accent-primary">{permissions[0].permission}</code>.
+                The site <code className="text-nd-accent-primary">{permissions[0].origin}</code>{" "}
+                requests access to{" "}
+                <code className="text-nd-accent-primary">{permissions[0].permission}</code>.
               </p>
             </div>
           </div>
           <div className="mt-2 grid grid-cols-2 gap-2">
-            <Button variant="primary" size="xs" fullWidth onClick={() => respondToPermission(permissions[0].requestId, "allow_once")}>
+            <Button
+              variant="primary"
+              size="xs"
+              fullWidth
+              onClick={() => respondToPermission(permissions[0].requestId, "allow_once")}
+            >
               Allow Once
             </Button>
-            <Button variant="success" size="xs" fullWidth onClick={() => respondToPermission(permissions[0].requestId, "allow_always")}>
+            <Button
+              variant="success"
+              size="xs"
+              fullWidth
+              onClick={() => respondToPermission(permissions[0].requestId, "allow_always")}
+            >
               Allow Always
             </Button>
-            <Button variant="secondary" size="xs" fullWidth onClick={() => respondToPermission(permissions[0].requestId, "block_once")}>
+            <Button
+              variant="secondary"
+              size="xs"
+              fullWidth
+              onClick={() => respondToPermission(permissions[0].requestId, "block_once")}
+            >
               Block Once
             </Button>
-            <Button variant="danger" size="xs" fullWidth onClick={() => respondToPermission(permissions[0].requestId, "block_always")}>
+            <Button
+              variant="danger"
+              size="xs"
+              fullWidth
+              onClick={() => respondToPermission(permissions[0].requestId, "block_always")}
+            >
               Block Always
             </Button>
           </div>
@@ -688,25 +721,40 @@ export function BrowserView() {
       )}
 
       {/* Title / Tab Strip */}
-      <div className="flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-secondary/30 px-4 py-2 shrink-0" data-controller-zone="toolbar">
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 max-w-[80%] pr-4">
+      <div
+        className="flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-secondary/30 px-4 py-2 shrink-0"
+        data-controller-zone="toolbar"
+      >
+        <div
+          role="tablist"
+          aria-label="Browser tabs"
+          className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 max-w-[80%] pr-4"
+        >
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
             return (
               <div
                 key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                tabIndex={isActive ? 0 : -1}
                 onClick={() => switchTab(tab.id)}
-                className={`group relative flex min-h-[40px] items-center gap-2 rounded-xl px-3 py-1.5 text-xs transition cursor-pointer shrink-0 border ${
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && void switchTab(tab.id)}
+                className={`group relative flex min-h-[40px] items-center gap-2 rounded-xl px-3 py-1.5 text-xs transition cursor-pointer shrink-0 border outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
                   isActive
                     ? "bg-nd-surface-selected border-nd-accent-primary/40 text-nd-text-primary font-semibold"
                     : "bg-nd-surface-secondary/40 border-transparent text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary"
                 }`}
               >
                 {tab.isPrivate ? (
-                  <Lock className="h-3.5 w-3.5 text-nd-accent-warning shrink-0" />
+                  <Lock
+                    className="h-3.5 w-3.5 text-nd-accent-warning shrink-0"
+                    aria-hidden="true"
+                  />
                 ) : (
                   <Globe
                     className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-nd-accent-primary" : "text-nd-text-muted"}`}
+                    aria-hidden="true"
                   />
                 )}
                 <span className="max-w-[120px] truncate">{tab.title || "New Tab"}</span>
@@ -714,7 +762,9 @@ export function BrowserView() {
                   <RefreshCw className="h-3 w-3 animate-spin text-nd-accent-primary shrink-0" />
                 )}
                 {tab.isMuted && <VolumeX className="h-3 w-3 text-nd-accent-error shrink-0" />}
-                {tab.isPinned && <Pin className="h-3 w-3 text-nd-accent-primary shrink-0 rotate-45" />}
+                {tab.isPinned && (
+                  <Pin className="h-3 w-3 text-nd-accent-primary shrink-0 rotate-45" />
+                )}
                 <IconButton
                   aria-label={`Close tab: ${tab.title || "New Tab"}`}
                   variant="ghost"
@@ -782,7 +832,10 @@ export function BrowserView() {
       </div>
 
       {/* Navigation & Address Bar Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-nd-border-subtle bg-nd-surface-app/60 px-4 py-2 shrink-0" data-controller-zone="browser">
+      <div
+        className="flex flex-wrap items-center gap-2 border-b border-nd-border-subtle bg-nd-surface-app/60 px-4 py-2 shrink-0"
+        data-controller-zone="browser"
+      >
         <div className="flex items-center gap-1">
           <IconButton
             aria-label="Back"
@@ -808,7 +861,11 @@ export function BrowserView() {
             size="md"
             onClick={activeTab?.isLoading ? stop : refresh}
           >
-            {activeTab?.isLoading ? <X className="h-4 w-4" aria-hidden="true" /> : <RotateCcw className="h-4 w-4" aria-hidden="true" />}
+            {activeTab?.isLoading ? (
+              <X className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <RotateCcw className="h-4 w-4" aria-hidden="true" />
+            )}
           </IconButton>
           <IconButton
             aria-label="Home"
@@ -857,7 +914,11 @@ export function BrowserView() {
             onClick={toggleBookmark}
             aria-pressed={isBookmarked}
           >
-            <Star className="h-4 w-4" fill={isBookmarked ? "currentColor" : "none"} aria-hidden="true" />
+            <Star
+              className="h-4 w-4"
+              fill={isBookmarked ? "currentColor" : "none"}
+              aria-hidden="true"
+            />
           </IconButton>
 
           <IconButton
@@ -867,7 +928,11 @@ export function BrowserView() {
             onClick={handleToggleAdBlock}
             aria-pressed={adBlockEnabled}
           >
-            {adBlockEnabled ? <ShieldCheck className="h-4 w-4" aria-hidden="true" /> : <Shield className="h-4 w-4" aria-hidden="true" />}
+            {adBlockEnabled ? (
+              <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Shield className="h-4 w-4" aria-hidden="true" />
+            )}
           </IconButton>
 
           {/* Profile Switcher */}
@@ -924,21 +989,24 @@ export function BrowserView() {
                             <Lock className="h-3 w-3 text-nd-accent-warning" aria-hidden="true" />
                           </span>
                         )}
-                        {isCurrent && <span className="h-1.5 w-1.5 rounded-full bg-nd-accent-primary" />}
+                        {isCurrent && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-nd-accent-primary" />
+                        )}
                       </div>
                     </button>
                   );
                 })}
                 <div className="my-2 border-t border-nd-border-subtle" />
                 {activeProfile && (
-                  <button
-                    type="button"
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    fullWidth
+                    icon={Trash2}
                     onClick={() => clearProfileData(activeProfile.id)}
-                    className="flex w-full min-h-[40px] items-center gap-2 rounded-xl px-2.5 py-2 text-xs text-nd-accent-error transition hover:bg-nd-accent-error/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-error/40"
                   >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                    <span>Clear Profile Storage</span>
-                  </button>
+                    Clear Profile Storage
+                  </Button>
                 )}
               </FocusTrapContainer>
             )}
@@ -1004,7 +1072,11 @@ export function BrowserView() {
             size="md"
             onClick={toggleVisibility}
           >
-            {visible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+            {visible ? (
+              <EyeOff className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Eye className="h-4 w-4" aria-hidden="true" />
+            )}
           </IconButton>
         </div>
       </div>
@@ -1036,7 +1108,12 @@ export function BrowserView() {
             <Button variant="primary" size="xs" onClick={() => submitFind(true)}>
               Find Next
             </Button>
-            <IconButton aria-label="Close find bar" variant="ghost" size="md" onClick={() => setFindOpen(false)}>
+            <IconButton
+              aria-label="Close find bar"
+              variant="ghost"
+              size="md"
+              onClick={() => setFindOpen(false)}
+            >
               <X className="h-4 w-4" aria-hidden="true" />
             </IconButton>
           </div>
@@ -1057,7 +1134,12 @@ export function BrowserView() {
               <Terminal className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
               <span>Diagnostics / Process Monitor</span>
             </h4>
-            <IconButton aria-label="Close diagnostics panel" variant="ghost" size="sm" onClick={() => setShowDiagnostics(false)}>
+            <IconButton
+              aria-label="Close diagnostics panel"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDiagnostics(false)}
+            >
               <X className="h-4 w-4" aria-hidden="true" />
             </IconButton>
           </div>
@@ -1118,7 +1200,12 @@ export function BrowserView() {
               <Download className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
               <span>Downloads Tracker</span>
             </h4>
-            <IconButton aria-label="Close downloads panel" variant="ghost" size="sm" onClick={() => setShowDownloadsMenu(false)}>
+            <IconButton
+              aria-label="Close downloads panel"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowDownloadsMenu(false)}
+            >
               <X className="h-4 w-4" aria-hidden="true" />
             </IconButton>
           </div>
@@ -1137,8 +1224,19 @@ export function BrowserView() {
                     className="p-2.5 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 text-xs flex flex-col gap-2"
                   >
                     <div className="flex justify-between gap-2">
-                      <span className="font-semibold truncate text-nd-text-primary">{d.filename}</span>
-                      <Badge tone={d.state === "completed" ? "success" : d.state === "progressing" ? "accent" : "neutral"} size="sm">
+                      <span className="font-semibold truncate text-nd-text-primary">
+                        {d.filename}
+                      </span>
+                      <Badge
+                        tone={
+                          d.state === "completed"
+                            ? "success"
+                            : d.state === "progressing"
+                              ? "accent"
+                              : "neutral"
+                        }
+                        size="sm"
+                      >
                         {d.state}
                       </Badge>
                     </div>
@@ -1250,11 +1348,15 @@ export function BrowserView() {
             {activeTab.state === "new" && (
               <div className="flex-1 flex flex-col items-center justify-center p-6 bg-nd-surface-app text-center select-none overflow-y-auto scrollbar-thin">
                 <div className="max-w-md w-full flex flex-col items-center gap-6">
-                  <Globe className="h-12 w-12 text-nd-accent-primary animate-pulse" aria-hidden="true" />
+                  <Globe
+                    className="h-12 w-12 text-nd-accent-primary animate-pulse"
+                    aria-hidden="true"
+                  />
                   <div>
                     <h3 className="text-lg font-bold text-nd-text-primary">New Session Tab</h3>
                     <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
-                      Start browsing by typing a URL or searching Google. Your session is fully isolated.
+                      Start browsing by typing a URL or searching Google. Your session is fully
+                      isolated.
                     </p>
                   </div>
 
@@ -1277,7 +1379,9 @@ export function BrowserView() {
                       variant="primary"
                       size="xs"
                       onClick={() => {
-                        const input = document.getElementById("new-tab-search-input") as HTMLInputElement;
+                        const input = document.getElementById(
+                          "new-tab-search-input"
+                        ) as HTMLInputElement;
                         if (input && input.value.trim()) navigate(input.value.trim());
                       }}
                     >
@@ -1324,10 +1428,20 @@ export function BrowserView() {
                       Privacy Actions
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button variant="secondary" size="xs" fullWidth onClick={() => handleClearData("currentTab")}>
+                      <Button
+                        variant="secondary"
+                        size="xs"
+                        fullWidth
+                        onClick={() => handleClearData("currentTab")}
+                      >
                         Clear Current Tab Data
                       </Button>
-                      <Button variant="danger" size="xs" fullWidth onClick={() => handleClearData("all")}>
+                      <Button
+                        variant="danger"
+                        size="xs"
+                        fullWidth
+                        onClick={() => handleClearData("all")}
+                      >
                         Purge All Sessions Data
                       </Button>
                     </div>
@@ -1345,7 +1459,10 @@ export function BrowserView() {
                   <div>
                     <h3 className="text-lg font-bold text-nd-text-primary">Failed to Load Page</h3>
                     <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed truncate max-w-sm">
-                      Could not establish connection to <code className="text-nd-accent-primary font-mono text-[10px]">{activeTab.url}</code>
+                      Could not establish connection to{" "}
+                      <code className="text-nd-accent-primary font-mono text-[10px]">
+                        {activeTab.url}
+                      </code>
                     </p>
                   </div>
 
@@ -1357,26 +1474,49 @@ export function BrowserView() {
                       className="flex w-full items-center justify-between px-4 py-2.5 text-xs font-semibold text-nd-text-primary transition hover:bg-nd-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60"
                     >
                       <span>Diagnostic Information</span>
-                      <ChevronDown className={`h-4 w-4 text-nd-text-muted transition-transform ${errorDetailsOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+                      <ChevronDown
+                        className={`h-4 w-4 text-nd-text-muted transition-transform ${errorDetailsOpen ? "rotate-180" : ""}`}
+                        aria-hidden="true"
+                      />
                     </button>
                     {errorDetailsOpen && (
                       <div className="border-t border-nd-border-subtle bg-nd-surface-app/50 p-3 text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1.5 max-h-40 overflow-y-auto scrollbar-thin">
-                        <div><span className="text-nd-accent-primary">Error Code:</span> {activeTab.diagnostics?.lastErrorCode || "ERR_CONNECTION_REFUSED"}</div>
-                        <div><span className="text-nd-accent-primary">Description:</span> {activeTab.diagnostics?.lastErrorMessage || "The server at the destination address refused the connection or DNS resolution failed."}</div>
-                        <div><span className="text-nd-accent-primary">Target:</span> {activeTab.url}</div>
+                        <div>
+                          <span className="text-nd-accent-primary">Error Code:</span>{" "}
+                          {activeTab.diagnostics?.lastErrorCode || "ERR_CONNECTION_REFUSED"}
+                        </div>
+                        <div>
+                          <span className="text-nd-accent-primary">Description:</span>{" "}
+                          {activeTab.diagnostics?.lastErrorMessage ||
+                            "The server at the destination address refused the connection or DNS resolution failed."}
+                        </div>
+                        <div>
+                          <span className="text-nd-accent-primary">Target:</span> {activeTab.url}
+                        </div>
                       </div>
                     )}
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3">
-                    <Button variant="secondary" size="sm" onClick={goBack} disabled={!activeTab?.canGoBack}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={goBack}
+                      disabled={!activeTab?.canGoBack}
+                    >
                       Go Back
                     </Button>
                     <Button variant="primary" size="sm" onClick={refresh}>
                       Retry Connection
                     </Button>
-                    <Button variant="ghost" size="sm" icon={ExternalLink} iconPosition="right" onClick={() => window.electronAPI?.openExternal(activeTab.url)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={ExternalLink}
+                      iconPosition="right"
+                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
+                    >
                       Open Externally
                     </Button>
                   </div>
@@ -1391,28 +1531,48 @@ export function BrowserView() {
                     <Terminal className="h-6 w-6 text-nd-accent-warning" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-nd-text-primary">Renderer Process Crashed</h3>
+                    <h3 className="text-lg font-bold text-nd-text-primary">
+                      Renderer Process Crashed
+                    </h3>
                     <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
-                      The sandboxed web page process has crashed. This can happen if the site uses excessive memory resources.
+                      The sandboxed web page process has crashed. This can happen if the site uses
+                      excessive memory resources.
                     </p>
                   </div>
 
                   {/* Diagnostic Details */}
                   <div className="w-full rounded-xl border border-nd-accent-warning/20 bg-nd-accent-warning/5 p-3 text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1">
-                    <div><span className="text-nd-accent-warning">Status:</span> PROCESS_CRASHED</div>
-                    <div><span className="text-nd-accent-warning">Consecutive Crashes:</span> {activeTab.crashCount || 1}</div>
-                    <div><span className="text-nd-accent-warning">Location:</span> {activeTab.url}</div>
+                    <div>
+                      <span className="text-nd-accent-warning">Status:</span> PROCESS_CRASHED
+                    </div>
+                    <div>
+                      <span className="text-nd-accent-warning">Consecutive Crashes:</span>{" "}
+                      {activeTab.crashCount || 1}
+                    </div>
+                    <div>
+                      <span className="text-nd-accent-warning">Location:</span> {activeTab.url}
+                    </div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3">
-                    <Button variant="secondary" size="sm" onClick={(e) => closeTab(activeTab.id, e)}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={(e) => closeTab(activeTab.id, e)}
+                    >
                       Close Tab
                     </Button>
                     <Button variant="primary" size="sm" onClick={refresh}>
                       Recover Tab
                     </Button>
-                    <Button variant="ghost" size="sm" icon={ExternalLink} iconPosition="right" onClick={() => window.electronAPI?.openExternal(activeTab.url)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      icon={ExternalLink}
+                      iconPosition="right"
+                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
+                    >
                       Open Externally
                     </Button>
                   </div>
@@ -1427,25 +1587,47 @@ export function BrowserView() {
                     <Lock className="h-6 w-6 text-nd-accent-error" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-nd-text-primary">Website Access Blocked</h3>
+                    <h3 className="text-lg font-bold text-nd-text-primary">
+                      Website Access Blocked
+                    </h3>
                     <p className="text-xs text-nd-text-muted mt-1.5 leading-relaxed">
-                      Access to this URL has been blocked in accordance with your security settings or local file access restrictions.
+                      Access to this URL has been blocked in accordance with your security settings
+                      or local file access restrictions.
                     </p>
                   </div>
 
                   {/* Policy details */}
                   <div className="w-full rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 p-3 text-left font-mono text-[10px] text-nd-text-muted flex flex-col gap-1">
-                    <div><span className="text-nd-accent-primary">Policy Rule:</span> LOCAL_FILE_SYSTEM_ISOLATION</div>
-                    <div><span className="text-nd-accent-primary">Detail:</span> Accessing local machine files (file://) or system settings is disabled for browser security.</div>
-                    <div><span className="text-nd-accent-primary">Attempted URL:</span> {activeTab.url}</div>
+                    <div>
+                      <span className="text-nd-accent-primary">Policy Rule:</span>{" "}
+                      LOCAL_FILE_SYSTEM_ISOLATION
+                    </div>
+                    <div>
+                      <span className="text-nd-accent-primary">Detail:</span> Accessing local
+                      machine files (file://) or system settings is disabled for browser security.
+                    </div>
+                    <div>
+                      <span className="text-nd-accent-primary">Attempted URL:</span> {activeTab.url}
+                    </div>
                   </div>
 
                   {/* Action Buttons */}
                   <div className="flex items-center gap-3">
-                    <Button variant="secondary" size="sm" onClick={goBack} disabled={!activeTab?.canGoBack}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={goBack}
+                      disabled={!activeTab?.canGoBack}
+                    >
                       Go Back
                     </Button>
-                    <Button variant="primary" size="sm" icon={ExternalLink} iconPosition="right" onClick={() => window.electronAPI?.openExternal(activeTab.url)}>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      icon={ExternalLink}
+                      iconPosition="right"
+                      onClick={() => window.electronAPI?.openExternal(activeTab.url)}
+                    >
                       Open in External Browser
                     </Button>
                   </div>
@@ -1468,7 +1650,12 @@ export function BrowserView() {
               <span className="text-xs font-bold uppercase tracking-wider text-nd-text-primary">
                 {showSidebar === "history" ? "History Log" : "Saved Bookmarks"}
               </span>
-              <IconButton aria-label="Close sidebar" variant="ghost" size="sm" onClick={() => setShowSidebar(null)}>
+              <IconButton
+                aria-label="Close sidebar"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowSidebar(null)}
+              >
                 <X className="h-4 w-4" aria-hidden="true" />
               </IconButton>
             </div>
@@ -1478,7 +1665,13 @@ export function BrowserView() {
               {showSidebar === "history" ? (
                 <>
                   <div className="mb-2 flex gap-2">
-                    <Button variant="danger" size="sm" fullWidth icon={Trash2} onClick={clearHistory}>
+                    <Button
+                      variant="danger"
+                      size="sm"
+                      fullWidth
+                      icon={Trash2}
+                      onClick={clearHistory}
+                    >
                       Purge History
                     </Button>
                   </div>
