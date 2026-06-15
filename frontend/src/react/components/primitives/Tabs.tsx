@@ -59,7 +59,7 @@ export function TabList({
     const idx = tabs.indexOf(current);
     if (idx === -1) return;
 
-    let next = -1;
+    let next: number;
     if (e.key === 'ArrowRight') next = (idx + 1) % tabs.length;
     else if (e.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
     else if (e.key === 'Home') next = 0;

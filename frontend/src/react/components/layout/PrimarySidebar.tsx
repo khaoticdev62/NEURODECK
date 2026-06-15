@@ -32,7 +32,7 @@ export function PrimarySidebar({
   return (
     <aside
       className="group/sidebar relative hidden shrink-0 flex-col border-r border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] transition-[width] duration-[var(--nd-motion-normal)] ease-[var(--nd-ease-standard)] lg:flex"
-      style={{ width: expanded ? 200 : 56 }}
+      style={{ width: expanded ? 'var(--nd-sidebar-expanded, 200px)' : 'var(--nd-shell-navrail)' }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -112,7 +112,7 @@ export function PrimarySidebar({
                       onClick={() => dispatch({ type: 'set-view', view: item.id as ViewId })}
                       className={`no-drag group/nav flex w-full min-h-touch items-center rounded-[var(--nd-radius-md)] px-2 py-2 text-left transition-[background-color,border-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
                         active
-                          ? 'border-l-2 border-[var(--nd-border-focus)] bg-[var(--nd-surface-selected)] pl-[6px] font-semibold text-[var(--nd-accent-primary)]'
+                          ? 'border-l-2 border-[var(--nd-border-focus)] bg-[var(--nd-surface-selected)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]'
                           : 'border-l-2 border-transparent text-[var(--nd-text-muted)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-text-primary)]'
                       } ${expanded ? '' : 'justify-center'}`}
                     >
@@ -120,7 +120,7 @@ export function PrimarySidebar({
                         <Icon className="h-4 w-4" />
                       </span>
                       <span
-                        className={`ml-2.5 overflow-hidden whitespace-nowrap text-[13px] font-medium transition-opacity duration-[var(--nd-motion-fast)] ${
+                        className={`ml-2.5 overflow-hidden whitespace-nowrap text-sm font-medium transition-opacity duration-[var(--nd-motion-fast)] ${
                           expanded ? 'opacity-100' : 'opacity-0 w-0'
                         }`}
                       >

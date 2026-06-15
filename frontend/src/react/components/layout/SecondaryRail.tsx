@@ -28,7 +28,7 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
   return (
     <aside
       className="hidden shrink-0 flex-col border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] xl:flex"
-      style={{ width: 280 }}
+      style={{ width: 'var(--nd-shell-context)' }}
     >
       {/* Collapse toggle */}
       <div className="flex items-center justify-end border-b border-[var(--nd-border-subtle)] px-2 py-1.5">

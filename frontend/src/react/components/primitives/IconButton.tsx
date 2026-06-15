@@ -12,6 +12,8 @@ interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   size?: IconButtonSize;
   variant?: IconButtonVariant;
+  /** Required: accessible label for screen readers and tooltips. */
+  'aria-label': string;
 }
 
 const hitTargetClasses: Record<IconButtonSize, string> = {
@@ -29,6 +31,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
     variant = 'subtle',
     'aria-label': ariaLabel,
     type = 'button',
+    disabled,
     ...props
   },
   ref,
@@ -44,8 +47,11 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       icon={children}
       variant={dsVariant}
       size={dsSize}
+      disabled={disabled}
+      aria-disabled={disabled}
       className={[hitTargetClasses[size], className].filter(Boolean).join(' ')}
       {...props}
     />
   );
 });
+

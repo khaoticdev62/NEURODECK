@@ -139,16 +139,17 @@
   /* ============================================================
      Spacing, radius, elevation, motion
      ============================================================ */
-  --nd-space-0: 0px;
-  --nd-space-1: 4px;
-  --nd-space-2: 8px;
-  --nd-space-3: 12px;
-  --nd-space-4: 16px;
-  --nd-space-5: 20px;
-  --nd-space-6: 24px;
-  --nd-space-8: 32px;
+  --nd-space-0:  0px;
+  --nd-space-1:  4px;
+  --nd-space-2:  8px;
+  --nd-space-3:  12px;
+  --nd-space-4:  16px;
+  --nd-space-5:  20px;
+  --nd-space-6:  24px;
+  --nd-space-8:  32px;
   --nd-space-10: 40px;
   --nd-space-12: 48px;
+  --nd-space-16: 64px;
 
   /* Layout shell dimensions (1280x800 Steam Deck) */
   --nd-shell-statusbar: 40px;
@@ -159,11 +160,19 @@
 
   /* Radius */
   --nd-radius-none: 0px;
-  --nd-radius-sm: 6px;
-  --nd-radius-md: 10px;
-  --nd-radius-lg: 14px;
-  --nd-radius-xl: 20px;
+  --nd-radius-xs:   4px;
+  --nd-radius-sm:   6px;
+  --nd-radius-md:   10px;
+  --nd-radius-lg:   14px;
+  --nd-radius-xl:   20px;
   --nd-radius-full: 999px;
+
+  /* Semantic radius aliases */
+  --nd-radius-panel:  var(--nd-radius-md);
+  --nd-radius-modal:  var(--nd-radius-lg);
+  --nd-radius-button: var(--nd-radius-sm);
+  --nd-radius-input:  var(--nd-radius-sm);
+  --nd-radius-badge:  var(--nd-radius-full);
 
   /* Elevation */
   --nd-elevation-none: none;
@@ -194,6 +203,11 @@
   --nd-font-ui:      "Inter", system-ui, sans-serif;
   --nd-font-mono:    "JetBrains Mono", "IBM Plex Mono", "SF Mono", Consolas, monospace;
   --nd-font-code:    "Fira Code", "JetBrains Mono", monospace;
+
+  /* Legacy font aliases — kept for backward compat with index.css and app.css */
+  --font-body:    var(--nd-font-ui);
+  --font-display: var(--nd-font-display);
+  --font-mono:    var(--nd-font-mono);
 
   /* Type scale */
   --nd-text-display-size: 28px;  --nd-text-display-lh: 36px;  --nd-text-display-weight: 700;
