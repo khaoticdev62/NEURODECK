@@ -1,7 +1,21 @@
-import { useCallback, useEffect, useState, type ElementType } from 'react';
-import { GitBranch, RefreshCw, GitCommit, GitPullRequest, GitMerge, FilePlus, FileMinus, CircleDot, AlertTriangle } from 'lucide-react';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { GitFile, GitCommit as GitCommitType, GitBranch as GitBranchType } from '../../services/bridgeAdapter';
+import { useCallback, useEffect, useState, type ElementType } from "react";
+import {
+  GitBranch,
+  RefreshCw,
+  GitCommit,
+  GitPullRequest,
+  GitMerge,
+  FilePlus,
+  FileMinus,
+  CircleDot,
+  AlertTriangle,
+} from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type {
+  GitFile,
+  GitCommit as GitCommitType,
+  GitBranch as GitBranchType,
+} from "../../services/bridgeAdapter";
 
 export function GitView() {
   const [staged, setStaged] = useState<GitFile[]>([]);
@@ -9,14 +23,14 @@ export function GitView() {
   const [untracked, setUntracked] = useState<GitFile[]>([]);
   const [branches, setBranches] = useState<GitBranchType[]>([]);
   const [commits, setCommits] = useState<GitCommitType[]>([]);
-  const [commitMsg, setCommitMsg] = useState('');
-  const [diff, setDiff] = useState('');
+  const [commitMsg, setCommitMsg] = useState("");
+  const [diff, setDiff] = useState("");
   const [loading, setLoading] = useState(false);
   const [mutating, setMutating] = useState(false);
-  const [notice, setNotice] = useState<{ kind: 'error' | 'ok'; text: string } | null>(null);
+  const [notice, setNotice] = useState<{ kind: "error" | "ok"; text: string } | null>(null);
   const [gitUnavailable, setGitUnavailable] = useState(false);
 
-  const showNotice = (kind: 'error' | 'ok', text: string) => {
+  const showNotice = (kind: "error" | "ok", text: string) => {
     setNotice({ kind, text });
     setTimeout(() => setNotice(null), 4000);
   };
@@ -57,7 +71,7 @@ export function GitView() {
       await neurodeckApi.git.stage(files);
       await loadStatus();
     } catch (e) {
-      showNotice('error', `Stage failed: ${e}`);
+      showNotice("error", `Stage failed: ${e}`);
     } finally {
       setMutating(false);
     }
@@ -71,7 +85,7 @@ export function GitView() {
       await neurodeckApi.git.unstage(files);
       await loadStatus();
     } catch (e) {
-      showNotice('error', `Unstage failed: ${e}`);
+      showNotice("error", `Unstage failed: ${e}`);
     } finally {
       setMutating(false);
     }
@@ -82,11 +96,11 @@ export function GitView() {
     setMutating(true);
     try {
       await neurodeckApi.git.commit(commitMsg);
-      setCommitMsg('');
-      showNotice('ok', 'Committed successfully.');
+      setCommitMsg("");
+      showNotice("ok", "Committed successfully.");
       await loadStatus();
     } catch (e) {
-      showNotice('error', `Commit failed: ${e}`);
+      showNotice("error", `Commit failed: ${e}`);
     } finally {
       setMutating(false);
     }
@@ -96,10 +110,10 @@ export function GitView() {
     setMutating(true);
     try {
       await neurodeckApi.git.push();
-      showNotice('ok', 'Pushed to remote.');
+      showNotice("ok", "Pushed to remote.");
       await loadStatus();
     } catch (e) {
-      showNotice('error', `Push failed: ${e}`);
+      showNotice("error", `Push failed: ${e}`);
     } finally {
       setMutating(false);
     }
@@ -109,10 +123,10 @@ export function GitView() {
     setMutating(true);
     try {
       await neurodeckApi.git.pull();
-      showNotice('ok', 'Pulled from remote.');
+      showNotice("ok", "Pulled from remote.");
       await loadStatus();
     } catch (e) {
-      showNotice('error', `Pull failed: ${e}`);
+      showNotice("error", `Pull failed: ${e}`);
     } finally {
       setMutating(false);
     }
@@ -123,7 +137,7 @@ export function GitView() {
       const result = await neurodeckApi.git.diff(file);
       setDiff(result.diff);
     } catch (_) {
-      setDiff('');
+      setDiff("");
     }
   };
 
@@ -197,7 +211,7 @@ export function GitView() {
           aria-label="Refresh repository status"
           className="rounded-lg border border-nd-text-muted/15 p-2 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
         >
-          <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} aria-hidden="true" />
         </button>
       </div>
 
@@ -206,9 +220,9 @@ export function GitView() {
           role="status"
           aria-live="polite"
           className={`mb-3 flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition ${
-            notice.kind === 'ok'
-              ? 'border-nd-success/25 bg-nd-success/10 text-nd-success'
-              : 'border-nd-danger/25 bg-nd-danger/10 text-nd-danger'
+            notice.kind === "ok"
+              ? "border-nd-success/25 bg-nd-success/10 text-nd-success"
+              : "border-nd-danger/25 bg-nd-danger/10 text-nd-danger"
           }`}
         >
           {notice.text}
@@ -220,7 +234,9 @@ export function GitView() {
         <div className="flex w-64 flex-col gap-3 overflow-auto">
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Staged</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
+                Staged
+              </span>
               <button
                 type="button"
                 onClick={unstageAll}
@@ -231,7 +247,13 @@ export function GitView() {
               </button>
             </div>
             {staged.map((f) => (
-              <FileItem key={f.path} file={f} icon={FilePlus} color="text-nd-success" statusLabel="A" />
+              <FileItem
+                key={f.path}
+                file={f}
+                icon={FilePlus}
+                color="text-nd-success"
+                statusLabel="A"
+              />
             ))}
             {!staged.length && (
               <p className="py-2 text-center text-xs text-nd-text-muted/70">No staged files</p>
@@ -240,7 +262,9 @@ export function GitView() {
 
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Unstaged</span>
+              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
+                Unstaged
+              </span>
               <button
                 type="button"
                 onClick={stageAll}
@@ -251,7 +275,13 @@ export function GitView() {
               </button>
             </div>
             {unstaged.map((f) => (
-              <FileItem key={f.path} file={f} icon={CircleDot} color="text-nd-warning" statusLabel="M" />
+              <FileItem
+                key={f.path}
+                file={f}
+                icon={CircleDot}
+                color="text-nd-warning"
+                statusLabel="M"
+              />
             ))}
             {!unstaged.length && (
               <p className="py-2 text-center text-xs text-nd-text-muted/70">No unstaged files</p>
@@ -259,9 +289,17 @@ export function GitView() {
           </div>
 
           <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Untracked</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
+              Untracked
+            </span>
             {untracked.map((f) => (
-              <FileItem key={f.path} file={f} icon={FileMinus} color="text-nd-text-muted" statusLabel="?" />
+              <FileItem
+                key={f.path}
+                file={f}
+                icon={FileMinus}
+                color="text-nd-text-muted"
+                statusLabel="?"
+              />
             ))}
             {!untracked.length && (
               <p className="py-2 text-center text-xs text-nd-text-muted/70">No untracked files</p>
@@ -280,7 +318,7 @@ export function GitView() {
                 placeholder="Commit message..."
                 aria-label="Commit message"
                 className="flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
-                onKeyDown={(e) => e.key === 'Enter' && doCommit()}
+                onKeyDown={(e) => e.key === "Enter" && doCommit()}
               />
               <button
                 type="button"
@@ -318,10 +356,15 @@ export function GitView() {
           )}
 
           <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Recent Commits</span>
+            <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
+              Recent Commits
+            </span>
             <div className="mt-2 space-y-2">
               {commits.map((c) => (
-                <div key={c.hash} className="rounded-lg border border-nd-text-muted/10 bg-nd-surface/30 p-2">
+                <div
+                  key={c.hash}
+                  className="rounded-lg border border-nd-text-muted/10 bg-nd-surface/30 p-2"
+                >
                   <p className="text-xs font-medium text-nd-text/90">{c.message}</p>
                   <div className="mt-1 flex gap-2 text-[10px] text-nd-text-muted/70">
                     <span className="font-mono">{c.hash.slice(0, 7)}</span>
@@ -339,7 +382,9 @@ export function GitView() {
 
         {/* Right: Branches */}
         <div className="w-48 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Branches</span>
+          <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
+            Branches
+          </span>
           <div className="mt-2 space-y-1">
             {branches.map((b) => (
               <button
@@ -351,14 +396,16 @@ export function GitView() {
                     await neurodeckApi.git.branchCheckout(b.name);
                     await loadStatus();
                   } catch (e) {
-                    showNotice('error', `Checkout failed: ${e}`);
+                    showNotice("error", `Checkout failed: ${e}`);
                   } finally {
                     setMutating(false);
                   }
                 }}
                 disabled={mutating}
                 className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent/40 disabled:opacity-40 ${
-                  b.current ? 'bg-nd-accent/10 text-nd-accent' : 'text-nd-text-muted hover:bg-nd-surface/50'
+                  b.current
+                    ? "bg-nd-accent/10 text-nd-accent"
+                    : "text-nd-text-muted hover:bg-nd-surface/50"
                 }`}
               >
                 <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />

@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { FocusTrap } from '../../../focus-trap.js';
+import * as React from "react";
+import { FocusTrap } from "../../../focus-trap.js";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-modal-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-modal-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-modal-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-modal-css";
   s.textContent = `
   .nd-modal__overlay{position:fixed;inset:0;background:var(--nd-surface-overlay);backdrop-filter:blur(2px);
     display:flex;align-items:center;justify-content:center;padding:24px;z-index:var(--z-modal,9990);
@@ -37,7 +37,7 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-modal-css'))
  * Focus-trapping overlay for critical decisions. B / Escape closes when
  * cancellable. Fits within Deck safe area.
  */
-export type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
+export type ModalSize = "sm" | "md" | "lg" | "xl";
 
 export interface ModalProps {
   /** Mount + show the modal. */
@@ -51,7 +51,7 @@ export interface ModalProps {
   /** Right-aligned footer actions (Buttons). */
   footer?: React.ReactNode;
   /** 'critical' adds a red glow for destructive/security dialogs. @default 'default' */
-  emphasis?: 'default' | 'critical';
+  emphasis?: "default" | "critical";
   /** Show close affordance + allow Escape/backdrop dismiss. @default true */
   closable?: boolean;
   /** Allow clicking the backdrop to close. Independent of closable/Escape. @default true */
@@ -70,12 +70,12 @@ export function Modal({
   description,
   children,
   footer,
-  emphasis = 'default',
+  emphasis = "default",
   closable = true,
   closeOnBackdrop = true,
   trap = true,
-  size = 'md',
-  className = '',
+  size = "md",
+  className = "",
 }: ModalProps): React.ReactNode {
   const ref = React.useRef<HTMLDivElement>(null);
   const trapRef = React.useRef<FocusTrap | null>(null);
@@ -83,18 +83,18 @@ export function Modal({
   React.useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closable && onClose) {
+      if (e.key === "Escape" && closable && onClose) {
         e.stopPropagation();
         onClose();
       }
     };
-    document.addEventListener('keydown', onKey, true);
+    document.addEventListener("keydown", onKey, true);
     if (trap && ref.current) {
       trapRef.current = new FocusTrap(ref.current);
       trapRef.current.activate();
     }
     return () => {
-      document.removeEventListener('keydown', onKey, true);
+      document.removeEventListener("keydown", onKey, true);
       trapRef.current?.deactivate();
       trapRef.current = null;
     };
@@ -106,22 +106,45 @@ export function Modal({
       className="nd-modal__overlay"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? 'nd-modal-title' : undefined}
-      aria-describedby={description ? 'nd-modal-desc' : undefined}
-      onMouseDown={(e) => { if (e.target === e.currentTarget && closeOnBackdrop && closable && onClose) onClose(); }}
+      aria-labelledby={title ? "nd-modal-title" : undefined}
+      aria-describedby={description ? "nd-modal-desc" : undefined}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget && closeOnBackdrop && closable && onClose) onClose();
+      }}
     >
       <div
         ref={ref}
         tabIndex={-1}
-        className={['nd-modal', `nd-modal--${size}`, emphasis === 'critical' ? 'nd-modal--critical' : '', className].filter(Boolean).join(' ')}
+        className={[
+          "nd-modal",
+          `nd-modal--${size}`,
+          emphasis === "critical" ? "nd-modal--critical" : "",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
-        {(title || closable) ? (
+        {title || closable ? (
           <div className="nd-modal__head">
             <div>
-              {title ? <h2 id="nd-modal-title" className="nd-modal__title">{title}</h2> : <span />}
-              {description ? <p id="nd-modal-desc" className="nd-modal__desc">{description}</p> : null}
+              {title ? (
+                <h2 id="nd-modal-title" className="nd-modal__title">
+                  {title}
+                </h2>
+              ) : (
+                <span />
+              )}
+              {description ? (
+                <p id="nd-modal-desc" className="nd-modal__desc">
+                  {description}
+                </p>
+              ) : null}
             </div>
-            {closable ? <button className="nd-modal__close" aria-label="Close dialog" onClick={onClose}>×</button> : null}
+            {closable ? (
+              <button className="nd-modal__close" aria-label="Close dialog" onClick={onClose}>
+                ×
+              </button>
+            ) : null}
           </div>
         ) : null}
         <div className="nd-modal__body">{children}</div>

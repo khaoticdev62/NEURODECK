@@ -1,9 +1,9 @@
-import { Activity, CircleDot } from 'lucide-react';
-import { Badge } from '../../../components/primitives/Badge';
-import { StatusChip } from '../../../components/primitives/StatusChip';
-import type { Agent } from '../../../types/neurodeck';
-import { AgentSelector } from './AgentSelector';
-import { PersonaSelector } from './PersonaSelector';
+import { Activity, CircleDot } from "lucide-react";
+import { Badge } from "../../../components/primitives/Badge";
+import { StatusChip } from "../../../components/primitives/StatusChip";
+import type { Agent } from "../../../types/neurodeck";
+import { AgentSelector } from "./AgentSelector";
+import { PersonaSelector } from "./PersonaSelector";
 
 interface WorkspaceHeaderProps {
   sessionName: string;
@@ -48,7 +48,7 @@ export function WorkspaceHeader({
           {provider}
         </Badge>
         <span className="whitespace-nowrap text-xs text-nd-text-muted">
-          {messageCount} msg{messageCount === 1 ? '' : 's'}
+          {messageCount} msg{messageCount === 1 ? "" : "s"}
         </span>
       </div>
     </header>

@@ -16,12 +16,7 @@ export type ControllerDeviceKind =
   | "keyboard"
   | "unknown";
 
-export type ControllerGlyphStyle =
-  | "auto"
-  | "steam_deck"
-  | "xbox"
-  | "playstation"
-  | "generic";
+export type ControllerGlyphStyle = "auto" | "steam_deck" | "xbox" | "playstation" | "generic";
 
 export type ControllerConfirmButton = "south" | "east";
 
@@ -148,10 +143,5 @@ export interface ControllerRuntimeState {
   lastAction?: ControllerAction;
   helpOverlayOpen: boolean;
   debugOverlayOpen: boolean;
-  browserControlMode?:
-    | "chrome"
-    | "page"
-    | "address"
-    | "permissionPrompt"
-    | "downloadShelf";
+  browserControlMode?: "chrome" | "page" | "address" | "permissionPrompt" | "downloadShelf";
 }

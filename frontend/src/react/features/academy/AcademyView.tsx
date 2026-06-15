@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import {
   GraduationCap,
   Home,
@@ -9,40 +9,40 @@ import {
   Database,
   ClipboardList,
   Map,
-} from 'lucide-react';
-import { LoadingState } from '../../components/primitives/LoadingState';
-import { ErrorState } from '../../components/primitives/ErrorState';
-import { TabGroup, TabList, Tab } from '../../components/primitives/Tabs';
-import { AcademyHome } from './views/AcademyHome';
-import { LearningPathsView } from './views/LearningPathsView';
-import { LabBrowserView } from './views/LabBrowserView';
-import { PortfolioView } from './views/PortfolioView';
-import { LabRunnerView } from './views/LabRunnerView';
-import { SOCConsoleView } from './views/SOCConsoleView';
-import { SIEMQueryView } from './views/SIEMQueryView';
-import { PracticeExamView } from './views/PracticeExamView';
-import { CertRoadmapView } from './views/CertRoadmapView';
-import { defaultProgress } from './types';
-import { getLabById } from './data/curricula';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { AcademyLearnerProgress } from '../../services/bridgeAdapter';
-import type { AcademyTab, Lab, LearnerProgress } from './types';
+} from "lucide-react";
+import { LoadingState } from "../../components/primitives/LoadingState";
+import { ErrorState } from "../../components/primitives/ErrorState";
+import { TabGroup, TabList, Tab } from "../../components/primitives/Tabs";
+import { AcademyHome } from "./views/AcademyHome";
+import { LearningPathsView } from "./views/LearningPathsView";
+import { LabBrowserView } from "./views/LabBrowserView";
+import { PortfolioView } from "./views/PortfolioView";
+import { LabRunnerView } from "./views/LabRunnerView";
+import { SOCConsoleView } from "./views/SOCConsoleView";
+import { SIEMQueryView } from "./views/SIEMQueryView";
+import { PracticeExamView } from "./views/PracticeExamView";
+import { CertRoadmapView } from "./views/CertRoadmapView";
+import { defaultProgress } from "./types";
+import { getLabById } from "./data/curricula";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { AcademyLearnerProgress } from "../../services/bridgeAdapter";
+import type { AcademyTab, Lab, LearnerProgress } from "./types";
 
 const TABS: { id: AcademyTab; label: string; icon: React.ElementType }[] = [
-  { id: 'home', label: 'Home', icon: Home },
-  { id: 'paths', label: 'Paths', icon: BookOpen },
-  { id: 'labs', label: 'Labs', icon: FlaskConical },
-  { id: 'portfolio', label: 'Portfolio', icon: FolderOpen },
-  { id: 'soc', label: 'SOC', icon: ShieldAlert },
-  { id: 'query', label: 'SIEM', icon: Database },
-  { id: 'exam', label: 'Exam', icon: ClipboardList },
-  { id: 'roadmap', label: 'Roadmap', icon: Map },
+  { id: "home", label: "Home", icon: Home },
+  { id: "paths", label: "Paths", icon: BookOpen },
+  { id: "labs", label: "Labs", icon: FlaskConical },
+  { id: "portfolio", label: "Portfolio", icon: FolderOpen },
+  { id: "soc", label: "SOC", icon: ShieldAlert },
+  { id: "query", label: "SIEM", icon: Database },
+  { id: "exam", label: "Exam", icon: ClipboardList },
+  { id: "roadmap", label: "Roadmap", icon: Map },
 ];
 
-const PROGRESS_LS_KEY = 'neurodeck_academy_progress';
+const PROGRESS_LS_KEY = "neurodeck_academy_progress";
 
 export function AcademyView() {
-  const [activeTab, setActiveTab] = useState<AcademyTab>('home');
+  const [activeTab, setActiveTab] = useState<AcademyTab>("home");
   const [progress, setProgress] = useState<LearnerProgress | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -128,7 +128,7 @@ export function AcademyView() {
     );
   }
 
-  const isFullBleedTab = activeTab === 'soc' || activeTab === 'query' || activeTab === 'exam';
+  const isFullBleedTab = activeTab === "soc" || activeTab === "query" || activeTab === "exam";
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -144,7 +144,11 @@ export function AcademyView() {
           </div>
         </div>
 
-        <TabGroup value={activeTab} onChange={(v) => setActiveTab(v as AcademyTab)} className="mt-3">
+        <TabGroup
+          value={activeTab}
+          onChange={(v) => setActiveTab(v as AcademyTab)}
+          className="mt-3"
+        >
           <TabList aria-label="Academy navigation" className="overflow-x-auto scrollbar-none">
             {TABS.map(({ id, label, icon: Icon }) => (
               <Tab key={id} value={id} className="gap-1.5 whitespace-nowrap px-3 py-1.5 text-xs">
@@ -160,25 +164,19 @@ export function AcademyView() {
         id={`academy-panel-${activeTab}`}
         role="tabpanel"
         aria-labelledby={`academy-tab-${activeTab}`}
-        className={`flex-1 ${isFullBleedTab ? 'overflow-hidden' : 'overflow-y-auto p-4'}`}
+        className={`flex-1 ${isFullBleedTab ? "overflow-hidden" : "overflow-y-auto p-4"}`}
         tabIndex={0}
       >
-        {activeTab === 'home' && (
+        {activeTab === "home" && (
           <AcademyHome progress={prog} onNavigate={handleNavigate} onStartLab={handleStartLab} />
         )}
-        {activeTab === 'paths' && (
-          <LearningPathsView progress={prog} onStartLab={handleStartLab} />
-        )}
-        {activeTab === 'labs' && (
-          <LabBrowserView progress={prog} onStartLab={handleStartLab} />
-        )}
-        {activeTab === 'portfolio' && <PortfolioView />}
-        {activeTab === 'soc' && (
-          <SOCConsoleView progress={prog} onProgressUpdate={saveProgress} />
-        )}
-        {activeTab === 'query' && <SIEMQueryView />}
-        {activeTab === 'exam' && <PracticeExamView />}
-        {activeTab === 'roadmap' && <CertRoadmapView progress={prog} />}
+        {activeTab === "paths" && <LearningPathsView progress={prog} onStartLab={handleStartLab} />}
+        {activeTab === "labs" && <LabBrowserView progress={prog} onStartLab={handleStartLab} />}
+        {activeTab === "portfolio" && <PortfolioView />}
+        {activeTab === "soc" && <SOCConsoleView progress={prog} onProgressUpdate={saveProgress} />}
+        {activeTab === "query" && <SIEMQueryView />}
+        {activeTab === "exam" && <PracticeExamView />}
+        {activeTab === "roadmap" && <CertRoadmapView progress={prog} />}
       </main>
     </div>
   );

@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { forwardRef } from 'react';
+import * as React from "react";
+import { forwardRef } from "react";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-toggle-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-toggle-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-toggle-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-toggle-css";
   s.textContent = `
   .nd-toggle{display:inline-flex;align-items:center;gap:10px;font-family:var(--nd-font-ui);cursor:pointer;
     color:var(--nd-text-primary);font-size:14px;user-select:none;}
@@ -35,23 +35,22 @@ export interface ToggleProps {
   label?: string;
   disabled?: boolean;
   className?: string;
-  'aria-label'?: string;
+  "aria-label"?: string;
 }
 
 export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(function Toggle(
-  {
-    checked = false,
-    onChange,
-    label,
-    disabled = false,
-    className = '',
-    'aria-label': ariaLabel,
-  },
-  ref,
+  { checked = false, onChange, label, disabled = false, className = "", "aria-label": ariaLabel },
+  ref
 ): React.ReactNode {
-  const toggle = () => { if (!disabled && onChange) onChange(!checked); };
+  const toggle = () => {
+    if (!disabled && onChange) onChange(!checked);
+  };
   return (
-    <label className={['nd-toggle', disabled ? 'nd-toggle--disabled' : '', className].filter(Boolean).join(' ')}>
+    <label
+      className={["nd-toggle", disabled ? "nd-toggle--disabled" : "", className]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <button
         ref={ref}
         type="button"
@@ -60,9 +59,16 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(function Toggle
         aria-label={label ? undefined : ariaLabel}
         tabIndex={disabled ? -1 : 0}
         disabled={disabled}
-        className={['nd-toggle__track', checked ? 'nd-toggle__track--on' : ''].filter(Boolean).join(' ')}
+        className={["nd-toggle__track", checked ? "nd-toggle__track--on" : ""]
+          .filter(Boolean)
+          .join(" ")}
         onClick={toggle}
-        onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggle(); } }}
+        onKeyDown={(e) => {
+          if (e.key === " " || e.key === "Enter") {
+            e.preventDefault();
+            toggle();
+          }
+        }}
       >
         <span className="nd-toggle__knob" />
       </button>

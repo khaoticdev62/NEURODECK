@@ -20,9 +20,7 @@ describe("triggerHaptic", () => {
 
     testTime += 100;
     vi.spyOn(performance, "now").mockImplementation(() => testTime);
-    getGamepadsSpy = vi
-      .spyOn(navigator, "getGamepads")
-      .mockReturnValue([mockGamepad]);
+    getGamepadsSpy = vi.spyOn(navigator, "getGamepads").mockReturnValue([mockGamepad]);
   });
 
   afterEach(() => {

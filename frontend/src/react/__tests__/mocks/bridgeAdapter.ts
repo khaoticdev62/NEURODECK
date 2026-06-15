@@ -5,7 +5,7 @@
  * Usage:
  *   vi.mock('../../services/bridgeAdapter', () => import('../mocks/bridgeAdapter'));
  */
-import { vi } from 'vitest';
+import { vi } from "vitest";
 
 const fn = () => vi.fn().mockResolvedValue(undefined);
 
@@ -28,7 +28,10 @@ export const neurodeckApi = {
     stop: fn(),
   },
   models: {
-    detectLocal: fn().mockResolvedValue({ ok: true, detection: { scannedAt: '', runtimes: [], discoveredModels: [], summary: '' } }),
+    detectLocal: fn().mockResolvedValue({
+      ok: true,
+      detection: { scannedAt: "", runtimes: [], discoveredModels: [], summary: "" },
+    }),
     listProviderRuntimes: fn(),
     discoverInstalledModels: fn(),
     getProviderHealth: fn(),

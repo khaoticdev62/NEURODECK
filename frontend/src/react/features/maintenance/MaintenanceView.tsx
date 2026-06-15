@@ -1,19 +1,28 @@
-import { useState } from 'react';
-import { Activity, CheckCircle2, RefreshCcw, Trash2, Wrench } from 'lucide-react';
-import { Button } from '../../components/primitives/Button';
-import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { MetricCard } from '../../components/primitives/MetricCard';
-import { Panel } from '../../components/primitives/Panel';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
+import { useState } from "react";
+import { Activity, CheckCircle2, RefreshCcw, Trash2, Wrench } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { MetricCard } from "../../components/primitives/MetricCard";
+import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import type { NeuroDeckAppActions, NeuroDeckState } from "../../types/neurodeck";
 
-export function MaintenanceView({ state, actions }: { state: NeuroDeckState; actions: NeuroDeckAppActions }) {
+export function MaintenanceView({
+  state,
+  actions,
+}: {
+  state: NeuroDeckState;
+  actions: NeuroDeckAppActions;
+}) {
   const diagnostics = state.diagnostics;
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div data-testid="maintenance-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
+    <div
+      data-testid="maintenance-view"
+      className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]"
+    >
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Version Info */}
         <Panel eyebrow="Build" title="Application Version">
@@ -24,11 +33,16 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
                 <InfoRow label="Chromium" value={diagnostics.chrome} />
                 <InfoRow label="Node" value={diagnostics.node} />
                 <InfoRow label="Platform" value={`${diagnostics.platform}/${diagnostics.arch}`} />
-                <InfoRow label="Schema" value={`v${diagnostics.schemaVersion ?? '?'}`} />
-                <InfoRow label="Build type" value={diagnostics.packaged ? 'packaged' : 'development'} />
+                <InfoRow label="Schema" value={`v${diagnostics.schemaVersion ?? "?"}`} />
+                <InfoRow
+                  label="Build type"
+                  value={diagnostics.packaged ? "packaged" : "development"}
+                />
               </>
             ) : (
-              <p className="text-sm text-text-secondary">Run a diagnostics refresh to load build info.</p>
+              <p className="text-sm text-text-secondary">
+                Run a diagnostics refresh to load build info.
+              </p>
             )}
           </div>
         </Panel>
@@ -52,12 +66,7 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
             >
               Export Support Bundle
             </Button>
-            <Button
-              variant="danger"
-              fullWidth
-              icon={Trash2}
-              onClick={() => setConfirmReset(true)}
-            >
+            <Button variant="danger" fullWidth icon={Trash2} onClick={() => setConfirmReset(true)}>
               Clear Local State
             </Button>
           </div>
@@ -67,7 +76,12 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
       {/* Health Overview */}
       <Panel eyebrow="Health" title="System Status">
         <div className="space-y-4 p-4">
-          <Button variant="primary" fullWidth icon={Wrench} onClick={() => void actions.checkAiHealth()}>
+          <Button
+            variant="primary"
+            fullWidth
+            icon={Wrench}
+            onClick={() => void actions.checkAiHealth()}
+          >
             Check AI Health
           </Button>
 
@@ -86,8 +100,8 @@ export function MaintenanceView({ state, actions }: { state: NeuroDeckState; act
                     )}
                     <span className="text-xs text-text-primary">{provider.provider}</span>
                   </div>
-                  <StatusChip tone={provider.available ? 'success' : 'warning'} size="sm">
-                    {provider.available ? `${provider.latencyMs ?? '?'}ms` : 'unavailable'}
+                  <StatusChip tone={provider.available ? "success" : "warning"} size="sm">
+                    {provider.available ? `${provider.latencyMs ?? "?"}ms` : "unavailable"}
                   </StatusChip>
                 </div>
               ))}

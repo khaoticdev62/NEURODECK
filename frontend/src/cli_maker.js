@@ -2,15 +2,39 @@ import { invoke } from "./neurobridge.js";
 import { createIcon } from "./icons.js";
 
 // ── State ──────────────────────────────────────────────────────────────────────
-let _cmds       = [];
-let _editingId  = null;
-let _flags      = [];   // [{ name, short, type, required, desc, default }]
-let _subcmds    = [];   // [{ name, desc, action }]
+let _cmds = [];
+let _editingId = null;
+let _flags = []; // [{ name, short, type, required, desc, default }]
+let _subcmds = []; // [{ name, desc, action }]
 let _initialized = false;
 
-const ICONS = ["zap","messageSquare","code2","squareTerminal","server","route","globe",
-  "bot","brain","share2","panelRightOpen","sparkles","fileText","gitBranch","send",
-  "copy","play","settings2","search","trash","cpu","layers","terminal","box","rocket"];
+const ICONS = [
+  "zap",
+  "messageSquare",
+  "code2",
+  "squareTerminal",
+  "server",
+  "route",
+  "globe",
+  "bot",
+  "brain",
+  "share2",
+  "panelRightOpen",
+  "sparkles",
+  "fileText",
+  "gitBranch",
+  "send",
+  "copy",
+  "play",
+  "settings2",
+  "search",
+  "trash",
+  "cpu",
+  "layers",
+  "terminal",
+  "box",
+  "rocket",
+];
 
 // ── Init ───────────────────────────────────────────────────────────────────────
 export function initCliMakerView() {
@@ -38,12 +62,14 @@ async function _loadCommands() {
 function _renderList(filter) {
   const listEl = document.getElementById("cli-maker-list");
   if (!listEl) return;
-  const filtered = filter === "all" ? _cmds : _cmds.filter(c => c.category === filter);
+  const filtered = filter === "all" ? _cmds : _cmds.filter((c) => c.category === filter);
   if (!filtered.length) {
     listEl.innerHTML = `<div class="cli-maker-empty">No ${filter === "all" ? "" : filter + " "}commands yet.</div>`;
     return;
   }
-  listEl.innerHTML = filtered.map(c => `
+  listEl.innerHTML = filtered
+    .map(
+      (c) => `
     <div class="cli-cmd-row${_editingId === c.id ? " cli-cmd-selected" : ""}"
          data-id="${_esc(c.id)}" role="listitem" tabindex="0"
          aria-label="${_esc(c.name)} — ${_esc(c.description)}">
@@ -56,27 +82,34 @@ function _renderList(filter) {
         <button class="cli-btn-small" data-action="del"   title="Delete" aria-label="Delete ${_esc(c.name)}">×</button>
       </div>
     </div>
-  `).join("");
+  `
+    )
+    .join("");
 
-  listEl.querySelectorAll(".cli-cmd-row").forEach(row => {
+  listEl.querySelectorAll(".cli-cmd-row").forEach((row) => {
     const id = row.dataset.id;
-    row.addEventListener("click", e => {
+    row.addEventListener("click", (e) => {
       const action = e.target.closest("[data-action]")?.dataset.action;
-      if (action === "edit")      _editCommand(id);
-      else if (action === "run")  _runCommand(id);
-      else if (action === "del")  _deleteCommand(id);
+      if (action === "edit") _editCommand(id);
+      else if (action === "run") _runCommand(id);
+      else if (action === "del") _deleteCommand(id);
     });
-    row.addEventListener("keydown", e => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); _editCommand(id); }
+    row.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        _editCommand(id);
+      }
     });
   });
 }
 
 // ── Filters ───────────────────────────────────────────────────────────────────
 function _wireFilters() {
-  document.querySelectorAll("#cli-maker-filters .cli-filter").forEach(btn => {
+  document.querySelectorAll("#cli-maker-filters .cli-filter").forEach((btn) => {
     btn.addEventListener("click", () => {
-      document.querySelectorAll("#cli-maker-filters .cli-filter").forEach(b => b.classList.remove("active"));
+      document
+        .querySelectorAll("#cli-maker-filters .cli-filter")
+        .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       _renderList(btn.dataset.filter);
     });
@@ -103,13 +136,21 @@ function _wireFilters() {
       const json = await invoke("cli_import_lua", { path: filePath });
       const imported = JSON.parse(json || "[]");
       if (imported.length === 0) {
-        window.addNotification?.('No Commands Found', 'No registerCommand(...) blocks found.', 'info');
+        window.addNotification?.(
+          "No Commands Found",
+          "No registerCommand(...) blocks found.",
+          "info"
+        );
         return;
       }
       await _loadCommands();
-      window.addNotification?.('Import Successful', `Imported ${imported.length} command(s) from Lua.`, 'success');
+      window.addNotification?.(
+        "Import Successful",
+        `Imported ${imported.length} command(s) from Lua.`,
+        "success"
+      );
     } catch (e) {
-      window.addNotification?.('Import Failed', String(e), 'error');
+      window.addNotification?.("Import Failed", String(e), "error");
     } finally {
       importInput.value = "";
     }
@@ -131,30 +172,30 @@ function _wireEditor() {
   });
 
   // Live preview on any input change
-  ["cli-cmd-name","cli-cmd-desc"].forEach(id => {
+  ["cli-cmd-name", "cli-cmd-desc"].forEach((id) => {
     document.getElementById(id)?.addEventListener("input", _updateHelpPreview);
   });
 
   // Shortcut recorder
-  document.getElementById("cli-shortcut-input")?.addEventListener("keydown", e => {
+  document.getElementById("cli-shortcut-input")?.addEventListener("keydown", (e) => {
     e.preventDefault();
     const parts = [];
-    if (e.ctrlKey)  parts.push("Ctrl");
-    if (e.altKey)   parts.push("Alt");
+    if (e.ctrlKey) parts.push("Ctrl");
+    if (e.altKey) parts.push("Alt");
     if (e.shiftKey) parts.push("Shift");
     if (e.key.length === 1) parts.push(e.key.toUpperCase());
-    else if (!["Control","Alt","Shift"].includes(e.key)) parts.push(e.key);
+    else if (!["Control", "Alt", "Shift"].includes(e.key)) parts.push(e.key);
     e.target.value = parts.join("+");
     _updateHelpPreview();
   });
 
-  document.getElementById("cli-save-btn")?.addEventListener("click",          _saveCommand);
-  document.getElementById("cli-test-btn")?.addEventListener("click",          _testCommand);
-  document.getElementById("cli-export-btn")?.addEventListener("click",        _exportLuaClipboard);
-  document.getElementById("cli-save-plugin-btn")?.addEventListener("click",   _saveAsPlugin);
+  document.getElementById("cli-save-btn")?.addEventListener("click", _saveCommand);
+  document.getElementById("cli-test-btn")?.addEventListener("click", _testCommand);
+  document.getElementById("cli-export-btn")?.addEventListener("click", _exportLuaClipboard);
+  document.getElementById("cli-save-plugin-btn")?.addEventListener("click", _saveAsPlugin);
   document.getElementById("cli-export-script-btn")?.addEventListener("click", _exportAsScript);
-  document.getElementById("cli-add-flag-btn")?.addEventListener("click",      _addFlag);
-  document.getElementById("cli-add-subcmd-btn")?.addEventListener("click",    _addSubcmd);
+  document.getElementById("cli-add-flag-btn")?.addEventListener("click", _addFlag);
+  document.getElementById("cli-add-subcmd-btn")?.addEventListener("click", _addSubcmd);
 
   // Language toggle visibility
   document.getElementById("cli-cmd-category")?.addEventListener("change", () => {
@@ -181,7 +222,7 @@ function _renderChainCategory(container) {
     const select = document.createElement("select");
     select.className = "cli-select";
     select.setAttribute("aria-label", "Chain step");
-    _cmds.forEach(c => {
+    _cmds.forEach((c) => {
       const opt = document.createElement("option");
       opt.value = c.id;
       opt.textContent = c.name;
@@ -214,7 +255,9 @@ function _renderDynamicFields(category) {
           Send to LLM (vs. just echo)
         </label>
       `;
-      container.querySelectorAll("textarea, input").forEach(el => el.addEventListener("input", _updateHelpPreview));
+      container
+        .querySelectorAll("textarea, input")
+        .forEach((el) => el.addEventListener("input", _updateHelpPreview));
       break;
 
     case "shell":
@@ -225,16 +268,38 @@ function _renderDynamicFields(category) {
                placeholder="Working directory (optional)" aria-label="Working directory">
         <div class="cli-warn-row">⚠️ Shell commands run with user privileges.</div>
       `;
-      container.querySelectorAll("input").forEach(el => el.addEventListener("input", _updateHelpPreview));
+      container
+        .querySelectorAll("input")
+        .forEach((el) => el.addEventListener("input", _updateHelpPreview));
       break;
 
     case "view":
       container.innerHTML = `
         <select id="cli-view-name" class="cli-select" aria-label="Target view">
-          ${["chat","canvas","terminal","ssh","tunnel","share","browser","agent","memory",
-             "prompt-lab","remote","docs","git","api-lab","cli-maker","graph","scheduler",
-             "workflow","ide","orchestrator"]
-            .map(v => `<option value="${v}">${v}</option>`).join("")}
+          ${[
+            "chat",
+            "canvas",
+            "terminal",
+            "ssh",
+            "tunnel",
+            "share",
+            "browser",
+            "agent",
+            "memory",
+            "prompt-lab",
+            "remote",
+            "docs",
+            "git",
+            "api-lab",
+            "cli-maker",
+            "graph",
+            "scheduler",
+            "workflow",
+            "ide",
+            "orchestrator",
+          ]
+            .map((v) => `<option value="${v}">${v}</option>`)
+            .join("")}
         </select>
       `;
       container.querySelector("select")?.addEventListener("change", _updateHelpPreview);
@@ -256,12 +321,16 @@ function _renderDynamicFields(category) {
 
   // Show flags/subcmds section only for shell/prompt
   const showFlags = category !== "view" && category !== "chain";
-  document.getElementById("cli-flags-section")?.style && (document.getElementById("cli-flags-section").style.display = showFlags ? "" : "none");
-  document.getElementById("cli-subcmds-section")?.style && (document.getElementById("cli-subcmds-section").style.display = showFlags ? "" : "none");
+  document.getElementById("cli-flags-section")?.style &&
+    (document.getElementById("cli-flags-section").style.display = showFlags ? "" : "none");
+  document.getElementById("cli-subcmds-section")?.style &&
+    (document.getElementById("cli-subcmds-section").style.display = showFlags ? "" : "none");
 }
 
 // ── Flags ─────────────────────────────────────────────────────────────────────
-function _addFlag(flag = { name: "", short: "", type: "string", required: false, desc: "", default: "" }) {
+function _addFlag(
+  flag = { name: "", short: "", type: "string", required: false, desc: "", default: "" }
+) {
   const list = document.getElementById("cli-flags-list");
   if (!list) return;
   const idx = _flags.length;
@@ -276,8 +345,9 @@ function _addFlag(flag = { name: "", short: "", type: "string", required: false,
     <input type="text" class="cli-flag-short cli-input" placeholder="-n" value="${_esc(flag.short)}"
            maxlength="2" aria-label="Short flag" title="Single-char shorthand">
     <select class="cli-select cli-flag-type" aria-label="Flag type" title="Value type">
-      ${["string","number","boolean","file"].map(t =>
-        `<option value="${t}" ${flag.type === t ? "selected" : ""}>${t}</option>`).join("")}
+      ${["string", "number", "boolean", "file"]
+        .map((t) => `<option value="${t}" ${flag.type === t ? "selected" : ""}>${t}</option>`)
+        .join("")}
     </select>
     <label class="cli-check-label" title="Required">
       <input type="checkbox" class="cli-flag-req" ${flag.required ? "checked" : ""} aria-label="Required">Req
@@ -287,10 +357,12 @@ function _addFlag(flag = { name: "", short: "", type: "string", required: false,
     <button class="cli-btn-small" aria-label="Remove flag">×</button>
   `;
 
-  row.querySelectorAll("input, select").forEach(el => el.addEventListener("input", () => {
-    _flags[idx] = _gatherFlag(row);
-    _updateHelpPreview();
-  }));
+  row.querySelectorAll("input, select").forEach((el) =>
+    el.addEventListener("input", () => {
+      _flags[idx] = _gatherFlag(row);
+      _updateHelpPreview();
+    })
+  );
   row.querySelector("button").addEventListener("click", () => {
     _flags.splice(idx, 1);
     row.remove();
@@ -303,12 +375,12 @@ function _addFlag(flag = { name: "", short: "", type: "string", required: false,
 
 function _gatherFlag(row) {
   return {
-    name:     row.querySelector(".cli-flag-name")?.value.trim().replace(/^-+/, "") || "",
-    short:    row.querySelector(".cli-flag-short")?.value.trim().replace(/^-/, "").slice(0, 1) || "",
-    type:     row.querySelector(".cli-flag-type")?.value || "string",
+    name: row.querySelector(".cli-flag-name")?.value.trim().replace(/^-+/, "") || "",
+    short: row.querySelector(".cli-flag-short")?.value.trim().replace(/^-/, "").slice(0, 1) || "",
+    type: row.querySelector(".cli-flag-type")?.value || "string",
     required: row.querySelector(".cli-flag-req")?.checked || false,
-    desc:     row.querySelector(".cli-flag-desc")?.value.trim() || "",
-    default:  "",
+    desc: row.querySelector(".cli-flag-desc")?.value.trim() || "",
+    default: "",
   };
 }
 
@@ -329,10 +401,15 @@ function _addSubcmd(sub = { name: "", desc: "", action: "" }) {
     <button class="cli-btn-small" aria-label="Remove subcommand">×</button>
   `;
 
-  row.querySelectorAll("input").forEach(el => el.addEventListener("input", () => {
-    _subcmds[idx] = { name: row.querySelector(".cli-subcmd-name")?.value.trim() || "", desc: row.querySelector(".cli-subcmd-desc")?.value.trim() || "" };
-    _updateHelpPreview();
-  }));
+  row.querySelectorAll("input").forEach((el) =>
+    el.addEventListener("input", () => {
+      _subcmds[idx] = {
+        name: row.querySelector(".cli-subcmd-name")?.value.trim() || "",
+        desc: row.querySelector(".cli-subcmd-desc")?.value.trim() || "",
+      };
+      _updateHelpPreview();
+    })
+  );
   row.querySelector("button").addEventListener("click", () => {
     _subcmds.splice(idx, 1);
     row.remove();
@@ -366,8 +443,8 @@ function _updateHelpPreview() {
     for (const f of _flags) {
       if (!f.name) continue;
       const short = f.short ? `, -${f.short}` : "";
-      const req   = f.required ? " (required)" : "";
-      const type  = f.type !== "boolean" ? ` <${f.type}>` : "";
+      const req = f.required ? " (required)" : "";
+      const type = f.type !== "boolean" ? ` <${f.type}>` : "";
       lines.push(`  --${f.name}${short}${type}${req}`);
       if (f.desc) lines.push(`      ${f.desc}`);
     }
@@ -384,7 +461,11 @@ function _updateHelpPreview() {
 
   if (cat === "shell") {
     const cmd = document.getElementById("cli-shell-command")?.value.trim();
-    if (cmd) { lines.push(""); lines.push("EXECUTES"); lines.push(`  ${cmd}`); }
+    if (cmd) {
+      lines.push("");
+      lines.push("EXECUTES");
+      lines.push(`  ${cmd}`);
+    }
   }
 
   if (shortcut) {
@@ -400,60 +481,67 @@ function _gatherDef() {
   const category = document.getElementById("cli-cmd-category")?.value || "prompt";
   const action = (() => {
     switch (category) {
-      case "prompt": return {
-        type: "Prompt",
-        data: {
-          template: document.getElementById("cli-prompt-template")?.value || "",
-          use_llm:  document.getElementById("cli-prompt-llm")?.checked || false,
-        }
-      };
-      case "shell": return {
-        type: "Shell",
-        data: {
-          command: document.getElementById("cli-shell-command")?.value || "",
-          cwd:     document.getElementById("cli-shell-cwd")?.value || null,
-        }
-      };
-      case "view": return {
-        type: "View",
-        data: { view_name: document.getElementById("cli-view-name")?.value || "chat" }
-      };
+      case "prompt":
+        return {
+          type: "Prompt",
+          data: {
+            template: document.getElementById("cli-prompt-template")?.value || "",
+            use_llm: document.getElementById("cli-prompt-llm")?.checked || false,
+          },
+        };
+      case "shell":
+        return {
+          type: "Shell",
+          data: {
+            command: document.getElementById("cli-shell-command")?.value || "",
+            cwd: document.getElementById("cli-shell-cwd")?.value || null,
+          },
+        };
+      case "view":
+        return {
+          type: "View",
+          data: { view_name: document.getElementById("cli-view-name")?.value || "chat" },
+        };
       case "chain": {
-        const steps = Array.from(document.querySelectorAll("#cli-chain-list select")).map(s => s.value);
+        const steps = Array.from(document.querySelectorAll("#cli-chain-list select")).map(
+          (s) => s.value
+        );
         return { type: "Chain", data: { steps } };
       }
-      case "plugin": return {
-        type: "Plugin",
-        data: { lua_code: document.getElementById("cli-plugin-code")?.value || "" }
-      };
-      default: return { type: "Prompt", data: { template: "", use_llm: false } };
+      case "plugin":
+        return {
+          type: "Plugin",
+          data: { lua_code: document.getElementById("cli-plugin-code")?.value || "" },
+        };
+      default:
+        return { type: "Prompt", data: { template: "", use_llm: false } };
     }
   })();
 
   const currentFlags = Array.from(document.querySelectorAll("#cli-flags-list .cli-flag-row"))
-    .map(r => _gatherFlag(r))
-    .filter(f => f.name);
+    .map((r) => _gatherFlag(r))
+    .filter((f) => f.name);
 
   const currentSubcmds = Array.from(document.querySelectorAll("#cli-subcmds-list .cli-subcmd-row"))
-    .map(r => ({
+    .map((r) => ({
       name: r.querySelector(".cli-subcmd-name")?.value.trim() || "",
       desc: r.querySelector(".cli-subcmd-desc")?.value.trim() || "",
     }))
-    .filter(s => s.name);
+    .filter((s) => s.name);
 
   return {
-    id:          _editingId || `cmd-${Date.now()}`,
-    name:        document.getElementById("cli-cmd-name")?.value.trim() || "Untitled",
+    id: _editingId || `cmd-${Date.now()}`,
+    name: document.getElementById("cli-cmd-name")?.value.trim() || "Untitled",
     description: document.getElementById("cli-cmd-desc")?.value.trim() || "",
-    icon:        document.getElementById("cli-icon-select")?.value || "zap",
+    icon: document.getElementById("cli-icon-select")?.value || "zap",
     category,
     action,
-    flags:       currentFlags,
+    flags: currentFlags,
     subcommands: currentSubcmds,
-    shortcut:    document.getElementById("cli-shortcut-input")?.value || null,
+    shortcut: document.getElementById("cli-shortcut-input")?.value || null,
     radial_bind: document.getElementById("cli-radial-select")?.value
-                   ? parseInt(document.getElementById("cli-radial-select").value)
-                   : null,
+      ? parseInt(document.getElementById("cli-radial-select").value)
+      : null,
   };
 }
 
@@ -491,7 +579,10 @@ async function _testCommand() {
 }
 
 async function _exportLuaClipboard() {
-  if (!_editingId) { _showOutput("Save the command first."); return; }
+  if (!_editingId) {
+    _showOutput("Save the command first.");
+    return;
+  }
   try {
     const lua = await invoke("cli_export_lua", { id: _editingId });
     await navigator.clipboard.writeText(lua);
@@ -511,7 +602,9 @@ async function _saveAsPlugin() {
   }
   try {
     const path = await invoke("cli_maker_save_plugin", { id: _editingId });
-    _showOutput(`✓ Plugin saved to:\n${path}\n\nReload plugins in Settings → Plugin Manager to activate.`);
+    _showOutput(
+      `✓ Plugin saved to:\n${path}\n\nReload plugins in Settings → Plugin Manager to activate.`
+    );
     await _loadCommands();
   } catch (e) {
     _showOutput(`Save plugin failed: ${e}`, true);
@@ -519,10 +612,12 @@ async function _saveAsPlugin() {
 }
 
 async function _exportAsScript() {
-  if (!_editingId) { await _saveCommand(); }
-  const cat  = document.getElementById("cli-cmd-category")?.value || "prompt";
-  const lang = document.getElementById("cli-lang-select")?.value
-    || (cat === "shell" ? "bash" : "lua");
+  if (!_editingId) {
+    await _saveCommand();
+  }
+  const cat = document.getElementById("cli-cmd-category")?.value || "prompt";
+  const lang =
+    document.getElementById("cli-lang-select")?.value || (cat === "shell" ? "bash" : "lua");
   try {
     const path = await invoke("cli_maker_export", { id: _editingId, format: lang });
     _showOutput(`✓ Script exported to:\n${path}`);
@@ -550,10 +645,17 @@ async function _runCommand(id) {
 }
 
 async function _deleteCommand(id) {
-  const confirmed = await showConfirm("Delete this command?", { confirmText: "Delete", cancelText: "Keep" }); if (!confirmed) return;
+  const confirmed = await showConfirm("Delete this command?", {
+    confirmText: "Delete",
+    cancelText: "Keep",
+  });
+  if (!confirmed) return;
   try {
     await invoke("cli_delete_command", { id });
-    if (_editingId === id) { _editingId = null; _clearEditor(); }
+    if (_editingId === id) {
+      _editingId = null;
+      _clearEditor();
+    }
     await _loadCommands();
   } catch (e) {
     _showOutput(`Delete failed: ${e}`, true);
@@ -562,52 +664,70 @@ async function _deleteCommand(id) {
 
 // ── Edit ──────────────────────────────────────────────────────────────────────
 function _editCommand(id) {
-  const cmd = _cmds.find(c => c.id === id);
+  const cmd = _cmds.find((c) => c.id === id);
   if (!cmd) return;
   _editingId = id;
-  _flags     = [...(cmd.flags || [])];
-  _subcmds   = [...(cmd.subcommands || [])];
+  _flags = [...(cmd.flags || [])];
+  _subcmds = [...(cmd.subcommands || [])];
 
   document.getElementById("cli-editor-title").textContent = `Edit: ${cmd.name}`;
-  document.getElementById("cli-cmd-name").value           = cmd.name;
-  document.getElementById("cli-cmd-desc").value           = cmd.description;
-  document.getElementById("cli-cmd-category").value       = cmd.category;
-  document.getElementById("cli-icon-select").value        = cmd.icon || "zap";
-  document.getElementById("cli-shortcut-input").value     = cmd.shortcut || "";
-  document.getElementById("cli-radial-select").value      = cmd.radial_bind != null ? String(cmd.radial_bind) : "";
+  document.getElementById("cli-cmd-name").value = cmd.name;
+  document.getElementById("cli-cmd-desc").value = cmd.description;
+  document.getElementById("cli-cmd-category").value = cmd.category;
+  document.getElementById("cli-icon-select").value = cmd.icon || "zap";
+  document.getElementById("cli-shortcut-input").value = cmd.shortcut || "";
+  document.getElementById("cli-radial-select").value =
+    cmd.radial_bind != null ? String(cmd.radial_bind) : "";
 
   const showLang = cmd.category === "shell" || cmd.category === "plugin";
-  const langSel  = document.getElementById("cli-lang-select");
+  const langSel = document.getElementById("cli-lang-select");
   if (langSel) langSel.style.display = showLang ? "" : "none";
 
   _renderDynamicFields(cmd.category);
 
   if (cmd.action?.type === "Prompt") {
-    document.getElementById("cli-prompt-template")?.setAttribute && (document.getElementById("cli-prompt-template").value = cmd.action.data.template || "");
-    if (document.getElementById("cli-prompt-llm")) document.getElementById("cli-prompt-llm").checked = cmd.action.data.use_llm || false;
+    document.getElementById("cli-prompt-template")?.setAttribute &&
+      (document.getElementById("cli-prompt-template").value = cmd.action.data.template || "");
+    if (document.getElementById("cli-prompt-llm"))
+      document.getElementById("cli-prompt-llm").checked = cmd.action.data.use_llm || false;
   } else if (cmd.action?.type === "Shell") {
-    if (document.getElementById("cli-shell-command")) document.getElementById("cli-shell-command").value = cmd.action.data.command || "";
-    if (document.getElementById("cli-shell-cwd"))     document.getElementById("cli-shell-cwd").value     = cmd.action.data.cwd || "";
+    if (document.getElementById("cli-shell-command"))
+      document.getElementById("cli-shell-command").value = cmd.action.data.command || "";
+    if (document.getElementById("cli-shell-cwd"))
+      document.getElementById("cli-shell-cwd").value = cmd.action.data.cwd || "";
   } else if (cmd.action?.type === "View") {
-    if (document.getElementById("cli-view-name")) document.getElementById("cli-view-name").value = cmd.action.data.view_name || "chat";
+    if (document.getElementById("cli-view-name"))
+      document.getElementById("cli-view-name").value = cmd.action.data.view_name || "chat";
   } else if (cmd.action?.type === "Plugin") {
-    if (document.getElementById("cli-plugin-code")) document.getElementById("cli-plugin-code").value = cmd.action.data.lua_code || "";
+    if (document.getElementById("cli-plugin-code"))
+      document.getElementById("cli-plugin-code").value = cmd.action.data.lua_code || "";
   }
 
   // Re-render flags / subcmds
   const flagsList = document.getElementById("cli-flags-list");
-  if (flagsList) { flagsList.innerHTML = ""; _flags.forEach(f => _addFlag(f)); }
+  if (flagsList) {
+    flagsList.innerHTML = "";
+    _flags.forEach((f) => _addFlag(f));
+  }
   const subcmdsList = document.getElementById("cli-subcmds-list");
-  if (subcmdsList) { subcmdsList.innerHTML = ""; _subcmds.forEach(s => _addSubcmd(s)); }
+  if (subcmdsList) {
+    subcmdsList.innerHTML = "";
+    _subcmds.forEach((s) => _addSubcmd(s));
+  }
 
-  _renderList(document.querySelector("#cli-maker-filters .cli-filter.active")?.dataset.filter || "all");
+  _renderList(
+    document.querySelector("#cli-maker-filters .cli-filter.active")?.dataset.filter || "all"
+  );
   _updateHelpPreview();
 }
 
 // ── Clear editor ──────────────────────────────────────────────────────────────
 function _clearEditor() {
-  const els = ["cli-cmd-name","cli-cmd-desc","cli-shortcut-input"];
-  els.forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+  const els = ["cli-cmd-name", "cli-cmd-desc", "cli-shortcut-input"];
+  els.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
   const radial = document.getElementById("cli-radial-select");
   if (radial) radial.value = "";
   const cat = document.getElementById("cli-cmd-category");
@@ -627,7 +747,7 @@ function _clearEditor() {
 function _populateIconSelect() {
   const select = document.getElementById("cli-icon-select");
   if (!select) return;
-  select.innerHTML = ICONS.map(i => `<option value="${i}">${i}</option>`).join("");
+  select.innerHTML = ICONS.map((i) => `<option value="${i}">${i}</option>`).join("");
 }
 
 function _esc(s) {

@@ -25,7 +25,10 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[var(--z-modal)] flex items-start justify-center bg-black/55 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[var(--z-modal)] flex items-start justify-center bg-black/55 p-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <FocusTrapContainer
         active={open}
         onEscape={onClose}
@@ -69,7 +72,11 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
         </div>
         <div className="flex items-center justify-between border-t border-nd-text-muted/15 px-4 py-3 text-xs text-nd-text-muted">
           <span>Esc closes</span>
-          <button type="button" onClick={onClose} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-1.5 text-xs text-nd-text-muted">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-1.5 text-xs text-nd-text-muted"
+          >
             Close
           </button>
         </div>
@@ -77,4 +84,3 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
     </div>
   );
 }
-

@@ -1,24 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
-import { CalendarClock, Plus, Trash2, Play, Pause } from 'lucide-react';
-import { neurodeckApi } from '../../services/bridgeAdapter';
-import type { ScheduledTask } from '../../services/bridgeAdapter';
-import { Button } from '../../components/primitives/Button';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { ErrorState } from '../../components/primitives/ErrorState';
-import { IconButton } from '../../components/primitives/IconButton';
-import { LoadingState } from '../../components/primitives/LoadingState';
-import { Panel } from '../../components/primitives/Panel';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import { TextInput } from '../../components/primitives/TextInput';
+import { useCallback, useEffect, useState } from "react";
+import { CalendarClock, Plus, Trash2, Play, Pause } from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { ScheduledTask } from "../../services/bridgeAdapter";
+import { Button } from "../../components/primitives/Button";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
+import { IconButton } from "../../components/primitives/IconButton";
+import { LoadingState } from "../../components/primitives/LoadingState";
+import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import { TextInput } from "../../components/primitives/TextInput";
 
 export function SchedulerView() {
   const [tasks, setTasks] = useState<ScheduledTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [mutateError, setMutateError] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [cron, setCron] = useState('0 9 * * MON');
-  const [goal, setGoal] = useState('');
+  const [name, setName] = useState("");
+  const [cron, setCron] = useState("0 9 * * MON");
+  const [goal, setGoal] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,8 +47,8 @@ export function SchedulerView() {
         goal: goal.trim(),
         enabled: true,
       });
-      setName('');
-      setGoal('');
+      setName("");
+      setGoal("");
       await load();
     } catch (e) {
       setMutateError(`Failed to add task: ${e}`);
@@ -86,7 +86,11 @@ export function SchedulerView() {
   };
 
   return (
-    <Panel eyebrow="Task Scheduler" title="Scheduler" className="flex h-full flex-col overflow-hidden">
+    <Panel
+      eyebrow="Task Scheduler"
+      title="Scheduler"
+      className="flex h-full flex-col overflow-hidden"
+    >
       <div data-testid="scheduler-view" className="flex h-full flex-col">
         <div className="space-y-4 p-4">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -144,7 +148,11 @@ export function SchedulerView() {
         <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-4 scrollbar-thin">
           {loading && <LoadingState label="Loading tasks…" />}
           {!loading && loadError && (
-            <ErrorState title="Failed to load tasks" message={loadError} onRetry={() => void load()} />
+            <ErrorState
+              title="Failed to load tasks"
+              message={loadError}
+              onRetry={() => void load()}
+            />
           )}
           {!loading && !loadError && tasks.length === 0 && (
             <EmptyState
@@ -160,8 +168,8 @@ export function SchedulerView() {
                 key={task.id}
                 className="flex items-center gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 p-3 transition duration-fast hover:bg-surface-tertiary/30"
               >
-                <StatusChip tone={task.enabled ? 'success' : 'info'} size="sm">
-                  {task.enabled ? 'Enabled' : 'Paused'}
+                <StatusChip tone={task.enabled ? "success" : "info"} size="sm">
+                  {task.enabled ? "Enabled" : "Paused"}
                 </StatusChip>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-text-primary">{task.name}</p>
@@ -180,7 +188,11 @@ export function SchedulerView() {
                   variant="ghost"
                   size="sm"
                   aria-pressed={task.enabled}
-                  aria-label={task.enabled ? 'Pause task (currently enabled)' : 'Resume task (currently paused)'}
+                  aria-label={
+                    task.enabled
+                      ? "Pause task (currently enabled)"
+                      : "Resume task (currently paused)"
+                  }
                   onClick={() => toggleTask(task.id)}
                 >
                   {task.enabled ? (

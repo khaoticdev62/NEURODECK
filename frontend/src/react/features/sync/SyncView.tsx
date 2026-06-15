@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 import {
   RefreshCcw,
   LayoutDashboard,
@@ -11,46 +11,56 @@ import {
   ListChecks,
   IdCard,
   Network,
-} from 'lucide-react';
-import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
-import type { FileTransfer, TransferPeer, TrustedPeer } from '../../services/bridgeAdapter';
-import { ConfirmDialog } from '../../components/primitives/ConfirmDialog';
-import { DeckButtonHint } from '../../components/primitives/DeckButtonHint';
-import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '../../components/primitives/Tabs';
-import { DashboardTab } from './tabs/DashboardTab';
-import { DevicesTab } from './tabs/DevicesTab';
-import { SendTab } from './tabs/SendTab';
-import { InboxTab } from './tabs/InboxTab';
-import { QueueTab } from './tabs/QueueTab';
-import { HistoryTab } from './tabs/HistoryTab';
-import { ProfilesTab } from './tabs/ProfilesTab';
-import { VpnWanTab } from './tabs/VpnWanTab';
-import { DiagnosticsTab } from './tabs/DiagnosticsTab';
-import { SettingsTab } from './tabs/SettingsTab';
+} from "lucide-react";
+import { neurodeckApi, listenBridge } from "../../services/bridgeAdapter";
+import type { FileTransfer, TransferPeer, TrustedPeer } from "../../services/bridgeAdapter";
+import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
+import { DeckButtonHint } from "../../components/primitives/DeckButtonHint";
+import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "../../components/primitives/Tabs";
+import { DashboardTab } from "./tabs/DashboardTab";
+import { DevicesTab } from "./tabs/DevicesTab";
+import { SendTab } from "./tabs/SendTab";
+import { InboxTab } from "./tabs/InboxTab";
+import { QueueTab } from "./tabs/QueueTab";
+import { HistoryTab } from "./tabs/HistoryTab";
+import { ProfilesTab } from "./tabs/ProfilesTab";
+import { VpnWanTab } from "./tabs/VpnWanTab";
+import { DiagnosticsTab } from "./tabs/DiagnosticsTab";
+import { SettingsTab } from "./tabs/SettingsTab";
 
-type TabId = 'dashboard' | 'devices' | 'send' | 'inbox' | 'queue' | 'history' | 'profiles' | 'vpn' | 'diagnostics' | 'settings';
+type TabId =
+  | "dashboard"
+  | "devices"
+  | "send"
+  | "inbox"
+  | "queue"
+  | "history"
+  | "profiles"
+  | "vpn"
+  | "diagnostics"
+  | "settings";
 
 const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'devices', label: 'Devices', icon: Laptop },
-  { id: 'send', label: 'Send', icon: SendIcon },
-  { id: 'inbox', label: 'Inbox', icon: Inbox },
-  { id: 'queue', label: 'Queue', icon: ListChecks },
-  { id: 'history', label: 'History', icon: Clock },
-  { id: 'profiles', label: 'Profiles', icon: IdCard },
-  { id: 'vpn', label: 'VPN/WAN', icon: Network },
-  { id: 'diagnostics', label: 'Diagnostics', icon: Activity },
-  { id: 'settings', label: 'Settings', icon: Settings },
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "devices", label: "Devices", icon: Laptop },
+  { id: "send", label: "Send", icon: SendIcon },
+  { id: "inbox", label: "Inbox", icon: Inbox },
+  { id: "queue", label: "Queue", icon: ListChecks },
+  { id: "history", label: "History", icon: Clock },
+  { id: "profiles", label: "Profiles", icon: IdCard },
+  { id: "vpn", label: "VPN/WAN", icon: Network },
+  { id: "diagnostics", label: "Diagnostics", icon: Activity },
+  { id: "settings", label: "Settings", icon: Settings },
 ];
 
 export function SyncView() {
-  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabId>("dashboard");
 
   const [transfers, setTransfers] = useState<FileTransfer[]>([]);
   const [peers, setPeers] = useState<TransferPeer[]>([]);
   const [trustedPeers, setTrustedPeers] = useState<TrustedPeer[]>([]);
-  const [groupCode, setGroupCode] = useState('');
-  const [inboxPath, setInboxPath] = useState('');
+  const [groupCode, setGroupCode] = useState("");
+  const [inboxPath, setInboxPath] = useState("");
   const [incomingRequest, setIncomingRequest] = useState<FileTransfer | null>(null);
   const [mutateError, setMutateError] = useState<string | null>(null);
   const [sendToPreselect, setSendToPreselect] = useState<TransferPeer | null>(null);
@@ -75,7 +85,7 @@ export function SyncView() {
 
   const refreshTrusted = useCallback(async () => {
     try {
-      const res = await neurodeckApi.transfer.trustedPeers('list');
+      const res = await neurodeckApi.transfer.trustedPeers("list");
       setTrustedPeers(res.peers ?? []);
     } catch {
       // non-critical
@@ -88,18 +98,24 @@ export function SyncView() {
     void refreshPeers();
     void refreshTrusted();
 
-    neurodeckApi.transfer.groupCode('get').then((r) => {
-      setGroupCode(r.code ?? '');
-    }).catch(() => {});
+    neurodeckApi.transfer
+      .groupCode("get")
+      .then((r) => {
+        setGroupCode(r.code ?? "");
+      })
+      .catch(() => {});
 
-    neurodeckApi.transfer.getInboxPath().then((r) => {
-      setInboxPath(r.path ?? '');
-    }).catch(() => {});
+    neurodeckApi.transfer
+      .getInboxPath()
+      .then((r) => {
+        setInboxPath(r.path ?? "");
+      })
+      .catch(() => {});
   }, [refreshTransfers, refreshPeers, refreshTrusted]);
 
   // WebSocket event subscriptions
   useEffect(() => {
-    const unsubIncoming = listenBridge('transfer_incoming', (payload) => {
+    const unsubIncoming = listenBridge("transfer_incoming", (payload) => {
       const data = payload as FileTransfer;
       setIncomingRequest(data);
       setTransfers((prev) => {
@@ -113,35 +129,35 @@ export function SyncView() {
       });
     });
 
-    const unsubProgress = listenBridge('transfer_progress', (payload) => {
+    const unsubProgress = listenBridge("transfer_progress", (payload) => {
       const data = normalizeProgressEvent(payload);
       setTransfers((prev) =>
-        prev.map((t) => (t.id === data.id ? { ...t, progress: data.progress, status: 'Transferring' } : t))
+        prev.map((t) =>
+          t.id === data.id ? { ...t, progress: data.progress, status: "Transferring" } : t
+        )
       );
     });
 
-    const unsubCompleted = listenBridge('transfer_completed', (payload) => {
+    const unsubCompleted = listenBridge("transfer_completed", (payload) => {
       const data = normalizeTransferIdEvent(payload);
       setTransfers((prev) =>
-        prev.map((t) => (t.id === data.id ? { ...t, status: 'Completed', progress: t.size } : t))
+        prev.map((t) => (t.id === data.id ? { ...t, status: "Completed", progress: t.size } : t))
       );
     });
 
-    const unsubFailed = listenBridge('transfer_failed', (payload) => {
+    const unsubFailed = listenBridge("transfer_failed", (payload) => {
       const data = normalizeTransferIdEvent(payload);
-      setTransfers((prev) =>
-        prev.map((t) => (t.id === data.id ? { ...t, status: 'Failed' } : t))
-      );
+      setTransfers((prev) => prev.map((t) => (t.id === data.id ? { ...t, status: "Failed" } : t)));
     });
 
-    const unsubCancelled = listenBridge('transfer_cancelled', (payload) => {
+    const unsubCancelled = listenBridge("transfer_cancelled", (payload) => {
       const data = payload as { id: string };
       setTransfers((prev) =>
-        prev.map((t) => (t.id === data.id ? { ...t, status: 'Cancelled' } : t))
+        prev.map((t) => (t.id === data.id ? { ...t, status: "Cancelled" } : t))
       );
     });
 
-    const unsubPeers = listenBridge('peers_updated', () => {
+    const unsubPeers = listenBridge("peers_updated", () => {
       void refreshPeers();
     });
 
@@ -158,21 +174,21 @@ export function SyncView() {
   // Tab keyboard navigation (L1/R1)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === '[' || (e.key === 'q' && e.ctrlKey)) {
+      if (e.key === "[" || (e.key === "q" && e.ctrlKey)) {
         setActiveTab((cur) => {
           const idx = TABS.findIndex((t) => t.id === cur);
           return TABS[Math.max(0, idx - 1)].id;
         });
       }
-      if (e.key === ']' || (e.key === 'e' && e.ctrlKey)) {
+      if (e.key === "]" || (e.key === "e" && e.ctrlKey)) {
         setActiveTab((cur) => {
           const idx = TABS.findIndex((t) => t.id === cur);
           return TABS[Math.min(TABS.length - 1, idx + 1)].id;
         });
       }
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, []);
 
   const handleCancel = async (id: string) => {
@@ -214,7 +230,7 @@ export function SyncView() {
 
   const handleSendToPeer = (peer: TransferPeer) => {
     setSendToPreselect(peer);
-    setActiveTab('send');
+    setActiveTab("send");
   };
 
   return (
@@ -225,9 +241,13 @@ export function SyncView() {
           <RefreshCcw className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-nd-text-muted">Sync</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-nd-text-muted">
+            Sync
+          </p>
           <h2 className="text-lg font-semibold text-nd-text-primary">NEURODECK Sync</h2>
-          <p className="text-xs text-nd-text-muted">LAN file transfer — Warpinator/Winpinator compatible</p>
+          <p className="text-xs text-nd-text-muted">
+            LAN file transfer — Warpinator/Winpinator compatible
+          </p>
         </div>
         <div className="flex items-center gap-1.5">
           <DeckButtonHint button="L1" label="Prev tab" />
@@ -254,11 +274,12 @@ export function SyncView() {
       )}
 
       {/* Tabs */}
-      <TabGroup value={activeTab} onChange={(v) => setActiveTab(v as TabId)} className="flex min-h-0 flex-1 flex-col">
-        <TabList
-          aria-label="Sync sections"
-          className="mb-3"
-        >
+      <TabGroup
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as TabId)}
+        className="flex min-h-0 flex-1 flex-col"
+      >
+        <TabList aria-label="Sync sections" className="mb-3">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -277,7 +298,10 @@ export function SyncView() {
               peers={peers}
               onCancel={(id) => void handleCancel(id)}
               onRetry={(id) => void handleRetry(id)}
-              onRefresh={() => { void refreshTransfers(); void refreshPeers(); }}
+              onRefresh={() => {
+                void refreshTransfers();
+                void refreshPeers();
+              }}
             />
           </TabPanel>
           <TabPanel value="devices" className="h-full">
@@ -291,12 +315,16 @@ export function SyncView() {
           </TabPanel>
           <TabPanel value="send" className="h-full">
             <SendTab
-              peers={sendToPreselect ? [sendToPreselect, ...peers.filter((p) => p.ip !== sendToPreselect.ip)] : peers}
+              peers={
+                sendToPreselect
+                  ? [sendToPreselect, ...peers.filter((p) => p.ip !== sendToPreselect.ip)]
+                  : peers
+              }
               onSuccess={() => {
                 setSendToPreselect(null);
                 void refreshTransfers();
                 setMutateError(null);
-                setActiveTab('dashboard');
+                setActiveTab("dashboard");
               }}
               onError={setMutateError}
             />
@@ -353,9 +381,9 @@ export function SyncView() {
       {/* Incoming transfer confirm dialog — mounted at root so it's always accessible */}
       <ConfirmDialog
         open={incomingRequest !== null}
-        title={`Incoming file from ${incomingRequest?.peer_name || incomingRequest?.peer_ip || 'unknown peer'}`}
-        message={`"${incomingRequest?.filename ?? ''}" (${
-          incomingRequest ? formatBytes(incomingRequest.size) : ''
+        title={`Incoming file from ${incomingRequest?.peer_name || incomingRequest?.peer_ip || "unknown peer"}`}
+        message={`"${incomingRequest?.filename ?? ""}" (${
+          incomingRequest ? formatBytes(incomingRequest.size) : ""
         }). Accept this transfer?`}
         confirmLabel="Accept"
         cancelLabel="Reject"
@@ -374,24 +402,24 @@ function formatBytes(n: number): string {
 }
 
 function normalizeTransferIdEvent(payload: unknown): { id: string } {
-  if (typeof payload === 'string') return { id: payload };
-  if (Array.isArray(payload) && typeof payload[0] === 'string') return { id: payload[0] };
-  if (payload && typeof payload === 'object' && 'id' in payload) {
+  if (typeof payload === "string") return { id: payload };
+  if (Array.isArray(payload) && typeof payload[0] === "string") return { id: payload[0] };
+  if (payload && typeof payload === "object" && "id" in payload) {
     return { id: String((payload as { id: unknown }).id) };
   }
-  return { id: '' };
+  return { id: "" };
 }
 
 function normalizeProgressEvent(payload: unknown): { id: string; progress: number } {
   if (Array.isArray(payload)) {
-    return { id: String(payload[0] ?? ''), progress: Number(payload[1] ?? 0) };
+    return { id: String(payload[0] ?? ""), progress: Number(payload[1] ?? 0) };
   }
-  if (payload && typeof payload === 'object') {
+  if (payload && typeof payload === "object") {
     const data = payload as { id?: unknown; transfer_id?: unknown; progress?: unknown };
     return {
-      id: String(data.id ?? data.transfer_id ?? ''),
+      id: String(data.id ?? data.transfer_id ?? ""),
       progress: Number(data.progress ?? 0),
     };
   }
-  return { id: '', progress: 0 };
+  return { id: "", progress: 0 };
 }

@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
-import { OnboardingProvider } from '../../onboarding/OnboardingProvider';
-import type { NeuroDeckState, NeuroDeckAction } from '../../types/neurodeck';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { OnboardingProvider } from "../../onboarding/OnboardingProvider";
+import type { NeuroDeckState, NeuroDeckAction } from "../../types/neurodeck";
 
-vi.mock('../../onboarding/OnboardingOverlay', () => ({
+vi.mock("../../onboarding/OnboardingOverlay", () => ({
   OnboardingOverlay: ({ mode }: { mode: string }) => (
     <div data-testid="onboarding-overlay" data-mode={mode} />
   ),
@@ -11,8 +11,8 @@ vi.mock('../../onboarding/OnboardingOverlay', () => ({
 
 const baseState = {
   showOnboarding: false,
-  onboardingMode: 'setup',
-  activeView: 'chat',
+  onboardingMode: "setup",
+  activeView: "chat",
   deckMode: false,
   models: [],
   sessions: [],
@@ -21,61 +21,77 @@ const baseState = {
 
 const dispatch = vi.fn() as unknown as React.Dispatch<NeuroDeckAction>;
 
-describe('OnboardingProvider', () => {
+describe("OnboardingProvider", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('renders children without overlay when showOnboarding is false', () => {
+  it("renders children without overlay when showOnboarding is false", () => {
     render(
       <OnboardingProvider state={baseState} dispatch={dispatch}>
         <span>app</span>
-      </OnboardingProvider>,
+      </OnboardingProvider>
     );
-    expect(screen.getByText('app')).toBeDefined();
-    expect(screen.queryByTestId('onboarding-overlay')).toBeNull();
+    expect(screen.getByText("app")).toBeDefined();
+    expect(screen.queryByTestId("onboarding-overlay")).toBeNull();
   });
 
-  it('does not mount overlay when onboardingMode is setup', () => {
-    const state = { ...baseState, showOnboarding: true, onboardingMode: 'setup' } as unknown as NeuroDeckState;
+  it("does not mount overlay when onboardingMode is setup", () => {
+    const state = {
+      ...baseState,
+      showOnboarding: true,
+      onboardingMode: "setup",
+    } as unknown as NeuroDeckState;
     render(
       <OnboardingProvider state={state} dispatch={dispatch}>
         <span>app</span>
-      </OnboardingProvider>,
+      </OnboardingProvider>
     );
-    expect(screen.queryByTestId('onboarding-overlay')).toBeNull();
+    expect(screen.queryByTestId("onboarding-overlay")).toBeNull();
   });
 
-  it('mounts overlay via portal when mode is tour', () => {
-    const state = { ...baseState, showOnboarding: true, onboardingMode: 'tour' } as unknown as NeuroDeckState;
+  it("mounts overlay via portal when mode is tour", () => {
+    const state = {
+      ...baseState,
+      showOnboarding: true,
+      onboardingMode: "tour",
+    } as unknown as NeuroDeckState;
     render(
       <OnboardingProvider state={state} dispatch={dispatch}>
         <span>app</span>
-      </OnboardingProvider>,
+      </OnboardingProvider>
     );
-    const overlay = screen.getByTestId('onboarding-overlay');
+    const overlay = screen.getByTestId("onboarding-overlay");
     expect(overlay).toBeDefined();
-    expect(overlay.getAttribute('data-mode')).toBe('tour');
+    expect(overlay.getAttribute("data-mode")).toBe("tour");
   });
 
-  it('mounts overlay when mode is contextual', () => {
-    const state = { ...baseState, showOnboarding: true, onboardingMode: 'contextual' } as unknown as NeuroDeckState;
+  it("mounts overlay when mode is contextual", () => {
+    const state = {
+      ...baseState,
+      showOnboarding: true,
+      onboardingMode: "contextual",
+    } as unknown as NeuroDeckState;
     render(
       <OnboardingProvider state={state} dispatch={dispatch}>
         <span>app</span>
-      </OnboardingProvider>,
+      </OnboardingProvider>
     );
-    expect(screen.getByTestId('onboarding-overlay').getAttribute('data-mode')).toBe('contextual');
+    expect(screen.getByTestId("onboarding-overlay").getAttribute("data-mode")).toBe("contextual");
   });
 
-  it('mounts overlay when mode is whats-new', () => {
-    const state = { ...baseState, showOnboarding: true, onboardingMode: 'whats-new' } as unknown as NeuroDeckState;
+  it("mounts overlay when mode is whats-new", () => {
+    const state = {
+      ...baseState,
+      showOnboarding: true,
+      onboardingMode: "whats-new",
+    } as unknown as NeuroDeckState;
     render(
       <OnboardingProvider state={state} dispatch={dispatch}>
         <span>app</span>
-      </OnboardingProvider>,
+      </OnboardingProvider>
     );
-    expect(screen.getByTestId('onboarding-overlay').getAttribute('data-mode')).toBe('whats-new');
+    expect(screen.getByTestId("onboarding-overlay").getAttribute("data-mode")).toBe("whats-new");
   });
 });
 
 // Required so TS allows JSX without explicit React import
-import type React from 'react';
+import type React from "react";

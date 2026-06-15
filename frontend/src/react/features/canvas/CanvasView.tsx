@@ -1,45 +1,48 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Paintbrush, Play, Copy, Trash2, RefreshCw, Sparkles, Users } from 'lucide-react';
-import { neurodeckApi, listenBridge } from '../../services/bridgeAdapter';
-import type { CodeLang } from '../../services/bridgeAdapter';
-import { Button } from '../../components/primitives/Button';
-import { IconButton } from '../../components/primitives/IconButton';
-import { Select } from '../../components/primitives/Select';
-import { Badge } from '../../components/primitives/Badge';
-import { Panel } from '../../components/primitives/Panel';
-import { EmptyState } from '../../components/primitives/EmptyState';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Paintbrush, Play, Copy, Trash2, RefreshCw, Sparkles, Users } from "lucide-react";
+import { neurodeckApi, listenBridge } from "../../services/bridgeAdapter";
+import type { CodeLang } from "../../services/bridgeAdapter";
+import { Button } from "../../components/primitives/Button";
+import { IconButton } from "../../components/primitives/IconButton";
+import { Select } from "../../components/primitives/Select";
+import { Badge } from "../../components/primitives/Badge";
+import { Panel } from "../../components/primitives/Panel";
+import { EmptyState } from "../../components/primitives/EmptyState";
 
 const LANG_OPTIONS: { value: CodeLang; label: string }[] = [
-  { value: 'html', label: 'HTML' },
-  { value: 'python', label: 'Python' },
-  { value: 'javascript', label: 'JavaScript' },
-  { value: 'bash', label: 'Bash' },
-  { value: 'powershell', label: 'PowerShell' },
+  { value: "html", label: "HTML" },
+  { value: "python", label: "Python" },
+  { value: "javascript", label: "JavaScript" },
+  { value: "bash", label: "Bash" },
+  { value: "powershell", label: "PowerShell" },
 ];
 
 const DEFAULT_CODE: Partial<Record<CodeLang, string>> = {
   html: '<!-- Try editing this HTML -->\n<div style="padding: 20px; color: #5EEBFF;">\n  <h1>Hello NEURODECK</h1>\n  <p>Edit and click Run to preview</p>\n</div>',
-  python: '# Python code execution\nprint("Hello from NEURODECK Canvas")\nfor i in range(3):\n    print(f"Line {i+1}")',
-  javascript: '// JavaScript execution\nconsole.log("Hello from NEURODECK Canvas");\nconst arr = [1, 2, 3];\narr.map(x => x * 2);',
+  python:
+    '# Python code execution\nprint("Hello from NEURODECK Canvas")\nfor i in range(3):\n    print(f"Line {i+1}")',
+  javascript:
+    '// JavaScript execution\nconsole.log("Hello from NEURODECK Canvas");\nconst arr = [1, 2, 3];\narr.map(x => x * 2);',
   bash: '#!/bin/bash\necho "Hello from NEURODECK Canvas"\nls -la',
   powershell: '# PowerShell\nWrite-Host "Hello from NEURODECK Canvas"\nGet-Date',
 };
 
 export function CanvasView() {
-  const [lang, setLang] = useState<CodeLang>('html');
-  const [code, setCode] = useState(DEFAULT_CODE.html ?? '');
-  const [output, setOutput] = useState('');
+  const [lang, setLang] = useState<CodeLang>("html");
+  const [code, setCode] = useState(DEFAULT_CODE.html ?? "");
+  const [output, setOutput] = useState("");
   const [running, setRunning] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
   const outputRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
-    const unsubLine = listenBridge('canvas_exec_line', (payload: unknown) => {
-      const line = typeof payload === 'object' && payload !== null && 'line' in payload
-        ? String((payload as Record<string, unknown>).line)
-        : String(payload);
+    const unsubLine = listenBridge("canvas_exec_line", (payload: unknown) => {
+      const line =
+        typeof payload === "object" && payload !== null && "line" in payload
+          ? String((payload as Record<string, unknown>).line)
+          : String(payload);
       setOutput((prev) => {
-        const next = prev + line + '\n';
+        const next = prev + line + "\n";
         requestAnimationFrame(() => {
           if (outputRef.current) {
             outputRef.current.scrollTop = outputRef.current.scrollHeight;
@@ -48,7 +51,7 @@ export function CanvasView() {
         return next;
       });
     });
-    const unsubDone = listenBridge('canvas_exec_done', () => {
+    const unsubDone = listenBridge("canvas_exec_done", () => {
       setRunning(false);
     });
     return () => {
@@ -61,14 +64,14 @@ export function CanvasView() {
     setCode((prev) => {
       const defaults = Object.values(DEFAULT_CODE);
       const isDefault = defaults.includes(prev);
-      return isDefault ? (DEFAULT_CODE[lang] ?? '') : prev;
+      return isDefault ? (DEFAULT_CODE[lang] ?? "") : prev;
     });
   }, [lang]);
 
   const run = useCallback(async () => {
     setRunning(true);
-    setOutput('');
-    if (lang === 'html') {
+    setOutput("");
+    if (lang === "html") {
       setPreviewKey((k) => k + 1);
       setRunning(false);
       return;
@@ -82,15 +85,15 @@ export function CanvasView() {
   }, [code, lang]);
 
   const clear = () => {
-    setOutput('');
-    setCode(DEFAULT_CODE[lang] ?? '');
+    setOutput("");
+    setCode(DEFAULT_CODE[lang] ?? "");
   };
 
   const copyCode = () => navigator.clipboard.writeText(code);
 
   const htmlBlob = useMemo(() => {
-    if (lang !== 'html') return null;
-    return URL.createObjectURL(new Blob([code], { type: 'text/html' }));
+    if (lang !== "html") return null;
+    return URL.createObjectURL(new Blob([code], { type: "text/html" }));
   }, [lang, previewKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -106,12 +109,16 @@ export function CanvasView() {
           <Paintbrush className="h-5 w-5 text-accent-primary" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">Canvas</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
+            Canvas
+          </p>
           <h2 className="text-lg font-semibold text-text-primary">Live Code Canvas</h2>
           <p className="text-xs text-text-muted">Edit, run, and preview code in split view.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge tone="accent" variant="outline">{lang.toUpperCase()}</Badge>
+          <Badge tone="accent" variant="outline">
+            {lang.toUpperCase()}
+          </Badge>
           <Select
             aria-label="Select language"
             value={lang}
@@ -165,12 +172,7 @@ export function CanvasView() {
       </header>
 
       <div className="flex min-h-0 flex-1 gap-3">
-        <Panel
-          className="flex min-w-0 flex-1 flex-col"
-          title="Editor"
-          eyebrow="Source"
-         
-        >
+        <Panel className="flex min-w-0 flex-1 flex-col" title="Editor" eyebrow="Source">
           <textarea
             id="canvas-monaco"
             value={code}
@@ -183,11 +185,10 @@ export function CanvasView() {
 
         <Panel
           className="flex min-w-0 flex-1 flex-col"
-          title={lang === 'html' ? 'Preview' : 'Output'}
-          eyebrow={lang === 'html' ? 'Render' : 'Stream'}
-         
+          title={lang === "html" ? "Preview" : "Output"}
+          eyebrow={lang === "html" ? "Render" : "Stream"}
         >
-          {lang === 'html' ? (
+          {lang === "html" ? (
             <iframe
               id="canvas-preview-frame"
               key={previewKey}

@@ -1,5 +1,5 @@
-import { type InputHTMLAttributes, forwardRef } from 'react';
-import '../../../design-system/components/core/TextInput';
+import { type InputHTMLAttributes, forwardRef } from "react";
+import "../../../design-system/components/core/TextInput";
 
 interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -9,13 +9,13 @@ interface TextInputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
-  { label, error, hint, fullWidth = false, className = '', id, ...rest },
-  ref,
+  { label, error, hint, fullWidth = false, className = "", id, ...rest },
+  ref
 ) {
-  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-');
+  const inputId = id ?? label?.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className={['nd-field', fullWidth ? 'w-full' : '', className].filter(Boolean).join(' ')}>
+    <div className={["nd-field", fullWidth ? "w-full" : "", className].filter(Boolean).join(" ")}>
       {label && (
         <label htmlFor={inputId} className="nd-field__label">
           {label}
@@ -28,12 +28,12 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       )}
       <div
         className={[
-          'nd-field__wrap',
-          error ? 'nd-field__wrap--error' : '',
-          rest.disabled ? 'nd-field__wrap--disabled' : '',
+          "nd-field__wrap",
+          error ? "nd-field__wrap--error" : "",
+          rest.disabled ? "nd-field__wrap--disabled" : "",
         ]
           .filter(Boolean)
-          .join(' ')}
+          .join(" ")}
       >
         <input
           ref={ref}

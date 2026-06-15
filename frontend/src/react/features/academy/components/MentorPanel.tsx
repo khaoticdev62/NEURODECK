@@ -1,8 +1,8 @@
-import { useState, useRef, useEffect, useId, KeyboardEvent } from 'react';
-import { BrainCircuit, ChevronDown, ChevronUp, Send, Trash2 } from 'lucide-react';
-import { Button } from '../../../components/primitives/Button';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { useMentorChat } from '../hooks/useMentorChat';
+import { useState, useRef, useEffect, useId, KeyboardEvent } from "react";
+import { BrainCircuit, ChevronDown, ChevronUp, Send, Trash2 } from "lucide-react";
+import { Button } from "../../../components/primitives/Button";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { useMentorChat } from "../hooks/useMentorChat";
 
 interface MentorPanelProps {
   /** Scoped context (lab/alert title + objectives/description — never answers). */
@@ -13,7 +13,7 @@ interface MentorPanelProps {
 
 export function MentorPanel({ context, greeting }: MentorPanelProps) {
   const [open, setOpen] = useState(false);
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const inputId = useId();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -21,18 +21,18 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
 
   // Auto-scroll to bottom when new content arrives
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, streamBuffer]);
 
   function handleSend() {
     const q = input.trim();
     if (!q || streaming) return;
-    setInput('');
+    setInput("");
     send(q);
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       handleSend();
     }
@@ -63,7 +63,7 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
 
       {/* Expanded body */}
       {open && (
-        <div className="flex flex-col" style={{ height: '220px' }}>
+        <div className="flex flex-col" style={{ height: "220px" }}>
           {/* Message log */}
           <div className="flex-1 space-y-2 overflow-y-auto px-4 py-2">
             {/* Static greeting */}
@@ -71,13 +71,14 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
               <div className="flex items-start gap-2">
                 <MentorAvatar />
                 <div className="max-w-prose rounded-lg border border-nd-border-subtle/50 bg-nd-surface/40 px-3 py-2 text-[11px] leading-relaxed text-nd-text-secondary">
-                  {greeting ?? "What's your question? I'll guide you — I won't hand you the answer."}
+                  {greeting ??
+                    "What's your question? I'll guide you — I won't hand you the answer."}
                 </div>
               </div>
             )}
 
             {messages.map((msg, i) =>
-              msg.role === 'student' ? (
+              msg.role === "student" ? (
                 <div key={i} className="flex justify-end gap-2">
                   <div className="max-w-[80%] rounded-lg bg-nd-accent/15 px-3 py-2 text-[11px] leading-relaxed text-nd-text-primary">
                     {msg.content}
@@ -141,10 +142,10 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
               disabled={streaming}
               placeholder="Ask Alex a question… (Ctrl+Enter to send)"
               className="flex-1 resize-none rounded-lg border border-nd-border-subtle bg-nd-surface-base/60 px-2.5 py-1.5 text-[11px] text-nd-text-primary placeholder:text-nd-text-muted/30 focus:border-nd-accent-primary/40 focus:outline-none focus:ring-1 focus:ring-nd-accent-primary/20 disabled:opacity-50"
-              style={{ maxHeight: '80px' }}
+              style={{ maxHeight: "80px" }}
               onInput={(e) => {
                 const el = e.currentTarget;
-                el.style.height = 'auto';
+                el.style.height = "auto";
                 el.style.height = `${Math.min(el.scrollHeight, 80)}px`;
               }}
             />

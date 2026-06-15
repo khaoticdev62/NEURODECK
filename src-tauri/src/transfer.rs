@@ -83,6 +83,12 @@ fn sanitize_relative_transfer_path(relative_path: &str) -> Result<PathBuf, Strin
     // Normalize Windows-style separators so cross-platform paths are parsed
     // consistently and cannot smuggle absolute/prefix components on Unix.
     let normalized = relative_path.replace('\\', "/");
+
+    // Reject Windows drive letters and any remaining absolute-looking prefix.
+    if normalized.starts_with('/') || normalized.contains(':') {
+        return Err("Transfer path must be relative and contain no drive letters".to_string());
+    }
+
     let candidate = Path::new(&normalized);
 
     let mut sanitized = PathBuf::new();

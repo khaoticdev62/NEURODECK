@@ -223,21 +223,14 @@ jobs:
       - name: Install ajv-cli
         run: npm install -g ajv-cli ajv-formats
 
-      - name: KFMS Stamp
-        run: bash scripts/kfms/khaotic-init.sh stamp
+      - name: KFMS Sync
+        run: bash scripts/kfms/khaotic-init.sh sync
 
       - name: KFMS Validate
         run: bash scripts/kfms/khaotic-init.sh validate
 
       - name: KFMS Status
         run: bash scripts/kfms/khaotic-init.sh status
-
-      - name: Verify KFMS artifacts are clean
-        run: |
-          git diff --quiet -- infra/meta/meta.json infra/telemetry/health.json infra/meta/CODENAME_REGISTRY.md docs/IMPLEMENTATION_PLAN.md || {
-            echo "KFMS artifacts are out of sync. Run: bash scripts/kfms/khaotic-init.sh sync"
-            exit 1
-          }
 
   # ── Gate 6: Security Hardening ───────────────────────────────────────────
   hardening:

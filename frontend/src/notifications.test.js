@@ -19,42 +19,83 @@ function createMinimalDOM() {
       className: "",
       classList: {
         _classes: new Set(),
-        add(...cls) { cls.forEach(c => this._classes.add(c)); },
-        remove(...cls) { cls.forEach(c => this._classes.delete(c)); },
-        contains(c) { return this._classes.has(c); },
-        toggle(c) { this._classes.has(c) ? this._classes.delete(c) : this._classes.add(c); return this._classes.has(c); },
+        add(...cls) {
+          cls.forEach((c) => this._classes.add(c));
+        },
+        remove(...cls) {
+          cls.forEach((c) => this._classes.delete(c));
+        },
+        contains(c) {
+          return this._classes.has(c);
+        },
+        toggle(c) {
+          this._classes.has(c) ? this._classes.delete(c) : this._classes.add(c);
+          return this._classes.has(c);
+        },
       },
       children: [],
       childNodes: [],
       _textContent: "",
-      get textContent() { return this._textContent; },
-      set textContent(v) { this._textContent = String(v ?? ""); },
-      get innerHTML() {
-        return this.children.map(c => `<${c.tagName.toLowerCase()}>${c._textContent}</${c.tagName.toLowerCase()}>`).join("");
+      get textContent() {
+        return this._textContent;
       },
-      set innerHTML(_v) { this.children = []; },
+      set textContent(v) {
+        this._textContent = String(v ?? "");
+      },
+      get innerHTML() {
+        return this.children
+          .map((c) => `<${c.tagName.toLowerCase()}>${c._textContent}</${c.tagName.toLowerCase()}>`)
+          .join("");
+      },
+      set innerHTML(_v) {
+        this.children = [];
+      },
       style: {},
       setAttribute() {},
-      getAttribute() { return null; },
-      append(...nodes) { nodes.forEach(n => { this.children.push(n); this.childNodes.push(n); }); },
-      appendChild(n) { this.children.push(n); this.childNodes.push(n); return n; },
+      getAttribute() {
+        return null;
+      },
+      append(...nodes) {
+        nodes.forEach((n) => {
+          this.children.push(n);
+          this.childNodes.push(n);
+        });
+      },
+      appendChild(n) {
+        this.children.push(n);
+        this.childNodes.push(n);
+        return n;
+      },
       insertBefore(n, ref) {
         const idx = ref ? this.childNodes.indexOf(ref) : -1;
-        if (idx >= 0) { this.childNodes.splice(idx, 0, n); this.children.splice(idx, 0, n); }
-        else { this.childNodes.push(n); this.children.push(n); }
+        if (idx >= 0) {
+          this.childNodes.splice(idx, 0, n);
+          this.children.splice(idx, 0, n);
+        } else {
+          this.childNodes.push(n);
+          this.children.push(n);
+        }
         return n;
       },
       removeChild(n) {
-        this.children = this.children.filter(c => c !== n);
-        this.childNodes = this.childNodes.filter(c => c !== n);
+        this.children = this.children.filter((c) => c !== n);
+        this.childNodes = this.childNodes.filter((c) => c !== n);
       },
-      remove() { /* self-remove from parent not needed in these tests */ },
-      replaceChildren(...nodes) { this.children = nodes; this.childNodes = [...nodes]; },
+      remove() {
+        /* self-remove from parent not needed in these tests */
+      },
+      replaceChildren(...nodes) {
+        this.children = nodes;
+        this.childNodes = [...nodes];
+      },
       querySelectorAll(sel) {
-        if (sel === ".notif-item") return this.children.filter(c => c.className.includes("notif-item"));
+        if (sel === ".notif-item")
+          return this.children.filter((c) => c.className.includes("notif-item"));
         return [];
       },
-      querySelector(sel) { return this.querySelectorAll(sel)[0] ?? null; },
+      querySelector(sel) {
+        return this.querySelectorAll(sel)[0] ?? null;
+      },
       addEventListener() {},
       dispatchEvent() {},
     };
@@ -63,8 +104,14 @@ function createMinimalDOM() {
 
   const doc = {
     createElement,
-    createTextNode(text) { const el = createElement("text"); el._textContent = text; return el; },
-    getElementById(id) { return elements.get(id) ?? null; },
+    createTextNode(text) {
+      const el = createElement("text");
+      el._textContent = text;
+      return el;
+    },
+    getElementById(id) {
+      return elements.get(id) ?? null;
+    },
     body: createElement("body"),
     _elements: elements,
   };
@@ -145,7 +192,7 @@ function addNotification(state, doc, title, text, type = "info", navigateTo = nu
     text: text,
     type: type,
     time: timeStr,
-    navigateTo: navigateTo
+    navigateTo: navigateTo,
   });
 
   while (state.notifications.length > 100) {
@@ -154,7 +201,7 @@ function addNotification(state, doc, title, text, type = "info", navigateTo = nu
 
   state.unreadNotifCount += 1;
   updateNotifBadge(state, doc);
-  
+
   const container = doc.getElementById("toast-container");
   if (container) {
     const toastEl = doc.createElement("div");
@@ -234,7 +281,13 @@ describe("renderNotificationsList", () => {
 
   it("uses textContent for title and text (XSS-safe contract)", () => {
     state.notifications = [
-      { id: "n1", title: "<script>alert(1)</script>", text: "<b>bold</b>", type: "info", time: "12:00" },
+      {
+        id: "n1",
+        title: "<script>alert(1)</script>",
+        text: "<b>bold</b>",
+        type: "info",
+        time: "12:00",
+      },
     ];
     renderNotificationsList(state, dom);
     const container = dom.getElementById("notif-list-container");
@@ -244,9 +297,7 @@ describe("renderNotificationsList", () => {
   });
 
   it("applies type class to each item", () => {
-    state.notifications = [
-      { id: "n1", title: "T", text: "x", type: "success", time: "00:00" },
-    ];
+    state.notifications = [{ id: "n1", title: "T", text: "x", type: "success", time: "00:00" }];
     renderNotificationsList(state, dom);
     const item = dom.getElementById("notif-list-container").children[0];
     expect(item.className).toContain("success");
@@ -284,7 +335,13 @@ describe("addNotification", () => {
 
   it("caps notifications at 100 entries to prevent unbounded growth", () => {
     for (let i = 0; i < 105; i++) {
-      state.notifications.unshift({ id: `n${i}`, title: `N${i}`, text: "body", type: "info", time: "00:00" });
+      state.notifications.unshift({
+        id: `n${i}`,
+        title: `N${i}`,
+        text: "body",
+        type: "info",
+        time: "00:00",
+      });
     }
     if (state.notifications.length > 100) {
       state.notifications = state.notifications.slice(0, 100);

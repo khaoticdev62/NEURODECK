@@ -1,23 +1,23 @@
-import { type ReactNode, useEffect, useRef } from 'react';
-import { X } from 'lucide-react';
-import { FocusTrap } from '../../../../focus-trap.js';
+import { type ReactNode, useEffect, useRef } from "react";
+import { X } from "lucide-react";
+import { FocusTrap } from "../../../../focus-trap.js";
 
 interface ModalProps {
   open: boolean;
   onClose: () => void;
   title?: string;
   description?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
   children: ReactNode;
   footer?: ReactNode;
   closeOnBackdrop?: boolean;
 }
 
 const sizeClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-2xl',
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-2xl",
 };
 
 export function Modal({
@@ -25,7 +25,7 @@ export function Modal({
   onClose,
   title,
   description,
-  size = 'md',
+  size = "md",
   children,
   footer,
   closeOnBackdrop = true,
@@ -37,13 +37,13 @@ export function Modal({
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.stopPropagation();
         onClose();
       }
     };
-    document.addEventListener('keydown', onKey, true);
-    return () => document.removeEventListener('keydown', onKey, true);
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
   }, [open, onClose]);
 
   // Focus trap activation / deactivation (restores focus on close)
@@ -64,8 +64,8 @@ export function Modal({
       className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? 'modal-title' : undefined}
-      aria-describedby={description ? 'modal-desc' : undefined}
+      aria-labelledby={title ? "modal-title" : undefined}
+      aria-describedby={description ? "modal-desc" : undefined}
     >
       <div
         className="absolute inset-0 bg-nd-bg/70 backdrop-blur-sm"
@@ -76,18 +76,22 @@ export function Modal({
         ref={dialogRef}
         tabIndex={-1}
         className={[
-          'relative z-10 flex w-full flex-col rounded-2xl border border-nd-text-muted/15',
-          'bg-nd-surface shadow-panel-elevated',
-          'animate-view-enter outline-none',
+          "relative z-10 flex w-full flex-col rounded-2xl border border-nd-text-muted/15",
+          "bg-nd-surface shadow-panel-elevated",
+          "animate-view-enter outline-none",
           sizeClasses[size],
-        ].join(' ')}
+        ].join(" ")}
       >
         {title && (
           <div className="flex items-start justify-between gap-3 border-b border-nd-text-muted/10 px-5 py-4">
             <div>
-              <h2 id="modal-title" className="text-sm font-semibold text-nd-text">{title}</h2>
+              <h2 id="modal-title" className="text-sm font-semibold text-nd-text">
+                {title}
+              </h2>
               {description && (
-                <p id="modal-desc" className="mt-0.5 text-xs text-nd-text-muted">{description}</p>
+                <p id="modal-desc" className="mt-0.5 text-xs text-nd-text-muted">
+                  {description}
+                </p>
               )}
             </div>
             <button

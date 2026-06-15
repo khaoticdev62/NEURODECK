@@ -1,6 +1,6 @@
-import { AlertTriangle } from 'lucide-react';
-import { Modal } from './Modal';
-import { Button } from './Button';
+import { AlertTriangle } from "lucide-react";
+import { Modal } from "./Modal";
+import { Button } from "./Button";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -17,10 +17,10 @@ export function ConfirmDialog({
   open,
   onConfirm,
   onCancel,
-  title = 'Are you sure?',
+  title = "Are you sure?",
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
   destructive = false,
 }: ConfirmDialogProps) {
   return (
@@ -34,7 +34,7 @@ export function ConfirmDialog({
           <Button variant="ghost" size="md" onClick={onCancel}>
             {cancelLabel}
           </Button>
-          <Button variant={destructive ? 'danger' : 'primary'} size="md" onClick={onConfirm}>
+          <Button variant={destructive ? "danger" : "primary"} size="md" onClick={onConfirm}>
             {confirmLabel}
           </Button>
         </>

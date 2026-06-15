@@ -248,7 +248,7 @@ describe("bridgeAdapter — sync profile fallback", () => {
               message:
                 "Command 'transfer_profiles' not found in bridge dispatch table. Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
             },
-          }),
+          })
         ),
     } as Response);
 

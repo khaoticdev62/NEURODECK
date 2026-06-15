@@ -25,7 +25,9 @@ export function TerminalProfileSelector({ profiles, selectedProfileId, onSelect 
   return (
     <section className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
       <div className="mb-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Profile</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
+          Profile
+        </p>
         <h3 className="text-sm font-semibold text-nd-text">Shell profile</h3>
       </div>
       <select
@@ -45,7 +47,9 @@ export function TerminalProfileSelector({ profiles, selectedProfileId, onSelect 
         ))}
       </select>
       {selected && (
-        <div className={`mt-3 rounded-2xl border px-3 py-2 text-xs ${selected.shellAvailable ? "border-nd-accent/30 bg-nd-accent/[0.08]" : "border-nd-danger/30 bg-nd-danger/[0.06]"}`}>
+        <div
+          className={`mt-3 rounded-2xl border px-3 py-2 text-xs ${selected.shellAvailable ? "border-nd-accent/30 bg-nd-accent/[0.08]" : "border-nd-danger/30 bg-nd-danger/[0.06]"}`}
+        >
           <div className="flex items-center justify-between gap-2">
             <span className="font-semibold text-nd-text">{selected.name}</span>
             <span className={selected.shellAvailable ? "text-nd-success" : "text-nd-danger"}>
@@ -54,11 +58,12 @@ export function TerminalProfileSelector({ profiles, selectedProfileId, onSelect 
           </div>
           <div className="mt-1 text-nd-text-muted">{selected.description}</div>
           {selected.detectedPath && (
-            <div className="mt-1 font-mono text-[0.65rem] text-nd-text-muted opacity-60">{selected.detectedPath}</div>
+            <div className="mt-1 font-mono text-[0.65rem] text-nd-text-muted opacity-60">
+              {selected.detectedPath}
+            </div>
           )}
         </div>
       )}
     </section>
   );
 }
-

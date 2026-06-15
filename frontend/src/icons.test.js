@@ -22,7 +22,7 @@ describe("createIcon", () => {
 
   it("sanitizes className to prevent injection", () => {
     const svg = createIcon("menu", {
-      className: 'foo<script>alert(1)</script>bar',
+      className: "foo<script>alert(1)</script>bar",
     });
     expect(svg).not.toContain("<script>");
     expect(svg).toContain("foo");

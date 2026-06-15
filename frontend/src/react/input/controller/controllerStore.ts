@@ -1,7 +1,4 @@
-import type {
-  ControllerRuntimeState,
-  ControllerSettings,
-} from "../../../shared/types/controller";
+import type { ControllerRuntimeState, ControllerSettings } from "../../../shared/types/controller";
 
 export const controllerDefaults: ControllerSettings = {
   enabled: true,

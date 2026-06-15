@@ -72,9 +72,7 @@ function createPane(sessionId: string, config: SSHConnectionConfig): PaneRuntime
 
 export function SSHTerminal({ config, onClose }: Props) {
   const sessionIdRef = useRef<string>(createSessionId());
-  const [pane, setPane] = useState<PaneRuntime>(() =>
-    createPane(sessionIdRef.current, config)
-  );
+  const [pane, setPane] = useState<PaneRuntime>(() => createPane(sessionIdRef.current, config));
   const [status, setStatus] = useState<string>("connecting");
   const [autoConnected, setAutoConnected] = useState(false);
 
@@ -163,7 +161,12 @@ export function SSHTerminal({ config, onClose }: Props) {
           onPaneOutput={() => {}}
           onCommandSubmitted={() => {}}
           onRequestRestart={() => {
-            patchPane({ state: "created", output: [], lastErrorMessage: undefined, lastExitReason: undefined });
+            patchPane({
+              state: "created",
+              output: [],
+              lastErrorMessage: undefined,
+              lastExitReason: undefined,
+            });
             setStatus("connecting");
             setAutoConnected(false);
           }}

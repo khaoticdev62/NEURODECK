@@ -1,5 +1,5 @@
-import { useEffect, useRef, type ReactNode, type HTMLAttributes } from 'react';
-import { FocusTrap } from '../../../focus-trap.js';
+import { useEffect, useRef, type ReactNode, type HTMLAttributes } from "react";
+import { FocusTrap } from "../../../focus-trap.js";
 
 interface FocusTrapContainerProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
@@ -35,13 +35,13 @@ export function FocusTrapContainer({
   useEffect(() => {
     if (!active || !onEscape) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.stopPropagation();
         onEscape();
       }
     };
-    document.addEventListener('keydown', onKey, true);
-    return () => document.removeEventListener('keydown', onKey, true);
+    document.addEventListener("keydown", onKey, true);
+    return () => document.removeEventListener("keydown", onKey, true);
   }, [active, onEscape]);
 
   return (

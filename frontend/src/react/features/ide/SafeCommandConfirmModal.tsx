@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import type { CommandSafety } from '../../../shared/ide/ideContracts';
-import { Modal } from '../../components/primitives/Modal';
-import { Button } from '../../components/primitives/Button';
-import { TextInput } from '../../components/primitives/TextInput';
+import { useEffect, useRef, useState } from "react";
+import type { CommandSafety } from "../../../shared/ide/ideContracts";
+import { Modal } from "../../components/primitives/Modal";
+import { Button } from "../../components/primitives/Button";
+import { TextInput } from "../../components/primitives/TextInput";
 
 interface SafeCommandConfirmModalProps {
   command: string;
@@ -16,13 +16,20 @@ interface SafeCommandConfirmModalProps {
 }
 
 export function SafeCommandConfirmModal({
-  command, args, cwd, safety, label, description, onConfirm, onCancel
+  command,
+  args,
+  cwd,
+  safety,
+  label,
+  description,
+  onConfirm,
+  onCancel,
 }: SafeCommandConfirmModalProps) {
-  const [typed, setTyped] = useState('');
+  const [typed, setTyped] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const isDangerous = safety === 'dangerous';
-  const canConfirm = !isDangerous || typed === 'CONFIRM';
+  const isDangerous = safety === "dangerous";
+  const canConfirm = !isDangerous || typed === "CONFIRM";
 
   useEffect(() => {
     if (isDangerous) {
@@ -30,23 +37,26 @@ export function SafeCommandConfirmModal({
     }
   }, [isDangerous]);
 
-  const cmdPreview = [command, ...args].join(' ');
+  const cmdPreview = [command, ...args].join(" ");
 
   return (
     <Modal
       open
       onClose={onCancel}
-      title={isDangerous ? 'Dangerous Command' : 'Confirm Command'}
-      description={isDangerous ? 'This command may be irreversible. Type CONFIRM to proceed.' : 'Review the command before running.'}
+      title={isDangerous ? "Dangerous Command" : "Confirm Command"}
+      description={
+        isDangerous
+          ? "This command may be irreversible. Type CONFIRM to proceed."
+          : "Review the command before running."
+      }
       size="md"
-
       footer={
         <>
           <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
           <Button
-            variant={isDangerous ? 'danger' : 'primary'}
+            variant={isDangerous ? "danger" : "primary"}
             onClick={onConfirm}
             disabled={!canConfirm}
           >
@@ -57,7 +67,9 @@ export function SafeCommandConfirmModal({
     >
       <div className="space-y-4">
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">Command</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+            Command
+          </span>
           <pre className="mt-1 overflow-x-auto rounded-xl border border-border-subtle bg-surface-secondary p-3 text-[11px] font-mono text-text-primary">
             {cmdPreview}
           </pre>
@@ -70,16 +82,20 @@ export function SafeCommandConfirmModal({
           </div>
           <div className="rounded-xl border border-border-subtle bg-surface-secondary/60 px-3 py-2">
             <span className="text-[10px] uppercase tracking-wider text-text-muted">Safety</span>
-            <p className={`mt-1 truncate ${isDangerous ? 'text-accent-error' : 'text-accent-warning'}`}>{safety}</p>
+            <p
+              className={`mt-1 truncate ${isDangerous ? "text-accent-error" : "text-accent-warning"}`}
+            >
+              {safety}
+            </p>
           </div>
         </div>
 
-        {description && (
-          <p className="text-xs text-text-secondary">{description}</p>
-        )}
+        {description && <p className="text-xs text-text-secondary">{description}</p>}
 
         <div className="rounded-xl border border-border-subtle bg-surface-secondary/60 px-3 py-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">Working Directory</span>
+          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+            Working Directory
+          </span>
           <p className="mt-1 truncate font-mono text-xs text-text-secondary">{cwd}</p>
         </div>
 

@@ -1,10 +1,10 @@
-import * as React from 'react';
-import { forwardRef } from 'react';
+import * as React from "react";
+import { forwardRef } from "react";
 
 /* Inject scoped Button styles once (token-driven, real :hover/:focus-visible/:active). */
-if (typeof document !== 'undefined' && !document.getElementById('nd-button-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-button-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-button-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-button-css";
   s.textContent = `
   .nd-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;
     font-family:var(--nd-font-ui);font-weight:500;border:1px solid transparent;cursor:pointer;
@@ -39,8 +39,8 @@ if (typeof document !== 'undefined' && !document.getElementById('nd-button-css')
   document.head.appendChild(s);
 }
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
-export type ButtonSize = 'sm' | 'md' | 'lg';
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
+export type ButtonSize = "sm" | "md" | "lg";
 
 /**
  * NEURODECK primary action button. Token-driven, controller-friendly focus ring.
@@ -57,7 +57,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   /** Leading/trailing icon node (e.g. a Lucide icon element). */
   icon?: React.ReactNode;
   /** @default 'left' */
-  iconPosition?: 'left' | 'right';
+  iconPosition?: "left" | "right";
   /** Optional keyboard/controller shortcut label, rendered muted/mono. */
   shortcut?: string;
   children: React.ReactNode;
@@ -65,34 +65,42 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
   {
-    variant = 'secondary',
-    size = 'md',
+    variant = "secondary",
+    size = "md",
     loading = false,
     disabled = false,
     fullWidth = false,
     icon = null,
-    iconPosition = 'left',
+    iconPosition = "left",
     shortcut,
     children,
-    className = '',
+    className = "",
     ...rest
   },
-  ref,
+  ref
 ): React.ReactNode {
   const cls = [
-    'nd-btn',
+    "nd-btn",
     `nd-btn--${variant}`,
     `nd-btn--${size}`,
-    fullWidth ? 'nd-btn--fw' : '',
+    fullWidth ? "nd-btn--fw" : "",
     className,
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
-    <button ref={ref} className={cls} disabled={disabled || loading} aria-busy={loading || undefined} {...rest}>
+    <button
+      ref={ref}
+      className={cls}
+      disabled={disabled || loading}
+      aria-busy={loading || undefined}
+      {...rest}
+    >
       {loading ? <span className="nd-btn__spin" aria-hidden="true" /> : null}
-      {!loading && icon && iconPosition === 'left' ? icon : null}
+      {!loading && icon && iconPosition === "left" ? icon : null}
       {children}
-      {!loading && icon && iconPosition === 'right' ? icon : null}
+      {!loading && icon && iconPosition === "right" ? icon : null}
       {shortcut ? <span className="nd-btn__sc">{shortcut}</span> : null}
     </button>
   );

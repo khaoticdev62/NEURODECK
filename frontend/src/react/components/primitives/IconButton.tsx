@@ -1,43 +1,43 @@
-import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from 'react';
+import { type ButtonHTMLAttributes, type ReactNode, forwardRef } from "react";
 import {
   IconButton as DSIconButton,
   type IconButtonVariant as DSIconButtonVariant,
   type IconButtonSize as DSIconButtonSize,
-} from '../../../design-system/components/core/IconButton';
+} from "../../../design-system/components/core/IconButton";
 
-type IconButtonSize = 'sm' | 'md' | 'lg' | 'xl';
-type IconButtonVariant = 'ghost' | 'subtle' | 'outline' | 'accent' | 'danger';
+type IconButtonSize = "sm" | "md" | "lg" | "xl";
+type IconButtonVariant = "ghost" | "subtle" | "outline" | "accent" | "danger";
 
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   size?: IconButtonSize;
   variant?: IconButtonVariant;
   /** Required: accessible label for screen readers and tooltips. */
-  'aria-label': string;
+  "aria-label": string;
 }
 
 const hitTargetClasses: Record<IconButtonSize, string> = {
-  sm: 'min-h-touch min-w-touch',
-  md: 'min-h-touch min-w-touch',
-  lg: 'min-h-11 min-w-11',
-  xl: 'min-h-12 min-w-12',
+  sm: "min-h-touch min-w-touch",
+  md: "min-h-touch min-w-touch",
+  lg: "min-h-11 min-w-11",
+  xl: "min-h-12 min-w-12",
 };
 
 export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(function IconButton(
   {
     children,
-    className = '',
-    size = 'md',
-    variant = 'subtle',
-    'aria-label': ariaLabel,
-    type = 'button',
+    className = "",
+    size = "md",
+    variant = "subtle",
+    "aria-label": ariaLabel,
+    type = "button",
     disabled,
     ...props
   },
-  ref,
+  ref
 ) {
-  const dsVariant: DSIconButtonVariant = variant === 'accent' ? 'primary' : variant;
-  const dsSize: DSIconButtonSize = size === 'xl' ? 'lg' : size;
+  const dsVariant: DSIconButtonVariant = variant === "accent" ? "primary" : variant;
+  const dsSize: DSIconButtonSize = size === "xl" ? "lg" : size;
 
   return (
     <DSIconButton
@@ -49,9 +49,8 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       size={dsSize}
       disabled={disabled}
       aria-disabled={disabled}
-      className={[hitTargetClasses[size], className].filter(Boolean).join(' ')}
+      className={[hitTargetClasses[size], className].filter(Boolean).join(" ")}
       {...props}
     />
   );
 });
-

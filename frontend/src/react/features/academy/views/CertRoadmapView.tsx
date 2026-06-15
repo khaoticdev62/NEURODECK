@@ -1,31 +1,39 @@
-import { useState } from 'react';
-import { ExternalLink, ChevronDown, ChevronUp, CheckCircle2, Lock, Unlock, BookOpen } from 'lucide-react';
-import { Badge } from '../../../components/primitives/Badge';
-import { Button } from '../../../components/primitives/Button';
-import { Panel } from '../../../components/primitives/Panel';
-import { SkillBar } from '../components/SkillBar';
-import { CERTIFICATIONS, computeCertReadiness } from '../data/certRoadmap';
-import { SKILL_LABELS } from '../types';
-import type { LearnerProgress, Certification, ThmRoom } from '../types';
+import { useState } from "react";
+import {
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  Lock,
+  Unlock,
+  BookOpen,
+} from "lucide-react";
+import { Badge } from "../../../components/primitives/Badge";
+import { Button } from "../../../components/primitives/Button";
+import { Panel } from "../../../components/primitives/Panel";
+import { SkillBar } from "../components/SkillBar";
+import { CERTIFICATIONS, computeCertReadiness } from "../data/certRoadmap";
+import { SKILL_LABELS } from "../types";
+import type { LearnerProgress, Certification, ThmRoom } from "../types";
 
 const LEVEL_LABELS: Record<string, string> = {
-  entry: 'Entry Level',
-  associate: 'Associate',
-  professional: 'Professional',
+  entry: "Entry Level",
+  associate: "Associate",
+  professional: "Professional",
 };
 
-const LEVEL_TONE: Record<string, 'accent' | 'warning' | 'danger'> = {
-  entry: 'accent',
-  associate: 'warning',
-  professional: 'danger',
+const LEVEL_TONE: Record<string, "accent" | "warning" | "danger"> = {
+  entry: "accent",
+  associate: "warning",
+  professional: "danger",
 };
 
-const THM_BASE = 'https://tryhackme.com/room/';
+const THM_BASE = "https://tryhackme.com/room/";
 
 // ── Difficulty badge ──────────────────────────────────────────────────────────
 
-function DiffBadge({ diff }: { diff: ThmRoom['difficulty'] }) {
-  const tone = diff === 'easy' ? 'success' : diff === 'medium' ? 'warning' : 'danger';
+function DiffBadge({ diff }: { diff: ThmRoom["difficulty"] }) {
+  const tone = diff === "easy" ? "success" : diff === "medium" ? "warning" : "danger";
   return <Badge tone={tone}>{diff}</Badge>;
 }
 
@@ -41,7 +49,7 @@ function ThmRoomCard({ room }: { room: ThmRoom }) {
         </div>
         <p className="text-[11px] leading-relaxed text-nd-text-secondary">{room.description}</p>
         <p className="mt-1 text-[10px] text-nd-text-muted/60">
-          ~{room.estimatedMinutes} min · {room.skillKeys.map((k) => SKILL_LABELS[k]).join(', ')}
+          ~{room.estimatedMinutes} min · {room.skillKeys.map((k) => SKILL_LABELS[k]).join(", ")}
         </p>
       </div>
       <Button
@@ -50,7 +58,7 @@ function ThmRoomCard({ room }: { room: ThmRoom }) {
         icon={ExternalLink}
         onClick={(e) => {
           e.stopPropagation();
-          window.open(`${THM_BASE}${room.slug}`, '_blank', 'noopener,noreferrer');
+          window.open(`${THM_BASE}${room.slug}`, "_blank", "noopener,noreferrer");
         }}
         aria-label={`Open TryHackMe room: ${room.title} (opens in new tab)`}
       >
@@ -62,13 +70,7 @@ function ThmRoomCard({ room }: { room: ThmRoom }) {
 
 // ── Cert card ─────────────────────────────────────────────────────────────────
 
-function CertCard({
-  cert,
-  progress,
-}: {
-  cert: Certification;
-  progress: LearnerProgress;
-}) {
+function CertCard({ cert, progress }: { cert: Certification; progress: LearnerProgress }) {
   const [domainsOpen, setDomainsOpen] = useState(false);
   const [thmOpen, setThmOpen] = useState(false);
 
@@ -76,20 +78,17 @@ function CertCard({
   const isReady = readiness.ready;
 
   return (
-    <Panel
-      variant="surface"
-      className={`${isReady ? 'border-nd-accent-success/30' : ''}`}
-    >
+    <Panel variant="surface" className={`${isReady ? "border-nd-accent-success/30" : ""}`}>
       <div className="p-5">
         <div className="flex items-start gap-4">
           {/* Readiness indicator */}
           <div
             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border font-mono text-sm font-bold ${
               isReady
-                ? 'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success'
+                ? "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
                 : readiness.overallPercent >= 60
-                ? 'border-nd-accent-warning/30 bg-nd-accent-warning/10 text-nd-accent-warning'
-                : 'border-nd-border-subtle bg-nd-surface-base/50 text-nd-text-muted/70'
+                  ? "border-nd-accent-warning/30 bg-nd-accent-warning/10 text-nd-accent-warning"
+                  : "border-nd-border-subtle bg-nd-surface-base/50 text-nd-text-muted/70"
             }`}
           >
             {readiness.overallPercent}%
@@ -119,10 +118,10 @@ function CertCard({
                 <div
                   className={`h-full rounded-full transition-all duration-700 motion-reduce:transition-none ${
                     isReady
-                      ? 'bg-nd-accent-success'
+                      ? "bg-nd-accent-success"
                       : readiness.overallPercent >= 60
-                      ? 'bg-nd-accent-warning'
-                      : 'bg-nd-accent-primary'
+                        ? "bg-nd-accent-warning"
+                        : "bg-nd-accent-primary"
                   }`}
                   style={{ width: `${readiness.overallPercent}%` }}
                   role="progressbar"
@@ -162,7 +161,7 @@ function CertCard({
               />
               <span
                 className={`shrink-0 text-[10px] font-mono ${
-                  ready ? 'text-nd-accent-success' : 'text-nd-text-muted/60'
+                  ready ? "text-nd-accent-success" : "text-nd-text-muted/60"
                 }`}
               >
                 {current}/{required}
@@ -208,9 +207,8 @@ function CertCard({
               const domainLabsDone = domain.objectives
                 .flatMap((o) => o.labIds)
                 .filter((id) => progress.completedLabs.includes(id)).length;
-              const domainLabsTotal = [
-                ...new Set(domain.objectives.flatMap((o) => o.labIds)),
-              ].length;
+              const domainLabsTotal = [...new Set(domain.objectives.flatMap((o) => o.labIds))]
+                .length;
 
               return (
                 <div
@@ -218,7 +216,9 @@ function CertCard({
                   className="rounded-xl border border-nd-border-subtle/50 bg-nd-surface-base/30 p-3"
                 >
                   <div className="mb-1.5 flex items-center justify-between">
-                    <p className="text-[11px] font-semibold text-nd-text-secondary">{domain.name}</p>
+                    <p className="text-[11px] font-semibold text-nd-text-secondary">
+                      {domain.name}
+                    </p>
                     <span className="font-mono text-[10px] text-nd-text-muted/60">
                       {domain.weight}%
                     </span>
@@ -238,7 +238,7 @@ function CertCard({
                           </span>
                           <span
                             className={`text-[11px] leading-relaxed ${
-                              objDone ? 'text-nd-accent-success' : 'text-nd-text-muted/70'
+                              objDone ? "text-nd-accent-success" : "text-nd-text-muted/70"
                             }`}
                           >
                             {obj.title}
@@ -250,8 +250,8 @@ function CertCard({
                                   key={id}
                                   className={`rounded-md px-1 py-0.5 text-[9px] font-mono ${
                                     progress.completedLabs.includes(id)
-                                      ? 'bg-nd-accent-success/15 text-nd-accent-success'
-                                      : 'bg-nd-surface-base/50 text-nd-text-muted/50'
+                                      ? "bg-nd-accent-success/15 text-nd-accent-success"
+                                      : "bg-nd-surface-base/50 text-nd-text-muted/50"
                                   }`}
                                 >
                                   {id}

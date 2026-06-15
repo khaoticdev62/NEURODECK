@@ -6,45 +6,45 @@
    ============================================================ */
 :root {
   /* ---- Primitive: Void / Slate surfaces ---- */
-  --nd-void-950: #05070A;   /* deepest background */
-  --nd-void-900: #0A0D10;   /* app shell */
-  --nd-void-850: #0D1117;   /* panel base */
-  --nd-slate-800: #11161C;  /* secondary surface */
-  --nd-slate-700: #18212B;  /* raised surface */
-  --nd-slate-600: #22303D;  /* hard borders */
+  --nd-void-950: #05070a; /* deepest background */
+  --nd-void-900: #0a0d10; /* app shell */
+  --nd-void-850: #0d1117; /* panel base */
+  --nd-slate-800: #11161c; /* secondary surface */
+  --nd-slate-700: #18212b; /* raised surface */
+  --nd-slate-600: #22303d; /* hard borders */
 
   /* ---- Primitive: Text ---- */
-  --nd-text-100: #E8F4FF;   /* primary */
-  --nd-text-300: #B9CAD8;   /* secondary */
-  --nd-text-500: #8DA1B3;   /* muted */
+  --nd-text-100: #e8f4ff; /* primary */
+  --nd-text-300: #b9cad8; /* secondary */
+  --nd-text-500: #8da1b3; /* muted */
 
   /* ---- Primitive: Accents ---- */
-  --nd-cyan-400:   #5EEBFF; /* primary accent */
-  --nd-blue-500:   #4F8CFF; /* info */
-  --nd-green-400:  #7CFFB2; /* success */
-  --nd-yellow-400: #FFC857; /* warning */
-  --nd-red-400:    #FF5A6A; /* error / destructive */
-  --nd-purple-400: #B28CFF; /* agent / memory */
+  --nd-cyan-400: #5eebff; /* primary accent */
+  --nd-blue-500: #4f8cff; /* info */
+  --nd-green-400: #7cffb2; /* success */
+  --nd-yellow-400: #ffc857; /* warning */
+  --nd-red-400: #ff5a6a; /* error / destructive */
+  --nd-purple-400: #b28cff; /* agent / memory */
 
   /* RGB channels for alpha composition (glow, focus, fills) */
-  --nd-cyan-rgb:   94, 235, 255;  /* @kind other */
-  --nd-green-rgb:  124, 255, 178; /* @kind other */
-  --nd-yellow-rgb: 255, 200, 87;  /* @kind other */
-  --nd-red-rgb:    255, 90, 106;  /* @kind other */
+  --nd-cyan-rgb: 94, 235, 255; /* @kind other */
+  --nd-green-rgb: 124, 255, 178; /* @kind other */
+  --nd-yellow-rgb: 255, 200, 87; /* @kind other */
+  --nd-red-rgb: 255, 90, 106; /* @kind other */
   --nd-purple-rgb: 178, 140, 255; /* @kind other */
-  --nd-blue-rgb:   79, 140, 255;  /* @kind other */
+  --nd-blue-rgb: 79, 140, 255; /* @kind other */
 
   /* ============================================================
      Semantic surfaces
      ============================================================ */
-  --nd-surface-app:       var(--nd-void-950);
-  --nd-surface-primary:   var(--nd-void-900);
+  --nd-surface-app: var(--nd-void-950);
+  --nd-surface-primary: var(--nd-void-900);
   --nd-surface-secondary: var(--nd-slate-800);
-  --nd-surface-tertiary:  var(--nd-slate-700);
-  --nd-surface-sidebar:   #0D1115;
-  --nd-surface-input:     #080A0E;
-  --nd-surface-overlay:   rgba(5, 7, 10, 0.88);
-  --nd-surface-glass:     rgba(17, 22, 28, 0.82);
+  --nd-surface-tertiary: var(--nd-slate-700);
+  --nd-surface-sidebar: #0d1115;
+  --nd-surface-input: #080a0e;
+  --nd-surface-overlay: rgba(5, 7, 10, 0.88);
+  --nd-surface-glass: rgba(17, 22, 28, 0.82);
 
   /* ---- Semantic borders ---- */
   --nd-border-subtle: rgba(141, 161, 179, 0.16);
@@ -53,22 +53,22 @@
   --nd-border-focus: var(--nd-cyan-400);
 
   /* ---- Semantic text ---- */
-  --nd-text-primary:   var(--nd-text-100);
+  --nd-text-primary: var(--nd-text-100);
   --nd-text-secondary: var(--nd-text-300);
-  --nd-text-muted:     var(--nd-text-500);
-  --nd-text-disabled:  rgba(141, 161, 179, 0.45);
-  --nd-text-code:      var(--nd-green-400);
-  --nd-text-link:      var(--nd-cyan-400);
+  --nd-text-muted: var(--nd-text-500);
+  --nd-text-disabled: rgba(141, 161, 179, 0.45);
+  --nd-text-code: var(--nd-green-400);
+  --nd-text-link: var(--nd-cyan-400);
 
   /* ---- Semantic accents (interaction + status) ---- */
   --nd-accent-primary: var(--nd-cyan-400);
-  --nd-accent-info:    var(--nd-blue-500);
+  --nd-accent-info: var(--nd-blue-500);
   --nd-accent-success: var(--nd-green-400);
   --nd-accent-warning: var(--nd-yellow-400);
-  --nd-accent-error:   var(--nd-red-400);
-  --nd-accent-agent:   var(--nd-purple-400);
+  --nd-accent-error: var(--nd-red-400);
+  --nd-accent-agent: var(--nd-purple-400);
 
   /* ---- Tactical glow ---- */
   --nd-glow-cyan: rgba(var(--nd-cyan-rgb), 0.18);
-  --nd-accent-soft: rgba(var(--nd-cyan-rgb), 0.10);
+  --nd-accent-soft: rgba(var(--nd-cyan-rgb), 0.1);
 }

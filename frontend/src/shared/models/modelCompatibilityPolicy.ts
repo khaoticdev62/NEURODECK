@@ -2,15 +2,15 @@ import type {
   SupportedModelProfile,
   ModelCompatibilityTier,
   ModelCapability,
-} from '../contracts/models.contracts';
+} from "../contracts/models.contracts";
 
 export const TIER_ORDER: ModelCompatibilityTier[] = [
-  'deck_default',
-  'deck_balanced',
-  'deck_heavy',
-  'remote_or_docked_only',
-  'unsupported',
-  'unknown',
+  "deck_default",
+  "deck_balanced",
+  "deck_heavy",
+  "remote_or_docked_only",
+  "unsupported",
+  "unknown",
 ];
 
 export function tierRank(tier: ModelCompatibilityTier): number {
@@ -41,7 +41,10 @@ export function recommendedContextTokens(profile: SupportedModelProfile): number
   return Math.min(profile.steamDeckPolicy.maxRecommendedContextTokens, 128000);
 }
 
-export function hasCapability(profile: SupportedModelProfile, capability: ModelCapability): boolean {
+export function hasCapability(
+  profile: SupportedModelProfile,
+  capability: ModelCapability
+): boolean {
   return profile.capabilities.includes(capability);
 }
 

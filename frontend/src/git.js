@@ -36,13 +36,17 @@ async function loadRepoList() {
       list.innerHTML = `<div class="git-empty">No repositories yet.</div>`;
       return;
     }
-    list.innerHTML = repos.map(r => `
+    list.innerHTML = repos
+      .map(
+        (r) => `
       <div class="git-repo-item" data-path="${escapeHtml(r.path)}">
         <span class="git-repo-name">${escapeHtml(r.name)}</span>
         <span class="git-repo-path">${escapeHtml(r.path)}</span>
       </div>
-    `).join("");
-    list.querySelectorAll(".git-repo-item").forEach(el => {
+    `
+      )
+      .join("");
+    list.querySelectorAll(".git-repo-item").forEach((el) => {
       el.addEventListener("click", () => openRepo(el.dataset.path));
     });
   } catch (e) {
@@ -61,19 +65,21 @@ function wireRepoActions() {
       await openRepo(path);
       await loadRepoList();
     } catch (e) {
-      addNotification('Clone Failed', String(e), 'error');
+      addNotification("Clone Failed", String(e), "error");
     }
   });
 
   document.getElementById("git-init-btn")?.addEventListener("click", async () => {
-    const path = await showPrompt("Initialize repo in directory:", ".", { title: "Init Repository" });
+    const path = await showPrompt("Initialize repo in directory:", ".", {
+      title: "Init Repository",
+    });
     if (!path) return;
     try {
       await invoke("git_init", { path });
       await openRepo(path);
       await loadRepoList();
     } catch (e) {
-      addNotification('Init Failed', String(e), 'error');
+      addNotification("Init Failed", String(e), "error");
     }
   });
 
@@ -100,7 +106,7 @@ async function openRepo(path) {
     await refreshHistory();
     await refreshRemotes();
   } catch (e) {
-    addNotification('Open Repo Failed', String(e), 'error');
+    addNotification("Open Repo Failed", String(e), "error");
     currentRepoPath = null;
   } finally {
     _hideLoadingBar(bar);
@@ -118,15 +124,19 @@ async function refreshWorktree() {
       list.innerHTML = `<div class="git-empty">Working tree clean.</div>`;
       return;
     }
-    list.innerHTML = files.map(f => `
+    list.innerHTML = files
+      .map(
+        (f) => `
       <div class="git-file-row" data-path="${escapeHtml(f.path)}" data-status="${f.status}">
         <input type="checkbox" class="git-file-check" ${selectedFiles.has(f.path) ? "checked" : ""}>
         <span class="git-file-status git-status-${f.status}">${statusIcon(f.status)}</span>
         <span class="git-file-name">${escapeHtml(f.path)}</span>
       </div>
-    `).join("");
+    `
+      )
+      .join("");
 
-    list.querySelectorAll(".git-file-row").forEach(row => {
+    list.querySelectorAll(".git-file-row").forEach((row) => {
       const path = row.dataset.path;
       const checkbox = row.querySelector(".git-file-check");
       checkbox.addEventListener("change", () => {
@@ -141,7 +151,14 @@ async function refreshWorktree() {
 }
 
 function statusIcon(status) {
-  const map = { staged: "S", modified: "M", untracked: "U", renamed: "R", deleted: "D", conflict: "C" };
+  const map = {
+    staged: "S",
+    modified: "M",
+    untracked: "U",
+    renamed: "R",
+    deleted: "D",
+    conflict: "C",
+  };
   return map[status] || "?";
 }
 
@@ -154,9 +171,9 @@ async function showDiff(filePath) {
     const diff = await invoke("git_diff", { path: currentRepoPath });
     // Filter to file-specific lines if possible, otherwise show full diff
     const lines = diff.split("\n");
-    const fileStart = lines.findIndex(l => l.includes(filePath));
+    const fileStart = lines.findIndex((l) => l.includes(filePath));
     if (fileStart !== -1) {
-      const nextFile = lines.slice(fileStart + 1).findIndex(l => l.startsWith("diff --git"));
+      const nextFile = lines.slice(fileStart + 1).findIndex((l) => l.startsWith("diff --git"));
       const end = nextFile === -1 ? lines.length : fileStart + 1 + nextFile;
       viewer.textContent = lines.slice(fileStart, end).join("\n");
     } else {
@@ -188,7 +205,11 @@ function wireCommitBar() {
 
   document.getElementById("git-discard-btn")?.addEventListener("click", async () => {
     if (!currentRepoPath || selectedFiles.size === 0) return;
-    const confirmed = await showConfirm("Discard changes to selected files?", { confirmText: "Discard", cancelText: "Keep" }); if (!confirmed) return;
+    const confirmed = await showConfirm("Discard changes to selected files?", {
+      confirmText: "Discard",
+      cancelText: "Keep",
+    });
+    if (!confirmed) return;
     const files = Array.from(selectedFiles);
     await invoke("git_discard", { path: currentRepoPath, files });
     selectedFiles.clear();
@@ -198,16 +219,24 @@ function wireCommitBar() {
   document.getElementById("git-commit-btn")?.addEventListener("click", async () => {
     if (!currentRepoPath) return;
     const msg = document.getElementById("git-commit-msg").value.trim();
-    if (!msg) { addNotification('Missing Commit Message', 'Enter a commit message.', 'warning'); return; }
+    if (!msg) {
+      addNotification("Missing Commit Message", "Enter a commit message.", "warning");
+      return;
+    }
     // Use generic author for now; could be configurable
     try {
-      const sha = await invoke("git_commit", { path: currentRepoPath, message: msg, authorName: "NEURODECK", authorEmail: "dev@neurodeck.local" });
+      const sha = await invoke("git_commit", {
+        path: currentRepoPath,
+        message: msg,
+        authorName: "NEURODECK",
+        authorEmail: "dev@neurodeck.local",
+      });
       document.getElementById("git-commit-msg").value = "";
       await refreshWorktree();
       await refreshHistory();
-      addNotification('Commit Successful', `Committed: ${sha.slice(0, 7)}`, 'success');
+      addNotification("Commit Successful", `Committed: ${sha.slice(0, 7)}`, "success");
     } catch (e) {
-      addNotification('Commit Failed', String(e), 'error');
+      addNotification("Commit Failed", String(e), "error");
     }
   });
 
@@ -219,7 +248,7 @@ function wireCommitBar() {
       const msg = await invoke("git_generate_commit_message", { path: currentRepoPath });
       document.getElementById("git-commit-msg").value = msg;
     } catch (e) {
-      addNotification('AI Suggestion Failed', String(e), 'error');
+      addNotification("AI Suggestion Failed", String(e), "error");
     } finally {
       btn.textContent = "✨";
     }
@@ -233,23 +262,31 @@ async function refreshBranches() {
   if (!list || !currentRepoPath) return;
   try {
     const branches = await invoke("git_branch_list", { path: currentRepoPath });
-    list.innerHTML = (branches || []).map(b => `
+    list.innerHTML = (branches || [])
+      .map(
+        (b) => `
       <div class="git-branch-row">
         <span class="git-branch-name">${escapeHtml(b)}</span>
         <button class="git-btn-small" data-action="checkout" data-branch="${escapeHtml(b)}">Checkout</button>
         <button class="git-btn-small" data-action="delete" data-branch="${escapeHtml(b)}">Del</button>
       </div>
-    `).join("");
+    `
+      )
+      .join("");
 
-    list.querySelectorAll("[data-action='checkout']").forEach(btn => {
+    list.querySelectorAll("[data-action='checkout']").forEach((btn) => {
       btn.addEventListener("click", async () => {
         await invoke("git_branch_checkout", { path: currentRepoPath, name: btn.dataset.branch });
         await openRepo(currentRepoPath);
       });
     });
-    list.querySelectorAll("[data-action='delete']").forEach(btn => {
+    list.querySelectorAll("[data-action='delete']").forEach((btn) => {
       btn.addEventListener("click", async () => {
-        const confirmed = await showConfirm(`Delete branch ${btn.dataset.branch}?`, { confirmText: "Delete", cancelText: "Keep" }); if (!confirmed) return;
+        const confirmed = await showConfirm(`Delete branch ${btn.dataset.branch}?`, {
+          confirmText: "Delete",
+          cancelText: "Keep",
+        });
+        if (!confirmed) return;
         await invoke("git_branch_delete", { path: currentRepoPath, name: btn.dataset.branch });
         await refreshBranches();
       });
@@ -266,12 +303,16 @@ async function refreshHistory() {
   if (!list || !currentRepoPath) return;
   try {
     const commits = await invoke("git_log", { path: currentRepoPath, maxCount: 25 });
-    list.innerHTML = (commits || []).map(c => `
+    list.innerHTML = (commits || [])
+      .map(
+        (c) => `
       <div class="git-commit-row" title="${escapeHtml(c.message)}">
         <span class="git-commit-sha">${escapeHtml(c.shortSha)}</span>
         <span class="git-commit-msg">${escapeHtml(c.message.split("\\n")[0])}</span>
       </div>
-    `).join("");
+    `
+      )
+      .join("");
   } catch (e) {
     list.innerHTML = `<div class="git-empty">Error: ${escapeHtml(String(e))}</div>`;
   }
@@ -294,14 +335,18 @@ async function loadAccountList() {
       list.innerHTML = `<div class="git-empty">No accounts saved.</div>`;
       return;
     }
-    list.innerHTML = creds.map(c => `
+    list.innerHTML = creds
+      .map(
+        (c) => `
       <div class="git-account-row">
         <span class="git-account-host">${escapeHtml(c.host)}</span>
         <span class="git-account-user">${escapeHtml(c.username)}</span>
         <button class="git-btn-small" data-host="${escapeHtml(c.host)}">Remove</button>
       </div>
-    `).join("");
-    list.querySelectorAll("button").forEach(btn => {
+    `
+      )
+      .join("");
+    list.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", async () => {
         await invoke("git_credential_delete", { host: btn.dataset.host });
         await loadAccountList();

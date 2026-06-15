@@ -16,11 +16,31 @@ const STORAGE_KEY = "neurodeck_lsp_config";
 
 // Completion item kind → display label
 const KIND_LABELS = {
-  1: "txt", 2: "meth", 3: "fn", 4: "ctor", 5: "field",
-  6: "var", 7: "class", 8: "iface", 9: "mod", 10: "prop",
-  11: "unit", 12: "val", 13: "enum", 14: "kw", 15: "snippet",
-  16: "color", 17: "file", 18: "ref", 19: "folder", 20: "member",
-  21: "const", 22: "struct", 23: "event", 24: "op", 25: "type",
+  1: "txt",
+  2: "meth",
+  3: "fn",
+  4: "ctor",
+  5: "field",
+  6: "var",
+  7: "class",
+  8: "iface",
+  9: "mod",
+  10: "prop",
+  11: "unit",
+  12: "val",
+  13: "enum",
+  14: "kw",
+  15: "snippet",
+  16: "color",
+  17: "file",
+  18: "ref",
+  19: "folder",
+  20: "member",
+  21: "const",
+  22: "struct",
+  23: "event",
+  24: "op",
+  25: "type",
 };
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -259,8 +279,7 @@ function _applyCompletion(textarea, popupEl) {
   let wordStart = pos;
   while (wordStart > 0 && /\w/.test(content[wordStart - 1])) wordStart--;
 
-  textarea.value =
-    content.slice(0, wordStart) + text + content.slice(textarea.selectionEnd);
+  textarea.value = content.slice(0, wordStart) + text + content.slice(textarea.selectionEnd);
   const newPos = wordStart + text.length;
   textarea.selectionStart = textarea.selectionEnd = newPos;
 
@@ -281,9 +300,7 @@ function _renderCompletions(textarea, popupEl) {
     .map((item, idx) => {
       const active = idx === _state.completionSelectedIdx ? " lsp-comp-active" : "";
       const kindLabel = KIND_LABELS[item.kind] || "…";
-      const detail = item.detail
-        ? `<span class="lsp-comp-detail">${_esc(item.detail)}</span>`
-        : "";
+      const detail = item.detail ? `<span class="lsp-comp-detail">${_esc(item.detail)}</span>` : "";
       const isSelected = idx === _state.completionSelectedIdx;
       return `<div class="lsp-comp-item${active}" role="option" aria-selected="${isSelected}" data-idx="${idx}">
         <span class="lsp-comp-kind">${kindLabel}</span>
@@ -430,15 +447,12 @@ function _cursorPosition(textarea) {
 
 /** Approximate file:// URI for workspace-relative path. */
 export function workspaceUri(relativePath) {
-  return `file:///workspace/${relativePath.replace(/\\/g, '/')}`;
+  return `file:///workspace/${relativePath.replace(/\\/g, "/")}`;
 }
 
 /** Escape HTML special chars. */
 function _esc(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**
@@ -480,10 +494,25 @@ function _getMirror(textarea) {
     document.body.appendChild(_mirrorEl);
   }
   const cs = window.getComputedStyle(textarea);
-  ["font", "fontSize", "fontFamily", "fontWeight", "lineHeight",
-   "letterSpacing", "padding", "paddingTop", "paddingLeft",
-   "paddingRight", "paddingBottom", "width", "borderWidth",
-   "boxSizing", "whiteSpace", "overflowWrap", "wordBreak"].forEach((p) => {
+  [
+    "font",
+    "fontSize",
+    "fontFamily",
+    "fontWeight",
+    "lineHeight",
+    "letterSpacing",
+    "padding",
+    "paddingTop",
+    "paddingLeft",
+    "paddingRight",
+    "paddingBottom",
+    "width",
+    "borderWidth",
+    "boxSizing",
+    "whiteSpace",
+    "overflowWrap",
+    "wordBreak",
+  ].forEach((p) => {
     _mirrorEl.style[p] = cs[p];
   });
   return _mirrorEl;

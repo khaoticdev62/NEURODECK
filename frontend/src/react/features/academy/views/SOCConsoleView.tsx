@@ -1,23 +1,23 @@
-import { useState, useCallback, useEffect } from 'react';
-import { ShieldAlert, FolderOpen, Check, Loader2 } from 'lucide-react';
-import { Button } from '../../../components/primitives/Button';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { Panel } from '../../../components/primitives/Panel';
-import { AlertQueuePanel } from '../components/AlertQueuePanel';
-import { AlertDetailPanel } from '../components/AlertDetailPanel';
-import { MOCK_ALERTS } from '../data/alerts';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import type { AlertAnalysisState, AlertDisposition, LearnerProgress } from '../types';
+import { useState, useCallback, useEffect } from "react";
+import { ShieldAlert, FolderOpen, Check, Loader2 } from "lucide-react";
+import { Button } from "../../../components/primitives/Button";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { Panel } from "../../../components/primitives/Panel";
+import { AlertQueuePanel } from "../components/AlertQueuePanel";
+import { AlertDetailPanel } from "../components/AlertDetailPanel";
+import { MOCK_ALERTS } from "../data/alerts";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import type { AlertAnalysisState, AlertDisposition, LearnerProgress } from "../types";
 
-const SOC_STORAGE_KEY = 'neurodeck_academy_soc';
-const SOC_EXPORTED_KEY = 'neurodeck_academy_soc_exported';
-const LOCAL_PORTFOLIO_KEY = 'neurodeck_academy_portfolio_local';
+const SOC_STORAGE_KEY = "neurodeck_academy_soc";
+const SOC_EXPORTED_KEY = "neurodeck_academy_soc_exported";
+const LOCAL_PORTFOLIO_KEY = "neurodeck_academy_portfolio_local";
 
 function defaultAnalysis(): AlertAnalysisState {
   return {
     mitreTags: [],
-    disposition: '' as AlertDisposition | '',
-    escalationNote: '',
+    disposition: "" as AlertDisposition | "",
+    escalationNote: "",
     graded: false,
   };
 }
@@ -47,20 +47,18 @@ function buildPortfolioEntry(analyses: Record<string, AlertAnalysisState>) {
   for (const alert of MOCK_ALERTS) {
     const a = analyses[alert.id];
     if (!a?.graded) continue;
-    const disp = a.disposition || 'unset';
-    const tags = a.mitreTags.length > 0 ? ` (${a.mitreTags.join(', ')})` : '';
+    const disp = a.disposition || "unset";
+    const tags = a.mitreTags.length > 0 ? ` (${a.mitreTags.join(", ")})` : "";
     findings.push(`${alert.title} → ${disp}${tags}`);
-    if (a.disposition === 'true-positive') {
+    if (a.disposition === "true-positive") {
       alert.correctMitreTechniques.forEach((t) => allMitre.add(t));
     }
   }
 
-  const tpCount = MOCK_ALERTS.filter(
-    (a) => analyses[a.id]?.disposition === 'true-positive'
-  ).length;
+  const tpCount = MOCK_ALERTS.filter((a) => analyses[a.id]?.disposition === "true-positive").length;
   const fpCount = MOCK_ALERTS.filter(
     (a) =>
-      analyses[a.id]?.disposition === 'false-positive' || analyses[a.id]?.disposition === 'benign'
+      analyses[a.id]?.disposition === "false-positive" || analyses[a.id]?.disposition === "benign"
   ).length;
 
   const avgScore = (() => {
@@ -72,12 +70,12 @@ function buildPortfolioEntry(analyses: Record<string, AlertAnalysisState>) {
 
   return {
     labId: `soc-session-${Date.now()}`,
-    labTitle: 'SOC Alert Triage Session',
+    labTitle: "SOC Alert Triage Session",
     summary: `Triaged ${MOCK_ALERTS.length} security alerts (${tpCount} true positive, ${fpCount} benign/false positive). Average analysis score: ${avgScore}/100.`,
     commandsUsed: [] as string[],
     findings,
     mitreMappings: [...allMitre],
-    skillsEarned: ['soc-triage'],
+    skillsEarned: ["soc-triage"],
     timestamp: new Date().toISOString(),
   };
 }
@@ -112,12 +110,12 @@ export function SOCConsoleView({ progress, onProgressUpdate }: SOCConsoleViewPro
         const wasGraded = prev[id]?.graded ?? false;
         if (!wasGraded && next.graded && next.gradeResult) {
           const score = next.gradeResult.score;
-          const cur = progress.skillScores['soc-triage'] ?? 0;
+          const cur = progress.skillScores["soc-triage"] ?? 0;
           const gain = Math.round((score / 100) * 20 * (1 - cur / 100));
           const newScore = Math.min(100, cur + gain);
           onProgressUpdate({
             ...progress,
-            skillScores: { ...progress.skillScores, 'soc-triage': newScore },
+            skillScores: { ...progress.skillScores, "soc-triage": newScore },
             lastActive: new Date().toISOString(),
           });
         }
@@ -146,7 +144,7 @@ export function SOCConsoleView({ progress, onProgressUpdate }: SOCConsoleViewPro
     } finally {
       setExporting(false);
       setExported(true);
-      localStorage.setItem(SOC_EXPORTED_KEY, '1');
+      localStorage.setItem(SOC_EXPORTED_KEY, "1");
     }
   }, [analyses, exporting, exported]);
 

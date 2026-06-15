@@ -16,9 +16,7 @@ interface Props {
  * by App.tsx and handles the setup mode.
  */
 export function OnboardingProvider({ state, dispatch, children }: Props) {
-  const showTour =
-    state.showOnboarding &&
-    state.onboardingMode !== "setup";
+  const showTour = state.showOnboarding && state.onboardingMode !== "setup";
 
   return (
     <>
@@ -30,7 +28,7 @@ export function OnboardingProvider({ state, dispatch, children }: Props) {
             state={state}
             dispatch={dispatch}
           />,
-          document.body,
+          document.body
         )}
     </>
   );

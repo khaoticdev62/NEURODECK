@@ -57,9 +57,7 @@ export function triggerHaptic(type, force = false) {
   if (!preset) return;
 
   const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-  const gp = Array.from(gamepads).find(
-    (g) => g && g.connected && g.vibrationActuator,
-  );
+  const gp = Array.from(gamepads).find((g) => g && g.connected && g.vibrationActuator);
   if (!gp) return;
 
   const actuator = gp.vibrationActuator;
@@ -68,16 +66,16 @@ export function triggerHaptic(type, force = false) {
     let delay = 0;
     for (const p of preset) {
       setTimeout(() => {
-        actuator
-          .pulse(p.strongMagnitude, p.duration)
-          .catch(() => {/* ignore unsupported */});
+        actuator.pulse(p.strongMagnitude, p.duration).catch(() => {
+          /* ignore unsupported */
+        });
       }, delay);
       delay += p.duration + 30;
     }
   } else {
-    actuator
-      .pulse(preset.strongMagnitude, preset.duration)
-      .catch(() => {/* ignore unsupported */});
+    actuator.pulse(preset.strongMagnitude, preset.duration).catch(() => {
+      /* ignore unsupported */
+    });
   }
 }
 

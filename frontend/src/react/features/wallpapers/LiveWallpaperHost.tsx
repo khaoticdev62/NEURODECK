@@ -29,7 +29,8 @@ export const LiveWallpaperHost: React.FC = () => {
 
   // Toggle body wallpaper-active class when wallpaper is active
   useEffect(() => {
-    const isActive = settings.liveWallpaperEnabled && !reducedMotion && settings.activeWallpaperId !== "none";
+    const isActive =
+      settings.liveWallpaperEnabled && !reducedMotion && settings.activeWallpaperId !== "none";
     if (isActive) {
       document.body.classList.add("wallpaper-active");
     } else {

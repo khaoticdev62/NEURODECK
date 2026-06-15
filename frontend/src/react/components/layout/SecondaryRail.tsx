@@ -1,15 +1,32 @@
-import { useState } from 'react';
-import type { Dispatch } from 'react';
-import { AlertTriangle, Cpu, Database, FolderOpen, Gauge, PanelRightClose, PanelRightOpen, PlugZap } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import type { NeuroDeckAction, NeuroDeckSelectors, NeuroDeckState } from '../../types/neurodeck';
-import { Badge } from '../primitives/Badge';
-import { Panel } from '../primitives/Panel';
-import { MemoryPanel } from '../systems/MemoryPanel';
+import { useState } from "react";
+import type { Dispatch } from "react";
+import {
+  AlertTriangle,
+  Cpu,
+  Database,
+  FolderOpen,
+  Gauge,
+  PanelRightClose,
+  PanelRightOpen,
+  PlugZap,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import type { NeuroDeckAction, NeuroDeckSelectors, NeuroDeckState } from "../../types/neurodeck";
+import { Badge } from "../primitives/Badge";
+import { Panel } from "../primitives/Panel";
+import { MemoryPanel } from "../systems/MemoryPanel";
 
-export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeckState; dispatch: Dispatch<NeuroDeckAction>; selectors: NeuroDeckSelectors }) {
+export function SecondaryRail({
+  state,
+  dispatch,
+  selectors,
+}: {
+  state: NeuroDeckState;
+  dispatch: Dispatch<NeuroDeckAction>;
+  selectors: NeuroDeckSelectors;
+}) {
   const [collapsed, setCollapsed] = useState(false);
-  const thinking = state.agents.filter((agent) => agent.status === 'thinking');
+  const thinking = state.agents.filter((agent) => agent.status === "thinking");
 
   if (collapsed) {
     return (
@@ -28,7 +45,7 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
   return (
     <aside
       className="hidden shrink-0 flex-col border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] xl:flex"
-      style={{ width: 'var(--nd-shell-context)' }}
+      style={{ width: "var(--nd-shell-context)" }}
     >
       {/* Collapse toggle */}
       <div className="flex items-center justify-end border-b border-[var(--nd-border-subtle)] px-2 py-1.5">
@@ -43,7 +60,11 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 scrollbar-thin" tabIndex={0} aria-label="Side panel">
+      <div
+        className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 scrollbar-thin"
+        tabIndex={0}
+        aria-label="Side panel"
+      >
         <Panel eyebrow="Mission" title="Control Stack">
           <div className="space-y-3 p-4">
             <div className="grid grid-cols-2 gap-2">
@@ -55,7 +76,9 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
             <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[var(--nd-text-muted)]">Context Used</span>
-                <span className="font-mono text-[var(--nd-accent-primary)]">{state.telemetry.contextUsed}%</span>
+                <span className="font-mono text-[var(--nd-accent-primary)]">
+                  {state.telemetry.contextUsed}%
+                </span>
               </div>
               <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--nd-border-subtle)]">
                 <div
@@ -68,12 +91,14 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
               <div className="flex items-center gap-2">
                 <FolderOpen className="h-4 w-4 text-[var(--nd-accent-primary)]" />
                 <span className="min-w-0 truncate text-xs font-semibold text-[var(--nd-text-secondary)]">
-                  {state.activeProject?.name ?? 'No project'}
+                  {state.activeProject?.name ?? "No project"}
                 </span>
               </div>
               <div className="mt-2 flex items-center justify-between text-xs text-[var(--nd-text-muted)]">
                 <span>Release risks</span>
-                <Badge tone={selectors.riskCount ? 'warning' : 'success'}>{selectors.riskCount}</Badge>
+                <Badge tone={selectors.riskCount ? "warning" : "success"}>
+                  {selectors.riskCount}
+                </Badge>
               </div>
             </div>
           </div>
@@ -81,11 +106,20 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
 
         <Panel eyebrow="Memory" title="Context Sources">
           <div className="p-3">
-            <MemoryPanel memories={state.memories} onTogglePin={(id) => dispatch({ type: 'toggle-memory-pin', id })} maxItems={4} compact />
+            <MemoryPanel
+              memories={state.memories}
+              onTogglePin={(id) => dispatch({ type: "toggle-memory-pin", id })}
+              maxItems={4}
+              compact
+            />
           </div>
         </Panel>
 
-        <Panel eyebrow="Agent Dock" title="Active Operators" className="min-h-0 flex-1 overflow-hidden">
+        <Panel
+          eyebrow="Agent Dock"
+          title="Active Operators"
+          className="min-h-0 flex-1 overflow-hidden"
+        >
           <div className="max-h-full space-y-2 overflow-y-auto p-3 scrollbar-thin">
             {state.agents.map((agent) => (
               <div
@@ -94,18 +128,20 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[var(--nd-text-primary)]">{agent.name}</p>
+                    <p className="truncate text-sm font-medium text-[var(--nd-text-primary)]">
+                      {agent.name}
+                    </p>
                     <p className="truncate text-xs text-[var(--nd-text-muted)]">{agent.model}</p>
                   </div>
                   <Badge
                     tone={
-                      agent.status === 'thinking'
-                        ? 'accent'
-                        : agent.status === 'complete'
-                          ? 'success'
-                          : agent.status === 'blocked'
-                            ? 'danger'
-                            : 'neutral'
+                      agent.status === "thinking"
+                        ? "accent"
+                        : agent.status === "complete"
+                          ? "success"
+                          : agent.status === "blocked"
+                            ? "danger"
+                            : "neutral"
                     }
                   >
                     {agent.status}
@@ -115,7 +151,8 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
             ))}
             {!thinking.length && (
               <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/40 p-3 text-xs leading-5 text-[var(--nd-text-muted)]">
-                No agents are actively thinking. That is either peaceful or suspicious. Probably both.
+                No agents are actively thinking. That is either peaceful or suspicious. Probably
+                both.
               </div>
             )}
           </div>
@@ -125,19 +162,26 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
           <div className="space-y-2 p-3 text-xs text-[var(--nd-text-muted)]">
             <div className="flex items-center justify-between">
               <span>Saved</span>
-              <span className="text-[var(--nd-text-secondary)]">{state.lastSavedAt ? 'yes' : 'pending'}</span>
+              <span className="text-[var(--nd-text-secondary)]">
+                {state.lastSavedAt ? "yes" : "pending"}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span>Export</span>
-              <span className="text-[var(--nd-text-secondary)]">{state.lastExportPath ? 'ready' : 'none'}</span>
+              <span className="text-[var(--nd-text-secondary)]">
+                {state.lastExportPath ? "ready" : "none"}
+              </span>
             </div>
             <div className="flex items-center justify-between">
               <span>Diagnostics</span>
-              <span className="text-[var(--nd-text-secondary)]">{state.diagnostics ? 'loaded' : 'cold'}</span>
+              <span className="text-[var(--nd-text-secondary)]">
+                {state.diagnostics ? "loaded" : "cold"}
+              </span>
             </div>
             {state.lastError && (
               <div className="mt-2 flex items-center gap-2 rounded-[var(--nd-radius-md)] border border-[var(--nd-accent-error)]/20 bg-[var(--nd-accent-error)]/10 p-2 text-[var(--nd-accent-error)]">
-                <AlertTriangle className="h-4 w-4 shrink-0" /> <span className="truncate">{state.lastError.title}</span>
+                <AlertTriangle className="h-4 w-4 shrink-0" />{" "}
+                <span className="truncate">{state.lastError.title}</span>
               </div>
             )}
           </div>
@@ -147,11 +191,21 @@ export function SecondaryRail({ state, dispatch, selectors }: { state: NeuroDeck
   );
 }
 
-function MiniStat({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string | number }) {
+function MiniStat({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: LucideIcon;
+  label: string;
+  value: string | number;
+}) {
   return (
     <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]">
       <Icon className="h-4 w-4 text-[var(--nd-accent-primary)]" aria-hidden="true" />
-      <p className="mt-2 text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]/60">{label}</p>
+      <p className="mt-2 text-[10px] uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]/60">
+        {label}
+      </p>
       <p className="mt-1 font-mono text-lg text-[var(--nd-text-primary)]">{value}</p>
     </div>
   );

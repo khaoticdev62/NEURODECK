@@ -8,7 +8,4 @@
  * reduced-motion settings were never applied.
  */
 
-export {
-  ThemeRegistry,
-  themeRegistry,
-} from "../../../../src/shared/theme/themeRegistry";
+export { ThemeRegistry, themeRegistry } from "../../../../src/shared/theme/themeRegistry";

@@ -2,12 +2,12 @@ import type {
   SupportedModelProfile,
   ProviderRuntimeProfile,
   AgentModelPolicy,
-} from '../contracts/models.contracts';
+} from "../contracts/models.contracts";
 import {
   isSupportedModelProfile,
   isProviderRuntimeProfile,
   isAgentModelPolicy,
-} from '../schemas/models.schemas';
+} from "../schemas/models.schemas";
 
 export type ModelRegistry = {
   version: string;
@@ -75,8 +75,8 @@ export function createModelRegistry(payload: {
   models: unknown[];
 }): ModelRegistry {
   return {
-    version: typeof payload.version === 'string' ? payload.version : '0.0.0',
-    updatedAt: typeof payload.updatedAt === 'string' ? payload.updatedAt : new Date().toISOString(),
+    version: typeof payload.version === "string" ? payload.version : "0.0.0",
+    updatedAt: typeof payload.updatedAt === "string" ? payload.updatedAt : new Date().toISOString(),
     models: validateModels(payload.models),
   };
 }
@@ -87,8 +87,8 @@ export function createRuntimeRegistry(payload: {
   runtimes: unknown[];
 }): RuntimeRegistry {
   return {
-    version: typeof payload.version === 'string' ? payload.version : '0.0.0',
-    updatedAt: typeof payload.updatedAt === 'string' ? payload.updatedAt : new Date().toISOString(),
+    version: typeof payload.version === "string" ? payload.version : "0.0.0",
+    updatedAt: typeof payload.updatedAt === "string" ? payload.updatedAt : new Date().toISOString(),
     runtimes: validateRuntimes(payload.runtimes),
   };
 }
@@ -99,13 +99,16 @@ export function createAgentPolicyRegistry(payload: {
   policies: unknown[];
 }): AgentPolicyRegistry {
   return {
-    version: typeof payload.version === 'string' ? payload.version : '0.0.0',
-    updatedAt: typeof payload.updatedAt === 'string' ? payload.updatedAt : new Date().toISOString(),
+    version: typeof payload.version === "string" ? payload.version : "0.0.0",
+    updatedAt: typeof payload.updatedAt === "string" ? payload.updatedAt : new Date().toISOString(),
     policies: validatePolicies(payload.policies),
   };
 }
 
-export function findModelById(registry: ModelRegistry, id: string): SupportedModelProfile | undefined {
+export function findModelById(
+  registry: ModelRegistry,
+  id: string
+): SupportedModelProfile | undefined {
   return registry.models.find((m) => m.id === id);
 }
 
@@ -121,9 +124,7 @@ export function findModelsByProviderModelId(
   providerModelId: string
 ): SupportedModelProfile[] {
   return registry.models.filter((m) =>
-    m.providerModelIds.some(
-      (id) => id.toLowerCase() === providerModelId.toLowerCase()
-    )
+    m.providerModelIds.some((id) => id.toLowerCase() === providerModelId.toLowerCase())
   );
 }
 
@@ -136,7 +137,7 @@ export function findRuntimeById(
 
 export function findRuntimeByType(
   registry: RuntimeRegistry,
-  type: ProviderRuntimeProfile['type']
+  type: ProviderRuntimeProfile["type"]
 ): ProviderRuntimeProfile | undefined {
   return registry.runtimes.find((r) => r.type === type);
 }

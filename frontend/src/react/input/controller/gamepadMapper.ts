@@ -11,7 +11,8 @@ export function detectControllerKind(id: string): ControllerDeviceKind {
   if (normalized.includes("steam deck")) return "steam_deck";
   if (normalized.includes("xbox") || normalized.includes("xinput")) return "xbox";
   if (normalized.includes("dualsense") || normalized.includes("ps5")) return "dualsense";
-  if (normalized.includes("dualshock") || normalized.includes("wireless controller")) return "dualshock";
+  if (normalized.includes("dualshock") || normalized.includes("wireless controller"))
+    return "dualshock";
   if (normalized.includes("switch") || normalized.includes("pro controller")) return "switch_pro";
   if (normalized.trim().length === 0) return "unknown";
   return "generic";
@@ -57,7 +58,7 @@ function buildStandardMap(confirmButton: ControllerConfirmButton): ButtonMap {
 export function mapButtonsToActions(
   gamepad: Gamepad,
   confirmButton: ControllerConfirmButton,
-  triggerThreshold: number,
+  triggerThreshold: number
 ): ControllerAction[] {
   const map = buildStandardMap(confirmButton);
   const actions: ControllerAction[] = [];

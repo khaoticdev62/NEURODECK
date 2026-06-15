@@ -1,8 +1,8 @@
-import { InboxIcon, FolderOpen } from 'lucide-react';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { Panel } from '../../../components/primitives/Panel';
-import { Badge } from '../../../components/primitives/Badge';
-import type { FileTransfer } from '../../../services/bridgeAdapter';
+import { InboxIcon, FolderOpen } from "lucide-react";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { Panel } from "../../../components/primitives/Panel";
+import { Badge } from "../../../components/primitives/Badge";
+import type { FileTransfer } from "../../../services/bridgeAdapter";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -17,8 +17,8 @@ interface Props {
 }
 
 export function InboxTab({ inboxPath, transfers }: Props) {
-  const received = transfers.filter((t) => t.direction === 'Incoming' && t.status === 'Completed');
-  const pending = transfers.filter((t) => t.direction === 'Incoming' && t.status === 'Pending');
+  const received = transfers.filter((t) => t.direction === "Incoming" && t.status === "Completed");
+  const pending = transfers.filter((t) => t.direction === "Incoming" && t.status === "Pending");
 
   return (
     <Panel eyebrow="Inbox" title="Incoming Transfers" className="h-full">
@@ -40,7 +40,9 @@ export function InboxTab({ inboxPath, transfers }: Props) {
                       <InboxIcon className="h-4 w-4 text-nd-warning" aria-hidden="true" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-nd-text-primary">{t.filename}</p>
+                      <p className="truncate text-sm font-medium text-nd-text-primary">
+                        {t.filename}
+                      </p>
                       <p className="text-xs text-nd-text-muted">
                         {formatBytes(t.size)} from {t.peer_name || t.peer_ip}
                       </p>
@@ -64,7 +66,9 @@ export function InboxTab({ inboxPath, transfers }: Props) {
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60">
               <FolderOpen className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
             </div>
-            <p className="break-all text-xs text-nd-text-secondary font-mono">{inboxPath || 'Loading…'}</p>
+            <p className="break-all text-xs text-nd-text-secondary font-mono">
+              {inboxPath || "Loading…"}
+            </p>
           </div>
         </section>
 
@@ -91,12 +95,16 @@ export function InboxTab({ inboxPath, transfers }: Props) {
                     <InboxIcon className="h-4 w-4 text-nd-success" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-nd-text-primary">{t.filename}</p>
+                    <p className="truncate text-sm font-medium text-nd-text-primary">
+                      {t.filename}
+                    </p>
                     <p className="text-xs text-nd-text-muted">
                       {formatBytes(t.size)} from {t.peer_name || t.peer_ip}
                     </p>
                   </div>
-                  <Badge tone="success" variant="outline" size="sm">Received</Badge>
+                  <Badge tone="success" variant="outline" size="sm">
+                    Received
+                  </Badge>
                 </li>
               ))}
             </ul>

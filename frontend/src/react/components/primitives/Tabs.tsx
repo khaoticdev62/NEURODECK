@@ -1,5 +1,5 @@
-import { createContext, useCallback, useContext, useId, useRef } from 'react';
-import type { KeyboardEvent, ReactNode } from 'react';
+import { createContext, useCallback, useContext, useId, useRef } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
 
 // ── Context ───────────────────────────────────────────────────────────────────
 
@@ -13,7 +13,7 @@ const TabsContext = createContext<TabsCtx | null>(null);
 
 function useTabsCtx(): TabsCtx {
   const ctx = useContext(TabsContext);
-  if (!ctx) throw new Error('Tab components must be used inside <TabGroup>');
+  if (!ctx) throw new Error("Tab components must be used inside <TabGroup>");
   return ctx;
 }
 
@@ -42,11 +42,11 @@ export function TabGroup({
 
 export function TabList({
   children,
-  'aria-label': ariaLabel,
+  "aria-label": ariaLabel,
   className,
 }: {
   children: ReactNode;
-  'aria-label'?: string;
+  "aria-label"?: string;
   className?: string;
 }) {
   const listRef = useRef<HTMLDivElement>(null);
@@ -60,10 +60,10 @@ export function TabList({
     if (idx === -1) return;
 
     let next: number;
-    if (e.key === 'ArrowRight') next = (idx + 1) % tabs.length;
-    else if (e.key === 'ArrowLeft') next = (idx - 1 + tabs.length) % tabs.length;
-    else if (e.key === 'Home') next = 0;
-    else if (e.key === 'End') next = tabs.length - 1;
+    if (e.key === "ArrowRight") next = (idx + 1) % tabs.length;
+    else if (e.key === "ArrowLeft") next = (idx - 1 + tabs.length) % tabs.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = tabs.length - 1;
     else return;
 
     e.preventDefault();
@@ -78,11 +78,11 @@ export function TabList({
       aria-label={ariaLabel}
       onKeyDown={handleKeyDown}
       className={[
-        'flex items-center gap-1 rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-1',
+        "flex items-center gap-1 rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-1",
         className,
       ]
         .filter(Boolean)
-        .join(' ')}
+        .join(" ")}
     >
       {children}
     </div>
@@ -110,14 +110,15 @@ export function Tab({
   const isActive = active === value;
 
   const base = [
-    'relative flex min-h-[40px] items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium outline-none transition-colors duration-fast',
-    'focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60',
-    'disabled:pointer-events-none disabled:opacity-40',
+    "relative flex min-h-[40px] items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium outline-none transition-colors duration-fast",
+    "focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60",
+    "disabled:pointer-events-none disabled:opacity-40",
     className,
-  ].join(' ');
+  ].join(" ");
 
-  const activeCls = activeClassName ?? 'bg-nd-surface-tertiary text-nd-text-primary shadow-sm';
-  const inactiveCls = inactiveClassName ?? 'text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary';
+  const activeCls = activeClassName ?? "bg-nd-surface-tertiary text-nd-text-primary shadow-sm";
+  const inactiveCls =
+    inactiveClassName ?? "text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary";
 
   return (
     <button
@@ -164,7 +165,7 @@ export function TabPanel({
       id={`${idPrefix}-panel-${value}`}
       aria-labelledby={`${idPrefix}-tab-${value}`}
       tabIndex={0}
-      className={`focus-visible:outline-none ${className ?? ''}`}
+      className={`focus-visible:outline-none ${className ?? ""}`}
     >
       {children}
     </div>

@@ -12,13 +12,17 @@ export function createDefaultOnboardingProgress(): OnboardingProgressState {
     dismissedFeatureIds: [],
     lastSeenManifestVersions: {},
     explanationMode: "jpe",
-    motionMode: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ? "reduced" : "full",
+    motionMode: window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches
+      ? "reduced"
+      : "full",
     fidelityMode: "deck_safe",
     lastUpdatedAt: new Date().toISOString(),
   };
 }
 
-function normalizeProgress(value: Partial<OnboardingProgressState> | null): OnboardingProgressState {
+function normalizeProgress(
+  value: Partial<OnboardingProgressState> | null
+): OnboardingProgressState {
   const defaults = createDefaultOnboardingProgress();
   if (!value || typeof value !== "object") return defaults;
   return {
@@ -41,7 +45,8 @@ function normalizeProgress(value: Partial<OnboardingProgressState> | null): Onbo
 
 export async function loadOnboardingProgress(): Promise<OnboardingProgressState> {
   try {
-    const stored = await neurodeckApi.store.get<Partial<OnboardingProgressState>>(ONBOARDING_PROGRESS_KEY);
+    const stored =
+      await neurodeckApi.store.get<Partial<OnboardingProgressState>>(ONBOARDING_PROGRESS_KEY);
     return normalizeProgress(stored ?? null);
   } catch {
     return createDefaultOnboardingProgress();

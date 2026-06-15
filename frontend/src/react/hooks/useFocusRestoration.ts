@@ -1,8 +1,7 @@
-import { useEffect, useRef } from 'react';
-import type { RefObject } from 'react';
+import { useEffect, useRef } from "react";
+import type { RefObject } from "react";
 
-const DEFAULT_SELECTOR =
-  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+const DEFAULT_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 /**
  * Manages focus for overlay panels: stores the trigger element when opening,
@@ -19,7 +18,7 @@ export function useFocusRestoration(
   dialogRef: RefObject<HTMLElement | null>,
   isOpen: boolean,
   onOpen?: () => void,
-  selector?: string,
+  selector?: string
 ): void {
   const triggerRef = useRef<HTMLElement | null>(null);
   // Use a ref for onOpen so it never needs to be a dependency
@@ -38,8 +37,8 @@ export function useFocusRestoration(
     } else {
       triggerRef.current?.focus();
     }
-  // dialogRef is a stable React ref object; selector is a string constant at each call site.
-  // Only isOpen and selector changes should re-trigger the effect.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // dialogRef is a stable React ref object; selector is a string constant at each call site.
+    // Only isOpen and selector changes should re-trigger the effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, selector]);
 }

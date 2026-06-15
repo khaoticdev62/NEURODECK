@@ -1,19 +1,27 @@
-import { useState, useId, KeyboardEvent } from 'react';
-import { Play, ChevronDown, ChevronUp, CheckCircle2, XCircle, BookOpen, Database } from 'lucide-react';
-import { Badge } from '../../../components/primitives/Badge';
-import { Button } from '../../../components/primitives/Button';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { SIEM_EVENTS } from '../data/siemEvents';
-import { executeQuery, SIEM_CHALLENGES, gradeChallenge } from '../utils/siemQuery';
-import type { SiemEvent } from '../data/siemEvents';
-import type { SiemChallenge } from '../utils/siemQuery';
+import { useState, useId, KeyboardEvent } from "react";
+import {
+  Play,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2,
+  XCircle,
+  BookOpen,
+  Database,
+} from "lucide-react";
+import { Badge } from "../../../components/primitives/Badge";
+import { Button } from "../../../components/primitives/Button";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { SIEM_EVENTS } from "../data/siemEvents";
+import { executeQuery, SIEM_CHALLENGES, gradeChallenge } from "../utils/siemQuery";
+import type { SiemEvent } from "../data/siemEvents";
+import type { SiemChallenge } from "../utils/siemQuery";
 
-const SEVERITY_TONE: Record<string, 'danger' | 'warning' | 'accent' | 'neutral'> = {
-  critical: 'danger',
-  high: 'warning',
-  medium: 'accent',
-  low: 'neutral',
-  info: 'neutral',
+const SEVERITY_TONE: Record<string, "danger" | "warning" | "accent" | "neutral"> = {
+  critical: "danger",
+  high: "warning",
+  medium: "accent",
+  low: "neutral",
+  info: "neutral",
 };
 
 const REFERENCE = `# SIEM Query Language — Quick Reference
@@ -54,7 +62,7 @@ const REFERENCE = `# SIEM Query Language — Quick Reference
 function ResultRow({ event, expanded }: { event: SiemEvent; expanded: boolean }) {
   return (
     <div
-      className={`border-b border-nd-border-subtle/30 px-3 py-1.5 ${expanded ? 'bg-nd-surface-base/20' : ''}`}
+      className={`border-b border-nd-border-subtle/30 px-3 py-1.5 ${expanded ? "bg-nd-surface-base/20" : ""}`}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="w-14 shrink-0 font-mono text-[10px] text-nd-text-muted/40">
@@ -71,9 +79,9 @@ function ResultRow({ event, expanded }: { event: SiemEvent; expanded: boolean })
         </span>
         <span className="hidden shrink-0 text-[10px] text-nd-text-muted/50 sm:block">
           {new Date(event.timestamp).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
           })}
         </span>
       </div>
@@ -118,7 +126,7 @@ function ChallengePanel({
         <span className="flex-1 text-[11px] font-medium text-nd-text-secondary">
           {challenge.title}
         </span>
-        {grade && <Badge tone={grade.passed ? 'success' : 'danger'}>{grade.score}</Badge>}
+        {grade && <Badge tone={grade.passed ? "success" : "danger"}>{grade.score}</Badge>}
         {open ? (
           <ChevronUp className="h-3 w-3 text-nd-text-muted/40" />
         ) : (
@@ -143,7 +151,7 @@ function ChallengePanel({
           {grade && (
             <p
               className={`text-[11px] font-medium ${
-                grade.passed ? 'text-nd-accent-success' : 'text-nd-accent-error'
+                grade.passed ? "text-nd-accent-success" : "text-nd-accent-error"
               }`}
             >
               {grade.feedback}
@@ -157,7 +165,7 @@ function ChallengePanel({
 
 export function SIEMQueryView() {
   const queryId = useId();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [results, setResults] = useState<SiemEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -187,7 +195,7 @@ export function SIEMQueryView() {
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
       e.preventDefault();
       runQuery();
     }
@@ -213,7 +221,7 @@ export function SIEMQueryView() {
         </div>
         <Button
           size="xs"
-          variant={showRef ? 'soft' : 'secondary'}
+          variant={showRef ? "soft" : "secondary"}
           icon={BookOpen}
           onClick={() => setShowRef((v) => !v)}
         >
@@ -275,7 +283,7 @@ export function SIEMQueryView() {
                 spellCheck={false}
                 placeholder="event_type:auth_fail AND NOT ip:10.*      (Ctrl+Enter to run)"
                 className="w-full resize-none rounded-xl border border-nd-border-subtle bg-nd-surface-base/60 px-3 py-2 font-mono text-[12px] text-nd-text-primary placeholder:text-nd-text-muted/30 focus:border-nd-accent-primary/40 focus:outline-none focus:ring-1 focus:ring-nd-accent-primary/20"
-                style={{ maxHeight: '80px' }}
+                style={{ maxHeight: "80px" }}
               />
             </div>
             <div className="flex items-center gap-2">
@@ -284,7 +292,7 @@ export function SIEMQueryView() {
               </Button>
               {results !== null && (
                 <span className="text-[11px] text-nd-text-muted/70">
-                  {results.length} event{results.length !== 1 ? 's' : ''} matched
+                  {results.length} event{results.length !== 1 ? "s" : ""} matched
                 </span>
               )}
               {error && <span className="text-[11px] text-nd-accent-error">{error}</span>}
@@ -313,7 +321,7 @@ export function SIEMQueryView() {
               <div>
                 <div className="sticky top-0 flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-base/80 px-3 py-1.5 backdrop-blur-sm">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-nd-text-muted/60">
-                    Results — {results.length} event{results.length !== 1 ? 's' : ''}
+                    Results — {results.length} event{results.length !== 1 ? "s" : ""}
                   </p>
                   <p className="text-[10px] text-nd-text-muted/50">Click row to expand raw log</p>
                 </div>
@@ -321,9 +329,7 @@ export function SIEMQueryView() {
                   <button
                     key={event.id}
                     type="button"
-                    onClick={() =>
-                      setExpandedId((prev) => (prev === event.id ? null : event.id))
-                    }
+                    onClick={() => setExpandedId((prev) => (prev === event.id ? null : event.id))}
                     className="w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 focus-visible:ring-inset"
                     aria-expanded={expandedId === event.id}
                   >

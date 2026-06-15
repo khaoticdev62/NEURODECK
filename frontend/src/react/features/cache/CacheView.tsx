@@ -1,18 +1,22 @@
-import { HardDrive, RotateCcw, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { Button } from '../../components/primitives/Button';
-import { EmptyState } from '../../components/primitives/EmptyState';
-import { MetricCard } from '../../components/primitives/MetricCard';
-import { Panel } from '../../components/primitives/Panel';
-import { StatusChip } from '../../components/primitives/StatusChip';
-import type { NeuroDeckState } from '../../types/neurodeck';
+import { HardDrive, RotateCcw, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
+import { EmptyState } from "../../components/primitives/EmptyState";
+import { MetricCard } from "../../components/primitives/MetricCard";
+import { Panel } from "../../components/primitives/Panel";
+import { StatusChip } from "../../components/primitives/StatusChip";
+import type { NeuroDeckState } from "../../types/neurodeck";
 
 export function CacheView({ state }: { state: NeuroDeckState }) {
   const entries = state.cacheEntries;
-  const readyCount = entries.filter((e) => e.status === 'ready').length;
-  const staleCount = entries.filter((e) => e.status === 'stale').length;
+  const readyCount = entries.filter((e) => e.status === "ready").length;
+  const staleCount = entries.filter((e) => e.status === "stale").length;
 
   return (
-    <Panel eyebrow="Offline Cache" title="Local Readiness Center" className="h-full overflow-hidden">
+    <Panel
+      eyebrow="Offline Cache"
+      title="Local Readiness Center"
+      className="h-full overflow-hidden"
+    >
       {entries.length === 0 ? (
         <EmptyState
           icon={HardDrive}
@@ -22,9 +26,19 @@ export function CacheView({ state }: { state: NeuroDeckState }) {
       ) : (
         <div className="flex h-full flex-col gap-4 p-4">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <MetricCard label="Total Items" value={entries.length} icon={HardDrive} hint="Cached assets" />
+            <MetricCard
+              label="Total Items"
+              value={entries.length}
+              icon={HardDrive}
+              hint="Cached assets"
+            />
             <MetricCard label="Ready" value={readyCount} icon={CheckCircle2} hint="Available now" />
-            <MetricCard label="Stale" value={staleCount} icon={AlertTriangle} hint="Needs refresh" />
+            <MetricCard
+              label="Stale"
+              value={staleCount}
+              icon={AlertTriangle}
+              hint="Needs refresh"
+            />
           </div>
 
           <div className="grid flex-1 gap-3 overflow-y-auto pb-1 scrollbar-thin lg:grid-cols-2">
@@ -46,7 +60,13 @@ export function CacheView({ state }: { state: NeuroDeckState }) {
                     </div>
                   </div>
                   <StatusChip
-                    tone={entry.status === 'ready' ? 'success' : entry.status === 'stale' ? 'warning' : 'info'}
+                    tone={
+                      entry.status === "ready"
+                        ? "success"
+                        : entry.status === "stale"
+                          ? "warning"
+                          : "info"
+                    }
                     size="sm"
                   >
                     {entry.status}

@@ -1,6 +1,6 @@
-import { Bot, PlayCircle, RotateCcw } from 'lucide-react';
-import { Badge } from '../primitives/Badge';
-import type { Agent, AgentStatus } from '../../types/neurodeck';
+import { Bot, PlayCircle, RotateCcw } from "lucide-react";
+import { Badge } from "../primitives/Badge";
+import type { Agent, AgentStatus } from "../../types/neurodeck";
 
 interface AgentCardProps {
   agent: Agent;
@@ -8,11 +8,11 @@ interface AgentCardProps {
   onCycle: (id: string) => void;
 }
 
-const statusTone: Record<AgentStatus, 'accent' | 'success' | 'danger' | 'neutral'> = {
-  thinking: 'accent',
-  complete:  'success',
-  blocked:   'danger',
-  idle:      'neutral',
+const statusTone: Record<AgentStatus, "accent" | "success" | "danger" | "neutral"> = {
+  thinking: "accent",
+  complete: "success",
+  blocked: "danger",
+  idle: "neutral",
 };
 
 export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
@@ -32,10 +32,10 @@ export function AgentCard({ agent, onRun, onCycle }: AgentCardProps) {
       </div>
 
       <dl className="mt-4 space-y-2 text-xs text-nd-text-muted">
-        <AgentRow label="Model"  value={agent.model} />
+        <AgentRow label="Model" value={agent.model} />
         <AgentRow label="Memory" value={agent.memoryAccess} />
-        <AgentRow label="Task"   value={agent.task} />
-        <AgentRow label="Last"   value={agent.lastAction} />
+        <AgentRow label="Task" value={agent.task} />
+        <AgentRow label="Last" value={agent.lastAction} />
       </dl>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">

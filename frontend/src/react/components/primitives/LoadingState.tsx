@@ -1,30 +1,30 @@
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from "lucide-react";
 
 interface LoadingStateProps {
   label?: string;
   fullHeight?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
 }
 
 const sizeMap = {
-  sm: 'h-4 w-4',
-  md: 'h-6 w-6',
-  lg: 'h-8 w-8',
+  sm: "h-4 w-4",
+  md: "h-6 w-6",
+  lg: "h-8 w-8",
 };
 
 export function LoadingState({
-  label = 'Loading…',
+  label = "Loading…",
   fullHeight = false,
-  size = 'md',
+  size = "md",
 }: LoadingStateProps) {
   return (
     <div
       role="status"
       aria-label={label}
       className={[
-        'flex flex-col items-center justify-center gap-3 text-nd-text-muted',
-        fullHeight ? 'h-full min-h-48' : 'py-10',
-      ].join(' ')}
+        "flex flex-col items-center justify-center gap-3 text-nd-text-muted",
+        fullHeight ? "h-full min-h-48" : "py-10",
+      ].join(" ")}
     >
       <Loader2
         className={`${sizeMap[size]} animate-spin text-nd-accent-primary motion-reduce:animate-none`}

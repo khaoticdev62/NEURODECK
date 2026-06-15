@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { Clock, RotateCcw, Trash2 } from 'lucide-react';
-import { EmptyState } from '../../../components/primitives/EmptyState';
-import { ConfirmDialog } from '../../../components/primitives/ConfirmDialog';
-import { StatusChip } from '../../../components/primitives/StatusChip';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { Panel } from '../../../components/primitives/Panel';
-import { Button } from '../../../components/primitives/Button';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import type { FileTransfer } from '../../../services/bridgeAdapter';
+import { useState } from "react";
+import { Clock, RotateCcw, Trash2 } from "lucide-react";
+import { EmptyState } from "../../../components/primitives/EmptyState";
+import { ConfirmDialog } from "../../../components/primitives/ConfirmDialog";
+import { StatusChip } from "../../../components/primitives/StatusChip";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { Panel } from "../../../components/primitives/Panel";
+import { Button } from "../../../components/primitives/Button";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import type { FileTransfer } from "../../../services/bridgeAdapter";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -16,10 +16,10 @@ function formatBytes(n: number): string {
   return `${(n / 1073741824).toFixed(2)} GB`;
 }
 
-function transferTone(status: FileTransfer['status']): 'info' | 'success' | 'warning' | 'error' {
-  if (status === 'Completed') return 'success';
-  if (status === 'Failed' || status === 'Cancelled' || status === 'Rejected') return 'error';
-  return 'warning';
+function transferTone(status: FileTransfer["status"]): "info" | "success" | "warning" | "error" {
+  if (status === "Completed") return "success";
+  if (status === "Failed" || status === "Cancelled" || status === "Rejected") return "error";
+  return "warning";
 }
 
 interface Props {
@@ -32,7 +32,7 @@ export function HistoryTab({ transfers, onRetry, onClearDone }: Props) {
   const [confirmClear, setConfirmClear] = useState(false);
 
   const history = transfers.filter((t) =>
-    ['Completed', 'Failed', 'Cancelled', 'Rejected'].includes(t.status)
+    ["Completed", "Failed", "Cancelled", "Rejected"].includes(t.status)
   );
 
   const handleClear = async () => {
@@ -85,17 +85,18 @@ export function HistoryTab({ transfers, onRetry, onClearDone }: Props) {
                 <StatusChip tone={transferTone(t.status)} size="sm">
                   {t.status}
                 </StatusChip>
-                {(t.status === 'Failed' || t.status === 'Cancelled') && t.direction === 'Outgoing' && (
-                  <IconButton
-                    type="button"
-                    size="md"
-                    variant="subtle"
-                    aria-label={`Retry ${t.filename}`}
-                    onClick={() => onRetry(t.id)}
-                  >
-                    <RotateCcw className="h-4 w-4" aria-hidden="true" />
-                  </IconButton>
-                )}
+                {(t.status === "Failed" || t.status === "Cancelled") &&
+                  t.direction === "Outgoing" && (
+                    <IconButton
+                      type="button"
+                      size="md"
+                      variant="subtle"
+                      aria-label={`Retry ${t.filename}`}
+                      onClick={() => onRetry(t.id)}
+                    >
+                      <RotateCcw className="h-4 w-4" aria-hidden="true" />
+                    </IconButton>
+                  )}
               </li>
             ))}
           </ul>

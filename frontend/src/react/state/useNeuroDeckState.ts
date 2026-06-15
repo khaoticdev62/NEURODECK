@@ -1,12 +1,18 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
-import { STORE_KEY } from '../types/seed';
-import { neurodeckApi } from '../services/bridgeAdapter';
-import type { AgentStatus, LocalModel, NeuroDeckAction, NeuroDeckState, PluginCard } from '../types/neurodeck';
-import { controllerDefaults } from '../input/controller/controllerStore';
+import { useCallback, useEffect, useMemo, useReducer } from "react";
+import { STORE_KEY } from "../types/seed";
+import { neurodeckApi } from "../services/bridgeAdapter";
+import type {
+  AgentStatus,
+  LocalModel,
+  NeuroDeckAction,
+  NeuroDeckState,
+  PluginCard,
+} from "../types/neurodeck";
+import { controllerDefaults } from "../input/controller/controllerStore";
 
 function getInitialShowOnboarding(): boolean {
   try {
-    return localStorage.getItem('neurodeck_onboarding_complete') !== 'true';
+    return localStorage.getItem("neurodeck_onboarding_complete") !== "true";
   } catch {
     return true;
   }
@@ -14,19 +20,19 @@ function getInitialShowOnboarding(): boolean {
 
 const initialState: NeuroDeckState = {
   hydrated: false,
-  activeView: 'chat',
+  activeView: "chat",
   commandOpen: false,
   deckMode: false,
   controllerSettings: controllerDefaults,
-  selectedTheme: 'Blacksite',
-  selectedPersona: 'Developer',
-  selectedProvider: 'ollama',
-  selectedModelId: '',
-  activeAgentId: 'general',
-  selectedFont: 'inter',
+  selectedTheme: "Blacksite",
+  selectedPersona: "Developer",
+  selectedProvider: "ollama",
+  selectedModelId: "",
+  activeAgentId: "general",
+  selectedFont: "inter",
   showOnboarding: getInitialShowOnboarding(),
-  onboardingMode: 'setup',
-  composerValue: '',
+  onboardingMode: "setup",
+  composerValue: "",
   busyLabel: null,
   toolStatus: null,
   statusBar: null,
@@ -55,15 +61,15 @@ const initialState: NeuroDeckState = {
     contextUsed: 14,
     memoryPressure: 38,
     cacheHealth: 94,
-    activeAgents: 1
-  }
+    activeAgents: 1,
+  },
 };
 
 function nextStatus(current: AgentStatus): AgentStatus {
-  if (current === 'idle') return 'thinking';
-  if (current === 'thinking') return 'complete';
-  if (current === 'complete') return 'idle';
-  return 'idle';
+  if (current === "idle") return "thinking";
+  if (current === "thinking") return "complete";
+  if (current === "complete") return "idle";
+  return "idle";
 }
 
 function mergeUniqueModels(current: LocalModel[], incoming: LocalModel[]): LocalModel[] {
@@ -73,7 +79,7 @@ function mergeUniqueModels(current: LocalModel[], incoming: LocalModel[]): Local
 }
 
 function sanitizeHydrate(payload: Partial<NeuroDeckState> | null): Partial<NeuroDeckState> {
-  if (!payload || typeof payload !== 'object') return {};
+  if (!payload || typeof payload !== "object") return {};
   const {
     hydrated: _hydrated,
     commandOpen: _commandOpen,
@@ -90,22 +96,22 @@ function sanitizeHydrate(payload: Partial<NeuroDeckState> | null): Partial<Neuro
 
 function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState {
   switch (action.type) {
-    case 'hydrate':
+    case "hydrate":
       return {
         ...state,
         ...sanitizeHydrate(action.payload),
         hydrated: true,
         commandOpen: false,
         busyLabel: null,
-        lastError: null
+        lastError: null,
       };
-    case 'set-view':
+    case "set-view":
       return { ...state, activeView: action.view, commandOpen: false };
-    case 'toggle-command':
+    case "toggle-command":
       return { ...state, commandOpen: action.open ?? !state.commandOpen };
-    case 'toggle-deck-mode':
+    case "toggle-deck-mode":
       return { ...state, deckMode: !state.deckMode };
-    case 'set-controller-settings':
+    case "set-controller-settings":
       return {
         ...state,
         controllerSettings: {
@@ -113,127 +119,173 @@ function reducer(state: NeuroDeckState, action: NeuroDeckAction): NeuroDeckState
           ...action.settings,
         },
       };
-    case 'set-theme':
+    case "set-theme":
       return { ...state, selectedTheme: action.theme };
-    case 'set-persona':
+    case "set-persona":
       return { ...state, selectedPersona: action.persona };
-    case 'set-tool-status':
+    case "set-tool-status":
       return { ...state, toolStatus: action.status };
-    case 'set-status-bar':
+    case "set-status-bar":
       return { ...state, statusBar: action.state };
-    case 'set-provider':
+    case "set-provider":
       return { ...state, selectedProvider: action.provider };
-    case 'set-selected-model':
+    case "set-selected-model":
       return { ...state, selectedModelId: action.id };
-    case 'set-font':
+    case "set-font":
       return { ...state, selectedFont: action.font };
-    case 'toggle-onboarding':
+    case "toggle-onboarding":
       return {
         ...state,
         showOnboarding: !state.showOnboarding,
-        onboardingMode: state.showOnboarding ? state.onboardingMode : 'setup',
+        onboardingMode: state.showOnboarding ? state.onboardingMode : "setup",
       };
-    case 'open-onboarding':
+    case "open-onboarding":
       return {
         ...state,
         showOnboarding: true,
-        onboardingMode: action.mode ?? 'tour',
+        onboardingMode: action.mode ?? "tour",
         commandOpen: false,
       };
-    case 'close-onboarding':
+    case "close-onboarding":
       return { ...state, showOnboarding: false };
-    case 'set-composer':
+    case "set-composer":
       return { ...state, composerValue: action.value };
-    case 'run-starter':
-      return { ...state, composerValue: action.prompt, activeView: 'chat', commandOpen: false };
-    case 'toggle-agent':
+    case "run-starter":
+      return { ...state, composerValue: action.prompt, activeView: "chat", commandOpen: false };
+    case "toggle-agent":
       return {
         ...state,
-        agents: state.agents.map((agent) => agent.id === action.id ? { ...agent, status: nextStatus(agent.status), lastAction: 'Status toggled locally' } : agent)
+        agents: state.agents.map((agent) =>
+          agent.id === action.id
+            ? { ...agent, status: nextStatus(agent.status), lastAction: "Status toggled locally" }
+            : agent
+        ),
       };
-    case 'set-agent-status':
+    case "set-agent-status":
       return {
         ...state,
-        agents: state.agents.map((agent) => agent.id === action.id ? {
-          ...agent,
-          status: action.status,
-          lastAction: action.lastAction ?? agent.lastAction,
-          task: action.task ?? agent.task
-        } : agent)
+        agents: state.agents.map((agent) =>
+          agent.id === action.id
+            ? {
+                ...agent,
+                status: action.status,
+                lastAction: action.lastAction ?? agent.lastAction,
+                task: action.task ?? agent.task,
+              }
+            : agent
+        ),
       };
-    case 'set-model-status':
+    case "set-model-status":
       return {
         ...state,
-        models: state.models.map((model) => model.id === action.id ? { ...model, status: action.status } : model)
+        models: state.models.map((model) =>
+          model.id === action.id ? { ...model, status: action.status } : model
+        ),
       };
-    case 'toggle-memory-pin':
+    case "toggle-memory-pin":
       return {
         ...state,
-        memories: state.memories.map((memory) => memory.id === action.id ? { ...memory, pinned: !memory.pinned } : memory)
+        memories: state.memories.map((memory) =>
+          memory.id === action.id ? { ...memory, pinned: !memory.pinned } : memory
+        ),
       };
-    case 'set-memories':
+    case "set-memories":
       return { ...state, memories: action.memories };
-    case 'add-memory':
+    case "add-memory":
       return { ...state, memories: [...state.memories, action.memory] };
-    case 'delete-memory':
+    case "delete-memory":
       return { ...state, memories: state.memories.filter((memory) => memory.id !== action.id) };
-    case 'set-sessions':
+    case "set-sessions":
       return { ...state, sessions: action.sessions };
-    case 'set-agents':
+    case "set-agents":
       return { ...state, agents: action.agents };
-    case 'set-plugins':
+    case "set-plugins":
       return { ...state, plugins: action.plugins };
-    case 'toggle-plugin':
+    case "toggle-plugin":
       return {
         ...state,
-        plugins: state.plugins.map((plugin) => plugin.id === action.id ? { ...plugin, status: plugin.status === 'enabled' ? 'disabled' : 'enabled' } : plugin)
+        plugins: state.plugins.map((plugin) =>
+          plugin.id === action.id
+            ? { ...plugin, status: plugin.status === "enabled" ? "disabled" : "enabled" }
+            : plugin
+        ),
       };
-    case 'set-project-scan':
-      return { ...state, activeProject: action.project, projectContext: null, activeView: action.project ? 'project' : state.activeView, lastError: null };
-    case 'set-project-context':
+    case "set-project-scan":
+      return {
+        ...state,
+        activeProject: action.project,
+        projectContext: null,
+        activeView: action.project ? "project" : state.activeView,
+        lastError: null,
+      };
+    case "set-project-context":
       return {
         ...state,
         projectContext: action.context,
-        telemetry: { ...state.telemetry, contextUsed: action.context ? Math.min(92, Math.max(12, Math.round(action.context.tokenBudget / 180))) : state.telemetry.contextUsed },
-        lastError: null
+        telemetry: {
+          ...state.telemetry,
+          contextUsed: action.context
+            ? Math.min(92, Math.max(12, Math.round(action.context.tokenBudget / 180)))
+            : state.telemetry.contextUsed,
+        },
+        lastError: null,
       };
-    case 'set-model-detection':
-      return { ...state, modelDetection: action.detection, activeView: action.detection ? 'models' : state.activeView, lastError: null };
-    case 'merge-detected-models':
+    case "set-model-detection":
+      return {
+        ...state,
+        modelDetection: action.detection,
+        activeView: action.detection ? "models" : state.activeView,
+        lastError: null,
+      };
+    case "merge-detected-models":
       return { ...state, models: mergeUniqueModels(state.models, action.models) };
-    case 'set-ai-health':
+    case "set-ai-health":
       return { ...state, aiHealth: action.health };
-    case 'append-message':
+    case "append-message":
       return {
         ...state,
         messages: [...state.messages, action.message].slice(-80),
-        composerValue: action.message.role === 'user' ? '' : state.composerValue,
-        telemetry: { ...state.telemetry, latencyMs: action.message.latencyMs ?? state.telemetry.latencyMs }
+        composerValue: action.message.role === "user" ? "" : state.composerValue,
+        telemetry: {
+          ...state.telemetry,
+          latencyMs: action.message.latencyMs ?? state.telemetry.latencyMs,
+        },
       };
-    case 'update-message':
+    case "update-message":
       return {
         ...state,
-        messages: state.messages.map((m) => m.id === action.id ? { ...m, content: m.content + action.content } : m),
+        messages: state.messages.map((m) =>
+          m.id === action.id ? { ...m, content: m.content + action.content } : m
+        ),
       };
-    case 'add-ai-run':
-      return { ...state, aiRuns: [action.run, ...state.aiRuns].slice(0, 60), activeView: action.run.status === 'complete' ? state.activeView : 'execution' };
-    case 'set-diagnostics':
-      return { ...state, diagnostics: action.diagnostics, diagnosticLogs: action.logs, activeView: 'diagnostics' };
-    case 'set-busy':
+    case "add-ai-run":
+      return {
+        ...state,
+        aiRuns: [action.run, ...state.aiRuns].slice(0, 60),
+        activeView: action.run.status === "complete" ? state.activeView : "execution",
+      };
+    case "set-diagnostics":
+      return {
+        ...state,
+        diagnostics: action.diagnostics,
+        diagnosticLogs: action.logs,
+        activeView: "diagnostics",
+      };
+    case "set-busy":
       return { ...state, busyLabel: action.label };
-    case 'set-error':
+    case "set-error":
       return { ...state, lastError: action.error, busyLabel: null };
-    case 'set-export-path':
+    case "set-export-path":
       return { ...state, lastExportPath: action.path, lastError: null };
-    case 'set-active-agent':
+    case "set-active-agent":
       return { ...state, activeAgentId: action.id };
-    case 'set-model-scores':
+    case "set-model-scores":
       return { ...state, modelScores: action.scores };
-    case 'set-agent-policies':
+    case "set-agent-policies":
       return { ...state, agentPolicies: action.policies };
-    case 'set-recovery-events':
+    case "set-recovery-events":
       return { ...state, recoveryEvents: action.events };
-    case 'reset-local-state':
+    case "reset-local-state":
       return { ...initialState, hydrated: true };
     default:
       return state;
@@ -247,7 +299,7 @@ export function useNeuroDeckState() {
     let mounted = true;
     async function hydrate() {
       const stored = (await neurodeckApi.store.get<Partial<NeuroDeckState>>(STORE_KEY)) || {};
-      
+
       // 1. Fetch live backend initial settings
       try {
         const init = await neurodeckApi.getInitialState();
@@ -279,9 +331,9 @@ export function useNeuroDeckState() {
             id: r.id,
             title: r.metadata?.title || r.content.slice(0, 40),
             body: r.content,
-            scope: (r.metadata?.scope as any) || 'Global',
-            pinned: r.metadata?.pinned === 'true',
-            updatedAt: r.metadata?.updatedAt || 'local cache',
+            scope: (r.metadata?.scope as any) || "Global",
+            pinned: r.metadata?.pinned === "true",
+            updatedAt: r.metadata?.updatedAt || "local cache",
             sourceFile: r.metadata?.path || undefined,
             namespace: r.metadata?.namespace || r.metadata?.source || undefined,
           }));
@@ -304,15 +356,15 @@ export function useNeuroDeckState() {
       try {
         const agentList = await neurodeckApi.agents.list();
         if (agentList && agentList.length > 0) {
-          stored.agents = agentList.map(a => ({
+          stored.agents = agentList.map((a) => ({
             id: a.id,
             name: a.name,
-            role: a.description || 'Specialized operator',
-            status: 'idle',
-            model: a.model || 'default',
-            memoryAccess: 'project',
-            lastAction: 'Ready',
-            task: 'Ready',
+            role: a.description || "Specialized operator",
+            status: "idle",
+            model: a.model || "default",
+            memoryAccess: "project",
+            lastAction: "Ready",
+            task: "Ready",
           }));
         }
       } catch (_) {
@@ -323,15 +375,15 @@ export function useNeuroDeckState() {
       try {
         const pluginList = await neurodeckApi.plugins.list();
         if (pluginList && pluginList.plugins) {
-          stored.plugins = pluginList.plugins.map(p => {
-            let status: PluginCard['status'] = 'disabled';
-            if (p.enabled) status = 'enabled';
+          stored.plugins = pluginList.plugins.map((p) => {
+            let status: PluginCard["status"] = "disabled";
+            if (p.enabled) status = "enabled";
             return {
               id: p.id || p.file_name,
               name: p.name,
-              description: p.description || '',
+              description: p.description || "",
               status,
-              permissions: p.permissions || []
+              permissions: p.permissions || [],
             };
           });
         }
@@ -339,19 +391,31 @@ export function useNeuroDeckState() {
         // Ignored, fallback to stored/initial
       }
 
-      if (mounted) dispatch({ type: 'hydrate', payload: stored });
+      if (mounted) dispatch({ type: "hydrate", payload: stored });
     }
-    hydrate().catch(() => dispatch({ type: 'hydrate', payload: null }));
-    return () => { mounted = false; };
+    hydrate().catch(() => dispatch({ type: "hydrate", payload: null }));
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
     if (!state.hydrated) return;
-    const { commandOpen, hydrated, busyLabel, diagnostics, diagnosticLogs, lastError, showOnboarding, onboardingMode, ...persistable } = state;
+    const {
+      commandOpen,
+      hydrated,
+      busyLabel,
+      diagnostics,
+      diagnosticLogs,
+      lastError,
+      showOnboarding,
+      onboardingMode,
+      ...persistable
+    } = state;
     const handle = window.setTimeout(() => {
       neurodeckApi.store.set(STORE_KEY, {
         ...persistable,
-        lastSavedAt: new Date().toISOString()
+        lastSavedAt: new Date().toISOString(),
       });
     }, 250);
     return () => window.clearTimeout(handle);
@@ -359,18 +423,31 @@ export function useNeuroDeckState() {
 
   const resetLocalState = useCallback(async () => {
     await neurodeckApi.store.reset(STORE_KEY);
-    dispatch({ type: 'reset-local-state' });
+    dispatch({ type: "reset-local-state" });
   }, []);
 
-  const selectors = useMemo(() => ({
-    activeAgents: state.agents.filter((agent) => agent.status === 'thinking').length,
-    readyModels: state.models.filter((model) => model.status === 'ready' || model.status === 'indexed').length,
-    pinnedMemories: state.memories.filter((memory) => memory.pinned).length,
-    enabledPlugins: state.plugins.filter((plugin) => plugin.status === 'enabled').length,
-    riskCount: state.activeProject?.risks.length ?? 0,
-    messageCount: state.messages.length,
-    completedRuns: state.aiRuns.filter((run) => run.status === 'complete').length
-  }), [state.activeProject?.risks.length, state.agents, state.aiRuns, state.memories, state.messages.length, state.models, state.plugins]);
+  const selectors = useMemo(
+    () => ({
+      activeAgents: state.agents.filter((agent) => agent.status === "thinking").length,
+      readyModels: state.models.filter(
+        (model) => model.status === "ready" || model.status === "indexed"
+      ).length,
+      pinnedMemories: state.memories.filter((memory) => memory.pinned).length,
+      enabledPlugins: state.plugins.filter((plugin) => plugin.status === "enabled").length,
+      riskCount: state.activeProject?.risks.length ?? 0,
+      messageCount: state.messages.length,
+      completedRuns: state.aiRuns.filter((run) => run.status === "complete").length,
+    }),
+    [
+      state.activeProject?.risks.length,
+      state.agents,
+      state.aiRuns,
+      state.memories,
+      state.messages.length,
+      state.models,
+      state.plugins,
+    ]
+  );
 
   return { state, dispatch, resetLocalState, selectors };
 }

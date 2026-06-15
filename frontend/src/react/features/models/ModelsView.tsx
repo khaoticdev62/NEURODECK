@@ -124,7 +124,9 @@ export function ModelsView({
                     onMarkIndexed={(id) =>
                       dispatch({ type: "set-model-status", id, status: "indexed" })
                     }
-                    onDisable={(id) => dispatch({ type: "set-model-status", id, status: "disabled" })}
+                    onDisable={(id) =>
+                      dispatch({ type: "set-model-status", id, status: "disabled" })
+                    }
                     onSelect={(id) => dispatch({ type: "set-selected-model", id })}
                   />
                 );
@@ -188,7 +190,9 @@ export function ModelsView({
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-nd-text-primary/90">{runtime.name}</span>
-                      <Badge tone={runtime.exists ? "success" : "neutral"} size="sm">{runtime.status}</Badge>
+                      <Badge tone={runtime.exists ? "success" : "neutral"} size="sm">
+                        {runtime.status}
+                      </Badge>
                     </div>
                     <p className="mt-1 break-all text-xs text-nd-text-muted/70">{runtime.path}</p>
                   </div>

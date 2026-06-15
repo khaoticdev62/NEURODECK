@@ -74,15 +74,30 @@ export function ModelCard({
             {status}
           </StatusChip>
           <div className="flex flex-wrap justify-end gap-1">
-            {agentPreferred && <Badge tone="accent" size="sm">Preferred</Badge>}
-            {policyAllowed === false && <Badge tone="danger" size="sm">Blocked</Badge>}
-            {selected && <Badge tone="accent" size="sm">Selected</Badge>}
+            {agentPreferred && (
+              <Badge tone="accent" size="sm">
+                Preferred
+              </Badge>
+            )}
+            {policyAllowed === false && (
+              <Badge tone="danger" size="sm">
+                Blocked
+              </Badge>
+            )}
+            {selected && (
+              <Badge tone="accent" size="sm">
+                Selected
+              </Badge>
+            )}
           </div>
         </div>
       </div>
 
       <div className="mt-4 grid gap-2 text-xs text-nd-text-muted sm:grid-cols-3">
-        <ModelSpec label="Context" value={model.context ? model.context.toLocaleString() : "runtime"} />
+        <ModelSpec
+          label="Context"
+          value={model.context ? model.context.toLocaleString() : "runtime"}
+        />
         <ModelSpec label="RAM" value={model.ramEstimate} />
         <ModelSpec label="Best For" value={model.bestFor.join(", ")} />
       </div>
@@ -116,12 +131,7 @@ export function ModelCard({
         >
           Indexed
         </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={Power}
-          onClick={() => onDisable(model.id)}
-        >
+        <Button variant="secondary" size="sm" icon={Power} onClick={() => onDisable(model.id)}>
           Disable
         </Button>
       </div>

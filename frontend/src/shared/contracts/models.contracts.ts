@@ -4,44 +4,44 @@
  */
 
 export type ModelCompatibilityTier =
-  | 'deck_default'
-  | 'deck_balanced'
-  | 'deck_heavy'
-  | 'remote_or_docked_only'
-  | 'unsupported'
-  | 'unknown';
+  | "deck_default"
+  | "deck_balanced"
+  | "deck_heavy"
+  | "remote_or_docked_only"
+  | "unsupported"
+  | "unknown";
 
 export type ModelCapability =
-  | 'chat'
-  | 'completion'
-  | 'reasoning'
-  | 'coding'
-  | 'tool_calling'
-  | 'vision'
-  | 'embedding'
-  | 'reranking'
-  | 'summarization'
-  | 'translation'
-  | 'long_context';
+  | "chat"
+  | "completion"
+  | "reasoning"
+  | "coding"
+  | "tool_calling"
+  | "vision"
+  | "embedding"
+  | "reranking"
+  | "summarization"
+  | "translation"
+  | "long_context";
 
 export type ParameterClass =
-  | 'sub_1b'
-  | '1b'
-  | '1_5b'
-  | '2b'
-  | '3b'
-  | '4b'
-  | '7b'
-  | '8b'
-  | '12b'
-  | '14b'
-  | '27b'
-  | '30b_plus'
-  | 'unknown';
+  | "sub_1b"
+  | "1b"
+  | "1_5b"
+  | "2b"
+  | "3b"
+  | "4b"
+  | "7b"
+  | "8b"
+  | "12b"
+  | "14b"
+  | "27b"
+  | "30b_plus"
+  | "unknown";
 
-export type Quantization = 'Q4_K_M' | 'Q4_K_S' | 'Q5_K_M' | 'Q8_0' | 'unknown';
+export type Quantization = "Q4_K_M" | "Q4_K_S" | "Q5_K_M" | "Q8_0" | "unknown";
 
-export type PressureLevel = 'low' | 'medium' | 'high' | 'extreme' | 'unknown';
+export type PressureLevel = "low" | "medium" | "high" | "extreme" | "unknown";
 
 export type SupportedModelProfile = {
   id: string;
@@ -71,30 +71,30 @@ export type SupportedModelProfile = {
 };
 
 export type ProviderRuntimeType =
-  | 'ollama'
-  | 'lm_studio'
-  | 'llama_cpp_server'
-  | 'openai_compatible_local'
-  | 'openai_compatible_remote'
-  | 'custom_http_provider'
-  | 'disabled_provider';
+  | "ollama"
+  | "lm_studio"
+  | "llama_cpp_server"
+  | "openai_compatible_local"
+  | "openai_compatible_remote"
+  | "custom_http_provider"
+  | "disabled_provider";
 
 export type ProviderConnectionState =
-  | 'unknown'
-  | 'not_configured'
-  | 'starting'
-  | 'connecting'
-  | 'connected'
-  | 'degraded'
-  | 'offline'
-  | 'missing_binary'
-  | 'missing_model'
-  | 'auth_failed'
-  | 'rate_limited'
-  | 'crashed'
-  | 'blocked'
-  | 'error'
-  | 'recovering';
+  | "unknown"
+  | "not_configured"
+  | "starting"
+  | "connecting"
+  | "connected"
+  | "degraded"
+  | "offline"
+  | "missing_binary"
+  | "missing_model"
+  | "auth_failed"
+  | "rate_limited"
+  | "crashed"
+  | "blocked"
+  | "error"
+  | "recovering";
 
 export type ProviderRuntimeProfile = {
   id: string;
@@ -135,18 +135,18 @@ export type ProviderRuntimeProfile = {
 };
 
 export type ModelProbeType =
-  | 'provider_ping'
-  | 'model_list'
-  | 'model_show'
-  | 'tiny_prompt'
-  | 'stream_probe'
-  | 'embedding_probe'
-  | 'tool_probe'
-  | 'runtime_process_check'
-  | 'self_healing_recovery'
-  | 'failover_route';
+  | "provider_ping"
+  | "model_list"
+  | "model_show"
+  | "tiny_prompt"
+  | "stream_probe"
+  | "embedding_probe"
+  | "tool_probe"
+  | "runtime_process_check"
+  | "self_healing_recovery"
+  | "failover_route";
 
-export type ProbeStatus = 'passed' | 'failed' | 'skipped' | 'blocked';
+export type ProbeStatus = "passed" | "failed" | "skipped" | "blocked";
 
 export type ModelConnectionEvidence = {
   requestId: string;
@@ -180,7 +180,7 @@ export type DiscoveredModel = {
   quantization?: Quantization;
   context?: number;
   bestFor?: string[];
-  status: 'ready' | 'indexed' | 'disabled' | 'missing' | 'unknown';
+  status: "ready" | "indexed" | "disabled" | "missing" | "unknown";
   ramEstimate?: string;
   lastVerifiedAt?: string;
 };
@@ -190,7 +190,7 @@ export type ModelDetectionResult = {
   runtimes: Array<{
     name: string;
     path: string;
-    type: 'api' | 'filesystem' | 'process';
+    type: "api" | "filesystem" | "process";
     exists: boolean;
     status: string;
   }>;

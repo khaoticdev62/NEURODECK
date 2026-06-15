@@ -1,6 +1,6 @@
-import { Bot } from 'lucide-react';
-import { Select } from '../../../../design-system/components/core/Select';
-import type { Agent } from '../../../types/neurodeck';
+import { Bot } from "lucide-react";
+import { Select } from "../../../../design-system/components/core/Select";
+import type { Agent } from "../../../types/neurodeck";
 
 interface AgentSelectorProps {
   agents: Agent[];
@@ -12,7 +12,7 @@ export function AgentSelector({ agents, activeAgentId, onChange }: AgentSelector
   if (agents.length === 0) return null;
 
   const options = agents.map((agent) => ({ value: agent.id, label: agent.name }));
-  const value = agents.some((a) => a.id === activeAgentId) ? activeAgentId : agents[0]?.id ?? '';
+  const value = agents.some((a) => a.id === activeAgentId) ? activeAgentId : (agents[0]?.id ?? "");
 
   return (
     <div className="flex items-center gap-2">

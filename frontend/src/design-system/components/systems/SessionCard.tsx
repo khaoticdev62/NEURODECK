@@ -1,9 +1,9 @@
-import * as React from 'react';
-import { Badge } from '../core/Badge';
+import * as React from "react";
+import { Badge } from "../core/Badge";
 
-if (typeof document !== 'undefined' && !document.getElementById('nd-sessioncard-css')) {
-  const s = document.createElement('style');
-  s.id = 'nd-sessioncard-css';
+if (typeof document !== "undefined" && !document.getElementById("nd-sessioncard-css")) {
+  const s = document.createElement("style");
+  s.id = "nd-sessioncard-css";
   s.textContent = `
   .nd-sessioncard{background:var(--nd-surface-secondary);border:1px solid var(--nd-border-subtle);
     border-radius:var(--nd-radius-md);padding:12px 14px;font-family:var(--nd-font-ui);color:var(--nd-text-primary);
@@ -34,7 +34,7 @@ export interface SessionCardProps {
   model?: string;
   messageCount?: number;
   /** @default 'local' */
-  location?: 'local' | 'remote';
+  location?: "local" | "remote";
   tags?: string[];
   /** Highlight as the current session. @default false */
   active?: boolean;
@@ -49,34 +49,56 @@ export function SessionCard({
   updated,
   model,
   messageCount,
-  location = 'local',
+  location = "local",
   tags = [],
   active = false,
   onOpen,
   actions,
-  className = '',
+  className = "",
 }: SessionCardProps): React.ReactNode {
   return (
     <button
       type="button"
-      className={['nd-sessioncard', active ? 'nd-sessioncard--active' : '', className].filter(Boolean).join(' ')}
+      className={["nd-sessioncard", active ? "nd-sessioncard--active" : "", className]
+        .filter(Boolean)
+        .join(" ")}
       onClick={onOpen}
     >
       <div className="nd-sessioncard__main">
         <div className="nd-sessioncard__title">{title}</div>
         <div className="nd-sessioncard__sub">
           {updated ? <span>{updated}</span> : null}
-          {model ? <><span className="dot" />{model}</> : null}
-          {typeof messageCount === 'number' ? <><span className="dot" />{messageCount} msgs</> : null}
+          {model ? (
+            <>
+              <span className="dot" />
+              {model}
+            </>
+          ) : null}
+          {typeof messageCount === "number" ? (
+            <>
+              <span className="dot" />
+              {messageCount} msgs
+            </>
+          ) : null}
         </div>
         {tags.length ? (
           <div className="nd-sessioncard__tags">
-            <Badge tone={location === 'remote' ? 'info' : 'neutral'} size="sm">{location}</Badge>
-            {tags.map((t) => <Badge key={t} tone="neutral" size="sm">{t}</Badge>)}
+            <Badge tone={location === "remote" ? "info" : "neutral"} size="sm">
+              {location}
+            </Badge>
+            {tags.map((t) => (
+              <Badge key={t} tone="neutral" size="sm">
+                {t}
+              </Badge>
+            ))}
           </div>
         ) : null}
       </div>
-      {actions ? <div className="nd-sessioncard__actions" onClick={(e) => e.stopPropagation()}>{actions}</div> : null}
+      {actions ? (
+        <div className="nd-sessioncard__actions" onClick={(e) => e.stopPropagation()}>
+          {actions}
+        </div>
+      ) : null}
     </button>
   );
 }

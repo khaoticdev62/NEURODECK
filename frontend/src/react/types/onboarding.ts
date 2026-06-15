@@ -1,17 +1,13 @@
-export type OnboardingStatus =
-  | 'not_started'
-  | 'in_progress'
-  | 'completed'
-  | 'skipped';
+export type OnboardingStatus = "not_started" | "in_progress" | "completed" | "skipped";
 
 export type OnboardingStep =
-  | 'welcome'
-  | 'environment'
-  | 'models'
-  | 'preferences'
-  | 'plugins'
-  | 'packages'
-  | 'finish';
+  | "welcome"
+  | "environment"
+  | "models"
+  | "preferences"
+  | "plugins"
+  | "packages"
+  | "finish";
 
 export interface SetupWarning {
   code: string;

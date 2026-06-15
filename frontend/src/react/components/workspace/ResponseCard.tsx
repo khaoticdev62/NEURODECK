@@ -1,6 +1,6 @@
-import { Bot, Copy, RefreshCw, User } from 'lucide-react';
-import { IconButton } from '../../components/primitives/IconButton';
-import type { AIMessage } from '../../types/neurodeck';
+import { Bot, Copy, RefreshCw, User } from "lucide-react";
+import { IconButton } from "../../components/primitives/IconButton";
+import type { AIMessage } from "../../types/neurodeck";
 
 interface ResponseCardProps {
   message: AIMessage;
@@ -10,23 +10,23 @@ interface ResponseCardProps {
 }
 
 function formatTime(iso?: string) {
-  if (!iso) return '';
+  if (!iso) return "";
   try {
     const d = new Date(iso);
-    return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
   } catch {
-    return '';
+    return "";
   }
 }
 
 export function ResponseCard({ message, style, isStreaming, onRegenerate }: ResponseCardProps) {
-  const isUser = message.role === 'user';
+  const isUser = message.role === "user";
   const time = formatTime(message.createdAt);
 
   return (
     <article
-      className={`message group flex animate-view-enter gap-3 ${isUser ? 'flex-row-reverse' : ''}`}
-      aria-label={`${isUser ? 'Your message' : 'AI response'}`}
+      className={`message group flex animate-view-enter gap-3 ${isUser ? "flex-row-reverse" : ""}`}
+      aria-label={`${isUser ? "Your message" : "AI response"}`}
       style={style}
     >
       {/* Avatar */}
@@ -34,20 +34,20 @@ export function ResponseCard({ message, style, isStreaming, onRegenerate }: Resp
         aria-hidden="true"
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border text-xs font-bold shadow-sm ${
           isUser
-            ? 'border-nd-accent-primary/30 bg-nd-accent-primary/15 text-nd-accent-primary'
-            : 'border-nd-border-subtle bg-nd-surface-tertiary text-nd-text-muted'
+            ? "border-nd-accent-primary/30 bg-nd-accent-primary/15 text-nd-accent-primary"
+            : "border-nd-border-subtle bg-nd-surface-tertiary text-nd-text-muted"
         }`}
       >
         {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
       </div>
 
       {/* Bubble */}
-      <div className={`relative flex max-w-[85%] flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+      <div className={`relative flex max-w-[85%] flex-col ${isUser ? "items-end" : "items-start"}`}>
         <div
           className={`relative overflow-hidden rounded-2xl border px-4 py-3 shadow-sm transition ${
             isUser
-              ? 'border-nd-accent-primary/25 bg-gradient-to-br from-nd-accent-primary/10 to-nd-accent-primary/5'
-              : 'border-nd-border-subtle bg-nd-surface-secondary/40'
+              ? "border-nd-accent-primary/25 bg-gradient-to-br from-nd-accent-primary/10 to-nd-accent-primary/5"
+              : "border-nd-border-subtle bg-nd-surface-secondary/40"
           }`}
         >
           {/* Top accent line for AI */}
@@ -62,15 +62,15 @@ export function ResponseCard({ message, style, isStreaming, onRegenerate }: Resp
           <div className="mb-1.5 flex items-center justify-between gap-4">
             <span
               className={`text-[10px] font-semibold uppercase tracking-wider ${
-                isUser ? 'text-nd-accent-primary' : 'text-nd-text-muted'
+                isUser ? "text-nd-accent-primary" : "text-nd-text-muted"
               }`}
             >
-              {isUser ? 'You' : message.provider ?? 'AI'}
+              {isUser ? "You" : (message.provider ?? "AI")}
             </span>
             <span className="text-[10px] tabular-nums text-nd-text-muted/70">
               {time}
-              {message.model ? ` · ${message.model}` : ''}
-              {message.latencyMs ? ` · ${message.latencyMs}ms` : ''}
+              {message.model ? ` · ${message.model}` : ""}
+              {message.latencyMs ? ` · ${message.latencyMs}ms` : ""}
             </span>
           </div>
 
@@ -89,7 +89,7 @@ export function ResponseCard({ message, style, isStreaming, onRegenerate }: Resp
         {/* Hover/focus actions */}
         <div
           className={`mt-1 flex gap-1 opacity-0 transition-opacity duration-fast group-hover:opacity-100 group-focus-within:opacity-100 ${
-            isUser ? 'justify-end' : 'justify-start'
+            isUser ? "justify-end" : "justify-start"
           }`}
         >
           <IconButton

@@ -1,24 +1,24 @@
-import { useState, useCallback } from 'react';
-import { ArrowLeft, Check } from 'lucide-react';
-import { Badge } from '../../../components/primitives/Badge';
-import { Button } from '../../../components/primitives/Button';
-import { IconButton } from '../../../components/primitives/IconButton';
-import { ErrorState } from '../../../components/primitives/ErrorState';
-import { Panel } from '../../../components/primitives/Panel';
-import { DatasetViewer } from '../components/DatasetViewer';
-import { TaskCard } from '../components/TaskCard';
-import { SkillBar } from '../components/SkillBar';
-import { MentorPanel } from '../components/MentorPanel';
-import { labOverallScore, scoreLabel, scoreTone } from '../utils/grading';
-import { SKILL_LABELS } from '../types';
-import { neurodeckApi } from '../../../services/bridgeAdapter';
-import type { AcademyLearnerProgress } from '../../../services/bridgeAdapter';
-import type { Lab, LearnerProgress } from '../types';
-import type { GradeResult } from '../utils/grading';
+import { useState, useCallback } from "react";
+import { ArrowLeft, Check } from "lucide-react";
+import { Badge } from "../../../components/primitives/Badge";
+import { Button } from "../../../components/primitives/Button";
+import { IconButton } from "../../../components/primitives/IconButton";
+import { ErrorState } from "../../../components/primitives/ErrorState";
+import { Panel } from "../../../components/primitives/Panel";
+import { DatasetViewer } from "../components/DatasetViewer";
+import { TaskCard } from "../components/TaskCard";
+import { SkillBar } from "../components/SkillBar";
+import { MentorPanel } from "../components/MentorPanel";
+import { labOverallScore, scoreLabel, scoreTone } from "../utils/grading";
+import { SKILL_LABELS } from "../types";
+import { neurodeckApi } from "../../../services/bridgeAdapter";
+import type { AcademyLearnerProgress } from "../../../services/bridgeAdapter";
+import type { Lab, LearnerProgress } from "../types";
+import type { GradeResult } from "../utils/grading";
 
-const PROGRESS_LS_KEY = 'neurodeck_academy_progress';
+const PROGRESS_LS_KEY = "neurodeck_academy_progress";
 
-type RunnerPhase = 'running' | 'complete' | 'saved';
+type RunnerPhase = "running" | "complete" | "saved";
 
 interface LabRunnerViewProps {
   lab: Lab;
@@ -30,7 +30,7 @@ interface LabRunnerViewProps {
 export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunnerViewProps) {
   const [taskResults, setTaskResults] = useState<Record<string, GradeResult>>({});
   const [currentTaskIdx, setCurrentTaskIdx] = useState(0);
-  const [phase, setPhase] = useState<RunnerPhase>('running');
+  const [phase, setPhase] = useState<RunnerPhase>("running");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -46,7 +46,7 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
   const handleNext = useCallback(() => {
     const nextIdx = currentTaskIdx + 1;
     if (nextIdx >= totalTasks) {
-      setPhase('complete');
+      setPhase("complete");
     } else {
       setCurrentTaskIdx(nextIdx);
     }
@@ -58,7 +58,7 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
     try {
       const findings = lab.tasks.map(
         (t, i) =>
-          `Task ${i + 1} (${t.type}): ${t.prompt.slice(0, 80)}${t.prompt.length > 80 ? '…' : ''}`
+          `Task ${i + 1} (${t.type}): ${t.prompt.slice(0, 80)}${t.prompt.length > 80 ? "…" : ""}`
       );
 
       const payload = {
@@ -74,7 +74,7 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
 
       const result = await neurodeckApi.academy.completeLab(payload);
       onLabComplete(result.updatedProgress as LearnerProgress);
-      setPhase('saved');
+      setPhase("saved");
     } catch (e) {
       // Sidecar unavailable — compute updates locally and persist to localStorage
       try {
@@ -93,9 +93,11 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
         }
         localStorage.setItem(PROGRESS_LS_KEY, JSON.stringify(updated));
         onLabComplete(updated);
-        setPhase('saved');
+        setPhase("saved");
       } catch {
-        setSaveError(e instanceof Error ? e.message : 'Failed to save — check connection to sidecar.');
+        setSaveError(
+          e instanceof Error ? e.message : "Failed to save — check connection to sidecar."
+        );
       }
     } finally {
       setSaving(false);
@@ -103,7 +105,7 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
   }
 
   // ── Saved confirmation ─────────────────────────────────────────────────────
-  if (phase === 'saved') {
+  if (phase === "saved") {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-5 p-8 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-nd-accent-success/30 bg-nd-accent-success/10">
@@ -127,12 +129,7 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
       {/* Runner header */}
       <header className="shrink-0 border-b border-nd-border-subtle bg-nd-surface-base/60 px-4 py-3">
         <div className="flex items-center gap-3">
-          <IconButton
-            size="md"
-            variant="subtle"
-            onClick={onBack}
-            aria-label="Back to Academy"
-          >
+          <IconButton size="md" variant="subtle" onClick={onBack} aria-label="Back to Academy">
             <ArrowLeft className="h-4 w-4 text-nd-text-secondary" aria-hidden="true" />
           </IconButton>
           <div className="min-w-0 flex-1">
@@ -141,14 +138,16 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
               {lab.estimatedMinutes} min · {totalTasks} tasks
             </p>
           </div>
-          <Badge tone="neutral">{lab.type.replace('-', ' ')}</Badge>
+          <Badge tone="neutral">{lab.type.replace("-", " ")}</Badge>
         </div>
 
         {/* Progress bar */}
         <div className="mt-3">
           <div className="mb-1 flex items-center justify-between text-[11px] text-nd-text-muted/70">
             <span>
-              {phase === 'complete' ? 'All tasks complete' : `Task ${currentTaskIdx + 1} of ${totalTasks}`}
+              {phase === "complete"
+                ? "All tasks complete"
+                : `Task ${currentTaskIdx + 1} of ${totalTasks}`}
             </span>
             <span>
               {gradedCount}/{totalTasks} graded
@@ -179,14 +178,14 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
             sections={
               lab.datasetSections && lab.datasetSections.length > 0
                 ? lab.datasetSections
-                : [{ label: 'Dataset', content: lab.datasetStub, format: 'log' }]
+                : [{ label: "Dataset", content: lab.datasetStub, format: "log" }]
             }
             maxHeight={280}
           />
         </section>
 
         {/* Tasks */}
-        {phase === 'running' && currentTask && (
+        {phase === "running" && currentTask && (
           <TaskCard
             key={currentTask.id}
             task={currentTask}
@@ -200,34 +199,34 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
         )}
 
         {/* Completion summary */}
-        {phase === 'complete' && (
+        {phase === "complete" && (
           <section aria-label="Lab results" className="space-y-4">
             {/* Score header */}
             <Panel
               variant="surface"
               className={`${
-                overallScore >= 60
-                  ? 'border-nd-accent-success/20'
-                  : 'border-nd-accent-warning/20'
+                overallScore >= 60 ? "border-nd-accent-success/20" : "border-nd-accent-warning/20"
               }`}
             >
               <div className="flex items-center gap-4 p-4">
                 <div
                   className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border font-mono text-xl font-bold ${
                     overallScore >= 60
-                      ? 'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success'
-                      : 'border-nd-accent-warning/30 bg-nd-accent-warning/10 text-nd-accent-warning'
+                      ? "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
+                      : "border-nd-accent-warning/30 bg-nd-accent-warning/10 text-nd-accent-warning"
                   }`}
                 >
                   {overallScore}
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-nd-text-primary">{scoreLabel(overallScore)}</p>
+                  <p className="text-sm font-bold text-nd-text-primary">
+                    {scoreLabel(overallScore)}
+                  </p>
                   <p className="text-xs text-nd-text-secondary">Overall score</p>
                 </div>
                 <div className="ml-auto">
                   <Badge tone={scoreTone(overallScore)} size="md">
-                    {overallScore >= 60 ? 'Passed' : 'Review'}
+                    {overallScore >= 60 ? "Passed" : "Review"}
                   </Badge>
                 </div>
               </div>
@@ -248,12 +247,12 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
                         <div
                           className={`h-full rounded-full transition-all motion-reduce:transition-none ${
                             s >= 75
-                              ? 'bg-nd-accent-success'
+                              ? "bg-nd-accent-success"
                               : s >= 60
-                              ? 'bg-nd-accent-primary'
-                              : s > 0
-                              ? 'bg-nd-accent-warning'
-                              : 'bg-nd-text-muted/20'
+                                ? "bg-nd-accent-primary"
+                                : s > 0
+                                  ? "bg-nd-accent-warning"
+                                  : "bg-nd-text-muted/20"
                           }`}
                           style={{ width: `${s}%` }}
                         />
@@ -277,8 +276,7 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
                       label={SKILL_LABELS[skill]}
                       score={Math.min(
                         100,
-                        (progress.skillScores[skill] ?? 0) +
-                          Math.round((overallScore / 100) * 25)
+                        (progress.skillScores[skill] ?? 0) + Math.round((overallScore / 100) * 25)
                       )}
                     />
                   ))}
@@ -320,15 +318,15 @@ export function LabRunnerView({ lab, progress, onBack, onLabComplete }: LabRunne
       </div>
 
       {/* Mentor panel — only visible while actively running tasks */}
-      {phase === 'running' && (
+      {phase === "running" && (
         <MentorPanel
           context={[
             `Lab: ${lab.title}`,
-            `Objectives: ${lab.objectives.join('; ')}`,
-            currentTask ? `Current task: ${currentTask.prompt}` : '',
+            `Objectives: ${lab.objectives.join("; ")}`,
+            currentTask ? `Current task: ${currentTask.prompt}` : "",
           ]
             .filter(Boolean)
-            .join('\n')}
+            .join("\n")}
           greeting={`Ready when you are. What's your question about "${lab.title}"?`}
         />
       )}
