@@ -76,7 +76,8 @@ jobs:
           name: steamdeck-linux-package
           path: .
       - run: chmod +x scripts/steamdeck/*.sh
-      - run: xvfb-run -a bash scripts/steamdeck/validate-runtime.sh --binary dist-electron/linux-unpacked/NEURODECK
+      - run: ls -laR dist-electron || true
+      - run: xvfb-run -a bash scripts/steamdeck/validate-runtime.sh --binary dist-electron/linux-unpacked/neurodeck
 
   build-windows-artifact:
     name: Build Windows Proton Artifact
@@ -117,6 +118,7 @@ jobs:
           name: steamdeck-windows-artifact
           path: .
       - run: chmod +x scripts/steamdeck/*.sh
+      - run: ls -laR dist-electron || true
       - run: |
           set +e
           bash scripts/steamdeck/validate-proton.sh --windows-artifact dist-electron/win-unpacked

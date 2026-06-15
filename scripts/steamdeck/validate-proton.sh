@@ -17,6 +17,14 @@ if [[ -z "$windows_artifact" ]]; then
   windows_artifact="$PROJECT_ROOT/dist-electron/win-unpacked"
 fi
 
+# Handle artifacts uploaded from Windows runners where backslashes may be preserved
+if [[ ! -d "$windows_artifact" && ! -f "$windows_artifact" ]]; then
+  alt_artifact="$(find . -type d -name 'win-unpacked' 2>/dev/null | head -n 1 || true)"
+  if [[ -n "$alt_artifact" ]]; then
+    windows_artifact="$alt_artifact"
+  fi
+fi
+
 [[ -d "$windows_artifact" || -f "$windows_artifact" ]] || { steamdeck_write_report "validate-proton" "blocked" "Windows artifact missing." "$windows_artifact"; exit "$STEAMDECK_EXIT_MISSING_ARTIFACT"; }
 
 steam_root="${HOME}/.local/share/Steam"

@@ -17,6 +17,14 @@ if [[ -z "$binary" ]]; then
   binary="$(steamdeck_launcher_target)" || binary="$NEURODECK_INSTALL_BIN_DIR/neurodeck"
 fi
 
+# Allow Electron executableName override: fall back to lowercase neurodeck
+if [[ ! -x "$binary" ]]; then
+  fallback_binary="${binary%/*}/neurodeck"
+  if [[ -x "$fallback_binary" ]]; then
+    binary="$fallback_binary"
+  fi
+fi
+
 [[ -x "$binary" ]] || { steamdeck_write_report "validate-runtime" "blocked" "Launcher not found." "$binary"; exit "$STEAMDECK_EXIT_MISSING_ARTIFACT"; }
 
 log_file="$REPORT_ROOT/validate-runtime.log"

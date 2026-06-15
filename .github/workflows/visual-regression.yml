@@ -221,8 +221,7 @@ jobs:
           // Diff images are uploaded as artifacts and a comment is posted when differences exist.
           EOF
           node compare.mjs
-          node compare.js
-          if [ -f "pr/e2e/.regression/diff/.has_differences" ]; then
+          if [ -f ".regression/diff/.has_differences" ]; then
             echo "has_differences=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_differences=false" >> "$GITHUB_OUTPUT"
