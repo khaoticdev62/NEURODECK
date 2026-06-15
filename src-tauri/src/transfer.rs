@@ -76,10 +76,14 @@ impl TransferState {
 pub struct SharedTransferState(pub Arc<Mutex<TransferState>>);
 
 fn sanitize_relative_transfer_path(relative_path: &str) -> Result<PathBuf, String> {
-    let candidate = Path::new(relative_path);
-    if candidate.as_os_str().is_empty() {
+    if relative_path.is_empty() {
         return Err("Transfer path was empty".to_string());
     }
+
+    // Normalize Windows-style separators so cross-platform paths are parsed
+    // consistently and cannot smuggle absolute/prefix components on Unix.
+    let normalized = relative_path.replace('\\', "/");
+    let candidate = Path::new(&normalized);
 
     let mut sanitized = PathBuf::new();
     for component in candidate.components() {
