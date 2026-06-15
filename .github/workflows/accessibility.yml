@@ -32,7 +32,9 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
+          cd e2e && npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
@@ -103,7 +105,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: |
+          npm ci
+          cd e2e && npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run frontend:build
       - working-directory: e2e

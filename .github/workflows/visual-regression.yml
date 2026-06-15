@@ -33,7 +33,9 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: |
+          npm ci
+          cd e2e && npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run frontend:build
       - name: Capture baseline screenshots
@@ -93,8 +95,8 @@ jobs:
 
       - name: Install dependencies and Playwright
         run: |
-          cd pr && npm ci
-          cd ../baseline && npm ci
+          cd pr && npm ci && cd e2e && npm ci
+          cd ../../baseline && npm ci && cd e2e && npm ci
           npx playwright install --with-deps chromium
 
       - name: Build PR and capture screenshots
@@ -111,7 +113,7 @@ jobs:
           const routes = process.env.SCREENSHOT_ROUTES.split(' ').filter(Boolean);
 
           (async () => {
-            const server = require('child_process').spawn('python3', ['-m', 'http.server', '4173', '--directory', '../frontend/dist'], { stdio: 'inherit' });
+            const server = require('child_process').spawn('python3', ['-c', "import http.server, socketserver, pathlib\nclass SPAHandler(http.server.SimpleHTTPRequestHandler):\n    def __init__(self, *args, **kwargs):\n        super().__init__(*args, directory='../frontend/dist', **kwargs)\n    def do_GET(self):\n        target = pathlib.Path('../frontend/dist') / self.path.lstrip('/')\n        if not target.exists():\n            self.path = '/index.html'\n        return super().do_GET()\nwith socketserver.TCPServer(('', 4173), SPAHandler) as httpd:\n    httpd.serve_forever()"], { stdio: 'inherit' });
             await new Promise(r => setTimeout(r, 3000));
 
             const browser = await chromium.launch();
