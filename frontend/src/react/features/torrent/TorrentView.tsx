@@ -630,13 +630,8 @@ function InspectorRow({ label, value }: { label: string; value: string }) {
 
 function MiniBtn({ icon: Icon, label, onClick }: { icon: React.ElementType; label: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-1 rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 px-2 py-1 text-[10px] text-nd-text-muted transition-colors duration-fast hover:bg-nd-surface-secondary hover:text-nd-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
-      title={label}
-    >
+    <Button size="xs" variant="ghost" onClick={onClick}>
       <Icon className="h-3 w-3" aria-hidden="true" /> {label}
-    </button>
+    </Button>
   );
 }

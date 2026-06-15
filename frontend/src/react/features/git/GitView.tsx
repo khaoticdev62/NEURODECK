@@ -351,12 +351,11 @@ export function GitView() {
         {/* Right: Branches */}
         <Panel className="w-48 shrink-0 overflow-auto p-3">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">Branches</h3>
-          <div className="mt-2 space-y-1" role="list" aria-label="Branch list">
+          <ul className="mt-2 space-y-1" aria-label="Branch list">
             {branches.map((b) => (
+              <li key={b.name}>
               <button
-                key={b.name}
                 type="button"
-                role="listitem"
                 onClick={async () => {
                   setMutating(true);
                   try {
@@ -380,11 +379,12 @@ export function GitView() {
                 <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
                 <span className="truncate">{b.name}</span>
               </button>
+              </li>
             ))}
             {!branches.length && (
-              <p className="py-2 text-center text-xs text-nd-text-muted/70">No branches</p>
+              <li><p className="py-2 text-center text-xs text-nd-text-muted/70">No branches</p></li>
             )}
-          </div>
+          </ul>
         </Panel>
       </div>
     </div>

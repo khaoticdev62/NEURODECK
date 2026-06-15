@@ -446,13 +446,13 @@ export function SettingsView({
                     title="Theme settings unavailable."
                     description="Theme data could not be loaded. Reset appearance to restore defaults."
                     action={
-                      <button
-                        type="button"
+                      <Button
+                        variant="secondary"
+                        icon={RotateCcw}
                         onClick={() => void resetToDefaults()}
-                        className="inline-flex items-center gap-2 rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-4 py-2 text-sm font-semibold text-nd-accent-primary transition hover:bg-nd-accent-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
                       >
-                        <RotateCcw className="h-4 w-4" aria-hidden="true" /> Reset Appearance
-                      </button>
+                        Reset Appearance
+                      </Button>
                     }
                   />
                 </div>

@@ -1,6 +1,8 @@
 ﻿import { useCallback, useEffect, useState } from 'react';
 import { Lock, Server, Save, Trash2, Plug, AlertTriangle } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
+import { Button } from '../../components/primitives/Button';
+import { IconButton } from '../../components/primitives/IconButton';
 import { SSHTerminal, type SSHConnectionConfig } from './SSHTerminal';
 
 export function SSHView() {
@@ -178,29 +180,30 @@ export function SSHView() {
         )}
 
         <div className="flex gap-2 pt-2">
-          <button
+          <Button
             id="ssh-connect-btn"
-            type="button"
+            variant="primary"
+            icon={Plug}
+            className="flex-1"
             onClick={connect}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-accent-primary/30 bg-nd-accent-primary/10 px-4 py-2 text-sm font-medium text-nd-accent-primary hover:bg-nd-accent-primary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
           >
-            <Plug className="h-4 w-4" aria-hidden="true" /> Connect
-          </button>
-          <button
-            type="button"
-            onClick={saveCredential}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-nd-accent-success/30 bg-nd-accent-success/10 px-4 py-2 text-sm font-medium text-nd-accent-success hover:bg-nd-accent-success/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-success/40"
+            Connect
+          </Button>
+          <Button
+            variant="secondary"
+            icon={Save}
+            className="flex-1"
+            onClick={() => void saveCredential()}
           >
-            <Save className="h-4 w-4" aria-hidden="true" /> {saved ? 'Saved!' : 'Save Profile'}
-          </button>
-          <button
-            type="button"
-            onClick={clearForm}
+            {saved ? 'Saved!' : 'Save Profile'}
+          </Button>
+          <IconButton
             aria-label="Clear SSH credentials"
-            className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-error/40"
+            variant="ghost"
+            onClick={clearForm}
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
       </div>
 
