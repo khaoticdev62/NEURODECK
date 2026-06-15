@@ -1,4 +1,5 @@
-import { Bot, Copy, RefreshCw, User } from 'lucide-react';
+import { useState } from 'react';
+import { Bot, Check, Copy, RefreshCw, User } from 'lucide-react';
 import { IconButton } from '../../components/primitives/IconButton';
 import type { AIMessage } from '../../types/neurodeck';
 
@@ -22,6 +23,17 @@ function formatTime(iso?: string) {
 export function ResponseCard({ message, style, isStreaming, onRegenerate }: ResponseCardProps) {
   const isUser = message.role === 'user';
   const time = formatTime(message.createdAt);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Clipboard API unavailable in this context
+    }
+  };
 
   return (
     <article
@@ -49,6 +61,7 @@ export function ResponseCard({ message, style, isStreaming, onRegenerate }: Resp
               ? 'border-nd-accent-primary/25 bg-gradient-to-br from-nd-accent-primary/10 to-nd-accent-primary/5'
               : 'border-nd-border-subtle bg-nd-surface-secondary/40'
           }`}
+          aria-busy={isStreaming ? 'true' : undefined}
         >
           {/* Top accent line for AI */}
           {!isUser && (
@@ -67,11 +80,14 @@ export function ResponseCard({ message, style, isStreaming, onRegenerate }: Resp
             >
               {isUser ? 'You' : message.provider ?? 'AI'}
             </span>
-            <span className="text-[10px] tabular-nums text-nd-text-muted/70">
+            <time
+              dateTime={message.createdAt ?? ''}
+              className="text-[10px] tabular-nums text-nd-text-muted/70"
+            >
               {time}
               {message.model ? ` · ${message.model}` : ''}
               {message.latencyMs ? ` · ${message.latencyMs}ms` : ''}
-            </span>
+            </time>
           </div>
 
           {/* Content */}
@@ -95,11 +111,11 @@ export function ResponseCard({ message, style, isStreaming, onRegenerate }: Resp
           <IconButton
             size="sm"
             variant="ghost"
-            aria-label="Copy message"
-            title="Copy message"
-            onClick={() => navigator.clipboard.writeText(message.content)}
+            aria-label={copied ? 'Copied!' : 'Copy message'}
+            title={copied ? 'Copied!' : 'Copy message'}
+            onClick={handleCopy}
           >
-            <Copy className="h-3.5 w-3.5" />
+            {copied ? <Check className="h-3.5 w-3.5 text-nd-accent-success" /> : <Copy className="h-3.5 w-3.5" />}
           </IconButton>
           {!isUser && (
             <IconButton
