@@ -69,6 +69,9 @@ tree-sitter-bash = "0.25.1"
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.24"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+nix = { version = "0.30", features = ["fs"] }
+
 [profile.dev]
 # Mitigate Windows PDB limit (LNK1318) by reducing debug info granularity
 # in dev/test builds. Use `debug = 2` only when actively debugging.

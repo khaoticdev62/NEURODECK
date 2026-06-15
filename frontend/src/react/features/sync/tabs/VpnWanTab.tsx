@@ -70,6 +70,7 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
           <div className="grid gap-3 lg:grid-cols-[1fr_100px_1fr_auto] lg:items-end">
             <TextInput
               label="Host"
+              aria-label="VPN peer host"
               value={host}
               onChange={(e) => setHost(e.target.value)}
               placeholder="VPN IP or hostname"
@@ -84,6 +85,7 @@ export function VpnWanTab({ peers, onSendToPeer, onError, onPeerAdded }: Props) 
             />
             <TextInput
               label="Alias"
+              aria-label="VPN peer alias"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="Optional"

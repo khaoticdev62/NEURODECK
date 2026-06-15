@@ -535,14 +535,17 @@ async fn call_tool(
                 let output = Arc::new(std::sync::Mutex::new(Vec::<String>::new()));
                 let output_clone = output.clone();
                 if let Ok(print_fn) = lua.create_function(move |_, args: mlua::MultiValue| {
-                    let parts: Vec<String> = args.iter().map(|v| match v {
-                        mlua::Value::String(s) => s.to_str().unwrap_or("").to_string(),
-                        mlua::Value::Integer(i) => i.to_string(),
-                        mlua::Value::Number(n) => n.to_string(),
-                        mlua::Value::Boolean(b) => b.to_string(),
-                        mlua::Value::Nil => "nil".to_string(),
-                        _ => String::new(),
-                    }).collect();
+                    let parts: Vec<String> = args
+                        .iter()
+                        .map(|v| match v {
+                            mlua::Value::String(s) => s.to_str().unwrap_or("").to_string(),
+                            mlua::Value::Integer(i) => i.to_string(),
+                            mlua::Value::Number(n) => n.to_string(),
+                            mlua::Value::Boolean(b) => b.to_string(),
+                            mlua::Value::Nil => "nil".to_string(),
+                            _ => String::new(),
+                        })
+                        .collect();
                     output_clone.lock().unwrap().push(parts.join("\t"));
                     Ok(())
                 }) {
@@ -917,7 +920,7 @@ fn well_known_mcp_body(port: u16) -> String {
 /// Hard cap at 4 MiB to protect against DoS.
 async fn read_http_request(stream: &mut tokio::net::TcpStream) -> Option<String> {
     const MAX_BODY: usize = 4 * 1024 * 1024; // 4 MiB
-    const HEADER_BUF: usize = 16 * 1024;     // 16 KiB header buffer
+    const HEADER_BUF: usize = 16 * 1024; // 16 KiB header buffer
 
     // Read until we have a complete header section (\r\n\r\n).
     let mut header_buf = vec![0u8; HEADER_BUF];
@@ -928,7 +931,10 @@ async fn read_http_request(stream: &mut tokio::net::TcpStream) -> Option<String>
             Ok(0) | Err(_) => return None,
             Ok(n) => {
                 header_len += n;
-                if header_buf[..header_len].windows(4).any(|w| w == b"\r\n\r\n") {
+                if header_buf[..header_len]
+                    .windows(4)
+                    .any(|w| w == b"\r\n\r\n")
+                {
                     break;
                 }
                 if header_len >= HEADER_BUF {

@@ -91,6 +91,10 @@ count_loose_root_files() {
     -not -name "electron-builder.yml" \
     -not -name "tsconfig.json" \
     -not -name "vitest.config.ts" \
+    -not -name "ui-checkpoints.json" \
+    -not -name "NEURODECK_DEEP_COSMETIC_UI_ENHANCEMENT_AAAA_PASS_PROMPT.md" \
+    -not -name "NEURODECK_E2E_UI_UX_Audit_Cleanup_Refactor_Prompt.md" \
+    -not -name "NEURODECK_Onboarding_Wizard_Upgrade_PRD.md" \
     | wc -l | tr -d ' ')
   echo "${count:-0}"
 }
@@ -158,6 +162,10 @@ PRESERVE=(
   ".prettierrc"
   "tsconfig.json"
   "vitest.config.ts"
+  "ui-checkpoints.json"
+  "NEURODECK_DEEP_COSMETIC_UI_ENHANCEMENT_AAAA_PASS_PROMPT.md"
+  "NEURODECK_E2E_UI_UX_Audit_Cleanup_Refactor_Prompt.md"
+  "NEURODECK_Onboarding_Wizard_Upgrade_PRD.md"
   "neurodeck_win_release.zip"
   "neurodeck_installer.exe"
   "neurodeck_1.3.0_amd64.AppImage"

@@ -58,6 +58,10 @@ jobs:
       security-events: write
     steps:
       - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libudev-dev libssl-dev pkg-config
       - uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript, rust
@@ -92,3 +96,31 @@ jobs:
           base: master
           head: HEAD
           extra_args: --debug --only-verified
+
+  # ── Quality Gates ────────────────────────────────────────────────────────
+  quality-gates:
+    name: Production Quality Gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Verify no production mocks
+        run: npm run verify:no-production-mocks
+      - name: Verify architecture boundaries
+        run: npm run verify:architecture-boundaries
+      - name: Verify backend security
+        run: npm run verify:security
+      - name: npm audit fix diff (informational)
+        run: |
+          npm audit --audit-level=moderate > npm-audit-report.txt || true
+          npm audit fix --dry-run --json > npm-audit-fix-dryrun.json 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: security-quality-gate-artifacts
+          path: |
+            npm-audit-report.txt
+            npm-audit-fix-dryrun.json

@@ -212,6 +212,7 @@ dependencies = [
  "mlua",
  "neurodeck_core",
  "neurodeck_infrastructure",
+ "nix 0.30.1",
  "pbkdf2",
  "portable-pty",
  "rand 0.8.6",

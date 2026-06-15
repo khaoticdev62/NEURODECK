@@ -1,0 +1,127 @@
+name: Accessibility & UI Quality
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "frontend/src/**"
+      - "electron/**"
+      - "frontend/public/**"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "frontend/src/**"
+      - "electron/**"
+      - "frontend/public/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  a11y-axe:
+    name: axe-core accessibility scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build frontend
+        run: npm run frontend:build
+
+      - name: Start static server
+        run: |
+          python3 -m http.server 4173 --directory frontend/dist &
+          sleep 3
+
+      - name: Run axe-core scan
+        working-directory: e2e
+        run: |
+          cat > a11y-scan.spec.js <<'EOF'
+          const { test, expect } = require('@playwright/test');
+          const { injectAxe, getViolations } = require('@axe-core/playwright');
+
+          const routes = ['/', '/settings', '/chat', '/canvas', '/terminal'];
+
+          for (const route of routes) {
+            test(`a11y scan for ${route}`, async ({ page }) => {
+              await page.goto(`http://localhost:4173${route}`);
+              await page.waitForLoadState('networkidle');
+              await injectAxe(page);
+              const violations = await getViolations(page, null, {
+                runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa'],
+                resultTypes: ['violations'],
+              });
+              const criticalSerious = violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
+              expect(criticalSerious, `Found ${criticalSerious.length} critical/serious a11y violations on ${route}`).toHaveLength(0);
+            });
+          }
+          EOF
+          npx playwright test a11y-scan.spec.js
+
+  contrast-check:
+    name: Theme contrast check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run verify:theme-accessibility
+
+  keyboard-nav:
+    name: Keyboard navigation smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run frontend:build
+      - working-directory: e2e
+        run: |
+          cat > keyboard-nav.spec.js <<'EOF'
+          const { test, expect } = require('@playwright/test');
+
+          test('primary chrome is keyboard navigable', async ({ page }) => {
+            await page.goto('http://localhost:4173/');
+            await page.waitForLoadState('networkidle');
+            await page.keyboard.press('Tab');
+            const first = await page.evaluate(() => document.activeElement?.tagName);
+            expect(first).not.toBe('BODY');
+            // Ensure at least one interactive element receives focus within 10 tabs.
+            let focused = false;
+            for (let i = 0; i < 10; i++) {
+              const tag = await page.evaluate(() => document.activeElement?.tagName);
+              const clickable = await page.evaluate(() => {
+                const el = document.activeElement;
+                return el && (el.tagName === 'BUTTON' || el.tagName === 'A' || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
+              });
+              if (clickable) {
+                focused = true;
+                break;
+              }
+              await page.keyboard.press('Tab');
+            }
+            expect(focused).toBe(true);
+          });
+          EOF
+          python3 -m http.server 4173 --directory ../frontend/dist &
+          sleep 3
+          npx playwright test keyboard-nav.spec.js

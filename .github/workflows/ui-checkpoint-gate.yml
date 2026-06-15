@@ -1,0 +1,127 @@
+name: UI Checkpoint Gate
+
+on:
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "frontend/src/**/*.css"
+      - "frontend/src/**/*.tsx"
+      - "frontend/src/**/*.ts"
+      - "electron/**/*.css"
+      - "electron/**/*.js"
+      - "frontend/public/**/*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  checkpoint-exists:
+    name: Verify UI checkpoint exists
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Find checkpoint tag for this PR
+        id: find
+        run: |
+          PR="${{ github.event.pull_request.number }}"
+          BRANCH="${{ github.head_ref }}"
+          TAG=""
+
+          # Prefer a tag matching the PR number.
+          if [ -n "$PR" ]; then
+            TAG="$(git tag -l "ui-checkpoint-*-pr${PR}" | sort -V | tail -n 1)"
+          fi
+
+          # Fallback to a tag matching the branch name.
+          if [ -z "$TAG" ] && [ -n "$BRANCH" ]; then
+            SAFE_BRANCH="$(echo "$BRANCH" | sed 's/[^a-zA-Z0-9_-]/-/g')"
+            TAG="$(git tag -l "ui-checkpoint-${SAFE_BRANCH}-*" | sort -V | tail -n 1)"
+          fi
+
+          # Fallback to latest ui-checkpoint tag.
+          if [ -z "$TAG" ]; then
+            TAG="$(git tag -l "ui-checkpoint-*" | sort -V | tail -n 1)"
+          fi
+
+          if [ -n "$TAG" ]; then
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+            echo "✅ Found UI checkpoint tag: $TAG"
+          else
+            echo "❌ No UI checkpoint tag found. Run \`npm run checkpoint:ui\` locally and push the tag."
+            exit 1
+          fi
+
+      - name: Verify checkpoint is in ui-checkpoints.json
+        run: |
+          TAG="${{ steps.find.outputs.tag }}"
+          if [ -f ui-checkpoints.json ] && grep -q "\"$TAG\"" ui-checkpoints.json; then
+            echo "✅ Checkpoint recorded in ui-checkpoints.json"
+          else
+            echo "⚠️ Checkpoint tag exists but is not recorded in ui-checkpoints.json. Run the checkpoint script to update the manifest."
+            exit 1
+          fi
+
+  checkpoint-builds:
+    name: Verify checkpoint still builds
+    runs-on: ubuntu-latest
+    needs: checkpoint-exists
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Build current PR
+        run: |
+          npm ci
+          npm run frontend:build
+          npm run build:main
+          find frontend/dist -type f -exec sha256sum {} \; | sort > current-dist.sha256
+
+      - name: Build checkpoint tag
+        run: |
+          git stash --all || true
+          git checkout "${{ needs.checkpoint-exists.outputs.tag }}"
+          npm ci
+          npm run frontend:build
+          npm run build:main
+          find frontend/dist -type f -exec sha256sum {} \; | sort > checkpoint-dist.sha256
+
+      - name: Compare build outputs
+        run: |
+          git diff --no-index checkpoint-dist.sha256 current-dist.sha256 > dist-diff.txt || true
+          DIFF_COUNT="$(grep -c '^[-+]' dist-diff.txt || echo 0)"
+          echo "Build diff lines: $DIFF_COUNT"
+          if [ "$DIFF_COUNT" -gt 100 ]; then
+            echo "❌ Checkpoint build output differs significantly from PR. The checkpoint may be stale."
+            head -n 50 dist-diff.txt
+            exit 1
+          fi
+          echo "✅ Checkpoint build is consistent with PR."
+
+  checkpoint-preview:
+    name: Post rollback preview command
+    runs-on: ubuntu-latest
+    needs: [checkpoint-exists, checkpoint-builds]
+    if: always() && needs.checkpoint-exists.result == 'success'
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ needs.checkpoint-exists.outputs.tag }}';
+            const body = `🛡️ UI Checkpoint Gate\n\nCheckpoint tag: \`${tag}\`\n\nTo preview the rollback locally:\n\`\`\`bash\nnpm run rollback:ui:preview ${tag}\n\`\`\`\n\nTo apply the rollback locally:\n\`\`\`bash\nnpm run rollback:ui:apply ${tag}\n\`\`\``;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            }).catch(() => {});

@@ -199,6 +199,62 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ---
 
+## GitOps, CI/CD, and UI Rollback
+
+NEURODECK uses a branch-protected, PR-only GitOps model. All contributors (human and agent) must follow it.
+
+### Branch Policy
+
+- Primary branch: `master` (existing convention). `main` is treated as an optional mirror.
+- Direct pushes to `master`, `main`, or `release/*` are blocked by `.github/workflows/branch-policy.yml`.
+- Allowed branch prefixes: `agent/`, `feature/`, `ui/`, `bugfix/`, `hotfix/`, `docs/`, `kfms/`, `release/`.
+- PR titles must start with `[UI]`, `[AGENT]`, `[CI]`, `[HOTFIX]`, `[BUGFIX]`, `[FEATURE]`, `[DOCS]`, `[KFMS]`, or `[RELEASE]`.
+
+### Local Preflight
+
+Run before every commit/push:
+
+```bash
+npm run preflight
+```
+
+This checks branch name, staged paths, secrets, and KFMS metadata in <30 seconds.
+
+### UI Checkpoints
+
+Before a large UI pass, create a checkpoint:
+
+```bash
+npm run checkpoint:ui -- --name phase-3-aaaa --description "Baseline before Phase 3 UI pass"
+```
+
+This builds, tags (`ui-checkpoint-phase-3-aaaa`), and appends metadata to `ui-checkpoints.json`.
+
+To inspect or apply a rollback:
+
+```bash
+npm run rollback:ui:list
+npm run rollback:ui:preview ui-checkpoint-phase-3-aaaa
+npm run rollback:ui:apply ui-checkpoint-phase-3-aaaa
+```
+
+Rollbacks only touch tracked UI source/build files; user data in `~/.config/neurodeck/` is never modified.
+
+### Agent PRs
+
+Agent-driven PRs must include an `## Agent report` section (see `.github/PULL_REQUEST_TEMPLATE.md`) and must not modify protected paths such as `.github/workflows/*`, `infra/meta/meta.json`, `infra/telemetry/health.json`, or lockfiles without explicit human approval.
+
+### Emergency Release Rollback
+
+If a published release must be retracted, use the **Emergency Rollback** GitHub Actions workflow. It creates a `rollback/<tag>` branch, updates `health.json` to `rolled-back`, and drafts a rollback release for human review.
+
+See:
+- `docs/AGENT-GITOPS.md` for full agent rules.
+- `docs/UI-ROLLBACK.md` for the UI checkpoint system.
+- `docs/CI-CD-PIPELINE.md` for workflow documentation.
+
+---
+
 ## Repository Structure
 
 The project follows the structure documented in `neurodeck-production-package/docs/07_CI_CD_Setup.md`. Key locations:

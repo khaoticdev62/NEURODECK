@@ -52,6 +52,7 @@ export function HistoryTab({ transfers, onRetry, onClearDone }: Props) {
             size="xs"
             variant="danger"
             icon={Trash2}
+            aria-label="Clear history"
             onClick={() => setConfirmClear(true)}
           >
             Clear
