@@ -15,5 +15,22 @@
     ],
     "buildHash": "baseline",
     "rolledBack": false
+  },
+  {
+    "tag": "ui-checkpoint-npm-onboarding-installer-pr50",
+    "sha": "d6f2bec14413ed251854ce584f053479c43a348b",
+    "branch": "ui/npm-onboarding-installer",
+    "timestamp": "20260615-155807",
+    "description": "NPM",
+    "protectedPaths": [
+      "frontend/src/**/*.css",
+      "frontend/src/**/*.tsx",
+      "frontend/src/**/*.ts",
+      "electron/**/*.css",
+      "electron/**/*.js",
+      "frontend/public/**/*"
+    ],
+    "buildHash": "da41b148b8cdaf84c4c9bb8a721b61793806634014790712a49b2885bab68190",
+    "rolledBack": false
   }
 ]
