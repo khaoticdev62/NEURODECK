@@ -167,6 +167,7 @@ jobs:
           node capture.js
 
       - name: Compare with pixelmatch
+        id: compare
         run: |
           cd pr/e2e
           npm install pixelmatch pngjs
@@ -182,7 +183,7 @@ jobs:
           fs.mkdirSync(diffDir, { recursive: true });
 
           const files = fs.readdirSync(baselineDir).filter(f => f.endsWith('.png'));
-          let failed = false;
+          let diffCount = 0;
           for (const file of files) {
             const basePath = path.join(baselineDir, file);
             const prPath = path.join(prDir, file);
@@ -194,7 +195,7 @@ jobs:
             const pr = PNG.sync.read(fs.readFileSync(prPath));
             if (base.width !== pr.width || base.height !== pr.height) {
               console.log(`❌ ${file}: dimensions changed (${base.width}x${base.height} vs ${pr.width}x${pr.height})`);
-              failed = true;
+              diffCount++;
               continue;
             }
             const diff = new PNG({ width: base.width, height: base.height });
@@ -205,22 +206,36 @@ jobs:
             fs.writeFileSync(diffPath, PNG.sync.write(diff));
             console.log(`${file}: ${(ratio * 100).toFixed(3)}% pixels differ`);
             if (ratio > 0.001) {
-              failed = true;
+              diffCount++;
             }
           }
-          process.exit(failed ? 1 : 0);
+          if (diffCount > 0) {
+            console.log(`⚠️ ${diffCount} screenshot(s) differ from master baseline. Review the diff artifact before merging.`);
+            fs.writeFileSync(path.join(diffDir, '.has_differences'), '');
+          } else {
+            console.log('✅ No visual differences detected against master baseline.');
+          }
+          // Informational only: PRs with intentional UI changes will diverge from master.
+          // Diff images are uploaded as artifacts and a comment is posted when differences exist.
+          process.exit(0);
           EOF
           node compare.js
+          if [ -f "pr/e2e/.regression/diff/.has_differences" ]; then
+            echo "has_differences=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_differences=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Upload regression artifacts
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: visual-regression-diff
           path: pr/e2e/.regression/diff/*.png
+          if-no-files-found: ignore
 
-      - name: Comment PR on failure
-        if: failure()
+      - name: Comment PR on differences
+        if: steps.compare.outputs.has_differences == 'true'
         uses: actions/github-script@v7
         with:
           script: |
