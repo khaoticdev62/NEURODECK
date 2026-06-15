@@ -40,9 +40,21 @@ jobs:
       - name: Build frontend
         run: npm run frontend:build
 
-      - name: Start static server
+      - name: Start static server (SPA fallback)
         run: |
-          python3 -m http.server 4173 --directory frontend/dist &
+          python3 - <<'PY' &
+          import http.server, socketserver, pathlib
+          class SPAHandler(http.server.SimpleHTTPRequestHandler):
+              def __init__(self, *args, **kwargs):
+                  super().__init__(*args, directory='frontend/dist', **kwargs)
+              def do_GET(self):
+                  target = pathlib.Path('frontend/dist') / self.path.lstrip('/')
+                  if not target.exists():
+                      self.path = '/index.html'
+                  return super().do_GET()
+          with socketserver.TCPServer(('', 4173), SPAHandler) as httpd:
+              httpd.serve_forever()
+          PY
           sleep 3
 
       - name: Run axe-core scan
