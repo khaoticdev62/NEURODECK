@@ -188,7 +188,7 @@ export const CanvasWallpaperRenderer: React.FC<CanvasWallpaperRendererProps> = (
   }, [wallpaperId, isPaused, performanceTier]);
 
   const draw = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
-    const ac = resolvedTokens?.color?.accent?.primary ?? "#00F0FF";
+    const ac = resolvedTokens?.color?.accent?.primary ?? "#5EEBFF";
     const sc = resolvedTokens?.color?.state?.success ?? "#00FF88";
 
     if (wallpaperId === "terminal_rainfield") {
