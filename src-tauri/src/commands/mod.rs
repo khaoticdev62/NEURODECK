@@ -6452,7 +6452,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     db.list_all()
                         .unwrap_or_default()
                         .into_iter()
-                        .filter_map(|r| r.metadata.get("path").cloned().map(|p| p))
+                        .filter_map(|r| r.metadata.get("path").cloned())
                         .fold(std::collections::HashMap::new(), |mut map, path| {
                             // Find which indexed dir this path belongs to
                             *map.entry(path).or_insert(0) += 1;

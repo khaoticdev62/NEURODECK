@@ -205,7 +205,7 @@ pub fn list_packages() -> Result<Vec<ManagedPackage>, String> {
             // We only auto-add if we can resolve them to a real package directory.
             if let Ok(meta) = std::fs::symlink_metadata(entry.path()) {
                 if meta.file_type().is_symlink() {
-                    if let Ok(target) = std::fs::read_link(&entry.path()) {
+                    if let Ok(target) = std::fs::read_link(entry.path()) {
                         if let Some(pkg_name) = infer_package_from_binary_path(&target) {
                             if !manifest.iter().any(|p| p.name == pkg_name) {
                                 manifest.push(ManagedPackage {

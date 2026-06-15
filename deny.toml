@@ -33,6 +33,7 @@ allow = [
     "Zlib",
     "BSL-1.0",
     "OpenSSL",
+    "LicenseRef-NEURODECK-EULA",
 ]
 confidence-threshold = 0.8
 
