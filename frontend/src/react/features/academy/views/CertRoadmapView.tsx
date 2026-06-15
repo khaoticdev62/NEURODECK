@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { ExternalLink, ChevronDown, ChevronUp, CheckCircle2, Lock, Unlock, BookOpen } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
 import { Button } from '../../../components/primitives/Button';
@@ -33,7 +33,7 @@ function DiffBadge({ diff }: { diff: ThmRoom['difficulty'] }) {
 
 function ThmRoomCard({ room }: { room: ThmRoom }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-base/40 px-3 py-2.5 transition hover:border-nd-accent/20">
+    <div className="flex items-start gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-base/40 px-3 py-2.5 transition hover:border-nd-accent-primary/20">
       <div className="min-w-0 flex-1">
         <div className="mb-0.5 flex items-center gap-2">
           <p className="truncate text-[12px] font-semibold text-nd-text-primary">{room.title}</p>

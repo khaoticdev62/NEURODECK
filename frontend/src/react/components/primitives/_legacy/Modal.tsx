@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef } from 'react';
+﻿import { type ReactNode, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { FocusTrap } from '../../../../focus-trap.js';
 
@@ -85,7 +85,7 @@ export function Modal({
         {title && (
           <div className="flex items-start justify-between gap-3 border-b border-nd-text-muted/10 px-5 py-4">
             <div>
-              <h2 id="modal-title" className="text-sm font-semibold text-nd-text">{title}</h2>
+              <h2 id="modal-title" className="text-sm font-semibold text-nd-text-primary">{title}</h2>
               {description && (
                 <p id="modal-desc" className="mt-0.5 text-xs text-nd-text-muted">{description}</p>
               )}
@@ -94,7 +94,7 @@ export function Modal({
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg p-1 text-nd-text-muted transition-colors hover:bg-nd-surface-raised hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+              className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-lg p-1 text-nd-text-muted transition-colors hover:bg-nd-surface-raised hover:text-nd-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
             >
               <X className="h-4 w-4" />
             </button>

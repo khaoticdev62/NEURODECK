@@ -1,4 +1,4 @@
-/* NEURODECK v6 workspace shell — functional shell that wires the v6 layout
+﻿/* NEURODECK v6 workspace shell — functional shell that wires the v6 layout
    components (TitleBar, PrimarySidebar, SecondaryRail) to the live React app
    state and preserves all existing feature views. */
 
@@ -128,7 +128,7 @@ export function NeurodeckShell(props: NeurodeckShellProps): React.ReactNode {
     <div className="flex h-screen min-h-0 flex-col overflow-hidden bg-surface-primary text-text-primary">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-lg focus:bg-nd-accent focus:px-4 focus:py-2 focus:text-nd-bg focus:font-semibold focus:shadow-glow-md"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[var(--z-toast)] focus:rounded-lg focus:bg-nd-accent-primary focus:px-4 focus:py-2 focus:text-nd-bg focus:font-semibold focus:shadow-glow-md"
       >
         Skip to main content
       </a>

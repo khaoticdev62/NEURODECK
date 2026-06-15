@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+﻿import { useCallback, useEffect, useState } from 'react';
 import {
   Package,
   PackagePlus,
@@ -122,7 +122,7 @@ export function PackagesPanel() {
                 npm {status.npmVersion ?? 'not found'}
               </StatusChip>
               {!nodeAvailable && (
-                <p className="w-full text-xs text-nd-warning">
+                <p className="w-full text-xs text-nd-accent-warning">
                   <AlertTriangle className="inline h-3 w-3 mr-1" aria-hidden="true" />
                   Node.js and npm are required to install packages. Install Node from nodejs.org and
                   restart NEURODECK.
@@ -176,7 +176,7 @@ export function PackagesPanel() {
       </Panel>
 
       {error && (
-        <div className="rounded-xl border border-nd-danger/20 bg-nd-danger/10 p-3 text-xs text-nd-danger flex items-start gap-2">
+        <div className="rounded-xl border border-nd-accent-error/20 bg-nd-accent-error/10 p-3 text-xs text-nd-accent-error flex items-start gap-2">
           <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span className="break-all">{error}</span>
         </div>
@@ -219,7 +219,7 @@ export function PackagesPanel() {
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-nd-text truncate">
+                        <span className="font-semibold text-sm text-nd-text-primary truncate">
                           {pkg.name}
                         </span>
                         {pkg.installedVersion && (
@@ -286,8 +286,8 @@ export function PackagesPanel() {
             ['Use in IDE', 'Language servers are discovered from the managed prefix.'],
           ].map(([label, value]) => (
             <div key={label} className="flex items-start justify-between gap-3 rounded-lg px-2 py-1">
-              <span className="text-nd-text/60 shrink-0">{label}</span>
-              <span className="font-mono text-nd-text text-right">{value}</span>
+              <span className="text-nd-text-primary/60 shrink-0">{label}</span>
+              <span className="font-mono text-nd-text-primary text-right">{value}</span>
             </div>
           ))}
         </div>

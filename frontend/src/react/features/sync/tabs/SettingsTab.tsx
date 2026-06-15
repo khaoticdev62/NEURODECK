@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { ShieldCheck, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import { Button } from '../../../components/primitives/Button';
 import { IconButton } from '../../../components/primitives/IconButton';
@@ -93,7 +93,7 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
                   onClick={() => void handleCopy()}
                 >
                   {copied ? (
-                    <Check className="h-4 w-4 text-nd-success" aria-hidden="true" />
+                    <Check className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />
                   ) : (
                     <Copy className="h-4 w-4" aria-hidden="true" />
                   )}
@@ -111,14 +111,14 @@ export function SettingsTab({ groupCode, inboxPath, onGroupCodeChange, onError }
               </Button>
             </div>
             {groupCode && (
-              <p className="flex items-center gap-1.5 text-xs text-nd-success">
+              <p className="flex items-center gap-1.5 text-xs text-nd-accent-success">
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                 Group code is active. Only peers with the same code can connect.
                 <Badge tone="success" variant="outline" size="sm">Active</Badge>
               </p>
             )}
             {!groupCode && (
-              <p className="flex items-center gap-1.5 text-xs text-nd-warning">
+              <p className="flex items-center gap-1.5 text-xs text-nd-accent-warning">
                 <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                 No group code set — using DEFAULT. Any Warpinator peer on the network can discover this device.
               </p>

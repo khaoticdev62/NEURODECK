@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Magnet, Plus, Pause, Play, Trash2, RefreshCw, ArrowDown, ArrowUp,
   FolderOpen, ArrowUpRight, Copy, Search, CheckSquare, Square as SquareIcon,
@@ -324,7 +324,7 @@ export function TorrentView() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-3 text-xs text-nd-text-muted">
             <span className="flex items-center gap-1">
-              <ArrowDown className="h-3.5 w-3.5 text-nd-success" aria-hidden="true" />
+              <ArrowDown className="h-3.5 w-3.5 text-nd-accent-success" aria-hidden="true" />
               {formatRate(torrents.reduce((sum, t) => sum + (t.download_rate_bps || 0), 0))}
             </span>
             <span className="flex items-center gap-1">
@@ -501,7 +501,7 @@ export function TorrentView() {
                 </div>
                 <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-nd-surface-tertiary/60">
                   <div
-                    className={`h-full rounded-full transition-all duration-normal motion-reduce:transition-none ${t.completed ? 'bg-nd-success' : 'bg-nd-accent-primary'}`}
+                    className={`h-full rounded-full transition-all duration-normal motion-reduce:transition-none ${t.completed ? 'bg-nd-accent-success' : 'bg-nd-accent-primary'}`}
                     style={{ width: `${Math.min(100, Math.max(0, t.progress_pct || 0))}%` }}
                   />
                 </div>
@@ -559,7 +559,7 @@ export function TorrentView() {
           <span className="text-nd-text-muted/30">·</span>
           <span className="text-nd-text-muted">Paused <strong>{counts.paused}</strong></span>
           <span className="text-nd-text-muted/30">·</span>
-          <span className="text-nd-success">Completed <strong>{counts.completed}</strong></span>
+          <span className="text-nd-accent-success">Completed <strong>{counts.completed}</strong></span>
           {downloadRoot && (
             <span className="ml-auto truncate text-nd-text-muted/60">{downloadRoot}</span>
           )}

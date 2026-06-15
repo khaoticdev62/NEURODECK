@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Plug, Unplug, AlertTriangle } from "lucide-react";
 import { TerminalViewport } from "../terminal/TerminalViewport";
 import { neurodeckApi } from "../../services/bridgeAdapter";
@@ -119,11 +119,11 @@ export function SSHTerminal({ config, onClose }: Props) {
 
   const statusTone =
     status === "connected"
-      ? "border-nd-success/30 bg-nd-success/10 text-nd-success"
+      ? "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
       : status === "error"
-        ? "border-nd-danger/30 bg-nd-danger/10 text-nd-danger"
+        ? "border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error"
         : status === "connecting"
-          ? "border-nd-warning/30 bg-nd-warning/10 text-nd-warning"
+          ? "border-nd-accent-warning/30 bg-nd-accent-warning/10 text-nd-accent-warning"
           : "border-nd-text-muted/15 bg-nd-surface/40 text-nd-text-muted";
 
   return (
@@ -131,13 +131,13 @@ export function SSHTerminal({ config, onClose }: Props) {
       <div className="flex items-center justify-between border-b border-nd-text-muted/15 px-3 py-2">
         <div className="flex min-w-0 items-center gap-2 text-xs">
           {status === "connected" ? (
-            <Plug className="h-4 w-4 text-nd-success" aria-hidden="true" />
+            <Plug className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />
           ) : status === "error" ? (
-            <AlertTriangle className="h-4 w-4 text-nd-danger" aria-hidden="true" />
+            <AlertTriangle className="h-4 w-4 text-nd-accent-error" aria-hidden="true" />
           ) : (
-            <Plug className="h-4 w-4 text-nd-warning" aria-hidden="true" />
+            <Plug className="h-4 w-4 text-nd-accent-warning" aria-hidden="true" />
           )}
-          <span className="truncate font-semibold text-nd-text">
+          <span className="truncate font-semibold text-nd-text-primary">
             {config.user}@{config.host}:{config.port}
           </span>
           <span className={`rounded-full border px-2 py-0.5 ${statusTone}`}>{status}</span>
@@ -145,7 +145,7 @@ export function SSHTerminal({ config, onClose }: Props) {
         <button
           type="button"
           onClick={handleDisconnect}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-nd-danger/25 bg-nd-danger/10 px-3 py-1.5 text-xs font-semibold text-nd-danger hover:bg-nd-danger/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-danger/40"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-1.5 text-xs font-semibold text-nd-accent-error hover:bg-nd-accent-error/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-error/40"
         >
           <Unplug className="h-3.5 w-3.5" aria-hidden="true" />
           Disconnect

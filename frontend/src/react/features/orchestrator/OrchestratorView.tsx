@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Layers, Play, Square, Plus, Trash2, Upload, Download, AlertTriangle, CheckCircle2, TerminalSquare, X } from 'lucide-react';
 import { neurodeckApi } from '../../services/bridgeAdapter';
 import { listenBridge } from '../../services/bridgeAdapter';
@@ -21,24 +21,24 @@ type RunState =
 
 const NODE_COLORS: Record<string, { fill: string; stroke: string }> = {
   trigger: {
-    fill: 'color-mix(in srgb, var(--nd-accent) 12%, transparent)',
-    stroke: 'color-mix(in srgb, var(--nd-accent) 42%, transparent)',
+    fill: 'color-mix(in srgb, var(--nd-accent-primary) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-accent-primary) 42%, transparent)',
   },
   prompt: {
     fill: 'color-mix(in srgb, var(--nd-accent-tertiary) 12%, transparent)',
     stroke: 'color-mix(in srgb, var(--nd-accent-tertiary) 42%, transparent)',
   },
   shell: {
-    fill: 'color-mix(in srgb, var(--nd-warning) 12%, transparent)',
-    stroke: 'color-mix(in srgb, var(--nd-warning) 42%, transparent)',
+    fill: 'color-mix(in srgb, var(--nd-accent-warning) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-accent-warning) 42%, transparent)',
   },
   condition: {
-    fill: 'color-mix(in srgb, var(--nd-success) 12%, transparent)',
-    stroke: 'color-mix(in srgb, var(--nd-success) 42%, transparent)',
+    fill: 'color-mix(in srgb, var(--nd-accent-success) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-accent-success) 42%, transparent)',
   },
   output: {
-    fill: 'color-mix(in srgb, var(--nd-accent) 12%, transparent)',
-    stroke: 'color-mix(in srgb, var(--nd-accent) 42%, transparent)',
+    fill: 'color-mix(in srgb, var(--nd-accent-primary) 12%, transparent)',
+    stroke: 'color-mix(in srgb, var(--nd-accent-primary) 42%, transparent)',
   },
   default: {
     fill: 'color-mix(in srgb, var(--nd-text-muted) 8%, transparent)',
@@ -300,11 +300,11 @@ export function OrchestratorView() {
   return (
     <div data-testid="orchestrator-view" className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent/20 bg-nd-accent/10">
-          <Layers className="h-5 w-5 text-nd-accent" aria-hidden="true" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <Layers className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-nd-text">Orchestrator</h2>
+          <h2 className="text-lg font-semibold text-nd-text-primary">Orchestrator</h2>
           <p className="text-xs text-nd-text-muted">Visual workflow automation builder</p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -312,21 +312,21 @@ export function OrchestratorView() {
             type="button"
             onClick={running ? handleStop : handleRun}
             disabled={!doc}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:opacity-50 ${running ? 'border-nd-danger/30 bg-nd-danger/10 text-nd-danger' : 'border-nd-success/30 bg-nd-success/10 text-nd-success'}`}
+            className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 disabled:opacity-50 ${running ? 'border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error' : 'border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success'}`}
           >
             {running ? <><Square className="h-4 w-4" aria-hidden="true" /> Stop</> : <><Play className="h-4 w-4" aria-hidden="true" /> Run</>}
           </button>
           <button
             type="button"
             onClick={handleCreateSample}
-            className="flex items-center gap-2 rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-medium text-nd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+            className="flex items-center gap-2 rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-sm font-medium text-nd-accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
           >
             <Plus className="h-4 w-4" aria-hidden="true" /> Sample
           </button>
           <button
             type="button"
             onClick={handleImport}
-            className="flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+            className="flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
           >
             <Upload className="h-4 w-4" aria-hidden="true" /> Import
           </button>
@@ -334,7 +334,7 @@ export function OrchestratorView() {
             type="button"
             onClick={handleExport}
             disabled={!selectedName}
-            className="flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted hover:bg-nd-surface/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 disabled:opacity-50"
           >
             <Download className="h-4 w-4" aria-hidden="true" /> Export
           </button>
@@ -357,12 +357,12 @@ export function OrchestratorView() {
               workflows.map((wf) => (
                 <div
                   key={wf.name}
-                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${selectedName === wf.name ? 'border-nd-accent/30 bg-nd-accent/[0.08]' : 'border-nd-text-muted/15 bg-nd-surface/40'}`}
+                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${selectedName === wf.name ? 'border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]' : 'border-nd-text-muted/15 bg-nd-surface/40'}`}
                 >
                   <button
                     type="button"
                     onClick={() => setSelectedName(wf.name)}
-                    className="min-w-0 flex-1 truncate text-left text-xs text-nd-text"
+                    className="min-w-0 flex-1 truncate text-left text-xs text-nd-text-primary"
                   >
                     {wf.name}
                   </button>
@@ -370,7 +370,7 @@ export function OrchestratorView() {
                     type="button"
                     onClick={() => void handleDelete(wf.name)}
                     aria-label={`Delete ${wf.name}`}
-                    className="rounded-lg p-1 text-nd-danger hover:bg-nd-danger/10"
+                    className="rounded-lg p-1 text-nd-accent-error hover:bg-nd-accent-error/10"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
@@ -440,13 +440,13 @@ export function OrchestratorView() {
             />
           )}
           {runState.status === 'error' && (
-            <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-nd-danger/25 bg-nd-danger/10 p-3 text-xs text-nd-danger">
+            <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-nd-accent-error/25 bg-nd-accent-error/10 p-3 text-xs text-nd-accent-error">
               <AlertTriangle className="mr-2 inline h-4 w-4" aria-hidden="true" />
               {runState.message}
             </div>
           )}
           {runState.status === 'complete' && (
-            <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-nd-success/25 bg-nd-success/10 p-3 text-xs text-nd-success">
+            <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-nd-accent-success/25 bg-nd-accent-success/10 p-3 text-xs text-nd-accent-success">
               <CheckCircle2 className="mr-2 inline h-4 w-4" aria-hidden="true" />
               Workflow completed. {runState.finalOutput ? `Output: ${runState.finalOutput}` : ''}
             </div>
@@ -460,11 +460,11 @@ export function OrchestratorView() {
             value={editorText}
             onChange={(e) => setEditorText(e.target.value)}
             disabled={!doc}
-            className="min-h-0 flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 font-mono text-xs text-nd-text outline-none focus:border-nd-accent/40 disabled:opacity-50"
+            className="min-h-0 flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 font-mono text-xs text-nd-text-primary outline-none focus:border-nd-accent-primary/40 disabled:opacity-50"
             spellCheck={false}
           />
           {editorError && (
-            <div className="rounded-xl border border-nd-danger/25 bg-nd-danger/10 px-3 py-2 text-xs text-nd-danger">
+            <div className="rounded-xl border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-2 text-xs text-nd-accent-error">
               {editorError}
             </div>
           )}
@@ -472,7 +472,7 @@ export function OrchestratorView() {
             type="button"
             onClick={handleSave}
             disabled={!doc}
-            className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent hover:bg-nd-accent/15 disabled:opacity-50"
+            className="rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-xs font-semibold text-nd-accent-primary hover:bg-nd-accent-primary/15 disabled:opacity-50"
           >
             Save Workflow
           </button>
@@ -508,12 +508,12 @@ export function OrchestratorView() {
         >
           <div className="w-full max-w-lg rounded-2xl border border-nd-text-muted/20 bg-nd-surface p-6 shadow-2xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 id="import-modal-title" className="text-sm font-semibold text-nd-text">Import Workflow JSON</h2>
+              <h2 id="import-modal-title" className="text-sm font-semibold text-nd-text-primary">Import Workflow JSON</h2>
               <button
                 type="button"
                 onClick={() => setImportModalOpen(false)}
                 aria-label="Close import dialog"
-                className="rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                className="rounded-lg p-1.5 text-nd-text-muted hover:bg-nd-surface/50 hover:text-nd-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
               </button>
@@ -528,13 +528,13 @@ export function OrchestratorView() {
               onChange={(e) => setImportJson(e.target.value)}
               rows={10}
               placeholder='{ "name": "my-workflow", "steps": [...], "edges": [...] }'
-              className="w-full resize-y rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 py-2 font-mono text-xs text-nd-text outline-none focus:border-nd-accent/40 focus-visible:ring-1 focus-visible:ring-nd-accent/40"
+              className="w-full resize-y rounded-xl border border-nd-text-muted/15 bg-nd-bg/50 px-3 py-2 font-mono text-xs text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40"
             />
             <div className="mt-4 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setImportModalOpen(false)}
-                className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                className="rounded-xl border border-nd-text-muted/15 px-4 py-2 text-sm text-nd-text-muted hover:text-nd-text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
               >
                 Cancel
               </button>
@@ -542,7 +542,7 @@ export function OrchestratorView() {
                 type="button"
                 onClick={() => void confirmImport()}
                 disabled={!importJson.trim()}
-                className="rounded-xl border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-sm font-semibold text-nd-accent hover:bg-nd-accent/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 disabled:pointer-events-none disabled:opacity-40"
+                className="rounded-xl border border-nd-accent-primary/30 bg-nd-accent-primary/10 px-4 py-2 text-sm font-semibold text-nd-accent-primary hover:bg-nd-accent-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 disabled:pointer-events-none disabled:opacity-40"
               >
                 Import
               </button>

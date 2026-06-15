@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import {
   CheckCircle2,
   RotateCcw,
@@ -402,10 +402,10 @@ export function ThemesView() {
                         <span className="text-accent-primary">--nd-surface</span>: {resolvedTokens.color.surface.base}
                       </p>
                       <p>
-                        <span className="text-accent-primary">--nd-accent</span>: {resolvedTokens.color.accent.primary}
+                        <span className="text-accent-primary">--nd-accent-primary</span>: {resolvedTokens.color.accent.primary}
                       </p>
                       <p>
-                        <span className="text-accent-primary">--nd-text</span>: {resolvedTokens.color.text.primary}
+                        <span className="text-accent-primary">--nd-text-primary</span>: {resolvedTokens.color.text.primary}
                       </p>
                       <p>
                         <span className="text-accent-primary">--nd-text-muted</span>: {resolvedTokens.color.text.muted}

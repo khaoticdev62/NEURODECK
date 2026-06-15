@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Command } from "lucide-react";
 import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
 
@@ -35,9 +35,9 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-nd-text-muted/15 px-4 py-3">
-          <Command className="h-4 w-4 text-nd-accent" aria-hidden="true" />
+          <Command className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
           <div>
-            <div className="text-sm font-semibold text-nd-text">Terminal Command Palette</div>
+            <div className="text-sm font-semibold text-nd-text-primary">Terminal Command Palette</div>
             <div className="text-xs text-nd-text-muted">Execute real terminal actions only.</div>
           </div>
         </div>
@@ -47,7 +47,7 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search terminal actions..."
-            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
+            className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none"
           />
         </div>
         <div className="max-h-80 overflow-auto p-2">
@@ -59,9 +59,9 @@ export function TerminalCommandPalette({ open, actions, onClose, onRun }: Props)
                 key={action.id}
                 type="button"
                 onClick={() => onRun(action)}
-                className="flex w-full items-center justify-between rounded-xl border border-transparent px-3 py-2 text-left transition hover:border-nd-accent/20 hover:bg-nd-accent/[0.06]"
+                className="flex w-full items-center justify-between rounded-xl border border-transparent px-3 py-2 text-left transition hover:border-nd-accent-primary/20 hover:bg-nd-accent-primary/[0.06]"
               >
-                <span className="text-sm text-nd-text">{action.label}</span>
+                <span className="text-sm text-nd-text-primary">{action.label}</span>
                 <span className="text-[11px] text-nd-text-muted">Enter</span>
               </button>
             ))

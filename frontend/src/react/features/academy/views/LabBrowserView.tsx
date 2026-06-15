@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { FlaskConical } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
 import { Panel } from '../../../components/primitives/Panel';
@@ -60,8 +60,8 @@ export function LabBrowserView({ progress, onStartLab }: LabBrowserViewProps) {
               aria-pressed={filterType === value}
               className={`min-h-touch rounded-lg border px-3 py-1.5 text-[11px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50 ${
                 filterType === value
-                  ? 'border-nd-accent-primary/40 bg-nd-accent/15 text-nd-accent-primary'
-                  : 'border-nd-border-subtle/50 bg-nd-surface-base/40 text-nd-text-secondary hover:border-nd-accent/20 hover:text-nd-text-primary'
+                  ? 'border-nd-accent-primary/40 bg-nd-accent-primary/15 text-nd-accent-primary'
+                  : 'border-nd-border-subtle/50 bg-nd-surface-base/40 text-nd-text-secondary hover:border-nd-accent-primary/20 hover:text-nd-text-primary'
               }`}
             >
               {label}

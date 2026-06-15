@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Share2, Users, ArrowUpDown, Send, Radio,
   CheckCircle2, XCircle, X, Download, Upload,
@@ -347,7 +347,7 @@ function WarpinatorPanel() {
             aria-live="polite"
             className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-xs ${
               notice.kind === 'ok'
-                ? 'border-nd-success/25 bg-nd-success/10 text-nd-success'
+                ? 'border-nd-accent-success/25 bg-nd-accent-success/10 text-nd-accent-success'
                 : 'border-nd-accent-error/25 bg-nd-accent-error/10 text-nd-accent-error'
             }`}
           >
@@ -416,9 +416,9 @@ function WarpinatorPanel() {
 
         {/* Incoming transfer requests */}
         {pendingIncoming.length > 0 && (
-          <div className="rounded-xl border border-nd-warning/25 bg-nd-warning/5 p-4">
+          <div className="rounded-xl border border-nd-accent-warning/25 bg-nd-accent-warning/5 p-4">
             <div className="mb-3 flex items-center gap-2">
-              <Download className="h-4 w-4 text-nd-warning" aria-hidden="true" />
+              <Download className="h-4 w-4 text-nd-accent-warning" aria-hidden="true" />
               <h3 className="text-xs font-semibold text-nd-text-primary">
                 Incoming Requests ({pendingIncoming.length})
               </h3>
@@ -427,7 +427,7 @@ function WarpinatorPanel() {
               {pendingIncoming.map((t) => (
                 <div
                   key={t.id}
-                  className="flex items-center gap-3 rounded-lg border border-nd-warning/20 bg-nd-warning/5 p-3"
+                  className="flex items-center gap-3 rounded-lg border border-nd-accent-warning/20 bg-nd-accent-warning/5 p-3"
                 >
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-nd-text-primary">{t.filename}</p>
@@ -574,7 +574,7 @@ function WarpinatorPanel() {
                       <div className="mt-0.5 shrink-0">
                         {t.direction === 'Incoming'
                           ? <Download className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
-                          : <Upload className="h-4 w-4 text-nd-success" aria-hidden="true" />}
+                          : <Upload className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
@@ -599,7 +599,7 @@ function WarpinatorPanel() {
                             <div className="h-1.5 overflow-hidden rounded-full bg-nd-surface-tertiary/60">
                               <div
                                 className={`h-full rounded-full transition-all duration-normal motion-reduce:transition-none ${
-                                  isDone ? 'bg-nd-success' : isFailed ? 'bg-nd-accent-error' : 'bg-nd-accent-primary'
+                                  isDone ? 'bg-nd-accent-success' : isFailed ? 'bg-nd-accent-error' : 'bg-nd-accent-primary'
                                 }`}
                                 style={{ width: `${pct}%` }}
                               />

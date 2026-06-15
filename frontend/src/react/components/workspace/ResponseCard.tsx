@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Bot, Check, Copy, RefreshCw, User } from 'lucide-react';
 import { IconButton } from '../../components/primitives/IconButton';
 import type { AIMessage } from '../../types/neurodeck';
@@ -66,7 +66,7 @@ export function ResponseCard({ message, style, isStreaming, onRegenerate }: Resp
           {/* Top accent line for AI */}
           {!isUser && (
             <div
-              className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-nd-accent-primary/50 via-nd-success/30 to-transparent"
+              className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-nd-accent-primary/50 via-nd-accent-success/30 to-transparent"
               aria-hidden="true"
             />
           )}

@@ -1,4 +1,4 @@
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
+﻿import { createContext, type ReactNode, useCallback, useContext, useEffect, useId, useRef, useState } from 'react';
 import { AlertCircle, CheckCircle2, Info, X, XCircle } from 'lucide-react';
 
 type ToastTone = 'info' | 'success' | 'warning' | 'error';
@@ -17,10 +17,10 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const toneConfig: Record<ToastTone, { icon: ReactNode; classes: string }> = {
-  info:    { icon: <Info className="h-4 w-4" />,         classes: 'border-nd-accent/25 bg-nd-accent/10 text-nd-accent' },
-  success: { icon: <CheckCircle2 className="h-4 w-4" />, classes: 'border-nd-success/25 bg-nd-success/10 text-nd-success' },
-  warning: { icon: <AlertCircle className="h-4 w-4" />,  classes: 'border-nd-warning/25 bg-nd-warning/10 text-nd-warning' },
-  error:   { icon: <XCircle className="h-4 w-4" />,      classes: 'border-nd-danger/25 bg-nd-danger/10 text-nd-danger' },
+  info:    { icon: <Info className="h-4 w-4" />,         classes: 'border-nd-accent-primary/25 bg-nd-accent-primary/10 text-nd-accent-primary' },
+  success: { icon: <CheckCircle2 className="h-4 w-4" />, classes: 'border-nd-accent-success/25 bg-nd-accent-success/10 text-nd-accent-success' },
+  warning: { icon: <AlertCircle className="h-4 w-4" />,  classes: 'border-nd-accent-warning/25 bg-nd-accent-warning/10 text-nd-accent-warning' },
+  error:   { icon: <XCircle className="h-4 w-4" />,      classes: 'border-nd-accent-error/25 bg-nd-accent-error/10 text-nd-accent-error' },
 };
 
 function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: string) => void }) {

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useId, KeyboardEvent } from 'react';
+﻿import { useState, useRef, useEffect, useId, KeyboardEvent } from 'react';
 import { BrainCircuit, ChevronDown, ChevronUp, Send, Trash2 } from 'lucide-react';
 import { Button } from '../../../components/primitives/Button';
 import { IconButton } from '../../../components/primitives/IconButton';
@@ -79,7 +79,7 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
             {messages.map((msg, i) =>
               msg.role === 'student' ? (
                 <div key={i} className="flex justify-end gap-2">
-                  <div className="max-w-[80%] rounded-lg bg-nd-accent/15 px-3 py-2 text-[11px] leading-relaxed text-nd-text-primary">
+                  <div className="max-w-[80%] rounded-lg bg-nd-accent-primary/15 px-3 py-2 text-[11px] leading-relaxed text-nd-text-primary">
                     {msg.content}
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export function MentorPanel({ context, greeting }: MentorPanelProps) {
 function MentorAvatar() {
   return (
     <div
-      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-nd-accent/20"
+      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-nd-accent-primary/20"
       aria-hidden="true"
     >
       <span className="text-[9px] font-bold text-nd-accent-primary">A</span>

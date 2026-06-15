@@ -1,4 +1,4 @@
-import { GraduationCap } from 'lucide-react';
+﻿import { GraduationCap } from 'lucide-react';
 import { EmptyState } from '../../../components/primitives/EmptyState';
 import { Panel } from '../../../components/primitives/Panel';
 import { Button } from '../../../components/primitives/Button';
@@ -24,9 +24,9 @@ export function AcademyHome({ progress, onNavigate, onStartLab }: AcademyHomePro
   return (
     <div className="space-y-5">
       {/* Welcome banner */}
-      <div className="rounded-2xl border border-nd-accent/20 bg-nd-accent/[0.06] px-5 py-4">
+      <div className="rounded-2xl border border-nd-accent-primary/20 bg-nd-accent-primary/[0.06] px-5 py-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent/30 bg-nd-accent/10">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/30 bg-nd-accent-primary/10">
             <GraduationCap className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
           </div>
           <div>

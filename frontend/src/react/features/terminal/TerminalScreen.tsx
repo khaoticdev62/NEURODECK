@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LayoutGrid, Plus, RefreshCw, Search, ShieldCheck, SplitSquareHorizontal, SplitSquareVertical, Terminal as TerminalIcon, Trash2, X } from "lucide-react";
 import { useNeuroDeckState } from "../../state/useNeuroDeckState";
 import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
@@ -743,15 +743,15 @@ export function TerminalScreen() {
     : [];
 
   return (
-    <div className="terminal-screen flex h-full min-h-0 flex-col overflow-hidden bg-nd-bg text-nd-text">
+    <div className="terminal-screen flex h-full min-h-0 flex-col overflow-hidden bg-nd-bg text-nd-text-primary">
       <header className="flex items-start justify-between gap-4 border-b border-nd-text-muted/15 px-4 py-3">
         <div className="min-w-0 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent/20 bg-nd-accent/10 text-nd-accent">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent-primary/20 bg-nd-accent-primary/10 text-nd-accent-primary">
             <TerminalIcon className="h-5 w-5" />
           </div>
           <div className="min-w-0">
             <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Terminal Workspace</div>
-            <h2 className="truncate text-lg font-semibold text-nd-text">NeuroShell</h2>
+            <h2 className="truncate text-lg font-semibold text-nd-text-primary">NeuroShell</h2>
             <div className="truncate text-xs text-nd-text-muted">{statusMessage}</div>
           </div>
         </div>
@@ -845,7 +845,7 @@ export function TerminalScreen() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Session Manager</p>
-                <h3 className="text-sm font-semibold text-nd-text">Tabs and panes</h3>
+                <h3 className="text-sm font-semibold text-nd-text-primary">Tabs and panes</h3>
               </div>
               <IconButton
                 aria-label="Toggle session manager"
@@ -919,7 +919,7 @@ export function TerminalScreen() {
               >
                 <TerminalIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
                 <span className="truncate">{tab.label}</span>
-                {tab.pinned && <ShieldCheck className="h-3.5 w-3.5 text-nd-success" aria-hidden="true" />}
+                {tab.pinned && <ShieldCheck className="h-3.5 w-3.5 text-nd-accent-success" aria-hidden="true" />}
               </button>
             ))}
             <Button
@@ -1026,9 +1026,9 @@ export function TerminalScreen() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">AI Assistant</p>
-                    <h3 className="text-sm font-semibold text-nd-text">Command help</h3>
+                    <h3 className="text-sm font-semibold text-nd-text-primary">Command help</h3>
                   </div>
-                  <button type="button" aria-label="Close command help" onClick={() => setAssistantOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+                  <button type="button" aria-label="Close command help" onClick={() => setAssistantOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40">
                     <X className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
@@ -1038,10 +1038,10 @@ export function TerminalScreen() {
                     value={assistantPrompt}
                     onChange={(e) => setAssistantPrompt(e.target.value)}
                     placeholder="Ask for the next command, explain the last error, or request a safer alternative..."
-                    className="min-h-28 w-full rounded-2xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 text-sm text-nd-text outline-none"
+                    className="min-h-28 w-full rounded-2xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 text-sm text-nd-text-primary outline-none"
                   />
                   <div className="flex gap-2">
-                    <button type="button" onClick={() => void buildAssistantSuggestions()} className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-xs font-semibold text-nd-accent">
+                    <button type="button" onClick={() => void buildAssistantSuggestions()} className="rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-xs font-semibold text-nd-accent-primary">
                       Suggest Commands
                     </button>
                     <button type="button" onClick={() => void explainLastCommand()} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-xs font-semibold text-nd-text-muted">
@@ -1049,7 +1049,7 @@ export function TerminalScreen() {
                     </button>
                   </div>
                   <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-bg/40 p-3 text-xs text-nd-text-muted">
-                    <div className="font-semibold text-nd-text">Suggested commands</div>
+                    <div className="font-semibold text-nd-text-primary">Suggested commands</div>
                     <div className="mt-2 space-y-2">
                       {assistantSuggestions.length === 0 ? (
                         <div className="text-nd-text-muted">No suggestions yet.</div>
@@ -1058,7 +1058,7 @@ export function TerminalScreen() {
                           key={command}
                           type="button"
                           onClick={() => void requestCommandExecution(activePaneId, command, "assistant")}
-                          className="block w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left font-mono text-[11px] text-nd-text hover:bg-nd-accent/[0.06]"
+                          className="block w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left font-mono text-[11px] text-nd-text-primary hover:bg-nd-accent-primary/[0.06]"
                         >
                           {command}
                         </button>
@@ -1102,9 +1102,9 @@ export function TerminalScreen() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Search</div>
-              <div className="text-sm font-semibold text-nd-text">Terminal output</div>
+              <div className="text-sm font-semibold text-nd-text-primary">Terminal output</div>
             </div>
-            <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+            <button type="button" aria-label="Close search" onClick={() => setSearchOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40">
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
@@ -1113,7 +1113,7 @@ export function TerminalScreen() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search output or session id..."
-              className="min-w-0 flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text outline-none"
+              className="min-w-0 flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none"
             />
             <button type="button" onClick={() => setSearchQuery("")} className="rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-muted">
               Clear
@@ -1125,7 +1125,7 @@ export function TerminalScreen() {
             ) : (
               searchResults.slice(-50).map((entry, index) => (
                 <div key={`${entry.paneId}-${index}`} className="mb-2 rounded-xl border border-nd-text-muted/15 bg-nd-bg/40 p-2">
-                  <div className="font-semibold text-nd-text">{entry.paneId}</div>
+                  <div className="font-semibold text-nd-text-primary">{entry.paneId}</div>
                   <div className="mt-1 font-mono text-[11px] text-nd-text-muted">{entry.line}</div>
                 </div>
               ))
@@ -1145,9 +1145,9 @@ export function TerminalScreen() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Sessions</div>
-              <div className="text-sm font-semibold text-nd-text">Terminal tabs and panes</div>
+              <div className="text-sm font-semibold text-nd-text-primary">Terminal tabs and panes</div>
             </div>
-            <button type="button" aria-label="Close session manager" onClick={() => setSessionManagerOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+            <button type="button" aria-label="Close session manager" onClick={() => setSessionManagerOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40">
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
@@ -1157,10 +1157,10 @@ export function TerminalScreen() {
                 key={tab.id}
                 type="button"
                 onClick={() => switchTab(tab.id)}
-                className={`w-full rounded-2xl border px-3 py-2 text-left ${tab.id === activeTabId ? "border-nd-accent/30 bg-nd-accent/[0.08]" : "border-nd-text-muted/15 bg-nd-surface/40"}`}
+                className={`w-full rounded-2xl border px-3 py-2 text-left ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]" : "border-nd-text-muted/15 bg-nd-surface/40"}`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-nd-text">{tab.label}</span>
+                  <span className="font-semibold text-nd-text-primary">{tab.label}</span>
                   <span className="text-xs text-nd-text-muted">{tab.sessionIds.length} pane(s)</span>
                 </div>
                 <div className="mt-1 text-xs text-nd-text-muted">{tab.cwd || "workspace"}</div>
@@ -1181,9 +1181,9 @@ export function TerminalScreen() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">Plugin Hooks</div>
-              <div className="text-sm font-semibold text-nd-text">Lua / Hermes / tool commands</div>
+              <div className="text-sm font-semibold text-nd-text-primary">Lua / Hermes / tool commands</div>
             </div>
-            <button type="button" aria-label="Close plugin panel" onClick={() => setPluginPanelOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40">
+            <button type="button" aria-label="Close plugin panel" onClick={() => setPluginPanelOpen(false)} className="rounded-lg border border-nd-text-muted/15 bg-nd-surface/40 p-2 text-nd-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40">
               <X className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
@@ -1191,10 +1191,10 @@ export function TerminalScreen() {
             <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
               Use the active shell profile to run Lua plugin checks, Fallow audits, or Hermes repair commands when the tools are detected in the environment probe.
             </div>
-            <button type="button" onClick={() => void requestCommandExecution(activePaneId, "npx fallow audit --format json", "palette")} className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left text-xs text-nd-text">
+            <button type="button" onClick={() => void requestCommandExecution(activePaneId, "npx fallow audit --format json", "palette")} className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left text-xs text-nd-text-primary">
               Run Fallow audit
             </button>
-            <button type="button" onClick={() => void requestCommandExecution(activePaneId, "lua --version", "palette")} className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left text-xs text-nd-text">
+            <button type="button" onClick={() => void requestCommandExecution(activePaneId, "lua --version", "palette")} className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left text-xs text-nd-text-primary">
               Check Lua runtime
             </button>
           </div>

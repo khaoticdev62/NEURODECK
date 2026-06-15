@@ -1,4 +1,4 @@
-import { useState, useId } from 'react';
+﻿import { useState, useId } from 'react';
 import { ChevronDown, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
 import { Badge } from '../../../components/primitives/Badge';
 import { Button } from '../../../components/primitives/Button';
@@ -101,7 +101,7 @@ export function TaskCard({
             </button>
           )}
           {hintOpen && task.hint && (
-            <p className="rounded-xl border border-nd-accent/15 bg-nd-accent/[0.04] px-3 py-2 text-xs leading-5 text-nd-text-secondary">
+            <p className="rounded-xl border border-nd-accent-primary/15 bg-nd-accent-primary/[0.04] px-3 py-2 text-xs leading-5 text-nd-text-secondary">
               {task.hint}
             </p>
           )}

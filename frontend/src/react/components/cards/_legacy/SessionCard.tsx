@@ -1,4 +1,4 @@
-import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
+﻿import { MessageSquareText, Trash2, Edit2, Download } from "lucide-react";
 import { Modal } from "../primitives/Modal";
 import type { SessionNode } from "../../types/neurodeck";
 import { useState } from "react";
@@ -66,14 +66,14 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
 
   return (
     <>
-    <article className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 transition-colors hover:border-nd-accent/25">
+    <article className="rounded-3xl border border-nd-text-muted/15 bg-nd-surface/40 p-4 transition-colors hover:border-nd-accent-primary/25">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4">
-          <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 text-nd-accent">
+          <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 text-nd-accent-primary">
             <MessageSquareText className="h-5 w-5" />
           </div>
           <div className="flex-1 min-w-0">
-            <h4 className="truncate font-semibold text-nd-text" title={displayName}>
+            <h4 className="truncate font-semibold text-nd-text-primary" title={displayName}>
               {displayName}
             </h4>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-nd-text-muted/70">
@@ -86,7 +86,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
                 {node.preview}
               </p>
             )}
-            {error && <p className="mt-2 text-xs text-nd-danger">{error}</p>}
+            {error && <p className="mt-2 text-xs text-nd-accent-error">{error}</p>}
           </div>
         </div>
 
@@ -98,7 +98,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
               setRenameOpen(true);
             }}
             disabled={loading}
-            className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-accent disabled:opacity-50"
+            className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-accent-primary disabled:opacity-50"
             aria-label="Rename Session"
           >
             <Edit2 className="h-4 w-4" aria-hidden="true" />
@@ -107,7 +107,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
             type="button"
             onClick={handleExport}
             disabled={loading}
-            className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-accent disabled:opacity-50"
+            className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-surface/60 hover:text-nd-accent-primary disabled:opacity-50"
             aria-label="Export Markdown"
           >
             <Download className="h-4 w-4" aria-hidden="true" />
@@ -116,7 +116,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
             type="button"
             onClick={handleDelete}
             disabled={loading}
-            className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-danger/20 hover:text-nd-danger disabled:opacity-50"
+            className="rounded-lg p-2 text-nd-text-muted hover:bg-nd-accent-error/20 hover:text-nd-accent-error disabled:opacity-50"
             aria-label="Delete Session"
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -143,7 +143,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
             type="button"
             onClick={() => void handleRename()}
             disabled={!renameValue.trim() || loading}
-            className="rounded-xl border border-nd-accent/25 bg-nd-accent/10 px-3 py-2 text-sm font-semibold text-nd-accent disabled:opacity-50"
+            className="rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-sm font-semibold text-nd-accent-primary disabled:opacity-50"
           >
             Save
           </button>
@@ -154,7 +154,7 @@ export function SessionCard({ node, onRefresh }: SessionCardProps) {
         value={renameValue}
         onChange={(event) => setRenameValue(event.target.value)}
         placeholder="Session name"
-        className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 px-3 py-2 text-sm text-nd-text outline-none"
+        className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 px-3 py-2 text-sm text-nd-text-primary outline-none"
       />
     </Modal>
     </>

@@ -1,4 +1,4 @@
-import { type SelectHTMLAttributes, forwardRef } from 'react';
+﻿import { type SelectHTMLAttributes, forwardRef } from 'react';
 import '../../../design-system/components/core/Select';
 
 interface SelectOption {
@@ -28,7 +28,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         <label htmlFor={selectId} className="nd-select__label">
           {label}
           {rest.required && (
-            <span className="ml-1 text-nd-warning" aria-hidden="true">
+            <span className="ml-1 text-nd-accent-warning" aria-hidden="true">
               *
             </span>
           )}
