@@ -212,6 +212,8 @@ export function ThemesView() {
                   {/* None option */}
                   <button
                     type="button"
+                    aria-pressed={settings.activeWallpaperId === "none"}
+                    aria-label={`No wallpaper: Solid Black${settings.activeWallpaperId === "none" ? " (active)" : ""}`}
                     onClick={() => updateSettings({ activeWallpaperId: "none" })}
                     className={`flex flex-col overflow-hidden rounded-2xl border text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/60 ${
                       settings.activeWallpaperId === "none"
@@ -236,6 +238,8 @@ export function ThemesView() {
                       <button
                         key={wp.id}
                         type="button"
+                        aria-pressed={active}
+                        aria-label={`${wp.name} wallpaper${active ? " (active)" : ""}`}
                         onClick={() => updateSettings({ activeWallpaperId: wp.id })}
                         className={`flex flex-col overflow-hidden rounded-2xl border text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/60 ${
                           active
@@ -279,6 +283,7 @@ export function ThemesView() {
                       <Monitor className="h-4 w-4 text-accent-primary" aria-hidden="true" /> Display Profile
                     </label>
                     <Select
+                      id="display-profile"
                       value={settings.displayProfile}
                       onChange={(e) => updateSettings({ displayProfile: e.target.value as ThemeDisplayTarget })}
                       options={[
@@ -298,6 +303,7 @@ export function ThemesView() {
                       <Sliders className="h-4 w-4 text-accent-primary" aria-hidden="true" /> Accessibility Mode
                     </label>
                     <Select
+                      id="accessibility-profile"
                       value={settings.accessibilityProfile}
                       onChange={(e) => updateSettings({ accessibilityProfile: e.target.value as AccessibilityProfile })}
                       options={[

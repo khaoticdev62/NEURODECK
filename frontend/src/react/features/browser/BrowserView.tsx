@@ -689,24 +689,29 @@ export function BrowserView() {
 
       {/* Title / Tab Strip */}
       <div className="flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-secondary/30 px-4 py-2 shrink-0" data-controller-zone="toolbar">
-        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 max-w-[80%] pr-4">
+        <div role="tablist" aria-label="Browser tabs" className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 max-w-[80%] pr-4">
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;
             return (
               <div
                 key={tab.id}
+                role="tab"
+                aria-selected={isActive}
+                tabIndex={isActive ? 0 : -1}
                 onClick={() => switchTab(tab.id)}
-                className={`group relative flex min-h-[40px] items-center gap-2 rounded-xl px-3 py-1.5 text-xs transition cursor-pointer shrink-0 border ${
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && void switchTab(tab.id)}
+                className={`group relative flex min-h-[40px] items-center gap-2 rounded-xl px-3 py-1.5 text-xs transition cursor-pointer shrink-0 border outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
                   isActive
                     ? "bg-nd-surface-selected border-nd-accent-primary/40 text-nd-text-primary font-semibold"
                     : "bg-nd-surface-secondary/40 border-transparent text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary"
                 }`}
               >
                 {tab.isPrivate ? (
-                  <Lock className="h-3.5 w-3.5 text-nd-accent-warning shrink-0" />
+                  <Lock className="h-3.5 w-3.5 text-nd-accent-warning shrink-0" aria-hidden="true" />
                 ) : (
                   <Globe
                     className={`h-3.5 w-3.5 shrink-0 ${isActive ? "text-nd-accent-primary" : "text-nd-text-muted"}`}
+                    aria-hidden="true"
                   />
                 )}
                 <span className="max-w-[120px] truncate">{tab.title || "New Tab"}</span>

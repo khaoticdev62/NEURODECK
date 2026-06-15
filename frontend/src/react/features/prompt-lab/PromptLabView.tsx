@@ -316,10 +316,10 @@ export function PromptLabView() {
           <DeckButtonHint button="L5" label="save" />
           <DeckButtonHint button="L5+R5" label="macro" />
         </div>
-        <Button id="pl-open-gallery-btn" variant="ghost" size="sm" icon={Sparkles}>
+        <Button id="pl-open-gallery-btn" variant="ghost" size="sm" icon={Sparkles} disabled title="Gallery — coming in a future release">
           Gallery
         </Button>
-        <Button id="pl-optimize-ai-btn" variant="ghost" size="sm" icon={RotateCcw}>
+        <Button id="pl-optimize-ai-btn" variant="ghost" size="sm" icon={RotateCcw} disabled title="AI Optimize — coming in a future release">
           Optimize
         </Button>
       </header>
