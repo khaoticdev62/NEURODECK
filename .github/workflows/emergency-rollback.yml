@@ -1,0 +1,143 @@
+name: Emergency Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_tag:
+        description: 'Release tag to roll back to (e.g. v1.7.0-bastet)'
+        required: true
+      reason:
+        description: 'Reason for rollback'
+        required: true
+      notify:
+        description: 'Comma-separated list of Slack/Discord webhook secrets to notify'
+        required: false
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  validate:
+    name: Validate rollback target
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure target tag exists
+        run: |
+          TAG="${{ github.event.inputs.target_tag }}"
+          if ! git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "❌ Tag $TAG does not exist."
+            exit 1
+          fi
+          echo "✅ Target tag $TAG exists."
+
+      - name: Ensure release manifest exists
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.target_tag }}"
+          if ! gh release view "$TAG" --json assets | grep -q "release-manifest.json"; then
+            echo "⚠️ No release-manifest.json found on $TAG. Continuing with best-effort rollback."
+          else
+            echo "✅ Release manifest found on $TAG."
+          fi
+
+  rollback-branch:
+    name: Create rollback branch
+    runs-on: ubuntu-latest
+    needs: validate
+    environment: production-rollback
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create rollback branch
+        run: |
+          TAG="${{ github.event.inputs.target_tag }}"
+          BRANCH="rollback/${TAG}"
+          git checkout -b "$BRANCH" "$TAG"
+
+          # Mark health.json as rolled back
+          node -e "
+            const fs = require('fs');
+            const health = JSON.parse(fs.readFileSync('infra/telemetry/health.json', 'utf8'));
+            health.rollout_status = 'rolled-back';
+            health.release_plan.readiness_score = 0;
+            health.release_plan.decision = 'NO-GO';
+            fs.writeFileSync('infra/telemetry/health.json', JSON.stringify(health, null, 2) + '\n');
+          "
+
+          git add infra/telemetry/health.json
+          git commit -m "kfms: mark ${TAG} as rolled-back [skip ci]"
+          git push origin "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+  draft-rollback-release:
+    name: Draft rollback release
+    runs-on: ubuntu-latest
+    needs: rollback-branch
+    environment: production-rollback
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Draft rollback release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.target_tag }}"
+          ROLLBACK_TAG="rollback-${TAG}-$(date -u +%Y%m%d-%H%M%S)"
+          REASON="${{ github.event.inputs.reason }}"
+          BODY="# Emergency Rollback\n\n- Rolled back to: \`${TAG}\`\n- Reason: ${REASON}\n- Triggered by: @${{ github.actor }}\n- Rollback branch: \`rollback/${TAG}\`\n\nThis release contains the binaries from \`${TAG}\` with an updated KFMS health manifest marking the rollout as rolled-back."
+
+          # Copy artifacts from target release to rollback release draft.
+          gh release create "$ROLLBACK_TAG" \
+            --target "rollback/${TAG}" \
+            --title "ROLLBACK ${TAG}" \
+            --notes "$BODY" \
+            --draft
+
+          gh release upload "$ROLLBACK_TAG" release-manifest.json --clobber || true
+          echo "✅ Draft rollback release created: $ROLLBACK_TAG"
+
+  notify:
+    name: Notify stakeholders
+    runs-on: ubuntu-latest
+    needs: [validate, rollback-branch, draft-rollback-release]
+    if: always()
+    steps:
+      - name: Comment on tracking issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.event.inputs.target_tag }}"
+          REASON="${{ github.event.inputs.reason }}"
+          BODY="🚨 Emergency rollback executed for \`${TAG}\`.\n\nReason: ${REASON}\nActor: @${{ github.actor }}\nRollback branch: \`rollback/${TAG}\`\n\nA draft rollback release has been created for human review before publishing."
+          gh issue list --label release --label tracking --search "${TAG} manifest" --json number -q '.[].number' | while read -r num; do
+            gh issue comment "$num" --body "$BODY"
+          done
+
+      - name: Webhook notifications
+        if: github.event.inputs.notify != ''
+        run: |
+          IFS=',' read -ra WEBHOOKS <<< "${{ github.event.inputs.notify }}"
+          for secret in "${WEBHOOKS[@]}"; do
+            URL="${!secret}"
+            if [ -n "$URL" ]; then
+              curl -X POST -H 'Content-type: application/json' \
+                --data "{\"text\":\"🚨 NEURODECK emergency rollback to ${{ github.event.inputs.target_tag }} by ${{ github.actor }}: ${{ github.event.inputs.reason }}\"}" \
+                "$URL" || true
+            fi
+          done

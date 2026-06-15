@@ -1,0 +1,60 @@
+name: Generate Release Manifest
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.8.0-ptah)'
+        required: true
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  generate-and-upload:
+    name: Generate release manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate manifest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+        run: node scripts/release/generate-release-manifest.mjs ${{ steps.tag.outputs.tag }}
+
+      - name: Upload manifest to release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "${{ steps.tag.outputs.tag }}" release-manifest.json --clobber
+
+      - name: Create tracking issue
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          BODY="Release manifest generated for \`${TAG}\`.\n\n- Manifest: $(gh release view "$TAG" --json url -q '.url')#release-manifest.json\n- Rollback target: see \`rollbackTo\` field in \`release-manifest.json\`.\n\nUse the **Emergency Rollback** workflow if this release needs to be retracted."
+          gh issue create \
+            --title "[Release] ${TAG} manifest" \
+            --body "$BODY" \
+            --label "release,tracking"

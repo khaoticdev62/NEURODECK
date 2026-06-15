@@ -23,7 +23,7 @@ NEURODECK uses a **multi-stage GitHub Actions pipeline** designed for bulletproo
 │Windows │  │AppImage  │  │ Flatpak  │
 │Build   │  │Build     │  │Build     │
 │(2x     │  │(2x       │  │(1x       │
-│ retries)│  │ retries) │  │ retry)   │
+│ retries)│  │ retries) │ │ retry)   │
 └────────┘  └──────────┘  └──────────┘
     │            │            │
     └────────────┼────────────┘
@@ -94,6 +94,106 @@ NEURODECK uses a **multi-stage GitHub Actions pipeline** designed for bulletproo
 4. `build-appimage` — Self-contained Linux binary
 5. `build-flatpak` — Wraps AppImage in Flatpak sandbox
 6. `publish-release` — Upload to GitHub with checksums
+
+---
+
+### 3. **branch-policy.yml** — GitOps Safety Gate
+
+**Trigger:** Every push, PR open/edit, branch creation, manual trigger
+
+**What it does:**
+- Rejects direct pushes to `master`, `main`, and `release/*` unless from the release bot.
+- Validates branch names against allowed prefixes (`agent/`, `feature/`, `ui/`, `bugfix/`, `hotfix/`, `docs/`, `kfms/`, `release/`).
+- Requires PR title prefix (`[UI]`, `[AGENT]`, `[CI]`, `[HOTFIX]`, etc.).
+- Validates required PR body sections.
+- Posts a remediation comment when the gate fails.
+
+**Why:** Prevents accidental pollution of protected branches by humans and agents.
+
+---
+
+### 4. **ui-checkpoint-gate.yml** — UI Rollback Gate
+
+**Trigger:** PRs that touch frontend or Electron UI files
+
+**What it does:**
+- Verifies a UI checkpoint tag exists for the PR.
+- Confirms the checkpoint is recorded in `ui-checkpoints.json`.
+- Builds the checkpoint tag and compares `frontend/dist` hashes against the PR.
+- Posts the rollback preview command as a PR comment.
+
+**Why:** Guarantees every large UI change has a known-good rollback point.
+
+---
+
+### 5. **accessibility.yml** — A11y & Keyboard QA
+
+**Trigger:** PRs + pushes to `master`/`main` that touch frontend files
+
+**What it does:**
+- Runs `axe-core` via Playwright on primary views (`/`, `/settings`, `/chat`, `/canvas`, `/terminal`).
+- Fails on critical/serious WCAG violations.
+- Runs theme contrast check (`npm run verify:theme-accessibility`).
+- Verifies primary chrome is keyboard-navigable.
+
+**Why:** Catches accessibility regressions before they reach users.
+
+---
+
+### 6. **visual-regression.yml** — Pixel Diff QA
+
+**Trigger:** PRs with `ui/` prefix, pushes to `master`/`main` that touch UI files
+
+**What it does:**
+- Captures baseline screenshots on `master` for 7 primary views.
+- Compares PR screenshots with `pixelmatch`.
+- Uploads diff artifacts and comments on the PR when thresholds are exceeded.
+
+**Why:** Surfaces unintended visual side effects of CSS/HTML changes.
+
+---
+
+### 7. **nightly.yml** — Nightly Health Gate
+
+**Trigger:** Daily at 04:00 UTC, manual trigger
+
+**What it does:**
+- Runs full CI + security matrix.
+- Scans for outdated npm/cargo dependencies.
+- Runs dead-code audit via `fallow`.
+- Verifies `infra/telemetry/health.json` score remains above the GO threshold.
+
+**Why:** Detects drift in dependencies, dead code, and release readiness outside active development.
+
+---
+
+### 8. **release-manifest.yml** — Release Provenance
+
+**Trigger:** GitHub Release published, manual trigger
+
+**What it does:**
+- Generates `release-manifest.json` from `infra/meta/meta.json`, git tags, and release artifacts.
+- Uploads the manifest to the GitHub Release.
+- Creates a tracking issue with rollback instructions.
+
+**Why:** Every release carries machine-readable provenance and rollback lineage.
+
+---
+
+### 9. **emergency-rollback.yml** — One-Click Rollback
+
+**Trigger:** Manual workflow dispatch only
+
+**What it does:**
+- Validates the target rollback tag and its release manifest.
+- Creates a `rollback/<tag>` branch at the target tag.
+- Updates `infra/telemetry/health.json` to `rolled-back` / score `0`.
+- Drafts a rollback GitHub Release for human review.
+- Comments on release tracking issues and sends webhook notifications.
+
+**Why:** Reduces mean-time-to-recover when a release causes instability.
+
+**Environment:** Requires approval from the `production-rollback` environment.
 
 ---
 
@@ -318,7 +418,9 @@ Before merging to master or cutting a release:
 - [ ] AppImage builds locally (`bash scripts/shell/build_appimage.sh`)
 - [ ] KFMS metadata is current (`scripts/kfms/khaotic-init.sh status`)
 - [ ] Release notes updated (`docs/RELEASE_NOTES.md`)
-- [ ] Version bumped (`src-tauri/tauri.conf.json`, `package.json`, `Cargo.toml`)
+- [ ] Local preflight passes (`npm run preflight`)
+- [ ] UI checkpoint created if the release contains UI changes (`npm run checkpoint:ui`)
+- [ ] Version bumped (`package.json`, `frontend/package.json`, `Cargo.toml`, `infra/meta/meta.json`)
 
 Then push a tag:
 
@@ -334,12 +436,33 @@ CI/CD automatically:
 
 ---
 
+## Local GitOps Commands
+
+| Command | Purpose |
+|---------|---------|
+| `npm run preflight` | Fast local sanity check before commit/push |
+| `npm run git:install-hooks` | Install pre-commit / pre-push hooks |
+| `npm run checkpoint:ui` | Create a UI checkpoint tag and manifest entry |
+| `npm run rollback:ui:list` | List recorded UI checkpoints |
+| `npm run rollback:ui:preview <tag>` | Non-destructive preview of a rollback |
+| `npm run rollback:ui:apply <tag>` | Apply a UI rollback locally |
+| `npm run release:manifest <tag>` | Generate `release-manifest.json` for a tag |
+
+See also:
+- [Agent GitOps Guide](./AGENT-GITOPS.md)
+- [UI Rollback Guide](./UI-ROLLBACK.md)
+
+---
+
 ## Future Improvements
 
 - [ ] Docker image for reproducible builds
 - [ ] Signed releases (GPG signatures)
 - [ ] AppImage delta updates (zsync)
-- [ ] Nightly builds to separate release channel
+- [x] Nightly builds and health drift checks
+- [x] Branch policy and agent GitOps gate
+- [x] UI checkpoint / rollback system
+- [x] Automated release manifest + emergency rollback
 - [ ] Performance benchmarks in CI
 - [ ] Automated release notes from commits
 
