@@ -7,6 +7,7 @@ export type OnboardingStatus =
 export type OnboardingStep =
   | 'welcome'
   | 'environment'
+  | 'npm'
   | 'models'
   | 'preferences'
   | 'plugins'

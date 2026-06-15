@@ -22,6 +22,7 @@ const mockCancelDependency = vi.fn();
 const mockDependencyOnProgress = vi.fn().mockReturnValue(() => {});
 const mockNpmGetStatus = vi.fn();
 const mockNpmGetRecommended = vi.fn();
+const mockNpmList = vi.fn();
 const mockNpmInstall = vi.fn();
 const mockNpmOnProgress = vi.fn().mockReturnValue(() => {});
 
@@ -58,7 +59,8 @@ vi.mock('../../services/bridgeAdapter', () => ({
     npm: {
       getStatus: () => mockNpmGetStatus(),
       getRecommended: () => mockNpmGetRecommended(),
-      install: (name: string) => mockNpmInstall(name),
+      list: () => mockNpmList(),
+      install: (name: string, version?: string) => mockNpmInstall(name, version),
       onProgress: (cb: any) => mockNpmOnProgress(cb),
     },
   },
@@ -120,6 +122,7 @@ describe('OnboardingWizard Component', () => {
     mockGetDependencyStatus.mockResolvedValue({ ssh: true, ollama: true, tts: true, openvpn: true, wireguard: true });
     mockNpmGetStatus.mockResolvedValue({ node: true, npm: true, nodeVersion: 'v20.0.0', npmVersion: '10.0.0' });
     mockNpmGetRecommended.mockResolvedValue([]);
+    mockNpmList.mockResolvedValue([]);
   });
 
   it('performs precheck and shows Skip for Now button if diagnostics are healthy', async () => {
@@ -167,7 +170,13 @@ describe('OnboardingWizard Component', () => {
     });
     expect(mockRunDiagnostics).toHaveBeenCalled();
 
-    // --- STEP 2 -> STEP 3 (Models) ---
+    // --- STEP 2 -> STEP 3 (NPM Installer) ---
+    await userEvent.click(screen.getByRole('button', { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 2, name: 'NPM Installer' })).toBeDefined();
+    });
+
+    // --- STEP 3 -> STEP 4 (Models) ---
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText('AI Provider Setup')).toBeDefined();
@@ -180,7 +189,7 @@ describe('OnboardingWizard Component', () => {
       expect(screen.getByText(/successfully connected to/i)).toBeDefined();
     });
 
-    // --- STEP 3 -> STEP 4 (Preferences) ---
+    // --- STEP 4 -> STEP 5 (Preferences) ---
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText('Preferences & Styling')).toBeDefined();
@@ -190,19 +199,19 @@ describe('OnboardingWizard Component', () => {
     const selectTheme = screen.getByRole('combobox');
     await userEvent.selectOptions(selectTheme, 'hologrid');
 
-    // --- STEP 4 -> STEP 5 (Plugins) ---
+    // --- STEP 5 -> STEP 6 (Plugins) ---
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText('Script Automation & Plugins')).toBeDefined();
     });
 
-    // --- STEP 5 -> STEP 6 (Packages) ---
+    // --- STEP 6 -> STEP 7 (Packages) ---
     await userEvent.click(screen.getByRole('button', { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText('Recommended Packages')).toBeDefined();
     });
 
-    // --- STEP 6 -> STEP 7 (Finish) ---
+    // --- STEP 7 -> STEP 8 (Finish) ---
     await userEvent.click(screen.getByRole('button', { name: /skip packages/i }));
     await waitFor(() => {
       expect(screen.getByText('Setup Finalization')).toBeDefined();

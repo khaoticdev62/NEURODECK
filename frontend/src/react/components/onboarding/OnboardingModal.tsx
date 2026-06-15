@@ -10,6 +10,7 @@ import { StepEnvironment, type InstallerItemState, type InstallerProgressMap } f
 import { StepModels } from './steps/StepModels';
 import { StepPreferences } from './steps/StepPreferences';
 import { StepPlugins } from './steps/StepPlugins';
+import { StepNpmInstaller } from './steps/StepNpmInstaller';
 import { StepPackages } from './steps/StepPackages';
 import { StepFinish } from './steps/StepFinish';
 import { OnboardingOverlay } from '../../onboarding/OnboardingOverlay';
@@ -37,6 +38,7 @@ interface StepDef {
 const STEPS: StepDef[] = [
   { id: 'welcome', label: 'Welcome' },
   { id: 'environment', label: 'Environment' },
+  { id: 'npm', label: 'NPM Installer' },
   { id: 'models', label: 'AI Model Connection' },
   { id: 'preferences', label: 'Preferences' },
   { id: 'plugins', label: 'Plugins' },
@@ -537,6 +539,9 @@ function SetupOnboardingModal({
                 onTestConnection={testModelConnection}
               />
             )}
+            {currentStep === 'npm' && (
+              <StepNpmInstaller />
+            )}
             {currentStep === 'preferences' && (
               <StepPreferences
                 availableThemes={availableThemes}
@@ -580,19 +585,19 @@ function SetupOnboardingModal({
                   Back
                 </Button>
               )}
-              {(currentStep === 'welcome' || currentStep === 'environment' || currentStep === 'packages') && (
+              {(currentStep === 'welcome' || currentStep === 'environment' || currentStep === 'npm' || currentStep === 'packages') && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    if (currentStep === 'packages') {
+                    if (currentStep === 'npm' || currentStep === 'packages') {
                       void handleNext();
                     } else {
                       void dismiss('skipped');
                     }
                   }}
                 >
-                  {currentStep === 'packages' ? 'Skip Packages' : 'Skip for Now'}
+                  {currentStep === 'npm' ? 'Skip NPM' : currentStep === 'packages' ? 'Skip Packages' : 'Skip for Now'}
                 </Button>
               )}
             </div>
