@@ -632,11 +632,16 @@ pub fn start_transfer_services<E: crate::bridge::EventEmitter>(
 
     let callbacks_clone = callbacks.clone();
     tokio::spawn(async move {
-        if let Err(e) =
-            neurodeck_infrastructure::warpinator::start_warpinator_service(callbacks_clone, warpinator_port)
-                .await
+        if let Err(e) = neurodeck_infrastructure::warpinator::start_warpinator_service(
+            callbacks_clone,
+            warpinator_port,
+        )
+        .await
         {
-            println!("Failed to start Warpinator service on port {}: {}", warpinator_port, e);
+            println!(
+                "Failed to start Warpinator service on port {}: {}",
+                warpinator_port, e
+            );
         }
     });
 
