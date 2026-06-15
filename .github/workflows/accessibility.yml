@@ -62,7 +62,7 @@ jobs:
       - name: Run axe-core scan
         working-directory: e2e
         run: |
-          cat > a11y-scan.spec.js <<'EOF'
+          cat > tests/a11y-scan.spec.js <<'EOF'
           const { test, expect } = require('@playwright/test');
           const { injectAxe, getViolations } = require('@axe-core/playwright');
 
@@ -82,7 +82,7 @@ jobs:
             });
           }
           EOF
-          npx playwright test a11y-scan.spec.js
+          npx playwright test tests/a11y-scan.spec.js
 
   contrast-check:
     name: Theme contrast check
@@ -112,7 +112,7 @@ jobs:
       - run: npm run frontend:build
       - working-directory: e2e
         run: |
-          cat > keyboard-nav.spec.js <<'EOF'
+          cat > tests/keyboard-nav.spec.js <<'EOF'
           const { test, expect } = require('@playwright/test');
 
           test('primary chrome is keyboard navigable', async ({ page }) => {
@@ -140,4 +140,4 @@ jobs:
           EOF
           python3 -m http.server 4173 --directory ../frontend/dist &
           sleep 3
-          npx playwright test keyboard-nav.spec.js
+          npx playwright test tests/keyboard-nav.spec.js

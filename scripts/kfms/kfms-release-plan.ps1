@@ -33,7 +33,10 @@ $preserveFiles = @(
     "deny.toml",
     ".editorconfig",
     ".env.example",
+    ".prettierignore",
+    ".prettierrc",
     "LICENSE",
+    "clippy.toml",
     "tsconfig.json",
     "vitest.config.ts",
     "ui-checkpoints.json",
@@ -132,6 +135,7 @@ function Get-WorkspaceState {
             "infra/meta/meta.json" { continue }
             "infra/telemetry/health.json" { continue }
             "infra/meta/CODENAME_REGISTRY.md" { continue }
+            "docs/IMPLEMENTATION_PLAN.md" { continue }
             "docs/IMPLEMENTATION_PLAN.md" { continue }
             default {
                 $generatedOnly = $false

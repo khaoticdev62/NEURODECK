@@ -76,12 +76,16 @@ count_loose_root_files() {
     -not -name "package_release.ps1" \
     -not -name "epics.md" \
     -not -name "gemini.md" \
+    -not -name "GEMINI.md" \
     -not -name "AGENTS.md" \
     -not -name "LICENSE" \
     -not -name "deny.toml" \
     -not -name "rustfmt.toml" \
     -not -name ".editorconfig" \
     -not -name ".env.example" \
+    -not -name ".prettierignore" \
+    -not -name ".prettierrc" \
+    -not -name "clippy.toml" \
     -not -name "neurodeck_win_release.zip" \
     -not -name "neurodeck_installer.exe" \
     -not -name "neurodeck_1.3.0_amd64.AppImage" \
@@ -111,7 +115,7 @@ derive_workspace_state() {
     [[ -z "$line" ]] && continue
     path="${line:3}"
     case "$path" in
-      "infra/meta/meta.json"|"infra/telemetry/health.json"|"infra/meta/CODENAME_REGISTRY.md")
+      "infra/meta/meta.json"|"infra/telemetry/health.json"|"infra/meta/CODENAME_REGISTRY.md"|"docs/IMPLEMENTATION_PLAN.md")
         ;;
       *)
         generated_only=false
@@ -157,9 +161,10 @@ PRESERVE=(
   "deny.toml"
   ".editorconfig"
   ".env.example"
+  ".prettierignore"
+  ".prettierrc"
   "LICENSE"
   "clippy.toml"
-  ".prettierrc"
   "tsconfig.json"
   "vitest.config.ts"
   "ui-checkpoints.json"
