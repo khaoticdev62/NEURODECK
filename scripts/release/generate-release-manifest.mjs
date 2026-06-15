@@ -3,31 +3,36 @@
 // Reads infra/meta/meta.json, git tags, and GitHub Release artifacts.
 
 import { readFile, writeFile } from 'node:fs/promises';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
-function run(cmd) {
-  return execSync(cmd, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
+function run(file, args = []) {
+  return execFileSync(file, args, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }).trim();
 }
 
 function getRepoSlug() {
-  const remote = run('git remote get-url origin');
+  const remote = run('git', ['remote', 'get-url', 'origin']);
   const match = remote.match(/github\.com[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);
   if (!match) throw new Error('Could not determine GitHub repo slug from origin');
   return { owner: match[1], repo: match[2] };
 }
 
 async function main() {
-  const tag = process.argv[2] || run('git describe --tags --exact-match');
+  const tag = process.argv[2] || run('git', ['describe', '--tags', '--exact-match']);
   if (!tag) {
     console.error('Usage: generate-release-manifest.mjs <tag>');
     process.exit(1);
   }
 
   const meta = JSON.parse(await readFile('infra/meta/meta.json', 'utf8'));
-  const sha = run(`git rev-list -n 1 ${tag}`);
-  const previousTag = run('git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo ""');
+  const sha = run('git', ['rev-list', '-n', '1', tag]);
+  let previousTag = '';
+  try {
+    previousTag = run('git', ['describe', '--tags', '--abbrev=0', 'HEAD^']);
+  } catch (e) {
+    previousTag = '';
+  }
   const commitRange = previousTag ? `${previousTag}..${tag}` : `${sha}`;
-  const commits = run(`git log --oneline ${commitRange}`).split('\n').filter(Boolean);
+  const commits = run('git', ['log', '--oneline', commitRange]).split('\n').filter(Boolean);
   const runUrl = process.env.GITHUB_RUN_ID
     ? `${process.env.GITHUB_SERVER_URL || 'https://github.com'}/${getRepoSlug().owner}/${getRepoSlug().repo}/actions/runs/${process.env.GITHUB_RUN_ID}`
     : null;
@@ -35,7 +40,7 @@ async function main() {
   // Discover artifacts attached to the GitHub Release.
   let artifacts = [];
   try {
-    const releaseJson = run(`gh release view ${tag} --json assets`);
+    const releaseJson = run('gh', ['release', 'view', tag, '--json', 'assets']);
     const release = JSON.parse(releaseJson);
     artifacts = (release.assets || []).map(a => ({
       name: a.name,
@@ -78,7 +83,7 @@ async function main() {
   // If running in CI, upload to the release.
   if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_TOKEN) {
     try {
-      run(`gh release upload ${tag} ${outFile} --clobber`);
+      run('gh', ['release', 'upload', tag, outFile, '--clobber']);
       console.log(`Uploaded ${outFile} to GitHub Release ${tag}`);
     } catch (e) {
       console.warn('Failed to upload manifest to release:', e.message);
