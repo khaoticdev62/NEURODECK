@@ -54,7 +54,7 @@ export function HistoryTab({ transfers, onRetry, onClearDone }: Props) {
             icon={Trash2}
             onClick={() => setConfirmClear(true)}
           >
-            Clear
+            Clear History
           </Button>
         ) : undefined
       }
