@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Dispatch, FormEvent } from 'react';
-import { Bot, Send } from 'lucide-react';
+import { Bot, Loader2, Send } from 'lucide-react';
 import { Button } from '../../components/primitives/Button';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { Panel } from '../../components/primitives/Panel';
@@ -18,12 +18,18 @@ export function AgentsView({
   actions: NeuroDeckAppActions;
 }) {
   const [task, setTask] = useState('');
+  const isBusy = !!state.busyLabel;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const trimmed = task.trim();
-    if (!trimmed) return;
-    void actions.runAssistant(trimmed);
+    if (!trimmed || isBusy) return;
+    const targetId = state.activeAgentId || state.agents[0]?.id;
+    if (targetId) {
+      void actions.runAgent(targetId, trimmed);
+    } else {
+      void actions.runAssistant(trimmed);
+    }
     setTask('');
   };
 
@@ -39,7 +45,8 @@ export function AgentsView({
             value={task}
             onChange={(e) => setTask(e.target.value)}
             placeholder="Describe a task for the active agent..."
-            aria-label="Task for agent"
+            aria-label="Task for active agent"
+            disabled={isBusy}
             className="flex-1"
           />
           <Button
@@ -47,12 +54,22 @@ export function AgentsView({
             type="submit"
             variant="primary"
             size="md"
-            disabled={!task.trim()}
-            icon={Send}
+            disabled={!task.trim() || isBusy}
+            icon={isBusy ? Loader2 : Send}
           >
-            Run
+            {isBusy ? 'Running…' : 'Run'}
           </Button>
         </div>
+        {isBusy && state.busyLabel && (
+          <p
+            role="status"
+            aria-live="polite"
+            className="mt-2 flex items-center gap-2 text-xs text-nd-text-muted"
+          >
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+            {state.busyLabel}
+          </p>
+        )}
       </form>
       <div className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-thin">
         {state.agents.length === 0 ? (
@@ -67,6 +84,7 @@ export function AgentsView({
               <AgentCard
                 key={agent.id}
                 agent={agent}
+                isBusy={isBusy}
                 onRun={(id) => void actions.runAgent(id, task.trim() || undefined)}
                 onCycle={(id) => dispatch({ type: 'toggle-agent', id })}
               />
