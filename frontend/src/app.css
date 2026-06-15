@@ -6411,10 +6411,9 @@ body.crt-flicker-disabled .crt-flicker {
 .torrent-queue-header,
 .torrent-row {
   display: grid;
-  grid-template-columns: 42px minmax(0, 2.3fr) minmax(116px, 0.9fr) minmax(
-      150px,
-      1.1fr
-    ) 78px 84px 92px minmax(210px, 1.35fr);
+  grid-template-columns:
+    42px minmax(0, 2.3fr) minmax(116px, 0.9fr) minmax(150px, 1.1fr)
+    78px 84px 92px minmax(210px, 1.35fr);
   gap: 12px;
   align-items: center;
 }
@@ -6567,10 +6566,9 @@ body.crt-flicker-disabled .crt-flicker {
 
   .torrent-queue-header,
   .torrent-row {
-    grid-template-columns: 36px minmax(0, 1.65fr) minmax(110px, 0.8fr) minmax(
-        140px,
-        1fr
-      ) 64px 72px 84px minmax(170px, 1.2fr);
+    grid-template-columns:
+      36px minmax(0, 1.65fr) minmax(110px, 0.8fr) minmax(140px, 1fr)
+      64px 72px 84px minmax(170px, 1.2fr);
     gap: 10px;
   }
 }

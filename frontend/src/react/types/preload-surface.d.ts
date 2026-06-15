@@ -118,9 +118,7 @@ export interface ElectronAPI {
     success: boolean;
     bookmarks: Array<{ title: string; url: string; createdAt: number }>;
   }>;
-  browserBookmarkRemove(
-    url: string
-  ): Promise<{
+  browserBookmarkRemove(url: string): Promise<{
     success: boolean;
     bookmarks: Array<{ title: string; url: string; createdAt: number }>;
   }>;
