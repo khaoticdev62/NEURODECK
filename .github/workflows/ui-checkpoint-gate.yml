@@ -20,6 +20,8 @@ jobs:
   checkpoint-exists:
     name: Verify UI checkpoint exists
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.find.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
         with:

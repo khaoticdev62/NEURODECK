@@ -94,7 +94,10 @@ jobs:
       - name: Install dependencies and Playwright
         run: |
           cd pr && npm ci
-          cd ../baseline && npm ci
+          cd e2e && npm ci
+          cd ../../baseline && npm ci
+          cd e2e && npm ci
+          cd ../../pr/e2e
           npx playwright install --with-deps chromium
 
       - name: Build PR and capture screenshots
