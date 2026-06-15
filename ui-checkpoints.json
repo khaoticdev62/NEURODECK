@@ -15,5 +15,22 @@
     ],
     "buildHash": "baseline",
     "rolledBack": false
+  },
+  {
+    "tag": "ui-checkpoint-auto-feature-kfms-gitops-cicd-rollback-20260615-143256",
+    "sha": "85518ac58ce5c0a975f8e62809e1ac641d4d617e",
+    "branch": "feature/kfms-gitops-cicd-rollback",
+    "timestamp": "20260615-143256",
+    "description": "Prettier-normalized UI baseline for PR #49",
+    "protectedPaths": [
+      "frontend/src/**/*.css",
+      "frontend/src/**/*.tsx",
+      "frontend/src/**/*.ts",
+      "electron/**/*.css",
+      "electron/**/*.js",
+      "frontend/public/**/*"
+    ],
+    "buildHash": "8a4a1430e2b5cd4343ddf7d12a938808d8996a5a793b9918fc34959e953ddb85",
+    "rolledBack": false
   }
 ]
