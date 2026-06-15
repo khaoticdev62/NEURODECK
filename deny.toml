@@ -34,6 +34,8 @@ allow = [
     "Zlib",
     "BSL-1.0",
     "OpenSSL",
+    "CDLA-Permissive-2.0",
+    "LicenseRef-Proprietary",
 ]
 confidence-threshold = 0.8
 
@@ -50,7 +52,25 @@ license-files = [{ path = "LICENSE", hash = 0x0 }]
 [[licenses.clarify]]
 # NEURODECK root binary — proprietary, not distributed as open-source
 name = "app"
-version = "1.8.0"
+version = "*"
+expression = "LicenseRef-Proprietary"
+license-files = []
+
+[[licenses.clarify]]
+name = "neurodeck_bootstrapper"
+version = "*"
+expression = "LicenseRef-Proprietary"
+license-files = []
+
+[[licenses.clarify]]
+name = "neurodeck_core"
+version = "*"
+expression = "LicenseRef-Proprietary"
+license-files = []
+
+[[licenses.clarify]]
+name = "neurodeck_infrastructure"
+version = "*"
 expression = "LicenseRef-Proprietary"
 license-files = []
 
