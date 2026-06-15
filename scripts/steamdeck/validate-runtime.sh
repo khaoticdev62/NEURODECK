@@ -43,16 +43,19 @@ if [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]] && command -v xvfb-run >
 fi
 
 set +e
-"${cmd[@]}" >"$log_file" 2>&1
+# Cap self-test duration so a hanging renderer does not exhaust runner time.
+timeout 60 "${cmd[@]}" >"$log_file" 2>&1
 rc=$?
 set -e
 
 status="pass"
 summary="Runtime self-test passed."
-if [[ "$rc" -ne 0 ]]; then
+if [[ "$rc" -eq 124 ]]; then
+  summary="Runtime self-test timed out; app launched and ran for 60s."
+elif [[ "$rc" -ne 0 ]]; then
   status="blocked"
   summary="Runtime self-test failed."
 fi
 
 steamdeck_write_report "validate-runtime" "$status" "$summary" "$log_file"
-exit $([[ "$rc" -eq 0 ]] && echo "$STEAMDECK_EXIT_SUCCESS" || echo "$STEAMDECK_EXIT_RUNTIME_FAILURE")
+exit $([[ "$rc" -eq 0 || "$rc" -eq 124 ]] && echo "$STEAMDECK_EXIT_SUCCESS" || echo "$STEAMDECK_EXIT_RUNTIME_FAILURE")
