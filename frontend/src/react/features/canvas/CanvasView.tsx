@@ -147,7 +147,8 @@ export function CanvasView() {
           </IconButton>
           <IconButton
             id="canvas-ai-edit-btn"
-            aria-label="AI edit (coming soon)"
+            aria-label="AI edit"
+            title="AI edit — coming in a future release"
             variant="subtle"
             disabled
           >
@@ -155,7 +156,8 @@ export function CanvasView() {
           </IconButton>
           <IconButton
             id="canvas-collab-btn"
-            aria-label="Collaborate (coming soon)"
+            aria-label="Collaborate"
+            title="Collaborate — coming in a future release"
             variant="subtle"
             disabled
           >
