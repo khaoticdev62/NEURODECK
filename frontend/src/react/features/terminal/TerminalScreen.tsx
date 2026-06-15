@@ -1050,14 +1050,16 @@ export function TerminalScreen() {
                       {assistantSuggestions.length === 0 ? (
                         <div className="text-nd-text-muted">No suggestions yet.</div>
                       ) : assistantSuggestions.map((command) => (
-                        <button
+                        <Button
                           key={command}
-                          type="button"
+                          variant="ghost"
+                          size="xs"
+                          fullWidth
+                          className="justify-start font-mono text-[11px]"
                           onClick={() => void requestCommandExecution(activePaneId, command, "assistant")}
-                          className="block w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-left font-mono text-[11px] text-nd-text-primary hover:bg-nd-accent-primary/[0.06]"
                         >
                           {command}
-                        </button>
+                        </Button>
                       ))}
                     </div>
                   </div>

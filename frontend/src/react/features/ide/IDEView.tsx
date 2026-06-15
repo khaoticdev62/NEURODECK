@@ -540,16 +540,19 @@ export function IDEView() {
         >
           <div className="min-h-0 flex-1 overflow-auto space-y-0.5">
             {currentPath && (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="xs"
+                fullWidth
+                icon={FolderOpen}
+                className="justify-start"
                 onClick={() => {
                   const parts = currentPath.split(/[/\\]/).filter(Boolean);
                   loadFiles(parts.slice(0, -1).join('/'));
                 }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-text-muted hover:bg-surface-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40"
               >
-                <FolderOpen className="h-3.5 w-3.5" aria-hidden="true" /> ..
-              </button>
+                ..
+              </Button>
             )}
             <div className="px-2 py-1 text-[10px] text-text-muted/60 truncate">{currentPath || 'workspace'}</div>
             {files.length === 0 && (
