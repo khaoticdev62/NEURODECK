@@ -98,48 +98,9 @@ export default {
           'surface-l2': withOpacity('var(--surface-l2, #101820)'),
           'surface-l3': withOpacity('var(--surface-l3, rgba(20,32,42,0.72))'),
         },
-      },
 
-      backgroundImage: {
-        'brand-gradient':      'var(--brand-gradient)',
-        'brand-gradient-dark': 'var(--brand-gradient-dark)',
-      },
-
-      fontFamily: {
-        // Mapped to CSS vars set by the theme injector at runtime
-        body:    ['var(--font-body)', 'Inter', 'system-ui', 'sans-serif'],
-        mono:    ['var(--font-mono)', 'JetBrains Mono', 'Fira Code', 'monospace'],
-        display: ['var(--font-display)', 'var(--font-body)', 'Inter', 'system-ui', 'sans-serif'],
-      },
-
-      transitionDuration: {
-        // Maps to CSS vars set by theme injector; fall through to fixed values
-        fast:   'var(--nd-transition-fast, 150ms)',
-        normal: 'var(--nd-transition-normal, 250ms)',
-        slow:   'var(--nd-transition-slow, 400ms)',
-      },
-
-      transitionTimingFunction: {
-        standard: 'var(--nd-ease-standard, cubic-bezier(0.4, 0, 0.2, 1))',
-        emphasis: 'var(--nd-ease-emphasis, cubic-bezier(0.34, 1.56, 0.64, 1))',
-      },
-
-      borderRadius: {
-        panel: 'var(--nd-radius-panel, 12px)',
-        modal: 'var(--nd-radius-modal, 16px)',
-        pill:  'var(--nd-radius-pill, 9999px)',
-      },
-
-      spacing: {
-        screen: 'var(--nd-spacing-screen, 16px)',
-        panel:  'var(--nd-spacing-panel, 12px)',
-        card:   'var(--nd-spacing-card, 12px)',
-        touch:  'var(--nd-spacing-touch-target, 40px)',
-      },
-
-      // NEURODECK Design Tokens v1.0 — semantic aliases for use in JSX
-      // e.g. className="bg-surface-primary text-text-primary border-border-subtle"
-      colors: {
+        // NEURODECK Design Tokens v1.0 — semantic aliases for use in JSX
+        // e.g. className="bg-surface-primary text-text-primary border-border-subtle"
         surface: {
           app:       withOpacity('var(--nd-surface-app)'),
           primary:   withOpacity('var(--nd-surface-primary)'),
@@ -153,7 +114,7 @@ export default {
           DEFAULT: withOpacity('var(--nd-border-default)'),
           strong:  withOpacity('var(--nd-border-strong)'),
         },
-        text: {
+        'text-ds': {
           primary:  withOpacity('var(--nd-text-primary)'),
           secondary:withOpacity('var(--nd-text-secondary)'),
           muted:    withOpacity('var(--nd-text-muted)'),
@@ -169,40 +130,97 @@ export default {
         },
       },
 
-      fontSize: {
-        display: ['28px', { lineHeight: '36px', fontWeight: '700' }],
-        h1:      ['24px', { lineHeight: '32px', fontWeight: '700' }],
-        h2:      ['20px', { lineHeight: '28px', fontWeight: '650' }],
-        h3:      ['17px', { lineHeight: '24px', fontWeight: '650' }],
-        body:    ['15px', { lineHeight: '22px', fontWeight: '400' }],
-        'body-sm': ['14px', { lineHeight: '20px', fontWeight: '400' }],
-        caption: ['12px', { lineHeight: '16px', fontWeight: '500' }],
-        micro:   ['11px', { lineHeight: '14px', fontWeight: '500' }],
-        code:    ['13px', { lineHeight: '20px', fontWeight: '400' }],
+      backgroundImage: {
+        'brand-gradient':      'var(--brand-gradient)',
+        'brand-gradient-dark': 'var(--brand-gradient-dark)',
       },
 
-      borderRadius: {
-        sm: 'var(--nd-radius-sm)',
-        md: 'var(--nd-radius-md)',
-        lg: 'var(--nd-radius-lg)',
-        xl: 'var(--nd-radius-xl)',
+      fontFamily: {
+        // Mapped to CSS vars set by the theme injector at runtime
+        body:    ['var(--font-body)', 'Inter', 'system-ui', 'sans-serif'],
+        mono:    ['var(--font-mono)', 'JetBrains Mono', 'Fira Code', 'monospace'],
+        display: ['var(--font-display)', 'var(--font-body)', 'Inter', 'system-ui', 'sans-serif'],
       },
 
-      boxShadow: {
-        panel:   'var(--nd-elevation-panel)',
-        card:    'var(--nd-elevation-card)',
-        overlay: 'var(--nd-elevation-overlay)',
-        focus:   'var(--nd-elevation-focus)',
-      },
-
+      // ── MERGED: single transitionDuration definition ──────────────────
       transitionDuration: {
-        fast:   'var(--nd-motion-fast)',
-        normal: 'var(--nd-motion-normal)',
-        slow:   'var(--nd-motion-slow)',
+        fast:   'var(--nd-motion-fast, 90ms)',
+        normal: 'var(--nd-motion-normal, 140ms)',
+        slow:   'var(--nd-motion-slow, 220ms)',
       },
 
+      // ── MERGED: single transitionTimingFunction definition ────────────
       transitionTimingFunction: {
-        standard: 'var(--nd-ease-standard)',
+        standard:     'var(--nd-ease-standard, cubic-bezier(0.4, 0, 0.2, 1))',
+        emphasis:     'var(--nd-ease-emphasis, cubic-bezier(0.34, 1.56, 0.64, 1))',
+        'snap':        'cubic-bezier(0.4, 0, 0.2, 1)',
+        'bounce-soft': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'out-quart':   'cubic-bezier(0.25, 1, 0.5, 1)',
+      },
+
+      // ── MERGED: single borderRadius definition ────────────────────────
+      borderRadius: {
+        // Named semantic radii (used with rounded-panel, rounded-modal, rounded-pill)
+        panel: 'var(--nd-radius-panel, 12px)',
+        modal: 'var(--nd-radius-modal, 16px)',
+        pill:  'var(--nd-radius-pill, 9999px)',
+        // Token-scale radii (used with rounded-sm, rounded-md, etc.)
+        sm: 'var(--nd-radius-sm, 4px)',
+        md: 'var(--nd-radius-md, 8px)',
+        lg: 'var(--nd-radius-lg, 12px)',
+        xl: 'var(--nd-radius-xl, 16px)',
+      },
+
+      spacing: {
+        screen: 'var(--nd-spacing-screen, 16px)',
+        panel:  'var(--nd-spacing-panel, 12px)',
+        card:   'var(--nd-spacing-card, 12px)',
+        touch:  'var(--nd-spacing-touch-target, 40px)',
+      },
+
+      // ── MERGED: single fontSize definition (semantic + numeric scale) ─
+      fontSize: {
+        // Semantic scale — display + heading hierarchy
+        display:   ['28px', { lineHeight: '36px', fontWeight: '700' }],
+        h1:        ['24px', { lineHeight: '32px', fontWeight: '700' }],
+        h2:        ['20px', { lineHeight: '28px', fontWeight: '650' }],
+        h3:        ['17px', { lineHeight: '24px', fontWeight: '650' }],
+        body:      ['15px', { lineHeight: '22px', fontWeight: '400' }],
+        'body-sm': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        caption:   ['12px', { lineHeight: '16px', fontWeight: '500' }],
+        micro:     ['11px', { lineHeight: '14px', fontWeight: '500' }],
+        code:      ['13px', { lineHeight: '20px', fontWeight: '400' }],
+        // Numeric scale — utility sizes
+        '2xs': ['11px', { lineHeight: '1.4' }],
+        'xs':  ['12px', { lineHeight: '1.5' }],
+        'sm':  ['13px', { lineHeight: '1.5' }],
+        'base':['14px', { lineHeight: '1.5' }],
+        'md':  ['15px', { lineHeight: '1.5' }],
+        'lg':  ['16px', { lineHeight: '1.4' }],
+        'xl':  ['20px', { lineHeight: '1.3' }],
+        '2xl': ['24px', { lineHeight: '1.2' }],
+      },
+
+      // ── MERGED: single boxShadow definition ──────────────────────────
+      boxShadow: {
+        // Token-driven elevation scale (preferred)
+        card:            'var(--nd-elevation-card)',
+        overlay:         'var(--nd-elevation-overlay)',
+        'focus':         '0 0 0 2px var(--nd-border-focus, rgba(94, 235, 255, 0.25))',
+        'focus-token':   '0 0 0 2px var(--nd-border-focus)',
+        'raised-token':  'var(--nd-elevation-raised)',
+        'floating-token':'var(--nd-elevation-floating)',
+        'overlay-token': 'var(--nd-elevation-overlay)',
+        'modal-token':   'var(--nd-elevation-modal)',
+        'critical-token':'var(--nd-elevation-critical)',
+        'glow-sm':       '0 0 8px var(--nd-glow)',
+        'glow-md':       '0 0 16px var(--nd-glow)',
+        'glow-lg':       '0 0 32px var(--nd-glow)',
+        // Legacy hard-coded shadows (compatibility during migration)
+        'panel':          '0 1px 2px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.04)',
+        'panel-elevated': '0 2px 4px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
+        'brand-glow':     'var(--brand-glow)',
+        'brand-glow-strong': 'var(--brand-glow-strong)',
       },
 
       screens: {
@@ -210,25 +228,6 @@ export default {
         deck:    '1280px',
         desktop: '1440px',
         wide:    '1920px',
-      },
-
-      boxShadow: {
-        // Token-driven elevation scale (preferred). Legacy hard-coded shadows
-        // remain available for compatibility during the migration period.
-        'focus':             '0 0 0 2px var(--nd-border-focus, rgba(94, 235, 255, 0.25))',
-        'focus-token':       '0 0 0 2px var(--nd-border-focus)',
-        'raised-token':      'var(--nd-elevation-raised)',
-        'floating-token':    'var(--nd-elevation-floating)',
-        'overlay-token':     'var(--nd-elevation-overlay)',
-        'modal-token':       'var(--nd-elevation-modal)',
-        'critical-token':    'var(--nd-elevation-critical)',
-        'glow-sm':           '0 0 8px var(--nd-glow)',
-        'glow-md':           '0 0 16px var(--nd-glow)',
-        'glow-lg':           '0 0 32px var(--nd-glow)',
-        'panel':             '0 1px 2px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.04)',
-        'panel-elevated':    '0 2px 4px rgba(0,0,0,0.25), 0 8px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.06)',
-        'brand-glow':        'var(--brand-glow)',
-        'brand-glow-strong': 'var(--brand-glow-strong)',
       },
 
       zIndex: {
@@ -240,23 +239,6 @@ export default {
         'modal':     '40',
         'toast':     '50',
         'tooltip':   '60',
-      },
-
-      fontSize: {
-        '2xs': ['11px', { lineHeight: '1.4' }],
-        'xs':  ['12px', { lineHeight: '1.5' }],
-        'sm':  ['13px', { lineHeight: '1.5' }],
-        'base':['14px', { lineHeight: '1.5' }],
-        'md':  ['15px', { lineHeight: '1.5' }],
-        'lg':  ['16px', { lineHeight: '1.4' }],
-        'xl':  ['20px', { lineHeight: '1.3' }],
-        '2xl': ['24px', { lineHeight: '1.2' }],
-      },
-
-      transitionTimingFunction: {
-        'snap':        'cubic-bezier(0.4, 0, 0.2, 1)',
-        'bounce-soft': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-        'out-quart':   'cubic-bezier(0.25, 1, 0.5, 1)',
       },
 
       keyframes: {
@@ -302,15 +284,15 @@ export default {
       },
 
       animation: {
-        'view-enter':      'view-enter 200ms ease-out forwards',
-        'view-exit':       'view-exit 150ms ease-in forwards',
-        'fade-in':         'fade-in 150ms ease-out forwards',
-        'slide-in-right':  'slide-in-right 200ms ease-out forwards',
-        'slide-up':        'slide-up 180ms ease-out forwards',
-        'pulse-glow':      'pulse-glow 2s ease-in-out infinite',
-        'shake':           'shake 300ms ease-in-out',
-        'spin-once':       'spin-once 600ms ease-in-out forwards',
-        'shimmer':         'shimmer 1.5s ease-in-out infinite',
+        'view-enter':     'view-enter 200ms ease-out forwards',
+        'view-exit':      'view-exit 150ms ease-in forwards',
+        'fade-in':        'fade-in 150ms ease-out forwards',
+        'slide-in-right': 'slide-in-right 200ms ease-out forwards',
+        'slide-up':       'slide-up 180ms ease-out forwards',
+        'pulse-glow':     'pulse-glow 2s ease-in-out infinite',
+        'shake':          'shake 300ms ease-in-out',
+        'spin-once':      'spin-once 600ms ease-in-out forwards',
+        'shimmer':        'shimmer 1.5s ease-in-out infinite',
       },
     },
   },

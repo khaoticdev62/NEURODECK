@@ -93,7 +93,7 @@ export function PrimarySidebar({
                     : 'flex justify-center py-1'
                 }`}
               >
-                {expanded ? section : <div className="h-px w-6 bg-[var(--nd-border-subtle)]" />}
+                {expanded ? section : <div className="h-px w-6 bg-[var(--nd-border-subtle)]" aria-hidden="true" />}
               </div>
               <div className="space-y-0.5">
                 {items.map((item) => {
