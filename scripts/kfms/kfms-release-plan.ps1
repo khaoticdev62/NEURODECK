@@ -136,7 +136,6 @@ function Get-WorkspaceState {
             "infra/telemetry/health.json" { continue }
             "infra/meta/CODENAME_REGISTRY.md" { continue }
             "docs/IMPLEMENTATION_PLAN.md" { continue }
-            "docs/IMPLEMENTATION_PLAN.md" { continue }
             default {
                 $generatedOnly = $false
                 break
