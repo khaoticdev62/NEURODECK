@@ -138,7 +138,7 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
               disabled={loading}
               onClick={(e) => {
                 e.stopPropagation();
-                void handleDelete();
+                setDeleteOpen(true);
               }}
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
@@ -146,6 +146,17 @@ export function SessionCard({ node, selected, onRefresh }: SessionCardProps) {
           </div>
         </div>
       </Panel>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete Session"
+        message={`Permanently delete "${displayName}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteOpen(false)}
+      />
 
       <Modal
         open={renameOpen}

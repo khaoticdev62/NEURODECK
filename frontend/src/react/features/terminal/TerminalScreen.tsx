@@ -909,11 +909,14 @@ export function TerminalScreen() {
         </aside>
 
         <main className="min-w-0 flex-1 overflow-hidden">
-          <div className="mb-3 flex items-center gap-2 overflow-x-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-2">
+          <div role="tablist" aria-label="Terminal sessions" className="mb-3 flex items-center gap-2 overflow-x-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                id={`term-tab-${tab.id}`}
                 type="button"
+                role="tab"
+                aria-selected={tab.id === activeTabId}
                 onClick={() => switchTab(tab.id)}
                 className={`inline-flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08] text-nd-text-primary" : "border-nd-border-subtle bg-nd-surface-secondary/40 text-nd-text-muted hover:bg-nd-surface-tertiary/60"}`}
               >
@@ -933,7 +936,7 @@ export function TerminalScreen() {
           </div>
 
           <div className="grid min-h-0 gap-3" style={{ gridTemplateColumns: assistantOpen ? "minmax(0,1fr) 18rem" : "minmax(0,1fr)" }}>
-            <section className="min-h-0 overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30">
+            <section role="tabpanel" aria-label={activeTab?.label ?? 'Terminal'} className="min-h-0 overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30">
               {activeTab ? (
                 <div className="flex min-h-0 h-full flex-col">
                   <div className="flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2">

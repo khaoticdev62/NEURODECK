@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import '../../../design-system/components/core/Panel';
 
 type PanelVariant = 'glass' | 'flat' | 'elevated' | 'surface';
@@ -18,6 +18,15 @@ const variantLegacyClasses: Record<PanelVariant, string> = {
   surface: 'bg-nd-surface-base border border-nd-border-subtle',
 };
 
+interface PanelOwnProps {
+  title?: string;
+  eyebrow?: string;
+  action?: ReactNode;
+  variant?: PanelVariant;
+  children: ReactNode;
+  className?: string;
+}
+
 export function Panel({
   title,
   eyebrow,
@@ -25,14 +34,8 @@ export function Panel({
   variant = 'glass',
   children,
   className = '',
-}: {
-  title?: string;
-  eyebrow?: string;
-  action?: ReactNode;
-  variant?: PanelVariant;
-  children: ReactNode;
-  className?: string;
-}) {
+  ...rest
+}: PanelOwnProps & Omit<HTMLAttributes<HTMLElement>, keyof PanelOwnProps | 'children'>) {
   const emphasis = emphasisMap[variant];
   const cls = [
     'nd-panel',
@@ -44,7 +47,7 @@ export function Panel({
     .join(' ');
 
   return (
-    <section className={cls}>
+    <section className={cls} {...rest}>
       {(title || eyebrow || action) && (
         <header className="nd-panel__head">
           <div className="nd-panel__titles">

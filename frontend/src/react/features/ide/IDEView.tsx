@@ -576,11 +576,14 @@ export function IDEView() {
 
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           {openTabs.length > 0 && (
-            <div className="flex gap-1 overflow-x-auto">
+            <div role="tablist" aria-label="Open editor files" className="flex gap-1 overflow-x-auto">
               {openTabs.map((tab) => (
                 <button
                   key={tab.path}
+                  id={`ide-tab-${tab.path.replace(/[^a-z0-9]/gi, '-')}`}
                   type="button"
+                  role="tab"
+                  aria-selected={activeTab === tab.path}
                   onClick={() => setActiveTab(tab.path)}
                   className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                     activeTab === tab.path
