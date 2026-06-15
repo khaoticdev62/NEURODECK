@@ -1,4 +1,5 @@
 ﻿import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
 import { Modal } from "../../components/primitives/Modal";
 import type { TerminalCommandSafety } from "../../../../../src/shared/terminal/terminalSafetyTypes";
 
@@ -24,17 +25,14 @@ export function TerminalSafetyConfirmModal({ open, command, safety, description,
       size="md"
       footer={
         <>
-          <button type="button" onClick={onCancel} className="rounded-xl border border-nd-text-muted/20 bg-nd-surface/40 px-4 py-2 text-sm text-nd-text-muted">
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
+          <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+          <Button
+            variant="danger"
             disabled={!requiresConfirm}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold ${isDangerous ? "bg-nd-accent-error/20 text-nd-accent-error" : "bg-nd-accent-warning/20 text-nd-accent-warning"} disabled:opacity-40`}
+            onClick={onConfirm}
           >
             Run
-          </button>
+          </Button>
         </>
       }
     >

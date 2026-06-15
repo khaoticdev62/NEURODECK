@@ -1,5 +1,6 @@
-﻿import { AlertTriangle, CheckCircle2, ClipboardCheck, FolderOpen, PackageCheck, ScanLine } from 'lucide-react';
+﻿import { AlertTriangle, CheckCircle2, ClipboardCheck, Download, FolderOpen, PackageCheck, ScanLine } from 'lucide-react';
 import { Badge } from '../../components/primitives/Badge';
+import { Button } from '../../components/primitives/Button';
 import { MetricCard } from '../../components/primitives/MetricCard';
 import { Panel } from '../../components/primitives/Panel';
 import type { NeuroDeckAppActions, NeuroDeckState } from '../../types/neurodeck';
@@ -15,9 +16,14 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
             <FolderOpen className="mx-auto h-12 w-12 text-nd-accent-primary" aria-hidden="true" />
             <h2 className="mt-5 text-2xl font-semibold text-nd-text-primary">Attach a project folder</h2>
             <p className="mt-3 text-sm leading-6 text-nd-text-muted">NEURODECK will read top-level signals locally: package manager, scripts, frameworks, docs, tests, file counts, and basic release risks.</p>
-            <button type="button" onClick={() => void actions.scanProject()} className="mt-6 inline-flex items-center gap-2 rounded-xl bg-nd-accent-primary px-4 py-2 text-sm font-semibold text-nd-bg transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40">
-              <ScanLine className="h-4 w-4" aria-hidden="true" /> Select Folder
-            </button>
+            <Button
+              variant="primary"
+              icon={ScanLine}
+              className="mt-6"
+              onClick={() => void actions.scanProject()}
+            >
+              Select Folder
+            </Button>
           </div>
         </div>
       </Panel>
@@ -46,9 +52,14 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
                   <h2 className="mt-4 text-xl font-semibold text-nd-text-primary">{project.path}</h2>
                   <p className="mt-2 text-sm text-nd-text-muted">Scanned at {new Date(project.scannedAt).toLocaleString()}</p>
                 </div>
-                <button type="button" onClick={() => void actions.scanProject()} className="rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-sm font-semibold text-nd-accent-primary transition hover:bg-nd-accent-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={ScanLine}
+                  onClick={() => void actions.scanProject()}
+                >
                   Rescan
-                </button>
+                </Button>
               </div>
             </div>
 
@@ -73,12 +84,21 @@ export function ProjectView({ state, actions }: { state: NeuroDeckState; actions
               <h3 className="mt-3 font-semibold text-nd-text-primary">Local scan completed</h3>
               <p className="mt-2 text-sm leading-6 text-nd-text-muted">This scan intentionally avoids network calls and skips heavy folders like node_modules, .git, dist, build, and release.</p>
             </div>
-            <button type="button" onClick={() => void actions.buildProjectContext()} className="w-full rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-sm font-semibold text-nd-accent-primary transition hover:bg-nd-accent-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40">
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => void actions.buildProjectContext()}
+            >
               Build AI context snapshot
-            </button>
-            <button type="button" onClick={() => void actions.exportSession()} className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm font-semibold text-nd-text-primary/80 transition hover:border-nd-accent-primary/25 hover:text-nd-accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40">
+            </Button>
+            <Button
+              variant="ghost"
+              fullWidth
+              icon={Download}
+              onClick={() => void actions.exportSession()}
+            >
               Export project scan notes
-            </button>
+            </Button>
           </div>
         </Panel>
       </div>

@@ -2,6 +2,7 @@
 import { Terminal as XTerm } from "xterm";
 import { FitAddon } from "xterm-addon-fit";
 import { AlertTriangle, Copy, RefreshCw, Trash2 } from "lucide-react";
+import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
@@ -371,12 +372,8 @@ export function TerminalViewport({
                   {pane.lastErrorMessage || pane.lastExitReason || pane.stateMessage || "The PTY is not currently running."}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button type="button" onClick={onRequestRestart} className="rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 px-3 py-2 text-xs font-semibold text-nd-accent-primary hover:bg-nd-accent-primary/20">
-                    Restart
-                  </button>
-                  <button type="button" onClick={onRequestClose} className="rounded-xl border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-2 text-xs font-semibold text-nd-accent-error hover:bg-nd-accent-error/20">
-                    Close
-                  </button>
+                  <Button variant="secondary" size="sm" onClick={onRequestRestart}>Restart</Button>
+                  <Button variant="danger" size="sm" onClick={onRequestClose}>Close</Button>
                 </div>
               </div>
             </div>
