@@ -107,11 +107,11 @@ name = "Default"
 description = "Standard agent permissions"
 granted = [
     "memory_write",
-    "network",
     "browser",
     "shell_exec",
     "memory_read",
     "plugin_load",
+    "network",
 ]
 created_at = "2026-06-11T22:48:46.793280100+00:00"
 
@@ -127,14 +127,14 @@ id = "privileged"
 name = "Privileged"
 description = "Full system access"
 granted = [
-    "plugin_load",
     "file_system_read",
-    "file_system_write",
-    "shell_exec",
-    "computer",
-    "memory_read",
     "network",
+    "shell_exec",
+    "memory_read",
+    "computer",
     "browser",
+    "file_system_write",
+    "plugin_load",
     "memory_write",
 ]
 created_at = "2026-06-11T22:48:46.793281400+00:00"

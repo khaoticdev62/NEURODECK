@@ -728,7 +728,7 @@ export function BrowserView() {
         <div
           role="tablist"
           aria-label="Browser tabs"
-          className="flex items-center gap-1.5 overflow-x-auto scrollbar-none flex-1 max-w-[80%] pr-4"
+          className="flex items-center gap-2 overflow-x-auto scrollbar-none flex-1 max-w-[80%] pr-4"
         >
           {tabs.map((tab) => {
             const isActive = tab.id === activeTabId;

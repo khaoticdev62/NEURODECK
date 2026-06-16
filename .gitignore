@@ -74,3 +74,4 @@ scripts/.loose/
 test-results/
 t2_err.txt
 t2_out.txt
+.tmp/

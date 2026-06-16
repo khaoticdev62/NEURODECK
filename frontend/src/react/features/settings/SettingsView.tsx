@@ -477,7 +477,7 @@ export function SettingsView({
   return (
     <div className="grid h-full min-h-0 gap-3 overflow-hidden p-3 xl:grid-cols-[220px_1fr]">
       {/* Sidebar */}
-      <aside className="stv-sidebar flex min-h-0 flex-col rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/50 p-2.5 gap-1">
+      <aside className="stv-sidebar flex min-h-0 flex-col rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/50 p-3 gap-2">
         <div className="stv-sidebar-brand-chip flex items-center gap-2 rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10 px-3 py-2 mb-1">
           <Settings className="h-4 w-4 text-nd-accent-primary" />
           <span className="text-xs font-bold uppercase tracking-[0.22em] text-nd-accent-primary">
@@ -749,7 +749,7 @@ export function SettingsView({
                           dispatch({ type: "set-provider", provider: provider.id });
                           void neurodeckApi.ai.setProvider(provider.id);
                         }}
-                        className={`w-full rounded-xl border p-3.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                        className={`w-full rounded-xl border p-4 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                           active
                             ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]"
                             : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/25"
@@ -974,7 +974,7 @@ export function SettingsView({
                 ).map(({ value, label, desc }) => (
                   <label
                     key={value}
-                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition ${
                       ttsMode === value
                         ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]"
                         : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/20"
@@ -1317,7 +1317,7 @@ export function SettingsView({
                   return (
                     <div
                       key={tier}
-                      className={`rounded-xl border p-3.5 ${active ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]" : "border-nd-border-subtle bg-nd-surface-secondary/40"}`}
+                      className={`rounded-xl border p-4 ${active ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.07]" : "border-nd-border-subtle bg-nd-surface-secondary/40"}`}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-semibold text-nd-text-primary text-sm">

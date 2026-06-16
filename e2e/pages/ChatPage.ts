@@ -19,11 +19,11 @@ export class ChatPage extends AppPage {
   }
 
   async expectUserMessage(text: string) {
-    await expect(this.chatViewport.locator(".msg-card.message.user .msg-content").last()).toContainText(text);
+    await expect(this.chatViewport.locator('.message[aria-label="Your message"] .msg-content').last()).toContainText(text);
   }
 
   async expectAiMessage(text: string, timeout = 10000) {
-    await expect(this.chatViewport.locator(".msg-card.message.assistant .msg-content").last()).toContainText(text, { timeout });
+    await expect(this.chatViewport.locator('.message[aria-label="AI response"] .msg-content').last()).toContainText(text, { timeout });
   }
 
   async expectErrorMessage(text: string, timeout = 10000) {

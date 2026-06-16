@@ -63,7 +63,7 @@ export function ApiLabView() {
     : "neutral";
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden">
       <header className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
           <Webhook className="h-5 w-5 text-accent-primary" aria-hidden="true" />
@@ -157,10 +157,10 @@ export function ApiLabView() {
           </TabPanel>
 
           <TabPanel value="response" className="h-full">
-            <div className="h-full space-y-3 rounded-2xl border border-border-subtle bg-surface-secondary p-4">
+            <div className="flex h-full flex-col gap-3 rounded-2xl border border-border-subtle bg-surface-secondary p-4">
               {response ? (
                 <>
-                  <div className="flex items-center gap-3">
+                  <div className="flex shrink-0 items-center gap-3">
                     <Badge tone={responseTone} variant="fill">
                       {response.status} {response.statusText}
                     </Badge>
@@ -172,7 +172,7 @@ export function ApiLabView() {
                       <Copy className="h-4 w-4" aria-hidden="true" />
                     </IconButton>
                   </div>
-                  <pre className="h-[calc(100%-2.5rem)] overflow-auto rounded-xl border border-border-subtle bg-surface-secondary/60 p-3 font-mono text-xs text-text-secondary">
+                  <pre className="min-h-0 flex-1 overflow-auto rounded-xl border border-border-subtle bg-surface-secondary/60 p-3 font-mono text-xs text-text-secondary">
                     {response.body}
                   </pre>
                 </>

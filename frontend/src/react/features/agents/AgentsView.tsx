@@ -38,6 +38,7 @@ export function AgentsView({
       eyebrow="Agent Dock"
       title="Specialized Operators"
       className="agent-shell flex h-full flex-col overflow-hidden"
+      bodyClassName="flex flex-1 flex-col min-h-0"
     >
       <div className="agent-kicker px-4 pt-4 text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
         Agent

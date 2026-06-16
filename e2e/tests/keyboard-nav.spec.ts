@@ -70,8 +70,8 @@ test("chat: Enter key in text field sends message", async ({ page }) => {
   const chatInput = page.locator("#user-input");
   await chatInput.fill("keyboard test message");
   await page.keyboard.press("Enter");
-  // Message should appear in chat (selector from ChatPage: .message.user)
-  await expect(page.locator(".message.user").last()).toBeVisible({ timeout: 5000 });
+  // Message should appear in chat (selector from ChatPage: .message[aria-label="Your message"])
+  await expect(page.locator('.message[aria-label="Your message"]').last()).toBeVisible({ timeout: 5000 });
 });
 
 test("chat: Shift+Enter adds a newline instead of sending", async ({ page }) => {

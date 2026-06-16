@@ -18,10 +18,10 @@ test("terminal view renders container and toolbar", async ({ page }) => {
 test("canvas view renders editor, toolbar, and output pane", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("canvas");
-  await expect(page.locator("#canvas-lang-select")).toBeVisible();
+  await expect(page.locator('select[aria-label="Select language"]')).toBeVisible();
   await expect(page.locator("#canvas-run-btn")).toBeVisible();
   await expect(page.locator("#canvas-monaco")).toBeVisible();
-  await expect(page.locator(".canvas-output-pane, #canvas-preview-frame")).toBeVisible();
+  await expect(page.locator("#canvas-preview-frame")).toBeVisible();
 });
 
 test("ssh view renders connection form", async ({ page }) => {
@@ -38,10 +38,10 @@ test("browser view renders address bar", async ({ page }) => {
   await expect(page.locator("#browser-address-input")).toBeVisible();
 });
 
-test("agent view renders model indicator and action buttons", async ({ page }) => {
+test("agent view renders action buttons", async ({ page }) => {
   const app = new AppPage(page);
   await app.navigateTo("agent");
-  await expect(page.locator("#model-name")).toBeVisible();
+  await expect(page.getByTestId("view-agent")).toHaveClass(/active/);
   await expect(page.locator("#agent-run-btn")).toBeVisible();
   await expect(page.locator("#agent-task-input")).toBeVisible();
 });

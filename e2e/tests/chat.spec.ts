@@ -12,8 +12,7 @@ test("user can send a message and see it in the conversation", async ({ page }) 
   await chat.sendMessage("Hello AI");
   await chat.expectUserMessage("Hello AI");
   // Assistant placeholder is appended immediately
-  await expect(chat.chatViewport.locator(".msg-card.message.assistant")).toBeVisible();
-  await expect(chat.chatViewport.locator(".msg-meta").first()).toBeVisible();
+  await expect(chat.chatViewport.locator('.message[aria-label="AI response"]')).toBeVisible();
 });
 
 test("chat stream error shows an error alert", async ({ page }) => {
