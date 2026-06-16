@@ -101,6 +101,8 @@ test.describe("Onboarding Wizard", () => {
             };
           case "npm_get_status":
             return { node: true, npm: true, nodeVersion: "v20.0.0", npmVersion: "10.0.0" };
+          case "npm_list_packages":
+            return { packages: [] };
           case "npm_get_recommended":
             return [];
           case "start_recording":
@@ -241,10 +243,14 @@ test.describe("Onboarding Wizard", () => {
     await expect(page.getByRole("heading", { name: "Environment Integrity Check" })).toBeVisible();
     await nextBtn.click();
 
-    // Step 3: AI Provider Setup
+    // Step 3: NPM Installer
+    await expect(page.getByRole("heading", { name: "NPM Installer" })).toBeVisible();
+    await page.getByRole("button", { name: /Skip NPM/i }).click();
+
+    // Step 4: AI Provider Setup
     await expect(page.getByRole("heading", { name: "AI Provider Setup" })).toBeVisible();
     // Select "Skip / Offline planning engine" to avoid required validation checks
-    await page.locator("select").first().selectOption("skip");
+    await page.locator('select[aria-label="Provider Type"]').selectOption("skip");
     await nextBtn.click();
 
     // Step 4: Preferences

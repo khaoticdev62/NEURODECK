@@ -190,6 +190,9 @@ jobs:
           name: frontend-dist
           path: frontend/dist/
 
+      - name: Install root dependencies (provides electron executable)
+        run: npm ci
+
       - name: Install Playwright Browsers
         run: |
           cd e2e

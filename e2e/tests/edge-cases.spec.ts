@@ -23,20 +23,20 @@ test.describe("Chat input edge cases", () => {
 
   test("sending empty input does nothing", async ({ page }) => {
     const chat = new ChatPage(page);
-    const msgsBefore = await chat.chatViewport.locator(".msg-card").count();
+    const msgsBefore = await chat.chatViewport.locator(".message").count();
     // The actual input is #user-input (textarea)
     await page.locator("#user-input").click();
     await page.keyboard.press("Enter");
-    const msgsAfter = await chat.chatViewport.locator(".msg-card").count();
+    const msgsAfter = await chat.chatViewport.locator(".message").count();
     expect(msgsAfter).toBe(msgsBefore);
   });
 
   test("sending whitespace-only input does nothing", async ({ page }) => {
     const chat = new ChatPage(page);
-    const msgsBefore = await chat.chatViewport.locator(".msg-card").count();
+    const msgsBefore = await chat.chatViewport.locator(".message").count();
     await page.locator("#user-input").fill("   \t   ");
     await page.keyboard.press("Enter");
-    const msgsAfter = await chat.chatViewport.locator(".msg-card").count();
+    const msgsAfter = await chat.chatViewport.locator(".message").count();
     expect(msgsAfter).toBe(msgsBefore);
   });
 
@@ -70,7 +70,7 @@ test.describe("Chat input edge cases", () => {
     });
     expect(dialogFired).toBe(false);
     // User message should contain the literal text
-    const userMsgs = chat.chatViewport.locator(".msg-card .msg-user-text, .msg-card .msg-content");
+    const userMsgs = chat.chatViewport.locator('.message[aria-label="Your message"] .msg-content');
     // At least one message visible
     await expect(chat.chatViewport).toBeVisible();
   });
