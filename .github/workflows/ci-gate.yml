@@ -199,10 +199,13 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
+      - name: Install xvfb for Electron tests
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends xvfb
+
       - name: Run E2E Tests
         run: |
           cd e2e
-          npx playwright test
+          xvfb-run -a --server-args="-screen 0 1280x800x24" npx playwright test
 
       - name: Upload Playwright Report
         if: always()

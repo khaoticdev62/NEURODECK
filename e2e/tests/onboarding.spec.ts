@@ -250,7 +250,7 @@ test.describe("Onboarding Wizard", () => {
     // Step 4: AI Provider Setup
     await expect(page.getByRole("heading", { name: "AI Provider Setup" })).toBeVisible();
     // Select "Skip / Offline planning engine" to avoid required validation checks
-    await page.locator('select[aria-label="Provider Type"]').selectOption("skip");
+    await page.locator("#provider-type").selectOption("skip");
     await nextBtn.click();
 
     // Step 4: Preferences
