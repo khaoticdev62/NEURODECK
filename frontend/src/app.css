@@ -1,3 +1,9 @@
+/*
+ * LEGACY COMPATIBILITY SHIM — do not extend.
+ * These tokens predate the --nd-* design system (frontend/src/design-system/tokens/).
+ * Canonical tokens are in tokens.css. Migrate usages to --nd-* as views are updated.
+ * Token migration candidates tracked in .UI_UX_ISSUE_LOG.md.
+ */
 :root {
   --bg-color: #0a0d10;
   --fg-color: #e8f4ff;

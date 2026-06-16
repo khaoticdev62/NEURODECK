@@ -236,7 +236,7 @@ export function SyncView() {
   };
 
   return (
-    <div data-testid="sync-view" className="flex h-full flex-col">
+    <div className="flex h-full flex-col">
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">

@@ -29,7 +29,7 @@ export function RecoveryView({
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div data-testid="recovery-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
+    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Active Error */}
         <Panel eyebrow="Recovery" title="Current Error State">
