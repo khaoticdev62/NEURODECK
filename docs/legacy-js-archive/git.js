@@ -119,8 +119,9 @@ async function refreshWorktree() {
   const list = document.getElementById("git-worktree");
   if (!list || !currentRepoPath) return;
   try {
-    const files = await invoke("git_status", { path: currentRepoPath });
-    if (!files || files.length === 0) {
+    const result = await invoke("git_status", { path: currentRepoPath });
+    const files = result.files || [];
+    if (!files.length) {
       list.innerHTML = `<div class="git-empty">Working tree clean.</div>`;
       return;
     }
@@ -266,9 +267,9 @@ async function refreshBranches() {
       .map(
         (b) => `
       <div class="git-branch-row">
-        <span class="git-branch-name">${escapeHtml(b)}</span>
-        <button class="git-btn-small" data-action="checkout" data-branch="${escapeHtml(b)}">Checkout</button>
-        <button class="git-btn-small" data-action="delete" data-branch="${escapeHtml(b)}">Del</button>
+        <span class="git-branch-name">${escapeHtml(b.name)}${b.is_head ? " *" : ""}</span>
+        <button class="git-btn-small" data-action="checkout" data-branch="${escapeHtml(b.name)}">Checkout</button>
+        <button class="git-btn-small" data-action="delete" data-branch="${escapeHtml(b.name)}">Del</button>
       </div>
     `
       )
@@ -302,13 +303,13 @@ async function refreshHistory() {
   const list = document.getElementById("git-history-list");
   if (!list || !currentRepoPath) return;
   try {
-    const commits = await invoke("git_log", { path: currentRepoPath, maxCount: 25 });
+    const commits = await invoke("git_log", { path: currentRepoPath, max_count: 25 });
     list.innerHTML = (commits || [])
       .map(
         (c) => `
       <div class="git-commit-row" title="${escapeHtml(c.message)}">
-        <span class="git-commit-sha">${escapeHtml(c.shortSha)}</span>
-        <span class="git-commit-msg">${escapeHtml(c.message.split("\\n")[0])}</span>
+        <span class="git-commit-sha">${escapeHtml(c.short_sha)}</span>
+        <span class="git-commit-msg">${escapeHtml((c.message || "").split("\\n")[0])}</span>
       </div>
     `
       )
