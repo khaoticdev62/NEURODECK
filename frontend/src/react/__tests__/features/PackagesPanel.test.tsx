@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PackagesPanel } from "../../features/settings/PackagesPanel";
 
@@ -65,11 +65,8 @@ describe("PackagesPanel", () => {
     await waitFor(() => expect(screen.getByText(/Node v20/)).toBeDefined());
 
     const nameInput = screen.getByPlaceholderText("package-name");
-    fireEvent.change(nameInput, { target: { value: "eslint" } });
-
-    const installBtn = screen.getByRole("button", { name: /^install$/i });
-    await waitFor(() => expect(installBtn).not.toBeDisabled());
-    await userEvent.click(installBtn);
+    await userEvent.type(nameInput, "eslint");
+    await userEvent.click(screen.getByRole("button", { name: /^install$/i }));
 
     await waitFor(() => expect(mockInstall).toHaveBeenCalledWith("eslint", undefined));
   });
