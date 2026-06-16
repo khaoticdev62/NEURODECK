@@ -32,15 +32,12 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Install e2e dependencies
-        run: npm ci
-        working-directory: e2e
+        run: |
+          npm ci
+          cd e2e && npm ci
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
-        working-directory: e2e
 
       - name: Build frontend
         run: npm run frontend:build
@@ -67,7 +64,7 @@ jobs:
         run: |
           cat > tests/a11y-scan.spec.js <<'EOF'
           const { test, expect } = require('@playwright/test');
-          const { AxeBuilder } = require('@axe-core/playwright');
+          const { injectAxe, getViolations } = require('@axe-core/playwright');
 
           const routes = ['/', '/settings', '/chat', '/canvas', '/terminal'];
 
@@ -75,13 +72,12 @@ jobs:
             test(`a11y scan for ${route}`, async ({ page }) => {
               await page.goto(`http://localhost:4173${route}`);
               await page.waitForLoadState('networkidle');
-              const { violations } = await new AxeBuilder({ page })
-                .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
-                .analyze();
+              await injectAxe(page);
+              const violations = await getViolations(page, null, {
+                runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa'],
+                resultTypes: ['violations'],
+              });
               const criticalSerious = violations.filter(v => v.impact === 'critical' || v.impact === 'serious');
-              if (criticalSerious.length > 0) {
-                console.error(JSON.stringify(criticalSerious.map(v => ({ id: v.id, impact: v.impact, description: v.description, nodes: v.nodes.length })), null, 2));
-              }
               expect(criticalSerious, `Found ${criticalSerious.length} critical/serious a11y violations on ${route}`).toHaveLength(0);
             });
           }
@@ -109,11 +105,10 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm ci
-        working-directory: e2e
+      - run: |
+          npm ci
+          cd e2e && npm ci
       - run: npx playwright install --with-deps chromium
-        working-directory: e2e
       - run: npm run frontend:build
       - working-directory: e2e
         run: |

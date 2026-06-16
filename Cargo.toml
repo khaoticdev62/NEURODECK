@@ -5,3 +5,9 @@ members = [
     "infrastructure"
 , "bootstrapper"]
 resolver = "2"
+
+[workspace.package]
+license = "LicenseRef-NEURODECK-EULA"
+authors = ["khaoticdev62"]
+edition = "2021"
+rust-version = "1.92.0"
