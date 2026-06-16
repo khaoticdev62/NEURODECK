@@ -1,0 +1,2509 @@
+{
+  "meta": {
+    "generated": "2026-06-16T17:20:24.226Z",
+    "source": "frontend/src/app.css",
+    "lineCount": 24874,
+    "note": "Phase 0 scaffolding. Values are candidate mappings, not yet applied.",
+    "appliedInSprint1": {
+      "date": "2026-06-16T17:21:07.512Z",
+      "files": [
+        "frontend/src/design-system/tokens/tokens.css",
+        "frontend/src/app.css"
+      ],
+      "colors": [
+        {
+          "from": "rgba(255,255,255,0.65)",
+          "to": "var(--nd-white-65)",
+          "count": 244
+        },
+        {
+          "from": "rgba(255,255,255,0.08)",
+          "to": "var(--nd-white-8)",
+          "count": 89
+        },
+        {
+          "from": "rgba(255,255,255,0.06)",
+          "to": "var(--nd-white-6)",
+          "count": 81
+        },
+        {
+          "from": "rgba(255,255,255,0.05)",
+          "to": "var(--nd-white-5)",
+          "count": 78
+        },
+        {
+          "from": "rgba(255,255,255,0.1)",
+          "to": "var(--nd-white-10)",
+          "count": 73
+        },
+        {
+          "from": "rgba(255,255,255,0.04)",
+          "to": "var(--nd-white-4)",
+          "count": 69
+        },
+        {
+          "from": "rgba(255,255,255,0.03)",
+          "to": "var(--nd-white-3)",
+          "count": 65
+        },
+        {
+          "from": "rgba(255,255,255,0.02)",
+          "to": "var(--nd-white-2)",
+          "count": 38
+        },
+        {
+          "from": "rgba(255,255,255,0.07)",
+          "to": "var(--nd-white-7)",
+          "count": 36
+        },
+        {
+          "from": "rgba(0,0,0,0.3)",
+          "to": "var(--nd-black-30)",
+          "count": 42
+        },
+        {
+          "from": "rgba(0,0,0,0.5)",
+          "to": "var(--nd-black-50)",
+          "count": 13
+        },
+        {
+          "from": "#ffffff / #fff",
+          "to": "var(--nd-white-100)",
+          "count": 30
+        },
+        {
+          "from": "#e2e8f0",
+          "to": "var(--nd-text-legacy-bright)",
+          "count": 27
+        },
+        {
+          "from": "#5eebff",
+          "to": "var(--nd-accent-primary)",
+          "count": 26
+        },
+        {
+          "from": "#00f0ff",
+          "to": "var(--nd-accent-bright)",
+          "count": 64
+        }
+      ],
+      "radii": [
+        {
+          "from": "4px",
+          "to": "var(--nd-radius-xs)",
+          "count": 72
+        },
+        {
+          "from": "6px",
+          "to": "var(--nd-radius-sm)",
+          "count": 101
+        },
+        {
+          "from": "8px",
+          "to": "var(--nd-radius-sm) /* 8px */",
+          "count": 73
+        },
+        {
+          "from": "10px",
+          "to": "var(--nd-radius-md)",
+          "count": 44
+        },
+        {
+          "from": "12px",
+          "to": "var(--nd-radius-md) /* 12px */",
+          "count": 34
+        },
+        {
+          "from": "999px",
+          "to": "var(--nd-radius-full)",
+          "count": 24
+        }
+      ],
+      "legacyAliases": [
+        "--bg-color → --nd-surface-primary",
+        "--fg-color → --nd-text-primary",
+        "--accent-color → --nd-accent-primary",
+        "--response-color → --nd-accent-success",
+        "--warning-color → --nd-accent-warning",
+        "--error-color → --nd-accent-error",
+        "--panel-bg → --nd-surface-secondary",
+        "--muted-color → --nd-surface-legacy-muted",
+        "--border-color → --nd-accent-a15",
+        "--shadow-color → --nd-black-50",
+        "--font-sans → --nd-font-ui",
+        "--font-mono → --nd-font-mono",
+        "--font-display → --nd-font-display",
+        "--space-1..12 → --nd-space-1..12",
+        "--dur-micro → --nd-motion-micro",
+        "--dur-base → --nd-motion-slow",
+        "--dur-enter → --nd-motion-enter",
+        "--dur-spring → --nd-motion-spring",
+        "--dur-ambient → --nd-motion-ambient",
+        "--ease-* → --nd-ease-*",
+        "--shadow-* → --nd-elevation-shadow-* / --nd-elevation-glow-*",
+        "--bg-dark → --nd-void-975",
+        "--bg-surface → --nd-surface-ide",
+        "--fg-muted → --nd-white-45",
+        "--color-success/info/warning/danger → --nd-*-legacy"
+      ],
+      "deferred": [
+        "Spacing body replacements (ambiguous context between padding/margin vs border-width/font-size).",
+        "Duration body replacements (low frequency, mostly already use --dur-* aliases).",
+        "Shadow body replacements (complex multi-value strings; addressed via --shadow-* aliases)."
+      ]
+    }
+  },
+  "colors": [
+    {
+      "value": "rgba(var(--accent-rgb)",
+      "raw": "rgba(var(--accent-rgb)",
+      "occurrences": 640,
+      "proposedToken": null,
+      "contexts": [
+        "L311",
+        "L352",
+        "L353"
+      ]
+    },
+    {
+      "value": "rgba(var(--response-rgb)",
+      "raw": "rgba(var(--response-rgb)",
+      "occurrences": 19,
+      "proposedToken": null,
+      "contexts": [
+        "L1011",
+        "L1062",
+        "L1088"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.4)",
+      "raw": "rgba(0, 0, 0, 0.4)",
+      "occurrences": 18,
+      "proposedToken": null,
+      "contexts": [
+        "L1283",
+        "L1384",
+        "L1739"
+      ]
+    },
+    {
+      "value": "rgba(var(--error-rgb)",
+      "raw": "rgba(var(--error-rgb)",
+      "occurrences": 18,
+      "proposedToken": null,
+      "contexts": [
+        "L1570",
+        "L1599",
+        "L1969"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.25)",
+      "raw": "rgba(0, 0, 0, 0.25)",
+      "occurrences": 18,
+      "proposedToken": null,
+      "contexts": [
+        "L3503",
+        "L4717",
+        "L5582"
+      ]
+    },
+    {
+      "value": "rgba(94, 235, 255, 0.15)",
+      "raw": "rgba(94, 235, 255, 0.15)",
+      "occurrences": 18,
+      "proposedToken": null,
+      "contexts": [
+        "L5999",
+        "L6009",
+        "L7228"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.12)",
+      "raw": "rgba(255, 255, 255, 0.12)",
+      "occurrences": 17,
+      "proposedToken": null,
+      "contexts": [
+        "L1260",
+        "L2370",
+        "L5388"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.15)",
+      "raw": "rgba(255, 255, 255, 0.15)",
+      "occurrences": 17,
+      "proposedToken": null,
+      "contexts": [
+        "L4247",
+        "L5134",
+        "L5135"
+      ]
+    },
+    {
+      "value": "rgba(94, 235, 255, 0.12)",
+      "raw": "rgba(94, 235, 255, 0.12)",
+      "occurrences": 17,
+      "proposedToken": null,
+      "contexts": [
+        "L6005",
+        "L7031",
+        "L7066"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.2)",
+      "raw": "rgba(0, 0, 0, 0.2)",
+      "occurrences": 16,
+      "proposedToken": null,
+      "contexts": [
+        "L1825",
+        "L1841",
+        "L4073"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.85)",
+      "raw": "rgba(255, 255, 255, 0.85)",
+      "occurrences": 16,
+      "proposedToken": null,
+      "contexts": [
+        "L2652",
+        "L5919",
+        "L8885"
+      ]
+    },
+    {
+      "value": "#ff3c5a",
+      "raw": "#ff3c5a",
+      "occurrences": 16,
+      "proposedToken": null,
+      "contexts": [
+        "L3279",
+        "L4162",
+        "L4173"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.8)",
+      "raw": "rgba(255, 255, 255, 0.8)",
+      "occurrences": 16,
+      "proposedToken": null,
+      "contexts": [
+        "L6330",
+        "L7553",
+        "L8064"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.6)",
+      "raw": "rgba(255, 255, 255, 0.6)",
+      "occurrences": 15,
+      "proposedToken": null,
+      "contexts": [
+        "L1722",
+        "L5087",
+        "L5524"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.025)",
+      "raw": "rgba(255, 255, 255, 0.025)",
+      "occurrences": 14,
+      "proposedToken": null,
+      "contexts": [
+        "L1030",
+        "L3912",
+        "L4514"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.75)",
+      "raw": "rgba(255, 255, 255, 0.75)",
+      "occurrences": 14,
+      "proposedToken": null,
+      "contexts": [
+        "L3551",
+        "L5389",
+        "L5421"
+      ]
+    },
+    {
+      "value": "#00ff88",
+      "raw": "#00ff88",
+      "occurrences": 14,
+      "proposedToken": null,
+      "contexts": [
+        "L8237",
+        "L9635",
+        "L9780"
+      ]
+    },
+    {
+      "value": "#64748b",
+      "raw": "#64748b",
+      "occurrences": 13,
+      "proposedToken": null,
+      "contexts": [
+        "L16925",
+        "L16937",
+        "L16954"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.72)",
+      "raw": "rgba(255, 255, 255, 0.72)",
+      "occurrences": 12,
+      "proposedToken": null,
+      "contexts": [
+        "L1056",
+        "L5285",
+        "L5510"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.35)",
+      "raw": "rgba(0, 0, 0, 0.35)",
+      "occurrences": 12,
+      "proposedToken": null,
+      "contexts": [
+        "L1477",
+        "L1823",
+        "L3075"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.7)",
+      "raw": "rgba(255, 255, 255, 0.7)",
+      "occurrences": 12,
+      "proposedToken": null,
+      "contexts": [
+        "L9015",
+        "L9661",
+        "L10645"
+      ]
+    },
+    {
+      "value": "#94a3b8",
+      "raw": "#94a3b8",
+      "occurrences": 11,
+      "proposedToken": null,
+      "contexts": [
+        "L16735",
+        "L16820",
+        "L16860"
+      ]
+    },
+    {
+      "value": "#475569",
+      "raw": "#475569",
+      "occurrences": 11,
+      "proposedToken": null,
+      "contexts": [
+        "L17161",
+        "L17509",
+        "L17538"
+      ]
+    },
+    {
+      "value": "#00e5ff",
+      "raw": "#00e5ff",
+      "occurrences": 11,
+      "proposedToken": null,
+      "contexts": [
+        "L18388",
+        "L18440",
+        "L18455"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.09)",
+      "raw": "rgba(255, 255, 255, 0.09)",
+      "occurrences": 10,
+      "proposedToken": null,
+      "contexts": [
+        "L5338",
+        "L5360",
+        "L7343"
+      ]
+    },
+    {
+      "value": "rgba(var(--warning-rgb)",
+      "raw": "rgba(var(--warning-rgb)",
+      "occurrences": 9,
+      "proposedToken": null,
+      "contexts": [
+        "L1566",
+        "L10891",
+        "L17718"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.9)",
+      "raw": "rgba(255, 255, 255, 0.9)",
+      "occurrences": 9,
+      "proposedToken": null,
+      "contexts": [
+        "L3611",
+        "L6372",
+        "L15639"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.6)",
+      "raw": "rgba(0, 0, 0, 0.6)",
+      "occurrences": 9,
+      "proposedToken": null,
+      "contexts": [
+        "L9630",
+        "L10293",
+        "L10310"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.035)",
+      "raw": "rgba(255, 255, 255, 0.035)",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L1548",
+        "L8379",
+        "L8565"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.55)",
+      "raw": "rgba(0, 0, 0, 0.55)",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L1822",
+        "L1838",
+        "L4998"
+      ]
+    },
+    {
+      "value": "rgba(var(--accent-rgb, 0, 240, 255)",
+      "raw": "rgba(var(--accent-rgb, 0, 240, 255)",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L2655",
+        "L3780",
+        "L3781"
+      ]
+    },
+    {
+      "value": "rgba(var(--settings-panel-accent)",
+      "raw": "rgba(var(--settings-panel-accent)",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L2905",
+        "L2908",
+        "L3305"
+      ]
+    },
+    {
+      "value": "rgba(148, 163, 184, 0.7)",
+      "raw": "rgba(148, 163, 184, 0.7)",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L4400",
+        "L24082",
+        "L24113"
+      ]
+    },
+    {
+      "value": "rgba(148, 163, 184, 0.1)",
+      "raw": "rgba(148, 163, 184, 0.1)",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L4402",
+        "L4424",
+        "L4447"
+      ]
+    },
+    {
+      "value": "#a78bfa",
+      "raw": "#a78bfa",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L4907",
+        "L5164",
+        "L7831"
+      ]
+    },
+    {
+      "value": "#030508",
+      "raw": "#030508",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L5176",
+        "L7664",
+        "L8321"
+      ]
+    },
+    {
+      "value": "rgba(94, 235, 255, 0.2)",
+      "raw": "rgba(94, 235, 255, 0.2)",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L16150",
+        "L16259",
+        "L16287"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.065)",
+      "raw": "rgba(255, 255, 255, 0.065)",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L20160",
+        "L20200",
+        "L20522"
+      ]
+    },
+    {
+      "value": "#2aa876",
+      "raw": "#2aa876",
+      "occurrences": 8,
+      "proposedToken": null,
+      "contexts": [
+        "L21642",
+        "L21803",
+        "L22041"
+      ]
+    },
+    {
+      "value": "rgba(0, 200, 220, 0.14)",
+      "raw": "rgba(0, 200, 220, 0.14)",
+      "occurrences": 7,
+      "proposedToken": null,
+      "contexts": [
+        "L905",
+        "L2044",
+        "L3511"
+      ]
+    },
+    {
+      "value": "rgba(6, 9, 12, 0.95)",
+      "raw": "rgba(6, 9, 12, 0.95)",
+      "occurrences": 7,
+      "proposedToken": null,
+      "contexts": [
+        "L9163",
+        "L9207",
+        "L17622"
+      ]
+    },
+    {
+      "value": "rgba(94, 235, 255, 0.08)",
+      "raw": "rgba(94, 235, 255, 0.08)",
+      "occurrences": 7,
+      "proposedToken": null,
+      "contexts": [
+        "L16056",
+        "L16181",
+        "L16297"
+      ]
+    },
+    {
+      "value": "rgba(94, 235, 255, 0.06)",
+      "raw": "rgba(94, 235, 255, 0.06)",
+      "occurrences": 7,
+      "proposedToken": null,
+      "contexts": [
+        "L16192",
+        "L16534",
+        "L16733"
+      ]
+    },
+    {
+      "value": "#fca5a5",
+      "raw": "#fca5a5",
+      "occurrences": 7,
+      "proposedToken": null,
+      "contexts": [
+        "L16815",
+        "L17247",
+        "L17258"
+      ]
+    },
+    {
+      "value": "rgba(239, 68, 68, 0.2)",
+      "raw": "rgba(239, 68, 68, 0.2)",
+      "occurrences": 7,
+      "proposedToken": null,
+      "contexts": [
+        "L17250",
+        "L17257",
+        "L17261"
+      ]
+    },
+    {
+      "value": "#e0e0f0",
+      "raw": "#e0e0f0",
+      "occurrences": 7,
+      "proposedToken": null,
+      "contexts": [
+        "L21556",
+        "L21592",
+        "L21608"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.18)",
+      "raw": "rgba(255, 255, 255, 0.18)",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L1521",
+        "L1603",
+        "L8537"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.055)",
+      "raw": "rgba(255, 255, 255, 0.055)",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L2583",
+        "L3400",
+        "L19996"
+      ]
+    },
+    {
+      "value": "rgba(167, 139, 250, 0.12)",
+      "raw": "rgba(167, 139, 250, 0.12)",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L4465",
+        "L7678",
+        "L7695"
+      ]
+    },
+    {
+      "value": "rgba(94, 235, 255, 0.1)",
+      "raw": "rgba(94, 235, 255, 0.1)",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L6010",
+        "L12528",
+        "L16270"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.3)",
+      "raw": "rgba(255, 255, 255, 0.3)",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L7890",
+        "L9251",
+        "L13429"
+      ]
+    },
+    {
+      "value": "rgba(8, 11, 18, 0.74)",
+      "raw": "rgba(8, 11, 18, 0.74)",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L7921",
+        "L9202",
+        "L10389"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.2)",
+      "raw": "rgba(255, 255, 255, 0.2)",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L9005",
+        "L13663",
+        "L14405"
+      ]
+    },
+    {
+      "value": "#000000",
+      "raw": "#000",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L9313",
+        "L11585",
+        "L11598"
+      ]
+    },
+    {
+      "value": "#86efac",
+      "raw": "#86efac",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L16803",
+        "L17037",
+        "L17239"
+      ]
+    },
+    {
+      "value": "#cbd5e1",
+      "raw": "#cbd5e1",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L16930",
+        "L17147",
+        "L17934"
+      ]
+    },
+    {
+      "value": "rgba(94, 235, 255, 0.4)",
+      "raw": "rgba(94, 235, 255, 0.4)",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L17015",
+        "L17032",
+        "L17220"
+      ]
+    },
+    {
+      "value": "#e05c5c",
+      "raw": "#e05c5c",
+      "occurrences": 6,
+      "proposedToken": null,
+      "contexts": [
+        "L21652",
+        "L21773",
+        "L21806"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.01)",
+      "raw": "rgba(255, 255, 255, 0.01)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L1030",
+        "L1715",
+        "L2141"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.88)",
+      "raw": "rgba(255, 255, 255, 0.88)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L1310",
+        "L6533",
+        "L20699"
+      ]
+    },
+    {
+      "value": "rgba(0, 200, 220, 0.22)",
+      "raw": "rgba(0, 200, 220, 0.22)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L2072",
+        "L3537",
+        "L7298"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.62)",
+      "raw": "rgba(255, 255, 255, 0.62)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L2609",
+        "L6188",
+        "L6384"
+      ]
+    },
+    {
+      "value": "rgba(255, 60, 90, 0.1)",
+      "raw": "rgba(255, 60, 90, 0.1)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L4160",
+        "L5552",
+        "L8715"
+      ]
+    },
+    {
+      "value": "rgba(4, 8, 14, 0.65)",
+      "raw": "rgba(4, 8, 14, 0.65)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L4658",
+        "L5559",
+        "L5587"
+      ]
+    },
+    {
+      "value": "rgba(0, 255, 136, 0.08)",
+      "raw": "rgba(0, 255, 136, 0.08)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L4891",
+        "L8135",
+        "L8602"
+      ]
+    },
+    {
+      "value": "rgba(6, 8, 14, 0.98)",
+      "raw": "rgba(6, 8, 14, 0.98)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L5008",
+        "L5219",
+        "L13326"
+      ]
+    },
+    {
+      "value": "#ffb000",
+      "raw": "#ffb000",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L8232",
+        "L9647",
+        "L9792"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.35)",
+      "raw": "rgba(255, 255, 255, 0.35)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L13362",
+        "L13476",
+        "L17059"
+      ]
+    },
+    {
+      "value": "rgba(239, 68, 68, 0.1)",
+      "raw": "rgba(239, 68, 68, 0.1)",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L17256",
+        "L17479",
+        "L20904"
+      ]
+    },
+    {
+      "value": "#f87171",
+      "raw": "#f87171",
+      "occurrences": 5,
+      "proposedToken": null,
+      "contexts": [
+        "L20705",
+        "L20869",
+        "L20906"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.7)",
+      "raw": "rgba(0, 0, 0, 0.7)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L604",
+        "L14246",
+        "L24252"
+      ]
+    },
+    {
+      "value": "rgba(255, 90, 106, 0.15)",
+      "raw": "rgba(255, 90, 106, 0.15)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L4174",
+        "L9695",
+        "L12457"
+      ]
+    },
+    {
+      "value": "#7c3aed",
+      "raw": "#7c3aed",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L4912",
+        "L5169",
+        "L8464"
+      ]
+    },
+    {
+      "value": "rgba(0, 255, 136, 0.15)",
+      "raw": "rgba(0, 255, 136, 0.15)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L5757",
+        "L20008",
+        "L22621"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.55)",
+      "raw": "rgba(255, 255, 255, 0.55)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L7642",
+        "L11257",
+        "L19200"
+      ]
+    },
+    {
+      "value": "rgba(0, 255, 136, 0.12)",
+      "raw": "rgba(0, 255, 136, 0.12)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L8026",
+        "L8134",
+        "L8159"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.68)",
+      "raw": "rgba(255, 255, 255, 0.68)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L8293",
+        "L9810",
+        "L11147"
+      ]
+    },
+    {
+      "value": "rgba(15, 23, 42, 0.5)",
+      "raw": "rgba(15, 23, 42, 0.5)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L8657",
+        "L8673",
+        "L24099"
+      ]
+    },
+    {
+      "value": "rgba(226, 232, 240, 0.7)",
+      "raw": "rgba(226, 232, 240, 0.7)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L8660",
+        "L8676",
+        "L24346"
+      ]
+    },
+    {
+      "value": "#d9f7ff",
+      "raw": "#d9f7ff",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L11469",
+        "L11558",
+        "L14272"
+      ]
+    },
+    {
+      "value": "#e0e0e0",
+      "raw": "#e0e0e0",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L12873",
+        "L13021",
+        "L13260"
+      ]
+    },
+    {
+      "value": "#00e676",
+      "raw": "#00e676",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L13656",
+        "L13668",
+        "L13952"
+      ]
+    },
+    {
+      "value": "rgba(94, 235, 255, 0.14)",
+      "raw": "rgba(94, 235, 255, 0.14)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L16743",
+        "L16829",
+        "L16883"
+      ]
+    },
+    {
+      "value": "#ef4444",
+      "raw": "#ef4444",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L16960",
+        "L17193",
+        "L17344"
+      ]
+    },
+    {
+      "value": "rgba(34, 197, 94, 0.2)",
+      "raw": "rgba(34, 197, 94, 0.2)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L17046",
+        "L17242",
+        "L17470"
+      ]
+    },
+    {
+      "value": "rgba(var(--accent-rgb, 0, 229, 255)",
+      "raw": "rgba(var(--accent-rgb, 0, 229, 255)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L18435",
+        "L18452",
+        "L18453"
+      ]
+    },
+    {
+      "value": "rgba(var(--fg-color, 200, 220, 255)",
+      "raw": "rgba(var(--fg-color, 200, 220, 255)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L19840",
+        "L19898",
+        "L19906"
+      ]
+    },
+    {
+      "value": "rgba(20, 26, 40, 0.95)",
+      "raw": "rgba(20, 26, 40, 0.95)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L20158",
+        "L20613",
+        "L21383"
+      ]
+    },
+    {
+      "value": "rgba(14, 18, 30, 0.98)",
+      "raw": "rgba(14, 18, 30, 0.98)",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L20327",
+        "L20614",
+        "L21384"
+      ]
+    },
+    {
+      "value": "#e09b3d",
+      "raw": "#e09b3d",
+      "occurrences": 4,
+      "proposedToken": null,
+      "contexts": [
+        "L22056",
+        "L22069",
+        "L22343"
+      ]
+    },
+    {
+      "value": "rgba(8, 12, 16, 0.95)",
+      "raw": "rgba(8, 12, 16, 0.95)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L235",
+        "L2094",
+        "L5149"
+      ]
+    },
+    {
+      "value": "rgba(124, 255, 178, 0.15)",
+      "raw": "rgba(124, 255, 178, 0.15)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L972",
+        "L9225",
+        "L13669"
+      ]
+    },
+    {
+      "value": "rgba(14, 18, 26, 0.98)",
+      "raw": "rgba(14, 18, 26, 0.98)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L2259",
+        "L2481",
+        "L15468"
+      ]
+    },
+    {
+      "value": "rgba(8, 10, 16, 0.98)",
+      "raw": "rgba(8, 10, 16, 0.98)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L2259",
+        "L2481",
+        "L15468"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0)",
+      "raw": "rgba(255, 255, 255, 0)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L2582",
+        "L2850",
+        "L2911"
+      ]
+    },
+    {
+      "value": "rgb(255, 149, 0)",
+      "raw": "rgb(255, 149, 0)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L2738",
+        "L2818",
+        "L7127"
+      ]
+    },
+    {
+      "value": "rgb(191, 174, 255)",
+      "raw": "rgb(191, 174, 255)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L2753",
+        "L2798",
+        "L8368"
+      ]
+    },
+    {
+      "value": "rgba(255, 60, 90, 0.25)",
+      "raw": "rgba(255, 60, 90, 0.25)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L3278",
+        "L4161",
+        "L8034"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.18)",
+      "raw": "rgba(0, 0, 0, 0.18)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L3329",
+        "L4600",
+        "L4791"
+      ]
+    },
+    {
+      "value": "#040608",
+      "raw": "#040608",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L4120",
+        "L19985",
+        "L23288"
+      ]
+    }
+  ],
+  "spacing": [
+    {
+      "valuePx": 1,
+      "occurrences": 740,
+      "proposedToken": "--nd-space-0 /* 1px */"
+    },
+    {
+      "valuePx": 8,
+      "occurrences": 447,
+      "proposedToken": "--nd-space-2"
+    },
+    {
+      "valuePx": 10,
+      "occurrences": 340,
+      "proposedToken": "--nd-space-2 /* 10px */"
+    },
+    {
+      "valuePx": 12,
+      "occurrences": 330,
+      "proposedToken": "--nd-space-3"
+    },
+    {
+      "valuePx": 6,
+      "occurrences": 278,
+      "proposedToken": "--nd-space-1 /* 6px */"
+    },
+    {
+      "valuePx": 2,
+      "occurrences": 245,
+      "proposedToken": "--nd-space-0 /* 2px */"
+    },
+    {
+      "valuePx": 4,
+      "occurrences": 244,
+      "proposedToken": "--nd-space-1"
+    },
+    {
+      "valuePx": 14,
+      "occurrences": 166,
+      "proposedToken": "--nd-space-3 /* 14px */"
+    },
+    {
+      "valuePx": 16,
+      "occurrences": 160,
+      "proposedToken": "--nd-space-4"
+    },
+    {
+      "valuePx": 20,
+      "occurrences": 110,
+      "proposedToken": "--nd-space-5"
+    },
+    {
+      "valuePx": 5,
+      "occurrences": 91,
+      "proposedToken": "--nd-space-1 /* 5px */"
+    },
+    {
+      "valuePx": 3,
+      "occurrences": 77,
+      "proposedToken": "--nd-space-1 /* 3px */"
+    },
+    {
+      "valuePx": 24,
+      "occurrences": 61,
+      "proposedToken": "--nd-space-6"
+    },
+    {
+      "valuePx": 18,
+      "occurrences": 56,
+      "proposedToken": "--nd-space-4 /* 18px */"
+    },
+    {
+      "valuePx": 7,
+      "occurrences": 54,
+      "proposedToken": "--nd-space-2 /* 7px */"
+    },
+    {
+      "valuePx": 40,
+      "occurrences": 51,
+      "proposedToken": "--nd-space-10"
+    },
+    {
+      "valuePx": 32,
+      "occurrences": 42,
+      "proposedToken": "--nd-space-8"
+    },
+    {
+      "valuePx": 9,
+      "occurrences": 31,
+      "proposedToken": "--nd-space-2 /* 9px */"
+    },
+    {
+      "valuePx": 28,
+      "occurrences": 31,
+      "proposedToken": "--nd-space-6 /* 28px */"
+    },
+    {
+      "valuePx": 180,
+      "occurrences": 23,
+      "proposedToken": "--nd-space-16 /* 180px */"
+    },
+    {
+      "valuePx": 0.5,
+      "occurrences": 21,
+      "proposedToken": "--nd-space-0 /* 0.5px */"
+    },
+    {
+      "valuePx": 15,
+      "occurrences": 20,
+      "proposedToken": "--nd-space-4 /* 15px */"
+    },
+    {
+      "valuePx": 80,
+      "occurrences": 19,
+      "proposedToken": "--nd-space-16 /* 80px */"
+    },
+    {
+      "valuePx": 36,
+      "occurrences": 19,
+      "proposedToken": "--nd-space-8 /* 36px */"
+    },
+    {
+      "valuePx": 220,
+      "occurrences": 17,
+      "proposedToken": "--nd-space-16 /* 220px */"
+    },
+    {
+      "valuePx": 42,
+      "occurrences": 16,
+      "proposedToken": "--nd-space-10 /* 42px */"
+    },
+    {
+      "valuePx": 160,
+      "occurrences": 13,
+      "proposedToken": "--nd-space-16 /* 160px */"
+    },
+    {
+      "valuePx": 640,
+      "occurrences": 13,
+      "proposedToken": "--nd-space-16 /* 640px */"
+    },
+    {
+      "valuePx": 48,
+      "occurrences": 13,
+      "proposedToken": "--nd-space-12"
+    },
+    {
+      "valuePx": 120,
+      "occurrences": 12,
+      "proposedToken": "--nd-space-16 /* 120px */"
+    },
+    {
+      "valuePx": 22,
+      "occurrences": 12,
+      "proposedToken": "--nd-space-5 /* 22px */"
+    },
+    {
+      "valuePx": 26,
+      "occurrences": 12,
+      "proposedToken": "--nd-space-6 /* 26px */"
+    },
+    {
+      "valuePx": 13,
+      "occurrences": 11,
+      "proposedToken": "--nd-space-3 /* 13px */"
+    },
+    {
+      "valuePx": 240,
+      "occurrences": 11,
+      "proposedToken": "--nd-space-16 /* 240px */"
+    },
+    {
+      "valuePx": 11,
+      "occurrences": 11,
+      "proposedToken": "--nd-space-3 /* 11px */"
+    },
+    {
+      "valuePx": 760,
+      "occurrences": 10,
+      "proposedToken": "--nd-space-16 /* 760px */"
+    },
+    {
+      "valuePx": 0.3,
+      "occurrences": 10,
+      "proposedToken": "--nd-space-0 /* 0.3px */"
+    },
+    {
+      "valuePx": 720,
+      "occurrences": 10,
+      "proposedToken": "--nd-space-16 /* 720px */"
+    },
+    {
+      "valuePx": 280,
+      "occurrences": 9,
+      "proposedToken": "--nd-space-16 /* 280px */"
+    },
+    {
+      "valuePx": 980,
+      "occurrences": 9,
+      "proposedToken": "--nd-space-16 /* 980px */"
+    },
+    {
+      "valuePx": 800,
+      "occurrences": 9,
+      "proposedToken": "--nd-space-16 /* 800px */"
+    },
+    {
+      "valuePx": 1.5,
+      "occurrences": 8,
+      "proposedToken": "--nd-space-0 /* 1.5px */"
+    },
+    {
+      "valuePx": 52,
+      "occurrences": 8,
+      "proposedToken": "--nd-space-12 /* 52px */"
+    },
+    {
+      "valuePx": 30,
+      "occurrences": 8,
+      "proposedToken": "--nd-space-8 /* 30px */"
+    },
+    {
+      "valuePx": 620,
+      "occurrences": 8,
+      "proposedToken": "--nd-space-16 /* 620px */"
+    },
+    {
+      "valuePx": 200,
+      "occurrences": 8,
+      "proposedToken": "--nd-space-16 /* 200px */"
+    },
+    {
+      "valuePx": 64,
+      "occurrences": 8,
+      "proposedToken": "--nd-space-16"
+    },
+    {
+      "valuePx": 860,
+      "occurrences": 8,
+      "proposedToken": "--nd-space-16 /* 860px */"
+    },
+    {
+      "valuePx": 260,
+      "occurrences": 8,
+      "proposedToken": "--nd-space-16 /* 260px */"
+    },
+    {
+      "valuePx": 44,
+      "occurrences": 7,
+      "proposedToken": "--nd-space-10 /* 44px */"
+    },
+    {
+      "valuePx": 140,
+      "occurrences": 7,
+      "proposedToken": "--nd-space-16 /* 140px */"
+    },
+    {
+      "valuePx": 34,
+      "occurrences": 7,
+      "proposedToken": "--nd-space-8 /* 34px */"
+    },
+    {
+      "valuePx": 150,
+      "occurrences": 7,
+      "proposedToken": "--nd-space-16 /* 150px */"
+    },
+    {
+      "valuePx": 300,
+      "occurrences": 7,
+      "proposedToken": "--nd-space-16 /* 300px */"
+    },
+    {
+      "valuePx": 1280,
+      "occurrences": 7,
+      "proposedToken": "--nd-space-16 /* 1280px */"
+    },
+    {
+      "valuePx": 46,
+      "occurrences": 6,
+      "proposedToken": "--nd-space-12 /* 46px */"
+    },
+    {
+      "valuePx": 250,
+      "occurrences": 6,
+      "proposedToken": "--nd-space-16 /* 250px */"
+    },
+    {
+      "valuePx": 72,
+      "occurrences": 6,
+      "proposedToken": "--nd-space-16 /* 72px */"
+    },
+    {
+      "valuePx": 500,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-16 /* 500px */"
+    },
+    {
+      "valuePx": 0.2,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-0 /* 0.2px */"
+    },
+    {
+      "valuePx": 60,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-16 /* 60px */"
+    },
+    {
+      "valuePx": 110,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-16 /* 110px */"
+    },
+    {
+      "valuePx": 820,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-16 /* 820px */"
+    },
+    {
+      "valuePx": 480,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-16 /* 480px */"
+    },
+    {
+      "valuePx": 1240,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-16 /* 1240px */"
+    },
+    {
+      "valuePx": 1.8,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-0 /* 1.8px */"
+    },
+    {
+      "valuePx": 320,
+      "occurrences": 5,
+      "proposedToken": "--nd-space-16 /* 320px */"
+    },
+    {
+      "valuePx": 580,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-16 /* 580px */"
+    },
+    {
+      "valuePx": 400,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-16 /* 400px */"
+    },
+    {
+      "valuePx": 0.8,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-0 /* 0.8px */"
+    },
+    {
+      "valuePx": 38,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-10 /* 38px */"
+    },
+    {
+      "valuePx": 560,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-16 /* 560px */"
+    },
+    {
+      "valuePx": 96,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-16 /* 96px */"
+    },
+    {
+      "valuePx": 1100,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-16 /* 1100px */"
+    },
+    {
+      "valuePx": 170,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-16 /* 170px */"
+    },
+    {
+      "valuePx": 56,
+      "occurrences": 4,
+      "proposedToken": "--nd-space-12 /* 56px */"
+    },
+    {
+      "valuePx": 900,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 900px */"
+    },
+    {
+      "valuePx": 600,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 600px */"
+    },
+    {
+      "valuePx": 58,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 58px */"
+    },
+    {
+      "valuePx": 100,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 100px */"
+    },
+    {
+      "valuePx": 0.4,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-0 /* 0.4px */"
+    },
+    {
+      "valuePx": 0.6,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-0 /* 0.6px */"
+    },
+    {
+      "valuePx": 90,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 90px */"
+    },
+    {
+      "valuePx": 104,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 104px */"
+    },
+    {
+      "valuePx": 84,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 84px */"
+    },
+    {
+      "valuePx": 70,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 70px */"
+    },
+    {
+      "valuePx": 35,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-8 /* 35px */"
+    },
+    {
+      "valuePx": 680,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 680px */"
+    },
+    {
+      "valuePx": 68,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 68px */"
+    },
+    {
+      "valuePx": 420,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 420px */"
+    },
+    {
+      "valuePx": 190,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 190px */"
+    },
+    {
+      "valuePx": 736,
+      "occurrences": 3,
+      "proposedToken": "--nd-space-16 /* 736px */"
+    },
+    {
+      "valuePx": 1480,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 1480px */"
+    },
+    {
+      "valuePx": 224,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 224px */"
+    },
+    {
+      "valuePx": 520,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 520px */"
+    },
+    {
+      "valuePx": 960,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 960px */"
+    },
+    {
+      "valuePx": 184,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 184px */"
+    },
+    {
+      "valuePx": 132,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 132px */"
+    },
+    {
+      "valuePx": 130,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 130px */"
+    },
+    {
+      "valuePx": 210,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 210px */"
+    },
+    {
+      "valuePx": 176,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-16 /* 176px */"
+    },
+    {
+      "valuePx": 45,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-12 /* 45px */"
+    },
+    {
+      "valuePx": 4.5,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-1 /* 4.5px */"
+    },
+    {
+      "valuePx": 50,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-12 /* 50px */"
+    },
+    {
+      "valuePx": 2.5,
+      "occurrences": 2,
+      "proposedToken": "--nd-space-1 /* 2.5px */"
+    },
+    {
+      "valuePx": 440,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 440px */"
+    },
+    {
+      "valuePx": 230,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 230px */"
+    },
+    {
+      "valuePx": 660,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 660px */"
+    },
+    {
+      "valuePx": 0.15,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-0 /* 0.15px */"
+    },
+    {
+      "valuePx": 1.2,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-0 /* 1.2px */"
+    },
+    {
+      "valuePx": 920,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 920px */"
+    },
+    {
+      "valuePx": 1160,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 1160px */"
+    },
+    {
+      "valuePx": 9999,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 9999px */"
+    },
+    {
+      "valuePx": 74,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 74px */"
+    },
+    {
+      "valuePx": 82,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 82px */"
+    },
+    {
+      "valuePx": 116,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 116px */"
+    },
+    {
+      "valuePx": 78,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 78px */"
+    },
+    {
+      "valuePx": 92,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 92px */"
+    },
+    {
+      "valuePx": 700,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 700px */"
+    },
+    {
+      "valuePx": 460,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 460px */"
+    },
+    {
+      "valuePx": 380,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 380px */"
+    },
+    {
+      "valuePx": 330,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 330px */"
+    },
+    {
+      "valuePx": 155,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 155px */"
+    },
+    {
+      "valuePx": 128,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 128px */"
+    },
+    {
+      "valuePx": 105,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 105px */"
+    },
+    {
+      "valuePx": 235,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 235px */"
+    },
+    {
+      "valuePx": 740,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 740px */"
+    },
+    {
+      "valuePx": 360,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 360px */"
+    },
+    {
+      "valuePx": 1040,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 1040px */"
+    },
+    {
+      "valuePx": 780,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 780px */"
+    },
+    {
+      "valuePx": 112,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 112px */"
+    },
+    {
+      "valuePx": 43,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-10 /* 43px */"
+    },
+    {
+      "valuePx": 0.1,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-0 /* 0.1px */"
+    },
+    {
+      "valuePx": 1024,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 1024px */"
+    },
+    {
+      "valuePx": 768,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 768px */"
+    },
+    {
+      "valuePx": 25,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-6 /* 25px */"
+    },
+    {
+      "valuePx": 10.4,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-3 /* 10.4px */"
+    },
+    {
+      "valuePx": 721,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 721px */"
+    },
+    {
+      "valuePx": 2560,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 2560px */"
+    },
+    {
+      "valuePx": 1000,
+      "occurrences": 1,
+      "proposedToken": "--nd-space-16 /* 1000px */"
+    }
+  ],
+  "fontSizes": [
+    {
+      "valuePx": 10,
+      "occurrences": 2,
+      "proposedToken": null
+    }
+  ],
+  "radii": [
+    {
+      "valuePx": 8,
+      "occurrences": 77,
+      "proposedToken": "--nd-radius-sm /* 8px */"
+    },
+    {
+      "valuePx": 12,
+      "occurrences": 34,
+      "proposedToken": "--nd-radius-md /* 12px */"
+    },
+    {
+      "valuePx": 5,
+      "occurrences": 30,
+      "proposedToken": "--nd-radius-xs /* 5px */"
+    },
+    {
+      "valuePx": 3,
+      "occurrences": 21,
+      "proposedToken": "--nd-radius-xs /* 3px */"
+    },
+    {
+      "valuePx": 18,
+      "occurrences": 19,
+      "proposedToken": "--nd-radius-xl /* 18px */"
+    },
+    {
+      "valuePx": 2,
+      "occurrences": 17,
+      "proposedToken": "--nd-radius-none /* 2px */"
+    },
+    {
+      "valuePx": 7,
+      "occurrences": 14,
+      "proposedToken": "--nd-radius-sm /* 7px */"
+    },
+    {
+      "valuePx": 16,
+      "occurrences": 10,
+      "proposedToken": "--nd-radius-lg /* 16px */"
+    },
+    {
+      "valuePx": 14,
+      "occurrences": 9,
+      "proposedToken": "--nd-radius-lg"
+    },
+    {
+      "valuePx": 20,
+      "occurrences": 4,
+      "proposedToken": "--nd-radius-xl"
+    },
+    {
+      "valuePx": 9,
+      "occurrences": 2,
+      "proposedToken": "--nd-radius-md /* 9px */"
+    },
+    {
+      "valuePx": 1,
+      "occurrences": 2,
+      "proposedToken": "--nd-radius-none /* 1px */"
+    },
+    {
+      "valuePx": 22,
+      "occurrences": 1,
+      "proposedToken": "--nd-radius-xl /* 22px */"
+    }
+  ],
+  "durations": [
+    {
+      "valueMs": 280,
+      "occurrences": 5,
+      "proposedToken": "--nd-motion-slow /* 280ms */"
+    },
+    {
+      "valueMs": 0,
+      "occurrences": 5,
+      "proposedToken": "--nd-motion-instant"
+    },
+    {
+      "valueMs": 320,
+      "occurrences": 4,
+      "proposedToken": "--nd-motion-slow /* 320ms */"
+    },
+    {
+      "valueMs": 150,
+      "occurrences": 3,
+      "proposedToken": "--nd-motion-normal /* 150ms */"
+    },
+    {
+      "valueMs": 300,
+      "occurrences": 3,
+      "proposedToken": "--nd-motion-slow /* 300ms */"
+    },
+    {
+      "valueMs": 380,
+      "occurrences": 3,
+      "proposedToken": "--nd-motion-slow /* 380ms */"
+    },
+    {
+      "valueMs": 200,
+      "occurrences": 3,
+      "proposedToken": "--nd-motion-slow /* 200ms */"
+    },
+    {
+      "valueMs": 120,
+      "occurrences": 3,
+      "proposedToken": "--nd-motion-normal /* 120ms */"
+    },
+    {
+      "valueMs": 240,
+      "occurrences": 3,
+      "proposedToken": "--nd-motion-slow /* 240ms */"
+    },
+    {
+      "valueMs": 90,
+      "occurrences": 3,
+      "proposedToken": "--nd-motion-fast"
+    },
+    {
+      "valueMs": 420,
+      "occurrences": 2,
+      "proposedToken": "--nd-motion-slow /* 420ms */"
+    },
+    {
+      "valueMs": 80,
+      "occurrences": 2,
+      "proposedToken": "--nd-motion-fast /* 80ms */"
+    },
+    {
+      "valueMs": 180,
+      "occurrences": 2,
+      "proposedToken": "--nd-motion-normal /* 180ms */"
+    },
+    {
+      "valueMs": 60,
+      "occurrences": 2,
+      "proposedToken": "--nd-motion-fast /* 60ms */"
+    },
+    {
+      "valueMs": 210,
+      "occurrences": 2,
+      "proposedToken": "--nd-motion-slow /* 210ms */"
+    },
+    {
+      "valueMs": 0.01,
+      "occurrences": 2,
+      "proposedToken": "--nd-motion-instant /* 0.01ms */"
+    },
+    {
+      "valueMs": 900,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 900ms */"
+    },
+    {
+      "valueMs": 250,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 250ms */"
+    },
+    {
+      "valueMs": 400,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 400ms */"
+    },
+    {
+      "valueMs": 480,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 480ms */"
+    },
+    {
+      "valueMs": 18,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-instant /* 18ms */"
+    },
+    {
+      "valueMs": 36,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-instant /* 36ms */"
+    },
+    {
+      "valueMs": 54,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-fast /* 54ms */"
+    },
+    {
+      "valueMs": 72,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-fast /* 72ms */"
+    },
+    {
+      "valueMs": 108,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-fast /* 108ms */"
+    },
+    {
+      "valueMs": 126,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-normal /* 126ms */"
+    },
+    {
+      "valueMs": 144,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-normal /* 144ms */"
+    },
+    {
+      "valueMs": 45,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-instant /* 45ms */"
+    },
+    {
+      "valueMs": 135,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-normal /* 135ms */"
+    },
+    {
+      "valueMs": 225,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 225ms */"
+    },
+    {
+      "valueMs": 270,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 270ms */"
+    },
+    {
+      "valueMs": 315,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 315ms */"
+    },
+    {
+      "valueMs": 35,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-instant /* 35ms */"
+    },
+    {
+      "valueMs": 70,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-fast /* 70ms */"
+    },
+    {
+      "valueMs": 105,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-fast /* 105ms */"
+    },
+    {
+      "valueMs": 140,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-normal"
+    },
+    {
+      "valueMs": 175,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-normal /* 175ms */"
+    },
+    {
+      "valueMs": 220,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow"
+    },
+    {
+      "valueMs": 30,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-instant /* 30ms */"
+    },
+    {
+      "valueMs": 700,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 700ms */"
+    },
+    {
+      "valueMs": 110,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-fast /* 110ms */"
+    },
+    {
+      "valueMs": 160,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-normal /* 160ms */"
+    },
+    {
+      "valueMs": 260,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 260ms */"
+    },
+    {
+      "valueMs": 310,
+      "occurrences": 1,
+      "proposedToken": "--nd-motion-slow /* 310ms */"
+    }
+  ],
+  "zIndexes": [],
+  "shadows": [
+    {
+      "value": "inset 0 1px 0 var(--nd-white-5)",
+      "occurrences": 7,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 10px rgba(var(--accent-rgb), 0.15)",
+      "occurrences": 5,
+      "proposedToken": null
+    },
+    {
+      "value": "inset 0 1px 3px var(--nd-black-30)",
+      "occurrences": 5,
+      "proposedToken": null
+    },
+    {
+      "value": "inset 0 1px 0 var(--nd-white-4)",
+      "occurrences": 4,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(var(--accent-rgb), 0.12)",
+      "occurrences": 4,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(var(--accent-rgb), 0.1)",
+      "occurrences": 4,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 12px rgba(var(--accent-rgb), 0.08)",
+      "occurrences": 3,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 12px rgba(var(--accent-rgb), 0.2)",
+      "occurrences": 3,
+      "proposedToken": null
+    },
+    {
+      "value": "var(--nd-shadow-card-hover) !important",
+      "occurrences": 3,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 0 3px rgba(var(--accent-rgb), 0.05) !important",
+      "occurrences": 3,
+      "proposedToken": null
+    },
+    {
+      "value": "var(--nd-shadow-card) !important",
+      "occurrences": 3,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px var(--accent-color)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 0 2px rgba(var(--accent-rgb), 0.08)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 6px rgba(124, 255, 178, 0.15)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "var(--shadow-1)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(255, 90, 106, 0.15)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 12px rgba(var(--accent-rgb), 0.15)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 2px 0 var(--nd-black-30)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(94, 235, 255, 0.1)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "var(--nd-shadow-card)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 10px rgba(94, 235, 255, 0.15)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 10px rgba(var(--accent-rgb), 0.07)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 2px 8px rgba(0, 0, 0, 0.4)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "var(--shadow-2)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "none",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 0 0 rgba(239, 71, 111, 0.35)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 0 8px rgba(239, 71, 111, 0)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(255, 199, 112, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(96, 233, 255, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(255, 145, 221, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(143, 255, 177, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(191, 174, 255, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(255, 175, 125, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(126, 188, 255, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(255, 136, 171, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(98, 233, 209, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(255, 149, 0, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(255, 157, 116, 0.8)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 6px var(--accent-color)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 4px 20px var(--nd-black-50)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 6px rgba(var(--accent-rgb), 0.5)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 6px rgba(0, 255, 136, 0.6)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 10px rgba(124, 58, 237, 0.15)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 10px rgba(var(--accent-rgb), 0.15) !important",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(var(--accent-rgb), 0.08)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 12px rgba(94, 235, 255, 0.15) !important",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 4px rgba(94, 235, 255, 0.12)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 10px 26px rgba(0, 0, 0, 0.22)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(94, 235, 255, 0.12)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "inset 0 2px 4px var(--nd-black-30)",
+      "occurrences": 1,
+      "proposedToken": null
+    }
+  ]
+}
