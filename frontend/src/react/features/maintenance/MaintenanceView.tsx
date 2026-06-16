@@ -19,10 +19,7 @@ export function MaintenanceView({
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div
-      data-testid="maintenance-view"
-      className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]"
-    >
+    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Version Info */}
         <Panel eyebrow="Build" title="Application Version">

@@ -169,7 +169,7 @@ export function SecurityView({
   };
 
   return (
-    <div data-testid="security-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
+    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Hardening Status */}
         <Panel

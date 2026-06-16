@@ -13,7 +13,7 @@ export function ExportsView({
   actions: NeuroDeckAppActions;
 }) {
   return (
-    <div data-testid="exports-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
+    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel eyebrow="Export Manager" title="Session Exports" className="h-full overflow-hidden">
         <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 scrollbar-thin">
           <div className="grid gap-3 sm:grid-cols-2">

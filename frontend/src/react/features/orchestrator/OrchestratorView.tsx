@@ -324,7 +324,7 @@ export function OrchestratorView() {
   const running = runState.status === "running";
 
   return (
-    <div data-testid="orchestrator-view" className="flex h-full flex-col">
+    <div className="flex h-full flex-col">
       <div className="mb-4 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
           <Layers className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
