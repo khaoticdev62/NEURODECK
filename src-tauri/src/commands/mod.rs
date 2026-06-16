@@ -9757,6 +9757,47 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::to_value(report).map_err(|e| e.to_string())?)
         }
 
+        "get_bridge_telemetry" => {
+            let tel = state.telemetry.lock().unwrap_or_else(|e| e.into_inner());
+            let commands: serde_json::Map<String, Value> = tel
+                .commands
+                .iter()
+                .map(|(name, c)| {
+                    let avg = if c.success + c.error > 0 {
+                        c.total_duration_ms / (c.success + c.error)
+                    } else {
+                        0
+                    };
+                    (
+                        name.clone(),
+                        serde_json::json!({
+                            "success": c.success,
+                            "error": c.error,
+                            "total": c.success + c.error,
+                            "avg_ms": avg,
+                            "min_ms": c.min_duration_ms,
+                            "max_ms": c.max_duration_ms,
+                            "p50_ms": c.percentile(0.50),
+                            "p95_ms": c.percentile(0.95),
+                            "last_ms": c.last_duration_ms,
+                        }),
+                    )
+                })
+                .collect();
+            Ok(serde_json::json!({
+                "commands": commands,
+                "unknown_commands": tel.unknown_commands,
+                "command_count": commands.len(),
+                "summary": tel.summary(),
+            }))
+        }
+
+        "reset_bridge_telemetry" => {
+            let mut tel = state.telemetry.lock().unwrap_or_else(|e| e.into_inner());
+            tel.reset();
+            Ok(serde_json::json!({ "reset": true }))
+        }
+
         // ────────────────────────────────────────────────────────────────────
         // LLM Utilities
         // ────────────────────────────────────────────────────────────────────
@@ -9983,11 +10024,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // ────────────────────────────────────────────────────────────────────
         // Absolute final catch-all
         // ────────────────────────────────────────────────────────────────────
-        _ => Err(format!(
-            "Command '{}' not found in bridge dispatch table. \
-            Full command reference: docs/BRIDGE_SERVER_PROGRESS.md",
-            command
-        )),
+        _ => Err(format!("Unknown command: {}", command)),
     }
 }
 

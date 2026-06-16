@@ -76,6 +76,8 @@ frontend/src/main.js
 ```
 All streaming (LLM tokens, PTY output, agent steps, canvas exec output) goes through WebSocket events. All request/response goes through HTTP POST to the bridge server.
 
+Command responses now use a structured error shape `{ error: { code, message, command, request_id? } }` with stable codes (`invalid_json`, `rate_limited`, `command_not_found`, `command_timeout`, `command_error`). Non-streaming commands enforce a 30-second HTTP timeout (300 seconds for file transfers/support bundles; no timeout for streaming commands).
+
 ### The One Big File Problem
 `lib.rs` owns `AppState`, the bridge server bootstrap, and module re-exports. The Tauri `run()` entry point and `generate_handler![]` have been removed. Command bodies, personas, themes, game detection, path utilities, and provider factories have been extracted to submodules. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
 
@@ -169,7 +171,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **New Privacy commands**: `set_memory_privacy`, `unlock_sealed_records`, `lock_all_sealed`.
 - **New Dashboard command**: `get_dashboard_stats`.
 - **Permission commands**: `list_permission_profiles` (returns `profiles`, `default_profile_id`, `agent_profile_map`), `get_agent_permission_profile`, `set_agent_permission_profile`. The registry supports an `agent_profile_map` so individual agents can be assigned to specific profiles; it falls back to `default_profile_id` only when no mapping exists.
-- **Observability commands**: `generate_support_bundle` (redacted archive), `get_system_health` (structured JSON with status/provider/model/memory_doc_count/plugin_count/kfms_version/issues).
+- **Observability commands**: `generate_support_bundle` (redacted archive), `get_system_health` (structured JSON with status/provider/model/memory_doc_count/plugin_count/kfms_version/issues and telemetry summary), `get_bridge_telemetry` (per-command counters + latency percentiles + summary), `reset_bridge_telemetry`.
 - **Do not use `std::sync::Mutex` across `.await` points** in bridge command handlers — `MutexGuard` is not `Send` and will break axum's `Handler` trait. Use `tokio::sync::Mutex` or rely on `SqlitePool`'s internal thread-safety.
 - **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Electron's WebView doesn't always pick up the change without a rebuild.
 - **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `models.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.

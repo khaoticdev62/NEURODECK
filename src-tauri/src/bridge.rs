@@ -10,8 +10,10 @@
 //! ## Port
 //! Binds to `127.0.0.1:9477` by default.  Override with the `NEURODECK_PORT` env var.
 
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 use axum::{
     extract::{
@@ -89,6 +91,104 @@ impl WsBroadcaster {
 // Shared server state — passed via axum State extractor
 // ─────────────────────────────────────────────────────────
 
+/// Per-command telemetry counters and latency distribution.
+#[derive(Clone, Debug, Default)]
+pub struct CommandTelemetry {
+    pub success: u64,
+    pub error: u64,
+    pub not_found: u64,
+    pub total_duration_ms: u64,
+    pub min_duration_ms: u64,
+    pub max_duration_ms: u64,
+    pub last_duration_ms: u64,
+    /// Rolling window of the last 100 durations for percentile estimation.
+    pub recent_durations_ms: Vec<u64>,
+}
+
+impl CommandTelemetry {
+    fn record(&mut self, duration_ms: u64, ok: bool) {
+        if ok {
+            self.success += 1;
+        } else {
+            self.error += 1;
+        }
+        self.total_duration_ms += duration_ms;
+        self.last_duration_ms = duration_ms;
+        if self.min_duration_ms == 0 || duration_ms < self.min_duration_ms {
+            self.min_duration_ms = duration_ms;
+        }
+        if duration_ms > self.max_duration_ms {
+            self.max_duration_ms = duration_ms;
+        }
+        self.recent_durations_ms.push(duration_ms);
+        if self.recent_durations_ms.len() > 100 {
+            self.recent_durations_ms.remove(0);
+        }
+    }
+
+    pub fn percentile(&self, p: f64) -> u64 {
+        if self.recent_durations_ms.is_empty() {
+            return 0;
+        }
+        let mut sorted = self.recent_durations_ms.clone();
+        sorted.sort_unstable();
+        let idx = ((sorted.len() - 1) as f64 * p) as usize;
+        sorted[idx.min(sorted.len() - 1)]
+    }
+}
+
+/// Lightweight telemetry for the bridge HTTP API.
+#[derive(Clone, Debug, Default)]
+pub struct BridgeTelemetry {
+    pub commands: HashMap<String, CommandTelemetry>,
+    pub unknown_commands: u64,
+}
+
+impl BridgeTelemetry {
+    pub fn reset(&mut self) {
+        self.commands.clear();
+        self.unknown_commands = 0;
+    }
+
+    pub fn summary(&self) -> Value {
+        let mut total_calls = 0u64;
+        let mut total_errors = 0u64;
+        for entry in self.commands.values() {
+            total_calls += entry.success + entry.error;
+            total_errors += entry.error;
+        }
+        serde_json::json!({
+            "total_calls": total_calls,
+            "total_errors": total_errors,
+            "unknown_commands": self.unknown_commands,
+            "top_slowest": self.top_slowest(3).into_iter().map(|(cmd, ms)| serde_json::json!({"command": cmd, "p95_ms": ms})).collect::<Vec<_>>(),
+            "top_errors": self.top_errors(3).into_iter().map(|(cmd, count)| serde_json::json!({"command": cmd, "errors": count})).collect::<Vec<_>>(),
+        })
+    }
+
+    pub fn top_slowest(&self, n: usize) -> Vec<(String, u64)> {
+        let mut scored: Vec<(String, u64)> = self
+            .commands
+            .iter()
+            .map(|(cmd, entry)| (cmd.clone(), entry.percentile(0.95)))
+            .filter(|(_, ms)| *ms > 0)
+            .collect();
+        scored.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        scored.into_iter().take(n).collect()
+    }
+
+    pub fn top_errors(&self, n: usize) -> Vec<(String, u64)> {
+        let mut scored: Vec<(String, u64)> = self
+            .commands
+            .iter()
+            .filter(|(_, entry)| entry.error > 0)
+            .map(|(cmd, entry)| (cmd.clone(), entry.error))
+            .collect();
+        scored.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+        scored.into_iter().take(n).collect()
+    }
+}
+
 /// All long-lived objects the route handlers need access to.
 /// Cloned cheaply (all fields are `Arc`-wrapped).
 #[derive(Clone)]
@@ -112,6 +212,7 @@ pub struct ServerState {
     pub deckcode_lang: Arc<Mutex<String>>,
     pub limiter: Arc<crate::security::IpRateLimiter>,
     pub db: Option<crate::db::DbPool>,
+    pub telemetry: Arc<Mutex<BridgeTelemetry>>,
 }
 
 impl ServerState {
@@ -152,8 +253,61 @@ impl ServerState {
             deckcode_lang,
             limiter: Arc::new(crate::security::IpRateLimiter::new(200.0, 50.0)),
             db,
+            telemetry: Arc::new(Mutex::new(BridgeTelemetry::default())),
         }
     }
+}
+
+// ─────────────────────────────────────────────────────────
+// Structured errors
+// ─────────────────────────────────────────────────────────
+
+/// A structured bridge error returned to the frontend.
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct BridgeError {
+    pub code: String,
+    pub message: String,
+    pub command: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub request_id: Option<String>,
+}
+
+impl BridgeError {
+    pub fn new(code: &str, message: impl Into<String>, command: &str) -> Self {
+        Self {
+            code: code.to_string(),
+            message: message.into(),
+            command: command.to_string(),
+            request_id: None,
+        }
+    }
+
+    pub fn timeout(command: &str, duration: Duration) -> Self {
+        Self::new(
+            "command_timeout",
+            format!("Command '{}' timed out after {:?}", command, duration),
+            command,
+        )
+    }
+
+    pub fn status_code(&self) -> StatusCode {
+        match self.code.as_str() {
+            "invalid_json" => StatusCode::BAD_REQUEST,
+            "rate_limited" => StatusCode::TOO_MANY_REQUESTS,
+            "command_not_found" => StatusCode::NOT_FOUND,
+            "command_timeout" => StatusCode::GATEWAY_TIMEOUT,
+            "command_error" => StatusCode::UNPROCESSABLE_ENTITY,
+            _ => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
+
+fn bridge_error_value(err: BridgeError) -> Value {
+    serde_json::json!({ "error": err })
+}
+
+fn bridge_error_response(status: StatusCode, err: BridgeError) -> Response {
+    (status, Json(bridge_error_value(err))).into_response()
 }
 
 // ─────────────────────────────────────────────────────────
@@ -162,8 +316,54 @@ impl ServerState {
 
 /// Dispatch a single command by name, returning a JSON result.
 /// This is the single-entry-point equivalent of a command dispatch registry.
-async fn dispatch_command(state: ServerState, command: &str, args: Value) -> Result<Value, String> {
-    crate::commands::dispatch(state, command, args).await
+/// Per-command timeout override. `None` means the command is allowed to run
+/// indefinitely (used for streaming/long-running operations). The default
+/// timeout for all other commands is 30 seconds.
+fn command_timeout(command: &str) -> Option<Duration> {
+    match command {
+        // Streaming chat/execution commands have no HTTP-level timeout; they
+        // stream progress over WebSocket and enforce their own internal limits.
+        "send_command" | "execute_command_stream" | "exec_code_stream" => None,
+        // File transfers and large archive operations can legitimately run for
+        // several minutes.
+        "ftp_download_file"
+        | "ftp_upload_file"
+        | "sftp_download_file"
+        | "sftp_upload_file"
+        | "transfer_file"
+        | "warpinator_send"
+        | "warpinator_receive"
+        | "generate_support_bundle" => Some(Duration::from_secs(300)),
+        _ => Some(Duration::from_secs(30)),
+    }
+}
+
+/// Classify a command handler's string error into a stable error code.
+fn classify_command_error(command: &str, message: String) -> BridgeError {
+    if message.starts_with("Unknown command:") {
+        BridgeError::new("command_not_found", message, command)
+    } else {
+        BridgeError::new("command_error", message, command)
+    }
+}
+
+async fn dispatch_command(
+    state: ServerState,
+    command: &str,
+    args: Value,
+) -> Result<Value, BridgeError> {
+    let dispatch_fut = crate::commands::dispatch(state, command, args);
+    let result = match command_timeout(command) {
+        Some(duration) => match tokio::time::timeout(duration, dispatch_fut).await {
+            Ok(r) => r,
+            Err(_) => {
+                tracing::warn!("Bridge command '{}' timed out after {:?}", command, duration);
+                return Err(BridgeError::timeout(command, duration));
+            }
+        },
+        None => dispatch_fut.await,
+    };
+    result.map_err(|msg| classify_command_error(command, msg))
 }
 
 // ─────────────────────────────────────────────────────────
@@ -171,27 +371,18 @@ async fn dispatch_command(state: ServerState, command: &str, args: Value) -> Res
 // ─────────────────────────────────────────────────────────
 
 /// `GET /health` — Electron polls this until the sidecar is ready.
-async fn health() -> &'static str {
-    "NEURODECK_READY"
-}
-
-fn bridge_error_value(code: &str, message: impl Into<String>) -> Value {
-    serde_json::json!({
-        "error": {
-            "code": code,
-            "message": message.into()
-        }
-    })
-}
-
-fn bridge_error_response(status: StatusCode, code: &str, message: impl Into<String>) -> Response {
-    (status, Json(bridge_error_value(code, message))).into_response()
+async fn health(AxumState(state): AxumState<ServerState>) -> Json<Value> {
+    let tel = state.telemetry.lock().unwrap_or_else(|e| e.into_inner());
+    Json(serde_json::json!({
+        "status": "NEURODECK_READY",
+        "telemetry": tel.summary()
+    }))
 }
 
 /// `POST /api/{command}` — single route for all 235 command handlers.
 ///
 /// Request body: JSON object with the named arguments.
-/// Response body: JSON value returned by the handler, or `{ error: { code, message } }`.
+/// Response body: JSON value returned by the handler, or `{ error: { code, message, command } }`.
 async fn api_command(
     AxumState(state): AxumState<ServerState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
@@ -200,11 +391,12 @@ async fn api_command(
 ) -> Response {
     let ip = addr.ip();
     if !state.limiter.is_allowed(ip) {
-        return bridge_error_response(
-            StatusCode::TOO_MANY_REQUESTS,
+        let err = BridgeError::new(
             "rate_limited",
             "Too many requests. Please try again later.",
+            &command,
         );
+        return bridge_error_response(err.status_code(), err);
     }
 
     // Parse body as JSON args (allow empty body → empty object)
@@ -216,16 +408,33 @@ async fn api_command(
             Err(e) => {
                 return bridge_error_response(
                     StatusCode::BAD_REQUEST,
-                    "invalid_json",
-                    format!("Invalid JSON body: {}", e),
+                    BridgeError::new("invalid_json", format!("Invalid JSON body: {}", e), &command),
                 );
             }
         }
     };
 
-    match dispatch_command(state, &command, args).await {
+    let start = std::time::Instant::now();
+    let result = dispatch_command(state.clone(), &command, args).await;
+    let duration_ms = start.elapsed().as_millis() as u64;
+
+    {
+        let mut tel = state.telemetry.lock().unwrap_or_else(|e| e.into_inner());
+        let entry = tel.commands.entry(command.clone()).or_default();
+        match &result {
+            Ok(_) => entry.record(duration_ms, true),
+            Err(err) => {
+                entry.record(duration_ms, false);
+                if err.code == "command_not_found" {
+                    tel.unknown_commands += 1;
+                }
+            }
+        }
+    }
+
+    match result {
         Ok(result) => Json(result).into_response(),
-        Err(msg) => bridge_error_response(StatusCode::UNPROCESSABLE_ENTITY, "command_error", msg),
+        Err(err) => bridge_error_response(err.status_code(), err),
     }
 }
 
@@ -674,6 +883,7 @@ pub async fn run_bridge_server(
         deckcode_lang,
         limiter: Arc::new(crate::security::IpRateLimiter::new(200.0, 50.0)),
         db: Some(db_pool),
+        telemetry: Arc::new(Mutex::new(BridgeTelemetry::default())),
     };
 
     start_server(server_state).await
@@ -685,8 +895,10 @@ mod tests {
 
     #[test]
     fn bridge_error_value_has_stable_shape() {
-        let value = bridge_error_value("command_error", "Missing 'template_id'");
+        let err = BridgeError::new("command_error", "Missing 'template_id'", "test_cmd");
+        let value = bridge_error_value(err);
         assert_eq!(value["error"]["code"], "command_error");
         assert_eq!(value["error"]["message"], "Missing 'template_id'");
+        assert_eq!(value["error"]["command"], "test_cmd");
     }
 }

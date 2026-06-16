@@ -42,6 +42,17 @@ import type {
 import type { OnboardingDiagnosticResult } from "../types/onboarding";
 import type { TerminalProfileAvailability } from "../../../../src/shared/terminal/terminalProfiles";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Configuration
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DEFAULT_TIMEOUT_MS = 30_000;
+const WS_INITIAL_RECONNECT_DELAY_MS = 1_000;
+const WS_MAX_RECONNECT_DELAY_MS = 30_000;
+const RETRY_MAX_ATTEMPTS = 3;
+const RETRY_INITIAL_DELAY_MS = 500;
+const RETRY_MAX_DELAY_MS = 8_000;
+
 function getBridgePort(): number {
   const runtime = typeof window !== "undefined" ? (window as any).NEURODECK_PORT : undefined;
   const runtimePort = runtime ? parseInt(String(runtime), 10) : NaN;
@@ -53,6 +64,49 @@ function getBridgePort(): number {
 const BRIDGE_PORT = getBridgePort();
 const BRIDGE_ORIGIN = `http://127.0.0.1:${BRIDGE_PORT}`;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Typed errors
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface BridgeErrorBody {
+  error?: {
+    code?: string;
+    message?: string;
+    command?: string;
+    request_id?: string;
+  };
+}
+
+export class BridgeError extends Error {
+  code: string;
+  command: string;
+  status: number;
+  requestId?: string;
+
+  constructor(
+    code: string,
+    message: string,
+    command: string,
+    status: number,
+    requestId?: string
+  ) {
+    super(message);
+    this.name = "BridgeError";
+    this.code = code;
+    this.command = command;
+    this.status = status;
+    this.requestId = requestId;
+  }
+}
+
+export function isBridgeError(err: unknown): err is BridgeError {
+  return err instanceof BridgeError;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WebSocket connection + exponential reconnect backoff
+// ─────────────────────────────────────────────────────────────────────────────
+
 let _ws: WebSocket | null = null;
 const _wsListeners: Map<string, Set<(payload: unknown) => void>> = new Map();
 if (typeof window !== "undefined") {
@@ -61,6 +115,21 @@ if (typeof window !== "undefined") {
 let _wsOpenPromise: Promise<void> | null = null;
 let _wsOpenResolve: (() => void) | null = null;
 let _wsOpenReject: ((err: Error) => void) | null = null;
+let _wsReconnectDelayMs = WS_INITIAL_RECONNECT_DELAY_MS;
+let _wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+function scheduleWsReconnect(): void {
+  if (_wsReconnectTimer) return;
+  const delay = _wsReconnectDelayMs;
+  _wsReconnectTimer = setTimeout(() => {
+    _wsReconnectTimer = null;
+    _wsReconnectDelayMs = Math.min(
+      WS_MAX_RECONNECT_DELAY_MS,
+      _wsReconnectDelayMs * 2
+    );
+    _ensureWs();
+  }, delay);
+}
 
 function _ensureWs(): WebSocket | null {
   if (_ws && _ws.readyState === WebSocket.OPEN) return _ws;
@@ -75,6 +144,7 @@ function _ensureWs(): WebSocket | null {
   openPromise.catch(() => {});
   _wsOpenPromise = openPromise;
   socket.onopen = () => {
+    _wsReconnectDelayMs = WS_INITIAL_RECONNECT_DELAY_MS;
     _wsOpenPromise = null;
     _wsOpenReject = null;
     _wsOpenResolve?.();
@@ -92,7 +162,7 @@ function _ensureWs(): WebSocket | null {
     _wsOpenResolve = null;
     _wsOpenPromise = null;
     _ws = null;
-    setTimeout(() => _ensureWs(), 2000);
+    scheduleWsReconnect();
   };
   socket.onmessage = (ev) => {
     try {
@@ -127,17 +197,187 @@ export function listenBridge(event: string, handler: (payload: unknown) => void)
   };
 }
 
-async function bridgeInvoke<T>(cmd: string, args?: unknown): Promise<T> {
-  const res = await fetch(`${BRIDGE_ORIGIN}/api/${cmd}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(args ?? {}),
-  });
+// ─────────────────────────────────────────────────────────────────────────────
+// HTTP command client: timeouts, retries, idempotency
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface BridgeInvokeOptions {
+  timeoutMs?: number;
+  retry?: boolean | { maxAttempts?: number; delayMs?: number };
+}
+
+function generateRequestId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.floor(Math.random() * 1_000_000_000)}`;
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** @internal exported for unit tests */
+export function computeBackoff(attempt: number, baseMs: number, maxMs: number): number {
+  const exponential = baseMs * Math.pow(2, attempt);
+  const jitter = Math.random() * 0.3 * exponential;
+  return Math.min(maxMs, exponential + jitter);
+}
+
+/** @internal exported for unit tests */
+export function isSafeReadCommand(cmd: string): boolean {
+  const safePrefixes = ["get_", "list_", "search_", "discover_", "count_"];
+  const safeExact = new Set(["status", "health", "get_bridge_telemetry"]);
+  if (safeExact.has(cmd)) return true;
+  return safePrefixes.some((prefix) => cmd.startsWith(prefix));
+}
+
+function getCommandTimeoutMs(cmd: string): number | undefined {
+  // Streaming commands have no HTTP-level client timeout; they stream
+  // progress over WebSocket and the server enforces its own limits.
+  if (
+    cmd === "send_command" ||
+    cmd === "execute_command_stream" ||
+    cmd === "exec_code_stream"
+  ) {
+    return undefined;
+  }
+  // File transfers and large archive operations can run for several minutes.
+  if (
+    cmd === "ftp_download_file" ||
+    cmd === "ftp_upload_file" ||
+    cmd === "sftp_download_file" ||
+    cmd === "sftp_upload_file" ||
+    cmd === "transfer_file" ||
+    cmd === "warpinator_send" ||
+    cmd === "warpinator_receive" ||
+    cmd === "generate_support_bundle"
+  ) {
+    return 310_000;
+  }
+  return DEFAULT_TIMEOUT_MS;
+}
+
+function isRetryableError(err: BridgeError): boolean {
+  if (err.code === "client_timeout" || err.code === "network_error") return true;
+  if (err.status === 429 || err.status === 502 || err.status === 503 || err.status === 504) {
+    return true;
+  }
+  return false;
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit,
+  timeoutMs?: number
+): Promise<Response> {
+  if (timeoutMs === undefined) return fetch(url, init);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function bridgeInvokeOnce<T>(
+  cmd: string,
+  args: unknown,
+  requestId: string,
+  includeRequestId: boolean,
+  timeoutMs?: number
+): Promise<T> {
+  const body = includeRequestId
+    ? { ...(args as Record<string, unknown> ?? {}), request_id: requestId }
+    : args;
+
+  let res: Response;
+  try {
+    res = await fetchWithTimeout(
+      `${BRIDGE_ORIGIN}/api/${cmd}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body ?? {}),
+      },
+      timeoutMs
+    );
+  } catch (e) {
+    if (e instanceof Error && e.name === "AbortError") {
+      throw new BridgeError(
+        "client_timeout",
+        `Request '${cmd}' timed out after ${timeoutMs ?? DEFAULT_TIMEOUT_MS}ms`,
+        cmd,
+        0,
+        requestId
+      );
+    }
+    const message = e instanceof Error ? e.message : String(e);
+    throw new BridgeError("network_error", message, cmd, 0, requestId);
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => "Bridge error");
-    throw new Error(text);
+    let parsed: BridgeErrorBody = {};
+    try {
+      parsed = JSON.parse(text) as BridgeErrorBody;
+    } catch (_) {
+      /* body is not JSON */
+    }
+    const code = parsed.error?.code ?? "command_error";
+    const message = parsed.error?.message ?? text;
+    throw new BridgeError(
+      code,
+      message,
+      parsed.error?.command ?? cmd,
+      res.status,
+      parsed.error?.request_id ?? requestId
+    );
   }
+
   return res.json() as Promise<T>;
+}
+
+async function bridgeInvoke<T>(
+  cmd: string,
+  args?: unknown,
+  options?: BridgeInvokeOptions
+): Promise<T> {
+  const timeoutMs = options?.timeoutMs ?? getCommandTimeoutMs(cmd);
+  const requestId = generateRequestId();
+
+  let maxAttempts = 1;
+  let retryBaseMs = RETRY_INITIAL_DELAY_MS;
+  let retryMaxMs = RETRY_MAX_DELAY_MS;
+
+  if (options?.retry === true || (options?.retry !== false && isSafeReadCommand(cmd))) {
+    maxAttempts = RETRY_MAX_ATTEMPTS;
+    if (typeof options?.retry === "object") {
+      maxAttempts = options.retry.maxAttempts ?? RETRY_MAX_ATTEMPTS;
+      retryBaseMs = options.retry.delayMs ?? RETRY_INITIAL_DELAY_MS;
+      retryMaxMs = Math.max(retryBaseMs * 4, RETRY_MAX_DELAY_MS);
+    }
+  }
+
+  // Only include request_id when retry is enabled. The backend ignores unknown
+  // fields by default, but keeping it scoped to retried commands minimizes risk.
+  const includeRequestId = maxAttempts > 1;
+  let lastErr: unknown;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await bridgeInvokeOnce<T>(cmd, args, requestId, includeRequestId, timeoutMs);
+    } catch (e) {
+      lastErr = e;
+      if (attempt === maxAttempts - 1) break;
+      if (!isBridgeError(e) || !isRetryableError(e)) break;
+      const delay = computeBackoff(attempt, retryBaseMs, retryMaxMs);
+      await sleep(delay);
+    }
+  }
+
+  throw lastErr;
 }
 
 /* ── Store (bridge-backed via localStorage fallback) ─────────────────────── */
