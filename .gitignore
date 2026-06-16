@@ -12,6 +12,7 @@ node_modules/
 frontend/node_modules/
 e2e/node_modules/
 frontend/dist/
+frontend/storybook-static/
 frontend/.vite/
 
 # --- Build artifacts & binaries ---
