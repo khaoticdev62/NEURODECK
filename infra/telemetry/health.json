@@ -7,7 +7,7 @@
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  false,
-    "stamped_at_utc":  "2026-06-16T03:03:51Z",
+    "stamped_at_utc":  "2026-06-16T03:08:27Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -17,7 +17,7 @@
                },
     "release_plan":  {
                          "release_decision":  "HOLD",
-                         "readiness_score":  80,
+                         "readiness_score":  70,
                          "policy":  {
                                         "go_threshold":  85,
                                         "hold_threshold":  60,
@@ -32,57 +32,57 @@
                                                           "frontend_build":  20
                                                       }
                                     },
-                         "gate_summary":  "hardening_check=pass,cargo_check=pass,cargo_test=pass,frontend_build=fail",
+                         "gate_summary":  "hardening_check=fail,cargo_check=pass,cargo_test=pass,frontend_build=pass",
                          "metadata":  "aligned",
                          "diff_hygiene":  "pass",
                          "workspace_state":  "clean",
                          "loose_root_files":  0,
-                         "hardening_check":  "pass",
+                         "hardening_check":  "fail",
                          "cargo_check":  "pass",
                          "cargo_test":  "pass",
-                         "frontend_build":  "fail",
+                         "frontend_build":  "pass",
                          "gates":  [
                                        {
                                            "name":  "security hardening",
-                                           "status":  "pass",
+                                           "status":  "fail",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
-                                           "message":  "",
-                                           "duration_ms":  1848,
-                                           "started_at_utc":  "2026-06-16T03:03:56Z",
-                                           "finished_at_utc":  "2026-06-16T03:03:57Z"
+                                           "message":  "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log",
+                                           "duration_ms":  1072,
+                                           "started_at_utc":  "2026-06-16T03:08:30Z",
+                                           "finished_at_utc":  "2026-06-16T03:08:31Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  11542,
-                                           "started_at_utc":  "2026-06-16T03:03:57Z",
-                                           "finished_at_utc":  "2026-06-16T03:04:09Z"
+                                           "duration_ms":  5032,
+                                           "started_at_utc":  "2026-06-16T03:08:31Z",
+                                           "finished_at_utc":  "2026-06-16T03:08:36Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "",
-                                           "duration_ms":  7979,
-                                           "started_at_utc":  "2026-06-16T03:04:09Z",
-                                           "finished_at_utc":  "2026-06-16T03:04:17Z"
+                                           "duration_ms":  5469,
+                                           "started_at_utc":  "2026-06-16T03:08:36Z",
+                                           "finished_at_utc":  "2026-06-16T03:08:42Z"
                                        },
                                        {
                                            "name":  "frontend build",
-                                           "status":  "fail",
+                                           "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
-                                           "message":  "frontend build failed. See .loose/inbox/kfms-release-logs/frontend-build.log",
-                                           "duration_ms":  2100,
-                                           "started_at_utc":  "2026-06-16T03:04:17Z",
-                                           "finished_at_utc":  "2026-06-16T03:04:19Z"
+                                           "message":  "",
+                                           "duration_ms":  3171,
+                                           "started_at_utc":  "2026-06-16T03:08:42Z",
+                                           "finished_at_utc":  "2026-06-16T03:08:45Z"
                                        }
                                    ],
                          "blockers":  [
-                                          "frontend build failed. See .loose/inbox/kfms-release-logs/frontend-build.log"
+                                          "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log"
                                       ],
-                         "duration_ms":  23497,
-                         "checked_at_utc":  "2026-06-16T03:04:19Z"
+                         "duration_ms":  14774,
+                         "checked_at_utc":  "2026-06-16T03:08:45Z"
                      }
 }
