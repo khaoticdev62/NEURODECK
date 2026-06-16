@@ -49,6 +49,26 @@ fn promptdrive_required_str<'a>(args: &'a Value, key: &str) -> Result<&'a str, S
         .ok_or_else(|| format!("Missing '{}'", key))
 }
 
+/// Default Git path: use the provided `path` arg, otherwise fall back to the
+/// sandboxed workspace directory. This lets React views call git commands
+/// without tracking a repo path on the client.
+fn git_path_or_workspace(args: &Value) -> String {
+    args.get("path")
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| {
+            crate::user_config_dir()
+                .join("workspace")
+                .to_string_lossy()
+                .to_string()
+        })
+}
+
+fn is_git_not_repo_error(e: &str) -> bool {
+    let low = e.to_lowercase();
+    low.contains("could not find repository") || low.contains("cannot open repo")
+}
+
 fn promptdrive_slot_values(args: &Value) -> Result<Value, String> {
     let raw_slot_values = args
         .get("slot_values")
@@ -3141,70 +3161,57 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         .to_string()
                 });
 
-            tokio::task::spawn_blocking(move || {
-                let repo = git2::Repository::open(&path)
-                    .map_err(|e| format!("Cannot open repo: {}", e))?;
-                let mut opts = git2::StatusOptions::new();
-                opts.include_untracked(true)
-                    .renames_head_to_index(true)
-                    .renames_index_to_workdir(true);
-
-                let statuses = repo.statuses(Some(&mut opts)).map_err(|e| e.to_string())?;
-                let mut staged = Vec::new();
-                let mut unstaged = Vec::new();
-                let mut untracked = Vec::new();
-
-                for entry in statuses.iter() {
-                    let st = entry.status();
-                    let fpath = entry.path().unwrap_or("?").to_string();
-                    let old_path = entry
-                        .head_to_index()
-                        .and_then(|d| d.old_file().path())
-                        .map(|p| p.to_string_lossy().to_string());
-
-                    if st.contains(git2::Status::INDEX_NEW)
-                        || st.contains(git2::Status::INDEX_MODIFIED)
-                        || st.contains(git2::Status::INDEX_DELETED)
-                        || st.contains(git2::Status::INDEX_RENAMED)
-                        || st.contains(git2::Status::CONFLICTED)
+            let files: Vec<crate::commands::git::GitFileStatus> = tokio::task::spawn_blocking(
+                move || match crate::commands::git::git_status(path) {
+                    Ok(files) => Ok(files),
+                    Err(e)
+                        if e.to_lowercase().contains("could not find repository")
+                            || e.to_lowercase().contains("cannot open repo") =>
                     {
-                        let label = if st.contains(git2::Status::INDEX_NEW) { "added" }
-                            else if st.contains(git2::Status::INDEX_DELETED) { "deleted" }
-                            else if st.contains(git2::Status::INDEX_RENAMED) { "renamed" }
-                            else if st.contains(git2::Status::CONFLICTED) { "conflict" }
-                            else { "modified" };
-                        staged.push(serde_json::json!({ "path": fpath, "status": label, "old_path": old_path }));
-                    } else if st.contains(git2::Status::WT_NEW) {
-                        untracked.push(serde_json::json!({ "path": fpath, "status": "untracked", "old_path": null }));
-                    } else if st.intersects(git2::Status::WT_MODIFIED | git2::Status::WT_DELETED | git2::Status::WT_RENAMED) {
-                        let label = if st.contains(git2::Status::WT_DELETED) { "deleted" }
-                            else if st.contains(git2::Status::WT_RENAMED) { "renamed" }
-                            else { "modified" };
-                        unstaged.push(serde_json::json!({ "path": fpath, "status": label, "old_path": old_path }));
+                        Ok(vec![])
                     }
-                }
-
-                Ok(serde_json::json!({
-                    "staged":   staged,
-                    "unstaged": unstaged,
-                    "untracked": untracked
-                }))
-            })
+                    Err(e) => Err(e),
+                },
+            )
             .await
-            .map_err(|e| format!("Spawn error: {}", e))?
+            .map_err(|e| format!("Spawn error: {}", e))??;
+
+            let staged: Vec<Value> = files
+                .iter()
+                .filter(|f| f.status == "staged")
+                .map(|f| serde_json::to_value(f).unwrap_or(Value::Null))
+                .collect();
+            let unstaged: Vec<Value> = files
+                .iter()
+                .filter(|f| f.status != "staged" && f.status != "untracked")
+                .map(|f| serde_json::to_value(f).unwrap_or(Value::Null))
+                .collect();
+            let untracked: Vec<Value> = files
+                .iter()
+                .filter(|f| f.status == "untracked")
+                .map(|f| serde_json::to_value(f).unwrap_or(Value::Null))
+                .collect();
+
+            Ok(serde_json::json!({
+                "staged": staged,
+                "unstaged": unstaged,
+                "untracked": untracked,
+                "files": files
+            }))
         }
 
         "git_log" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+            let path = git_path_or_workspace(&args);
             let max_count = args.get("max_count").and_then(|v| v.as_u64()).unwrap_or(20) as usize;
 
             tokio::task::spawn_blocking(move || {
-                let repo = git2::Repository::open(&path)
-                    .map_err(|e| format!("Cannot open repo: {}", e))?;
+                let repo = match git2::Repository::open(&path) {
+                    Ok(r) => r,
+                    Err(e) if is_git_not_repo_error(&e.to_string()) => {
+                        return Ok(serde_json::json!({ "commits": [], "count": 0 }));
+                    }
+                    Err(e) => return Err(format!("Cannot open repo: {}", e)),
+                };
                 let mut revwalk = repo.revwalk().map_err(|e| e.to_string())?;
                 revwalk.push_head().map_err(|e| e.to_string())?;
 
@@ -3224,10 +3231,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                     }));
                 }
 
-                Ok(serde_json::json!({
-                    "commits": commits,
-                    "count":   commits.len()
-                }))
+                Ok(serde_json::json!(commits))
             })
             .await
             .map_err(|e| format!("Spawn error: {}", e))?
@@ -4906,13 +4910,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Git Extended (branches)
         // ────────────────────────────────────────────────────────────────────
         "git_branch_list" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+            let path = git_path_or_workspace(&args);
             tokio::task::spawn_blocking(move || {
-                let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
+                let repo = match git2::Repository::open(&path) {
+                    Ok(r) => r,
+                    Err(e) if is_git_not_repo_error(&e.to_string()) => {
+                        return Ok(serde_json::json!({ "branches": [], "count": 0 }));
+                    }
+                    Err(e) => return Err(e.to_string()),
+                };
                 let mut branches = Vec::new();
                 for b in repo.branches(None).map_err(|e| e.to_string())? {
                     let (branch, kind) = b.map_err(|e| e.to_string())?;
@@ -4924,7 +4930,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         }));
                     }
                 }
-                Ok(serde_json::json!({ "branches": branches, "count": branches.len() }))
+                Ok(serde_json::json!(branches))
             }).await.map_err(|e| e.to_string())?
         }
 
@@ -6012,11 +6018,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         // Git Extended Operations (spawn_blocking)
         // ────────────────────────────────────────────────────────────────────
         "git_stage" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+            let path = git_path_or_workspace(&args);
             let files: Vec<String> = args
                 .get("files")
                 .and_then(|v| v.as_array())
@@ -6039,11 +6041,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_unstage" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+            let path = git_path_or_workspace(&args);
             let files: Vec<String> = args
                 .get("files")
                 .and_then(|v| v.as_array())
@@ -6089,11 +6087,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_commit" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+            let path = git_path_or_workspace(&args);
             let message = args
                 .get("message")
                 .and_then(|v| v.as_str())
@@ -6132,11 +6126,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_push" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+            let path = git_path_or_workspace(&args);
             let remote = args
                 .get("remote")
                 .and_then(|v| v.as_str())
@@ -6168,11 +6158,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_pull" | "git_fetch" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+            let path = git_path_or_workspace(&args);
             let remote = args
                 .get("remote")
                 .and_then(|v| v.as_str())
@@ -6198,11 +6184,7 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         "git_diff" => {
-            let path = args
-                .get("path")
-                .and_then(|v| v.as_str())
-                .ok_or("Missing 'path'")?
-                .to_string();
+            let path = git_path_or_workspace(&args);
             tokio::task::spawn_blocking(move || {
                 let repo = git2::Repository::open(&path).map_err(|e| e.to_string())?;
                 let head_tree = repo.head().ok()
