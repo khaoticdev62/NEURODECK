@@ -62,7 +62,7 @@ describe("PackagesPanel", () => {
   it("installs a package when name is entered and Install button is clicked", async () => {
     mockList.mockResolvedValue([]);
     render(<PackagesPanel />);
-    await waitFor(() => expect(mockList).toHaveBeenCalled());
+    await waitFor(() => expect(screen.getByText(/Node v20/)).toBeDefined());
 
     const nameInput = screen.getByPlaceholderText("package-name");
     await userEvent.type(nameInput, "eslint");
