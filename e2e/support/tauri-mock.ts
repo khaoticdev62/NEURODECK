@@ -252,6 +252,7 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
       case "torrent_remove":
         return { status: "ok" };
       case "scheduler_list_tasks":
+      case "list_scheduled_tasks":
         return [];
       case "scheduler_add_task":
         return { id: `task-${Date.now()}` };
@@ -343,6 +344,111 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
           { id: "s1", label: "Rust ownership", source: "Topic", insert_text: "Rust ownership", score: 9 },
           { id: "s2", label: "SQLite migration", source: "Topic", insert_text: "SQLite migration", score: 7 },
         ];
+      // ── Git commands ───────────────────────────────────────────────────────
+      case "git_list_repos":
+        return [];
+      case "git_status":
+        return { staged: [], unstaged: [], untracked: [], branch: "main", ahead: 0, behind: 0 };
+      case "git_log":
+        return [];
+      case "git_branch_list":
+        return [];
+      case "git_diff":
+        return { diff: "" };
+      case "git_commit":
+        return { status: "ok", hash: "abc1234" };
+      case "git_checkout":
+        return { status: "ok" };
+
+      // ── Session commands ────────────────────────────────────────────────────
+      case "list_sessions_meta":
+        return [];
+
+      // ── CLI Maker ──────────────────────────────────────────────────────────
+      case "cli_list_commands":
+        return [];
+      case "cli_run_command":
+        return { status: "ok", output: "" };
+
+      // ── Transfer / Sync ────────────────────────────────────────────────────
+      case "get_discovered_peers":
+        return [];
+      case "get_active_transfers":
+        return [];
+      case "transfer_trusted_peers":
+        return { status: "ok", peers: [] };
+      case "transfer_send_file":
+        return { status: "ok" };
+      case "transfer_accept":
+        return { status: "ok" };
+
+      // ── Projects ──────────────────────────────────────────────────────────
+      case "list_projects":
+        return [];
+      case "create_project":
+        return { id: `proj-${Date.now()}`, name: args?.name ?? "New Project" };
+      case "delete_project":
+        return { status: "ok" };
+
+      // ── Workflows ─────────────────────────────────────────────────────────
+      case "list_workflows":
+        return { workflows: [] };
+      case "create_workflow":
+        return { id: `wf-${Date.now()}` };
+      case "delete_workflow":
+        return { status: "ok" };
+      case "run_workflow":
+        return { status: "ok" };
+
+      // ── Academy ───────────────────────────────────────────────────────────
+      case "academy_get_progress":
+        return {
+          completedLabs: [],
+          completedModules: [],
+          skillScores: {},
+          portfolioEntryIds: [],
+          lastActive: new Date().toISOString(),
+        };
+      case "academy_list_portfolio":
+        return [];
+      case "academy_list_modules":
+        return [];
+      case "academy_get_module":
+        return null;
+      case "academy_complete_lab":
+        return { status: "ok" };
+
+      // ── Graph / Knowledge ─────────────────────────────────────────────────
+      case "get_knowledge_graph":
+        return { nodes: [], edges: [] };
+      case "graph_search":
+        return { results: [] };
+
+      // ── Sync ──────────────────────────────────────────────────────────────
+      case "get_sync_config":
+        return { enabled: false, peers: [], endpoint: "" };
+      case "start_sync":
+      case "stop_sync":
+        return { status: "ok" };
+
+      // ── Dashboard / Graph ─────────────────────────────────────────────────
+      case "get_dashboard_stats":
+        return {
+          sessions_total: 0,
+          messages_total: 0,
+          memory_total: 0,
+          memory_pinned: 0,
+          projects_total: 0,
+          packs_total: 0,
+          provider: "gemini",
+          model: "gemini-1.5-flash",
+          db_size_bytes: 0,
+          privacy_breakdown: { standard: 0, private: 0, sensitive: 0, sealed: 0 },
+          recent_sessions: [],
+        };
+      case "get_provider_health":
+        return [];
+
       case "get_allowed_models_for_agent":
         if ((globalThis as any).__mockOverrideGetAllowedModels) {
           throw new Error("Model service unavailable");
@@ -351,7 +457,7 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
       case "get_model_compatibility_scores":
         return [];
       case "security_report":
-        return { keychain_ok: true, safe_mode: false, agent_workspace_only: true, permission_registry_count: 0 };
+        return { keychain_ok: true, safe_mode: false, agent_workspace_only: true, permission_registry_count: 1 };
       case "get_credential_status":
         return { gemini: false, huggingface: false, openai_compat: false };
       case "list_permission_profiles":
@@ -496,6 +602,25 @@ export function buildTauriMock(options: TauriMockOptions = {}) {
     }
     return _originalFetch(input, init);
   };
+
+  // Expose window.electronAPI so SecurityView can call getSecurityFlags
+  // and other components can read platform/version info.
+  if (!(window as any).electronAPI) {
+    (window as any).electronAPI = {
+      getSecurityFlags: async () => ({
+        nodeIntegration: false,
+        contextIsolation: true,
+        sandbox: true,
+        remoteModuleDisabled: true,
+        cspActive: true,
+      }),
+      platform: "win32",
+      versions: { electron: "30.0.0", chrome: "124.0.0", node: "20.0.0", app: "1.8.0" },
+      getAppVersion: async () => "1.8.0",
+      getBridgePort: async () => "9477",
+      openExternal: async (_url: string) => {},
+    };
+  }
 
   if (extraInit) extraInit();
 }

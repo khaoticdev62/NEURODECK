@@ -34,6 +34,7 @@ export function PrimarySidebar({
     "Knowledge",
     "Automation",
     "System",
+    "Integrations",
     "Security & Ops",
   ];
 

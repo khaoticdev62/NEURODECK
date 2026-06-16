@@ -27,6 +27,6 @@ export class ChatPage extends AppPage {
   }
 
   async expectErrorMessage(text: string, timeout = 10000) {
-    await expect(this.page.locator("[role='alert']")).toContainText(text, { timeout });
+    await expect(this.page.locator("[role='alert'][aria-live='assertive']")).toContainText(text, { timeout });
   }
 }

@@ -39,6 +39,11 @@ test.describe("Settings > General panel", () => {
     const count = await cards.count();
     if (count > 1) {
       await cards.nth(1).click();
+      await page.waitForTimeout(200);
+      // Click "Apply Theme" to persist the selection to localStorage
+      const applyBtn = page.getByRole("button", { name: "Apply Theme" });
+      await expect(applyBtn).toBeVisible({ timeout: 5000 });
+      await applyBtn.click();
       await page.waitForTimeout(400);
       const saved = await page.evaluate(() => localStorage.getItem("themeSettings"));
       expect(saved).not.toBeNull();

@@ -252,6 +252,12 @@ const commands: CommandItem[] = [
     icon: Type,
   },
   {
+    label: "Open MCP Server",
+    hint: "Model Context Protocol server management",
+    view: "mcp",
+    icon: Webhook,
+  },
+  {
     label: "Scan Project Folder",
     hint: "Select a folder and detect stack, risks, scripts, and docs",
     icon: FolderOpen,

@@ -9,7 +9,6 @@
 import { test, expect } from "@playwright/test";
 import { AppPage } from "../pages/AppPage";
 import { buildTauriMock } from "../support/tauri-mock";
-import type { TauriMockOptions } from "../support/tauri-mock";
 
 /** Wait for the React app to finish hydrating. */
 async function waitForAppReady(page: import("@playwright/test").Page) {
@@ -87,12 +86,11 @@ test.describe("Models view", () => {
 
 test.describe("Settings view", () => {
   test("appearance section renders without crashing", async ({ page }) => {
-    await page.addInitScript(buildTauriMock);
-    await page.goto("/");
-    await waitForAppReady(page);
+    const app = new AppPage(page);
+    await app.mockTauriBackend();
+    await app.goto();
 
-    const settingsBtn = page.locator("#settings-btn");
-    await settingsBtn.click();
+    await app.openSettings();
     await expect(page.locator("#settings-overlay")).toHaveClass(/active/);
 
     // The settings nav sidebar is visible
@@ -100,12 +98,11 @@ test.describe("Settings view", () => {
   });
 
   test("settings appearance panel shows theme grid when themes are available", async ({ page }) => {
-    await page.addInitScript(buildTauriMock);
-    await page.goto("/");
-    await waitForAppReady(page);
+    const app = new AppPage(page);
+    await app.mockTauriBackend();
+    await app.goto();
 
-    const settingsBtn = page.locator("#settings-btn");
-    await settingsBtn.click();
+    await app.openSettings();
     await expect(page.locator("#settings-overlay")).toHaveClass(/active/);
 
     // Theme Engine section should be present (General panel is active by default)
@@ -114,12 +111,11 @@ test.describe("Settings view", () => {
   });
 
   test("settings view does not show theme-unavailable empty state when themes load correctly", async ({ page }) => {
-    await page.addInitScript(buildTauriMock);
-    await page.goto("/");
-    await waitForAppReady(page);
+    const app = new AppPage(page);
+    await app.mockTauriBackend();
+    await app.goto();
 
-    const settingsBtn = page.locator("#settings-btn");
-    await settingsBtn.click();
+    await app.openSettings();
     await expect(page.locator("#settings-overlay")).toHaveClass(/active/);
 
     // With valid theme registry, the "theme settings unavailable" message should NOT appear

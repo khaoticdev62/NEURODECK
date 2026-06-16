@@ -33,9 +33,9 @@ test.describe("Security & Ops — View Navigation", () => {
   test("navigates to themes view and shows theme manager heading", async ({ page }) => {
     const app = new AppPage(page);
     await app.navigateTo("themes");
-    // Use heading role to avoid matching the "Open Theme Manager" command palette item
+    // ThemesView title is "Supreme Theme System"
     await expect(
-      page.getByTestId("view-themes").getByRole("heading", { name: "Theme Manager" })
+      page.getByTestId("view-themes").getByRole("heading", { name: "Supreme Theme System" })
     ).toBeVisible();
   });
 

@@ -1,4 +1,4 @@
-import { Page, Locator, expect } from "@playwright/test";
+import { Page, Locator, expect, type TestInfo } from "@playwright/test";
 import { buildTauriMock } from "../support/tauri-mock";
 
 
@@ -154,7 +154,8 @@ export class AppPage {
   }
 
   async openSettings() {
-    await this.settingsBtn.scrollIntoViewIfNeeded();
+    // Use evaluate click — sidebar button may be hidden at narrow viewports
+    // but el.click() still dispatches via React's event delegation.
     await this.settingsBtn.evaluate((el) => (el as HTMLButtonElement).click());
     await expect(this.settingsOverlay).toHaveClass(/active/);
   }
@@ -181,7 +182,22 @@ export class AppPage {
     await expect(this.shortcutsOverlay).not.toHaveClass(/hidden/);
   }
 
+  async openNotifications() {
+    await this.notifBtn.evaluate((el) => (el as HTMLButtonElement).click());
+    await expect(this.notifModal).toHaveClass(/active/);
+  }
+
   async openQuickSwitcher() {
+    // Quick switcher only opens when recentViews.length > 1.
+    // Add a second view to history by briefly visiting an anchor view then
+    // returning to wherever we already are.
+    const currentView = await this.page.evaluate(() => {
+      const el = document.querySelector("[data-testid^='view-'].active");
+      return el?.getAttribute("data-testid")?.replace("view-", "") ?? "chat";
+    });
+    const pivot = currentView === "memory" ? "chat" : "memory";
+    await this.navigateTo(pivot);
+    await this.navigateTo(currentView as Parameters<typeof this.navigateTo>[0]);
     await this.page.keyboard.press("Control+Tab");
     await expect(this.quickSwitcherOverlay).toHaveClass(/active/);
   }
@@ -197,5 +213,78 @@ export class AppPage {
 
   async mockBridgeBackend() {
     await this.mockTauriBackend();
+  }
+
+  // ── Audit helpers ─────────────────────────────────────────────────────────
+
+  async assertNoHorizontalOverflow() {
+    const overflow = await this.page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth
+    );
+    expect(overflow, "horizontal overflow detected").toBe(false);
+  }
+
+  assertNoConsoleErrors(errors: string[]) {
+    const real = errors.filter(
+      (e) =>
+        !e.includes("favicon") &&
+        !e.includes("sidecar") &&
+        !e.includes("127.0.0.1:9477") &&
+        !e.includes("websocket") &&
+        !e.toLowerCase().includes("net::err_connection_refused")
+    );
+    expect(real, `console errors: ${real.join("; ")}`).toEqual([]);
+  }
+
+  async assertViewVisible(viewId: string) {
+    await expect(this.page.getByTestId(`view-${viewId}`)).toHaveClass(/active/);
+  }
+
+  async captureScreen(name: string) {
+    await this.page.waitForLoadState("networkidle").catch(() => {});
+    await this.page.screenshot({
+      path: `test-results/ui-audit/${name}.png`,
+      fullPage: true,
+    });
+  }
+
+  async assertNoTauriText() {
+    const body = await this.page.locator("body").textContent();
+    const hasTauri = /\btauri\b/i.test(body ?? "");
+    expect(hasTauri, 'page should not contain the word "tauri"').toBe(false);
+  }
+
+  async assertNoPlaceholderText() {
+    const page = this.page;
+    const badPhrases = [
+      page.getByText(/lorem ipsum/i),
+      page.getByText(/coming soon/i),
+      page.getByText(/placeholder/i),
+      page.getByText(/dummy data/i),
+      page.getByText(/mock data/i),
+    ];
+    for (const loc of badPhrases) {
+      expect(await loc.count(), `placeholder text found on page`).toBe(0);
+    }
+  }
+
+  async checkTouchTargets(): Promise<Array<{ text: string; h: number; w: number }>> {
+    return this.page
+      .locator("button, [role='button'], a[href], input, select, textarea")
+      .evaluateAll((els) =>
+        els
+          .map((el) => {
+            const r = el.getBoundingClientRect();
+            const style = window.getComputedStyle(el);
+            return {
+              text: (el as HTMLElement).textContent?.trim().slice(0, 40) ?? "",
+              h: Math.round(r.height),
+              w: Math.round(r.width),
+              offscreen: r.left < -100 || r.top < -100 || style.position === "absolute" && r.height <= 1,
+            };
+          })
+          .filter((t) => t.h > 0 && t.h < 36 && !t.offscreen)
+          .map(({ text, h, w }) => ({ text, h, w }))
+      );
   }
 }
