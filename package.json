@@ -149,7 +149,7 @@
     "check:controller-actions": "node scripts/dev/check-controller-actions.cjs"
   },
   "devDependencies": {
-    "electron": "39.8.5",
+    "electron": "42.4.0",
     "electron-builder": "26.15.3",
     "sharp": "^0.35.1",
     "tsx": "^4.19.0",
