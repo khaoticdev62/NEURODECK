@@ -15,6 +15,7 @@
   color-scheme: dark;
 
   /* ---- Primitive: Void / Slate surfaces ---- */
+  --nd-void-975: #040608; /* deepest IDE/editor background */
   --nd-void-950: #05070a; /* deepest background */
   --nd-void-900: #0a0d10; /* app shell */
   --nd-void-850: #0d1117; /* panel base */
@@ -136,6 +137,39 @@
   /* ---- Tactical glow ---- */
   --nd-glow-cyan: rgba(var(--nd-cyan-rgb), 0.18);
 
+  /* ---- White / black alpha primitives (legacy app.css overlay migration) ---- */
+  --nd-white-100: rgba(255, 255, 255, 1);
+  --nd-white-65: rgba(255, 255, 255, 0.65);
+  --nd-white-10: rgba(255, 255, 255, 0.1);
+  --nd-white-8: rgba(255, 255, 255, 0.08);
+  --nd-white-7: rgba(255, 255, 255, 0.07);
+  --nd-white-6: rgba(255, 255, 255, 0.06);
+  --nd-white-5: rgba(255, 255, 255, 0.05);
+  --nd-white-4: rgba(255, 255, 255, 0.04);
+  --nd-white-3: rgba(255, 255, 255, 0.03);
+  --nd-white-2: rgba(255, 255, 255, 0.02);
+  --nd-white-45: rgba(255, 255, 255, 0.45);
+
+  --nd-black-50: rgba(0, 0, 0, 0.5);
+  --nd-black-30: rgba(0, 0, 0, 0.3);
+
+  /* ---- Legacy-compatible surface / text aliases ---- */
+  --nd-text-legacy-bright: #e2e8f0;
+  --nd-surface-legacy-muted: #1a2230;
+  --nd-surface-ide: #0c1018;
+  --nd-accent-bright: #00f0ff;
+  --nd-accent-a15: rgba(94, 235, 255, 0.15);
+
+  /* Legacy status palette (preserves existing component colors during migration) */
+  --nd-green-legacy: #22c55e;
+  --nd-green-legacy-rgb: 34, 197, 94;
+  --nd-blue-legacy: #3b82f6;
+  --nd-blue-legacy-rgb: 59, 130, 246;
+  --nd-yellow-legacy: #f59e0b;
+  --nd-yellow-legacy-rgb: 245, 158, 11;
+  --nd-red-legacy: #ef4444;
+  --nd-red-legacy-rgb: 239, 68, 68;
+
   /* ============================================================
      Spacing, radius, elevation, motion
      ============================================================ */
@@ -146,8 +180,11 @@
   --nd-space-4: 16px;
   --nd-space-5: 20px;
   --nd-space-6: 24px;
+  --nd-space-7: 28px;
   --nd-space-8: 32px;
+  --nd-space-9: 36px;
   --nd-space-10: 40px;
+  --nd-space-11: 44px;
   --nd-space-12: 48px;
   --nd-space-16: 64px;
 
@@ -182,13 +219,32 @@
   --nd-elevation-focus: 0 0 0 2px var(--nd-focus-ring), 0 0 24px rgba(var(--nd-cyan-rgb), 0.18);
   --nd-elevation-glow: 0 0 16px rgba(var(--nd-cyan-rgb), 0.18);
 
+  /* Legacy elevation aliases */
+  --nd-elevation-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.12);
+  --nd-elevation-shadow-2: 0 2px 4px rgba(0, 0, 0, 0.24), 0 2px 8px rgba(0, 0, 0, 0.14);
+  --nd-elevation-shadow-3: 0 4px 8px rgba(0, 0, 0, 0.28), 0 4px 16px rgba(0, 0, 0, 0.16);
+  --nd-elevation-shadow-4: 0 8px 16px rgba(0, 0, 0, 0.32), 0 8px 32px rgba(0, 0, 0, 0.18);
+  --nd-elevation-glow-1: 0 0 4px rgba(var(--nd-cyan-rgb), 0.15);
+  --nd-elevation-glow-2: 0 0 8px rgba(var(--nd-cyan-rgb), 0.25);
+  --nd-elevation-glow-3: 0 0 16px rgba(var(--nd-cyan-rgb), 0.35);
+
   /* Motion */
   --nd-motion-instant: 0ms;
   --nd-motion-fast: 90ms;
   --nd-motion-normal: 140ms;
   --nd-motion-slow: 220ms;
 
+  /* Legacy motion durations */
+  --nd-motion-micro: 80ms;
+  --nd-motion-enter: 300ms;
+  --nd-motion-spring: 380ms;
+  --nd-motion-ambient: 2400ms;
+
   --nd-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --nd-ease-snap: cubic-bezier(0.22, 1, 0.36, 1);
+  --nd-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --nd-ease-out-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --nd-ease-in-out-smooth: cubic-bezier(0.45, 0, 0.15, 1);
   --nd-ease-out: cubic-bezier(0, 0, 0.2, 1);
   --nd-ease-in: cubic-bezier(0.4, 0, 1, 1);
 
