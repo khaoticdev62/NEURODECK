@@ -64,8 +64,11 @@ describe("PackagesPanel", () => {
     render(<PackagesPanel />);
     await waitFor(() => expect(screen.getByText(/Node v20/)).toBeDefined());
 
-    const nameInput = screen.getByPlaceholderText("package-name");
+    const nameInput = screen.getByPlaceholderText("package-name") as HTMLInputElement;
     await userEvent.type(nameInput, "eslint");
+    // Wait for the re-render to commit the typed value to DOM before clicking
+    await waitFor(() => expect(nameInput.value).toBe("eslint"));
+
     await userEvent.click(screen.getByRole("button", { name: /^install$/i }));
 
     await waitFor(() => expect(mockInstall).toHaveBeenCalledWith("eslint", undefined));
