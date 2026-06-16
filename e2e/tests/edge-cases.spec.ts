@@ -109,7 +109,7 @@ test.describe("Modal escape behaviour", () => {
 
   test("notification modal opens and can be closed", async ({ page }) => {
     const app = new AppPage(page);
-    await app.notifBtn.click();
+    await app.openNotifications();
     await expect(page.locator("#notif-modal")).toHaveClass(/active/);
     // The close button exists in DOM — trigger click via JS since CSS
     // visibility transitions can cause Playwright toBeVisible to disagree
@@ -256,7 +256,7 @@ test.describe("Error state resilience", () => {
 
     await chat.sendMessage("trigger error");
     await expect(chat.chatViewport).toBeVisible();
-    await expect(page.locator("[role='alert']")).toContainText("Intentional test error");
+    await expect(page.locator("[role='alert'][aria-live='assertive']")).toContainText("Intentional test error");
   });
 
   test("navigating away from chat while busy does not crash", async ({ page }) => {

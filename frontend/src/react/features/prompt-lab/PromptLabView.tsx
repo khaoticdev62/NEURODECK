@@ -324,7 +324,7 @@ export function PromptLabView() {
           <Sparkles className="h-5 w-5 text-accent-primary" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
+          <p className="pl-header-kicker text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
             PromptDrive
           </p>
           <h2 className="text-lg font-semibold text-text-primary">Prompt Composer</h2>

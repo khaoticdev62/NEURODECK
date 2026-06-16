@@ -53,7 +53,7 @@ test.describe("Core System Views — Phase 10 Integration", () => {
     const view = page.getByTestId("view-remote");
     await expect(view.getByRole("heading", { name: "Remote Control" })).toBeVisible();
     await expect(view.getByText("Server Offline")).toBeVisible();
-    await expect(view.getByRole("button", { name: /Start remote server/i })).toBeVisible();
+    await expect(view.getByRole("button", { name: /Start Server/i })).toBeVisible();
   });
 
   test("navigates to Torrent view and shows empty state", async ({ page }) => {

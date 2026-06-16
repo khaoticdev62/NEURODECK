@@ -163,7 +163,9 @@ test.describe("Quick Switcher", () => {
     const app = new AppPage(page);
     await app.navigateTo("canvas");
     await app.navigateTo("terminal");
-    await app.openQuickSwitcher();
+    // History now: [canvas, terminal]. Ctrl+Tab selects previous view (canvas).
+    await page.keyboard.press("Control+Tab");
+    await expect(app.quickSwitcherOverlay).toHaveClass(/active/);
     await page.keyboard.press("Enter");
     await expect(app.quickSwitcherOverlay).not.toHaveClass(/active/);
     await expect(app.viewCanvas).toHaveClass(/active/);

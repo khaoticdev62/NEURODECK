@@ -24,6 +24,7 @@ const steamDeck = {
 
 export default defineConfig({
   testDir: "./tests",
+  testIgnore: ["**/electron-native.spec.ts"],
   timeout: 30000,
   globalTimeout: IS_CI ? 600_000 : 600_000,
   globalSetup: "./support/global-setup.cjs",

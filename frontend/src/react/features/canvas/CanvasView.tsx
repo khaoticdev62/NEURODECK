@@ -115,7 +115,7 @@ export function CanvasView() {
           <h2 className="text-lg font-semibold text-text-primary">Live Code Canvas</h2>
           <p className="text-xs text-text-muted">Edit, run, and preview code in split view.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="canvas-toolbar flex items-center gap-2">
           <Badge tone="accent" variant="outline">
             {lang.toUpperCase()}
           </Badge>
