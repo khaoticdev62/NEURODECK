@@ -100,6 +100,7 @@ export function ModelsView({
                   size="sm"
                   icon={RefreshCcw}
                   onClick={() => void actions.detectModels()}
+                  className="min-h-touch"
                 >
                   Detect Models
                 </Button>
@@ -155,6 +156,7 @@ export function ModelsView({
             fullWidth
             icon={RefreshCcw}
             onClick={() => void actions.detectModels()}
+            className="min-h-touch"
           >
             Detect Local Models
           </Button>
@@ -192,11 +194,12 @@ export function ModelsView({
                   {new Date(state.modelDetection.scannedAt).toLocaleString()}
                 </time>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2" role="list" aria-label="Detected runtimes">
                 {state.modelDetection.runtimes.map((runtime) => (
                   <div
                     key={`${runtime.name}-${runtime.path}`}
                     className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3"
+                    role="listitem"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-nd-text-primary/90">{runtime.name}</span>
@@ -215,36 +218,39 @@ export function ModelsView({
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
                     Compatibility
                   </p>
-                  {state.models.map((model) => {
-                    const score = scoresMap[model.id];
-                    if (!score) return null;
-                    return (
-                      <div
-                        key={`score-${model.id}`}
-                        className="flex items-center justify-between rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2"
-                        aria-label={`${model.name}: ${score.score}/100, tier ${score.tier}`}
-                      >
-                        <span className="text-xs text-nd-text-primary/80" aria-hidden="true">
-                          {model.name}
-                        </span>
-                        <div className="flex items-center gap-2" aria-hidden="true">
-                          <span className="text-xs text-nd-text-muted">{score.score}/100</span>
-                          <Badge
-                            tone={
-                              score.score >= 70
-                                ? "success"
-                                : score.score >= 40
-                                  ? "warning"
-                                  : "danger"
-                            }
-                            size="sm"
-                          >
-                            {score.tier}
-                          </Badge>
+                  <div className="space-y-2" role="list" aria-label="Compatibility scores">
+                    {state.models.map((model) => {
+                      const score = scoresMap[model.id];
+                      if (!score) return null;
+                      return (
+                        <div
+                          key={`score-${model.id}`}
+                          className="flex items-center justify-between rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2"
+                          aria-label={`${model.name}: ${score.score}/100, tier ${score.tier}`}
+                          role="listitem"
+                        >
+                          <span className="text-xs text-nd-text-primary/80" aria-hidden="true">
+                            {model.name}
+                          </span>
+                          <div className="flex items-center gap-2" aria-hidden="true">
+                            <span className="text-xs text-nd-text-muted">{score.score}/100</span>
+                            <Badge
+                              tone={
+                                score.score >= 70
+                                  ? "success"
+                                  : score.score >= 40
+                                    ? "warning"
+                                    : "danger"
+                              }
+                              size="sm"
+                            >
+                              {score.tier}
+                            </Badge>
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </>

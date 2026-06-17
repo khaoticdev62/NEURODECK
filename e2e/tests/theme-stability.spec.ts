@@ -105,7 +105,7 @@ test("app renders safely when localStorage.themeSettings is corrupted", async ({
 test("theme selection persists in localStorage and CSS vars survive reload", async ({ page }) => {
   // Open the settings overlay
   const settingsBtn = page.locator("#settings-btn");
-  await settingsBtn.click();
+  await settingsBtn.evaluate((el) => (el as HTMLButtonElement).click());
   await expect(page.locator("#settings-overlay")).toHaveClass(/active/);
 
   // Read initial CSS var value

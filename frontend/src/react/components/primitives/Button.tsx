@@ -64,7 +64,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     variant === "outline"
       ? "border-nd-border-subtle bg-transparent text-nd-text-primary hover:border-nd-accent-primary/35 hover:bg-nd-surface-secondary/50"
       : "",
-    size === "xs" ? "h-7 px-2 text-2xs gap-1 rounded-lg" : "",
+    size === "xs" ? "min-h-touch px-2 text-2xs gap-1 rounded-lg" : "",
     fullWidth ? "w-full" : "",
     className,
   ]

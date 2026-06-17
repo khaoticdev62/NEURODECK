@@ -72,8 +72,8 @@ export class WallpaperManager {
 
   refreshColors() {
     const cs = getComputedStyle(document.documentElement);
-    this.accentColor = cs.getPropertyValue("--accent-color").trim() || "#00F0FF";
-    this.responseColor = cs.getPropertyValue("--response-color").trim() || "#00FF88";
+    this.accentColor = cs.getPropertyValue("--nd-accent-primary").trim() || "#00F0FF";
+    this.responseColor = cs.getPropertyValue("--nd-accent-success").trim() || "#00FF88";
   }
 
   private readonly resize = () => {
@@ -201,7 +201,7 @@ export class WallpaperManager {
         x: Math.random() * w - w / 2,
         y: Math.random() * h - h / 2,
         z: Math.random() * w,
-        color: Math.random() > 0.5 ? "var(--accent-color)" : "var(--response-color)",
+        color: Math.random() > 0.5 ? "var(--nd-accent-primary)" : "var(--nd-accent-success)",
       }));
     } else if (type === "particles") {
       this.particles = Array.from({ length: 60 }, () => ({
@@ -244,7 +244,7 @@ export class WallpaperManager {
       growSpeed: 2 + Math.random() * 2,
       stepsRemaining: Math.floor(Math.random() * 15) + 10,
       alpha: 1.0,
-      color: Math.random() > 0.4 ? "var(--accent-color)" : "var(--response-color)",
+      color: Math.random() > 0.4 ? "var(--nd-accent-primary)" : "var(--nd-accent-success)",
     };
   }
 

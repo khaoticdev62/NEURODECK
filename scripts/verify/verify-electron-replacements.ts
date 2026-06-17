@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 const MATRIX_PATH = path.join(ROOT, 'docs', 'cleanup', 'ELECTRON_REPLACEMENT_MATRIX.md');
 const CHANNELS_PATH = path.join(ROOT, 'electron', 'ipc-channels.js');
 const PRELOAD_PATH = path.join(ROOT, 'electron', 'preload.js');

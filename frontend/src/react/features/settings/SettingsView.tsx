@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState, Children, cloneElement, isValidElement } from "react";
 import type { Dispatch } from "react";
 import {
   BrainCircuit,
@@ -90,16 +90,29 @@ function SettingRow({
   description: string;
   children: React.ReactNode;
 }) {
+  const baseId = useId();
+  const titleId = `${baseId}-title`;
+  const descId = `${baseId}-desc`;
+  const controlId = `${baseId}-control`;
+
+  const labelledChild = Children.map(children, (child) =>
+    isValidElement(child) ? cloneElement(child, { id: controlId } as Record<string, unknown>) : child
+  );
+
   return (
-    <div className="flex min-h-[64px] items-center justify-between gap-4 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3.5 py-3">
+    <div
+      className="flex min-h-touch items-center justify-between gap-4 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3.5 py-3"
+      aria-labelledby={titleId}
+      aria-describedby={descId}
+    >
       <div className="flex items-center gap-3 min-w-0">
         <Icon className="h-5 w-5 shrink-0 text-nd-accent-primary" aria-hidden="true" />
         <div className="min-w-0">
-          <p className="font-semibold text-nd-text-primary text-sm">{title}</p>
-          <p className="text-xs text-nd-text-muted mt-0.5">{description}</p>
+          <p id={titleId} className="font-semibold text-nd-text-primary text-sm">{title}</p>
+          <p id={descId} className="text-xs text-nd-text-muted mt-0.5">{description}</p>
         </div>
       </div>
-      <div className="shrink-0">{children}</div>
+      <div className="shrink-0">{labelledChild}</div>
     </div>
   );
 }
@@ -477,7 +490,7 @@ export function SettingsView({
   return (
     <div className="grid h-full min-h-0 gap-3 overflow-hidden p-3 xl:grid-cols-[220px_1fr]">
       {/* Sidebar */}
-      <aside className="stv-sidebar flex min-h-0 flex-col rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/50 p-3 gap-2">
+      <aside className="stv-sidebar flex min-h-0 flex-col overflow-y-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/50 p-3 gap-2 scrollbar-thin">
         <div className="stv-sidebar-brand-chip flex items-center gap-2 rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10 px-3 py-2 mb-1">
           <Settings className="h-4 w-4 text-nd-accent-primary" />
           <span className="text-xs font-bold uppercase tracking-[0.22em] text-nd-accent-primary">
@@ -494,7 +507,7 @@ export function SettingsView({
               data-panel={`sp-${key}`}
               aria-current={active ? "page" : undefined}
               onClick={() => selectPanel(key)}
-              className={`stv-nav-item flex min-h-10 w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+              className={`stv-nav-item flex min-h-touch w-full items-center gap-2.5 rounded-xl border px-3 py-2 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                 active
                   ? "active border-nd-accent-primary/35 bg-nd-accent-primary/10 text-nd-accent-primary font-semibold"
                   : "border-transparent text-nd-text-primary/70 hover:border-nd-border-subtle hover:bg-nd-surface-secondary/60 hover:text-nd-text-primary"

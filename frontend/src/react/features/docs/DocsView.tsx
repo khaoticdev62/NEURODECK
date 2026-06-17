@@ -3,6 +3,7 @@ import { BookOpen, Search, FolderOpen, Trash2, RefreshCw, FileText } from "lucid
 import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { IconButton } from "../../components/primitives/IconButton";
 import { LoadingState } from "../../components/primitives/LoadingState";
 import { Panel } from "../../components/primitives/Panel";
@@ -80,8 +81,9 @@ export function DocsView() {
             }
           }
         }
-      } catch (_) {
-        // Default folder discovery is optional; leave the input empty
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to discover default docs folder.");
+        setStatus("Default docs folder discovery failed.");
       }
     }
     void init();
@@ -164,13 +166,20 @@ export function DocsView() {
         }
       >
         <div className="flex h-full flex-col gap-4 p-4">
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2 text-xs">
+          <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2 text-xs">
             <StatusChip tone={error ? "error" : loading ? "info" : "success"} size="sm">
               {error ? "Error" : loading ? "Working" : "Ready"}
             </StatusChip>
-            <span className="text-text-secondary">{status}</span>
-            {error ? <p className="text-accent-error">{error}</p> : null}
+            <span className="text-nd-text-secondary">{status}</span>
           </div>
+          {error && (
+            <ErrorState
+              title="Docs error"
+              message={error}
+              onRetry={loadDocs}
+              onClose={() => setError("")}
+            />
+          )}
 
           <div className="docs-search-shell flex gap-2">
             <TextInput
@@ -180,12 +189,12 @@ export function DocsView() {
               onKeyDown={(e) => e.key === "Enter" && search()}
               placeholder="Search indexed docs..."
               aria-label="Search indexed docs"
-              className="flex-1"
+              className="flex-1 min-h-touch"
             />
-            <Button variant="primary" size="sm" icon={Search} onClick={search}>
+            <Button variant="primary" size="sm" icon={Search} onClick={search} className="min-h-touch">
               Search
             </Button>
-            <Button variant="danger" size="sm" icon={Trash2} onClick={clear}>
+            <Button variant="danger" size="sm" icon={Trash2} onClick={clear} className="min-h-touch">
               Clear
             </Button>
           </div>
@@ -198,9 +207,9 @@ export function DocsView() {
               onKeyDown={(e) => e.key === "Enter" && indexDir()}
               placeholder="Path to index..."
               aria-label="Directory path to index"
-              className="flex-1"
+              className="flex-1 min-h-touch"
             />
-            <Button variant="success" size="sm" icon={FolderOpen} onClick={indexDir}>
+            <Button variant="success" size="sm" icon={FolderOpen} onClick={indexDir} className="min-h-touch">
               Index
             </Button>
           </div>
@@ -212,14 +221,16 @@ export function DocsView() {
               className="flex w-64 flex-col overflow-hidden"
             >
               <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
-                <div className="space-y-1">
+                <div className="space-y-1" role="list" aria-label="Indexed documents">
                   {docs.map((doc) => (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-text-secondary transition duration-fast hover:bg-surface-tertiary/30"
+                      role="listitem"
+                      tabIndex={0}
+                      className="flex min-h-touch items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-nd-text-secondary transition duration-fast hover:bg-nd-surface-tertiary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60"
                     >
                       <FileText
-                        className="h-3.5 w-3.5 shrink-0 text-text-muted"
+                        className="h-3.5 w-3.5 shrink-0 text-nd-text-muted"
                         aria-hidden="true"
                       />
                       <span className="truncate">{doc.title || doc.path}</span>
@@ -243,19 +254,21 @@ export function DocsView() {
                 {loading && !results.length ? (
                   <LoadingState label="Loading docs…" />
                 ) : results.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-3" role="list" aria-label="Search results">
                     {results.map((r) => (
                       <div
                         key={r.id}
-                        className="rounded-xl border border-border-subtle bg-surface-secondary/40 p-3 transition duration-fast hover:bg-surface-tertiary/30"
+                        role="listitem"
+                        tabIndex={0}
+                        className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 transition duration-fast hover:bg-nd-surface-tertiary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-text-primary">{r.title}</span>
+                          <span className="text-sm font-medium text-nd-text-primary">{r.title}</span>
                           <Badge tone="accent" size="sm">
                             {(r.score * 100).toFixed(1)}%
                           </Badge>
                         </div>
-                        <p className="mt-1 text-xs leading-relaxed text-text-secondary">
+                        <p className="mt-1 text-xs leading-relaxed text-nd-text-secondary">
                           {r.snippet}
                         </p>
                       </div>

@@ -15,6 +15,7 @@ import { IconButton } from "../../components/primitives/IconButton";
 import { Panel } from "../../components/primitives/Panel";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import { TextInput } from "../../components/primitives/TextInput";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { neurodeckApi } from "../../services/bridgeAdapter";
 import type { McpStatus } from "../../services/bridgeAdapter";
 
@@ -86,6 +87,7 @@ export function MCPView() {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const tokenRef = useRef<HTMLInputElement>(null);
 
   const showToast = useCallback((text: string, ok = true) => {
@@ -94,14 +96,16 @@ export function MCPView() {
   }, []);
 
   const refresh = useCallback(async () => {
+    setLoadError(null);
     try {
       const s = await neurodeckApi.mcp.getStatus();
       setStatus(s);
       if (s.running && s.port) setPort(s.port);
       const wl = await neurodeckApi.mcp.getToolWhitelist();
       setWhitelist(new Set(wl));
-    } catch {
+    } catch (e) {
       setStatus(null);
+      setLoadError(String(e));
     }
   }, []);
 
@@ -194,7 +198,7 @@ export function MCPView() {
             <span
               role="status"
               aria-live="polite"
-              className={`text-xs ${toast.ok ? "text-accent-success" : "text-accent-error"}`}
+              className={`text-xs ${toast.ok ? "text-nd-accent-success" : "text-nd-accent-error"}`}
             >
               {toast.text}
             </span>
@@ -212,24 +216,32 @@ export function MCPView() {
     >
       <div className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-thin">
         <div className="mx-auto max-w-2xl space-y-5">
+          {loadError && (
+            <ErrorState
+              title="Failed to load MCP status"
+              message={loadError}
+              onRetry={refresh}
+              onClose={() => setLoadError(null)}
+            />
+          )}
           {/* Status card */}
           <section
             aria-label="Server status"
             className={`rounded-2xl border p-4 transition duration-fast ${
               running
-                ? "border-accent-success/25 bg-accent-success/[0.055]"
-                : "border-border-subtle bg-surface-secondary/40"
+                ? "border-nd-accent-success/25 bg-nd-accent-success/[0.055]"
+                : "border-nd-border-subtle bg-nd-surface-secondary/40"
             }`}
           >
             <div className="flex flex-wrap items-center gap-3">
               <Circle
-                className={`h-3 w-3 shrink-0 fill-current ${running ? "text-accent-success" : "text-text-muted/40"}`}
+                className={`h-3 w-3 shrink-0 fill-current ${running ? "text-nd-accent-success" : "text-nd-text-muted/40"}`}
                 aria-hidden="true"
               />
               <StatusChip tone={running ? "success" : "info"} size="sm" pulse={running}>
                 {running ? `Running on port ${status?.port}` : "Stopped"}
               </StatusChip>
-              <span className="ml-auto text-2xs text-text-muted">Protocol: MCP 2024-11</span>
+              <span className="ml-auto text-2xs text-nd-text-muted">Protocol: MCP 2024-11</span>
             </div>
 
             {running && status?.discovery && (
@@ -238,7 +250,7 @@ export function MCPView() {
                   href={status.discovery}
                   target="_blank"
                   rel="noreferrer noopener"
-                  className="flex items-center gap-1.5 text-xs text-accent-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+                  className="flex items-center gap-1.5 text-xs text-nd-accent-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
                 >
                   <ExternalLink className="h-3 w-3" aria-hidden="true" />
                   {status.discovery}
@@ -250,9 +262,9 @@ export function MCPView() {
           {/* Start / Stop controls */}
           <section
             aria-label="Server controls"
-            className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+            className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4"
           >
-            <h2 className="mb-3 text-sm font-semibold text-text-primary">Controls</h2>
+            <h2 className="mb-3 text-sm font-semibold text-nd-text-primary">Controls</h2>
             <div className="flex flex-wrap items-end gap-3">
               {!running && (
                 <TextInput
@@ -263,7 +275,7 @@ export function MCPView() {
                   max={65535}
                   value={port}
                   onChange={(e) => setPort(Number(e.target.value))}
-                  className="w-28"
+                  className="w-28 min-h-touch"
                 />
               )}
 
@@ -274,6 +286,7 @@ export function MCPView() {
                   icon={PowerOff}
                   onClick={() => void handleStop()}
                   loading={busy}
+                  className="min-h-touch"
                 >
                   Stop Server
                 </Button>
@@ -284,6 +297,7 @@ export function MCPView() {
                   icon={Power}
                   onClick={() => void handleStart()}
                   loading={busy}
+                  className="min-h-touch"
                 >
                   Start Server
                 </Button>
@@ -295,12 +309,12 @@ export function MCPView() {
           {running && status?.token && (
             <section
               aria-label="Authentication token"
-              className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+              className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4"
             >
-              <h2 className="mb-3 text-sm font-semibold text-text-primary">Bearer Token</h2>
-              <p className="mb-3 text-2xs text-text-secondary">
+              <h2 className="mb-3 text-sm font-semibold text-nd-text-primary">Bearer Token</h2>
+              <p className="mb-3 text-2xs text-nd-text-secondary">
                 Every request must include this token in the{" "}
-                <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">
+                <code className="rounded bg-nd-surface-primary px-1 py-0.5 text-nd-accent-primary">
                   Authorization: Bearer …
                 </code>{" "}
                 header. Regenerated each time the server starts.
@@ -312,13 +326,14 @@ export function MCPView() {
                   value={status.token}
                   readOnly
                   aria-label="MCP bearer token"
-                  className="min-w-0 flex-1"
+                  className="min-w-0 flex-1 min-h-touch"
                 />
                 <Button
                   variant="secondary"
                   size="sm"
                   icon={copied ? ClipboardCheck : Clipboard}
                   onClick={handleCopyToken}
+                  className="min-h-touch"
                 >
                   {copied ? "Copied" : "Copy"}
                 </Button>
@@ -330,22 +345,22 @@ export function MCPView() {
           {claudeDesktopConfig && (
             <section
               aria-label="Claude Desktop config snippet"
-              className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+              className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4"
             >
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-text-primary">Claude Desktop Config</h2>
-                <Button variant="secondary" size="sm" icon={Clipboard} onClick={handleCopyConfig}>
+                <h2 className="text-sm font-semibold text-nd-text-primary">Claude Desktop Config</h2>
+                <Button variant="secondary" size="sm" icon={Clipboard} onClick={handleCopyConfig} className="min-h-touch">
                   Copy
                 </Button>
               </div>
-              <p className="mb-3 text-2xs text-text-secondary">
+              <p className="mb-3 text-2xs text-nd-text-secondary">
                 Add this to your{" "}
-                <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">
+                <code className="rounded bg-nd-surface-primary px-1 py-0.5 text-nd-accent-primary">
                   claude_desktop_config.json
                 </code>{" "}
                 to connect Claude Desktop (or any MCP client) to NEURODECK.
               </p>
-              <pre className="overflow-x-auto rounded-xl border border-border-subtle bg-surface-primary p-4 font-mono text-2xs leading-relaxed text-text-secondary scrollbar-thin">
+              <pre className="overflow-x-auto rounded-xl border border-nd-border-subtle bg-nd-surface-primary p-4 font-mono text-2xs leading-relaxed text-nd-text-secondary scrollbar-thin">
                 {claudeDesktopConfig}
               </pre>
             </section>
@@ -354,12 +369,12 @@ export function MCPView() {
           {/* Tool whitelist */}
           <section
             aria-label="Tool whitelist"
-            className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+            className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4"
           >
-            <h2 className="mb-1 text-sm font-semibold text-text-primary">Tool Whitelist</h2>
-            <p className="mb-4 text-2xs text-text-secondary">
+            <h2 className="mb-1 text-sm font-semibold text-nd-text-primary">Tool Whitelist</h2>
+            <p className="mb-4 text-2xs text-nd-text-secondary">
               Only enabled tools are advertised to MCP clients via{" "}
-              <code className="rounded bg-surface-primary px-1 py-0.5 text-accent-primary">
+              <code className="rounded bg-nd-surface-primary px-1 py-0.5 text-nd-accent-primary">
                 tools/list
               </code>
               . Changes take effect on the next call — no restart required.
@@ -374,28 +389,28 @@ export function MCPView() {
                       role="checkbox"
                       aria-checked={enabled}
                       onClick={() => void toggleTool(tool.name)}
-                      className={`flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
+                      className={`flex w-full min-h-touch items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
                         enabled
-                          ? "border-accent-primary/20 bg-accent-primary/[0.06]"
-                          : "border-border-subtle bg-surface-primary/50 hover:bg-surface-tertiary/30"
+                          ? "border-nd-accent-primary/20 bg-nd-accent-primary/[0.06]"
+                          : "border-nd-border-subtle bg-nd-surface-primary/50 hover:bg-nd-surface-tertiary/30"
                       }`}
                     >
                       {enabled ? (
                         <CheckSquare
-                          className="mt-0.5 h-4 w-4 shrink-0 text-accent-primary"
+                          className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-primary"
                           aria-hidden="true"
                         />
                       ) : (
                         <Square
-                          className="mt-0.5 h-4 w-4 shrink-0 text-text-muted/40"
+                          className="mt-0.5 h-4 w-4 shrink-0 text-nd-text-muted/40"
                           aria-hidden="true"
                         />
                       )}
                       <div className="min-w-0">
-                        <span className="block font-mono text-xs font-medium text-text-primary">
+                        <span className="block font-mono text-xs font-medium text-nd-text-primary">
                           {tool.label}
                         </span>
-                        <span className="mt-0.5 block text-2xs leading-relaxed text-text-secondary/80">
+                        <span className="mt-0.5 block text-2xs leading-relaxed text-nd-text-secondary/80">
                           {tool.desc}
                         </span>
                       </div>
@@ -409,9 +424,9 @@ export function MCPView() {
           {/* Capability summary */}
           <section
             aria-label="MCP 2024-11 capabilities"
-            className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4"
+            className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4"
           >
-            <h2 className="mb-3 text-sm font-semibold text-text-primary">
+            <h2 className="mb-3 text-sm font-semibold text-nd-text-primary">
               MCP 2024-11 Capabilities
             </h2>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-xs">
@@ -427,11 +442,11 @@ export function MCPView() {
               ].map(([label, supported]) => (
                 <div key={String(label)} className="flex items-center gap-2">
                   <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${supported ? "bg-accent-success" : "bg-text-muted/30"}`}
+                    className={`h-2 w-2 shrink-0 rounded-full ${supported ? "bg-nd-accent-success" : "bg-nd-text-muted/30"}`}
                     aria-hidden="true"
                   />
                   <dt
-                    className={supported ? "text-text-primary" : "text-text-muted/50 line-through"}
+                    className={supported ? "text-nd-text-primary" : "text-nd-text-muted/50 line-through"}
                   >
                     {String(label)}
                   </dt>

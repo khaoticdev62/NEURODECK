@@ -14,6 +14,7 @@ import { Button } from "../../components/primitives/Button";
 import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
 import { EmptyState } from "../../components/primitives/EmptyState";
 import { LoadingState } from "../../components/primitives/LoadingState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { MetricCard } from "../../components/primitives/MetricCard";
 import { Panel } from "../../components/primitives/Panel";
 import { Select } from "../../components/primitives/Select";
@@ -65,9 +66,11 @@ export function SecurityView({
   const [agentMapSaving, setAgentMapSaving] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = async () => {
     setLoading(true);
+    setError(null);
     try {
       const [nextSecurity, nextCredentials, nextPermissions, nextAgents] = await Promise.all([
         neurodeckApi.diagnostics.securityReport(),
@@ -93,6 +96,8 @@ export function SecurityView({
       } else {
         setElectronFlags(null);
       }
+    } catch (e) {
+      setError(String(e));
     } finally {
       setLoading(false);
     }
@@ -170,13 +175,21 @@ export function SecurityView({
 
   return (
     <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_400px]">
-      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
+      <div className="flex min-h-0 flex-col gap-4 overflow-y-auto p-1 pb-4 scrollbar-thin">
+        {error && (
+          <ErrorState
+            title="Failed to load security data"
+            message={error}
+            onRetry={refresh}
+            onClose={() => setError(null)}
+          />
+        )}
         {/* Hardening Status */}
         <Panel
           eyebrow="Security"
           title="Hardening Status"
           action={
-            <Button variant="secondary" size="sm" icon={RefreshCcw} onClick={() => void refresh()}>
+            <Button variant="secondary" size="sm" icon={RefreshCcw} onClick={() => void refresh()} className="min-h-touch">
               Refresh
             </Button>
           }
@@ -191,8 +204,8 @@ export function SecurityView({
               <div
                 className={`mt-2 rounded-xl border px-3 py-2 text-xs ${
                   allPass
-                    ? "border-accent-success/20 bg-accent-success/10 text-accent-success"
-                    : "border-accent-warning/20 bg-accent-warning/10 text-accent-warning"
+                    ? "border-nd-accent-success/20 bg-nd-accent-success/10 text-nd-accent-success"
+                    : "border-nd-accent-warning/20 bg-nd-accent-warning/10 text-nd-accent-warning"
                 }`}
               >
                 <span className="flex items-center gap-2 font-semibold">
@@ -243,7 +256,7 @@ export function SecurityView({
                     : "missing"
               }
             />
-            <p className="text-2xs leading-5 text-text-muted/80">
+            <p className="text-2xs leading-5 text-nd-text-muted/80">
               All API keys are stored exclusively in the OS keychain. They are never written to disk
               files, localStorage, or log output.
             </p>
@@ -261,12 +274,12 @@ export function SecurityView({
                       key={profile.id}
                       className={`rounded-xl border px-3 py-2.5 transition duration-fast ${
                         profile.id === permissionRegistry.default_profile_id
-                          ? "border-accent-primary/30 bg-accent-primary/10"
-                          : "border-border-subtle bg-surface-secondary/40 hover:bg-surface-tertiary/30"
+                          ? "border-nd-accent-primary/30 bg-nd-accent-primary/10"
+                          : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:bg-nd-surface-tertiary/30"
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-semibold text-text-primary">
+                        <span className="text-xs font-semibold text-nd-text-primary">
                           {profile.name}
                         </span>
                         {profile.id === permissionRegistry.default_profile_id && (
@@ -275,10 +288,10 @@ export function SecurityView({
                           </Badge>
                         )}
                       </div>
-                      <p className="mt-1 text-2xs text-text-secondary">{profile.description}</p>
+                      <p className="mt-1 text-2xs text-nd-text-secondary">{profile.description}</p>
                       <div className="mt-2 flex flex-wrap gap-1">
                         {profile.granted.length === 0 && (
-                          <span className="text-2xs text-text-muted/70">
+                          <span className="text-2xs text-nd-text-muted/70">
                             No capabilities granted
                           </span>
                         )}
@@ -293,10 +306,10 @@ export function SecurityView({
                 </div>
 
                 {agents.length > 0 && (
-                  <div className="rounded-xl border border-border-subtle bg-surface-secondary/30 p-3">
+                  <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-3">
                     <div className="mb-2 flex items-center gap-2">
-                      <Users className="h-3.5 w-3.5 text-accent-primary" aria-hidden="true" />
-                      <span className="text-xs font-semibold text-text-primary">
+                      <Users className="h-3.5 w-3.5 text-nd-accent-primary" aria-hidden="true" />
+                      <span className="text-xs font-semibold text-nd-text-primary">
                         Agent Profile Mapping
                       </span>
                     </div>
@@ -309,13 +322,13 @@ export function SecurityView({
                         return (
                           <div
                             key={agent.id}
-                            className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle bg-surface-secondary/40 px-2.5 py-2"
+                            className="flex items-center justify-between gap-2 rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/40 px-2.5 py-2"
                           >
                             <div className="min-w-0">
-                              <p className="truncate text-xs font-medium text-text-primary">
+                              <p className="truncate text-xs font-medium text-nd-text-primary">
                                 {agent.name || agent.id}
                               </p>
-                              <p className="truncate text-2xs text-text-muted">
+                              <p className="truncate text-2xs text-nd-text-muted">
                                 {agent.description}
                               </p>
                             </div>
@@ -327,7 +340,7 @@ export function SecurityView({
                               onChange={(e) =>
                                 void handleAgentProfileChange(agent.id, e.target.value)
                               }
-                              className="min-w-[140px]"
+                              className="min-w-[140px] min-h-touch"
                               options={[
                                 {
                                   value: "__default__",
@@ -361,7 +374,7 @@ export function SecurityView({
         <Panel
           eyebrow="Privacy"
           title="Data Controls"
-          className="border-accent-error/30 bg-accent-error/[0.03]"
+          className="border-nd-accent-error/30 bg-nd-accent-error/[0.03]"
         >
           <div className="space-y-3 p-4">
             <div className="space-y-2">
@@ -370,6 +383,7 @@ export function SecurityView({
                 fullWidth
                 icon={RefreshCcw}
                 onClick={() => void actions.exportDiagnosticsBundle()}
+                className="min-h-touch"
               >
                 Generate Security Audit Bundle
               </Button>
@@ -378,11 +392,12 @@ export function SecurityView({
                 fullWidth
                 icon={Trash2}
                 onClick={() => setConfirmReset(true)}
+                className="min-h-touch"
               >
                 Clear All Local State
               </Button>
             </div>
-            <p className="text-2xs leading-5 text-text-muted/80">
+            <p className="text-2xs leading-5 text-nd-text-muted/80">
               Clearing local state removes session history, memories, and preferences. Keys stored
               in the OS keychain are preserved.
             </p>
@@ -413,11 +428,11 @@ export function SecurityView({
                 icon={report.packaged ? CheckCircle2 : ShieldAlert}
                 hint="Build configuration"
               />
-              <div className="rounded-xl border border-border-subtle bg-surface-secondary/40 p-3">
-                <p className="text-2xs font-semibold uppercase tracking-[0.18em] text-text-muted">
+              <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
+                <p className="text-2xs font-semibold uppercase tracking-[0.18em] text-nd-text-muted">
                   User Data
                 </p>
-                <p className="mt-1 break-all text-xs text-text-secondary">{report.userData}</p>
+                <p className="mt-1 break-all text-xs text-nd-text-secondary">{report.userData}</p>
               </div>
             </>
           ) : (
@@ -449,21 +464,21 @@ export function SecurityView({
 
 function HardeningRow({ label, ok, unknown }: { label: string; ok: boolean; unknown: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2.5">
-      <span className="text-xs text-text-primary">{label}</span>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2.5">
+      <span className="text-xs text-nd-text-primary">{label}</span>
       {unknown ? (
         <StatusChip tone="info" size="sm">
           unknown
         </StatusChip>
       ) : ok ? (
         <CheckCircle2
-          className="h-4 w-4 shrink-0 text-accent-success"
+          className="h-4 w-4 shrink-0 text-nd-accent-success"
           role="img"
           aria-label="Pass"
         />
       ) : (
         <ShieldAlert
-          className="h-4 w-4 shrink-0 text-accent-warning"
+          className="h-4 w-4 shrink-0 text-nd-accent-warning"
           role="img"
           aria-label="Warning"
         />
@@ -480,9 +495,9 @@ function CredentialRow({
   status: "keychain" | "optional" | "missing";
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2.5">
-      <span className="flex items-center gap-2 text-xs text-text-primary">
-        <KeyRound className="h-3.5 w-3.5 text-accent-primary" aria-hidden="true" /> {label}
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2.5">
+      <span className="flex items-center gap-2 text-xs text-nd-text-primary">
+        <KeyRound className="h-3.5 w-3.5 text-nd-accent-primary" aria-hidden="true" /> {label}
       </span>
       <Badge
         tone={status === "keychain" ? "success" : status === "optional" ? "neutral" : "danger"}

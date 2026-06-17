@@ -133,6 +133,26 @@ export function PrimarySidebar({
                       aria-label={item.label}
                       title={item.label}
                       onClick={() => dispatch({ type: "set-view", view: item.id as ViewId })}
+                      onKeyDown={(e) => {
+                        const nav = e.currentTarget.closest("nav");
+                        const btns = Array.from(
+                          nav?.querySelectorAll<HTMLElement>("[data-view]") ?? []
+                        );
+                        const idx = btns.indexOf(e.currentTarget);
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault();
+                          btns[Math.min(idx + 1, btns.length - 1)]?.focus();
+                        } else if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          btns[Math.max(idx - 1, 0)]?.focus();
+                        } else if (e.key === "Home") {
+                          e.preventDefault();
+                          btns[0]?.focus();
+                        } else if (e.key === "End") {
+                          e.preventDefault();
+                          btns[btns.length - 1]?.focus();
+                        }
+                      }}
                       className={`no-drag group/nav flex w-full min-h-touch items-center rounded-[var(--nd-radius-md)] px-2 py-2 text-left transition-[background-color,border-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
                         active
                           ? "active border-l-2 border-[var(--nd-border-focus)] bg-[var(--nd-surface-selected)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]"
@@ -140,19 +160,24 @@ export function PrimarySidebar({
                       } ${expanded ? "" : "justify-center"}`}
                     >
                       <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-4 w-4" aria-hidden="true" />
                       </span>
                       <span
                         className={`ml-2.5 overflow-hidden whitespace-nowrap text-sm font-medium transition-opacity duration-[var(--nd-motion-fast)] ${
                           expanded ? "opacity-100" : "opacity-0 w-0"
                         }`}
+                        aria-hidden={!expanded}
                       >
                         {item.label}
                       </span>
-                      {expanded && item.shortcut && (
-                        <span className="ml-auto rounded border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] px-1.5 py-0.5 text-[10px] text-[var(--nd-text-muted)]">
-                          {item.shortcut}
-                        </span>
+                      {item.shortcut && (
+                        expanded ? (
+                          <span className="ml-auto rounded border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)] px-1.5 py-0.5 text-[10px] text-[var(--nd-text-muted)]">
+                            {item.shortcut}
+                          </span>
+                        ) : (
+                          <span className="sr-only">{item.shortcut}</span>
+                        )
                       )}
                     </button>
                   );
@@ -206,6 +231,7 @@ export function PrimarySidebar({
         </div>
         <button
           type="button"
+          data-testid="deck-mode-toggle"
           onClick={() => dispatch({ type: "toggle-deck-mode" })}
           className={`flex w-full min-h-touch items-center justify-center rounded-full border px-2 py-1.5 text-xs transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
             state.deckMode

@@ -16,6 +16,7 @@ import { listenBridge } from "../../services/bridgeAdapter";
 import type { WorkflowDoc, WorkflowSummary } from "../../services/bridgeAdapter";
 import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { IconButton } from "../../components/primitives/IconButton";
 import { Modal } from "../../components/primitives/Modal";
 
@@ -149,6 +150,7 @@ export function OrchestratorView() {
   const [editorError, setEditorError] = useState<string | null>(null);
   const [runState, setRunState] = useState<RunState>({ status: "idle" });
   const [logs, setLogs] = useState<string[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importJson, setImportJson] = useState("");
   const importTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -164,7 +166,9 @@ export function OrchestratorView() {
         setSelectedName(list[0].name);
       }
     } catch (e) {
-      setLogs((prev) => [...prev, `Failed to load workflows: ${String(e)}`]);
+      const msg = `Failed to load workflows: ${String(e)}`;
+      setLogs((prev) => [...prev, msg]);
+      setLoadError(msg);
     }
   }, [selectedName]);
 
@@ -175,7 +179,9 @@ export function OrchestratorView() {
       setEditorText(JSON.stringify(loaded, null, 2));
       setEditorError(null);
     } catch (e) {
-      setLogs((prev) => [...prev, `Failed to load ${name}: ${String(e)}`]);
+      const msg = `Failed to load ${name}: ${String(e)}`;
+      setLogs((prev) => [...prev, msg]);
+      setLoadError(msg);
     }
   }, []);
 
@@ -186,6 +192,12 @@ export function OrchestratorView() {
   useEffect(() => {
     if (selectedName) void loadWorkflow(selectedName);
   }, [selectedName, loadWorkflow]);
+
+  const handleRetryLoad = useCallback(async () => {
+    setLoadError(null);
+    await loadList();
+    if (selectedName) await loadWorkflow(selectedName);
+  }, [loadList, loadWorkflow, selectedName]);
 
   useEffect(() => {
     const unsubStart = listenBridge("workflow_started", (payload) => {
@@ -337,6 +349,7 @@ export function OrchestratorView() {
           <Button
             variant={running ? "danger" : "primary"}
             size="sm"
+            className="min-h-touch"
             icon={running ? Square : Play}
             disabled={!doc}
             onClick={running ? handleStop : handleRun}
@@ -346,17 +359,25 @@ export function OrchestratorView() {
           <Button
             variant="secondary"
             size="sm"
+            className="min-h-touch"
             icon={Plus}
             onClick={() => void handleCreateSample()}
           >
             Sample
           </Button>
-          <Button variant="ghost" size="sm" icon={Upload} onClick={handleImport}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-touch"
+            icon={Upload}
+            onClick={handleImport}
+          >
             Import
           </Button>
           <Button
             variant="ghost"
             size="sm"
+            className="min-h-touch"
             icon={Download}
             disabled={!selectedName}
             onClick={() => void handleExport()}
@@ -366,13 +387,26 @@ export function OrchestratorView() {
         </div>
       </div>
 
+      {loadError && (
+        <div className="mb-4">
+          <ErrorState
+            message={loadError}
+            onRetry={handleRetryLoad}
+            onClose={() => setLoadError(null)}
+          />
+        </div>
+      )}
+
       <div className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[220px_1fr_320px]">
         {/* Workflow list */}
         <section className="flex min-h-0 flex-col gap-3 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-nd-text-muted">
             Workflows
           </div>
-          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto">
+          <div
+            role="list"
+            className="min-h-0 flex-1 space-y-2 overflow-y-auto"
+          >
             {workflows.length === 0 ? (
               <EmptyState
                 compact
@@ -384,12 +418,13 @@ export function OrchestratorView() {
               workflows.map((wf) => (
                 <div
                   key={wf.name}
-                  className={`flex items-center justify-between gap-2 rounded-xl border px-3 py-2 ${selectedName === wf.name ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]" : "border-nd-text-muted/15 bg-nd-surface/40"}`}
+                  role="listitem"
+                  className={`flex min-h-touch items-center justify-between gap-2 rounded-xl border px-3 py-2 ${selectedName === wf.name ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]" : "border-nd-text-muted/15 bg-nd-surface/40"}`}
                 >
                   <Button
                     variant="ghost"
                     size="xs"
-                    className="min-w-0 flex-1 truncate !justify-start text-left text-xs"
+                    className="min-h-touch min-w-0 flex-1 truncate !justify-start text-left text-xs"
                     onClick={() => setSelectedName(wf.name)}
                   >
                     {wf.name}
@@ -498,14 +533,18 @@ export function OrchestratorView() {
 
         {/* Editor + logs */}
         <section className="flex min-h-0 flex-col gap-3 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-          <div className="text-xs font-semibold uppercase tracking-[0.2em] text-nd-text-muted">
+          <label
+            htmlFor="workflow-json-editor"
+            className="text-xs font-semibold uppercase tracking-[0.2em] text-nd-text-muted"
+          >
             Workflow JSON
-          </div>
+          </label>
           <textarea
+            id="workflow-json-editor"
             value={editorText}
             onChange={(e) => setEditorText(e.target.value)}
             disabled={!doc}
-            className="min-h-0 flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 font-mono text-xs text-nd-text-primary outline-none focus:border-nd-accent-primary/40 disabled:opacity-50"
+            className="min-h-0 flex-1 resize-y rounded-xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 font-mono text-xs text-nd-text-primary outline-none focus:border-nd-accent-primary/40 disabled:opacity-50"
             spellCheck={false}
           />
           {editorError && (
@@ -516,6 +555,7 @@ export function OrchestratorView() {
           <Button
             variant="secondary"
             size="sm"
+            className="min-h-touch"
             fullWidth
             disabled={!doc}
             onClick={() => void handleSave()}
@@ -550,11 +590,16 @@ export function OrchestratorView() {
         size="md"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setImportModalOpen(false)}>
+            <Button
+              variant="secondary"
+              className="min-h-touch"
+              onClick={() => setImportModalOpen(false)}
+            >
               Cancel
             </Button>
             <Button
               variant="primary"
+              className="min-h-touch"
               onClick={() => void confirmImport()}
               disabled={!importJson.trim()}
             >

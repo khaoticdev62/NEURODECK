@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { Panel } from "../../components/primitives/Panel";
 import { Select } from "../../components/primitives/Select";
 
@@ -42,6 +43,8 @@ export function RemoteView() {
   const [notifText, setNotifText] = useState("");
   const [notifType, setNotifType] = useState<"info" | "success" | "warn" | "error">("info");
   const [sendingNotif, setSendingNotif] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const ttlTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
@@ -64,8 +67,9 @@ export function RemoteView() {
           return prev;
         });
       }
-    } catch (_) {
-      /* ignore */
+      setLoadError(null);
+    } catch (e) {
+      setLoadError(String(e));
     }
   }, []);
 
@@ -143,6 +147,7 @@ export function RemoteView() {
 
   const toggle = async () => {
     setLoading(true);
+    setActionError(null);
     try {
       if (status.running) {
         await neurodeckApi.remote.stop();
@@ -155,6 +160,7 @@ export function RemoteView() {
       }
       await refresh();
     } catch (err) {
+      setActionError(String(err));
       log(`Failed: ${err}`, "error");
     } finally {
       setLoading(false);
@@ -199,6 +205,21 @@ export function RemoteView() {
       <div data-testid="remote-view" className="flex min-h-0 flex-1 gap-3 p-4">
         {/* Main panel */}
         <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-4 scrollbar-thin">
+          {loadError && (
+            <ErrorState
+              title="Failed to load remote status"
+              message={loadError}
+              onRetry={() => void refresh()}
+              onClose={() => setLoadError(null)}
+            />
+          )}
+          {actionError && (
+            <ErrorState
+              title="Server action failed"
+              message={actionError}
+              onClose={() => setActionError(null)}
+            />
+          )}
           {/* Status card */}
           <div
             data-testid="remote-status-badge"

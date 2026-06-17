@@ -92,6 +92,29 @@
   --nd-state-info: var(--nd-blue-500);
   --nd-state-loading: var(--nd-cyan-400);
 
+  /* RGB channels for state colors (enables rgba() alpha composition) */
+  --nd-state-success-rgb: var(--nd-green-rgb);
+  --nd-state-warning-rgb: var(--nd-yellow-rgb);
+  --nd-state-error-rgb: var(--nd-red-rgb);
+  --nd-state-info-rgb: var(--nd-blue-rgb);
+
+  /* ---- Semantic state surface tokens ---- */
+  --nd-surface-success: rgba(var(--nd-green-rgb), 0.10);
+  --nd-surface-warning: rgba(var(--nd-yellow-rgb), 0.10);
+  --nd-surface-error: rgba(var(--nd-red-rgb), 0.10);
+  --nd-surface-info: rgba(var(--nd-blue-rgb), 0.10);
+
+  /* ---- Z-index scale ---- */
+  --nd-z-behind: -1;
+  --nd-z-wallpaper: 0;
+  --nd-z-base: 1;
+  --nd-z-sticky: 10;
+  --nd-z-dropdown: 20;
+  --nd-z-overlay: 30;
+  --nd-z-modal: 40;
+  --nd-z-toast: 50;
+  --nd-z-tooltip: 60;
+
   /* ---- Semantic borders ---- */
   --nd-border-subtle: rgba(141, 161, 179, 0.16);
   --nd-border-default: rgba(141, 161, 179, 0.28);
@@ -180,6 +203,7 @@
   --nd-black-55: rgba(0, 0, 0, 0.55);
   --nd-black-40: rgba(0, 0, 0, 0.4);
   --nd-white-15: rgba(255, 255, 255, 0.15);
+  --nd-white-25: rgba(255, 255, 255, 0.25);
 
   /* ---- Legacy-compatible surface / text aliases ---- */
   --nd-text-legacy-bright: #e2e8f0;
@@ -197,6 +221,9 @@
   --nd-yellow-legacy-rgb: 245, 158, 11;
   --nd-red-legacy: #ef4444;
   --nd-red-legacy-rgb: 239, 68, 68;
+  --nd-red-300: #f87171;
+  --nd-purple-legacy: #a855f7;
+  --nd-purple-legacy-rgb: 168, 85, 247;
 
   /* ============================================================
      Spacing, radius, elevation, motion
@@ -235,6 +262,13 @@
   --nd-radius-3xl: 20px;
   --nd-radius-full: 999px;
   --nd-radius-circle: 50%;
+  --nd-radius-hairline: 1px;
+  --nd-radius-3px: 3px;
+  --nd-radius-5px: 5px;
+  --nd-radius-7px: 7px;
+  --nd-radius-8px: 8px;
+  --nd-radius-9px: 9px;
+  --nd-radius-22px: 22px;
 
   /* Semantic radius aliases */
   --nd-radius-panel: var(--nd-radius-md);

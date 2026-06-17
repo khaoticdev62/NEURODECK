@@ -152,4 +152,21 @@ test.describe("Steam Deck Layout — 1280×800", () => {
     await page.screenshot({ path: "test-results/ui-audit/deck-command-palette.png" });
     await app.closeCommandPalette();
   });
+
+  test("deck: controller hint bar renders in deck mode and fits viewport", async ({ page }) => {
+    const app = new AppPage(page);
+    await app.setDeckMode(true);
+    await app.navigateTo("chat");
+
+    await expect(app.controllerHintBar).toBeVisible();
+
+    const hintRect = await app.controllerHintBar.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { height: r.height, bottom: r.bottom };
+    });
+    expect(hintRect.height, "hint bar should be at least 40px tall").toBeGreaterThanOrEqual(40);
+    expect(hintRect.bottom, "hint bar should sit inside viewport").toBeLessThanOrEqual(800);
+
+    await page.screenshot({ path: "test-results/ui-audit/deck-mode-hint-bar.png" });
+  });
 });

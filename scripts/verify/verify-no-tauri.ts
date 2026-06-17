@@ -2,10 +2,11 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 
 const SKIP_DIRS = new Set([
-  'node_modules', 'dist', 'target', '.git', 'reports', 'docs/cleanup'
+  'node_modules', 'dist', 'target', '.git', 'reports', 'docs/cleanup',
+  '.fallow', '.serena', '.ruff_cache', '.playwright-mcp', '.venv', '.tmp'
 ]);
 
 const SKIP_EXTS = new Set(['.json', '.lock', '.png', '.ico', '.svg', '.woff2', '.ttf', '.md']);

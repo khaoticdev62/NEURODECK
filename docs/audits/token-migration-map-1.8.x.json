@@ -1,15 +1,15 @@
 {
   "meta": {
-    "generated": "2026-06-16T17:20:24.226Z",
+    "generated": "2026-06-17T13:18:39.790Z",
     "source": "frontend/src/app.css",
     "lineCount": 24874,
     "note": "Phase 0 scaffolding. Values are candidate mappings, not yet applied."
   },
   "colors": [
     {
-      "value": "rgba(var(--accent-rgb)",
-      "raw": "rgba(var(--accent-rgb)",
-      "occurrences": 640,
+      "value": "rgba(var(--nd-cyan-rgb)",
+      "raw": "rgba(var(--nd-cyan-rgb)",
+      "occurrences": 726,
       "proposedToken": null,
       "contexts": [
         "L311",
@@ -18,58 +18,58 @@
       ]
     },
     {
-      "value": "rgba(var(--response-rgb)",
-      "raw": "rgba(var(--response-rgb)",
-      "occurrences": 19,
+      "value": "rgba(var(--nd-green-rgb)",
+      "raw": "rgba(var(--nd-green-rgb)",
+      "occurrences": 63,
       "proposedToken": null,
       "contexts": [
-        "L1011",
-        "L1062",
-        "L1088"
+        "L772",
+        "L773",
+        "L972"
       ]
     },
     {
-      "value": "rgba(0, 0, 0, 0.4)",
-      "raw": "rgba(0, 0, 0, 0.4)",
-      "occurrences": 18,
+      "value": "rgba(var(--nd-red-rgb)",
+      "raw": "rgba(var(--nd-red-rgb)",
+      "occurrences": 59,
       "proposedToken": null,
       "contexts": [
-        "L1283",
-        "L1384",
-        "L1739"
-      ]
-    },
-    {
-      "value": "rgba(var(--error-rgb)",
-      "raw": "rgba(var(--error-rgb)",
-      "occurrences": 18,
-      "proposedToken": null,
-      "contexts": [
+        "L1500",
         "L1570",
-        "L1599",
-        "L1969"
+        "L1599"
       ]
     },
     {
-      "value": "rgba(0, 0, 0, 0.25)",
-      "raw": "rgba(0, 0, 0, 0.25)",
-      "occurrences": 18,
+      "value": "rgba(var(--nd-purple-rgb)",
+      "raw": "rgba(var(--nd-purple-rgb)",
+      "occurrences": 35,
       "proposedToken": null,
       "contexts": [
-        "L3503",
-        "L4717",
-        "L5582"
+        "L2799",
+        "L4926",
+        "L4927"
       ]
     },
     {
-      "value": "rgba(94, 235, 255, 0.15)",
-      "raw": "rgba(94, 235, 255, 0.15)",
-      "occurrences": 18,
+      "value": "rgba(var(--nd-yellow-rgb)",
+      "raw": "rgba(var(--nd-yellow-rgb)",
+      "occurrences": 33,
       "proposedToken": null,
       "contexts": [
-        "L5999",
-        "L6009",
-        "L7228"
+        "L1506",
+        "L1566",
+        "L2682"
+      ]
+    },
+    {
+      "value": "rgba(var(--nd-red-legacy-rgb)",
+      "raw": "rgba(var(--nd-red-legacy-rgb)",
+      "occurrences": 31,
+      "proposedToken": null,
+      "contexts": [
+        "L16817",
+        "L17248",
+        "L17249"
       ]
     },
     {
@@ -80,40 +80,7 @@
       "contexts": [
         "L1260",
         "L2370",
-        "L5388"
-      ]
-    },
-    {
-      "value": "rgba(255, 255, 255, 0.15)",
-      "raw": "rgba(255, 255, 255, 0.15)",
-      "occurrences": 17,
-      "proposedToken": null,
-      "contexts": [
-        "L4247",
-        "L5134",
-        "L5135"
-      ]
-    },
-    {
-      "value": "rgba(94, 235, 255, 0.12)",
-      "raw": "rgba(94, 235, 255, 0.12)",
-      "occurrences": 17,
-      "proposedToken": null,
-      "contexts": [
-        "L6005",
-        "L7031",
-        "L7066"
-      ]
-    },
-    {
-      "value": "rgba(0, 0, 0, 0.2)",
-      "raw": "rgba(0, 0, 0, 0.2)",
-      "occurrences": 16,
-      "proposedToken": null,
-      "contexts": [
-        "L1825",
-        "L1841",
-        "L4073"
+        "L5409"
       ]
     },
     {
@@ -123,19 +90,8 @@
       "proposedToken": null,
       "contexts": [
         "L2652",
-        "L5919",
-        "L8885"
-      ]
-    },
-    {
-      "value": "#ff3c5a",
-      "raw": "#ff3c5a",
-      "occurrences": 16,
-      "proposedToken": null,
-      "contexts": [
-        "L3279",
-        "L4162",
-        "L4173"
+        "L5940",
+        "L8888"
       ]
     },
     {
@@ -144,9 +100,9 @@
       "occurrences": 16,
       "proposedToken": null,
       "contexts": [
-        "L6330",
-        "L7553",
-        "L8064"
+        "L6333",
+        "L7556",
+        "L8067"
       ]
     },
     {
@@ -156,8 +112,8 @@
       "proposedToken": null,
       "contexts": [
         "L1722",
-        "L5087",
-        "L5524"
+        "L5108",
+        "L5545"
       ]
     },
     {
@@ -168,7 +124,7 @@
       "contexts": [
         "L1030",
         "L3912",
-        "L4514"
+        "L4535"
       ]
     },
     {
@@ -178,19 +134,8 @@
       "proposedToken": null,
       "contexts": [
         "L3551",
-        "L5389",
-        "L5421"
-      ]
-    },
-    {
-      "value": "#00ff88",
-      "raw": "#00ff88",
-      "occurrences": 14,
-      "proposedToken": null,
-      "contexts": [
-        "L8237",
-        "L9635",
-        "L9780"
+        "L5410",
+        "L5442"
       ]
     },
     {
@@ -199,9 +144,9 @@
       "occurrences": 13,
       "proposedToken": null,
       "contexts": [
-        "L16925",
-        "L16937",
-        "L16954"
+        "L16928",
+        "L16940",
+        "L16957"
       ]
     },
     {
@@ -211,8 +156,8 @@
       "proposedToken": null,
       "contexts": [
         "L1056",
-        "L5285",
-        "L5510"
+        "L5306",
+        "L5531"
       ]
     },
     {
@@ -232,9 +177,20 @@
       "occurrences": 12,
       "proposedToken": null,
       "contexts": [
-        "L9015",
-        "L9661",
-        "L10645"
+        "L9018",
+        "L9664",
+        "L10648"
+      ]
+    },
+    {
+      "value": "rgba(var(--nd-purple-legacy-rgb)",
+      "raw": "rgba(var(--nd-purple-legacy-rgb)",
+      "occurrences": 11,
+      "proposedToken": null,
+      "contexts": [
+        "L5760",
+        "L5780",
+        "L5862"
       ]
     },
     {
@@ -243,9 +199,9 @@
       "occurrences": 11,
       "proposedToken": null,
       "contexts": [
-        "L16735",
-        "L16820",
-        "L16860"
+        "L16738",
+        "L16823",
+        "L16863"
       ]
     },
     {
@@ -254,9 +210,9 @@
       "occurrences": 11,
       "proposedToken": null,
       "contexts": [
-        "L17161",
-        "L17509",
-        "L17538"
+        "L17164",
+        "L17512",
+        "L17541"
       ]
     },
     {
@@ -265,9 +221,9 @@
       "occurrences": 11,
       "proposedToken": null,
       "contexts": [
-        "L18388",
-        "L18440",
-        "L18455"
+        "L18391",
+        "L18443",
+        "L18458"
       ]
     },
     {
@@ -276,20 +232,9 @@
       "occurrences": 10,
       "proposedToken": null,
       "contexts": [
-        "L5338",
-        "L5360",
-        "L7343"
-      ]
-    },
-    {
-      "value": "rgba(var(--warning-rgb)",
-      "raw": "rgba(var(--warning-rgb)",
-      "occurrences": 9,
-      "proposedToken": null,
-      "contexts": [
-        "L1566",
-        "L10891",
-        "L17718"
+        "L5359",
+        "L5381",
+        "L7346"
       ]
     },
     {
@@ -299,19 +244,8 @@
       "proposedToken": null,
       "contexts": [
         "L3611",
-        "L6372",
-        "L15639"
-      ]
-    },
-    {
-      "value": "rgba(0, 0, 0, 0.6)",
-      "raw": "rgba(0, 0, 0, 0.6)",
-      "occurrences": 9,
-      "proposedToken": null,
-      "contexts": [
-        "L9630",
-        "L10293",
-        "L10310"
+        "L6375",
+        "L15642"
       ]
     },
     {
@@ -321,19 +255,8 @@
       "proposedToken": null,
       "contexts": [
         "L1548",
-        "L8379",
-        "L8565"
-      ]
-    },
-    {
-      "value": "rgba(0, 0, 0, 0.55)",
-      "raw": "rgba(0, 0, 0, 0.55)",
-      "occurrences": 8,
-      "proposedToken": null,
-      "contexts": [
-        "L1822",
-        "L1838",
-        "L4998"
+        "L8382",
+        "L8568"
       ]
     },
     {
@@ -364,7 +287,7 @@
       "occurrences": 8,
       "proposedToken": null,
       "contexts": [
-        "L4400",
+        "L4421",
         "L24082",
         "L24113"
       ]
@@ -375,9 +298,9 @@
       "occurrences": 8,
       "proposedToken": null,
       "contexts": [
-        "L4402",
-        "L4424",
-        "L4447"
+        "L4423",
+        "L4445",
+        "L4468"
       ]
     },
     {
@@ -386,31 +309,9 @@
       "occurrences": 8,
       "proposedToken": null,
       "contexts": [
-        "L4907",
-        "L5164",
-        "L7831"
-      ]
-    },
-    {
-      "value": "#030508",
-      "raw": "#030508",
-      "occurrences": 8,
-      "proposedToken": null,
-      "contexts": [
-        "L5176",
-        "L7664",
-        "L8321"
-      ]
-    },
-    {
-      "value": "rgba(94, 235, 255, 0.2)",
-      "raw": "rgba(94, 235, 255, 0.2)",
-      "occurrences": 8,
-      "proposedToken": null,
-      "contexts": [
-        "L16150",
-        "L16259",
-        "L16287"
+        "L4928",
+        "L5185",
+        "L7834"
       ]
     },
     {
@@ -452,31 +353,9 @@
       "occurrences": 7,
       "proposedToken": null,
       "contexts": [
-        "L9163",
-        "L9207",
-        "L17622"
-      ]
-    },
-    {
-      "value": "rgba(94, 235, 255, 0.08)",
-      "raw": "rgba(94, 235, 255, 0.08)",
-      "occurrences": 7,
-      "proposedToken": null,
-      "contexts": [
-        "L16056",
-        "L16181",
-        "L16297"
-      ]
-    },
-    {
-      "value": "rgba(94, 235, 255, 0.06)",
-      "raw": "rgba(94, 235, 255, 0.06)",
-      "occurrences": 7,
-      "proposedToken": null,
-      "contexts": [
-        "L16192",
-        "L16534",
-        "L16733"
+        "L9166",
+        "L9210",
+        "L17625"
       ]
     },
     {
@@ -485,19 +364,8 @@
       "occurrences": 7,
       "proposedToken": null,
       "contexts": [
-        "L16815",
-        "L17247",
-        "L17258"
-      ]
-    },
-    {
-      "value": "rgba(239, 68, 68, 0.2)",
-      "raw": "rgba(239, 68, 68, 0.2)",
-      "occurrences": 7,
-      "proposedToken": null,
-      "contexts": [
+        "L16818",
         "L17250",
-        "L17257",
         "L17261"
       ]
     },
@@ -520,7 +388,7 @@
       "contexts": [
         "L1521",
         "L1603",
-        "L8537"
+        "L8540"
       ]
     },
     {
@@ -531,7 +399,7 @@
       "contexts": [
         "L2583",
         "L3400",
-        "L19996"
+        "L19999"
       ]
     },
     {
@@ -540,20 +408,9 @@
       "occurrences": 6,
       "proposedToken": null,
       "contexts": [
-        "L4465",
-        "L7678",
-        "L7695"
-      ]
-    },
-    {
-      "value": "rgba(94, 235, 255, 0.1)",
-      "raw": "rgba(94, 235, 255, 0.1)",
-      "occurrences": 6,
-      "proposedToken": null,
-      "contexts": [
-        "L6010",
-        "L12528",
-        "L16270"
+        "L4486",
+        "L7681",
+        "L7698"
       ]
     },
     {
@@ -562,9 +419,9 @@
       "occurrences": 6,
       "proposedToken": null,
       "contexts": [
-        "L7890",
-        "L9251",
-        "L13429"
+        "L7893",
+        "L9254",
+        "L13432"
       ]
     },
     {
@@ -573,9 +430,9 @@
       "occurrences": 6,
       "proposedToken": null,
       "contexts": [
-        "L7921",
-        "L9202",
-        "L10389"
+        "L7924",
+        "L9205",
+        "L10392"
       ]
     },
     {
@@ -584,9 +441,9 @@
       "occurrences": 6,
       "proposedToken": null,
       "contexts": [
-        "L9005",
-        "L13663",
-        "L14405"
+        "L9008",
+        "L13666",
+        "L14408"
       ]
     },
     {
@@ -595,9 +452,9 @@
       "occurrences": 6,
       "proposedToken": null,
       "contexts": [
-        "L9313",
-        "L11585",
-        "L11598"
+        "L9316",
+        "L11588",
+        "L11601"
       ]
     },
     {
@@ -606,9 +463,9 @@
       "occurrences": 6,
       "proposedToken": null,
       "contexts": [
-        "L16803",
-        "L17037",
-        "L17239"
+        "L16806",
+        "L17040",
+        "L17242"
       ]
     },
     {
@@ -617,20 +474,9 @@
       "occurrences": 6,
       "proposedToken": null,
       "contexts": [
-        "L16930",
-        "L17147",
-        "L17934"
-      ]
-    },
-    {
-      "value": "rgba(94, 235, 255, 0.4)",
-      "raw": "rgba(94, 235, 255, 0.4)",
-      "occurrences": 6,
-      "proposedToken": null,
-      "contexts": [
-        "L17015",
-        "L17032",
-        "L17220"
+        "L16933",
+        "L17150",
+        "L17937"
       ]
     },
     {
@@ -662,7 +508,7 @@
       "proposedToken": null,
       "contexts": [
         "L1310",
-        "L6533",
+        "L6536",
         "L20699"
       ]
     },
@@ -674,7 +520,7 @@
       "contexts": [
         "L2072",
         "L3537",
-        "L7298"
+        "L7301"
       ]
     },
     {
@@ -684,19 +530,8 @@
       "proposedToken": null,
       "contexts": [
         "L2609",
-        "L6188",
-        "L6384"
-      ]
-    },
-    {
-      "value": "rgba(255, 60, 90, 0.1)",
-      "raw": "rgba(255, 60, 90, 0.1)",
-      "occurrences": 5,
-      "proposedToken": null,
-      "contexts": [
-        "L4160",
-        "L5552",
-        "L8715"
+        "L6191",
+        "L6387"
       ]
     },
     {
@@ -705,20 +540,9 @@
       "occurrences": 5,
       "proposedToken": null,
       "contexts": [
-        "L4658",
-        "L5559",
-        "L5587"
-      ]
-    },
-    {
-      "value": "rgba(0, 255, 136, 0.08)",
-      "raw": "rgba(0, 255, 136, 0.08)",
-      "occurrences": 5,
-      "proposedToken": null,
-      "contexts": [
-        "L4891",
-        "L8135",
-        "L8602"
+        "L4679",
+        "L5580",
+        "L5608"
       ]
     },
     {
@@ -727,9 +551,9 @@
       "occurrences": 5,
       "proposedToken": null,
       "contexts": [
-        "L5008",
-        "L5219",
-        "L13326"
+        "L5029",
+        "L5240",
+        "L13329"
       ]
     },
     {
@@ -738,9 +562,9 @@
       "occurrences": 5,
       "proposedToken": null,
       "contexts": [
-        "L8232",
-        "L9647",
-        "L9792"
+        "L8235",
+        "L9650",
+        "L9795"
       ]
     },
     {
@@ -749,53 +573,9 @@
       "occurrences": 5,
       "proposedToken": null,
       "contexts": [
-        "L13362",
-        "L13476",
-        "L17059"
-      ]
-    },
-    {
-      "value": "rgba(239, 68, 68, 0.1)",
-      "raw": "rgba(239, 68, 68, 0.1)",
-      "occurrences": 5,
-      "proposedToken": null,
-      "contexts": [
-        "L17256",
-        "L17479",
-        "L20904"
-      ]
-    },
-    {
-      "value": "#f87171",
-      "raw": "#f87171",
-      "occurrences": 5,
-      "proposedToken": null,
-      "contexts": [
-        "L20705",
-        "L20869",
-        "L20906"
-      ]
-    },
-    {
-      "value": "rgba(0, 0, 0, 0.7)",
-      "raw": "rgba(0, 0, 0, 0.7)",
-      "occurrences": 4,
-      "proposedToken": null,
-      "contexts": [
-        "L604",
-        "L14246",
-        "L24252"
-      ]
-    },
-    {
-      "value": "rgba(255, 90, 106, 0.15)",
-      "raw": "rgba(255, 90, 106, 0.15)",
-      "occurrences": 4,
-      "proposedToken": null,
-      "contexts": [
-        "L4174",
-        "L9695",
-        "L12457"
+        "L13365",
+        "L13479",
+        "L17062"
       ]
     },
     {
@@ -804,20 +584,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L4912",
-        "L5169",
-        "L8464"
-      ]
-    },
-    {
-      "value": "rgba(0, 255, 136, 0.15)",
-      "raw": "rgba(0, 255, 136, 0.15)",
-      "occurrences": 4,
-      "proposedToken": null,
-      "contexts": [
-        "L5757",
-        "L20008",
-        "L22621"
+        "L4933",
+        "L5190",
+        "L8467"
       ]
     },
     {
@@ -826,20 +595,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L7642",
-        "L11257",
-        "L19200"
-      ]
-    },
-    {
-      "value": "rgba(0, 255, 136, 0.12)",
-      "raw": "rgba(0, 255, 136, 0.12)",
-      "occurrences": 4,
-      "proposedToken": null,
-      "contexts": [
-        "L8026",
-        "L8134",
-        "L8159"
+        "L7645",
+        "L11260",
+        "L19203"
       ]
     },
     {
@@ -848,9 +606,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L8293",
-        "L9810",
-        "L11147"
+        "L8296",
+        "L9813",
+        "L11150"
       ]
     },
     {
@@ -859,8 +617,8 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L8657",
-        "L8673",
+        "L8660",
+        "L8676",
         "L24099"
       ]
     },
@@ -870,8 +628,8 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L8660",
-        "L8676",
+        "L8663",
+        "L8679",
         "L24346"
       ]
     },
@@ -881,9 +639,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L11469",
-        "L11558",
-        "L14272"
+        "L11472",
+        "L11561",
+        "L14275"
       ]
     },
     {
@@ -892,9 +650,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L12873",
-        "L13021",
-        "L13260"
+        "L12876",
+        "L13024",
+        "L13263"
       ]
     },
     {
@@ -903,31 +661,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L13656",
-        "L13668",
-        "L13952"
-      ]
-    },
-    {
-      "value": "rgba(94, 235, 255, 0.14)",
-      "raw": "rgba(94, 235, 255, 0.14)",
-      "occurrences": 4,
-      "proposedToken": null,
-      "contexts": [
-        "L16743",
-        "L16829",
-        "L16883"
-      ]
-    },
-    {
-      "value": "#ef4444",
-      "raw": "#ef4444",
-      "occurrences": 4,
-      "proposedToken": null,
-      "contexts": [
-        "L16960",
-        "L17193",
-        "L17344"
+        "L13659",
+        "L13671",
+        "L13955"
       ]
     },
     {
@@ -936,9 +672,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L17046",
-        "L17242",
-        "L17470"
+        "L17049",
+        "L17245",
+        "L17473"
       ]
     },
     {
@@ -947,9 +683,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L18435",
-        "L18452",
-        "L18453"
+        "L18438",
+        "L18455",
+        "L18456"
       ]
     },
     {
@@ -958,9 +694,9 @@
       "occurrences": 4,
       "proposedToken": null,
       "contexts": [
-        "L19840",
-        "L19898",
-        "L19906"
+        "L19843",
+        "L19901",
+        "L19909"
       ]
     },
     {
@@ -986,39 +722,6 @@
       ]
     },
     {
-      "value": "#e09b3d",
-      "raw": "#e09b3d",
-      "occurrences": 4,
-      "proposedToken": null,
-      "contexts": [
-        "L22056",
-        "L22069",
-        "L22343"
-      ]
-    },
-    {
-      "value": "rgba(8, 12, 16, 0.95)",
-      "raw": "rgba(8, 12, 16, 0.95)",
-      "occurrences": 3,
-      "proposedToken": null,
-      "contexts": [
-        "L235",
-        "L2094",
-        "L5149"
-      ]
-    },
-    {
-      "value": "rgba(124, 255, 178, 0.15)",
-      "raw": "rgba(124, 255, 178, 0.15)",
-      "occurrences": 3,
-      "proposedToken": null,
-      "contexts": [
-        "L972",
-        "L9225",
-        "L13669"
-      ]
-    },
-    {
       "value": "rgba(14, 18, 26, 0.98)",
       "raw": "rgba(14, 18, 26, 0.98)",
       "occurrences": 3,
@@ -1026,7 +729,7 @@
       "contexts": [
         "L2259",
         "L2481",
-        "L15468"
+        "L15471"
       ]
     },
     {
@@ -1037,7 +740,7 @@
       "contexts": [
         "L2259",
         "L2481",
-        "L15468"
+        "L15471"
       ]
     },
     {
@@ -1059,7 +762,7 @@
       "contexts": [
         "L2738",
         "L2818",
-        "L7127"
+        "L7130"
       ]
     },
     {
@@ -1070,29 +773,7 @@
       "contexts": [
         "L2753",
         "L2798",
-        "L8368"
-      ]
-    },
-    {
-      "value": "rgba(255, 60, 90, 0.25)",
-      "raw": "rgba(255, 60, 90, 0.25)",
-      "occurrences": 3,
-      "proposedToken": null,
-      "contexts": [
-        "L3278",
-        "L4161",
-        "L8034"
-      ]
-    },
-    {
-      "value": "rgba(0, 0, 0, 0.18)",
-      "raw": "rgba(0, 0, 0, 0.18)",
-      "occurrences": 3,
-      "proposedToken": null,
-      "contexts": [
-        "L3329",
-        "L4600",
-        "L4791"
+        "L8371"
       ]
     },
     {
@@ -1102,8 +783,318 @@
       "proposedToken": null,
       "contexts": [
         "L4120",
-        "L19985",
+        "L19988",
         "L23288"
+      ]
+    },
+    {
+      "value": "#020406",
+      "raw": "#020406",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L4186",
+        "L6407",
+        "L6790"
+      ]
+    },
+    {
+      "value": "rgba(6, 10, 16, 0.99)",
+      "raw": "rgba(6, 10, 16, 0.99)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L4665",
+        "L16004",
+        "L19319"
+      ]
+    },
+    {
+      "value": "rgba(4, 7, 12, 0.98)",
+      "raw": "rgba(4, 7, 12, 0.98)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L4665",
+        "L16004",
+        "L19319"
+      ]
+    },
+    {
+      "value": "#060a0e",
+      "raw": "#060a0e",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L4980",
+        "L4987",
+        "L8098"
+      ]
+    },
+    {
+      "value": "#050505",
+      "raw": "#050505",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L5761",
+        "L5781",
+        "L14366"
+      ]
+    },
+    {
+      "value": "rgba(167, 139, 250, 0.18)",
+      "raw": "rgba(167, 139, 250, 0.18)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L7699",
+        "L8359",
+        "L9725"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.012)",
+      "raw": "rgba(255, 255, 255, 0.012)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L8333",
+        "L13597",
+        "L15023"
+      ]
+    },
+    {
+      "value": "rgba(148, 163, 184, 0.15)",
+      "raw": "rgba(148, 163, 184, 0.15)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L8661",
+        "L8677",
+        "L24262"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.88)",
+      "raw": "rgba(0, 0, 0, 0.88)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L8952",
+        "L9858",
+        "L13312"
+      ]
+    },
+    {
+      "value": "#0d1117",
+      "raw": "#0d1117",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L10999",
+        "L21065",
+        "L21080"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.5)",
+      "raw": "rgba(255, 255, 255, 0.5)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L13397",
+        "L13508",
+        "L23646"
+      ]
+    },
+    {
+      "value": "#ff5555",
+      "raw": "#ff5555",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L13820",
+        "L13958",
+        "L23284"
+      ]
+    },
+    {
+      "value": "#d8b4fe",
+      "raw": "#d8b4fe",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L16810",
+        "L17883",
+        "L21029"
+      ]
+    },
+    {
+      "value": "rgba(148, 163, 184, 0.2)",
+      "raw": "rgba(148, 163, 184, 0.2)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L17072",
+        "L24632",
+        "L24657"
+      ]
+    },
+    {
+      "value": "rgba(0, 180, 220, 0.12)",
+      "raw": "rgba(0, 180, 220, 0.12)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L20356",
+        "L20477",
+        "L20992"
+      ]
+    },
+    {
+      "value": "rgba(0, 180, 220, 0.2)",
+      "raw": "rgba(0, 180, 220, 0.2)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L20369",
+        "L20494",
+        "L21003"
+      ]
+    },
+    {
+      "value": "rgba(10, 13, 20, 0.98)",
+      "raw": "rgba(10, 13, 20, 0.98)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L20672",
+        "L20898",
+        "L20940"
+      ]
+    },
+    {
+      "value": "rgba(12, 15, 24, 0.98)",
+      "raw": "rgba(12, 15, 24, 0.98)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L20758",
+        "L21043",
+        "L21180"
+      ]
+    },
+    {
+      "value": "rgba(8, 10, 18, 0.99)",
+      "raw": "rgba(8, 10, 18, 0.99)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L20759",
+        "L21181",
+        "L21304"
+      ]
+    },
+    {
+      "value": "rgba(224, 92, 92, 0.12)",
+      "raw": "rgba(224, 92, 92, 0.12)",
+      "occurrences": 3,
+      "proposedToken": null,
+      "contexts": [
+        "L21650",
+        "L21774",
+        "L21953"
+      ]
+    },
+    {
+      "value": "rgba(0, 200, 220, 0.06)",
+      "raw": "rgba(0, 200, 220, 0.06)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L573",
+        "L701"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.016)",
+      "raw": "rgba(255, 255, 255, 0.016)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L1257",
+        "L3321"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.13)",
+      "raw": "rgba(255, 255, 255, 0.13)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L1819",
+        "L20348"
+      ]
+    },
+    {
+      "value": "rgba(0, 0, 0, 0.82)",
+      "raw": "rgba(0, 0, 0, 0.82)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L2182",
+        "L2218"
+      ]
+    },
+    {
+      "value": "rgba(255, 255, 255, 0.14)",
+      "raw": "rgba(255, 255, 255, 0.14)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L2329",
+        "L2524"
+      ]
+    },
+    {
+      "value": "rgba(167, 139, 250, 0.08)",
+      "raw": "rgba(167, 139, 250, 0.08)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L2697",
+        "L7982"
+      ]
+    },
+    {
+      "value": "rgb(255, 199, 112)",
+      "raw": "rgb(255, 199, 112)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L2728",
+        "L2782"
+      ]
+    },
+    {
+      "value": "rgb(96, 233, 255)",
+      "raw": "rgb(96, 233, 255)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L2733",
+        "L2786"
+      ]
+    },
+    {
+      "value": "rgb(255, 145, 221)",
+      "raw": "rgb(255, 145, 221)",
+      "occurrences": 2,
+      "proposedToken": null,
+      "contexts": [
+        "L2743",
+        "L2790"
       ]
     }
   ],
@@ -1818,16 +1809,6 @@
   ],
   "radii": [
     {
-      "valuePx": 8,
-      "occurrences": 77,
-      "proposedToken": "--nd-radius-sm /* 8px */"
-    },
-    {
-      "valuePx": 12,
-      "occurrences": 34,
-      "proposedToken": "--nd-radius-md /* 12px */"
-    },
-    {
       "valuePx": 5,
       "occurrences": 30,
       "proposedToken": "--nd-radius-xs /* 5px */"
@@ -1838,44 +1819,19 @@
       "proposedToken": "--nd-radius-xs /* 3px */"
     },
     {
-      "valuePx": 18,
-      "occurrences": 19,
-      "proposedToken": "--nd-radius-xl /* 18px */"
-    },
-    {
-      "valuePx": 2,
-      "occurrences": 17,
-      "proposedToken": "--nd-radius-none /* 2px */"
-    },
-    {
       "valuePx": 7,
       "occurrences": 14,
       "proposedToken": "--nd-radius-sm /* 7px */"
     },
     {
-      "valuePx": 16,
-      "occurrences": 10,
-      "proposedToken": "--nd-radius-lg /* 16px */"
-    },
-    {
-      "valuePx": 14,
-      "occurrences": 9,
-      "proposedToken": "--nd-radius-lg"
-    },
-    {
-      "valuePx": 20,
+      "valuePx": 8,
       "occurrences": 4,
-      "proposedToken": "--nd-radius-xl"
+      "proposedToken": "--nd-radius-sm /* 8px */"
     },
     {
       "valuePx": 9,
       "occurrences": 2,
       "proposedToken": "--nd-radius-md /* 9px */"
-    },
-    {
-      "valuePx": 1,
-      "occurrences": 2,
-      "proposedToken": "--nd-radius-none /* 1px */"
     },
     {
       "valuePx": 22,
@@ -2108,13 +2064,18 @@
   "zIndexes": [],
   "shadows": [
     {
+      "value": "0 0 10px rgba(var(--nd-cyan-rgb), 0.15)",
+      "occurrences": 7,
+      "proposedToken": null
+    },
+    {
       "value": "inset 0 1px 0 var(--nd-white-5)",
       "occurrences": 7,
       "proposedToken": null
     },
     {
-      "value": "0 0 10px rgba(var(--accent-rgb), 0.15)",
-      "occurrences": 5,
+      "value": "0 0 8px rgba(var(--nd-cyan-rgb), 0.1)",
+      "occurrences": 6,
       "proposedToken": null
     },
     {
@@ -2123,27 +2084,32 @@
       "proposedToken": null
     },
     {
+      "value": "0 0 8px rgba(var(--nd-cyan-rgb), 0.12)",
+      "occurrences": 5,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(var(--nd-yellow-rgb), 0.8)",
+      "occurrences": 4,
+      "proposedToken": null
+    },
+    {
       "value": "inset 0 1px 0 var(--nd-white-4)",
       "occurrences": 4,
       "proposedToken": null
     },
     {
-      "value": "0 0 8px rgba(var(--accent-rgb), 0.12)",
-      "occurrences": 4,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(var(--accent-rgb), 0.1)",
-      "occurrences": 4,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 12px rgba(var(--accent-rgb), 0.08)",
+      "value": "0 0 12px rgba(var(--nd-cyan-rgb), 0.08)",
       "occurrences": 3,
       "proposedToken": null
     },
     {
-      "value": "0 0 12px rgba(var(--accent-rgb), 0.2)",
+      "value": "0 0 12px rgba(var(--nd-cyan-rgb), 0.15)",
+      "occurrences": 3,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 12px rgba(var(--nd-cyan-rgb), 0.2)",
       "occurrences": 3,
       "proposedToken": null
     },
@@ -2153,7 +2119,7 @@
       "proposedToken": null
     },
     {
-      "value": "0 0 0 3px rgba(var(--accent-rgb), 0.05) !important",
+      "value": "0 0 0 3px rgba(var(--nd-cyan-rgb), 0.05) !important",
       "occurrences": 3,
       "proposedToken": null
     },
@@ -2163,32 +2129,52 @@
       "proposedToken": null
     },
     {
-      "value": "0 0 8px var(--accent-color)",
+      "value": "0 0 8px var(--nd-accent-primary)",
       "occurrences": 2,
       "proposedToken": null
     },
     {
-      "value": "0 0 0 2px rgba(var(--accent-rgb), 0.08)",
+      "value": "0 0 0 2px rgba(var(--nd-cyan-rgb), 0.08)",
       "occurrences": 2,
       "proposedToken": null
     },
     {
-      "value": "0 0 6px rgba(124, 255, 178, 0.15)",
+      "value": "0 0 6px rgba(var(--nd-green-rgb), 0.15)",
       "occurrences": 2,
       "proposedToken": null
     },
     {
-      "value": "var(--shadow-1)",
+      "value": "var(--nd-elevation-shadow-1)",
       "occurrences": 2,
       "proposedToken": null
     },
     {
-      "value": "0 0 8px rgba(255, 90, 106, 0.15)",
+      "value": "0 0 8px rgba(var(--nd-cyan-rgb), 0.8)",
       "occurrences": 2,
       "proposedToken": null
     },
     {
-      "value": "0 0 12px rgba(var(--accent-rgb), 0.15)",
+      "value": "0 0 8px rgba(var(--nd-red-rgb), 0.8)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(var(--nd-red-rgb), 0.15)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 8px rgba(var(--nd-cyan-rgb), 0.08)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 10px rgba(var(--nd-cyan-rgb), 0.08)",
+      "occurrences": 2,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 15px rgba(var(--nd-cyan-rgb), 0.15)",
       "occurrences": 2,
       "proposedToken": null
     },
@@ -2198,32 +2184,22 @@
       "proposedToken": null
     },
     {
-      "value": "0 0 8px rgba(94, 235, 255, 0.1)",
-      "occurrences": 2,
-      "proposedToken": null
-    },
-    {
       "value": "var(--nd-shadow-card)",
       "occurrences": 2,
       "proposedToken": null
     },
     {
-      "value": "0 0 10px rgba(94, 235, 255, 0.15)",
-      "occurrences": 2,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 10px rgba(var(--accent-rgb), 0.07)",
+      "value": "0 0 10px rgba(var(--nd-cyan-rgb), 0.07)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 2px 8px rgba(0, 0, 0, 0.4)",
+      "value": "0 2px 8px var(--nd-black-40)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "var(--shadow-2)",
+      "value": "var(--nd-elevation-shadow-2)",
       "occurrences": 1,
       "proposedToken": null
     },
@@ -2233,72 +2209,32 @@
       "proposedToken": null
     },
     {
-      "value": "0 0 0 0 rgba(239, 71, 111, 0.35)",
+      "value": "0 0 0 0 rgba(var(--nd-red-rgb), 0.35)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 0 8px rgba(239, 71, 111, 0)",
+      "value": "0 0 0 8px rgba(var(--nd-red-rgb), 0)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 8px rgba(255, 199, 112, 0.8)",
+      "value": "0 0 8px rgba(var(--nd-green-rgb), 0.8)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 8px rgba(96, 233, 255, 0.8)",
+      "value": "0 0 8px rgba(var(--nd-purple-rgb), 0.8)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 8px rgba(255, 145, 221, 0.8)",
+      "value": "0 0 8px rgba(var(--nd-blue-rgb), 0.8)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 8px rgba(143, 255, 177, 0.8)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(191, 174, 255, 0.8)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(255, 175, 125, 0.8)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(126, 188, 255, 0.8)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(255, 136, 171, 0.8)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(98, 233, 209, 0.8)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(255, 149, 0, 0.8)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(255, 157, 116, 0.8)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 6px var(--accent-color)",
+      "value": "0 0 6px var(--nd-accent-primary)",
       "occurrences": 1,
       "proposedToken": null
     },
@@ -2308,52 +2244,72 @@
       "proposedToken": null
     },
     {
-      "value": "0 0 6px rgba(var(--accent-rgb), 0.5)",
+      "value": "0 0 6px rgba(var(--nd-cyan-rgb), 0.5)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 6px rgba(0, 255, 136, 0.6)",
+      "value": "0 0 6px rgba(var(--nd-green-rgb), 0.6)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 10px rgba(124, 58, 237, 0.15)",
+      "value": "0 0 10px rgba(var(--nd-purple-rgb), 0.15)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 10px rgba(var(--accent-rgb), 0.15) !important",
+      "value": "0 0 10px rgba(var(--nd-cyan-rgb), 0.15) !important",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 8px rgba(var(--accent-rgb), 0.08)",
+      "value": "0 0 12px rgba(var(--nd-cyan-rgb), 0.15) !important",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 12px rgba(94, 235, 255, 0.15) !important",
+      "value": "0 0 4px rgba(var(--nd-cyan-rgb), 0.12)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
-      "value": "0 0 4px rgba(94, 235, 255, 0.12)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 10px 26px rgba(0, 0, 0, 0.22)",
-      "occurrences": 1,
-      "proposedToken": null
-    },
-    {
-      "value": "0 0 8px rgba(94, 235, 255, 0.12)",
+      "value": "0 10px 26px var(--nd-black-20)",
       "occurrences": 1,
       "proposedToken": null
     },
     {
       "value": "inset 0 2px 4px var(--nd-black-30)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 10px rgba(var(--nd-cyan-rgb), 0.12)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "inset 0 1px 0 rgba(var(--nd-cyan-rgb), 0.15)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 16px 40px var(--nd-black-40)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "inset 0 2px 5px var(--nd-black-30)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 2px 8px var(--nd-black-25)",
+      "occurrences": 1,
+      "proposedToken": null
+    },
+    {
+      "value": "0 0 0 4px var(--nd-white-4)",
       "occurrences": 1,
       "proposedToken": null
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Network, RefreshCw, Cpu, Database, FolderOpen, Layers, Zap, Server } from "lucide-react";
 import { ErrorState } from "../../components/primitives/ErrorState";
 import { IconButton } from "../../components/primitives/IconButton";
@@ -48,12 +48,12 @@ const R_CATEGORY = 130;
 const R_LEAF = 250;
 
 const CATEGORIES: { key: string; label: string; colorClass: string; icon: typeof Network }[] = [
-  { key: "sessions", label: "Sessions", colorClass: "text-accent-primary", icon: Network },
-  { key: "memory", label: "Memory", colorClass: "text-accent-success", icon: Database },
-  { key: "projects", label: "Projects", colorClass: "text-accent-warning", icon: FolderOpen },
-  { key: "models", label: "Models", colorClass: "text-accent-info", icon: Cpu },
-  { key: "workflows", label: "Workflows", colorClass: "text-accent-agent", icon: Zap },
-  { key: "plugins", label: "Plugins", colorClass: "text-accent-success", icon: Server },
+  { key: "sessions", label: "Sessions", colorClass: "text-nd-accent-primary", icon: Network },
+  { key: "memory", label: "Memory", colorClass: "text-nd-accent-success", icon: Database },
+  { key: "projects", label: "Projects", colorClass: "text-nd-accent-warning", icon: FolderOpen },
+  { key: "models", label: "Models", colorClass: "text-nd-accent-info", icon: Cpu },
+  { key: "workflows", label: "Workflows", colorClass: "text-nd-accent-agent", icon: Zap },
+  { key: "plugins", label: "Plugins", colorClass: "text-nd-accent-success", icon: Server },
 ];
 
 function truncate(text: string, max = 18) {
@@ -83,7 +83,7 @@ function buildGraph(data: GraphData): { nodes: GraphNode[]; edges: GraphEdge[] }
     label: "NeuroDeck",
     x: CX,
     y: CY,
-    colorClass: "text-accent-primary",
+    colorClass: "text-nd-accent-primary",
     detail: coreDetail,
   });
 
@@ -140,7 +140,7 @@ function buildGraph(data: GraphData): { nodes: GraphNode[]; edges: GraphEdge[] }
         break;
       }
       case "projects": {
-        const projs = data.projects.slice(0, 10);
+        const projs = data.projects?.slice(0, 10) ?? [];
         count = data.projects.length;
         projs.forEach((p) => {
           leaves.push({
@@ -152,16 +152,16 @@ function buildGraph(data: GraphData): { nodes: GraphNode[]; edges: GraphEdge[] }
         break;
       }
       case "models": {
-        const runtimes = data.health.slice(0, 4);
+        const runtimes = data.health?.slice(0, 4) ?? [];
         count = runtimes.length;
         runtimes.forEach((h) => {
           const runtimeId = `model-rt-${h.runtime_id}`;
           leaves.push({
             id: runtimeId,
             label: truncate(h.label || h.runtime_id, 16),
-            detail: `${h.state} · ${h.models.length} model(s)`,
+            detail: `${h.state} · ${h.models?.length ?? 0} model(s)`,
           });
-          h.models.slice(0, 4).forEach((m) => {
+          h.models?.slice(0, 4).forEach((m) => {
             leaves.push({
               id: `model-m-${h.runtime_id}-${m}`,
               label: truncate(m, 16),
@@ -172,7 +172,7 @@ function buildGraph(data: GraphData): { nodes: GraphNode[]; edges: GraphEdge[] }
         break;
       }
       case "workflows": {
-        const wfs = data.workflows.slice(0, 10);
+        const wfs = data.workflows?.slice(0, 10) ?? [];
         count = data.workflows.length;
         wfs.forEach((w) => {
           leaves.push({ id: `wf-${w.name}`, label: truncate(w.name), detail: "Workflow" });
@@ -180,7 +180,7 @@ function buildGraph(data: GraphData): { nodes: GraphNode[]; edges: GraphEdge[] }
         break;
       }
       case "plugins": {
-        const plugs = data.plugins?.plugins.slice(0, 10) ?? [];
+        const plugs = data.plugins?.plugins?.slice(0, 10) ?? [];
         count = data.plugins?.count ?? 0;
         plugs.forEach((p) => {
           leaves.push({
@@ -249,6 +249,8 @@ export function GraphView() {
     title: "",
     detail: "",
   });
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const nodeRefs = useRef<Map<string, SVGGElement>>(new Map());
 
   const load = async () => {
     setData((d) => ({ ...d, loading: true, error: null }));
@@ -262,9 +264,9 @@ export function GraphView() {
       ]);
 
     const dashboard = dashboardRes.status === "fulfilled" ? dashboardRes.value : null;
-    const projects = projectsRes.status === "fulfilled" ? projectsRes.value : [];
-    const health = healthRes.status === "fulfilled" ? healthRes.value : [];
-    const workflows = workflowsRes.status === "fulfilled" ? workflowsRes.value : [];
+    const projects = (projectsRes.status === "fulfilled" ? projectsRes.value : null) ?? [];
+    const health = (healthRes.status === "fulfilled" ? healthRes.value : null) ?? [];
+    const workflows = (workflowsRes.status === "fulfilled" ? workflowsRes.value : null) ?? [];
     const plugins = pluginsRes.status === "fulfilled" ? pluginsRes.value : null;
 
     const errors: string[] = [];
@@ -307,7 +309,41 @@ export function GraphView() {
 
   const handleNodeLeave = () => {
     setHovered(null);
+    if (focusedNodeId) {
+      const node = nodeMap.get(focusedNodeId);
+      if (node) {
+        setTooltip((t) => ({ ...t, visible: true, title: node.label, detail: node.detail }));
+      }
+    } else {
+      setTooltip((t) => ({ ...t, visible: false }));
+    }
+  };
+
+  const handleNodeFocus = (node: GraphNode) => {
+    setFocusedNodeId(node.id);
+    setTooltip((t) => ({ ...t, visible: true, title: node.label, detail: node.detail }));
+  };
+
+  const handleNodeBlur = () => {
+    setFocusedNodeId(null);
     setTooltip((t) => ({ ...t, visible: false }));
+  };
+
+  const focusNodeByIndex = (idx: number) => {
+    const node = nodes[idx];
+    if (!node) return;
+    const el = nodeRefs.current.get(node.id);
+    el?.focus();
+  };
+
+  const handleNodeKeyDown = (e: React.KeyboardEvent, idx: number) => {
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      focusNodeByIndex((idx + 1) % nodes.length);
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      focusNodeByIndex((idx - 1 + nodes.length) % nodes.length);
+    }
   };
 
   const nodeRadius = (type: GraphNodeType) => {
@@ -387,9 +423,9 @@ export function GraphView() {
           />
         </div>
 
-        <div className="relative min-h-0 flex-1 rounded-2xl border border-border-subtle bg-surface-secondary/30">
+        <div className="relative min-h-0 flex-1 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30">
           {data.loading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-surface-secondary/40">
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-nd-surface-secondary/40">
               <LoadingState label="Loading graph…" />
             </div>
           )}
@@ -398,6 +434,8 @@ export function GraphView() {
             viewBox={`0 0 ${W} ${H}`}
             preserveAspectRatio="xMidYMid meet"
             className="h-full w-full cursor-crosshair"
+            role="img"
+            aria-label="System intelligence graph"
             onMouseMove={handleNodeMove}
             onMouseLeave={handleNodeLeave}
           >
@@ -415,7 +453,8 @@ export function GraphView() {
               const s = nodeMap.get(e.source);
               const t = nodeMap.get(e.target);
               if (!s || !t) return null;
-              const dim = hovered && hovered !== s.id && hovered !== t.id;
+              const activeId = hovered || focusedNodeId;
+              const dim = activeId && activeId !== s.id && activeId !== t.id;
               return (
                 <line
                   key={`${e.source}-${e.target}`}
@@ -423,46 +462,68 @@ export function GraphView() {
                   y1={s.y}
                   x2={t.x}
                   y2={t.y}
-                  className={`stroke-text-muted/20 transition-opacity duration-fast ${dim ? "opacity-20" : "opacity-100"}`}
+                  className={`stroke-nd-text-muted/20 transition-opacity duration-fast ${dim ? "opacity-20" : "opacity-100"}`}
                   strokeWidth={1}
                 />
               );
             })}
 
-            {nodes.map((n) => {
+            {nodes.map((n, idx) => {
               const r = nodeRadius(n.type);
               const isHovered = hovered === n.id;
+              const isFocused = focusedNodeId === n.id;
+              const activeId = hovered || focusedNodeId;
               const dim =
-                hovered &&
-                hovered !== n.id &&
+                activeId &&
+                activeId !== n.id &&
                 !edges.some(
                   (e) =>
-                    (e.source === hovered && e.target === n.id) ||
-                    (e.target === hovered && e.source === n.id)
+                    (e.source === activeId && e.target === n.id) ||
+                    (e.target === activeId && e.source === n.id)
                 );
-              const showLabel = n.type !== "leaf" || isHovered;
+              const showLabel = n.type !== "leaf" || isHovered || isFocused;
               return (
                 <g
                   key={n.id}
-                  className={`${n.colorClass} transition-opacity duration-fast ${dim ? "opacity-30" : "opacity-100"}`}
+                  ref={(el) => {
+                    if (el) nodeRefs.current.set(n.id, el);
+                    else nodeRefs.current.delete(n.id);
+                  }}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`${n.label}: ${n.detail}`}
+                  className={`${n.colorClass} cursor-pointer transition-opacity duration-fast focus:outline-none ${dim ? "opacity-30" : "opacity-100"}`}
                   onMouseEnter={() => handleNodeEnter(n)}
+                  onFocus={() => handleNodeFocus(n)}
+                  onBlur={handleNodeBlur}
+                  onKeyDown={(e) => handleNodeKeyDown(e, idx)}
                 >
                   <circle
                     cx={n.x}
                     cy={n.y}
-                    r={isHovered ? r + 3 : r}
+                    r={isHovered || isFocused ? r + 3 : r}
                     fill="currentColor"
                     className={
                       n.type === "core"
                         ? "opacity-30"
                         : n.type === "category"
-                          ? "opacity-25"
-                          : "opacity-80"
+                          ? "opacity-50"
+                          : "opacity-90"
                     }
-                    filter={
-                      n.type === "core" || n.type === "category" ? "url(#graph-glow)" : undefined
-                    }
+                    filter="url(#graph-glow)"
                   />
+                  {isFocused && (
+                    <circle
+                      cx={n.x}
+                      cy={n.y}
+                      r={r + 6}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      className="opacity-80"
+                      pointerEvents="none"
+                    />
+                  )}
                   {n.type === "core" && (
                     <circle
                       cx={n.x}
@@ -477,7 +538,7 @@ export function GraphView() {
                       x={n.x}
                       y={n.y + r + 14}
                       textAnchor="middle"
-                      className="fill-text-secondary text-[9px] select-none"
+                      className="fill-nd-text-secondary text-[11px] select-none"
                       dominantBaseline="middle"
                     >
                       {n.label}
@@ -488,15 +549,32 @@ export function GraphView() {
             })}
           </svg>
 
-          {tooltip.visible && (
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            {focusedNodeId
+              ? `${nodeMap.get(focusedNodeId)?.label}: ${nodeMap.get(focusedNodeId)?.detail}`
+              : ""}
+          </div>
+
+          {(tooltip.visible || focusedNodeId) && (
             <div
-              className="pointer-events-none absolute z-20 max-w-[16rem] rounded-lg border border-border-subtle bg-surface-secondary px-3 py-2 shadow-card"
-              style={{ left: tooltip.x + 12, top: tooltip.y + 12 }}
+              className="pointer-events-none absolute z-20 max-w-[16rem] rounded-lg border border-nd-border-subtle bg-nd-surface-secondary px-3 py-2 shadow-nd-elevation-card"
+              style={{
+                left: (focusedNodeId ? nodeMap.get(focusedNodeId)?.x ?? tooltip.x : tooltip.x) + 12,
+                top: (focusedNodeId ? nodeMap.get(focusedNodeId)?.y ?? tooltip.y : tooltip.y) + 12,
+              }}
             >
-              <div className="text-xs font-semibold text-text-primary">{tooltip.title}</div>
-              {tooltip.detail && (
-                <div className="mt-0.5 text-2xs text-text-secondary">{tooltip.detail}</div>
-              )}
+              <div className="text-xs font-semibold text-nd-text-primary">
+                {focusedNodeId ? nodeMap.get(focusedNodeId)?.label : tooltip.title}
+              </div>
+              {focusedNodeId ? (
+                nodeMap.get(focusedNodeId)?.detail ? (
+                  <div className="mt-0.5 text-2xs text-nd-text-secondary">
+                    {nodeMap.get(focusedNodeId)?.detail}
+                  </div>
+                ) : null
+              ) : tooltip.detail ? (
+                <div className="mt-0.5 text-2xs text-nd-text-secondary">{tooltip.detail}</div>
+              ) : null}
             </div>
           )}
 
@@ -504,10 +582,10 @@ export function GraphView() {
             {CATEGORIES.map((c) => (
               <div
                 key={c.key}
-                className="flex items-center gap-1.5 rounded-full border border-border-subtle bg-surface-secondary/80 px-2 py-1"
+                className="flex items-center gap-1.5 rounded-full border border-nd-border-subtle bg-nd-surface-secondary/80 px-2 py-1"
               >
                 <span className={`h-2 w-2 rounded-full ${c.colorClass.replace("text-", "bg-")}`} />
-                <span className="text-2xs text-text-secondary">{c.label}</span>
+                <span className="text-2xs text-nd-text-secondary">{c.label}</span>
               </div>
             ))}
           </div>

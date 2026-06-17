@@ -504,14 +504,12 @@ export function TorrentView() {
               />
             )}
             {filteredTorrents.map((t) => (
-              <button
+              <div
                 key={t.id}
-                type="button"
-                onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
-                className={`rounded-xl border p-3 text-left transition-colors duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                className={`rounded-xl border p-3 transition-colors duration-fast ${
                   selectedId === t.id
                     ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.05]"
-                    : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:border-nd-accent-primary/25"
+                    : "border-nd-border-subtle bg-nd-surface-secondary/40"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -526,10 +524,7 @@ export function TorrentView() {
                         : `Select ${t.name || t.id}`
                     }
                     aria-pressed={selectedIds.has(t.id)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleSelection(t.id);
-                    }}
+                    onClick={() => toggleSelection(t.id)}
                   >
                     {selectedIds.has(t.id) ? (
                       <CheckSquare className="h-4 w-4 text-nd-accent-primary" aria-hidden="true" />
@@ -537,7 +532,13 @@ export function TorrentView() {
                       <SquareIcon className="h-4 w-4" aria-hidden="true" />
                     )}
                   </IconButton>
-                  <div className="min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(t.id === selectedId ? null : t.id)}
+                    className={`min-w-0 flex-1 rounded-lg text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                      selectedId === t.id ? "" : "hover:bg-nd-surface-secondary/60"
+                    }`}
+                  >
                     <p className="truncate text-sm font-medium text-nd-text-primary">
                       {t.name || t.id}
                     </p>
@@ -552,7 +553,7 @@ export function TorrentView() {
                         {formatRate(t.download_rate_bps)} ↓ · {formatRate(t.upload_rate_bps)} ↑
                       </span>
                     </div>
-                  </div>
+                  </button>
                   <div className="flex items-center gap-1">
                     <IconButton
                       type="button"
@@ -596,7 +597,7 @@ export function TorrentView() {
                   </span>
                   <span>ETA {formatEta(t.eta_seconds)}</span>
                 </div>
-              </button>
+              </div>
             ))}
           </div>
 

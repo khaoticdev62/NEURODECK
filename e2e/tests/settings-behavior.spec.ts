@@ -38,7 +38,19 @@ test.describe("Settings > General panel", () => {
     const cards = page.locator("[data-testid='theme-card']");
     const count = await cards.count();
     if (count > 1) {
-      await cards.nth(1).click();
+      // Pick a card that is not already active so a pending change is created.
+      let target = cards.first();
+      for (let i = 0; i < count; i++) {
+        const card = cards.nth(i);
+        const isActive = await card.evaluate(
+          (el) => el.classList.contains("border-nd-accent-success/40")
+        );
+        if (!isActive) {
+          target = card;
+          break;
+        }
+      }
+      await target.click();
       await page.waitForTimeout(200);
       // Click "Apply Theme" to persist the selection to localStorage
       const applyBtn = page.getByRole("button", { name: "Apply Theme" });

@@ -8,7 +8,7 @@ export function TitleBar({ subtitle }: { subtitle: string }) {
       className="drag-region flex h-11 shrink-0 items-center justify-between border-b border-[var(--nd-border-subtle)] bg-[var(--nd-surface-primary)] px-3"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <div className="no-drag flex gap-1.5 pl-1">
+        <div className="no-drag flex gap-1.5 pl-1" aria-hidden="true">
           <span className="h-3 w-3 rounded-full bg-[var(--nd-accent-error)]/80" />
           <span className="h-3 w-3 rounded-full bg-[var(--nd-accent-warning)]/80" />
           <span className="h-3 w-3 rounded-full bg-[var(--nd-accent-success)]/80" />

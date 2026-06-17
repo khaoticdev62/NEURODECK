@@ -1086,7 +1086,6 @@ export default function App() {
           <div
             id="app-shell"
             ref={shellRef}
-            tabIndex={0}
             data-controller-screen="app-shell"
             data-onboarding-anchor="app-shell"
             data-density={state.deckMode ? "deck" : "comfortable"}
@@ -1314,7 +1313,7 @@ export default function App() {
             <div
               id="notif-modal"
               data-controller-overlay={notificationsOpen ? "true" : undefined}
-              className={`fixed inset-0 z-[var(--nd-z-modal)] bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-200 ${notificationsOpen ? "active" : "pointer-events-none opacity-0"}`}
+              className={`fixed inset-0 z-modal bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-200 ${notificationsOpen ? "active" : "pointer-events-none opacity-0"}`}
               onMouseDown={() => setNotificationsOpen(false)}
             >
               {notificationsOpen && (
@@ -1355,7 +1354,7 @@ export default function App() {
             <div
               id="shortcuts-overlay"
               data-controller-overlay={shortcutsOpen ? "true" : undefined}
-              className={`fixed inset-0 z-[var(--nd-z-modal)] bg-nd-bg/55 backdrop-blur-sm ${shortcutsOpen ? "" : "hidden"}`}
+              className={`fixed inset-0 z-modal bg-nd-bg/55 backdrop-blur-sm ${shortcutsOpen ? "" : "hidden"}`}
               onMouseDown={() => setShortcutsOpen(false)}
             >
               {shortcutsOpen && (
@@ -1416,10 +1415,12 @@ export default function App() {
               <div
                 id="ctrl-prompt-overlay"
                 data-controller-overlay="true"
-                className={`fixed inset-0 z-[var(--nd-z-modal)] bg-nd-bg/55 backdrop-blur-sm ${ctrlPromptOpen ? "active" : ""}`}
+                className={`fixed inset-0 z-modal bg-nd-bg/55 backdrop-blur-sm ${ctrlPromptOpen ? "active" : ""}`}
                 onMouseDown={() => setCtrlPromptOpen(false)}
               >
-                <div
+                <FocusTrapContainer
+                  active={ctrlPromptOpen}
+                  onEscape={() => setCtrlPromptOpen(false)}
                   ref={ctrlPromptDialogRef}
                   role="dialog"
                   aria-modal="true"
@@ -1455,7 +1456,7 @@ export default function App() {
                     Press B to close, R4 to accept suggestions, R5 hold to execute, and L5 to save
                     or record PromptDrive macros.
                   </p>
-                </div>
+                </FocusTrapContainer>
               </div>
             )}
 
@@ -1463,11 +1464,13 @@ export default function App() {
             <div
               id="quick-switcher-overlay"
               data-controller-overlay={quickSwitcherOpen ? "true" : undefined}
-              className={`fixed inset-0 z-[var(--nd-z-modal)] bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-150 ${quickSwitcherOpen ? "active" : "pointer-events-none opacity-0"}`}
+              className={`fixed inset-0 z-modal bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-150 ${quickSwitcherOpen ? "active" : "pointer-events-none opacity-0"}`}
               onMouseDown={() => setQuickSwitcherOpen(false)}
             >
               {quickSwitcherOpen && (
-                <div
+                <FocusTrapContainer
+                  active={quickSwitcherOpen}
+                  onEscape={() => setQuickSwitcherOpen(false)}
                   ref={quickSwitcherDialogRef}
                   role="dialog"
                   aria-modal="true"
@@ -1483,10 +1486,12 @@ export default function App() {
                     id="quick-switcher-list"
                     role="listbox"
                     aria-label="Recent views"
+                    aria-activedescendant={recentViews.slice(1)[quickSwitcherFocusIdx] ? `qs-item-${recentViews.slice(1)[quickSwitcherFocusIdx]}` : undefined}
                     className="mt-3 space-y-1"
                   >
                     {recentViews.slice(1).map((view, index) => (
                       <button
+                        id={`qs-item-${view}`}
                         key={view}
                         type="button"
                         role="option"
@@ -1510,7 +1515,7 @@ export default function App() {
                       </p>
                     )}
                   </div>
-                </div>
+                </FocusTrapContainer>
               )}
             </div>
 

@@ -7,6 +7,7 @@ export function EmptyState({
   description,
   action,
   compact = false,
+  variant: variantProp,
   className = "",
 }: {
   icon: LucideIcon;
@@ -14,13 +15,43 @@ export function EmptyState({
   description: string;
   action?: ReactNode;
   compact?: boolean;
+  /** Visual weight. `deck` is the large, full-panel empty state for 1280×800. */
+  variant?: "compact" | "default" | "deck";
   className?: string;
 }) {
+  const variant = compact ? "compact" : variantProp ?? "default";
+
+  const variants = {
+    compact: {
+      wrapper: "px-3 py-6",
+      iconBox: "h-10 w-10 rounded-xl",
+      icon: "h-5 w-5",
+      title: "text-sm",
+      desc: "max-w-[14rem] text-xs",
+    },
+    default: {
+      wrapper: "px-4 py-12",
+      iconBox: "h-14 w-14 rounded-2xl",
+      icon: "h-7 w-7",
+      title: "text-base",
+      desc: "max-w-xs text-sm",
+    },
+    deck: {
+      wrapper: "px-6 py-16",
+      iconBox: "h-20 w-20 rounded-3xl border-2",
+      icon: "h-10 w-10",
+      title: "text-xl",
+      desc: "max-w-md text-base",
+    },
+  };
+
+  const v = variants[variant];
+
   return (
     <div
       className={[
         "flex flex-col items-center justify-center text-center",
-        compact ? "px-3 py-6" : "px-4 py-12",
+        v.wrapper,
         className,
       ]
         .filter(Boolean)
@@ -28,24 +59,20 @@ export function EmptyState({
     >
       <div
         className={[
-          "mb-4 flex items-center justify-center border border-nd-border-subtle bg-nd-surface-secondary/60 shadow-panel",
-          compact ? "h-10 w-10 rounded-xl" : "h-14 w-14 rounded-2xl",
+          "mb-5 flex items-center justify-center border border-nd-border-subtle bg-nd-surface-secondary/60 shadow-panel",
+          v.iconBox,
         ].join(" ")}
       >
         <Icon
-          className={`${compact ? "h-5 w-5" : "h-7 w-7"} text-nd-accent-primary motion-reduce:transition-none`}
+          className={`${v.icon} text-nd-accent-primary motion-reduce:transition-none`}
           aria-hidden="true"
         />
       </div>
-      <h3 className={`${compact ? "text-sm" : "text-base"} font-semibold text-nd-text-primary`}>
-        {title}
-      </h3>
-      <p
-        className={`${compact ? "max-w-[14rem] text-xs" : "max-w-xs text-sm"} mt-1 leading-relaxed text-nd-text-muted`}
-      >
+      <h3 className={`${v.title} font-semibold text-nd-text-primary`}>{title}</h3>
+      <p className={`${v.desc} mt-2 leading-relaxed text-nd-text-muted`}>
         {description}
       </p>
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className="mt-6">{action}</div>}
     </div>
   );
 }

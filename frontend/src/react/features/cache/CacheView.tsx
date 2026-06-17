@@ -16,12 +16,15 @@ export function CacheView({ state }: { state: NeuroDeckState }) {
       eyebrow="Offline Cache"
       title="Local Readiness Center"
       className="h-full overflow-hidden"
+      bodyClassName="h-full"
     >
       {entries.length === 0 ? (
         <EmptyState
           icon={HardDrive}
           title="No cached items"
           description="Cached models, docs, and sessions will appear here."
+          variant="deck"
+          className="h-full"
         />
       ) : (
         <div className="flex h-full flex-col gap-4 p-4">

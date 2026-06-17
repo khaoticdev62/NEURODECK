@@ -12,10 +12,13 @@ import {
   type Suggestion,
 } from "../../services/bridgeAdapter";
 import { Button } from "../../components/primitives/Button";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { IconButton } from "../../components/primitives/IconButton";
 import { Badge } from "../../components/primitives/Badge";
 import { Panel } from "../../components/primitives/Panel";
-import { DeckButtonHint } from "../../components/primitives/DeckButtonHint";
+import { Select } from "../../components/primitives/Select";
+import { TextInput } from "../../components/primitives/TextInput";
+
 
 type SlotValues = Record<string, string>;
 
@@ -56,6 +59,7 @@ export function PromptLabView() {
   const [recordedSteps, setRecordedSteps] = useState<MacroStep[]>([]);
   const [status, setStatus] = useState("Loading PromptDrive...");
   const [busy, setBusy] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const valid = preview?.valid ?? false;
   const selectedSlotId = selectedTemplate?.slots[0]?.id;
@@ -70,13 +74,17 @@ export function PromptLabView() {
   const refreshSaved = useCallback(async () => {
     try {
       setSavedPrompts(await neurodeckApi.promptDrive.listSavedPrompts());
-    } catch (_) {}
+    } catch (e) {
+      setLoadError(`Failed to load saved prompts: ${String(e)}`);
+    }
   }, []);
 
   const refreshMacros = useCallback(async () => {
     try {
       setMacros(await neurodeckApi.promptDrive.listMacros());
-    } catch (_) {}
+    } catch (e) {
+      setLoadError(`Failed to load macros: ${String(e)}`);
+    }
   }, []);
 
   const renderPreview = useCallback(async (template: PromptTemplate | null, values: SlotValues) => {
@@ -89,46 +97,56 @@ export function PromptLabView() {
 
   const selectTemplate = useCallback(
     async (templateId: string, record = true) => {
-      const template = await neurodeckApi.promptDrive.getTemplate(templateId);
-      const values = defaultValues(template);
-      setSelectedTemplate(template);
-      setSelectedPackId(template.pack_id);
-      setSlotValues(values);
-      if (record) {
-        recordStep(macroStep("select_template", { template_id: template.id }));
+      try {
+        const template = await neurodeckApi.promptDrive.getTemplate(templateId);
+        const values = defaultValues(template);
+        setSelectedTemplate(template);
+        setSelectedPackId(template.pack_id);
+        setSlotValues(values);
+        if (record) {
+          recordStep(macroStep("select_template", { template_id: template.id }));
+        }
+        await renderPreview(template, values);
+      } catch (e) {
+        setLoadError(`Failed to load template: ${String(e)}`);
       }
-      await renderPreview(template, values);
     },
     [recordStep, renderPreview]
   );
 
+  const loadAll = useCallback(async (isCancelled: () => boolean) => {
+    try {
+      setStatus("Loading PromptDrive...");
+      const loadedPacks = await neurodeckApi.promptDrive.listPacks();
+      const firstPack = loadedPacks[0];
+      const loadedTemplates = await neurodeckApi.promptDrive.listTemplates(firstPack?.id);
+      if (isCancelled()) return;
+      setPacks(loadedPacks);
+      setTemplates(loadedTemplates);
+      setSelectedPackId(firstPack?.id ?? loadedTemplates[0]?.pack_id ?? "");
+      await refreshSaved();
+      if (isCancelled()) return;
+      await refreshMacros();
+      if (isCancelled()) return;
+      if (loadedTemplates[0]) {
+        await selectTemplate(loadedTemplates[0].id, false);
+      } else {
+        setStatus("No PromptDrive templates found.");
+      }
+    } catch (error) {
+      if (isCancelled()) return;
+      setStatus(`PromptDrive unavailable: ${String(error)}`);
+      setLoadError(`PromptDrive unavailable: ${String(error)}`);
+    }
+  }, [refreshMacros, refreshSaved, selectTemplate]);
+
   useEffect(() => {
     let cancelled = false;
-    async function load() {
-      try {
-        const loadedPacks = await neurodeckApi.promptDrive.listPacks();
-        const firstPack = loadedPacks[0];
-        const loadedTemplates = await neurodeckApi.promptDrive.listTemplates(firstPack?.id);
-        if (cancelled) return;
-        setPacks(loadedPacks);
-        setTemplates(loadedTemplates);
-        setSelectedPackId(firstPack?.id ?? loadedTemplates[0]?.pack_id ?? "");
-        await refreshSaved();
-        await refreshMacros();
-        if (loadedTemplates[0]) {
-          await selectTemplate(loadedTemplates[0].id, false);
-        } else {
-          setStatus("No PromptDrive templates found.");
-        }
-      } catch (error) {
-        if (!cancelled) setStatus(`PromptDrive unavailable: ${String(error)}`);
-      }
-    }
-    load();
+    void loadAll(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, [refreshMacros, refreshSaved, selectTemplate]);
+  }, [loadAll]);
 
   useEffect(() => {
     if (!selectedTemplate) return;
@@ -318,26 +336,32 @@ export function PromptLabView() {
   }, [acceptSuggestion, executePrompt, savePrompt, suggestions, toggleMacro]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <header className="mb-3 flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
-          <Sparkles className="h-5 w-5 text-accent-primary" aria-hidden="true" />
+    <div className="promptdrive-composer flex h-full flex-col overflow-hidden">
+      {loadError && (
+        <ErrorState
+          title="PromptDrive load failed"
+          message={loadError}
+          onRetry={() => {
+            setLoadError(null);
+            void loadAll(() => false);
+          }}
+          onClose={() => setLoadError(null)}
+        />
+      )}
+      <header className="promptdrive-header mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <Sparkles className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="pl-header-kicker text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
+          <p className="pl-header-kicker text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
             PromptDrive
           </p>
-          <h2 className="text-lg font-semibold text-text-primary">Prompt Composer</h2>
-          <p className="text-xs text-text-muted">
+          <h2 className="text-lg font-semibold text-nd-text-primary">Prompt Composer</h2>
+          <p className="text-xs text-nd-text-muted">
             Pack templates, validated slots, autocomplete, saved prompts, and safe macro replay.
           </p>
         </div>
-        <div className="hidden gap-1 md:flex">
-          <DeckButtonHint button="R4" label="suggestion" />
-          <DeckButtonHint button="R5" label="execute" />
-          <DeckButtonHint button="L5" label="save" />
-          <DeckButtonHint button="L5+R5" label="macro" />
-        </div>
+
         <Button
           id="pl-open-gallery-btn"
           variant="ghost"
@@ -361,22 +385,32 @@ export function PromptLabView() {
       </header>
 
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)] gap-3 overflow-hidden">
-        <Panel className="flex min-h-0 flex-col overflow-hidden">
-          <div className="grid grid-cols-2 items-start gap-3 overflow-auto p-3 scrollbar-thin">
+        <Panel className="flex min-h-0 flex-col overflow-hidden" scrollable>
+          <div className="grid grid-cols-2 items-start gap-3 p-3">
             <div className="min-w-0">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
                 Prompt Packs
               </div>
-              <div id="pd-pack-list" className="grid gap-2">
+              <div id="pd-pack-list" className="grid gap-2" role="listbox" aria-label="Prompt packs">
                 {packs.map((pack) => (
                   <button
                     key={pack.id}
                     type="button"
+                    role="option"
+                    aria-selected={selectedPackId === pack.id}
+                    aria-label={`${pack.title} pack`}
+                    tabIndex={0}
                     onClick={() => setSelectedPackId(pack.id)}
-                    className={`min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${selectedPackId === pack.id ? "border-accent-primary/40 bg-accent-primary/10 text-accent-primary" : "border-border-subtle bg-surface-secondary text-text-primary/80 hover:border-border-strong"}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedPackId(pack.id);
+                      }
+                    }}
+                    className={`min-h-touch min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${selectedPackId === pack.id ? "border-nd-accent-primary/40 bg-nd-accent-primary/10 text-nd-accent-primary" : "border-nd-border-subtle bg-nd-surface-secondary text-nd-text-primary/80 hover:border-nd-border-strong"}`}
                   >
                     <span className="block truncate font-medium">{pack.title}</span>
-                    <span className="block truncate text-xs leading-relaxed text-text-muted">
+                    <span className="block truncate text-xs leading-relaxed text-nd-text-muted">
                       {pack.description}
                     </span>
                   </button>
@@ -384,19 +418,34 @@ export function PromptLabView() {
               </div>
             </div>
             <div className="min-w-0">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">
+              <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
                 Templates
               </div>
-              <div id="pd-template-list" className="grid gap-2">
+              <div
+                id="pd-template-list"
+                className="promptdrive-template-list grid gap-2"
+                role="listbox"
+                aria-label="Prompt templates"
+              >
                 {filteredTemplates.map((template) => (
                   <button
                     key={template.id}
                     type="button"
+                    role="option"
+                    aria-selected={selectedTemplate?.id === template.id}
+                    aria-label={`${template.title} template`}
+                    tabIndex={0}
                     onClick={() => selectTemplate(template.id)}
-                    className={`min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${selectedTemplate?.id === template.id ? "border-accent-primary/40 bg-accent-primary/10 text-accent-primary" : "border-border-subtle bg-surface-secondary text-text-primary/80 hover:border-border-strong"}`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        void selectTemplate(template.id);
+                      }
+                    }}
+                    className={`promptdrive-template-card min-h-touch min-w-0 overflow-hidden rounded-xl border px-3.5 py-2.5 text-left text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${selectedTemplate?.id === template.id ? "border-nd-accent-primary/40 bg-nd-accent-primary/10 text-nd-accent-primary active" : "border-nd-border-subtle bg-nd-surface-secondary text-nd-text-primary/80 hover:border-nd-border-strong"}`}
                   >
                     <span className="block truncate font-medium">{template.title}</span>
-                    <span className="block truncate text-xs leading-relaxed text-text-muted">
+                    <span className="block truncate text-xs leading-relaxed text-nd-text-muted">
                       {template.description}
                     </span>
                   </button>
@@ -405,18 +454,18 @@ export function PromptLabView() {
             </div>
           </div>
 
-          <div className="mx-3 mb-3 rounded-xl border border-border-subtle bg-surface-secondary p-3.5">
+          <div className="mx-3 mb-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary p-3.5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div
                   id="pd-template-title"
-                  className="truncate text-sm font-semibold text-text-primary"
+                  className="truncate text-sm font-semibold text-nd-text-primary"
                 >
                   {selectedTemplate?.title ?? "Select a template"}
                 </div>
                 <div
                   id="pd-template-desc"
-                  className="mt-1 line-clamp-2 text-xs leading-relaxed text-text-muted"
+                  className="mt-1 line-clamp-2 text-xs leading-relaxed text-nd-text-muted"
                 >
                   {selectedTemplate?.description ??
                     "Choose a pack and template to start composing."}
@@ -439,12 +488,12 @@ export function PromptLabView() {
 
           <div className="mx-3 mb-3">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+              <span className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
                 Required Slots
               </span>
               <span
                 id="pd-validation-status"
-                className={`truncate text-xs ${valid ? "text-accent-success" : "text-accent-warning"}`}
+                className={`truncate text-xs ${valid ? "text-nd-accent-success" : "text-nd-accent-warning"}`}
               >
                 {valid ? "Valid" : status}
               </span>
@@ -453,11 +502,12 @@ export function PromptLabView() {
               {(selectedTemplate?.slots ?? []).map((slot) => (
                 <label
                   key={slot.id}
-                  className="block rounded-xl border border-border-subtle bg-surface-secondary p-3"
+                  htmlFor={`pd-slot-${slot.id}`}
+                  className="block rounded-xl border border-nd-border-subtle bg-nd-surface-secondary p-3"
                 >
-                  <span className="mb-1 flex items-center justify-between text-xs font-medium text-text-muted">
+                  <span className="mb-1 flex items-center justify-between text-xs font-medium text-nd-text-muted">
                     {slot.label}
-                    {slot.required && <span className="text-accent-warning">Required</span>}
+                    {slot.required && <span className="text-nd-accent-warning">Required</span>}
                   </span>
                   {slot.kind === "textarea" ? (
                     <textarea
@@ -465,28 +515,24 @@ export function PromptLabView() {
                       value={slotValues[slot.id] ?? ""}
                       onChange={(event) => updateSlot(slot.id, event.target.value)}
                       rows={3}
-                      className="w-full resize-none rounded-xl border border-border-subtle bg-surface-app px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40"
+                      aria-label={slot.label}
+                      className="min-h-touch w-full resize-none rounded-xl border border-nd-border-subtle bg-nd-surface-app px-3 py-2 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40"
                     />
                   ) : slot.kind === "select" && slot.options && slot.options.length > 0 ? (
-                    <select
+                    <Select
                       id={`pd-slot-${slot.id}`}
                       value={slotValues[slot.id] ?? slot.default ?? ""}
                       onChange={(event) => updateSlot(slot.id, event.target.value)}
-                      className="w-full rounded-xl border border-border-subtle bg-surface-app px-3 py-2 text-sm text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
-                    >
-                      {slot.options.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
+                      options={slot.options.map((opt) => ({ value: opt, label: opt }))}
+                      fullWidth
+                    />
                   ) : (
-                    <input
+                    <TextInput
                       id={`pd-slot-${slot.id}`}
                       type="text"
                       value={slotValues[slot.id] ?? ""}
                       onChange={(event) => updateSlot(slot.id, event.target.value)}
-                      className="w-full rounded-xl border border-border-subtle bg-surface-app px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40"
+                      fullWidth
                     />
                   )}
                 </label>
@@ -528,7 +574,7 @@ export function PromptLabView() {
             <Panel eyebrow="Saved" title="Saved Prompts" className="min-h-0">
               <div
                 id="pd-saved-list"
-                className="grid max-h-28 gap-2 overflow-auto"
+                className="promptdrive-saved-list grid max-h-28 gap-2 overflow-auto"
                 tabIndex={0}
                 aria-label="Saved prompts"
               >
@@ -537,15 +583,23 @@ export function PromptLabView() {
                     <button
                       key={prompt.id}
                       type="button"
+                      aria-label={`Load saved prompt: ${prompt.title}`}
+                      tabIndex={0}
                       onClick={() => setPreviewText(prompt.prompt)}
-                      className="min-w-0 overflow-hidden rounded-lg border border-border-subtle px-2.5 py-2 text-left text-xs text-text-primary/80 hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setPreviewText(prompt.prompt);
+                        }
+                      }}
+                      className="promptdrive-saved-item min-h-touch min-w-0 overflow-hidden rounded-lg border border-nd-border-subtle px-2.5 py-2 text-left text-xs text-nd-text-primary/80 hover:border-nd-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
                     >
                       <span className="block truncate font-medium">{prompt.title}</span>
-                      <span className="block truncate text-text-muted">{prompt.prompt}</span>
+                      <span className="block truncate text-nd-text-muted">{prompt.prompt}</span>
                     </button>
                   ))
                 ) : (
-                  <div className="text-xs text-text-muted/70">No saved prompts.</div>
+                  <div className="text-xs text-nd-text-muted/70">No saved prompts.</div>
                 )}
               </div>
             </Panel>
@@ -553,7 +607,7 @@ export function PromptLabView() {
             <Panel eyebrow="Macros" title="Recorded Macros" className="min-h-0">
               <div
                 id="pd-macro-list"
-                className="grid max-h-28 gap-2 overflow-auto"
+                className="promptdrive-macro-list grid max-h-28 gap-2 overflow-auto"
                 tabIndex={0}
                 aria-label="Recorded macros"
               >
@@ -561,31 +615,36 @@ export function PromptLabView() {
                   macros.map((macro) => (
                     <div
                       key={macro.id}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-border-subtle px-2.5 py-2 text-xs text-text-primary/80"
+                      className="promptdrive-macro-item flex min-h-touch items-center justify-between gap-2 rounded-lg border border-nd-border-subtle px-2.5 py-2 text-xs text-nd-text-primary/80"
                     >
                       <div className="min-w-0 overflow-hidden">
                         <span className="block truncate font-medium">{macro.name}</span>
-                        <span className="block truncate text-text-muted">
+                        <span className="block truncate text-nd-text-muted">
                           {macro.steps.length} steps · {macro.risk_level}
                         </span>
                       </div>
                       <div className="flex shrink-0 gap-1">
-                        <Button variant="primary" size="xs" onClick={() => replayMacro(macro.id)}>
+                        <Button
+                          variant="primary"
+                          size="xs"
+                          aria-label={`Replay macro ${macro.name}`}
+                          onClick={() => replayMacro(macro.id)}
+                        >
                           Replay
                         </Button>
                         <IconButton
-                          aria-label="Delete macro"
+                          aria-label={`Delete macro ${macro.name}`}
                           variant="ghost"
                           size="sm"
                           onClick={() => deleteMacro(macro.id)}
                         >
-                          <Trash2 className="h-3.5 w-3.5 text-accent-error" aria-hidden="true" />
+                          <Trash2 className="h-3.5 w-3.5 text-nd-accent-error" aria-hidden="true" />
                         </IconButton>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-xs text-text-muted/70">No macros recorded.</div>
+                  <div className="text-xs text-nd-text-muted/70">No macros recorded.</div>
                 )}
               </div>
             </Panel>
@@ -594,32 +653,40 @@ export function PromptLabView() {
 
         <div className="flex min-h-0 flex-col gap-3 overflow-hidden">
           <Panel eyebrow="Suggestions" title="Ranked Suggestions">
-            <label
-              className="mb-2 block text-xs font-semibold uppercase tracking-wider text-text-muted"
-              htmlFor="pd-suggestion-query"
-            >
-              Search
-            </label>
-            <input
+            <TextInput
               id="pd-suggestion-query"
-              type="text"
+              label="Search"
               value={suggestionQuery}
               onChange={(event) => setSuggestionQuery(event.target.value)}
-              className="w-full rounded-xl border border-border-subtle bg-surface-secondary px-3 py-2 text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40"
               placeholder="Search suggestions"
+              fullWidth
             />
-            <div id="pd-suggestions" className="mt-2 grid max-h-40 gap-2 overflow-auto">
+            <div
+              id="pd-suggestions"
+              className="mt-2 grid max-h-40 gap-2 overflow-auto"
+              role="listbox"
+              aria-label="Ranked suggestions"
+            >
               {suggestions.map((suggestion) => (
                 <button
                   key={suggestion.id}
                   type="button"
+                  role="option"
+                  aria-label={`Use suggestion: ${suggestion.label}`}
+                  tabIndex={0}
                   onClick={() => acceptSuggestion(suggestion)}
-                  className="min-w-0 overflow-hidden rounded-xl border border-border-subtle bg-surface-secondary px-3 py-2 text-left hover:border-accent-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      void acceptSuggestion(suggestion);
+                    }
+                  }}
+                  className="promptdrive-suggestion min-h-touch min-w-0 overflow-hidden rounded-xl border border-nd-border-subtle bg-nd-surface-secondary px-3 py-2 text-left hover:border-nd-accent-primary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
                 >
-                  <span className="block truncate text-sm font-medium text-text-primary">
+                  <span className="block truncate text-sm font-medium text-nd-text-primary">
                     {suggestion.label}
                   </span>
-                  <span className="block truncate text-xs text-text-muted">
+                  <span className="block truncate text-xs text-nd-text-muted">
                     {suggestion.source} · score {suggestion.score}
                   </span>
                 </button>
@@ -637,9 +704,9 @@ export function PromptLabView() {
               value={previewText}
               onChange={(event) => setPreviewText(event.target.value)}
               aria-label="Live prompt preview"
-              className="min-h-0 flex-1 resize-none bg-transparent p-4 font-mono text-sm text-text-primary/90 outline-none"
+              className="min-h-touch min-h-0 flex-1 resize-none bg-transparent p-4 font-mono text-sm text-nd-text-primary/90 outline-none"
             />
-            <div className="flex items-center justify-between border-t border-border-subtle px-4 py-2 text-xs text-text-muted">
+            <div className="flex items-center justify-between border-t border-nd-border-subtle px-4 py-2 text-xs text-nd-text-muted">
               <span>{status}</span>
               <div className="flex items-center gap-3">
                 <span>~{tokenCount(previewText)} tokens</span>

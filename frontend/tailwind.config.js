@@ -28,12 +28,16 @@ export default {
         // NEURODECK design tokens — all mapped to runtime CSS custom properties
         nd: {
           // ── Semantic surfaces ──────────────────────────────────────────
-          'surface-base':   withOpacity('var(--nd-surface-base, var(--nd-surface, #11161C))'),
-          'surface-raised': withOpacity('var(--nd-surface-raised)'),
-          'surface-glass':  withOpacity('var(--nd-surface-glass, rgba(17,22,28,0.72))'),
-          'surface-overlay':withOpacity('var(--nd-surface-overlay, rgba(10,13,16,0.85))'),
-          'surface-modal':  withOpacity('var(--nd-surface-modal, #0F1419)'),
-          'surface-danger': withOpacity('var(--nd-surface-danger, #FF5A6A)'),
+          'surface-base':    withOpacity('var(--nd-surface-base, var(--nd-surface, #11161C))'),
+          'surface-raised':  withOpacity('var(--nd-surface-raised)'),
+          'surface-glass':   withOpacity('var(--nd-surface-glass, rgba(17,22,28,0.72))'),
+          'surface-overlay': withOpacity('var(--nd-surface-overlay, rgba(10,13,16,0.85))'),
+          'surface-modal':   withOpacity('var(--nd-surface-modal, #0F1419)'),
+          'surface-danger':  withOpacity('var(--nd-surface-danger, #FF5A6A)'),
+          'surface-success': 'var(--nd-surface-success)',
+          'surface-warning': 'var(--nd-surface-warning)',
+          'surface-error':   'var(--nd-surface-error)',
+          'surface-info':    'var(--nd-surface-info)',
 
           // Legacy surface aliases (kept for compatibility during migration)
           bg:               withOpacity('var(--nd-bg)'),
@@ -175,7 +179,7 @@ export default {
         screen: 'var(--nd-spacing-screen, 16px)',
         panel:  'var(--nd-spacing-panel, 12px)',
         card:   'var(--nd-spacing-card, 12px)',
-        touch:  'var(--nd-spacing-touch-target, 40px)',
+        touch:  'var(--nd-target-min, 44px)',
       },
 
       // ── MERGED: single fontSize definition (semantic + numeric scale) ─
@@ -231,14 +235,14 @@ export default {
       },
 
       zIndex: {
-        'wallpaper': '0',
-        'base':      '1',
-        'sticky':    '10',
-        'dropdown':  '20',
-        'overlay':   '30',
-        'modal':     '40',
-        'toast':     '50',
-        'tooltip':   '60',
+        'wallpaper': 'var(--nd-z-wallpaper, 0)',
+        'base':      'var(--nd-z-base, 1)',
+        'sticky':    'var(--nd-z-sticky, 10)',
+        'dropdown':  'var(--nd-z-dropdown, 20)',
+        'overlay':   'var(--nd-z-overlay, 30)',
+        'modal':     'var(--nd-z-modal, 40)',
+        'toast':     'var(--nd-z-toast, 50)',
+        'tooltip':   'var(--nd-z-tooltip, 60)',
       },
 
       keyframes: {

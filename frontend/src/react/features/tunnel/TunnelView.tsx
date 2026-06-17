@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeftRight, Power, PowerOff, Send, FolderOpen } from "lucide-react";
 import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { Panel } from "../../components/primitives/Panel";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import { TextInput } from "../../components/primitives/TextInput";
@@ -13,11 +14,13 @@ export function TunnelView() {
   const [dirPath, setDirPath] = useState("");
   const [log, setLog] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const addLog = (msg: string) => setLog((prev) => [...prev.slice(-49), msg]);
 
   const toggle = async () => {
     setLoading(true);
+    setError(null);
     try {
       if (running) {
         await neurodeckApi.tunnel.stop();
@@ -29,7 +32,9 @@ export function TunnelView() {
         setRunning(true);
       }
     } catch (e) {
-      addLog(`Error: ${String(e)}`);
+      const msg = String(e);
+      addLog(`Error: ${msg}`);
+      setError(`Failed to ${running ? "stop" : "start"} tunnel: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -37,24 +42,30 @@ export function TunnelView() {
 
   const sendCmd = async () => {
     if (!command.trim()) return;
+    setError(null);
     try {
       const res = await neurodeckApi.tunnel.sendRequest(command.trim());
       addLog(`> ${command}`);
       addLog(res.output);
       setCommand("");
     } catch (e) {
-      addLog(`Error: ${String(e)}`);
+      const msg = String(e);
+      addLog(`Error: ${msg}`);
+      setError(`Command failed: ${msg}`);
     }
   };
 
   const listDir = async () => {
     if (!dirPath.trim()) return;
+    setError(null);
     try {
       const res = await neurodeckApi.tunnel.sendRequest(`ls -la "${dirPath.trim()}"`);
       addLog(`> ls ${dirPath}`);
       addLog(res.output);
     } catch (e) {
-      addLog(`Error: ${String(e)}`);
+      const msg = String(e);
+      addLog(`Error: ${msg}`);
+      setError(`Directory list failed: ${msg}`);
     }
   };
 
@@ -83,6 +94,7 @@ export function TunnelView() {
             icon={running ? PowerOff : Power}
             onClick={() => void toggle()}
             loading={loading}
+            className="min-h-touch"
           >
             {running ? "Stop" : "Start"}
           </Button>
@@ -120,8 +132,21 @@ export function TunnelView() {
           </div>
         </div>
 
+        {error && (
+          <ErrorState
+            title="Tunnel action failed"
+            message={error}
+            onClose={() => setError(null)}
+            closeLabel="Dismiss"
+          />
+        )}
+
         {/* Log */}
-        <div className="min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 font-mono text-xs">
+        <div
+          className="min-h-0 flex-1 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 font-mono text-xs"
+          aria-live="polite"
+          aria-label="Tunnel log"
+        >
           {log.length === 0 ? (
             <EmptyState
               icon={ArrowLeftRight}

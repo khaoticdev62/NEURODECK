@@ -3,7 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 const REPORT_PATH = path.join(ROOT, 'reports', 'fallow', 'dead-code-final-dead-code.json');
 
 interface FallowReport {
@@ -44,9 +44,15 @@ if (hasFallow) {
 }
 
 if (!fs.existsSync(REPORT_PATH)) {
-  console.error(`✗ Fallow report not found at: ${REPORT_PATH}`);
-  console.error('Please run "npm run quality:fallow:json" first to generate the report.');
-  process.exit(1);
+  if (hasFallow) {
+    console.error(`✗ Fallow report not found at: ${REPORT_PATH}`);
+    console.error('Please run "npm run quality:fallow:json" first to generate the report.');
+    process.exit(1);
+  } else {
+    console.log('⚠ Fallow report not found and Fallow CLI is unavailable.');
+    console.log('  Skipping dead-code verification. Install Fallow to enable this gate.');
+    process.exit(0);
+  }
 }
 
 const data = fs.readFileSync(REPORT_PATH, 'utf8');

@@ -35,9 +35,7 @@ for (const view of viewTabs) {
   });
 }
 
-test.fixme("visual regression: settings modal at 1280x800", async ({
-  page,
-}) => {
+test("visual regression: settings modal at 1280x800", async ({ page }) => {
   const app = new AppPage(page);
   await app.openSettings();
   await page.waitForTimeout(400);
@@ -62,6 +60,17 @@ test("visual regression: shortcuts overlay at 1280x800", async ({ page }) => {
   await app.openShortcuts();
   await page.waitForTimeout(400);
   await expect(page).toHaveScreenshot("shortcuts-1280x800.png", {
+    fullPage: false,
+    maxDiffPixels: 200,
+  });
+});
+
+test("visual regression: deck mode hint bar at 1280x800", async ({ page }) => {
+  const app = new AppPage(page);
+  await app.setDeckMode(true);
+  await page.waitForTimeout(400);
+  await expect(app.controllerHintBar).toBeVisible();
+  await expect(page).toHaveScreenshot("deck-mode-hint-bar-1280x800.png", {
     fullPage: false,
     maxDiffPixels: 200,
   });

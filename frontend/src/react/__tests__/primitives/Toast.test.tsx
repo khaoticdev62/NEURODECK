@@ -88,17 +88,17 @@ describe("ToastProvider / useToast — structure", () => {
     for (let i = 0; i < 7; i++) {
       await userEvent.click(trigger);
     }
-    expect(screen.getAllByRole("status").length).toBeLessThanOrEqual(5);
+    expect(screen.queryAllByRole("status").length + screen.queryAllByRole("alert").length).toBeLessThanOrEqual(5);
   });
 
-  it("renders error tone classes", async () => {
+  it("renders error tone classes and alert role", async () => {
     render(
       <ToastProvider>
         <Trigger message="Oops" tone="error" />
       </ToastProvider>
     );
     await userEvent.click(screen.getByRole("button"));
-    const toast = screen.getByText("Oops").closest('[role="status"]');
+    const toast = screen.getByText("Oops").closest('[role="alert"]');
     expect(toast?.className).toContain("nd-toast--error");
   });
 
@@ -113,14 +113,14 @@ describe("ToastProvider / useToast — structure", () => {
     expect(toast?.className).toContain("nd-toast--success");
   });
 
-  it("renders warning tone classes", async () => {
+  it("renders warning tone classes and alert role", async () => {
     render(
       <ToastProvider>
         <Trigger message="Watch out" tone="warning" />
       </ToastProvider>
     );
     await userEvent.click(screen.getByRole("button"));
-    const toast = screen.getByText("Watch out").closest('[role="status"]');
+    const toast = screen.getByText("Watch out").closest('[role="alert"]');
     expect(toast?.className).toContain("nd-toast--warning");
   });
 

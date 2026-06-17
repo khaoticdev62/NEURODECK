@@ -25,7 +25,9 @@ import { Select } from "../../components/primitives/Select";
 import { Badge } from "../../components/primitives/Badge";
 import { Panel } from "../../components/primitives/Panel";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { LoadingState } from "../../components/primitives/LoadingState";
+import { Toggle } from "../../components/primitives/Toggle";
 
 const LOCAL_STORAGE_KEY = "neurodeck:cli_commands_fallback";
 
@@ -143,6 +145,7 @@ export function CliMakerView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -170,6 +173,7 @@ export function CliMakerView() {
   const [statusIsError, setStatusIsError] = useState(false);
 
   const [importPath, setImportPath] = useState("");
+  const [exportFormat, setExportFormat] = useState<"sh" | "py" | "lua">("sh");
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const loadCommands = useCallback(async () => {
@@ -177,7 +181,9 @@ export function CliMakerView() {
     try {
       const list = await neurodeckApi.cliMaker.list();
       setCommands(list);
+      setLoadError(null);
     } catch (_) {
+      setLoadError("Could not reach the sidecar. Showing locally saved commands.");
       setCommands(getFallbackCommands());
     } finally {
       setLoading(false);
@@ -544,7 +550,7 @@ export function CliMakerView() {
                 key={filter}
                 type="button"
                 onClick={() => setCategoryFilter(filter)}
-                className={`rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition min-h-[32px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
+                className={`rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition min-h-touch min-w-[48px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                   categoryFilter === filter
                     ? "border-accent-primary/40 bg-accent-primary/15 text-accent-primary"
                     : "border-border-subtle bg-surface-secondary text-text-muted hover:border-border-strong"
@@ -557,6 +563,15 @@ export function CliMakerView() {
 
           <Panel className="flex-1 min-h-0 overflow-hidden">
             <div className="h-full overflow-y-auto space-y-2 p-3">
+              {loadError && (
+                <ErrorState
+                  title="Sidecar unavailable"
+                  message={loadError}
+                  onRetry={() => void loadCommands()}
+                  retryLabel="Retry"
+                  fullHeight={false}
+                />
+              )}
               {loading ? (
                 <LoadingState label="Loading commands..." />
               ) : filteredCommands.length === 0 ? (
@@ -571,9 +586,17 @@ export function CliMakerView() {
                 filteredCommands.map((cmd) => (
                   <div
                     key={cmd.id}
-                    onClick={() => handleEditCommand(cmd)}
+                    role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && handleEditCommand(cmd)}
+                    aria-pressed={editingId === cmd.id}
+                    aria-label={`Edit command /${cmd.name}`}
+                    onClick={() => handleEditCommand(cmd)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleEditCommand(cmd);
+                      }
+                    }}
                     className={`group relative flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                       editingId === cmd.id
                         ? "border-accent-primary/40 bg-accent-primary/5"
@@ -631,7 +654,7 @@ export function CliMakerView() {
                     value={name}
                     onChange={(e) => setName(e.target.value.replace(/\s+/g, "-").toLowerCase())}
                     placeholder="my-command"
-                    className="w-full h-10 rounded-xl border border-border-subtle bg-surface-app pl-6 pr-4 text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40 min-h-[40px]"
+                    className="w-full h-10 rounded-xl border border-nd-border-subtle bg-nd-surface-app pl-6 pr-4 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 min-h-touch"
                   />
                 </div>
               </div>
@@ -690,7 +713,7 @@ export function CliMakerView() {
             {category === "prompt" && (
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="cli-prompt" className="text-xs font-medium text-text-muted">
+                  <label htmlFor="cli-prompt" className="text-xs font-medium text-nd-text-muted">
                     Prompt Template
                   </label>
                   <textarea
@@ -700,20 +723,14 @@ export function CliMakerView() {
                     placeholder="Enter prompt content. Use {{input}} to insert custom runner arguments at runtime."
                     rows={4}
                     aria-label="Prompt template"
-                    className="w-full rounded-xl border border-border-subtle bg-surface-app p-3 text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40 resize-none"
+                    className="w-full rounded-xl border border-nd-border-subtle bg-nd-surface-app p-3 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 resize-none"
                   />
                 </div>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={promptUseLlm}
-                    onChange={(e) => setPromptUseLlm(e.target.checked)}
-                    className="rounded border-border-subtle bg-surface-app text-accent-primary focus-visible:ring-2 focus-visible:ring-accent-primary/40 h-4 w-4"
-                  />
-                  <span className="text-xs text-text-muted">
-                    Send output directly to LLM for response streaming
-                  </span>
-                </label>
+                <Toggle
+                  checked={promptUseLlm}
+                  onChange={() => setPromptUseLlm((v) => !v)}
+                  label="Send output directly to LLM for response streaming"
+                />
               </div>
             )}
 
@@ -735,7 +752,7 @@ export function CliMakerView() {
                     placeholder="Absolute path, or blank for default workspace"
                   />
                 </div>
-                <div className="flex items-start gap-2.5 rounded-xl border border-accent-warning/20 bg-accent-warning/5 p-3 text-xs text-accent-warning/90">
+                <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-nd-accent-warning/20 bg-nd-accent-warning/5 p-3 text-xs text-nd-accent-warning/90">
                   <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
                   <span>
                     Shell commands are executed directly on the host machine. Ensure you audit
@@ -762,26 +779,26 @@ export function CliMakerView() {
                 <div className="space-y-2">
                   {chainSteps.map((step, idx) => (
                     <div key={idx} className="flex items-center gap-2">
-                      <span className="text-xs text-text-muted font-mono w-6">#{idx + 1}</span>
-                      <select
+                      <span className="text-xs text-nd-text-muted font-mono w-6">#{idx + 1}</span>
+                      <Select
+                        aria-label={`Chain step ${idx + 1}`}
                         value={step}
                         onChange={(e) => {
                           const nextSteps = [...chainSteps];
                           nextSteps[idx] = e.target.value;
                           setChainSteps(nextSteps);
                         }}
-                        aria-label={`Chain step ${idx + 1}`}
-                        className="flex-1 h-9 rounded-xl border border-border-subtle bg-surface-app px-3 text-xs text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
-                      >
-                        <option value="">Select Command...</option>
-                        {commands
-                          .filter((c) => c.id !== editingId)
-                          .map((c) => (
-                            <option key={c.id} value={c.id}>
-                              /{c.name} ({c.description || "No description"})
-                            </option>
-                          ))}
-                      </select>
+                        options={[
+                          { value: "", label: "Select Command..." },
+                          ...commands
+                            .filter((c) => c.id !== editingId)
+                            .map((c) => ({
+                              value: c.id,
+                              label: `/${c.name} (${c.description || "No description"})`,
+                            })),
+                        ]}
+                        className="flex-1"
+                      />
                       <IconButton
                         aria-label={`Remove chain step ${idx + 1}`}
                         variant="ghost"
@@ -806,7 +823,7 @@ export function CliMakerView() {
 
             {category === "plugin" && (
               <div className="space-y-1.5">
-                <label htmlFor="cli-lua" className="text-xs font-medium text-text-muted">
+                <label htmlFor="cli-lua" className="text-xs font-medium text-nd-text-muted">
                   Lua Code Snippet
                 </label>
                 <textarea
@@ -816,7 +833,7 @@ export function CliMakerView() {
                   rows={8}
                   spellCheck={false}
                   aria-label="Lua code snippet"
-                  className="w-full rounded-xl border border-border-subtle bg-surface-app p-3 font-mono text-xs text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40 resize-none"
+                  className="w-full rounded-xl border border-nd-border-subtle bg-nd-surface-app p-3 font-mono text-xs text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 resize-none"
                 />
               </div>
             )}
@@ -862,26 +879,22 @@ export function CliMakerView() {
                 </div>
 
                 <div className="flex gap-2">
-                  <select
-                    id="export-script-format"
-                    defaultValue="sh"
+                  <Select
                     aria-label="Export script format"
-                    className="w-24 h-10 rounded-xl border border-border-subtle bg-surface-app px-2 text-xs text-text-primary outline-none focus:border-accent-primary/40"
-                  >
-                    <option value="sh">Bash (.sh)</option>
-                    <option value="py">Python (.py)</option>
-                    <option value="lua">Lua (.lua)</option>
-                  </select>
+                    value={exportFormat}
+                    onChange={(e) => setExportFormat(e.target.value as "sh" | "py" | "lua")}
+                    options={[
+                      { value: "sh", label: "Bash (.sh)" },
+                      { value: "py", label: "Python (.py)" },
+                      { value: "lua", label: "Lua (.lua)" },
+                    ]}
+                    className="w-28"
+                  />
                   <Button
                     variant="secondary"
                     size="sm"
                     fullWidth
-                    onClick={() => {
-                      const sel = document.getElementById(
-                        "export-script-format"
-                      ) as HTMLSelectElement;
-                      handleExportScript((sel?.value || "sh") as "sh" | "py" | "lua");
-                    }}
+                    onClick={() => handleExportScript(exportFormat)}
                   >
                     Export Script
                   </Button>

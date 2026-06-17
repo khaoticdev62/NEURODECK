@@ -80,21 +80,24 @@ export function AgentsView({
         {state.agents.length === 0 ? (
           <EmptyState
             icon={Bot}
-            title="No agents loaded."
+            title="No agents loaded"
             description="Agent definitions are registered at startup. Check that plugins/bmad.lua loaded correctly."
+            variant="deck"
+            className="h-full"
           />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
+          <ul role="list" className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
             {state.agents.map((agent) => (
-              <AgentCard
-                key={agent.id}
-                agent={agent}
-                isBusy={isBusy}
-                onRun={(id) => void actions.runAgent(id, task.trim() || undefined)}
-                onCycle={(id) => dispatch({ type: "toggle-agent", id })}
-              />
+              <li key={agent.id}>
+                <AgentCard
+                  agent={agent}
+                  isBusy={isBusy}
+                  onRun={(id) => void actions.runAgent(id, task.trim() || undefined)}
+                  onCycle={(id) => dispatch({ type: "toggle-agent", id })}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         )}
       </div>
     </Panel>

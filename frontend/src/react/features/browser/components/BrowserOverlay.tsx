@@ -25,6 +25,7 @@ export function BrowserOverlay({
   role = "dialog",
   ariaLabel,
 }: BrowserOverlayProps) {
+  if (!active) return null;
   return (
     <FocusTrapContainer
       active={active}

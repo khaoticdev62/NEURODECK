@@ -84,7 +84,7 @@ export function InputConsole({
           <IconButton
             aria-label="Attach file"
             title="Attach file"
-            size="md"
+            size="touch"
             variant="subtle"
             onClick={async () => {
               const api = (
@@ -130,7 +130,7 @@ export function InputConsole({
           <IconButton
             aria-label={isRecording ? "Stop recording" : "Voice input"}
             title={isRecording ? "Stop recording" : "Voice input"}
-            size="md"
+            size="touch"
             variant={isRecording ? "accent" : "subtle"}
             onClick={async () => {
               try {
@@ -152,7 +152,7 @@ export function InputConsole({
           <IconButton
             aria-label="Attach screenshot"
             title="Attach screenshot"
-            size="md"
+            size="touch"
             variant="subtle"
             onClick={async () => {
               try {
@@ -198,7 +198,7 @@ export function InputConsole({
         <IconButton
           aria-label={isBusy ? "Waiting for response" : "Send message"}
           title={isBusy ? "Waiting for response" : "Send message"}
-          size="md"
+          size="touch"
           variant="accent"
           disabled={!value.trim() || isBusy}
           onClick={handleSend}

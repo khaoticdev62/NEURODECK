@@ -109,14 +109,17 @@ export function SchedulerView() {
               placeholder="Cron: 0 9 * * MON"
             />
           </div>
-          <textarea
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            placeholder="Task description or Lua script..."
-            aria-label="Task description or Lua script"
-            rows={2}
-            className="w-full resize-none rounded-xl border border-border-subtle bg-surface-primary px-3 py-2 text-sm text-text-primary outline-none transition duration-fast placeholder:text-text-muted focus:border-accent-primary/40 focus-visible:ring-2 focus-visible:ring-accent-primary/30"
-          />
+          <label htmlFor="task-goal" className="nd-field">
+            <span className="nd-field__label">Task description or Lua script</span>
+            <textarea
+              id="task-goal"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              placeholder="Task description or Lua script..."
+              rows={2}
+              className="min-h-touch w-full resize-none rounded-xl border border-nd-border-subtle bg-nd-surface-primary px-3 py-2 text-sm text-nd-text-primary outline-none transition duration-fast placeholder:text-nd-text-muted focus:border-nd-accent-primary/40 focus-visible:ring-2 focus-visible:ring-nd-accent-primary/30"
+            />
+          </label>
           <Button
             variant="primary"
             size="sm"
@@ -131,14 +134,14 @@ export function SchedulerView() {
         {mutateError && (
           <div
             role="alert"
-            className="mx-4 mb-3 flex items-center gap-2 rounded-xl border border-accent-error/25 bg-accent-error/10 px-3 py-2 text-xs text-accent-error"
+            className="mx-4 mb-3 flex items-center gap-2 rounded-xl border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-2 text-xs text-nd-accent-error"
           >
             {mutateError}
             <IconButton
               aria-label="Dismiss error"
               variant="ghost"
               size="sm"
-              className="ml-auto text-accent-error/70 hover:text-accent-error"
+              className="ml-auto text-nd-accent-error/70 hover:text-nd-accent-error"
               onClick={() => setMutateError(null)}
             >
               <X className="h-3.5 w-3.5" aria-hidden="true" />
@@ -146,7 +149,11 @@ export function SchedulerView() {
           </div>
         )}
 
-        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-4 scrollbar-thin">
+        <div
+          role="list"
+          aria-label="Scheduled tasks"
+          className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-4 scrollbar-thin"
+        >
           {loading && <LoadingState label="Loading tasks…" />}
           {!loading && loadError && (
             <ErrorState
@@ -167,15 +174,16 @@ export function SchedulerView() {
             tasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 p-3 transition duration-fast hover:bg-surface-tertiary/30"
+                role="listitem"
+                className="flex items-center gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3 transition duration-fast hover:bg-nd-surface-tertiary/30"
               >
                 <StatusChip tone={task.enabled ? "success" : "info"} size="sm">
                   {task.enabled ? "Enabled" : "Paused"}
                 </StatusChip>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-text-primary">{task.name}</p>
-                  <p className="font-mono text-xs text-text-muted">{task.cron}</p>
-                  {task.goal && <p className="truncate text-xs text-text-muted/70">{task.goal}</p>}
+                  <p className="text-sm font-medium text-nd-text-primary">{task.name}</p>
+                  <p className="font-mono text-xs text-nd-text-muted">{task.cron}</p>
+                  {task.goal && <p className="truncate text-xs text-nd-text-muted/70">{task.goal}</p>}
                 </div>
                 <IconButton
                   variant="ghost"

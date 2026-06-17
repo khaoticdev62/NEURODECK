@@ -34,6 +34,7 @@ export function WorkspaceView({
 
   const [liveRamMb, setLiveRamMb] = useState(128);
   const [docCount, setDocCount] = useState(state.memories.length);
+  const [personaError, setPersonaError] = useState<string | null>(null);
   const telemetryTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -84,8 +85,9 @@ export function WorkspaceView({
       dispatch({ type: "set-persona", persona });
       try {
         await bridgeInvoke("set_persona", { name: persona });
-      } catch {
-        // Backend sync is best-effort; the UI already reflects the selection.
+        setPersonaError(null);
+      } catch (e) {
+        setPersonaError(`Failed to sync persona: ${String(e)}`);
       }
     },
     [dispatch]
@@ -126,6 +128,15 @@ export function WorkspaceView({
         />
       )}
 
+      {personaError && (
+        <ErrorState
+          title="Persona sync failed"
+          message={personaError}
+          onClose={() => setPersonaError(null)}
+          closeLabel="Dismiss"
+        />
+      )}
+
       <Panel eyebrow="Telemetry" title="Live Systems">
         <TelemetryWidget
           provider={state.selectedProvider}
@@ -136,7 +147,7 @@ export function WorkspaceView({
         />
       </Panel>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface/30 shadow-panel">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface/30 shadow-nd-elevation-card">
         <ChatViewport
           messages={state.messages}
           busyLabel={state.busyLabel}

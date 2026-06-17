@@ -58,7 +58,7 @@ describe("IconButton", () => {
         <X />
       </IconButton>
     );
-    expect(container.querySelector("button")?.className).toContain("min-h-11");
+    expect(container.querySelector("button")?.className).toContain("min-h-touch");
   });
 
   it("applies xl size classes", () => {

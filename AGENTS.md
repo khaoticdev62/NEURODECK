@@ -20,7 +20,7 @@ NEURODECK is an Electron desktop app with a Rust sidecar that turns a Steam Deck
 - **`GEMINI_API_KEY` must be set as an env var** before `npm run dev`. If absent, the binary silently falls back to Ollama with no user-visible error.
 - **`NEURODECK_SAFE_MODE`**: if set (any value), the sidecar skips all Lua plugin loading at startup. The bridge logs `SAFE MODE active — plugin loading is disabled`. Use when a broken plugin prevents boot.
 - **`NEURODECK_PORT`**: overrides the bridge port (default `9477`). Electron's `findFreePort()` auto-selects the next free port in `9477–9577` if the default is occupied and sets this env var before spawning the sidecar.
-- **Vite dev standalone** (`npm run --prefix frontend dev`) works for CSS/HTML iteration but all `invoke()` calls will fail — the bridge server is not running. To test real commands, use `npm run dev` (starts Electron + sidecar).
+- **Vite dev standalone** (`npm run --prefix frontend dev` or `npm run frontend:dev`) works for React/CSS iteration but all `bridgeAdapter.invoke()` calls will fail — the bridge server is not running. To test real commands, use `npm run dev` (starts Electron + sidecar). `npm run dev:no-sidecar` starts Electron against an already-running sidecar.
 - **Lua auto-loads on startup**: every `.lua` file in `plugins/` is loaded at app init via `lua.rs`. A syntax error in any plugin silently suppresses that plugin — check the terminal console for `[Lua Error]` lines. Use `NEURODECK_SAFE_MODE=1` to boot without any plugins.
 - **Rust version is pinned to 1.92.0** in `Cargo.toml`. The `mlua` crate with `vendored` feature compiles Lua 5.4 from source — first build takes 2–3 minutes.
 - **FTP downloads stream to disk**: `ftp_download_file` uses `retr()` + `std::io::copy` instead of `retr_as_buffer`. A `max_download_size_mb` config gate (default 500 MB) rejects oversized transfers before they start. Progress events fire every 1 MB.
@@ -69,31 +69,35 @@ The NEURODECK Design System is fully wired into the React frontend and blended w
 
 ### IPC Flow
 ```
-frontend/src/main.js
-  └─ invoke("command_name", { args })  ──►  neurobridge.js  ──►  POST /api/{cmd}
-  └─ listen("event_name", handler)     ◄──  WebSocket  ◄──  WsBroadcaster.emit()
-                                                          (Rust sidecar localhost:9477)
+frontend/src/react/App.tsx
+  └─ bridgeAdapter.invoke("command_name", { args })  ──►  POST /api/{cmd}
+  └─ bridgeAdapter.listen("event_name", handler)     ◄──  WebSocket  ◄──  WsBroadcaster.emit()
+                                                                   (Rust sidecar localhost:9477)
 ```
 All streaming (LLM tokens, PTY output, agent steps, canvas exec output) goes through WebSocket events. All request/response goes through HTTP POST to the bridge server.
 
-Command responses now use a structured error shape `{ error: { code, message, command, request_id? } }` with stable codes (`invalid_json`, `rate_limited`, `command_not_found`, `command_timeout`, `command_error`). Non-streaming commands enforce a 30-second HTTP timeout (300 seconds for file transfers/support bundles; no timeout for streaming commands).
+The React UI talks to the bridge through `frontend/src/react/services/bridgeAdapter.ts`, not through Electron IPC. `bridgeAdapter` exposes typed `invoke<T>()` and `listen()` helpers, wraps errors in `BridgeError` with stable codes (`invalid_json`, `rate_limited`, `command_not_found`, `command_timeout`, `command_error`), and applies retry/backoff for safe read commands. Non-streaming commands enforce a 30-second HTTP timeout (300 seconds for file transfers/support bundles; no timeout for streaming commands).
+
+### Frontend Architecture
+The frontend is a **React 19 + TypeScript** Vite app (`frontend/src/main.tsx` → `frontend/src/react/App.tsx`). The legacy vanilla-JS `frontend/src/main.js` has been removed; the few remaining shared helpers live in `frontend/src/shared/`. Feature views are co-located under `frontend/src/react/features/` and lazy-loaded in `App.tsx` (only the workspace/chat view is eager). Global state is managed by `frontend/src/react/state/useNeuroDeckState.ts`.
 
 ### The One Big File Problem
 `lib.rs` owns `AppState`, the bridge server bootstrap, and module re-exports. The Tauri `run()` entry point and `generate_handler![]` have been removed. Command bodies, personas, themes, game detection, path utilities, and provider factories have been extracted to submodules. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
 
-`main.js` (~4300 lines) is similarly monolithic by design (no framework). Feature sections are delimited by `// ===` banner comments. New features go at the end of their section, not at the bottom of the file.
+`commands/mod.rs` remains the single bridge dispatch table (~5,400 lines). New commands are defined in a `src/` module and wired into the dispatch table; keep handlers short and delegate to module functions to avoid inflating the table further.
 
 ### Module Responsibilities
 | Module | What It Owns |
 |---|---|
 | `lib.rs` | `AppState`, bridge server bootstrap, module re-exports |
 | `models.rs` | `Theme`, `CustomPersona`, `PERSONAS`, `THEMES` |
+| `config.rs` | TOML config parsing/validation and runtime config structs |
 | `game.rs` | Game detection: `detect_game`, `steam_library_paths`, `game_exe_map`, `get_game_details` |
 | `paths.rs` | `get_config_path`, `user_config_dir`, `user_bin_dir`, `get_home_dir`, `load_env_file` |
 | `providers.rs` | `create_provider`, `provider_from_agent`, `default_agents` |
-| `llm.rs` | `GeminiProvider` (streaming SSE) and `OllamaProvider` (local); `generate_embedding()` for RAG |
+| `llm.rs` | `GeminiProvider`, `OllamaProvider`, HuggingFace, Kimi, OpenAI-compat providers; `generate_embedding()` for RAG |
 | `lua.rs` | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
-| `pty_manager.rs` | PTY sessions via `portable-pty`; `HashMap<String, PtySession>` keyed by session ID; supports multiple sessions |
+| `pty_manager.rs` / `terminal.rs` | PTY sessions via `portable-pty`; `terminal.rs` owns higher-level terminal command handlers and diagnostics |
 | `memory.rs` | Cosine-similarity vector DB; SQLite-backed with in-memory cache for fast search |
 | `projects.rs` | Project Knowledge Spaces CRUD; associates sessions and memory with projects |
 | `search.rs` | Universal Search engine using FTS5 `search_index` across messages, memory, and projects |
@@ -101,15 +105,41 @@ Command responses now use a structured error shape `{ error: { code, message, co
 | `privacy.rs` | Privacy levels (`Standard`/`Private`/`Sensitive`/`Sealed`), `UnlockState`, `PrivacyFilter` for RAG/search/export gating |
 | `dashboard.rs` | Workspace Intelligence Dashboard stats aggregation (sessions, messages, memory, privacy breakdown) |
 | `db/` | SQLite persistence layer: `DbPool`, migrations runner, schema definitions |
-| `ftp.rs` | FTP list/download/upload via `suppaftp`; all sync ops wrapped in `spawn_blocking` |
+| `ftp.rs` / `sftp.rs` | FTP/SFTP list/download/upload via `suppaftp`/`ssh2`; all sync ops wrapped in `spawn_blocking` |
 | `tunnel.rs` | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge |
 | `transfer.rs` | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery |
 | `canvas_collab.rs` | TCP live canvas collaboration — host binds a port, join connects to peer |
 | `deckcode/` | DeckCode input orchestration: schema parsing, raw input loop, bindings mapping, frontend IPC dispatch |
-| `commands/system.rs` | `generate_support_bundle` (redacted diagnostic archive), `get_system_health` (structured JSON health report), `redact_line` (heuristic secret scrubber) |
-| `workflow_engine.rs` | 9 node types, template substitution, `eval_condition` with `preprocess_expr()` pre-pass |
+| `mcp.rs` | Model Context Protocol server (HTTP/JSON-RPC 2.0) on `127.0.0.1:{port}` (default 13337); tool whitelist |
+| `orchestrator.rs` | Multi-agent pipeline/orchestrator: `Pipeline`, `AgentTask`, `OrchestratorPlan`, `execute_pipeline` |
+| `scheduler.rs` | Cron-based scheduled tasks via `tokio-cron-scheduler`; persists to `data/scheduler/tasks.json` |
+| `permissions.rs` | Capability/permission registry (`Capability`, permission profiles, agent→profile mapping) |
+| `security.rs` | Agent workspace sandboxing, permission checks, security reports |
+| `self_heal.rs` | Boot health recovery, automatic repair workflows |
+| `sync.rs` | Cross-device sync for memory/sessions via configurable API base URL |
+| `storage.rs` | Disk-backed key/value storage helpers |
+| `torrent.rs` | BitTorrent metadata/magnet handling |
+| `promptdrive.rs` | Prompt presets library CRUD |
+| `model_registry.rs` / `hf_model_mgr.rs` / `ollama_mgr.rs` | Model discovery, HuggingFace/Ollama model management |
+| `npm_packages.rs` | Frontend package manager integration for plugin/dependency installs |
+| `audio_recorder.rs` / `whisper.rs` | Voice STT capture and Whisper-based transcription |
+| `computer_use.rs` | Desktop automation: mouse, keyboard, screenshot, OCR |
+| `lsp.rs` | Language Server Protocol client integration |
+| `error.rs` / `bridge.rs` | Typed `BridgeError` and bridge server/telemetry |
+| `doc_indexer.rs` | Document indexing pipeline for RAG |
+| `workflow.rs` / `workflow_engine.rs` | 9 node types, template substitution, `eval_condition` with `preprocess_expr()` pre-pass |
 | `plugin_mgr.rs` | Plugin lifecycle: load, toggle, install from URL, hot-reload, QA gate; `audit_log_path()` is `pub` |
 | `remote_control.rs` | UDP remote control server — `start_remote_server_bridge()` / `stop_remote_server_bridge()` — ACTIVE in bridge |
+| `commands/system.rs` | `generate_support_bundle` (redacted diagnostic archive), `get_system_health`, `get_bridge_telemetry`, `redact_line` |
+| `commands/agent.rs` | Agent execution, streaming code execution (`exec_code_stream`) |
+| `commands/academy.rs` | Academy learning progress, portfolio, mentor queries |
+| `commands/api_lab.rs` | HTTP API client, collections, cURL import |
+| `commands/cli_maker.rs` | Custom CLI commands/hooks definitions |
+| `commands/git.rs` | Git repo discovery, status, commits, branches, diff |
+| `commands/browser.rs` | Headless browser automation, citations, sessions |
+| `commands/ide.rs` | IDE/workspace file operations |
+| `commands/session.rs` | Session save/fork/export/delete |
+| `commands/config.rs` | Runtime config get/set |
 
 ### Infrastructure Crate (`infrastructure/`)
 A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by the Rust sidecar (`src-tauri/`) as a path dependency.
@@ -136,16 +166,16 @@ Memory context injection is live in bridge `send_command` (`commands/mod.rs`): e
 
 ### Canvas Code Execution
 Canvas Python/Bash/JavaScript execution is **fully implemented** end-to-end:
-- Frontend: `canvas.js` `_cvRunStreamingExec()` calls `invoke("exec_code_stream", { code, lang })`
+- Frontend: `frontend/src/react/features/canvas/CanvasView.tsx` calls `bridgeAdapter.invoke("exec_code_stream", { code, lang })`
 - Supported languages: `python`, `bash`, `powershell`, `javascript`/`js` (passed to `exec_code_stream`)
-- Backend: `commands/mod.rs` line ~5101 dispatches to `commands/agent.rs` `exec_code_stream()`
+- Backend: `commands/mod.rs` dispatches to `commands/agent.rs` `exec_code_stream()`
 - Output streams via `canvas_exec_line` WebSocket events; completion via `canvas_exec_done`
 - 120-second timeout enforced server-side
 - Lua scripts go through `execute_lua` (separate path with `runLuaScript()` confirmation gate)
 - HTML/CSS/other langs render in the preview iframe (no exec path)
 
-### CSS Specificity Trap (was live bug)
-ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active` (specificity 20). **Never add `display: flex` or `display: block` to `#view-*` ID rules** — it will permanently override the `.view-content { display: none }` hide rule and break tab switching. Use `flex-direction`, `overflow`, `background` on ID rules only.
+### CSS Specificity Trap (legacy `app.css`)
+In the legacy CSS, ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active` (specificity 20). **Never add `display: flex` or `display: block` to `#view-*` ID rules** — it will permanently override the `.view-content { display: none }` hide rule and break any remaining static tab switching. The React app mounts views as components, so this trap mainly matters for the residual `app.css` chrome and any embedded HTML previews.
 
 ### Electron Security Model
 `electron/main.js` implements a hardened security posture:
@@ -172,9 +202,18 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 - **New Dashboard command**: `get_dashboard_stats`.
 - **Permission commands**: `list_permission_profiles` (returns `profiles`, `default_profile_id`, `agent_profile_map`), `get_agent_permission_profile`, `set_agent_permission_profile`. The registry supports an `agent_profile_map` so individual agents can be assigned to specific profiles; it falls back to `default_profile_id` only when no mapping exists.
 - **Observability commands**: `generate_support_bundle` (redacted archive), `get_system_health` (structured JSON with status/provider/model/memory_doc_count/plugin_count/kfms_version/issues and telemetry summary), `get_bridge_telemetry` (per-command counters + latency percentiles + summary), `reset_bridge_telemetry`.
+- **Academy commands**: `academy_get_progress`, `academy_save_progress`, `academy_list_portfolio`, `academy_save_portfolio_entry`, `academy_complete_lab`, `academy_mentor_query`.
+- **API Lab commands**: `api_request`, `api_save_collection`, `api_load_collection`, `api_delete_collection`, `api_list_collections`, `api_generate_request`, `api_curl_import`.
+- **CLI Maker commands**: `cli_list_commands`, `cli_create_command`, `cli_update_command`, `cli_delete_command`, `cli_run_command`, `cli_list_hooks`, `cli_toggle_hook`, `cli_export_lua`, `cli_import_lua`, `cli_maker_save_plugin`, `cli_maker_export`.
+- **Git commands**: `git_list_repos`, `git_add_repo`, `git_remove_repo`, `git_init`, `git_open_repo`, `git_clone`, `git_status`, `git_stage`, `git_unstage`, `git_discard`, `git_commit`, `git_log`, `git_branch_list`, `git_branch_create`, `git_branch_checkout`, `git_branch_delete`, `git_diff`, `git_pull`, `git_push`, `git_fetch`, `git_remote_list`, `git_remote_add`, `git_remote_remove`, `git_generate_commit_message`, `git_generate_ssh_key`, `git_ssh_public_keys`, `git_credential_get/store/delete`.
+- **IDE / Workspace commands**: `list_workspace_files`, `read_workspace_file`, `write_workspace_file`, `create_workspace_file`, `delete_workspace_file`, `rename_workspace_file`.
+- **Session commands**: `list_sessions`, `get_session`, `delete_session`, `fork_session`, `export_session_markdown`, `export_session_content`.
+- **Orchestrator commands**: `start_orchestrated_task`, `get_orchestration_status`, `stop_orchestration`.
+- **Scheduler commands**: `list_scheduled_tasks`, `add_scheduled_task`, `delete_scheduled_task`, `toggle_scheduled_task`, `run_task_now`.
+- **MCP commands**: `get_mcp_status`, `get_mcp_tool_whitelist`, `set_mcp_tool_whitelist`, `start_mcp_server`, `stop_mcp_server`.
 - **Do not use `std::sync::Mutex` across `.await` points** in bridge command handlers — `MutexGuard` is not `Send` and will break axum's `Handler` trait. Use `tokio::sync::Mutex` or rely on `SqlitePool`'s internal thread-safety.
-- **CSS changes**: run `npm run --prefix frontend build` after edits to `app.css` — the Vite dev server hot-reloads CSS but Electron's WebView doesn't always pick up the change without a rebuild.
-- **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `models.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format to match what the settings modal JS expects.
+- **CSS changes**: the React build imports `frontend/src/react/index.css`, which loads the DS tokens. For legacy `app.css` edits, run `npm run --prefix frontend build` — the Vite dev server hot-reloads CSS but Electron's WebView doesn't always pick up the change without a rebuild. For Tailwind class changes, just rebuild.
+- **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `models.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format and the React settings UI (`frontend/src/react/features/settings/`) to match.
 - **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. Double-spawning the same ID creates a resource leak (the old reader thread keeps running).
 - **FTP/SSH backend**: use `tokio::task::spawn_blocking` for all `suppaftp` and `std::net::TcpStream` calls — they are synchronous and will block the async executor if called directly.
 - **Window size**: all new views must fit within 1280×800. The flex column layout in `.view-container` is `position: absolute; top: 0; left: 0; width: 100%; height: 100%`. Use `overflow: hidden` on view roots and scroll internally.
@@ -183,20 +222,20 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 
 ## Hard Constraints / Anti-Patterns
 
-- **Do not add `display: flex` to `#view-*` ID rules in app.css** — kills tab switching (see CSS Specificity Trap above).
+- **Do not add `display: flex` to `#view-*` ID rules in app.css** — kills legacy tab switching (see CSS Specificity Trap above). The React app handles view visibility via component mounting, but the legacy `app.css` rules still apply to any remaining static chrome.
 - **Do not call `pty_spawn` without a preceding `pty_kill`** for the same session ID.
 - **Do not load the full FTP file into a `Vec<u8>` for files that could be large** — `retr_as_buffer` is for small files only. Stream to disk for anything user-selectable.
 - **Do not use `unwrap()` in command handlers** — panics crash the backend process and the frontend gets a blank error. Use `map_err(|e| e.to_string())?`.
-- **Do not modify `main.js` HTML template strings by searching for partial strings** — the template is one massive string literal. Always match a full containing element to avoid ambiguous edits.
-- **Do not add npm packages** — the frontend is intentionally zero-dependency except for `xterm.js`, `marked.js`, and `qrcode` (all npm ESM imports). Adding a bundled npm package will bloat the Electron renderer bundle.
+- **Do not modify React component JSX by searching for partial strings** — use AST-aware replacements or full component rewrites. For generated HTML inside legacy helpers, match a full containing element to avoid ambiguous edits.
+- **Adding npm packages is allowed but gated** — the frontend is now a standard React + Tailwind + Vite app with `package.json` dependencies. New runtime dependencies must be justified, kept small, and added to the workspace root (`npm -w frontend install <pkg>`). Do not add heavy bundled libraries for trivial UI tasks.
 - **Never hardcode the config file path** as just `"llm-term.toml"` — always use the path-resolution logic in `paths.rs`/`lib.rs` that checks env var and OS config dir first.
 - **Never expose secrets through the bridge** — `generate_support_bundle` uses `redact_line()` to scrub API keys, Bearer tokens, and password lines. Any new diagnostic command must follow the same pattern.
 - **Do not add `display: none` inside Electron `webRequest.onHeadersReceived`** — it runs on every response including the bridge's HTTP/WS traffic. Only inject `Content-Security-Policy`; do not modify response bodies.
 - **Do not call `Notification.permission` in the Electron main process** — that is a Web API. Use `Notification.isSupported()` instead (Electron's class).
-- **Do not use inline `style="..."` attributes for static styling** — all visual styles must use CSS classes from `app.css` so they participate in the design-token system. Inline styles are reserved for dynamic values controlled by JavaScript (e.g., `display:none` toggles, `width:0%` progress bars).
-- **Do not use magic `z-index` values in CSS** — always use the `--z-*` token scale defined in `:root`. The scale ranges from `--z-behind` (-1) through `--z-toast-peak` (30000) and is documented in `app.css`.
-- **Do not set `will-change` statically in CSS** — it must be added dynamically via JavaScript before animations and removed after to avoid GPU memory waste. See `_navAnimateTransition()` in `main.js` for the pattern.
-- **All new modals/overlays must use `FocusTrap`** — import from `focus-trap.js` and call `.activate()` on open, `.deactivate()` on close. This ensures keyboard and gamepad navigation stays trapped.
+- **Do not use inline `style="..."` attributes for static styling** — all visual styles must use Tailwind classes or CSS classes from the design-token system. Inline styles are reserved for dynamic values controlled by JavaScript (e.g., `display:none` toggles, `width:0%` progress bars).
+- **Do not use magic `z-index` values in CSS** — always use the `--z-*` token scale defined in `:root`. The scale ranges from `--z-behind` (-1) through `--z-toast-peak` (30000) and is documented in `app.css` / `tokens.css`.
+- **Do not set `will-change` statically in CSS** — it must be added dynamically via JavaScript before animations and removed after to avoid GPU memory waste. Use React refs or the `useWillChange` hook pattern for animations.
+- **All new modals/overlays must trap focus** — use `frontend/src/react/components/primitives/FocusTrapContainer.tsx` (which wraps `focus-trap.js`) or an equivalent accessible focus-management pattern. This ensures keyboard and gamepad navigation stays trapped.
 - **All interactive controls must have a minimum 40×40px hit target** on primary UI chrome (tabs, sidebar toggles, top-nav buttons). Use `min-width` / `min-height` so layout is not disrupted.
 
 ---
@@ -263,12 +302,19 @@ The project follows the structure documented in `neurodeck-production-package/do
 
 | Directory | What Lives Here |
 |---|---|
+| `src/` | Shared TypeScript contracts, schemas, registries, and types used by frontend and backend |
+| `src/shared/contracts/` | IPC/bridge contracts (agent, chat, errors, providers, sessions, backend health) |
+| `src/shared/terminal/` | Terminal contracts, profiles, safety types, controller map |
+| `src/shared/theme/` | Theme registry, design tokens, motion/accessibility profiles |
 | `src-tauri/src/` | Rust backend — ~5,400-line dispatch table in `commands/mod.rs`, all modules |
 | `src-tauri/src/commands/` | Bridge command implementations (agent, browser, git, system, session...) |
 | `src-tauri/src/db/migrations/` | SQLite schema evolution (001, 002, 003...) |
 | `src-tauri/tests/` | Rust integration tests |
-| `frontend/src/` | Vanilla JS frontend — `main.js` (~8K lines), `app.css` (~9K lines) |
-| `frontend/src/main.js` | App bootstrap, view switching, all UI logic (monolithic by design) |
+| `frontend/src/` | React 19 + TypeScript frontend — `main.tsx`, `react/App.tsx`, `react/features/`, `design-system/` |
+| `frontend/src/react/` | React app root, feature views, components, state, services, hooks, theme |
+| `frontend/src/react/services/bridgeAdapter.ts` | Typed bridge client: `invoke<T>()`, `listen()`, `BridgeError`, retry/backoff |
+| `frontend/src/design-system/` | Canonical design tokens, themes, and components |
+| `frontend/src/shared/` | Shared TypeScript types and contracts used by both frontend and backend |
 | `electron/` | Electron main process + preload script |
 | `infrastructure/` | Rust workspace crate — secrets, OAuth, Warpinator |
 | `plugins/` | Lua plugins auto-loaded at startup |
@@ -276,10 +322,12 @@ The project follows the structure documented in `neurodeck-production-package/do
 | `docs/` | All documentation — epics, roadmaps, architecture, user guide |
 | `neurodeck-production-package/` | **North star** — PRD, SDS, release gates, backlog, CI templates |
 | `production_code_prompt_system/` | PromptFlow CLI + 15 production prompts |
-| `scripts/` | Build & utility scripts — `dev/`, `shell/`, `powershell/`, `kfms/`, `git-hooks/` |
+| `scripts/` | Build & utility scripts — `brand/`, `dev/`, `git/`, `git-hooks/`, `kfms/`, `perf/`, `powershell/`, `release/`, `report/`, `shell/`, `steamdeck/`, `ui/`, `verify/` |
 | `scripts/dev/` | Development utilities (CSS, JS, JSON, Lua, Python helpers) |
+| `scripts/verify/` | TypeScript verification scripts for architecture, security, IPC, wiring, real-data |
+| `scripts/ui/` | UI checkpoint/rollback scripts |
 | `e2e/` | Playwright E2E tests (~390 tests) |
-| `tests/` | Shared test fixtures (config, memory, plugins) |
+| `tests/` | Shared test fixtures (config, memory, plugins) + Vitest contract/integration/unit tests |
 | `infra/` | KFMS metadata and telemetry |
 | `aur/` | Arch Linux PKGBUILD |
 | `flatpak/` | Flatpak manifest & build scripts |
@@ -308,6 +356,12 @@ The project follows the structure documented in `neurodeck-production-package/do
 | Final Release Checklist | `neurodeck-production-package/checklists/FINAL_1_0_RELEASE_CHECKLIST.md` |
 | Production Backlog | `neurodeck-production-package/checklists/PRODUCTION_BACKLOG.md` |
 | Full feature backlog + priority matrix | `docs/ANTIGRAVITY_HANDOFF.md` |
+| Architecture overview | `docs/ARCHITECTURE.md` |
+| Bridge server protocol & telemetry | `docs/BRIDGE_SERVER.md` |
+| Electron/React migration handoff | `docs/ELECTRON_MIGRATION_HANDOFF.md` |
+| Developer handoff guide | `docs/DEVELOPER_HANDOFF.md` |
+| Plugin development guide | `docs/PLUGIN_DEV_GUIDE.md` |
+| Fallow quality gates | `docs/FALLOW_GATES.md` |
 | Project identity, sprint history, command registry | `docs/project-context.md` |
 | Steam Deck Game Mode integration | `docs/gamescope_guide.md` |
 | Steam Input controller mapping | `docs/steam_input_guide.md` |
@@ -323,33 +377,33 @@ The project follows the structure documented in `neurodeck-production-package/do
 
 - **`google_client_id` must be set in `llm-term.toml`** under `[llm]` for the OAuth Gemini sign-in flow to work. `start_oauth_flow` reads it from `AppState.config.llm.google_client_id` and returns an error if empty. Register a client at console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client IDs (TV/Device type).
 
-- **Canvas Python/Bash/JS run IS fully implemented** — `exec_code_stream` dispatches via `commands/agent.rs`, streams stdout via `canvas_exec_line` WebSocket events, and enforces a 120s timeout. The Run button in `canvas.js` calls `_cvRunStreamingExec()` for Python, Bash, PowerShell, and JavaScript. HTML/CSS render in the preview iframe (no exec). Lua uses the separate `execute_lua` path.
+- **Canvas Python/Bash/JS run IS fully implemented** — `exec_code_stream` dispatches via `commands/agent.rs`, streams stdout via `canvas_exec_line` WebSocket events, and enforces a 120s timeout. The React Canvas view calls `bridgeAdapter.invoke("exec_code_stream", { code, lang })` via `frontend/src/react/features/canvas/CanvasView.tsx`. HTML/CSS render in the preview iframe (no exec). Lua uses the separate `execute_lua` path.
 
 - **`send_command` vs `execute_command_stream`** — there are two different LLM invocation paths. `execute_command_stream` is the older streaming path. `send_command` is the newer, fuller path with RAG injection, game context, persona, and memory storage. Always use `send_command` for new features.
 
 - **Voice STT uses cpal on Windows/macOS**: `audio_recorder.rs` captures 16kHz mono WAV via `cpal` + `hound`, then feeds it to `whisper.cpp` CLI. Linux still prefers `arecord` but falls back to `cpal` if unavailable. The Whisper model path is configurable in `llm-term.toml` `[stt]` section.
 
-- **The 📊 context drawer** is wired and populated via `get_context_stats` — shows provider, model, RAM, memory record count, and session info. The toggle button slides the drawer open from the right side of the chat input bar.
+- **The 📊 context drawer / TelemetryWidget** is wired and populated via `get_context_stats` — shows provider, model, RAM, memory record count, and session info. The toggle button slides the drawer open from the right side of the chat input bar in `frontend/src/react/components/workspace/TelemetryWidget.tsx`.
 
 - **BMAD personas are Lua-registered, not hardcoded** — `/john`, `/sally`, etc. call `setPersona()` via `plugins/bmad.lua`. If the Lua plugin fails to load, those commands silently disappear. The 9 built-in personas (including the BMAD ones) are hardcoded in `models.rs`'s `PERSONAS` lazy_static as a fallback.
 
-- **Radial menu uses backtick for keyboard, L2 for gamepad** — but L2 only works if the Steam Input `.vdf` profile is active. In desktop mode without Steam running, only the backtick shortcut works. The `RADIAL_SEGMENTS` array in `main.js` has **12 entries** covering all tabs — Chat, Canvas, Terminal, SSH, Tunnel, Browser, Agent, Memory, Share, Remote, PromptLab, Docs.
+- **Radial menu uses backtick for keyboard, L2 for gamepad** — but L2 only works if the Steam Input `.vdf` profile is active. In desktop mode without Steam running, only the backtick shortcut works. The React `ControllerHintBar` (`frontend/src/react/components/layout/ControllerHintBar.tsx`) renders the current radial segments; the legacy `RADIAL_SEGMENTS` array is gone.
 
 - **`pty_spawn` now accepts an `args: Option<Vec<String>>` parameter** — this was added to support SSH sessions. All existing callers pass `args: null` or omit the field.
 
-- **Prompt Lab tab** (`#view-prompt-lab`) exposes AIDA/SCQA/PASTOR/CoT/ToT/PAS/Role+Constraints formulas, a template gallery, and a JPE explanation pane backed by `generate_jpe_explanation` (calls the active LLM). The Lua plugin `plugins/promptgen.lua` registers `/promptlab`, `/promptgen <task>`, and `/formula <name> <task>` shell commands.
+- **Prompt Lab view** (`frontend/src/react/features/prompt-lab/PromptLabView.tsx`) exposes AIDA/SCQA/PASTOR/CoT/ToT/PAS/Role+Constraints formulas, a template gallery, and a JPE explanation pane backed by `generate_jpe_explanation` (calls the active LLM). The Lua plugin `plugins/promptgen.lua` registers `/promptlab`, `/promptgen <task>`, and `/formula <name> <task>` shell commands.
 
-- **Cinematic boot screen** (`#boot-overlay`) runs as an IIFE at the bottom of `main.js`. It calls `list_plugins`, `get_config`, `get_personas`, `get_themes`, `get_doc_count`, and `get_context_stats` during startup to show real system state. It fades out and is removed from the DOM after completion — it does NOT block app initialization.
+- **Cinematic boot screen** is now a React component rendered by `App.tsx` during initial data loading. It calls `list_plugins`, `get_config`, `get_personas`, `get_themes`, `get_doc_count`, and `get_context_stats` during startup to show real system state. It fades out and is removed from the DOM after completion — it does NOT block app initialization.
 
-- **Onboarding wizard** (`#onboarding-modal`) shown to first-time users; calls `run_onboarding_diagnostics` to check PTY/network/keychain health. Dismissed state is persisted in `localStorage("neurodeck_onboarding_complete")`.
+- **Onboarding wizard** is a React modal (`frontend/src/react/components/onboarding/OnboardingModal.tsx`) shown to first-time users; calls `run_onboarding_diagnostics` to check PTY/network/keychain health. Dismissed state is persisted in `localStorage("neurodeck_onboarding_complete")`.
 
 - **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
 
 - **`EventEmitter` trait**: `bridge.rs` defines an `EventEmitter` trait implemented by `WsBroadcaster`. All emit-only modules (`canvas_collab.rs`, `transfer.rs`, `lsp.rs`) are generic over `E: EventEmitter`, enabling the bridge server to emit events via WebSocket.
 
-- **Disk persistence migration**: SSH/FTP/SFTP profiles and custom themes are persisted to `data/profiles/` and `data/themes/` under the OS config directory. On first boot, a frontend migration IIFE moves any legacy `localStorage` data to disk and deletes the old keys.
+- **Disk persistence migration**: SSH/FTP/SFTP profiles and custom themes are persisted to `data/profiles/` and `data/themes/` under the OS config directory. On first boot, the React frontend migration effect moves any legacy `localStorage` data to disk and deletes the old keys.
 
-- **DeckCode multi-language code snippets** — `deckcode-action` events received on the frontend with the `insert_snippet:` prefix are dynamically injected into the active `textarea` (IDE or Canvas editor), automatically parsing `${cursor}` placeholders to adjust the cursor selection.
+- **DeckCode multi-language code snippets** — `deckcode-action` events received on the frontend with the `insert_snippet:` prefix are dynamically injected into the active textarea or Monaco editor, automatically parsing `${cursor}` placeholders to adjust the cursor selection.
 
 - **`workflow_engine.rs` condition evaluator** — `eval_condition` runs a `preprocess_expr()` pre-pass before scanning for operators. This pre-pass resolves `input.len()`, `input.contains("x")`, and bare `input` tokens to their actual values so that comparisons like `input.len() > 10` work numerically rather than lexicographically. Without the pre-pass, `"input.len()"` as a string is lexicographically greater than `"10"` (`'i' > '1'`), causing false positives.
 
@@ -358,6 +412,14 @@ The project follows the structure documented in `neurodeck-production-package/do
 - **Plugin QA gate** (`.github/workflows/plugin-qa.yml`): runs on `plugins/**` changes. A Python static analysis script checks: `@name`, `@version`, `@author` annotations present; file size ≤ 512 KB; 8 blocked Lua API patterns absent (`os.execute`, `io.popen`, `dofile`, `loadfile`, `loadstring`, `package.loadlib`, `require("ffi")`, `debug.*`). CI fails if any plugin fails QA.
 
 - **PTY restart delay** — `restartTerminalSession` includes a 150ms delay between `pty_kill` and `pty_spawn`. The old reader thread needs time to exit after its master fd closes; without the delay both threads briefly co-exist and emit duplicate `pty_output` events on the same session ID.
+
+- **MCP server** (`mcp.rs`) implements Model Context Protocol 2024-11 over HTTP/JSON-RPC 2.0 on `127.0.0.1:{port}` (default `13337`). Tools are whitelisted; defaults are `neurodeck_chat`, `get_status`, `memory_add_fact`, `memory_list_all`, `memory_search`. Exposing `read_file`, `write_file`, `run_shell`, `run_code`, or `run_lua` requires explicit user opt-in via Settings.
+
+- **Orchestrator** (`orchestrator.rs`) runs multi-agent pipelines (`Pipeline` of `PipelineNode`s) and hierarchical plans (`OrchestratorPlan` of `AgentTask`s). Pipelines are saved to disk; execution respects the active agent and `inputs` edges for context flow.
+
+- **Scheduler** (`scheduler.rs`) uses `tokio-cron-scheduler` to run `ScheduledTask` entries. Tasks are persisted to `data/scheduler/tasks.json` under the OS config dir. Each task has a cron expression, goal, and enabled flag; missed runs fire on startup.
+
+- **Bridge telemetry** is live: every bridge command is timed and counted. `get_bridge_telemetry` returns per-command counters, latency percentiles, and a summary; `reset_bridge_telemetry` clears counters. Telemetry is in-memory only (resets on sidecar restart).
 
 ---
 
@@ -409,7 +471,7 @@ The post-commit hook in `.git/hooks/post-commit` runs `stamp` + `validate` + ame
 
 ### CI Workflows (`.github/workflows/`)
 
-All 12 active workflows:
+All active workflows:
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
@@ -425,6 +487,15 @@ All 12 active workflows:
 | `validate-meta-schema.yml` | `infra/meta/**` change | `meta.json` JSON Schema validation via `ajv-cli` |
 | `verify-telemetry.yml` | `infra/meta/**` change | `health.json` integrity, 5-check truth, version/codename drift |
 | `security.yml` | push master | `cargo-audit`, `cargo-deny`, `npm-audit`, CodeQL SAST, secret scanning |
+| `branch-policy.yml` | PR / push | Enforces branch naming and direct-push protection |
+| `accessibility.yml` | PR + push master | axe-core accessibility checks |
+| `visual-regression.yml` | PR + push master | Playwright visual regression (informational) |
+| `ui-checkpoint-gate.yml` | PR | Validates UI checkpoint metadata and rollback integrity |
+| `emergency-rollback.yml` | workflow_dispatch | Publishes a rollback release for a broken tag |
+| `release-manifest.yml` | release | Generates and attaches release manifest artifacts |
+| `model-support-report.yml` | workflow_dispatch | Probes provider/model compatibility matrix |
+| `chromatic.yml` | push master | Chromatic visual review / Storybook |
+| `nightly.yml` | schedule | Nightly build + long-running tests |
 
 ### Rules When Bumping Versions
 - **PATCH bump** (1.8.x): run `./scripts/kfms/khaotic-init.sh stamp` — codename and `meta.json` governance fields stay the same.
@@ -506,7 +577,7 @@ production_code_prompt_system/promptflow_runs/
 npm run dev                           # Hot-reload (Vite + Electron + Rust sidecar)
 npm run build                         # Production build (Electron + sidecar)
 
-npm run --prefix frontend dev         # Frontend only (CSS/HTML — invoke() calls fail without sidecar)
+npm run --prefix frontend dev         # Frontend only (React/CSS — bridgeAdapter.invoke() calls fail without sidecar)
 npm run --prefix frontend build       # Vite build only
 
 cd src-tauri && cargo check           # Fast type-check
@@ -527,6 +598,19 @@ npm run frontend:test                 # Runs `cd frontend && node ../node_module
 ./scripts/kfms/khaotic-init.sh stamp     # Re-stamp build block after changes
 ./scripts/kfms/khaotic-init.sh status    # Print release score and gate summary
 ./scripts/kfms/khaotic-init.sh sweep     # Move loose root files to .loose/inbox/
+
+# Verification gates (TypeScript)
+npm run verify:wiring                 # IPC wiring sanity check
+npm run verify:ipc                    # IPC channel contracts
+npm run verify:all                    # no-mocks + security + real-data + contracts
+npm run production:cleanup-gate       # no-tauri / no-dead-code / no-prod-mocks / replacements / boundaries
+npm run production:chat-gate          # AI chat real-data gate
+npm run production:ide-gate           # IDE real-data gate
+
+# Storybook / Design System
+npm run storybook                     # Storybook dev server on :6006
+npm run build-storybook               # Static Storybook build
+npm run chromatic                     # Chromatic visual review
 
 ./install.sh                          # SteamOS deploy → ~/Applications/neurodeck/
 ./launch_gamescope.sh                 # Run in gamescope 1280×800 (Steam Deck Game Mode)

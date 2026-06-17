@@ -2,7 +2,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 const FRONTEND_SRC = path.join(ROOT, 'frontend', 'src');
 
 console.log('\n=== verify-architecture-boundaries ===\n');
@@ -12,7 +12,7 @@ if (!fs.existsSync(FRONTEND_SRC)) {
   process.exit(1);
 }
 
-const SKIP_DIRS = new Set(['node_modules', 'dist', '.git']);
+const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.fallow', '.serena', '.ruff_cache', '.playwright-mcp', '.tmp']);
 const SKIP_EXTS = new Set(['.json', '.png', '.ico', '.svg', '.woff2', '.ttf', '.md']);
 
 function walk(dir: string, results: string[] = []): string[] {

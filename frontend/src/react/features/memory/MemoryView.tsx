@@ -18,6 +18,7 @@ import {
 import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { IconButton } from "../../components/primitives/IconButton";
 import { Panel } from "../../components/primitives/Panel";
 import { TextInput } from "../../components/primitives/TextInput";
@@ -63,6 +64,7 @@ export function MemoryView({
   const [semanticMode, setSemanticMode] = useState(false);
   const [restoreConfirmName, setRestoreConfirmName] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<{ message: string; retry?: () => void } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showToast = useCallback((text: string, ok = true) => {
@@ -88,6 +90,7 @@ export function MemoryView({
       setSemanticResults(null);
       return;
     }
+    setLoadError(null);
     setBusy("semantic");
     try {
       const res = await neurodeckApi.memory.searchSemantic(q, 10, 0.5);
@@ -105,7 +108,7 @@ export function MemoryView({
       setSemanticMode(true);
       showToast(`${res.method === "mmr" ? "MMR" : "Keyword"} search — ${items.length} results`);
     } catch (e) {
-      showToast(`Semantic search failed: ${e}`, false);
+      setLoadError({ message: `Semantic search failed: ${e}`, retry: handleSemanticSearch });
     } finally {
       setBusy(null);
     }
@@ -195,17 +198,18 @@ export function MemoryView({
       setRestoreConfirmName(null);
       return;
     }
+    setLoadError(null);
     setBusy("list");
     try {
       const res = await neurodeckApi.memory.listBackups();
       setBackups(res.backups);
       setShowBackups(true);
     } catch (e) {
-      showToast(`Could not list backups: ${e}`, false);
+      setLoadError({ message: `Could not list backups: ${e}`, retry: handleToggleBackups });
     } finally {
       setBusy(null);
     }
-  }, [showBackups, showToast]);
+  }, [showBackups]);
 
   // ── Restore ─────────────────────────────────────────────────────────────────
   const handleConfirmRestore = useCallback(
@@ -249,6 +253,7 @@ export function MemoryView({
           disabled={busy !== null}
           aria-label="Export all memories to file"
           loading={busy === "export"}
+          className="min-h-touch"
           onClick={() => void handleExport()}
         >
           Export
@@ -261,6 +266,7 @@ export function MemoryView({
           disabled={busy !== null}
           aria-label="Import memories from file"
           loading={busy === "import"}
+          className="min-h-touch"
           onClick={() => fileInputRef.current?.click()}
         >
           Import
@@ -284,6 +290,7 @@ export function MemoryView({
           disabled={busy !== null}
           aria-label="Create a local backup snapshot"
           loading={busy === "backup"}
+          className="min-h-touch"
           onClick={() => void handleBackup()}
         >
           Backup
@@ -297,6 +304,7 @@ export function MemoryView({
           aria-expanded={showBackups}
           aria-label="View and restore backups"
           loading={busy === "list"}
+          className="min-h-touch"
           onClick={() => void handleToggleBackups()}
         >
           Backups
@@ -312,6 +320,7 @@ export function MemoryView({
             semanticMode ? "Exit semantic search mode" : "Run MMR semantic search on current query"
           }
           loading={busy === "semantic"}
+          className="min-h-touch"
           onClick={() => {
             if (semanticMode) {
               setSemanticMode(false);
@@ -332,6 +341,17 @@ export function MemoryView({
           </span>
         )}
       </div>
+
+      {loadError && (
+        <div className="px-4 pt-2">
+          <ErrorState
+            title="Load failed"
+            message={loadError.message}
+            onRetry={loadError.retry}
+            onClose={() => setLoadError(null)}
+          />
+        </div>
+      )}
 
       {/* Backup restore panel */}
       {showBackups && (
@@ -369,6 +389,7 @@ export function MemoryView({
                           size="sm"
                           variant="primary"
                           disabled={busy === "restore"}
+                          className="min-h-touch"
                           onClick={() => void handleConfirmRestore(b.name)}
                         >
                           Confirm
@@ -389,6 +410,7 @@ export function MemoryView({
                         icon={RotateCcw}
                         disabled={busy === "restore"}
                         aria-label={`Restore backup ${b.name}`}
+                        className="min-h-touch"
                         onClick={() => setRestoreConfirmName(b.name)}
                       >
                         Restore
@@ -420,7 +442,7 @@ export function MemoryView({
               placeholder="Type a new fact to persist..."
             />
           </div>
-          <Button type="submit" id="memory-fact-save-btn">
+          <Button type="submit" id="memory-fact-save-btn" className="min-h-touch">
             Add Fact
           </Button>
         </form>
@@ -556,7 +578,7 @@ export function MemoryView({
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-nd-text-muted">{memory.body}</p>
                 {memory.sourceFile && (
-                  <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-nd-border-subtle/50 bg-nd-surface-base/40 px-2 py-1">
+                  <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-nd-border-subtle/50 bg-nd-surface/40 px-2 py-1">
                     <FileText
                       className="h-3 w-3 shrink-0 text-nd-text-muted/60"
                       aria-hidden="true"

@@ -54,7 +54,8 @@ export function AcademyView() {
     try {
       const data = await neurodeckApi.academy.getProgress();
       setProgress(data as LearnerProgress);
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load academy progress.");
       try {
         const raw = localStorage.getItem(PROGRESS_LS_KEY);
         setProgress(raw ? (JSON.parse(raw) as LearnerProgress) : defaultProgress());
@@ -74,7 +75,8 @@ export function AcademyView() {
     setProgress(next);
     try {
       await neurodeckApi.academy.saveProgress(next as AcademyLearnerProgress);
-    } catch {
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save academy progress.");
       localStorage.setItem(PROGRESS_LS_KEY, JSON.stringify(next));
     }
   }, []);
@@ -110,7 +112,11 @@ export function AcademyView() {
   if (error)
     return (
       <div className="flex h-full items-center justify-center">
-        <ErrorState message={error} onRetry={loadProgress} />
+        <ErrorState
+          message={error}
+          onRetry={loadProgress}
+          onClose={() => setError(null)}
+        />
       </div>
     );
 
@@ -164,7 +170,7 @@ export function AcademyView() {
         id={`academy-panel-${activeTab}`}
         role="tabpanel"
         aria-labelledby={`academy-tab-${activeTab}`}
-        className={`flex-1 ${isFullBleedTab ? "overflow-hidden" : "overflow-y-auto p-4"}`}
+        className={`flex-1 ${isFullBleedTab ? "overflow-hidden" : "overflow-y-auto p-4 pb-6"}`}
         tabIndex={0}
       >
         {activeTab === "home" && (

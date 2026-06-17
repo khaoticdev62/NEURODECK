@@ -11,6 +11,7 @@ import {
   Star,
   Terminal,
 } from "lucide-react";
+import { EmptyState } from "../../components/primitives/EmptyState";
 import { BrowserVpnPanel } from "../browser-vpn/BrowserVpnPanel";
 import { Button } from "../../components/primitives/Button";
 import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
@@ -20,7 +21,7 @@ import { BrowserTabStrip } from "./components/BrowserTabStrip";
 import { DiagnosticsPanel } from "./components/DiagnosticsPanel";
 import { DownloadsPanel } from "./components/DownloadsPanel";
 import { FindBar } from "./components/FindBar";
-import { GamepadHintsFooter } from "./components/GamepadHintsFooter";
+
 import { GlobalToolbar } from "./components/GlobalToolbar";
 import { NavigationToolbar } from "./components/NavigationToolbar";
 import { NoticeToast } from "./components/NoticeToast";
@@ -142,7 +143,7 @@ export function BrowserView() {
           onGoForward={goForward}
           onRefresh={refresh}
           onStop={stop}
-          onHome={() => navigate("https://example.com")}
+          onHome={() => navigate("about:blank")}
         />
         <AddressBar
           urlInput={urlInput}
@@ -291,7 +292,7 @@ export function BrowserView() {
         <FocusTrapContainer
           active={showVpnPanel}
           onEscape={() => setShowVpnPanel(false)}
-          className="absolute inset-0 z-[var(--z-modal)] flex items-start justify-end bg-nd-bg/60 p-4 backdrop-blur-sm"
+          className="absolute inset-0 z-modal flex items-start justify-end bg-nd-bg/60 p-4 backdrop-blur-sm"
           role="dialog"
           aria-label="Browser VPN"
         >
@@ -304,6 +305,7 @@ export function BrowserView() {
         {/* Viewport Overlay */}
         <div
           ref={viewportRef}
+          aria-label="Browser viewport"
           className={`flex-1 overflow-hidden relative ${
             visible &&
             activeTab &&
@@ -317,27 +319,26 @@ export function BrowserView() {
           style={{ background: "transparent" }}
         />
         {!visible && (
-          <div className="flex flex-1 items-center justify-center rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/20 m-4">
-            <div className="text-center p-6 flex flex-col items-center gap-3">
-              <Globe className="h-10 w-10 text-nd-text-muted animate-pulse" aria-hidden="true" />
-              <p className="text-sm font-semibold text-nd-text-primary">Viewport Suspended</p>
-              <p className="text-xs text-nd-text-muted max-w-xs leading-relaxed">
-                Guest frame process detached to save Steam Deck CPU / GPU / Battery resource. Tap
-                the eye icon in toolbar to resume.
-              </p>
-              <Button variant="primary" size="sm" onClick={toggleVisibility} className="mt-2">
-                Resume Session View
-              </Button>
-            </div>
+          <div className="flex flex-1 items-center justify-center p-4">
+            <EmptyState
+              icon={Globe}
+              title="Viewport Suspended"
+              description="Guest frame process detached to save Steam Deck CPU / GPU / Battery resource. Tap the eye icon in toolbar to resume."
+              action={
+                <Button variant="primary" size="sm" onClick={toggleVisibility}>
+                  Resume Session View
+                </Button>
+              }
+            />
           </div>
         )}
 
-        {visible && activeTab && (
+        {visible && (
           <>
-            {activeTab.state === "new" && (
+            {(!activeTab || activeTab.state === "new") && (
               <NewTabScreen onNavigate={navigate} onClearData={handleClearData} />
             )}
-            {activeTab.state === "error" && (
+            {activeTab?.state === "error" && (
               <ErrorScreen
                 activeTab={activeTab}
                 onGoBack={goBack}
@@ -346,14 +347,14 @@ export function BrowserView() {
                 onToggleErrorDetails={() => setErrorDetailsOpen((v) => !v)}
               />
             )}
-            {activeTab.state === "crashed" && (
+            {activeTab?.state === "crashed" && (
               <CrashedScreen
                 activeTab={activeTab}
                 onCloseTab={closeTab}
                 onRefresh={refresh}
               />
             )}
-            {activeTab.state === "blocked" && (
+            {activeTab?.state === "blocked" && (
               <BlockedScreen activeTab={activeTab} onGoBack={goBack} />
             )}
           </>
@@ -371,7 +372,6 @@ export function BrowserView() {
         />
       </div>
 
-      <GamepadHintsFooter />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Select } from "../../components/primitives/Select";
 import { Badge } from "../../components/primitives/Badge";
 import { Panel } from "../../components/primitives/Panel";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 
 const LANG_OPTIONS: { value: CodeLang; label: string }[] = [
   { value: "html", label: "HTML" },
@@ -33,6 +34,7 @@ export function CanvasView() {
   const [output, setOutput] = useState("");
   const [running, setRunning] = useState(false);
   const [previewKey, setPreviewKey] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const outputRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export function CanvasView() {
   const run = useCallback(async () => {
     setRunning(true);
     setOutput("");
+    setError(null);
     if (lang === "html") {
       setPreviewKey((k) => k + 1);
       setRunning(false);
@@ -79,7 +82,9 @@ export function CanvasView() {
     try {
       await neurodeckApi.canvas.execStream(code, lang);
     } catch (e) {
-      setOutput(String(e));
+      const msg = String(e);
+      setOutput(msg);
+      setError(msg);
       setRunning(false);
     }
   }, [code, lang]);
@@ -93,7 +98,10 @@ export function CanvasView() {
 
   const htmlBlob = useMemo(() => {
     if (lang !== "html") return null;
-    return URL.createObjectURL(new Blob([code], { type: "text/html" }));
+    const wrapped = `<style>
+      html,body{margin:0;background:var(--nd-surface-app,#0A0D10);color:var(--nd-text-primary,#E8F4FF);font-family:system-ui,sans-serif;}
+    </style>${code}`;
+    return URL.createObjectURL(new Blob([wrapped], { type: "text/html" }));
   }, [lang, previewKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -104,18 +112,18 @@ export function CanvasView() {
 
   return (
     <div className="flex h-full flex-col">
-      <header className="mb-3 flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
-          <Paintbrush className="h-5 w-5 text-accent-primary" aria-hidden="true" />
+      <header className="mb-3 flex flex-wrap items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <Paintbrush className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
+        <div className="min-w-0 flex-auto shrink-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
             Canvas
           </p>
-          <h2 className="text-lg font-semibold text-text-primary">Live Code Canvas</h2>
-          <p className="text-xs text-text-muted">Edit, run, and preview code in split view.</p>
+          <h2 className="text-lg font-semibold text-nd-text-primary">Live Code Canvas</h2>
+          <p className="text-xs text-nd-text-muted">Edit, run, and preview code in split view.</p>
         </div>
-        <div className="canvas-toolbar flex items-center gap-2">
+        <div className="canvas-toolbar flex flex-wrap items-center gap-2 min-w-max">
           <Badge tone="accent" variant="outline">
             {lang.toUpperCase()}
           </Badge>
@@ -180,14 +188,24 @@ export function CanvasView() {
           eyebrow="Source"
           bodyClassName="flex flex-1 flex-col min-h-0 p-0"
         >
-          <textarea
-            id="canvas-monaco"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            spellCheck={false}
-            aria-label="Code editor"
-            className="min-h-0 flex-1 resize-none bg-transparent p-3 font-mono text-sm leading-relaxed text-text-primary outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-accent-primary/30"
-          />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <label htmlFor="canvas-monaco" className="px-3 pt-3 text-xs font-medium text-nd-text-muted">
+              Source code
+            </label>
+            <textarea
+              id="canvas-monaco"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                  e.preventDefault();
+                  run();
+                }
+              }}
+              spellCheck={false}
+              className="min-h-0 min-h-touch flex-1 resize-none bg-transparent p-3 font-mono text-sm leading-relaxed text-nd-text-primary outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-nd-accent-primary/30"
+            />
+          </div>
         </Panel>
 
         <Panel
@@ -203,14 +221,25 @@ export function CanvasView() {
               src={htmlBlob ?? undefined}
               title="Canvas Preview"
               sandbox="allow-scripts allow-forms allow-pointer-lock allow-top-navigation-by-user-activation"
-              className="min-h-0 flex-1 w-full border-none bg-surface-app"
+              className="min-h-0 flex-1 w-full border-none bg-nd-surface-app"
             />
           ) : (
             <div className="relative min-h-0 flex-1">
+              {error && (
+                <ErrorState
+                  title="Execution failed"
+                  message={error}
+                  onRetry={run}
+                  onClose={() => setError(null)}
+                />
+              )}
               {output ? (
                 <pre
                   ref={outputRef}
-                  className="h-full overflow-auto p-3 font-mono text-sm leading-relaxed text-text-secondary"
+                  aria-live="polite"
+                  role="log"
+                  aria-label="Execution output"
+                  className="h-full overflow-auto p-3 font-mono text-sm leading-relaxed text-nd-text-secondary"
                 >
                   {output}
                 </pre>

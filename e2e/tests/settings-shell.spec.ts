@@ -254,7 +254,7 @@ test("canvas toolbar wraps cleanly on compact widths", async ({ page }) => {
   await app.goto();
   await app.navigateTo("canvas");
 
-  const metrics = await page.locator("[data-testid='view-canvas'] header").evaluate((el) => ({
+  const metrics = await page.locator("[data-testid='view-canvas'] > div > header").evaluate((el) => ({
     clientWidth: el.clientWidth,
     scrollWidth: el.scrollWidth,
     clientHeight: el.clientHeight,
@@ -273,6 +273,7 @@ test("theme selection persists across reload", async ({ page }) => {
   const target = cards.nth(1);
   const targetName = await target.locator("p").first().textContent();
   await target.click();
+  await page.getByRole("button", { name: "Apply Theme" }).click();
   await page.waitForTimeout(400);
 
   await settings.closeSettings();
@@ -284,6 +285,7 @@ test("theme selection persists across reload", async ({ page }) => {
 
   await settings.openSettings();
   await settings.openTab("general");
-  const activeCard = page.locator("[data-testid='theme-card'].border-nd-accent\\/50");
+  const activeCard = page.locator("[data-testid='theme-card'].border-nd-accent-success\\/40");
   await expect(activeCard).toBeVisible();
+  await expect(activeCard.locator("p").first()).toHaveText(targetName ?? "");
 });

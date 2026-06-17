@@ -1,11 +1,14 @@
-import { AlertCircle, RefreshCcw } from "lucide-react";
+import { AlertCircle, RefreshCcw, X } from "lucide-react";
 import { Button } from "./Button";
+import { IconButton } from "./IconButton";
 
 interface ErrorStateProps {
   title?: string;
   message?: string;
   onRetry?: () => void;
   retryLabel?: string;
+  onClose?: () => void;
+  closeLabel?: string;
   fullHeight?: boolean;
 }
 
@@ -14,6 +17,8 @@ export function ErrorState({
   message,
   onRetry,
   retryLabel = "Try again",
+  onClose,
+  closeLabel = "Dismiss",
   fullHeight = false,
 }: ErrorStateProps) {
   return (
@@ -21,7 +26,7 @@ export function ErrorState({
       role="alert"
       aria-live="assertive"
       className={[
-        "flex flex-col items-center justify-center gap-3 text-center",
+        "relative flex flex-col items-center justify-center gap-3 text-center",
         fullHeight ? "h-full min-h-48" : "py-10",
       ].join(" ")}
     >
@@ -37,6 +42,17 @@ export function ErrorState({
           <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />
           {retryLabel}
         </Button>
+      )}
+      {onClose && (
+        <IconButton
+          variant="ghost"
+          size="sm"
+          aria-label={closeLabel}
+          onClick={onClose}
+          className="absolute right-2 top-2"
+        >
+          <X className="h-3.5 w-3.5" aria-hidden="true" />
+        </IconButton>
       )}
     </div>
   );

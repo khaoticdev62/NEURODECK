@@ -37,7 +37,6 @@ import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import { TerminalCommandPalette } from "./TerminalCommandPalette";
-import { TerminalControllerHintBar } from "./TerminalControllerHintBar";
 import { TerminalDiagnosticsPanel } from "./TerminalDiagnosticsPanel";
 import { TerminalProfileSelector } from "./TerminalProfileSelector";
 import { TerminalSafetyConfirmModal } from "./TerminalSafetyConfirmModal";
@@ -1037,24 +1036,6 @@ export function TerminalScreen() {
         </div>
       </header>
 
-      <TerminalControllerHintBar
-        activeMode={
-          commandPaletteOpen
-            ? "palette"
-            : assistantOpen
-              ? "assistant"
-              : searchOpen
-                ? "search"
-                : pendingCommand
-                  ? "confirm"
-                  : "input"
-        }
-        onOpenPalette={() => setCommandPaletteOpen(true)}
-        onOpenAssistant={() => setAssistantOpen((value) => !value)}
-        onOpenSearch={() => setSearchOpen(true)}
-        onOpenSessions={() => setSessionManagerOpen((value) => !value)}
-      />
-
       <div className="flex min-h-0 flex-1 gap-3 overflow-hidden p-3">
         <aside className="flex w-80 min-w-[18rem] max-w-[22rem] flex-col gap-3 overflow-hidden">
           <TerminalProfileSelector
@@ -1121,12 +1102,7 @@ export function TerminalScreen() {
                 return (
                   <div
                     key={tab.id}
-                    role="button"
-                    tabIndex={0}
                     onClick={() => switchTab(tab.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") switchTab(tab.id);
-                    }}
                     className={`w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]" : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:bg-nd-surface-tertiary/60"}`}
                   >
                     <div className="flex items-center justify-between gap-2">
@@ -1180,28 +1156,30 @@ export function TerminalScreen() {
         </aside>
 
         <main className="min-w-0 flex-1 overflow-hidden">
-          <div
-            role="tablist"
-            aria-label="Terminal sessions"
-            className="mb-3 flex items-center gap-2 overflow-x-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-2"
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                id={`term-tab-${tab.id}`}
-                type="button"
-                role="tab"
-                aria-selected={tab.id === activeTabId}
-                onClick={() => switchTab(tab.id)}
-                className={`inline-flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08] text-nd-text-primary" : "border-nd-border-subtle bg-nd-surface-secondary/40 text-nd-text-muted hover:bg-nd-surface-tertiary/60"}`}
-              >
-                <TerminalIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="truncate">{tab.label}</span>
-                {tab.pinned && (
-                  <ShieldCheck className="h-3.5 w-3.5 text-nd-accent-success" aria-hidden="true" />
-                )}
-              </button>
-            ))}
+          <div className="mb-3 flex items-center gap-2 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-2">
+            <div
+              role="tablist"
+              aria-label="Terminal sessions"
+              className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-none"
+            >
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  id={`term-tab-${tab.id}`}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab.id === activeTabId}
+                  onClick={() => switchTab(tab.id)}
+                  className={`inline-flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08] text-nd-text-primary" : "border-nd-border-subtle bg-nd-surface-secondary/40 text-nd-text-muted hover:bg-nd-surface-tertiary/60"}`}
+                >
+                  <TerminalIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{tab.label}</span>
+                  {tab.pinned && (
+                    <ShieldCheck className="h-3.5 w-3.5 text-nd-accent-success" aria-hidden="true" />
+                  )}
+                </button>
+              ))}
+            </div>
             <Button variant="ghost" size="sm" icon={Plus} onClick={() => createTab()}>
               Add Tab
             </Button>

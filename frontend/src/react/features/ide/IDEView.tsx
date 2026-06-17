@@ -17,7 +17,6 @@ import { getProfileForFile } from "../../../shared/ide/languageProfiles";
 import { getTopCommands } from "../../../shared/ide/languageCommands";
 import { getControllerFriendlySnippets } from "../../../shared/ide/predictiveSnippets";
 import { PredictiveBar } from "./PredictiveBar";
-import { ControllerHintBar } from "./ControllerHintBar";
 import { LanguageModeBadge } from "./LanguageModeBadge";
 import { RadialCommandWheel } from "./RadialCommandWheel";
 import { SafeCommandConfirmModal } from "./SafeCommandConfirmModal";
@@ -130,7 +129,6 @@ export function IDEView() {
   const lineNumbersRef = useRef<HTMLDivElement>(null);
 
   const [ideMode, setIdeMode] = useState<IdeMode>("IDE_NAVIGATION");
-  const [showHintBar, setShowHintBar] = useState(true);
   const [showRadialWheel, setShowRadialWheel] = useState(false);
   const [predictions, setPredictions] = useState<PredictionResult[]>([]);
   const [showPredictions, setShowPredictions] = useState(false);
@@ -592,16 +590,14 @@ export function IDEView() {
     : [];
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <ControllerHintBar ideMode={ideMode} visible={showHintBar} />
-
+    <div className="flex h-full flex-col overflow-hidden" data-controller-zone="ide">
       <header className="mb-3 mt-2 flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
-          <Code className="h-5 w-5 text-accent-primary" aria-hidden="true" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <Code className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-text-primary">IDE</h2>
+            <h2 className="text-lg font-semibold text-nd-text-primary">IDE</h2>
             {activeTabData && (
               <LanguageModeBadge
                 languageId={activeProfile?.id ?? activeTabData.lang}
@@ -611,7 +607,7 @@ export function IDEView() {
               />
             )}
           </div>
-          <p className="text-xs text-text-muted">Integrated code workspace</p>
+          <p className="text-xs text-nd-text-muted">Integrated code workspace</p>
         </div>
         <div className="flex items-center gap-1">
           <IconButton
@@ -642,14 +638,6 @@ export function IDEView() {
             <span className="text-xs font-bold">⊕</span>
           </IconButton>
           <IconButton
-            aria-label="Toggle hints"
-            title="Toggle hints"
-            variant="subtle"
-            onClick={() => setShowHintBar((v) => !v)}
-          >
-            <span className="text-[10px] font-bold">HB</span>
-          </IconButton>
-          <IconButton
             aria-label="Refresh"
             title="Refresh"
             variant="subtle"
@@ -660,7 +648,7 @@ export function IDEView() {
         </div>
       </header>
 
-      <div className="flex min-h-0 flex-1 gap-3">
+      <div className="flex min-h-0 flex-1 gap-3" data-controller-zone="ide-workspace">
         <Panel
           className="flex w-52 flex-col"
           eyebrow="Explorer"
@@ -683,21 +671,21 @@ export function IDEView() {
                 ..
               </Button>
             )}
-            <div className="px-2 py-1 text-[10px] text-text-muted/60 truncate">
+            <div className="px-2 py-1 text-[10px] text-nd-text-muted/60 truncate">
               {currentPath || "workspace"}
             </div>
             {files.length === 0 && (
-              <div className="px-2 py-1.5 text-xs text-text-muted/50 italic">No files</div>
+              <div className="px-2 py-1.5 text-xs text-nd-text-muted/50 italic">No files</div>
             )}
             {files.map((f) => (
               <button
                 key={f.path}
                 type="button"
                 onClick={() => (f.is_dir ? loadFiles(f.path) : openFile(f.path, f.name))}
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/40 ${
+                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 ${
                   activeTab === f.path
-                    ? "bg-accent-primary/10 text-accent-primary"
-                    : "text-text-muted hover:bg-surface-secondary"
+                    ? "bg-nd-accent-primary/10 text-nd-accent-primary"
+                    : "text-nd-text-muted hover:bg-nd-surface-secondary"
                 }`}
               >
                 {f.is_dir ? (
@@ -711,7 +699,7 @@ export function IDEView() {
           </div>
         </Panel>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex min-w-0 flex-1 flex-col gap-2" data-controller-zone="ide-editor">
           {openTabs.length > 0 && (
             <div
               role="tablist"
@@ -719,37 +707,42 @@ export function IDEView() {
               className="flex gap-1 overflow-x-auto"
             >
               {openTabs.map((tab) => (
-                <button
+                <div
                   key={tab.path}
-                  id={`ide-tab-${tab.path.replace(/[^a-z0-9]/gi, "-")}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab.path}
-                  onClick={() => setActiveTab(tab.path)}
-                  className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
+                  className={`flex items-center gap-0.5 rounded-lg border px-1.5 py-1 transition ${
                     activeTab === tab.path
-                      ? "border-accent-primary/30 bg-accent-primary/10 text-accent-primary"
-                      : "border-border-subtle bg-surface-secondary text-text-muted hover:bg-surface-tertiary"
+                      ? "border-nd-accent-primary/30 bg-nd-accent-primary/10"
+                      : "border-nd-border-subtle bg-nd-surface-secondary hover:bg-nd-surface-tertiary"
                   }`}
                 >
-                  <span>{getLangIcon(tab.lang)}</span>
-                  <span className="truncate max-w-[120px]">
-                    {tab.name}
-                    {tab.dirty ? " ●" : ""}
-                  </span>
+                  <button
+                    id={`ide-tab-${tab.path.replace(/[^a-z0-9]/gi, "-")}`}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === tab.path}
+                    onClick={() => setActiveTab(tab.path)}
+                    className={`flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                      activeTab === tab.path
+                        ? "text-nd-accent-primary"
+                        : "text-nd-text-muted"
+                    }`}
+                  >
+                    <span aria-hidden="true">{getLangIcon(tab.lang)}</span>
+                    <span className="truncate max-w-[120px]">
+                      {tab.name}
+                      {tab.dirty ? " ●" : ""}
+                    </span>
+                  </button>
                   <IconButton
                     aria-label={`Close ${tab.name}`}
                     variant="ghost"
                     size="sm"
-                    className="ml-1 h-5 w-5"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      closeTab(tab.path);
-                    }}
+                    className="h-5 w-5"
+                    onClick={() => closeTab(tab.path)}
                   >
                     <X className="h-3 w-3" aria-hidden="true" />
                   </IconButton>
-                </button>
+                </div>
               ))}
             </div>
           )}
@@ -757,9 +750,9 @@ export function IDEView() {
           <Panel className="relative flex min-h-0 flex-1 flex-col">
             {activeTabData ? (
               <>
-                <div className="flex items-center gap-2 border-b border-border-subtle px-3 py-2">
-                  <FileCode className="h-3.5 w-3.5 text-text-muted" aria-hidden="true" />
-                  <span className="text-xs text-text-muted">{activeTabData.name}</span>
+                <div className="flex items-center gap-2 border-b border-nd-border-subtle px-3 py-2">
+                  <FileCode className="h-3.5 w-3.5 text-nd-text-muted" aria-hidden="true" />
+                  <span className="text-xs text-nd-text-muted">{activeTabData.name}</span>
                   {activeTabData.dirty && (
                     <Badge tone="accent" size="sm" variant="outline">
                       modified
@@ -770,7 +763,7 @@ export function IDEView() {
                       size="xs"
                       variant="ghost"
                       icon={AlertCircle}
-                      className="ml-auto text-accent-error hover:bg-accent-error/10"
+                      className="ml-auto text-nd-accent-error hover:bg-nd-accent-error/10"
                       onClick={() => {
                         setShowDiagnosticPanel(true);
                         setActiveDiagnosticMsg(diagnostics[0]?.message ?? "");
@@ -790,7 +783,7 @@ export function IDEView() {
                     {Array.from({ length: lineCount }, (_, i) => (
                       <div
                         key={i}
-                        className="px-2 text-right text-[11px] leading-5 text-text-muted/40 select-none"
+                        className="px-2 text-right text-[11px] leading-5 text-nd-text-muted/40 select-none"
                       >
                         {i + 1}
                       </div>
@@ -831,7 +824,7 @@ export function IDEView() {
                         onEditorInput();
                       }
                     }}
-                    className="min-h-0 flex-1 resize-none bg-transparent py-3 pr-3 font-mono text-sm leading-5 text-text-primary/90 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-accent-primary/40"
+                    className="min-h-0 flex-1 resize-none bg-transparent py-3 pr-3 font-mono text-sm leading-5 text-nd-text-primary/90 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-nd-accent-primary/40"
                     spellCheck={false}
                     aria-label="Code editor"
                   />
@@ -852,10 +845,10 @@ export function IDEView() {
                   <div
                     role="listbox"
                     aria-label="LSP completions"
-                    className="absolute bottom-2 left-12 z-tooltip max-h-48 w-72 overflow-auto rounded-xl border border-accent-primary/20 bg-surface-secondary shadow-glow-sm"
+                    className="absolute bottom-2 left-12 z-tooltip max-h-48 w-72 overflow-auto rounded-xl border border-nd-accent-primary/20 bg-nd-surface-secondary shadow-nd-elevation-card"
                   >
-                    <div className="flex items-center justify-between border-b border-border-subtle px-3 py-1.5">
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                    <div className="flex items-center justify-between border-b border-nd-border-subtle px-3 py-1.5">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
                         Completions
                       </span>
                       <IconButton
@@ -874,7 +867,7 @@ export function IDEView() {
                         role="option"
                         aria-selected={false}
                         type="button"
-                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-text-primary hover:bg-accent-primary/10 focus-visible:bg-accent-primary/10 focus-visible:outline-none"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs text-nd-text-primary hover:bg-nd-accent-primary/10 focus-visible:bg-nd-accent-primary/10 focus-visible:outline-none"
                         onClick={() => {
                           const el = editorRef.current;
                           if (!el) return;
@@ -888,7 +881,7 @@ export function IDEView() {
                           log(`Inserted: ${item.label}`, "ok");
                         }}
                       >
-                        <span className="shrink-0 text-[10px] text-text-muted/60 w-4 text-center">
+                        <span className="shrink-0 text-[10px] text-nd-text-muted/60 w-4 text-center">
                           {item.kind === 2
                             ? "M"
                             : item.kind === 6
@@ -899,7 +892,7 @@ export function IDEView() {
                         </span>
                         <span className="truncate font-mono">{item.label}</span>
                         {item.detail && (
-                          <span className="ml-auto shrink-0 truncate max-w-[80px] text-text-muted/60 text-[10px]">
+                          <span className="ml-auto shrink-0 truncate max-w-[80px] text-nd-text-muted/60 text-[10px]">
                             {item.detail}
                           </span>
                         )}
@@ -911,10 +904,10 @@ export function IDEView() {
                 {hoverInfo && hoverPos && (
                   <div
                     role="tooltip"
-                    className="pointer-events-none fixed z-tooltip max-w-sm rounded-xl border border-accent-primary/15 bg-surface-secondary px-3 py-2 shadow-glow-sm"
+                    className="pointer-events-none fixed z-tooltip max-w-sm rounded-xl border border-nd-accent-primary/15 bg-nd-surface-secondary px-3 py-2 shadow-nd-elevation-card"
                     style={{ left: hoverPos.x + 12, top: hoverPos.y - 8 }}
                   >
-                    <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-text-primary/90">
+                    <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-nd-text-primary/90">
                       {hoverInfo.contents.slice(0, 400)}
                     </pre>
                   </div>
@@ -960,19 +953,19 @@ export function IDEView() {
           >
             <div className="h-[calc(100%-2.5rem)] overflow-auto space-y-0.5 px-1">
               {logs.length === 0 && (
-                <p className="text-[11px] text-text-muted/40 italic">No output yet</p>
+                <p className="text-[11px] text-nd-text-muted/40 italic">No output yet</p>
               )}
               {logs.map((l, i) => (
                 <div
                   key={i}
                   className={`text-[11px] font-mono ${
                     l.tone === "error"
-                      ? "text-accent-error"
+                      ? "text-nd-accent-error"
                       : l.tone === "ok"
-                        ? "text-accent-success"
+                        ? "text-nd-accent-success"
                         : l.tone === "warn"
-                          ? "text-accent-warning"
-                          : "text-text-muted"
+                          ? "text-nd-accent-warning"
+                          : "text-nd-text-muted"
                   }`}
                 >
                   [{new Date().toLocaleTimeString("en-US", { hour12: false })}] {l.text}

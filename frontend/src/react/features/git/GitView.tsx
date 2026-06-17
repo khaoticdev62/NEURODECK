@@ -13,6 +13,7 @@ import {
 import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
 import { Panel } from "../../components/primitives/Panel";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { TextInput } from "../../components/primitives/TextInput";
 import { neurodeckApi } from "../../services/bridgeAdapter";
 import type {
@@ -42,7 +43,7 @@ function FileItem({
       type="button"
       onClick={() => onDiff(file.path)}
       aria-label={`${statusLabel}: ${file.path} — click to view diff`}
-      className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-nd-text-primary/80 hover:bg-nd-surface-hover/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
+      className="flex min-h-touch w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-nd-text-primary/80 hover:bg-nd-surface-hover/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
     >
       <Icon className={`h-3.5 w-3.5 shrink-0 ${color}`} aria-hidden="true" />
       <span className={`shrink-0 font-mono font-semibold ${color}`}>{statusLabel}</span>
@@ -63,6 +64,8 @@ export function GitView() {
   const [mutating, setMutating] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "ok"; text: string } | null>(null);
   const [gitUnavailable, setGitUnavailable] = useState(false);
+  const [loadError, setLoadError] = useState<{ message: string; retry?: () => void } | null>(null);
+  const [diffError, setDiffError] = useState<string | null>(null);
 
   const showNotice = (kind: "error" | "ok", text: string) => {
     setNotice({ kind, text });
@@ -72,6 +75,7 @@ export function GitView() {
   const loadStatus = useCallback(async () => {
     setLoading(true);
     setGitUnavailable(false);
+    setLoadError(null);
     try {
       const status = await neurodeckApi.git.status();
       setStaged(status.staged || []);
@@ -85,14 +89,14 @@ export function GitView() {
     try {
       const branchList = await neurodeckApi.git.branchList();
       setBranches(branchList);
-    } catch {
-      /* branch list is best-effort */
+    } catch (e) {
+      setLoadError((prev) => prev || { message: `Could not load branches: ${e}`, retry: loadStatus });
     }
     try {
       const log = await neurodeckApi.git.log(20);
       setCommits(log);
-    } catch {
-      /* log is best-effort */
+    } catch (e) {
+      setLoadError((prev) => prev || { message: `Could not load commits: ${e}`, retry: loadStatus });
     }
     setLoading(false);
   }, []);
@@ -171,11 +175,13 @@ export function GitView() {
   };
 
   const showDiff = async (file?: string) => {
+    setDiffError(null);
     try {
       const result = await neurodeckApi.git.diff(file);
       setDiff(result.diff);
-    } catch {
+    } catch (e) {
       setDiff("");
+      setDiffError(`Could not load diff: ${e}`);
     }
   };
 
@@ -236,6 +242,17 @@ export function GitView() {
           }`}
         >
           {notice.text}
+        </div>
+      )}
+
+      {loadError && (
+        <div className="mb-3">
+          <ErrorState
+            title="Load failed"
+            message={loadError.message}
+            onRetry={loadError.retry}
+            onClose={() => setLoadError(null)}
+          />
         </div>
       )}
 
@@ -368,14 +385,18 @@ export function GitView() {
             </div>
           </Panel>
 
-          {diff && (
+          {diff && !diffError ? (
             <Panel className="min-h-0 flex-1 overflow-auto p-3">
               <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
                 Diff
               </h3>
               <pre className="font-mono text-xs text-nd-text-primary/80">{diff}</pre>
             </Panel>
-          )}
+          ) : diffError ? (
+            <Panel className="min-h-0 flex-1 overflow-auto p-3">
+              <ErrorState title="Diff unavailable" message={diffError} onClose={() => setDiffError(null)} />
+            </Panel>
+          ) : null}
 
           <Panel className="min-h-0 flex-1 overflow-auto p-3">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-nd-text-muted">
@@ -426,7 +447,7 @@ export function GitView() {
                   disabled={mutating}
                   aria-current={b.current ? "true" : undefined}
                   aria-label={`Checkout ${b.name}${b.current ? " (current)" : ""}`}
-                  className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 disabled:opacity-40 ${
+                  className={`flex min-h-touch w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 disabled:opacity-40 ${
                     b.current
                       ? "bg-nd-accent-primary/10 text-nd-accent-primary"
                       : "text-nd-text-muted hover:bg-nd-surface-hover/50"

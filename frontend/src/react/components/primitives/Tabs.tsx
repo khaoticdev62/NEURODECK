@@ -110,7 +110,7 @@ export function Tab({
   const isActive = active === value;
 
   const base = [
-    "relative flex min-h-[40px] items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium outline-none transition-colors duration-fast",
+    "relative flex min-h-touch items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium outline-none transition-colors duration-fast",
     "focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60",
     "disabled:pointer-events-none disabled:opacity-40",
     className,

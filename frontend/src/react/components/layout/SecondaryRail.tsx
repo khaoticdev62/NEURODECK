@@ -38,7 +38,7 @@ export function SecondaryRail({
           localStorage.setItem("nd:rail-collapsed", "false");
           setCollapsed(false);
         }}
-        className="hidden h-full shrink-0 items-center border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] px-1 text-[var(--nd-text-muted)] transition-[color,background-color] duration-[var(--nd-motion-fast)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-accent-primary)] xl:flex"
+        className="hidden h-full shrink-0 items-center border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] px-1 text-[var(--nd-text-muted)] transition-[color,background-color] duration-[var(--nd-motion-fast)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-accent-primary)] desktop:flex"
         aria-label="Expand side panel"
         title="Expand side panel (B)"
       >
@@ -49,7 +49,7 @@ export function SecondaryRail({
 
   return (
     <aside
-      className="hidden shrink-0 flex-col border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] xl:flex"
+      className="hidden shrink-0 flex-col border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] desktop:flex"
       style={{ width: "var(--nd-shell-context)" }}
     >
       {/* Collapse toggle */}
@@ -60,8 +60,9 @@ export function SecondaryRail({
             localStorage.setItem("nd:rail-collapsed", "true");
             setCollapsed(true);
           }}
-          className="inline-flex h-8 w-8 items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] text-[var(--nd-text-muted)] transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:text-[var(--nd-accent-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
+          className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] text-[var(--nd-text-muted)] transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:text-[var(--nd-accent-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
           aria-label="Collapse side panel"
+          aria-expanded={true}
           title="Collapse side panel"
         >
           <PanelRightClose className="h-3.5 w-3.5" />
@@ -69,8 +70,8 @@ export function SecondaryRail({
       </div>
 
       <div
+        role="region"
         className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 scrollbar-thin"
-        tabIndex={0}
         aria-label="Side panel"
       >
         <Panel eyebrow="Mission" title="Control Stack">
@@ -88,7 +89,14 @@ export function SecondaryRail({
                   {state.telemetry.contextUsed}%
                 </span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--nd-border-subtle)]">
+              <div
+                className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--nd-border-subtle)]"
+                role="progressbar"
+                aria-label="Context used"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={state.telemetry.contextUsed}
+              >
                 <div
                   className="h-full rounded-full bg-[var(--nd-accent-primary)] transition-[width] duration-[var(--nd-motion-normal)]"
                   style={{ width: `${state.telemetry.contextUsed}%` }}

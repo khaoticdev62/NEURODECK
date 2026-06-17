@@ -1,8 +1,11 @@
 ﻿import { useCallback, useEffect, useState } from "react";
-import { Lock, Server, Save, Trash2, Plug, AlertTriangle } from "lucide-react";
+import { Lock, Server, Save, Trash2, Plug } from "lucide-react";
+import { EmptyState } from "../../components/primitives/EmptyState";
 import { neurodeckApi } from "../../services/bridgeAdapter";
 import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
+import { TextInput } from "../../components/primitives/TextInput";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { SSHTerminal, type SSHConnectionConfig } from "./SSHTerminal";
 
 export function SSHView() {
@@ -43,8 +46,8 @@ export function SSHView() {
         setKeyPath(cred.key_path);
         setAuthType("key");
       }
-    } catch (_) {
-      // No saved credential is fine.
+    } catch (e) {
+      setError(`Failed to load saved credential: ${String(e)}`);
     }
   }, [host, user, keyPath]);
 
@@ -86,9 +89,6 @@ export function SSHView() {
     setError(null);
   };
 
-  const inputClass =
-    "w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40";
-
   return (
     <div className="ssh-container flex h-full flex-col overflow-hidden">
       <div className="mb-4 flex items-center gap-3">
@@ -106,79 +106,85 @@ export function SSHView() {
 
       <div className="mx-auto w-full max-w-lg space-y-3 rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-6">
         <div className="flex gap-2">
-          <input
+          <TextInput
             id="ssh-host-input"
-            type="text"
             value={host}
             onChange={(e) => setHost(e.target.value)}
             placeholder="Host"
+            label="Host"
             aria-label="SSH host"
-            className={`${inputClass} flex-1`}
+            fullWidth
+            className="flex-1"
           />
-          <input
-            type="text"
+          <TextInput
             value={port}
             onChange={(e) => setPort(e.target.value)}
             placeholder="Port"
+            label="Port"
             aria-label="SSH port"
-            className={`${inputClass} w-20`}
+            className="w-20"
           />
         </div>
 
-        <input
+        <TextInput
           id="ssh-user-input"
-          type="text"
           value={user}
           onChange={(e) => setUser(e.target.value)}
           placeholder="Username"
+          label="Username"
           aria-label="SSH username"
-          className={inputClass}
+          fullWidth
         />
 
         <div className="flex gap-2">
-          <button
+          <Button
             type="button"
+            variant={authType === "password" ? "primary" : "secondary"}
             onClick={() => setAuthType("password")}
             aria-pressed={authType === "password"}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${authType === "password" ? "border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary" : "border-nd-text-muted/15 text-nd-text-muted"}`}
+            className="min-h-touch flex-1"
           >
             Password
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant={authType === "key" ? "primary" : "secondary"}
             onClick={() => setAuthType("key")}
             aria-pressed={authType === "key"}
-            className={`flex-1 rounded-lg border px-3 py-2 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${authType === "key" ? "border-nd-accent-primary/30 bg-nd-accent-primary/10 text-nd-accent-primary" : "border-nd-text-muted/15 text-nd-text-muted"}`}
+            className="min-h-touch flex-1"
           >
             SSH Key
-          </button>
+          </Button>
         </div>
 
         {authType === "password" ? (
-          <input
+          <TextInput
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
+            label="Password"
             aria-label="SSH password"
-            className={inputClass}
+            fullWidth
           />
         ) : (
-          <input
+          <TextInput
             type="text"
             value={keyPath}
             onChange={(e) => setKeyPath(e.target.value)}
             placeholder="~/.ssh/id_rsa"
+            label="Key path"
             aria-label="SSH key path"
-            className={inputClass}
+            fullWidth
           />
         )}
 
         {error && (
-          <div className="flex items-center gap-2 rounded-xl border border-nd-accent-error/25 bg-nd-accent-error/10 px-3 py-2 text-xs text-nd-accent-error">
-            <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            {error}
-          </div>
+          <ErrorState
+            title="SSH error"
+            message={error}
+            onClose={() => setError(null)}
+          />
         )}
 
         <div className="flex gap-2 pt-2">
@@ -186,7 +192,7 @@ export function SSHView() {
             id="ssh-connect-btn"
             variant="primary"
             icon={Plug}
-            className="flex-1"
+            className="min-h-touch flex-1"
             onClick={connect}
           >
             Connect
@@ -194,12 +200,12 @@ export function SSHView() {
           <Button
             variant="secondary"
             icon={Save}
-            className="flex-1"
+            className="min-h-touch flex-1"
             onClick={() => void saveCredential()}
           >
             {saved ? "Saved!" : "Save Profile"}
           </Button>
-          <IconButton aria-label="Clear SSH credentials" variant="ghost" onClick={clearForm}>
+          <IconButton aria-label="Clear SSH credentials" variant="ghost" size="touch" onClick={clearForm}>
             <Trash2 className="h-4 w-4" aria-hidden="true" />
           </IconButton>
         </div>
@@ -210,12 +216,12 @@ export function SSHView() {
           <SSHTerminal config={connectedConfig} onClose={disconnect} />
         ) : (
           <div className="flex h-full flex-1 items-center justify-center rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30">
-            <div className="text-center">
-              <Server className="mx-auto h-8 w-8 text-nd-text-muted/40" aria-hidden="true" />
-              <p className="mt-2 text-sm text-nd-text-muted/70">
-                Enter connection details and click Connect.
-              </p>
-            </div>
+            <EmptyState
+              icon={Server}
+              title="Ready to connect"
+              description="Enter host, user, and credentials above, then click Connect to open a secure shell session."
+              variant="deck"
+            />
           </div>
         )}
       </div>

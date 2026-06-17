@@ -1,6 +1,6 @@
 # NEURODECK Screen Inventory, Navigation & Alignment Audit
 
-> Generated: 2026-06-16T16:58:15.531Z
+> Generated: 2026-06-17T13:18:38.963Z
 > Command: `node scripts/ui/screen-inventory-audit.js`
 
 ## 1. View Inventory
@@ -8,28 +8,28 @@
 | Feature ID | Component | File | Controller Screen | Lines |
 |---|---|---|---|---|
 | academy | `AcademyView` | frontend/src/react/features/academy/AcademyView.tsx | — | 184 |
-| agents | `AgentsView` | frontend/src/react/features/agents/AgentsView.tsx | — | 103 |
+| agents | `AgentsView` | frontend/src/react/features/agents/AgentsView.tsx | — | 106 |
 | api-lab | `ApiLabView` | frontend/src/react/features/api-lab/ApiLabView.tsx | — | 194 |
-| browser | `BrowserView` | frontend/src/react/features/browser/BrowserView.tsx | — | 1785 |
-| cache | `CacheView` | frontend/src/react/features/cache/CacheView.tsx | — | 86 |
-| canvas | `CanvasView` | frontend/src/react/features/canvas/CanvasView.tsx | — | 233 |
+| browser | `BrowserView` | frontend/src/react/features/browser/BrowserView.tsx | — | 377 |
+| cache | `CacheView` | frontend/src/react/features/cache/CacheView.tsx | — | 89 |
+| canvas | `CanvasView` | frontend/src/react/features/canvas/CanvasView.tsx | — | 236 |
 | cli-maker | `CliMakerView` | frontend/src/react/features/cli-maker/CliMakerView.tsx | — | 956 |
 | diagnostics | `DiagnosticsView` | frontend/src/react/features/diagnostics/DiagnosticsView.tsx | — | 589 |
 | docs | `DocsView` | frontend/src/react/features/docs/DocsView.tsx | — | 280 |
-| execution | `ExecutionView` | frontend/src/react/features/execution/ExecutionView.tsx | — | 140 |
+| execution | `ExecutionView` | frontend/src/react/features/execution/ExecutionView.tsx | — | 141 |
 | exports | `ExportsView` | frontend/src/react/features/exports/ExportsView.tsx | — | 125 |
 | fonts | `FontManagerView` | frontend/src/react/features/fonts/FontManagerView.tsx | — | 170 |
 | git | `GitView` | frontend/src/react/features/git/GitView.tsx | — | 451 |
 | graph | `GraphView` | frontend/src/react/features/graph/GraphView.tsx | — | 519 |
-| ide | `IDEView` | frontend/src/react/features/ide/IDEView.tsx | — | 1051 |
+| ide | `IDEView` | frontend/src/react/features/ide/IDEView.tsx | — | 1039 |
 | maintenance | `MaintenanceView` | frontend/src/react/features/maintenance/MaintenanceView.tsx | — | 150 |
 | mcp | `MCPView` | frontend/src/react/features/mcp/MCPView.tsx | — | 447 |
-| memory | `MemoryView` | frontend/src/react/features/memory/MemoryView.tsx | — | 586 |
-| models | `ModelsView` | frontend/src/react/features/models/ModelsView.tsx | — | 258 |
+| memory | `MemoryView` | frontend/src/react/features/memory/MemoryView.tsx | — | 601 |
+| models | `ModelsView` | frontend/src/react/features/models/ModelsView.tsx | — | 262 |
 | orchestrator | `OrchestratorView` | frontend/src/react/features/orchestrator/OrchestratorView.tsx | — | 585 |
 | plugins | `PluginsView` | frontend/src/react/features/plugins/PluginsView.tsx | — | 916 |
 | project | `ProjectView` | frontend/src/react/features/project/ProjectView.tsx | — | 227 |
-| prompt-lab | `PromptLabView` | frontend/src/react/features/prompt-lab/PromptLabView.tsx | — | 662 |
+| prompt-lab | `PromptLabView` | frontend/src/react/features/prompt-lab/PromptLabView.tsx | — | 657 |
 | recovery | `RecoveryView` | frontend/src/react/features/recovery/RecoveryView.tsx | — | 220 |
 | remote | `RemoteView` | frontend/src/react/features/remote/RemoteView.tsx | — | 384 |
 | scheduler | `SchedulerView` | frontend/src/react/features/scheduler/SchedulerView.tsx | — | 220 |
@@ -37,8 +37,8 @@
 | sessions | `SessionsView` | frontend/src/react/features/sessions/SessionsView.tsx | — | 116 |
 | settings | `SettingsView` | frontend/src/react/features/settings/SettingsView.tsx | — | 1528 |
 | share | `ShareView` | frontend/src/react/features/share/ShareView.tsx | — | 767 |
-| ssh | `SSHView` | frontend/src/react/features/ssh/SSHView.tsx | — | 225 |
-| sync | `SyncView` | frontend/src/react/features/sync/SyncView.tsx | — | 429 |
+| ssh | `SSHView` | frontend/src/react/features/ssh/SSHView.tsx | — | 226 |
+| sync | `SyncView` | frontend/src/react/features/sync/SyncView.tsx | — | 424 |
 | terminal | `TerminalView` | frontend/src/react/features/terminal/TerminalView.tsx | — | 2 |
 | themes | `ThemesView` | frontend/src/react/features/themes/ThemesView.tsx | — | 515 |
 | torrent | `TorrentView` | frontend/src/react/features/torrent/TorrentView.tsx | — | 774 |

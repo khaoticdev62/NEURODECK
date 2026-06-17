@@ -4,11 +4,11 @@ if (typeof document !== "undefined" && !document.getElementById("nd-select-css")
   const s = document.createElement("style");
   s.id = "nd-select-css";
   s.textContent = `
-  .nd-select{display:flex;flex-direction:column;gap:6px;font-family:var(--nd-font-ui);}
+  .nd-select{display:flex;flex-direction:column;gap:6px;font-family:var(--nd-font-ui);min-width:0;}
   .nd-select__label{font-family:var(--nd-font-hud);text-transform:uppercase;letter-spacing:0.14em;
     font-size:10px;font-weight:600;color:var(--nd-text-muted);}
-  .nd-select__wrap{position:relative;display:flex;align-items:center;}
-  .nd-select__field{appearance:none;width:100%;background:var(--nd-surface-input);color:var(--nd-text-primary);
+  .nd-select__wrap{position:relative;display:flex;align-items:center;min-width:0;}
+  .nd-select__field{appearance:none;width:100%;min-width:0;background:var(--nd-surface-input);color:var(--nd-text-primary);
     border:1px solid var(--nd-border-default);border-radius:var(--nd-radius-md);height:40px;padding:0 36px 0 12px;
     font-family:var(--nd-font-ui);font-size:14px;outline:none;cursor:pointer;
     transition:border-color var(--nd-motion-fast) var(--nd-ease-standard),box-shadow var(--nd-motion-fast) var(--nd-ease-standard);}

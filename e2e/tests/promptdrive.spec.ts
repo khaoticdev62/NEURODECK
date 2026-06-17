@@ -31,6 +31,8 @@ test.describe("PromptDrive Composer — structural smoke tests", () => {
   });
 
   test("DeckButtonHints render on 1280px viewport", async ({ page }) => {
+    const app = new AppPage(page);
+    await app.setDeckMode(true);
     const hints = page.getByTestId("deck-button-hint");
     expect(await hints.count()).toBeGreaterThanOrEqual(3);
   });

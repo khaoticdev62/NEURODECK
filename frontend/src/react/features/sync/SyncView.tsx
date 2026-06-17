@@ -16,8 +16,8 @@ import {
 import { neurodeckApi, listenBridge } from "../../services/bridgeAdapter";
 import type { FileTransfer, TransferPeer, TrustedPeer } from "../../services/bridgeAdapter";
 import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { IconButton } from "../../components/primitives/IconButton";
-import { DeckButtonHint } from "../../components/primitives/DeckButtonHint";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "../../components/primitives/Tabs";
 import { DashboardTab } from "./tabs/DashboardTab";
 import { DevicesTab } from "./tabs/DevicesTab";
@@ -65,14 +65,15 @@ export function SyncView() {
   const [inboxPath, setInboxPath] = useState("");
   const [incomingRequest, setIncomingRequest] = useState<FileTransfer | null>(null);
   const [mutateError, setMutateError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [sendToPreselect, setSendToPreselect] = useState<TransferPeer | null>(null);
 
   const refreshTransfers = useCallback(async () => {
     try {
       const list = await neurodeckApi.transfer.listActive();
       setTransfers(list);
-    } catch {
-      // non-critical; WebSocket events will update state
+    } catch (e) {
+      setLoadError(`Failed to load transfers: ${String(e)}`);
     }
   }, []);
 
@@ -80,8 +81,8 @@ export function SyncView() {
     try {
       const list = await neurodeckApi.transfer.listPeers();
       setPeers(list);
-    } catch {
-      // non-critical
+    } catch (e) {
+      setLoadError(`Failed to load peers: ${String(e)}`);
     }
   }, []);
 
@@ -89,31 +90,32 @@ export function SyncView() {
     try {
       const res = await neurodeckApi.transfer.trustedPeers("list");
       setTrustedPeers(res.peers ?? []);
-    } catch {
-      // non-critical
+    } catch (e) {
+      setLoadError(`Failed to load trusted peers: ${String(e)}`);
     }
   }, []);
 
+  const loadAll = useCallback(async () => {
+    setLoadError(null);
+    await Promise.all([refreshTransfers(), refreshPeers(), refreshTrusted()]);
+    try {
+      const r = await neurodeckApi.transfer.groupCode("get");
+      setGroupCode(r.code ?? "");
+    } catch (e) {
+      setLoadError(`Failed to load group code: ${String(e)}`);
+    }
+    try {
+      const r = await neurodeckApi.transfer.getInboxPath();
+      setInboxPath(r.path ?? "");
+    } catch (e) {
+      setLoadError(`Failed to load inbox path: ${String(e)}`);
+    }
+  }, [refreshTransfers, refreshPeers, refreshTrusted]);
+
   // Initial load
   useEffect(() => {
-    void refreshTransfers();
-    void refreshPeers();
-    void refreshTrusted();
-
-    neurodeckApi.transfer
-      .groupCode("get")
-      .then((r) => {
-        setGroupCode(r.code ?? "");
-      })
-      .catch(() => {});
-
-    neurodeckApi.transfer
-      .getInboxPath()
-      .then((r) => {
-        setInboxPath(r.path ?? "");
-      })
-      .catch(() => {});
-  }, [refreshTransfers, refreshPeers, refreshTrusted]);
+    void loadAll();
+  }, [loadAll]);
 
   // WebSocket event subscriptions
   useEffect(() => {
@@ -251,10 +253,6 @@ export function SyncView() {
             LAN file transfer — Warpinator/Winpinator compatible
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          <DeckButtonHint button="L1" label="Prev tab" />
-          <DeckButtonHint button="R1" label="Next tab" />
-        </div>
       </div>
 
       {/* Mutate error */}
@@ -273,6 +271,17 @@ export function SyncView() {
           >
             <X className="h-3.5 w-3.5" aria-hidden="true" />
           </IconButton>
+        </div>
+      )}
+
+      {/* Load error */}
+      {loadError && (
+        <div className="mb-3">
+          <ErrorState
+            message={loadError}
+            onRetry={loadAll}
+            onClose={() => setLoadError(null)}
+          />
         </div>
       )}
 

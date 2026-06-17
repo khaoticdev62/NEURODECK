@@ -1,0 +1,57 @@
+{
+  "scannedAt": "2026-06-17T15:22:01.701Z",
+  "violations": [],
+  "warnings": [],
+  "allowed": [
+    {
+      "file": {},
+      "pattern": "models.cancel",
+      "reason": "No-op by design — no sidecar cancel endpoint exists"
+    },
+    {
+      "file": {},
+      "pattern": "settings.validate",
+      "reason": "Pass-through validation — real validation occurs on settings.set"
+    },
+    {
+      "file": {},
+      "pattern": "browserDraft",
+      "reason": "Intentional offline-draft fallback, clearly labeled"
+    },
+    {
+      "file": {},
+      "pattern": "fallbackHealth",
+      "reason": "Fallback health array for bridge-unavailable state"
+    },
+    {
+      "file": {},
+      "pattern": "fallbackDiagnostics",
+      "reason": "Fallback diagnostics for bridge-unavailable state"
+    },
+    {
+      "file": {},
+      "pattern": "latencyMs: 0",
+      "reason": "Zero latency in fallback path — not real metric, acceptable"
+    },
+    {
+      "file": {},
+      "pattern": "latencyMs: 42",
+      "reason": "Initial placeholder overwritten by real hydration data"
+    },
+    {
+      "file": {},
+      "pattern": "*",
+      "reason": "Seed file used for initial state only — overwritten by real hydration"
+    },
+    {
+      "file": {},
+      "pattern": "APPROVED_MOCK_FALLBACK",
+      "reason": "Collab active status mock fallback check with approval"
+    },
+    {
+      "file": {},
+      "pattern": "APPROVED_MOCK_FALLBACK",
+      "reason": "Collab active status mock fallback check with approval"
+    }
+  ]
+}

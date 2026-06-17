@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', '..');
 const DS_ROOT = path.join(ROOT, 'frontend', 'src', 'design-system');
 
 const requiredFiles = [

@@ -152,8 +152,11 @@
     "check:controller-actions": "node scripts/dev/check-controller-actions.cjs"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@types/react-dom": "^19.2.3",
     "electron": "39.8.5",
     "electron-builder": "26.15.3",
+    "fallow": "^2.98.0",
     "sharp": "^0.35.1",
     "tsx": "^4.19.0",
     "vitest": "^4.1.7"

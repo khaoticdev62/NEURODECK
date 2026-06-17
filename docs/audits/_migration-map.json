@@ -2505,5 +2505,28 @@
       "occurrences": 1,
       "proposedToken": null
     }
-  ]
+  ],
+  "appliedInSprint2": {
+    "date": "2026-06-16T21:10:48Z",
+    "files": [
+      "frontend/src/design-system/tokens/tokens.css",
+      "frontend/src/design-system/tokens.json",
+      "frontend/src/app.css",
+      "frontend/src/react/index.css",
+      "frontend/src/react/App.tsx",
+      "frontend/src/react/theme/cssVariableInjector.ts",
+      "frontend/src/react/features/settings/wallpaperManager.ts",
+      "frontend/src/design-system/components/core/IconButton.tsx",
+      "frontend/src/design-system/ui_kits/workstation/CommandPalette.tsx",
+      "scripts/brand/validate-design-system.js"
+    ],
+    "categories": [
+      "root-shim-colors",
+      "legacy-alias-removal",
+      "border-radius-tokenization",
+      "box-shadow-color-tokenization",
+      "z-index-magic-numbers",
+      "tokens-json-sync"
+    ]
+  }
 }

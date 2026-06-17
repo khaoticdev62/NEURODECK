@@ -23,17 +23,35 @@ interface ToastContextValue {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 function ToastItem({ item, onDismiss }: { item: ToastItem; onDismiss: (id: string) => void }) {
+  const [paused, setPaused] = useState(false);
+  const remainingRef = useRef(item.durationMs);
+  const startRef = useRef(Date.now());
+
   useEffect(() => {
-    const t = setTimeout(() => onDismiss(item.id), item.durationMs);
+    if (paused) return;
+    startRef.current = Date.now();
+    const t = setTimeout(() => onDismiss(item.id), remainingRef.current);
     return () => clearTimeout(t);
-  }, [item.id, item.durationMs, onDismiss]);
+  }, [item.id, paused, onDismiss]);
+
+  const pause = useCallback(() => {
+    remainingRef.current = Math.max(0, remainingRef.current - (Date.now() - startRef.current));
+    setPaused(true);
+  }, []);
+
+  const resume = useCallback(() => {
+    setPaused(false);
+  }, []);
 
   return (
     <DSToast
       tone={item.tone}
       message={item.message}
       onClose={() => onDismiss(item.id)}
-      role="status"
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+      onFocus={pause}
+      onBlur={resume}
     />
   );
 }

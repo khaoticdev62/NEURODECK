@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   Share2,
   Users,
@@ -19,6 +19,7 @@ import { neurodeckApi, listenBridge } from "../../services/bridgeAdapter";
 import type { DiscoveredPeer, FileTransfer } from "../../services/bridgeAdapter";
 import { TorrentView } from "../torrent/TorrentView";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { Button } from "../../components/primitives/Button";
 import { IconButton } from "../../components/primitives/IconButton";
 import { Panel } from "../../components/primitives/Panel";
@@ -47,6 +48,7 @@ function LanPanel() {
   const [transfers, setTransfers] = useState<LegacyTransfer[]>([]);
   const [filePath, setFilePath] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -70,8 +72,8 @@ function LanPanel() {
             status: t.status,
           }))
       );
-    } catch (_) {
-      /* ignore — backend may not be ready */
+    } catch (e) {
+      setLoadError(`Could not load LAN peers: ${e}`);
     }
   }, []);
 
@@ -84,12 +86,13 @@ function LanPanel() {
   const sendFile = async () => {
     if (!filePath.trim()) return;
     setLoading(true);
+    setLoadError(null);
     try {
       await neurodeckApi.share.startTransfer(filePath.trim());
       setFilePath("");
       await load();
-    } catch (_) {
-      // Transfer errors surface in the transfers list from the backend
+    } catch (e) {
+      setLoadError(`Send failed: ${e}`);
     } finally {
       setLoading(false);
     }
@@ -120,17 +123,29 @@ function LanPanel() {
           </Button>
         </div>
 
+        {loadError && (
+          <ErrorState
+            title="LAN P2P error"
+            message={loadError}
+            onClose={() => setLoadError(null)}
+            fullHeight={false}
+          />
+        )}
+
         <div className="flex min-h-0 flex-1 gap-4">
           <div className="flex w-64 flex-col gap-2 overflow-auto rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-3">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-nd-text-muted">
               <Users className="h-3.5 w-3.5" aria-hidden="true" />
               Peers ({peers.length})
             </div>
-            <div className="flex flex-col gap-2">
+            <div role="list" className="flex flex-col gap-2">
               {peers.map((peer) => (
                 <div
                   key={peer.id}
-                  className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-3 transition-colors duration-fast hover:border-nd-accent-primary/25"
+                  tabIndex={0}
+                  role="listitem"
+                  aria-label={`Peer ${peer.name} at ${peer.address}`}
+                  className="rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-3 transition-colors duration-fast hover:border-nd-accent-primary/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
                 >
                   <p className="text-xs font-medium text-nd-text-primary">{peer.name}</p>
                   <p className="text-[10px] font-mono text-nd-text-muted">{peer.address}</p>
@@ -210,6 +225,7 @@ function WarpinatorPanel() {
   const [sendPath, setSendPath] = useState("");
   const [selectedPeerIp, setSelectedPeerIp] = useState("");
   const [sending, setSending] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [notice, setNotice] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -234,8 +250,8 @@ function WarpinatorPanel() {
       if (warpPeers.length > 0 && !selectedPeerIp) {
         setSelectedPeerIp(warpPeers[0].ip);
       }
-    } catch (_) {
-      /* backend may not be ready */
+    } catch (e) {
+      setLoadError(`Could not load Warpinator peers: ${e}`);
     }
   }, [selectedPeerIp]);
 
@@ -364,6 +380,14 @@ function WarpinatorPanel() {
     <Panel eyebrow="Warpinator" title="Cross-Platform P2P" className="h-full">
       <div className="flex h-full flex-col gap-4 overflow-y-auto">
         {/* Notice */}
+        {loadError && (
+          <ErrorState
+            title="Warpinator error"
+            message={loadError}
+            onClose={() => setLoadError(null)}
+            fullHeight={false}
+          />
+        )}
         {notice && (
           <div
             role="status"
@@ -531,9 +555,9 @@ function WarpinatorPanel() {
                       <p className="truncate text-xs font-semibold text-nd-text-primary">
                         {peer.hostname}
                       </p>
-                      <span className="ml-auto shrink-0 rounded px-1 py-0.5 text-[9px] font-mono text-nd-text-muted">
+                      <Badge tone="neutral" variant="outline" size="sm" className="ml-auto">
                         {peer.os}
-                      </span>
+                      </Badge>
                     </div>
                     <p className="mt-0.5 pl-4 text-[10px] font-mono text-nd-text-muted">
                       {peer.ip}:{peer.port}
@@ -698,12 +722,37 @@ type SharePanel = "lan" | "warpinator" | "torrent";
 
 export function ShareView() {
   const [activePanel, setActivePanel] = useState<SharePanel>("lan");
+  const tablistRef = useRef<HTMLDivElement>(null);
 
   const tabs: { id: SharePanel; label: string }[] = [
     { id: "lan", label: "LAN P2P" },
     { id: "warpinator", label: "Warpinator" },
     { id: "torrent", label: "Torrent" },
   ];
+
+  const handleTabKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const buttons = Array.from(
+      tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? []
+    );
+    const idx = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (idx === -1) return;
+
+    const next =
+      e.key === "ArrowRight"
+        ? (idx + 1) % buttons.length
+        : e.key === "ArrowLeft"
+          ? (idx - 1 + buttons.length) % buttons.length
+          : e.key === "Home"
+            ? 0
+            : e.key === "End"
+              ? tabs.length - 1
+              : -1;
+    if (next === -1) return;
+
+    e.preventDefault();
+    buttons[next]?.focus();
+    setActivePanel(tabs[next].id);
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -723,8 +772,10 @@ export function ShareView() {
 
       {/* Tabs */}
       <div
+        ref={tablistRef}
         role="tablist"
         aria-label="Share panels"
+        onKeyDown={handleTabKeyDown}
         className="mb-3 flex gap-1 overflow-x-auto rounded-lg border border-nd-border-subtle bg-nd-surface-secondary/60 p-1"
       >
         {tabs.map((tab) => (
@@ -732,10 +783,13 @@ export function ShareView() {
             key={tab.id}
             type="button"
             role="tab"
+            id={`share-tab-${tab.id}`}
             aria-selected={activePanel === tab.id}
+            aria-controls={`share-panel-${tab.id}`}
+            tabIndex={activePanel === tab.id ? 0 : -1}
             onClick={() => setActivePanel(tab.id)}
             data-panel={tab.id}
-            className={`relative flex min-h-[40px] shrink-0 items-center justify-center rounded-md px-3 py-2 text-xs font-medium outline-none transition-colors duration-fast focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
+            className={`relative flex min-h-touch shrink-0 items-center justify-center rounded-md px-3 py-2 text-xs font-medium outline-none transition-colors duration-fast focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
               activePanel === tab.id
                 ? "bg-nd-surface-tertiary text-nd-text-primary shadow-sm"
                 : "text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text-primary"
@@ -747,17 +801,30 @@ export function ShareView() {
       </div>
 
       {/* Panel areas — keep all mounted to preserve state */}
-      <div className={`flex min-h-0 flex-1 flex-col ${activePanel === "lan" ? "" : "hidden"}`}>
+      <div
+        id="share-panel-lan"
+        role="tabpanel"
+        aria-labelledby="share-tab-lan"
+        hidden={activePanel !== "lan"}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <LanPanel />
       </div>
       <div
-        className={`flex min-h-0 flex-1 flex-col ${activePanel === "warpinator" ? "" : "hidden"}`}
+        id="share-panel-warpinator"
+        role="tabpanel"
+        aria-labelledby="share-tab-warpinator"
+        hidden={activePanel !== "warpinator"}
+        className="flex min-h-0 flex-1 flex-col"
       >
         <WarpinatorPanel />
       </div>
       <div
         id="share-panel-torrent"
-        className={`flex min-h-0 flex-1 flex-col ${activePanel === "torrent" ? "active" : "hidden"}`}
+        role="tabpanel"
+        aria-labelledby="share-tab-torrent"
+        hidden={activePanel !== "torrent"}
+        className="flex min-h-0 flex-1 flex-col"
       >
         <TorrentView />
       </div>

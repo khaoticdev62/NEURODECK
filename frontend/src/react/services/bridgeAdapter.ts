@@ -2638,9 +2638,10 @@ const docs = {
     return res;
   },
   async getIndexedDocs() {
-    const paths = await bridgeInvoke<string[]>("get_indexed_docs");
+    const paths = await bridgeInvoke<string[] | { docs?: string[] }>("get_indexed_docs");
+    const safePaths = Array.isArray(paths) ? paths : paths?.docs ?? [];
     return {
-      docs: paths.map((p, i) => ({
+      docs: safePaths.map((p, i) => ({
         id: `doc-${i}`,
         title: p.replace(/\\/g, "/").split("/").pop() || p,
         path: p,
@@ -2648,12 +2649,12 @@ const docs = {
     };
   },
   async searchDocs(query: string) {
-    const raw = await bridgeInvoke<Array<{ file: string; snippet: string; score: number }>>(
-      "search_docs_semantic",
-      { query }
-    );
+    const raw = await bridgeInvoke<
+      Array<{ file: string; snippet: string; score: number }> | { results?: Array<{ file: string; snippet: string; score: number }> }
+    >("search_docs_semantic", { query });
+    const safeRaw = Array.isArray(raw) ? raw : raw?.results ?? [];
     return {
-      results: raw.map((r, i) => ({
+      results: safeRaw.map((r, i) => ({
         id: `result-${i}`,
         title: r.file.replace(/\\/g, "/").split("/").pop() || r.file,
         snippet: r.snippet,

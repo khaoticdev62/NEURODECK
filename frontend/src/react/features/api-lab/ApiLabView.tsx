@@ -8,6 +8,7 @@ import { Select } from "../../components/primitives/Select";
 import { TextInput } from "../../components/primitives/TextInput";
 import { Badge } from "../../components/primitives/Badge";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "../../components/primitives/Tabs";
 
 const METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
@@ -22,11 +23,13 @@ export function ApiLabView() {
   const [body, setBody] = useState("");
   const [response, setResponse] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"headers" | "body" | "response">("response");
 
   const send = async () => {
     if (!url.trim()) return;
     setLoading(true);
+    setError(null);
     try {
       const headerObj: Record<string, string> = {};
       headers.forEach((h) => {
@@ -41,7 +44,8 @@ export function ApiLabView() {
       setResponse(res);
       setActiveTab("response");
     } catch (e) {
-      setResponse({ status: 0, statusText: "Error", headers: {}, body: String(e) });
+      setError(String(e));
+      setResponse(null);
     }
     setLoading(false);
   };
@@ -65,15 +69,15 @@ export function ApiLabView() {
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <header className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
-          <Webhook className="h-5 w-5 text-accent-primary" aria-hidden="true" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+          <Webhook className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
             API Lab
           </p>
-          <h2 className="text-lg font-semibold text-text-primary">HTTP Request Builder</h2>
-          <p className="text-xs text-text-muted">
+          <h2 className="text-lg font-semibold text-nd-text-primary">HTTP Request Builder</h2>
+          <p className="text-xs text-nd-text-muted">
             Send requests, inspect headers, and capture responses.
           </p>
         </div>
@@ -115,7 +119,7 @@ export function ApiLabView() {
 
         <TabPanels className="min-h-0 flex-1 overflow-hidden">
           <TabPanel value="headers" className="h-full">
-            <div className="space-y-2 rounded-2xl border border-border-subtle bg-surface-secondary p-4">
+            <div className="space-y-2 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary p-4">
               {headers.map((h, i) => (
                 <div key={i} className="flex gap-2">
                   <TextInput
@@ -137,7 +141,7 @@ export function ApiLabView() {
                     variant="subtle"
                     onClick={() => removeHeader(i)}
                   >
-                    <Trash2 className="h-4 w-4 text-accent-error" aria-hidden="true" />
+                    <Trash2 className="h-4 w-4 text-nd-accent-error" aria-hidden="true" />
                   </IconButton>
                 </div>
               ))}
@@ -148,16 +152,36 @@ export function ApiLabView() {
           </TabPanel>
 
           <TabPanel value="body" className="h-full">
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder='{"key": "value"}'
-              className="h-full w-full resize-none rounded-2xl border border-border-subtle bg-surface-secondary p-4 font-mono text-sm text-text-primary outline-none focus:border-accent-primary/40 focus-visible:ring-1 focus-visible:ring-accent-primary/40"
-            />
+            <div className="flex h-full flex-col gap-2">
+              <label htmlFor="api-body" className="text-xs font-medium text-nd-text-muted">
+                Request body
+              </label>
+              <textarea
+                id="api-body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder='{"key": "value"}'
+                className="min-h-0 min-h-touch flex-1 resize-none rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary p-4 font-mono text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40"
+              />
+            </div>
           </TabPanel>
 
           <TabPanel value="response" className="h-full">
-            <div className="flex h-full flex-col gap-3 rounded-2xl border border-border-subtle bg-surface-secondary p-4">
+            <div className="flex h-full flex-col gap-3 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary p-4">
+              {error && (
+                <ErrorState
+                  title="Request failed"
+                  message={error}
+                  onRetry={send}
+                  onClose={() => setError(null)}
+                />
+              )}
               {response ? (
                 <>
                   <div className="flex shrink-0 items-center gap-3">
@@ -172,17 +196,19 @@ export function ApiLabView() {
                       <Copy className="h-4 w-4" aria-hidden="true" />
                     </IconButton>
                   </div>
-                  <pre className="min-h-0 flex-1 overflow-auto rounded-xl border border-border-subtle bg-surface-secondary/60 p-3 font-mono text-xs text-text-secondary">
+                  <pre aria-live="polite" role="region" aria-label="Response body" className="min-h-0 flex-1 overflow-auto rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 p-3 font-mono text-xs text-nd-text-secondary">
                     {response.body}
                   </pre>
                 </>
               ) : (
-                <EmptyState
-                  icon={Send}
-                  title="No response yet"
-                  description="Configure your request and press Send to see the response here."
-                  className="h-full"
-                />
+                !error && (
+                  <EmptyState
+                    icon={Send}
+                    title="No response yet"
+                    description="Configure your request and press Send to see the response here."
+                    className="h-full"
+                  />
+                )
               )}
             </div>
           </TabPanel>

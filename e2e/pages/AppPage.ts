@@ -62,6 +62,8 @@ export class AppPage {
   readonly notifModal: Locator;
   readonly shortcutsOverlay: Locator;
   readonly quickSwitcherOverlay: Locator;
+  readonly deckModeToggle: Locator;
+  readonly controllerHintBar: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -118,6 +120,8 @@ export class AppPage {
     this.notifModal = page.locator("#notif-modal");
     this.shortcutsOverlay = page.locator("#shortcuts-overlay");
     this.quickSwitcherOverlay = page.locator("#quick-switcher-overlay");
+    this.deckModeToggle = page.getByTestId("deck-mode-toggle");
+    this.controllerHintBar = page.locator('[aria-label="Controller hints"]');
   }
 
   async goto() {
@@ -166,8 +170,9 @@ export class AppPage {
   }
 
   async openCommandPalette() {
-    // Click the title-bar button instead of Control+K because Chromium intercepts Ctrl+K
-    await this.commandPaletteBtn.click();
+    // Use evaluate click so it works even when the sidebar is hidden on narrow
+    // viewports (the button is still in the DOM).
+    await this.commandPaletteBtn.evaluate((el) => (el as HTMLButtonElement).click());
     await expect(this.commandPaletteOverlay).toHaveClass(/active/);
   }
 
@@ -188,23 +193,42 @@ export class AppPage {
   }
 
   async openQuickSwitcher() {
-    // Quick switcher only opens when recentViews.length > 1.
-    // Add a second view to history by briefly visiting an anchor view then
-    // returning to wherever we already are.
-    const currentView = await this.page.evaluate(() => {
-      const el = document.querySelector("[data-testid^='view-'].active");
-      return el?.getAttribute("data-testid")?.replace("view-", "") ?? "chat";
-    });
-    const pivot = currentView === "memory" ? "chat" : "memory";
-    await this.navigateTo(pivot);
-    await this.navigateTo(currentView as Parameters<typeof this.navigateTo>[0]);
+    // Try opening the quick switcher directly first. It only appears when the
+    // app has already visited more than one view.
     await this.page.keyboard.press("Control+Tab");
+    await this.page.waitForTimeout(150);
+    const isOpen = await this.quickSwitcherOverlay
+      .evaluate((el) => el.classList.contains("active"))
+      .catch(() => false);
+
+    if (!isOpen) {
+      // No history yet — seed it by visiting an anchor view and returning.
+      const currentView = await this.page.evaluate(() => {
+        const el = document.querySelector("[data-testid^='view-'].active");
+        return el?.getAttribute("data-testid")?.replace("view-", "") ?? "chat";
+      });
+      const pivot = currentView === "memory" ? "chat" : "memory";
+      await this.navigateTo(pivot);
+      await this.navigateTo(currentView as Parameters<typeof this.navigateTo>[0]);
+      await this.page.keyboard.press("Control+Tab");
+    }
+
     await expect(this.quickSwitcherOverlay).toHaveClass(/active/);
   }
 
   async closeQuickSwitcher() {
     await this.page.keyboard.press("Escape");
     await expect(this.quickSwitcherOverlay).not.toHaveClass(/active/);
+  }
+
+  async setDeckMode(enabled: boolean) {
+    const isOn = await this.deckModeToggle.evaluate(
+      (el) => el.getAttribute("aria-label") === "Deck Mode On"
+    );
+    if (isOn !== enabled) {
+      await this.deckModeToggle.evaluate((el) => (el as HTMLButtonElement).click());
+      await expect(this.controllerHintBar).toBeVisible({ visible: enabled });
+    }
   }
 
   async mockTauriBackend() {
