@@ -25,7 +25,8 @@ export function ExecutionView({
               icon={BrainCircuit}
               title="No agent runs yet"
               description="Run an agent from the Agent Dock or use a prompt template. Runs are recorded here with provider, model, status, prompt, result, and context usage."
-              className="rounded-3xl border border-dashed border-border-subtle bg-surface-secondary/60"
+              variant="deck"
+              className="h-full rounded-3xl border border-dashed border-border-subtle bg-surface-secondary/60"
               action={
                 <Button variant="primary" onClick={() => void actions.runAgent("architect")}>
                   Run Architect Agent

@@ -77,7 +77,7 @@ export function CommandPalette({
         alignItems: "flex-start",
         justifyContent: "center",
         paddingTop: 90,
-        zIndex: 500,
+        zIndex: "var(--z-panel)",
       }}
     >
       <div

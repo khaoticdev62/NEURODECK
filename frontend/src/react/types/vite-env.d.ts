@@ -18,7 +18,7 @@ import type {
   SavedSessionPayload,
   SaveSessionResponse,
   SessionExportResponse,
-} from "./types/neurodeck";
+} from "./neurodeck";
 
 type NeuroDeckStoreResult = { ok: boolean; updatedAt?: string; reason?: string };
 type ProjectScanResponse =

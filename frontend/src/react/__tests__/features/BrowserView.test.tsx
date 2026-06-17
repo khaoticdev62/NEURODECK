@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { BrowserView } from "../../features/browser/BrowserView";
 
 // Mock child components
-vi.mock("../browser-vpn/BrowserVpnPanel", () => ({
+vi.mock("../../features/browser-vpn/BrowserVpnPanel", () => ({
   BrowserVpnPanel: () => <div data-testid="vpn-panel">VPN Panel</div>,
 }));
 
