@@ -443,6 +443,20 @@ export function MemoryView({
         </div>
       </div>
 
+      {/* Screen reader live region for search/semantic results */}
+      <div
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+        id="memory-search-status"
+      >
+        {semanticMode && semanticResults !== null
+          ? `Found ${semanticResults.length} related memories via semantic search`
+          : query.trim() && filtered.length !== state.memories.length
+          ? `${filtered.length} memories match your search`
+          : ""}
+      </div>
+
       <div className="min-h-0 flex-1 overflow-y-auto p-4 scrollbar-thin">
         {filtered.length === 0 && state.memories.length === 0 && (
           <EmptyState
@@ -458,13 +472,13 @@ export function MemoryView({
             description={`No memories match "${query}". Try a different search term.`}
           />
         )}
-        <div className="grid gap-4 lg:grid-cols-3">
+        <ul role="list" className="grid gap-4 lg:grid-cols-3" aria-label="Memory records">
           {filtered.map((memory) => {
             const ts = formatUpdatedAt(memory.updatedAt);
             const isConfirmingDelete = deleteConfirmId === memory.id;
             return (
+              <li key={memory.id}>
               <article
-                key={memory.id}
                 aria-label={memory.title ?? "(untitled)"}
                 className={`rounded-3xl border p-4 transition ${
                   memory.pinned
@@ -576,9 +590,10 @@ export function MemoryView({
                   )}
                 </div>
               </article>
+              </li>
             );
           })}
-        </div>
+        </ul>
       </div>
     </Panel>
   );

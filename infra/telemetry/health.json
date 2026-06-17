@@ -7,7 +7,7 @@
     "tag":  "v1.8.0-ptah",
     "workspace_state":  "manual-uncommitted",
     "dirty_build":  true,
-    "stamped_at_utc":  "2026-06-17T01:52:21Z",
+    "stamped_at_utc":  "2026-06-17T05:57:54Z",
     "checks":  {
                    "meta_json_present":  true,
                    "schema_valid":  true,
@@ -47,36 +47,36 @@
                                            "status":  "fail",
                                            "log_path":  ".loose/inbox/kfms-release-logs/security-hardening.log",
                                            "message":  "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log",
-                                           "duration_ms":  1211,
-                                           "started_at_utc":  "2026-06-17T01:52:24Z",
-                                           "finished_at_utc":  "2026-06-17T01:52:25Z"
+                                           "duration_ms":  933,
+                                           "started_at_utc":  "2026-06-17T05:57:57Z",
+                                           "finished_at_utc":  "2026-06-17T05:57:58Z"
                                        },
                                        {
                                            "name":  "cargo check",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-check.log",
                                            "message":  "",
-                                           "duration_ms":  7644,
-                                           "started_at_utc":  "2026-06-17T01:52:25Z",
-                                           "finished_at_utc":  "2026-06-17T01:52:33Z"
+                                           "duration_ms":  8842,
+                                           "started_at_utc":  "2026-06-17T05:57:58Z",
+                                           "finished_at_utc":  "2026-06-17T05:58:07Z"
                                        },
                                        {
                                            "name":  "cargo test",
                                            "status":  "fail",
                                            "log_path":  ".loose/inbox/kfms-release-logs/cargo-test.log",
                                            "message":  "cargo test failed. See .loose/inbox/kfms-release-logs/cargo-test.log",
-                                           "duration_ms":  25817,
-                                           "started_at_utc":  "2026-06-17T01:52:33Z",
-                                           "finished_at_utc":  "2026-06-17T01:52:58Z"
+                                           "duration_ms":  19687,
+                                           "started_at_utc":  "2026-06-17T05:58:07Z",
+                                           "finished_at_utc":  "2026-06-17T05:58:26Z"
                                        },
                                        {
                                            "name":  "frontend build",
                                            "status":  "pass",
                                            "log_path":  ".loose/inbox/kfms-release-logs/frontend-build.log",
                                            "message":  "",
-                                           "duration_ms":  3359,
-                                           "started_at_utc":  "2026-06-17T01:52:58Z",
-                                           "finished_at_utc":  "2026-06-17T01:53:02Z"
+                                           "duration_ms":  3925,
+                                           "started_at_utc":  "2026-06-17T05:58:26Z",
+                                           "finished_at_utc":  "2026-06-17T05:58:30Z"
                                        }
                                    ],
                          "blockers":  [
@@ -85,7 +85,7 @@
                                           "security hardening failed. See .loose/inbox/kfms-release-logs/security-hardening.log",
                                           "cargo test failed. See .loose/inbox/kfms-release-logs/cargo-test.log"
                                       ],
-                         "duration_ms":  38060,
-                         "checked_at_utc":  "2026-06-17T01:53:02Z"
+                         "duration_ms":  33417,
+                         "checked_at_utc":  "2026-06-17T05:58:30Z"
                      }
 }

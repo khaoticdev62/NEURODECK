@@ -46,7 +46,10 @@ export function ModelCard({
       : "bg-transparent";
 
   return (
-    <Panel className={`transition hover:border-nd-accent-primary/30 ${panelBorder} ${panelBg}`}>
+    <Panel
+      className={`transition hover:border-nd-accent-primary/30 ${panelBorder} ${panelBg}`}
+      aria-label={`${model.name}${selected ? " — selected" : ""}${policyAllowed === false ? " — policy blocked" : ""}`}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-3">
           <div

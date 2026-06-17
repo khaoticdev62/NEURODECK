@@ -30,29 +30,33 @@ export function TelemetryWidget({
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <dl
+      className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
+      aria-label="System telemetry"
+    >
       {items.map((item, index) => (
         <div
           key={item.label}
           className="relative overflow-hidden rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-2.5 transition duration-fast hover:border-nd-accent-primary/25 hover:bg-nd-surface-tertiary/40"
           style={{ animationDelay: `${index * 40}ms` }}
         >
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-tertiary text-nd-accent-primary">
-              <item.icon className="h-3.5 w-3.5" aria-hidden="true" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-tertiary text-nd-accent-primary">
+              <item.icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] uppercase tracking-wider text-nd-text-muted/80">
+              <dt className="text-xs uppercase tracking-wider text-nd-text-muted/80">
                 {item.label}
-              </p>
+              </dt>
               {item.label === "Health" ? (
                 <div className="flex items-center gap-1.5">
-                  <span
-                    className="truncate text-xs font-semibold text-nd-text-primary"
+                  <dd
+                    className="truncate text-sm font-semibold text-nd-text-primary"
                     title={item.value}
+                    aria-label={`${item.label}: ${item.value}`}
                   >
                     {item.value}
-                  </span>
+                  </dd>
                   <StatusChip
                     tone={ready === total ? "success" : ready > 0 ? "warning" : "error"}
                     size="sm"
@@ -61,12 +65,13 @@ export function TelemetryWidget({
                   </StatusChip>
                 </div>
               ) : (
-                <p
-                  className="truncate text-xs font-semibold text-nd-text-primary"
+                <dd
+                  className="truncate text-sm font-semibold text-nd-text-primary"
                   title={item.value}
+                  aria-label={`${item.label}: ${item.value}`}
                 >
                   {item.value}
-                </p>
+                </dd>
               )}
             </div>
           </div>
@@ -76,6 +81,6 @@ export function TelemetryWidget({
           />
         </div>
       ))}
-    </div>
+    </dl>
   );
 }

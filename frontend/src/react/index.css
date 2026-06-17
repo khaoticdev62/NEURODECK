@@ -28,6 +28,7 @@
 
   /* Density mode tokens — overridden by [data-density] selectors below */
   --nd-target-min: 44px;
+  --nd-spacing-touch-target: var(--nd-target-min);
   --nd-spacing-item: 8px;
 
   /* Z-index scale (matches AGENTS.md documented range) */
@@ -46,12 +47,14 @@
 /* Density overrides */
 [data-density="deck"] {
   --nd-target-min: 48px;
+  --nd-spacing-touch-target: var(--nd-target-min);
   --nd-spacing-item: 10px;
   --nd-font-ui: 15px;
 }
 
 [data-density="compact"] {
   --nd-target-min: 36px;
+  --nd-spacing-touch-target: var(--nd-target-min);
   --nd-spacing-item: 6px;
   --nd-font-ui: 13px;
 }
@@ -67,7 +70,7 @@ body,
 body {
   background: var(--nd-bg);
   color: var(--nd-text);
-  font-family: var(--font-body);
+  font-family: var(--nd-font-ui);
 }
 
 /* Drag regions for Electron frameless window */
@@ -98,7 +101,12 @@ a,
 
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--nd-text-muted) 30%, transparent);
-  border-radius: 999px;
+  border-radius: var(--nd-radius-full);
+  transition: background 150ms ease;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--nd-text-muted) 50%, transparent);
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
@@ -125,6 +133,7 @@ a,
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 4px 16px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(var(--nd-glass-blur, 8px));
 }
 
 .glass-panel-elevated {
@@ -137,6 +146,7 @@ a,
     0 2px 4px rgba(0, 0, 0, 0.25),
     0 8px 24px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(calc(var(--nd-glass-blur, 8px) * 1.5));
 }
 
 .glass-panel-flat {
@@ -172,17 +182,17 @@ a,
 @keyframes view-enter {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.995);
+    transform: translateY(4px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
 }
 
 .animate-view-enter {
   opacity: 0;
-  animation: view-enter 220ms ease-out forwards;
+  animation: view-enter var(--nd-motion-normal, 200ms) var(--nd-ease-out, ease-out) forwards;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -329,14 +339,24 @@ body.wallpaper-active #app-shell {
    Accessibility — Reduced Motion
    ═══════════════════════════════════════════════════════════════════════════ */
 
+/* Reduced-motion: global rule lives in design-system/tokens/tokens.css.
+   Only targeted overrides belong here — transforms that leave visible artifacts
+   when duration is zeroed out, and decorative ambient animations. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.001ms !important;
+  /* View enter animation: 0ms duration would leave the opacity:0 start state
+     visible for one frame. Explicitly reset all properties to safe final values. */
+  .animate-view-enter {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Ambient wallpaper animations are decorative-only; disorienting when instant */
+  .css-nebula,
+  .css-aurora,
+  .css-mesh,
+  .css-tactical {
+    animation: none !important;
   }
 
   .glow-pulse {
@@ -416,7 +436,7 @@ a:focus,
 *:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--nd-accent) 50%, transparent);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: var(--nd-radius-xs);
 }
 
 /* Override for elements that already have custom focus styles */
@@ -459,6 +479,11 @@ button:focus-visible,
 }
 
 /* Glow pulse for active/running states */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: var(--nd-glow-sm, 0 0 8px 0 rgba(var(--nd-accent-primary-rgb, 94, 235, 255), 0.35)); }
+  50% { box-shadow: var(--nd-glow-md, 0 0 16px 2px rgba(var(--nd-accent-primary-rgb, 94, 235, 255), 0.55)); }
+}
+
 .glow-pulse {
   animation: pulse-glow 2s ease-in-out infinite;
 }
@@ -481,7 +506,7 @@ button:focus-visible,
 
 *::-webkit-scrollbar-thumb {
   background: color-mix(in srgb, var(--nd-text-muted) 20%, transparent);
-  border-radius: 999px;
+  border-radius: var(--nd-radius-full);
 }
 
 *::-webkit-scrollbar-track {
@@ -523,7 +548,7 @@ button:focus-visible,
   flex-direction: column;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--nd-accent) 26%, transparent);
-  border-radius: 20px;
+  border-radius: var(--nd-radius-3xl);
   background: color-mix(in srgb, var(--nd-bg) 94%, transparent);
   box-shadow:
     0 22px 70px rgba(0, 0, 0, 0.45),
@@ -551,7 +576,7 @@ button:focus-visible,
 .onboarding-viewfinder-frame {
   position: absolute;
   border: 1px solid color-mix(in srgb, var(--nd-accent) 72%, white 8%);
-  border-radius: 14px;
+  border-radius: var(--nd-radius-lg);
   box-shadow:
     0 0 0 9999px rgba(0, 0, 0, 0.22),
     0 0 0 4px color-mix(in srgb, var(--nd-accent) 13%, transparent),
@@ -570,7 +595,7 @@ button:focus-visible,
   z-index: calc(var(--z-modal) + 1);
   max-width: 280px;
   border: 1px solid color-mix(in srgb, var(--nd-warning) 30%, transparent);
-  border-radius: 14px;
+  border-radius: var(--nd-radius-lg);
   background: color-mix(in srgb, var(--nd-bg) 92%, transparent);
   padding: 10px 12px;
   color: var(--nd-text-muted);
@@ -613,7 +638,7 @@ button:focus-visible,
   top: 45%;
   height: 10px;
   width: 72%;
-  border-radius: 999px;
+  border-radius: var(--nd-radius-full);
   background: linear-gradient(90deg, transparent, var(--nd-accent), transparent);
   box-shadow: 0 0 22px color-mix(in srgb, var(--nd-accent) 54%, transparent);
   animation: onboarding-scan 2.2s ease-in-out infinite;

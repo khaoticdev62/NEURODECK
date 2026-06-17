@@ -5,8 +5,8 @@ import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
 import { ErrorState } from "../../components/primitives/ErrorState";
-import { LoadingState } from "../../components/primitives/LoadingState";
 import { Panel } from "../../components/primitives/Panel";
+import { Skeleton } from "../../components/primitives/Skeleton";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import { ModelCard } from "../../components/cards/ModelCard";
 import { neurodeckApi } from "../../services/bridgeAdapter";
@@ -72,8 +72,12 @@ export function ModelsView({
       >
         <div className="flex-1 min-h-0 overflow-y-auto p-4 scrollbar-thin">
           {loading && (
-            <div className="flex h-full min-h-[120px] items-center justify-center">
-              <LoadingState label="Scanning for models…" />
+            <div
+              className="grid gap-4 lg:grid-cols-2"
+              role="status"
+              aria-label="Scanning for models…"
+            >
+              <Skeleton className="h-28 rounded-2xl" count={4} />
             </div>
           )}
           {!loading && error && (

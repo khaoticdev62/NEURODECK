@@ -227,6 +227,15 @@ export function injectThemeVariables(tokens: ThemeTokenSet) {
     root.style.setProperty("--nd-state-error", tokens.color.state.error);
     root.style.setProperty("--nd-state-info", tokens.color.state.info);
 
+    // State RGB channels — enables rgba(var(--nd-state-*-rgb), alpha) patterns
+    root.style.setProperty("--nd-state-success-rgb", hexToRgb(tokens.color.state.success));
+    root.style.setProperty("--nd-state-warning-rgb", hexToRgb(tokens.color.state.warning));
+    root.style.setProperty("--nd-state-error-rgb", hexToRgb(tokens.color.state.error));
+    root.style.setProperty("--nd-state-info-rgb", hexToRgb(tokens.color.state.info));
+
+    // Accent primary RGB channel
+    root.style.setProperty("--nd-accent-primary-rgb", hexToRgb(tokens.color.accent.primary));
+
     // Borders
     root.style.setProperty("--nd-border-subtle", tokens.color.border.subtle);
     root.style.setProperty("--nd-border", tokens.color.border.default);
@@ -241,9 +250,9 @@ export function injectThemeVariables(tokens: ThemeTokenSet) {
     root.style.setProperty("--tw-shadow-color", tokens.color.accent.glow);
 
     // Typography
-    root.style.setProperty("--font-body", tokens.typography.fontFamily.ui);
-    root.style.setProperty("--font-mono", tokens.typography.fontFamily.mono);
-    root.style.setProperty("--font-display", tokens.typography.fontFamily.display);
+    root.style.setProperty("--nd-font-ui", tokens.typography.fontFamily.ui);
+    root.style.setProperty("--nd-font-mono", tokens.typography.fontFamily.mono);
+    root.style.setProperty("--nd-font-display", tokens.typography.fontFamily.display);
 
     // Glassmorphism
     root.style.setProperty("--nd-glass-opacity", tokens.glass.opacity.toString());

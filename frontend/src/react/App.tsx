@@ -10,6 +10,8 @@ import { PrimarySidebar } from "./components/layout/PrimarySidebar";
 import { SecondaryRail } from "./components/layout/SecondaryRail";
 import { TitleBar } from "./components/layout/TitleBar";
 import { Badge } from "./components/primitives/Badge";
+import { FocusTrapContainer } from "./components/primitives/FocusTrapContainer";
+import { ViewErrorBoundary } from "./components/system/ViewErrorBoundary";
 import { ToastProvider } from "./components/primitives/Toast";
 // ─── Eager imports — only the default landing view (chat/workspace) ──────────
 import { WorkspaceView } from "./features/workspace/WorkspaceView";
@@ -930,7 +932,11 @@ export default function App() {
       data-controller-default="true"
       className="view-content active h-full min-h-0 animate-view-enter"
     >
-      {content}
+      <ViewErrorBoundary viewId={id}>
+        <Suspense fallback={<ViewLoader />}>
+          {content}
+        </Suspense>
+      </ViewErrorBoundary>
     </div>
   );
 
@@ -947,8 +953,8 @@ export default function App() {
     const shell = shellRef.current;
     if (!shell) return;
 
-    shell.style.setProperty("--font-body", activeFont.family);
-    document.documentElement.style.setProperty("--font-body", activeFont.family);
+    shell.style.setProperty("--nd-font-ui", activeFont.family);
+    document.documentElement.style.setProperty("--nd-font-ui", activeFont.family);
   }, [activeFont]);
 
   if (!state.hydrated) {
@@ -1073,7 +1079,7 @@ export default function App() {
           {/* Skip to main content — visible on first Tab press */}
           <a
             href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[var(--z-toast)] focus:rounded-lg focus:bg-nd-accent focus:px-3 focus:py-2 focus:text-nd-bg focus:text-sm focus:font-semibold"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[var(--nd-z-toast)] focus:rounded-lg focus:bg-nd-accent focus:px-3 focus:py-2 focus:text-nd-bg focus:text-sm focus:font-semibold"
           >
             Skip to main content
           </a>
@@ -1268,33 +1274,39 @@ export default function App() {
               onMouseDown={() => setSettingsOpen(false)}
             >
               {settingsOpen && (
-                <div
-                  ref={settingsDialogRef}
-                  role="dialog"
-                  aria-modal="true"
-                  aria-labelledby="settings-dialog-title"
-                  tabIndex={-1}
-                  className="settings-modal-card absolute inset-3 rounded-3xl border border-nd-text-muted/15 p-0 shadow-2xl shadow-nd-accent/10 outline-none"
-                  data-settings-theme={settingsPanel}
-                  data-controller-zone="dialog"
-                  onMouseDown={(e) => e.stopPropagation()}
+                <FocusTrapContainer
+                  active={settingsOpen}
+                  onEscape={() => setSettingsOpen(false)}
+                  className="contents"
                 >
-                  <span id="settings-dialog-title" className="sr-only">
-                    Settings
-                  </span>
-                  <div className="h-full min-h-0">
-                    <Suspense fallback={<ViewLoader />}>
-                      <SettingsView
-                        key={settingsPanel}
-                        state={state}
-                        dispatch={dispatch}
-                        actions={appActions}
-                        onPanelChange={setSettingsPanel}
-                        onClose={() => setSettingsOpen(false)}
-                      />
-                    </Suspense>
+                  <div
+                    ref={settingsDialogRef}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="settings-dialog-title"
+                    tabIndex={-1}
+                    className="settings-modal-card absolute inset-3 rounded-3xl border border-nd-text-muted/15 p-0 shadow-2xl shadow-nd-accent/10 outline-none"
+                    data-settings-theme={settingsPanel}
+                    data-controller-zone="dialog"
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <span id="settings-dialog-title" className="sr-only">
+                      Settings
+                    </span>
+                    <div className="h-full min-h-0">
+                      <Suspense fallback={<ViewLoader />}>
+                        <SettingsView
+                          key={settingsPanel}
+                          state={state}
+                          dispatch={dispatch}
+                          actions={appActions}
+                          onPanelChange={setSettingsPanel}
+                          onClose={() => setSettingsOpen(false)}
+                        />
+                      </Suspense>
+                    </div>
                   </div>
-                </div>
+                </FocusTrapContainer>
               )}
             </div>
 
@@ -1302,10 +1314,15 @@ export default function App() {
             <div
               id="notif-modal"
               data-controller-overlay={notificationsOpen ? "true" : undefined}
-              className={`fixed inset-0 z-[var(--z-modal)] bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-200 ${notificationsOpen ? "active" : "pointer-events-none opacity-0"}`}
+              className={`fixed inset-0 z-[var(--nd-z-modal)] bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-200 ${notificationsOpen ? "active" : "pointer-events-none opacity-0"}`}
               onMouseDown={() => setNotificationsOpen(false)}
             >
               {notificationsOpen && (
+                <FocusTrapContainer
+                  active={notificationsOpen}
+                  onEscape={() => setNotificationsOpen(false)}
+                  className="contents"
+                >
                 <div
                   ref={notifDialogRef}
                   role="dialog"
@@ -1330,6 +1347,7 @@ export default function App() {
                   </div>
                   <p className="mt-3 text-sm text-nd-text-muted">No notifications.</p>
                 </div>
+                </FocusTrapContainer>
               )}
             </div>
 
@@ -1337,10 +1355,15 @@ export default function App() {
             <div
               id="shortcuts-overlay"
               data-controller-overlay={shortcutsOpen ? "true" : undefined}
-              className={`fixed inset-0 z-[var(--z-modal)] bg-nd-bg/55 backdrop-blur-sm ${shortcutsOpen ? "" : "hidden"}`}
+              className={`fixed inset-0 z-[var(--nd-z-modal)] bg-nd-bg/55 backdrop-blur-sm ${shortcutsOpen ? "" : "hidden"}`}
               onMouseDown={() => setShortcutsOpen(false)}
             >
               {shortcutsOpen && (
+                <FocusTrapContainer
+                  active={shortcutsOpen}
+                  onEscape={() => setShortcutsOpen(false)}
+                  className="contents"
+                >
                 <div
                   ref={shortcutsDialogRef}
                   role="dialog"
@@ -1384,6 +1407,7 @@ export default function App() {
                     ))}
                   </div>
                 </div>
+                </FocusTrapContainer>
               )}
             </div>
 
@@ -1392,7 +1416,7 @@ export default function App() {
               <div
                 id="ctrl-prompt-overlay"
                 data-controller-overlay="true"
-                className={`fixed inset-0 z-[var(--z-modal)] bg-nd-bg/55 backdrop-blur-sm ${ctrlPromptOpen ? "active" : ""}`}
+                className={`fixed inset-0 z-[var(--nd-z-modal)] bg-nd-bg/55 backdrop-blur-sm ${ctrlPromptOpen ? "active" : ""}`}
                 onMouseDown={() => setCtrlPromptOpen(false)}
               >
                 <div
@@ -1439,7 +1463,7 @@ export default function App() {
             <div
               id="quick-switcher-overlay"
               data-controller-overlay={quickSwitcherOpen ? "true" : undefined}
-              className={`fixed inset-0 z-[var(--z-modal)] bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-150 ${quickSwitcherOpen ? "active" : "pointer-events-none opacity-0"}`}
+              className={`fixed inset-0 z-[var(--nd-z-modal)] bg-nd-bg/55 backdrop-blur-sm transition-opacity duration-150 ${quickSwitcherOpen ? "active" : "pointer-events-none opacity-0"}`}
               onMouseDown={() => setQuickSwitcherOpen(false)}
             >
               {quickSwitcherOpen && (
