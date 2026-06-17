@@ -14,6 +14,7 @@ pub struct TerminalEnvironmentProbe {
 }
 
 #[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TerminalEnvironmentReport {
     pub platform: String,
     pub arch: String,
@@ -27,6 +28,7 @@ pub struct TerminalEnvironmentReport {
 }
 
 #[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TerminalProfileAvailability {
     pub id: String,
     pub name: String,
@@ -42,6 +44,7 @@ pub struct TerminalProfileAvailability {
 }
 
 #[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TerminalSessionSummary {
     pub id: String,
     pub title: String,
@@ -60,6 +63,7 @@ pub struct TerminalSessionSummary {
 }
 
 #[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct TerminalDiagnosticsReport {
     pub session_count: usize,
     pub active_session_count: usize,
@@ -70,6 +74,7 @@ pub struct TerminalDiagnosticsReport {
 }
 
 #[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CommandSafetyVerdict {
     pub level: String,
     pub reason: String,

@@ -1115,11 +1115,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let environment = crate::terminal::detect_terminal_environment();
             let sessions = crate::terminal::list_terminal_sessions(state.pty.clone());
             Ok(serde_json::json!({
-                "session_count": sessions.len(),
-                "active_session_count": sessions.len(),
-                "active_sessions": sessions,
+                "sessionCount": sessions.len(),
+                "activeSessionCount": sessions.len(),
+                "activeSessions": sessions,
                 "environment": environment,
-                "safety_level": "safe",
+                "safetyLevel": "safe",
                 "warnings": environment.warnings
             }))
         }
