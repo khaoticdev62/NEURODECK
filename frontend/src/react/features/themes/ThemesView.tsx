@@ -8,7 +8,11 @@ import {
   ShieldAlert,
   Sparkles,
   Layers,
+  Plus,
 } from "lucide-react";
+import { ThemeEditorDrawer } from "./ThemeEditorDrawer";
+import { buildThemeFromEditorTokens } from "./themeBuilder";
+import type { NeuroDeckAction } from "../../types/neurodeck";
 
 import { Badge } from "../../components/primitives/Badge";
 import { Button } from "../../components/primitives/Button";
@@ -49,7 +53,7 @@ function isPartialThemeSettings(value: unknown): value is Partial<Record<string,
 
 const TABS = ["themes", "wallpapers", "settings", "diagnostics"] as const;
 
-export function ThemesView() {
+export function ThemesView({ dispatch }: { dispatch?: React.Dispatch<NeuroDeckAction> }) {
   const {
     settings,
     activeTheme,
@@ -58,10 +62,12 @@ export function ThemesView() {
     availableWallpapers,
     updateSettings,
     resetToDefaults,
+    registerCustomTheme,
   } = useTheme();
 
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("themes");
   const [showTokenInspector, setShowTokenInspector] = useState(false);
+  const [themeEditorOpen, setThemeEditorOpen] = useState(false);
   const [exportStr, setExportStr] = useState("");
   const [importStr, setImportStr] = useState("");
   const [importMessage, setImportMessage] = useState<{ text: string; ok: boolean } | null>(null);
@@ -211,6 +217,16 @@ export function ThemesView() {
                     </button>
                   );
                 })}
+              </div>
+              <div className="mt-4 flex justify-end">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={Plus}
+                  onClick={() => setThemeEditorOpen(true)}
+                >
+                  Create Theme
+                </Button>
               </div>
             </TabPanel>
 
@@ -547,6 +563,18 @@ export function ThemesView() {
           </div>
         </div>
       </TabGroup>
+
+      <ThemeEditorDrawer
+        open={themeEditorOpen}
+        onClose={() => setThemeEditorOpen(false)}
+        onSaved={(name, tokens) => {
+          const theme = buildThemeFromEditorTokens(name, tokens);
+          void registerCustomTheme(theme).then(() => {
+            dispatch?.({ type: "add-theme", theme });
+            applyUpdate({ activeThemeId: theme.id });
+          });
+        }}
+      />
     </Panel>
   );
 }
