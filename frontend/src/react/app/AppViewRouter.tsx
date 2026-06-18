@@ -30,6 +30,9 @@ const MemoryView = lazy(() =>
 const ModelsView = lazy(() =>
   import("../features/models/ModelsView").then((m) => ({ default: m.ModelsView }))
 );
+const ProviderManagerView = lazy(() =>
+  import("../features/models/ProviderManagerView").then((m) => ({ default: m.ProviderManagerView }))
+);
 const PluginsView = lazy(() =>
   import("../features/plugins/PluginsView").then((m) => ({ default: m.PluginsView }))
 );
@@ -77,6 +80,12 @@ const OrchestratorView = lazy(() =>
 const PromptLabView = lazy(() =>
   import("../features/prompt-lab/PromptLabView").then((m) => ({ default: m.PromptLabView }))
 );
+const PromptLibraryView = lazy(() =>
+  import("../features/prompt-lab/PromptLibraryView").then((m) => ({ default: m.PromptLibraryView }))
+);
+const PromptBuilderView = lazy(() =>
+  import("../features/prompt-lab/PromptBuilderView").then((m) => ({ default: m.PromptBuilderView }))
+);
 const RecoveryView = lazy(() =>
   import("../features/recovery/RecoveryView").then((m) => ({ default: m.RecoveryView }))
 );
@@ -91,6 +100,9 @@ const SyncView = lazy(() =>
 );
 const SecurityView = lazy(() =>
   import("../features/security/SecurityView").then((m) => ({ default: m.SecurityView }))
+);
+const ApiKeyVaultView = lazy(() =>
+  import("../features/security/ApiKeyVaultView").then((m) => ({ default: m.ApiKeyVaultView }))
 );
 const ShareView = lazy(() =>
   import("../features/share/ShareView").then((m) => ({ default: m.ShareView }))
@@ -170,6 +182,15 @@ const ControllerProfileView = lazy(() =>
 const BackupRestoreView = lazy(() =>
   import("../features/maintenance/BackupRestoreView").then((m) => ({ default: m.BackupRestoreView }))
 );
+const ArchiveView = lazy(() =>
+  import("../features/archive/ArchiveView").then((m) => ({ default: m.ArchiveView }))
+);
+const StorageView = lazy(() =>
+  import("../features/storage/StorageView").then((m) => ({ default: m.StorageView }))
+);
+const SafeModeScreen = lazy(() =>
+  import("../features/recovery/SafeModeScreen").then((m) => ({ default: m.SafeModeScreen }))
+);
 
 function renderView(id: ViewId, content: ReactNode) {
   return (
@@ -209,6 +230,8 @@ export function AppViewRouter({ state, dispatch, selectors, actions }: AppViewRo
         renderView("project", <ProjectView state={state} actions={actions} />)}
       {state.activeView === "models" &&
         renderView("models", <ModelsView state={state} dispatch={dispatch} actions={actions} />)}
+      {state.activeView === "provider-manager" &&
+        renderView("provider-manager", <ProviderManagerView state={state} dispatch={dispatch} />)}
       {(state.activeView === "agent" || state.activeView === "agents") &&
         renderView("agent", <AgentsView state={state} dispatch={dispatch} actions={actions} />)}
       {state.activeView === "memory" &&
@@ -234,6 +257,10 @@ export function AppViewRouter({ state, dispatch, selectors, actions }: AppViewRo
       {state.activeView === "remote" && renderView("remote", <RemoteView />)}
       {state.activeView === "docs" && renderView("docs", <DocsView />)}
       {state.activeView === "prompt-lab" && renderView("prompt-lab", <PromptLabView />)}
+      {state.activeView === "prompt-library" &&
+        renderView("prompt-library", <PromptLibraryView state={state} dispatch={dispatch} />)}
+      {state.activeView === "prompt-builder" &&
+        renderView("prompt-builder", <PromptBuilderView state={state} dispatch={dispatch} />)}
       {state.activeView === "academy" && renderView("academy", <AcademyView />)}
       {state.activeView === "graph" && renderView("graph", <GraphView />)}
       {state.activeView === "scheduler" && renderView("scheduler", <SchedulerView />)}
@@ -247,7 +274,9 @@ export function AppViewRouter({ state, dispatch, selectors, actions }: AppViewRo
         )}
       {state.activeView === "security" &&
         renderView("security", <SecurityView state={state} actions={actions} />)}
-      {state.activeView === "themes" && renderView("themes", <ThemesView />)}
+      {state.activeView === "api-key-vault" &&
+        renderView("api-key-vault", <ApiKeyVaultView state={state} dispatch={dispatch} />)}
+      {state.activeView === "themes" && renderView("themes", <ThemesView dispatch={dispatch} />)}
       {state.activeView === "exports" &&
         renderView("exports", <ExportsView state={state} actions={actions} />)}
       {state.activeView === "maintenance" &&
@@ -299,6 +328,10 @@ export function AppViewRouter({ state, dispatch, selectors, actions }: AppViewRo
         renderView("controller-profile", <ControllerProfileView state={state} />)}
       {state.activeView === "backup" &&
         renderView("backup", <BackupRestoreView state={state} />)}
+      {state.activeView === "archive" && renderView("archive", <ArchiveView />)}
+      {state.activeView === "storage" &&
+        renderView("storage", <StorageView dispatch={dispatch} />)}
+      {state.activeView === "safe-mode" && renderView("safe-mode", <SafeModeScreen />)}
     </>
   );
 }

@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import type { ControllerSettings } from "../../shared/types/controller";
+import type { NeurodeckTheme } from "../../shared/theme/themeContracts";
 import type { OnboardingMode } from "../onboarding/onboarding.types";
 
 export type ViewId =
@@ -63,7 +64,15 @@ export type ViewId =
   | "release-checklist"
   | "permissions"
   | "controller-profile"
-  | "backup";
+  | "backup"
+  | "archive"
+  | "storage"
+  | "safe-mode"
+  // AI Core batch
+  | "prompt-library"
+  | "prompt-builder"
+  | "provider-manager"
+  | "api-key-vault";
 export type ThemeName =
   | "Blacksite"
   | "Tactical Glass"
@@ -496,6 +505,7 @@ export interface NeuroDeckState {
   hydrated: boolean;
   activeView: ViewId;
   commandOpen: boolean;
+  searchOpen: boolean;
   deckMode: boolean;
   controllerSettings: ControllerSettings;
   selectedTheme: ThemeName;
@@ -530,6 +540,7 @@ export interface NeuroDeckState {
   messages: AIMessage[];
   aiRuns: AgentRun[];
   promptTemplates: PromptTemplate[];
+  customThemes: NeurodeckTheme[];
   telemetry: Telemetry;
   lastSavedAt?: string;
 }
@@ -613,6 +624,7 @@ export type NeuroDeckAction =
   | { type: "hydrate"; payload: Partial<NeuroDeckState> | null }
   | { type: "set-view"; view: ViewId }
   | { type: "toggle-command"; open?: boolean }
+  | { type: "toggle-search"; open?: boolean }
   | { type: "toggle-deck-mode" }
   | { type: "set-controller-settings"; settings: Partial<ControllerSettings> }
   | { type: "set-theme"; theme: ThemeName }
@@ -659,7 +671,9 @@ export type NeuroDeckAction =
   | { type: "delete-memory"; id: string }
   | { type: "set-sessions"; sessions: SessionNode[] }
   | { type: "set-agents"; agents: Agent[] }
+  | { type: "add-agent"; agent: Agent }
   | { type: "set-plugins"; plugins: PluginCard[] }
+  | { type: "add-theme"; theme: NeurodeckTheme }
   | { type: "reset-local-state" };
 
 // ── npm Package Manager ──────────────────────────────────────────────────────

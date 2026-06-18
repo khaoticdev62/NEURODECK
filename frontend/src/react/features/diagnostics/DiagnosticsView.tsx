@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { TelemetryDashboardTab } from "./TelemetryDashboardTab";
 import {
   Activity,
   AlertTriangle,
@@ -50,6 +51,7 @@ export function DiagnosticsView({
   actions: NeuroDeckAppActions;
 }) {
   const diagnostics = state.diagnostics;
+  const [diagTab, setDiagTab] = useState<"health" | "telemetry">("health");
   const [matrix, setMatrix] = useState<ConnectionMatrixEntry[]>([]);
   const [selectedConnectionId, setSelectedConnectionId] = useState<string | null>(null);
   const [isProbing, setIsProbing] = useState<Record<string, boolean>>({});
@@ -178,7 +180,48 @@ export function DiagnosticsView({
   };
 
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[340px_1fr_400px]">
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      {/* Tab selector */}
+      <div
+        className="flex shrink-0 gap-1 border-b border-nd-border-subtle bg-nd-surface-secondary/30 px-4 py-2"
+        role="tablist"
+        aria-label="Diagnostics tabs"
+      >
+        {(["health", "telemetry"] as const).map((tab) => (
+          <button
+            key={tab}
+            role="tab"
+            aria-selected={diagTab === tab}
+            aria-controls={`diag-tab-${tab}`}
+            id={`diag-tab-btn-${tab}`}
+            onClick={() => setDiagTab(tab)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition ${
+              diagTab === tab
+                ? "bg-nd-accent-primary/20 text-nd-accent-primary"
+                : "text-nd-text-muted hover:text-nd-text-primary"
+            }`}
+          >
+            {tab === "health" ? "Health Monitor" : "Telemetry"}
+          </button>
+        ))}
+      </div>
+
+      {diagTab === "telemetry" ? (
+        <div
+          id="diag-tab-telemetry"
+          role="tabpanel"
+          aria-labelledby="diag-tab-btn-telemetry"
+          className="min-h-0 flex-1 overflow-hidden"
+        >
+          <TelemetryDashboardTab />
+        </div>
+      ) : (
+      <div
+        id="diag-tab-health"
+        role="tabpanel"
+        aria-labelledby="diag-tab-btn-health"
+        className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[340px_1fr_400px]"
+      >
       {/* Column 1: System Info & Core Health Checks */}
       <Panel
         eyebrow="Diagnostics"
@@ -485,6 +528,8 @@ export function DiagnosticsView({
             </div>
           </div>
         </Panel>
+      )}
+      </div>
       )}
     </div>
   );
