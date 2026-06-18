@@ -11,7 +11,7 @@
 - Codename: `Ptah`
 - Tag: `v1.8.0-ptah`
 - Workspace state: `generated-only`
-- Last stamped build: `2026-06-18T19:48:58Z`
+- Last stamped build: `2026-06-18T20:08:18Z`
 <!-- KFMS:PLAN_SNAPSHOT:END -->
 
 ---

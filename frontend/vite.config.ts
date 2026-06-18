@@ -9,6 +9,9 @@ const rendererRoot = path.resolve(repoRoot, "src/renderer");
 export default defineConfig({
   // Root is repo root so index.html and src/renderer/ are resolved correctly
   root: repoRoot,
+  // publicDir must be explicit because root moved to repoRoot; Vite's default
+  // <root>/public/ doesn't exist — static assets live in frontend/public/.
+  publicDir: path.resolve(__dirname, "public"),
   build: {
     outDir: path.resolve(__dirname, "dist"),
     emptyOutDir: true,
@@ -43,6 +46,11 @@ export default defineConfig({
       : []),
   ],
   clearScreen: false,
+  css: {
+    // Vite root is repoRoot, but postcss.config.js lives in frontend/.
+    // Explicitly point PostCSS discovery here so Tailwind is processed.
+    postcss: __dirname,
+  },
   server: {
     host: "127.0.0.1",
     port: 1420,
