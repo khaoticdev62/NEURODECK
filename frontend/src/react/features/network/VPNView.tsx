@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, RefreshCcw, Shield, ShieldOff, Wifi } from "lucide-react";
+import { NetworkProfileDrawer } from "./NetworkProfileDrawer";
 import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
 import { ErrorState } from "../../components/primitives/ErrorState";
@@ -40,6 +41,7 @@ export function VPNView({ state: _state }: { state: NeuroDeckState }) {
   const [error, setError] = useState<string | null>(null);
   const [tunnel, setTunnel] = useState<TunnelStatus | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -108,7 +110,12 @@ export function VPNView({ state: _state }: { state: NeuroDeckState }) {
             onClick={() => void loadData()}
             aria-label="Refresh"
           />
-          <Button variant="secondary" size="sm" icon={Plus}>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={Plus}
+            onClick={() => setProfileDrawerOpen(true)}
+          >
             Add Profile
           </Button>
         </div>
@@ -143,7 +150,11 @@ export function VPNView({ state: _state }: { state: NeuroDeckState }) {
                 title="No VPN profiles"
                 description="Add a WireGuard or OpenVPN profile to get started."
                 action={
-                  <Button variant="secondary" size="sm" onClick={() => {}}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setProfileDrawerOpen(true)}
+                  >
                     Add Profile
                   </Button>
                 }
@@ -242,6 +253,12 @@ export function VPNView({ state: _state }: { state: NeuroDeckState }) {
           </div>
         </TabPanel>
       </TabGroup>
+
+      <NetworkProfileDrawer
+        open={profileDrawerOpen}
+        onClose={() => setProfileDrawerOpen(false)}
+        onSaved={() => void loadData()}
+      />
     </Panel>
   );
 }
