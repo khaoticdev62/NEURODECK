@@ -116,7 +116,7 @@ jobs:
     needs: [checkpoint-exists, checkpoint-builds]
     if: always() && needs.checkpoint-exists.result == 'success'
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           script: |
             const tag = '${{ needs.checkpoint-exists.outputs.tag }}';
