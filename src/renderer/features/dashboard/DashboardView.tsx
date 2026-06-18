@@ -115,30 +115,25 @@ export function DashboardView({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <MetricCard
-                label="Sessions"
-                value={metrics?.sessionCount ?? 0}
-                icon={MessageSquare}
-                hint="Total sessions"
-              />
-              <MetricCard
-                label="Memory"
-                value={metrics?.memoryCount ?? 0}
-                icon={BrainCircuit}
-                hint="Stored facts"
-              />
-              <MetricCard
-                label="CPU"
-                value={`${metrics?.cpuPercent ?? 0}%`}
-                icon={Cpu}
-                hint="Current usage"
-              />
-              <MetricCard
-                label="RAM"
-                value={`${Math.round((metrics?.ramUsedMb ?? 0) / 1024)}GB`}
-                icon={HardDrive}
-                hint="Memory used"
-              />
+              {[
+                { label: "Sessions", value: metrics?.sessionCount ?? 0, icon: MessageSquare, hint: "Total sessions" },
+                { label: "Memory", value: metrics?.memoryCount ?? 0, icon: BrainCircuit, hint: "Stored facts" },
+                { label: "CPU", value: `${metrics?.cpuPercent ?? 0}%`, icon: Cpu, hint: "Current usage" },
+                { label: "RAM", value: `${Math.round((metrics?.ramUsedMb ?? 0) / 1024)}GB`, icon: HardDrive, hint: "Memory used" },
+              ].map((card, i) => (
+                <div
+                  key={card.label}
+                  className="animate-slide-up"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <MetricCard
+                    label={card.label}
+                    value={card.value}
+                    icon={card.icon}
+                    hint={card.hint}
+                  />
+                </div>
+              ))}
             </div>
           )}
         </section>

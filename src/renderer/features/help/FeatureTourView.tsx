@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { BookOpen, CheckCircle2, Play } from "lucide-react";
 import { Button } from "../../components/primitives/Button";
+import { EmptyState } from "../../components/primitives/EmptyState";
 import { Panel } from "../../components/primitives/Panel";
 import { StatusChip } from "../../components/primitives/StatusChip";
 import type { NeuroDeckState } from "../../types/neurodeck";
@@ -125,6 +126,13 @@ export function FeatureTourView({ state: _state }: { state: NeuroDeckState }) {
       }
     >
       <div className="flex flex-col gap-6 p-4">
+        {TOURS.length === 0 && (
+          <EmptyState
+            icon={BookOpen}
+            title="No tours available"
+            description="Feature tours are not available in this build."
+          />
+        )}
         {allDone && (
           <div
             role="status"

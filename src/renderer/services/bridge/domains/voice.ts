@@ -9,12 +9,12 @@ export const voice = {
       return { ok: false };
     }
   },
-  async stop(): Promise<{ transcript: string }> {
+  async stop(): Promise<{ transcript: string; error?: string }> {
     try {
       const result = await bridgeInvoke<string>("stop_recording");
       return { transcript: typeof result === "string" ? result : "" };
-    } catch (_) {
-      return { transcript: "" };
+    } catch (e) {
+      return { transcript: "", error: String(e) };
     }
   },
 };

@@ -29,6 +29,7 @@ export function InputConsole({
 }: InputConsoleProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [isRecording, setIsRecording] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
 
   const adjustHeight = useCallback(() => {
     const el = textareaRef.current;
@@ -80,7 +81,7 @@ export function InputConsole({
       {/* Composer */}
       <div className="flex items-end gap-2 rounded-2xl border border-nd-border-subtle bg-nd-surface-raised/60 p-2 shadow-sm transition focus-within:border-nd-border-focus focus-within:bg-nd-surface-raised focus-within:shadow-focus">
         {/* Attachments */}
-        <div className="flex gap-1 pb-1 pl-1">
+        <div className="relative flex gap-1 pb-1 pl-1">
           <IconButton
             aria-label="Attach file"
             title="Attach file"
@@ -131,16 +132,22 @@ export function InputConsole({
             aria-label={isRecording ? "Stop recording" : "Voice input"}
             title={isRecording ? "Stop recording" : "Voice input"}
             size="touch"
-            variant={isRecording ? "accent" : "subtle"}
+            variant={isRecording ? "accent" : voiceError ? "danger" : "subtle"}
             onClick={async () => {
+              setVoiceError(null);
               try {
                 if (isRecording) {
                   setIsRecording(false);
-                  const { transcript } = await neurodeckApi.voice.stop();
-                  if (transcript) onChange(value ? `${value} ${transcript}` : transcript);
+                  const { transcript, error } = await neurodeckApi.voice.stop();
+                  if (error) {
+                    setVoiceError(error);
+                  } else if (transcript) {
+                    onChange(value ? `${value} ${transcript}` : transcript);
+                  }
                 } else {
                   const { ok } = await neurodeckApi.voice.start();
                   if (ok) setIsRecording(true);
+                  else setVoiceError("Microphone unavailable");
                 }
               } catch {
                 setIsRecording(false);
@@ -149,6 +156,15 @@ export function InputConsole({
           >
             <Mic className="h-4 w-4" />
           </IconButton>
+          {voiceError && (
+            <span
+              role="alert"
+              className="absolute bottom-full left-0 mb-1 max-w-[200px] rounded-lg border border-nd-danger/30 bg-nd-bg/95 px-2 py-1 text-xs text-nd-danger"
+              title={voiceError}
+            >
+              Mic error
+            </span>
+          )}
           <IconButton
             aria-label="Attach screenshot"
             title="Attach screenshot"

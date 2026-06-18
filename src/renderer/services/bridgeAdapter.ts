@@ -52,6 +52,8 @@ import type { ToolStatus, StatusBarState } from "../types/neurodeck";
 
 export { BridgeError, isBridgeError };
 export { listenBridge };
+export { getBridgeConnectionState } from "./bridge/transport";
+export type { BridgeStatus } from "./bridge/transport";
 export { computeBackoff, isSafeReadCommand };
 export { runtimeTypeToProvider };
 export { bridgeInvoke };

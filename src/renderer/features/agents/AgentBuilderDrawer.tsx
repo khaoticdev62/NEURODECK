@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import { Bot, X } from "lucide-react";
+import { neurodeckApi } from "../../services/bridgeAdapter";
+import type { AIProvider } from "../../types/neurodeck";
 import { Button } from "../../components/primitives/Button";
 import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
 import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
@@ -97,15 +99,28 @@ export function AgentBuilderDrawer({ open, onClose, onSaved }: AgentBuilderDrawe
     if (!testPrompt.trim()) return;
     setTesting(true);
     setTestOutput("");
-    await new Promise<void>((r) => setTimeout(r, 800));
-    setTestOutput(
-      `[Agent: ${name || "Unnamed"}] Simulating task: "${testPrompt}"\n` +
-        `→ Model: ${model} · Runtime: ${runtime}\n` +
-        `→ Tools: ${[...selectedTools].join(", ") || "none"}\n` +
-        `→ Wire to neurodeckApi.agents.test() for live output.`
-    );
-    setTesting(false);
-  }, [testPrompt, name, model, runtime, selectedTools]);
+    try {
+      const result = await neurodeckApi.agents.run({
+        agentId: `builder-preview-${Date.now()}`,
+        agentName: name || "Unnamed Agent",
+        agentRole: "assistant",
+        provider: (model.startsWith("gemini") ? "openai_compat" : "ollama") as AIProvider,
+        model,
+        persona: "default",
+        prompt: testPrompt.trim(),
+        projectContext: null,
+      });
+      if (result.ok) {
+        setTestOutput(result.run.result ?? "(no output)");
+      } else {
+        setTestOutput(`[Error] ${result.error ?? "Agent run failed"}`);
+      }
+    } catch (e) {
+      setTestOutput(`[Error] ${String(e)}`);
+    } finally {
+      setTesting(false);
+    }
+  }, [testPrompt, name, model]);
 
   const handleSave = () => {
     if (!name.trim()) return;

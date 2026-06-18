@@ -136,9 +136,13 @@ export function SecondaryRail({
           title="Active Operators"
           className="min-h-0 flex-1 overflow-hidden"
         >
-          <div className="max-h-full space-y-2 overflow-y-auto p-3 scrollbar-thin">
+          <ul
+            role="list"
+            aria-label="Active agents"
+            className="max-h-full space-y-2 overflow-y-auto p-3 scrollbar-thin"
+          >
             {state.agents.map((agent) => (
-              <div
+              <li
                 key={agent.id}
                 className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]"
               >
@@ -163,15 +167,15 @@ export function SecondaryRail({
                     {agent.status}
                   </Badge>
                 </div>
-              </div>
+              </li>
             ))}
             {!thinking.length && (
-              <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/40 p-3 text-xs leading-5 text-[var(--nd-text-muted)]">
+              <li className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/40 p-3 text-xs leading-5 text-[var(--nd-text-muted)]">
                 No agents are actively thinking. That is either peaceful or suspicious. Probably
                 both.
-              </div>
+              </li>
             )}
-          </div>
+          </ul>
         </Panel>
 
         <Panel eyebrow="System" title="Local State">

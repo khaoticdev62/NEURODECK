@@ -1,5 +1,34 @@
 import { Minus, Square, X } from "lucide-react";
 import { IconButton } from "../primitives/IconButton";
+import { useBridgeStatus } from "../../hooks/useBridgeStatus";
+
+const STATUS_CONFIG = {
+  connected: {
+    label: "Backend connected",
+    className: "bg-[var(--nd-accent-success)]",
+  },
+  connecting: {
+    label: "Backend connecting…",
+    className: "animate-pulse bg-[var(--nd-accent-warning)]",
+  },
+  disconnected: {
+    label: "Backend disconnected",
+    className: "bg-[var(--nd-accent-error)]",
+  },
+} as const;
+
+function BridgeStatusDot() {
+  const status = useBridgeStatus();
+  const { label, className } = STATUS_CONFIG[status];
+  return (
+    <span
+      role="status"
+      aria-label={label}
+      title={label}
+      className={`pointer-events-auto inline-block h-1.5 w-1.5 shrink-0 rounded-full ${className}`}
+    />
+  );
+}
 
 export function TitleBar({ subtitle }: { subtitle: string }) {
   return (
@@ -14,13 +43,16 @@ export function TitleBar({ subtitle }: { subtitle: string }) {
           <span className="h-3 w-3 rounded-full bg-[var(--nd-accent-success)]/80" />
         </div>
         <div className="h-5 w-px bg-[var(--nd-border-subtle)]" />
-        <div className="min-w-0">
-          <p className="truncate text-xs font-bold uppercase tracking-[var(--nd-tracking-wordmark)] text-[var(--nd-text-primary)]">
-            NEURODECK
-          </p>
-          <p className="truncate text-[10px] uppercase tracking-[0.16em] text-[var(--nd-text-muted)]">
-            {subtitle}
-          </p>
+        <div className="min-w-0 flex items-center gap-2">
+          <div>
+            <p className="truncate text-xs font-bold uppercase tracking-[var(--nd-tracking-wordmark)] text-[var(--nd-text-primary)]">
+              NEURODECK
+            </p>
+            <p className="truncate text-[10px] uppercase tracking-[0.16em] text-[var(--nd-text-muted)]">
+              {subtitle}
+            </p>
+          </div>
+          <BridgeStatusDot />
         </div>
       </div>
 

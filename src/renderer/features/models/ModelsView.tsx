@@ -113,10 +113,15 @@ export function ModelsView({
           )}
           {!loading && !error && state.models.length > 0 && (
             <div className="grid gap-4 lg:grid-cols-2" role="list" aria-label="Available models">
-              {state.models.map((model) => {
+              {state.models.map((model, i) => {
                 const scored = allowedById[model.id];
                 return (
-                  <div key={model.id} role="listitem">
+                  <div
+                    key={model.id}
+                    role="listitem"
+                    className="animate-slide-up"
+                    style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
+                  >
                     <ModelCard
                       model={model}
                       selected={state.selectedModelId === model.id}

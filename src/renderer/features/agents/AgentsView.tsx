@@ -154,8 +154,12 @@ export function AgentsView({
             />
           ) : (
             <ul role="list" className="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-              {state.agents.map((agent) => (
-                <li key={agent.id}>
+              {state.agents.map((agent, i) => (
+                <li
+                  key={agent.id}
+                  className="animate-slide-up"
+                  style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
+                >
                   <AgentCard
                     agent={agent}
                     isBusy={isBusy}

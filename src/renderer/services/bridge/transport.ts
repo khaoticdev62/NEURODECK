@@ -1,5 +1,7 @@
 import { BRIDGE_PORT, WS_INITIAL_RECONNECT_DELAY_MS, WS_MAX_RECONNECT_DELAY_MS } from "./config";
 
+export type BridgeStatus = "connected" | "disconnected" | "connecting";
+
 let _ws: WebSocket | null = null;
 const _wsListeners: Map<string, Set<(payload: unknown) => void>> = new Map();
 if (typeof window !== "undefined") {
@@ -10,6 +12,18 @@ let _wsOpenResolve: (() => void) | null = null;
 let _wsOpenReject: ((err: Error) => void) | null = null;
 let _wsReconnectDelayMs = WS_INITIAL_RECONNECT_DELAY_MS;
 let _wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+function emitBridgeState(state: BridgeStatus): void {
+  const handlers = _wsListeners.get("bridge:status");
+  if (handlers) handlers.forEach((h) => h({ state }));
+}
+
+export function getBridgeConnectionState(): BridgeStatus {
+  if (!_ws) return "disconnected";
+  if (_ws.readyState === WebSocket.OPEN) return "connected";
+  if (_ws.readyState === WebSocket.CONNECTING) return "connecting";
+  return "disconnected";
+}
 
 function scheduleWsReconnect(): void {
   if (_wsReconnectTimer) return;
@@ -42,12 +56,14 @@ function _ensureWs(): WebSocket | null {
     _wsOpenReject = null;
     _wsOpenResolve?.();
     _wsOpenResolve = null;
+    emitBridgeState("connected");
   };
   socket.onerror = () => {
     _wsOpenReject?.(new Error("WebSocket connection failed"));
     _wsOpenReject = null;
     _wsOpenResolve = null;
     _wsOpenPromise = null;
+    emitBridgeState("disconnected");
   };
   socket.onclose = () => {
     _wsOpenReject?.(new Error("WebSocket closed before open"));
@@ -55,7 +71,9 @@ function _ensureWs(): WebSocket | null {
     _wsOpenResolve = null;
     _wsOpenPromise = null;
     _ws = null;
+    emitBridgeState("disconnected");
     scheduleWsReconnect();
+    emitBridgeState("connecting");
   };
   socket.onmessage = (ev) => {
     try {

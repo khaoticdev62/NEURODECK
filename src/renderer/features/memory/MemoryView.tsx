@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch } from "react";
 import {
   Archive,
@@ -66,6 +66,7 @@ export function MemoryView({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<{ message: string; retry?: () => void } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const backupsToggleBtnRef = useRef<HTMLButtonElement>(null);
 
   const showToast = useCallback((text: string, ok = true) => {
     setToast({ text, ok });
@@ -211,6 +212,15 @@ export function MemoryView({
     }
   }, [showBackups]);
 
+  // Return focus to the Backups toggle when the backup panel closes
+  const prevShowBackups = useRef(showBackups);
+  useEffect(() => {
+    if (prevShowBackups.current && !showBackups) {
+      backupsToggleBtnRef.current?.focus();
+    }
+    prevShowBackups.current = showBackups;
+  }, [showBackups]);
+
   // ── Restore ─────────────────────────────────────────────────────────────────
   const handleConfirmRestore = useCallback(
     async (name: string) => {
@@ -297,6 +307,7 @@ export function MemoryView({
         </Button>
 
         <Button
+          ref={backupsToggleBtnRef}
           size="sm"
           variant={showBackups ? "soft" : "outline"}
           icon={RefreshCw}
@@ -495,11 +506,15 @@ export function MemoryView({
           />
         )}
         <ul role="list" className="grid gap-4 lg:grid-cols-3" aria-label="Memory records">
-          {filtered.map((memory) => {
+          {filtered.map((memory, i) => {
             const ts = formatUpdatedAt(memory.updatedAt);
             const isConfirmingDelete = deleteConfirmId === memory.id;
             return (
-              <li key={memory.id}>
+              <li
+                key={memory.id}
+                className="animate-slide-up"
+                style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
+              >
               <article
                 aria-label={memory.title ?? "(untitled)"}
                 className={`rounded-3xl border p-4 transition ${

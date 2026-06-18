@@ -40,7 +40,11 @@ export function SessionsView({
   return (
     <Panel eyebrow="Session History" title="Saved Sessions" data-testid="sessions-view" className="h-full overflow-hidden">
       <div className="grid h-full gap-4 overflow-y-auto p-4 scrollbar-thin xl:grid-cols-[360px_1fr]">
-        <div className="rounded-3xl border border-nd-accent-primary/25 bg-nd-accent-primary/[0.045] p-5">
+        <div
+          role="region"
+          aria-label="Session actions"
+          className="rounded-3xl border border-nd-accent-primary/25 bg-nd-accent-primary/[0.045] p-5"
+        >
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
             <Archive className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
           </div>
@@ -105,8 +109,14 @@ export function SessionsView({
           )}
           {!loading &&
             !error &&
-            sessionsList.map((node) => (
-              <SessionCard key={node.id} node={node} onRefresh={fetchSessions} />
+            sessionsList.map((node, i) => (
+              <div
+                key={node.id}
+                className="animate-slide-up"
+                style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
+              >
+                <SessionCard node={node} onRefresh={fetchSessions} />
+              </div>
             ))}
         </div>
       </div>

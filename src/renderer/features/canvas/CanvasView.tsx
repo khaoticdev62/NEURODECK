@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Paintbrush, Play, Copy, Trash2, RefreshCw, Sparkles, Users } from "lucide-react";
+import { Paintbrush, Play, Copy, Trash2, Square, Sparkles, Users } from "lucide-react";
 import { neurodeckApi, listenBridge } from "../../services/bridgeAdapter";
 import type { CodeLang } from "../../services/bridgeAdapter";
 import { Button } from "../../components/primitives/Button";
@@ -89,6 +89,16 @@ export function CanvasView() {
     }
   }, [code, lang]);
 
+  const handleStop = useCallback(async () => {
+    try {
+      await neurodeckApi.canvas.cancelExec();
+    } catch {
+      // backend may already be done
+    } finally {
+      setRunning(false);
+    }
+  }, []);
+
   const clear = () => {
     setOutput("");
     setCode(DEFAULT_CODE[lang] ?? "");
@@ -136,13 +146,12 @@ export function CanvasView() {
           />
           <Button
             id="canvas-run-btn"
-            variant="success"
+            variant={running ? "danger" : "success"}
             size="md"
-            loading={running}
-            onClick={run}
-            icon={running ? RefreshCw : Play}
+            onClick={running ? () => void handleStop() : run}
+            icon={running ? Square : Play}
           >
-            Run
+            {running ? "Stop" : "Run"}
           </Button>
           <IconButton
             id="canvas-copy-btn"

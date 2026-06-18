@@ -87,15 +87,26 @@ export function TelemetryDashboardTab() {
 
   const fetchSnapshot = useCallback(async () => {
     try {
-      const mem = await neurodeckApi.diagnostics.memoryUsage();
+      const [mem, probe] = await Promise.all([
+        neurodeckApi.diagnostics.memoryUsage(),
+        neurodeckApi.diagnostics.runHealthProbe(),
+      ]);
+      const connectedEntries = probe.data.filter((d) => d.state === "connected");
+      const avgLatency =
+        connectedEntries.length > 0
+          ? Math.round(
+              connectedEntries.reduce((sum, d) => sum + (d.latencyMs ?? 0), 0) /
+                connectedEntries.length
+            )
+          : 0;
       const snap: TelemetrySnapshot = {
         timestamp: Date.now(),
-        cpuPct: Math.round(Math.random() * 40 + 5),
-        ramMb: mem.rss_mb > 0 ? mem.rss_mb : Math.round(Math.random() * 300 + 128),
-        apiLatencyMs: Math.round(Math.random() * 120 + 20),
-        tokensPerSec: parseFloat((Math.random() * 40 + 5).toFixed(1)),
-        ipcThroughputKbps: parseFloat((Math.random() * 200 + 10).toFixed(1)),
-        modelLoadMs: Math.round(Math.random() * 2000 + 200),
+        cpuPct: 0,                    // TODO: expose cpu_pct from Rust backend
+        ramMb: mem.rss_mb > 0 ? mem.rss_mb : 0,
+        apiLatencyMs: avgLatency,
+        tokensPerSec: 0,              // TODO: expose tokens_per_sec from inference backend
+        ipcThroughputKbps: 0,         // TODO: expose ipc bytes/s from bridge
+        modelLoadMs: 0,               // TODO: expose model_load_ms from model manager
       };
       pushSnapshot(snap);
     } catch {

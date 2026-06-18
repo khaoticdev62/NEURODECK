@@ -26,6 +26,7 @@ import { IconButton } from "../../components/primitives/IconButton";
 import { TextInput } from "../../components/primitives/TextInput";
 import { Badge } from "../../components/primitives/Badge";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { ErrorState } from "../../components/primitives/ErrorState";
 import { Panel } from "../../components/primitives/Panel";
 import type { DiagnosticFix } from "./DiagnosticFixPanel";
 import { DiagnosticFixPanel } from "./DiagnosticFixPanel";
@@ -52,6 +53,7 @@ export function IDEView() {
   const [openTabs, setOpenTabs] = useState<OpenTab[]>([]);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [fileLoadError, setFileLoadError] = useState<string | null>(null);
   const [logs, setLogs] = useState<{ text: string; tone: "info" | "ok" | "error" | "warn" }[]>([]);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const lineNumbersRef = useRef<HTMLDivElement>(null);
@@ -90,12 +92,15 @@ export function IDEView() {
   const loadFiles = useCallback(
     async (path = "") => {
       setLoading(true);
+      setFileLoadError(null);
       try {
         const res = await neurodeckApi.ide.listWorkspaceFiles(path || undefined);
         setFiles(res.files || []);
         setCurrentPath(path);
       } catch (e) {
-        log(`Cannot list files: ${e}`, "error");
+        const msg = String(e);
+        log(`Cannot list files: ${msg}`, "error");
+        setFileLoadError(msg);
       }
       setLoading(false);
     },
@@ -577,17 +582,28 @@ export function IDEView() {
       </header>
 
       <div className="flex min-h-0 flex-1 gap-3" data-controller-zone="ide-workspace">
-        <IdeFileExplorer
-          files={files}
-          currentPath={currentPath}
-          activeTab={activeTab}
-          onNavigateUp={() => {
-            const parts = currentPath.split(/[/\\]/).filter(Boolean);
-            loadFiles(parts.slice(0, -1).join("/"));
-          }}
-          onLoadDirectory={loadFiles}
-          onOpenFile={openFile}
-        />
+        {fileLoadError && files.length === 0 ? (
+          <div className="flex w-48 shrink-0 flex-col overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/60">
+            <ErrorState
+              title="File explorer unavailable"
+              message={fileLoadError}
+              onRetry={() => void loadFiles(currentPath)}
+              onClose={() => setFileLoadError(null)}
+            />
+          </div>
+        ) : (
+          <IdeFileExplorer
+            files={files}
+            currentPath={currentPath}
+            activeTab={activeTab}
+            onNavigateUp={() => {
+              const parts = currentPath.split(/[/\\]/).filter(Boolean);
+              loadFiles(parts.slice(0, -1).join("/"));
+            }}
+            onLoadDirectory={loadFiles}
+            onOpenFile={openFile}
+          />
+        )}
 
         <div className="flex min-w-0 flex-1 flex-col gap-2" data-controller-zone="ide-editor">
           <IdeTabBar

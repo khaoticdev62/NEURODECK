@@ -498,7 +498,7 @@ export function PluginsView({
                 }
               />
             ) : (
-              filteredPlugins.map((p) => {
+              filteredPlugins.map((p, i) => {
                 const isSelected = selectedPlugin?.file_name === p.file_name;
                 const validation = validationStatuses[p.file_name];
                 const hasErrors = validation ? !validation.passed : false;
@@ -510,6 +510,12 @@ export function PluginsView({
                     tabIndex={0}
                     aria-pressed={isSelected}
                     aria-label={p.name}
+                    className={`animate-slide-up rounded-xl border p-4 transition duration-200 cursor-pointer flex flex-col gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
+                      isSelected
+                        ? "border-nd-accent-primary bg-nd-accent-primary/[0.03]"
+                        : "border-nd-text-muted/15 bg-nd-surface/30 hover:border-nd-accent-primary/25 hover:bg-nd-surface/40"
+                    }`}
+                    style={{ animationDelay: `${Math.min(i * 50, 300)}ms` }}
                     onClick={() => handleSelectPlugin(p)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" || e.key === " ") {
@@ -517,11 +523,6 @@ export function PluginsView({
                         handleSelectPlugin(p);
                       }
                     }}
-                    className={`rounded-xl border p-4 transition duration-200 cursor-pointer flex flex-col gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
-                      isSelected
-                        ? "border-nd-accent-primary bg-nd-accent-primary/[0.03]"
-                        : "border-nd-text-muted/15 bg-nd-surface/30 hover:border-nd-accent-primary/25 hover:bg-nd-surface/40"
-                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
