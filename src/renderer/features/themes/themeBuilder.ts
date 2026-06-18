@@ -40,71 +40,85 @@ export function buildThemeFromEditorTokens(
   const statusWarning = editorTokens["--nd-status-warning"] ?? tokens.color.state.warning;
   const statusError = editorTokens["--nd-status-error"] ?? tokens.color.state.error;
 
-  tokens.color.accent.primary = accentPrimary;
-  tokens.color.accent.secondary = accentSecondary;
-  tokens.color.accent.tertiary = accentSecondary;
-  tokens.color.accent.strong = accentPrimary;
-  tokens.color.accent.glow = toRgba(accentPrimary, 0.18);
-  tokens.color.accent.soft = toRgba(accentPrimary, 0.1);
+  Object.assign(tokens.color.accent, {
+    primary: accentPrimary,
+    secondary: accentSecondary,
+    tertiary: accentSecondary,
+    strong: accentPrimary,
+    glow: toRgba(accentPrimary, 0.18),
+    soft: toRgba(accentPrimary, 0.1),
+  });
 
-  tokens.color.surface.app = surfaceBg;
-  tokens.color.surface.base = surfaceBg;
-  tokens.color.surface.sidebar = surfaceBg;
-  tokens.color.surface.panel = surfaceBg;
-  tokens.color.surface.raised = surfaceSecondary;
-  tokens.color.surface.card = surfaceSecondary;
-  tokens.color.surface.modal = surfaceSecondary;
-  tokens.color.surface.overlay = toRgba(surfaceSecondary, 0.88);
-  tokens.color.surface.glass = toRgba(surfaceSecondary, 0.82);
-  tokens.color.surface.sunken = surfaceTertiary;
-  tokens.color.surface.input = surfaceTertiary;
-  tokens.color.surface.tooltip = surfaceTertiary;
+  Object.assign(tokens.color.surface, {
+    app: surfaceBg,
+    base: surfaceBg,
+    sidebar: surfaceBg,
+    panel: surfaceBg,
+    raised: surfaceSecondary,
+    card: surfaceSecondary,
+    modal: surfaceSecondary,
+    overlay: toRgba(surfaceSecondary, 0.88),
+    glass: toRgba(surfaceSecondary, 0.82),
+    sunken: surfaceTertiary,
+    input: surfaceTertiary,
+    tooltip: surfaceTertiary,
+  });
 
-  tokens.color.text.primary = textPrimary;
-  tokens.color.text.secondary = textSecondary;
-  tokens.color.text.tertiary = textMuted;
-  tokens.color.text.muted = textMuted;
-  tokens.color.text.inverse = surfaceBg;
-  tokens.color.text.link = accentPrimary;
-  tokens.color.text.code = statusSuccess;
-  tokens.color.text.command = accentPrimary;
-  tokens.color.text.danger = statusError;
-  tokens.color.text.warning = statusWarning;
-  tokens.color.text.success = statusSuccess;
-  tokens.color.text.info = accentSecondary;
+  Object.assign(tokens.color.text, {
+    primary: textPrimary,
+    secondary: textSecondary,
+    tertiary: textMuted,
+    muted: textMuted,
+    inverse: surfaceBg,
+    link: accentPrimary,
+    code: statusSuccess,
+    command: accentPrimary,
+    danger: statusError,
+    warning: statusWarning,
+    success: statusSuccess,
+    info: accentSecondary,
+  });
 
-  tokens.color.border.subtle = borderSubtle;
-  tokens.color.border.default = borderSubtle;
-  tokens.color.border.strong = textSecondary;
-  tokens.color.border.focus = accentPrimary;
-  tokens.color.border.danger = statusError;
-  tokens.color.border.warning = statusWarning;
-  tokens.color.border.success = statusSuccess;
+  Object.assign(tokens.color.border, {
+    subtle: borderSubtle,
+    default: borderSubtle,
+    strong: textSecondary,
+    focus: accentPrimary,
+    danger: statusError,
+    warning: statusWarning,
+    success: statusSuccess,
+  });
 
-  tokens.color.state.success = statusSuccess;
-  tokens.color.state.warning = statusWarning;
-  tokens.color.state.error = statusError;
-  tokens.color.state.info = accentSecondary;
-  tokens.color.state.loading = toRgba(accentPrimary, 0.5);
-  tokens.color.state.hover = toRgba(accentPrimary, 0.08);
-  tokens.color.state.focus = toRgba(accentPrimary, 0.15);
-  tokens.color.state.active = toRgba(accentPrimary, 0.2);
-  tokens.color.state.selected = toRgba(accentPrimary, 0.1);
+  Object.assign(tokens.color.state, {
+    success: statusSuccess,
+    warning: statusWarning,
+    error: statusError,
+    info: accentSecondary,
+    loading: toRgba(accentPrimary, 0.5),
+    hover: toRgba(accentPrimary, 0.08),
+    focus: toRgba(accentPrimary, 0.15),
+    active: toRgba(accentPrimary, 0.2),
+    selected: toRgba(accentPrimary, 0.1),
+  });
 
-  tokens.color.syntax.keyword = accentPrimary;
-  tokens.color.syntax.string = statusSuccess;
-  tokens.color.syntax.number = statusWarning;
-  tokens.color.syntax.function = accentSecondary;
-  tokens.color.syntax.variable = textPrimary;
-  tokens.color.syntax.comment = textMuted;
+  Object.assign(tokens.color.syntax, {
+    keyword: accentPrimary,
+    string: statusSuccess,
+    number: statusWarning,
+    function: accentSecondary,
+    variable: textPrimary,
+    comment: textMuted,
+  });
 
-  tokens.color.telemetry.cpu = accentPrimary;
-  tokens.color.telemetry.gpu = accentSecondary;
-  tokens.color.telemetry.memory = statusSuccess;
-  tokens.color.telemetry.network = accentSecondary;
-  tokens.color.telemetry.latency = statusSuccess;
-  tokens.color.telemetry.battery = statusSuccess;
-  tokens.color.telemetry.temperature = statusError;
+  Object.assign(tokens.color.telemetry, {
+    cpu: accentPrimary,
+    gpu: accentSecondary,
+    memory: statusSuccess,
+    network: accentSecondary,
+    latency: statusSuccess,
+    battery: statusSuccess,
+    temperature: statusError,
+  });
 
   tokens.wallpaper.tint = accentPrimary;
   tokens.shadow.glow = `0 0 16px ${toRgba(accentPrimary, 0.18)}`;

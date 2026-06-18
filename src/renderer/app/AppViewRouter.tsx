@@ -217,121 +217,93 @@ export type AppViewRouterProps = {
 };
 
 export function AppViewRouter({ state, dispatch, selectors, actions }: AppViewRouterProps) {
-  return (
-    <>
-      {(state.activeView === "chat" || state.activeView === "workspace") &&
-        renderView(
-          "chat",
-          <WorkspaceView state={state} dispatch={dispatch} selectors={selectors} actions={actions} />
-        )}
-      {state.activeView === "execution" &&
-        renderView("execution", <ExecutionView state={state} actions={actions} />)}
-      {state.activeView === "project" &&
-        renderView("project", <ProjectView state={state} actions={actions} />)}
-      {state.activeView === "models" &&
-        renderView("models", <ModelsView state={state} dispatch={dispatch} actions={actions} />)}
-      {state.activeView === "provider-manager" &&
-        renderView("provider-manager", <ProviderManagerView state={state} dispatch={dispatch} />)}
-      {(state.activeView === "agent" || state.activeView === "agents") &&
-        renderView("agent", <AgentsView state={state} dispatch={dispatch} actions={actions} />)}
-      {state.activeView === "memory" &&
-        renderView("memory", <MemoryView state={state} dispatch={dispatch} actions={actions} />)}
-      {state.activeView === "sessions" &&
-        renderView("sessions", <SessionsView state={state} actions={actions} />)}
-      {state.activeView === "cache" && renderView("cache", <CacheView state={state} />)}
-      {state.activeView === "plugins" &&
-        renderView("plugins", <PluginsView state={state} dispatch={dispatch} />)}
-      {state.activeView === "diagnostics" &&
-        renderView("diagnostics", <DiagnosticsView state={state} actions={actions} />)}
-      {state.activeView === "canvas" && renderView("canvas", <CanvasView />)}
-      {state.activeView === "terminal" && renderView("terminal", <TerminalView />)}
-      {state.activeView === "ssh" && renderView("ssh", <SSHView />)}
-      {state.activeView === "ide" && renderView("ide", <IDEView />)}
-      {state.activeView === "git" && renderView("git", <GitView />)}
-      {state.activeView === "api-lab" && renderView("api-lab", <ApiLabView />)}
-      {state.activeView === "cli-maker" && renderView("cli-maker", <CliMakerView />)}
-      {state.activeView === "browser" && renderView("browser", <BrowserView />)}
-      {state.activeView === "tunnel" && renderView("tunnel", <TunnelView />)}
-      {state.activeView === "share" && renderView("share", <ShareView />)}
-      {state.activeView === "torrent" && renderView("torrent", <TorrentView />)}
-      {state.activeView === "remote" && renderView("remote", <RemoteView />)}
-      {state.activeView === "docs" && renderView("docs", <DocsView />)}
-      {state.activeView === "prompt-lab" && renderView("prompt-lab", <PromptLabView />)}
-      {state.activeView === "prompt-library" &&
-        renderView("prompt-library", <PromptLibraryView state={state} dispatch={dispatch} />)}
-      {state.activeView === "prompt-builder" &&
-        renderView("prompt-builder", <PromptBuilderView state={state} dispatch={dispatch} />)}
-      {state.activeView === "academy" && renderView("academy", <AcademyView />)}
-      {state.activeView === "graph" && renderView("graph", <GraphView />)}
-      {state.activeView === "scheduler" && renderView("scheduler", <SchedulerView />)}
-      {state.activeView === "sync" && renderView("sync", <SyncView />)}
-      {state.activeView === "orchestrator" &&
-        renderView("orchestrator", <OrchestratorView />)}
-      {state.activeView === "settings" &&
-        renderView(
-          "settings",
-          <SettingsView state={state} dispatch={dispatch} actions={actions} />
-        )}
-      {state.activeView === "security" &&
-        renderView("security", <SecurityView state={state} actions={actions} />)}
-      {state.activeView === "api-key-vault" &&
-        renderView("api-key-vault", <ApiKeyVaultView state={state} dispatch={dispatch} />)}
-      {state.activeView === "themes" && renderView("themes", <ThemesView dispatch={dispatch} />)}
-      {state.activeView === "exports" &&
-        renderView("exports", <ExportsView state={state} actions={actions} />)}
-      {state.activeView === "maintenance" &&
-        renderView("maintenance", <MaintenanceView state={state} actions={actions} />)}
-      {state.activeView === "recovery" &&
-        renderView(
-          "recovery",
-          <RecoveryView state={state} dispatch={dispatch} actions={actions} />
-        )}
-      {state.activeView === "fonts" &&
-        renderView("fonts", <FontManagerView state={state} dispatch={dispatch} />)}
-      {state.activeView === "mcp" && renderView("mcp", <MCPView />)}
-      {state.activeView === "dashboard" &&
-        renderView("dashboard", <DashboardView state={state} dispatch={dispatch} />)}
-      {state.activeView === "quickstart" &&
-        renderView("quickstart", <QuickStartView state={state} dispatch={dispatch} />)}
-      {state.activeView === "personas" &&
-        renderView("personas", <PersonaManagerView state={state} />)}
-      {state.activeView === "vpn" && renderView("vpn", <VPNView state={state} />)}
-      {state.activeView === "lua-scripts" &&
-        renderView("lua-scripts", <LuaScriptsView state={state} />)}
-      {state.activeView === "plugin-permissions" &&
-        renderView("plugin-permissions", <PluginPermissionsView state={state} />)}
-      {state.activeView === "about" && renderView("about", <AboutView state={state} />)}
-      {state.activeView === "update-center" &&
-        renderView("update-center", <UpdateCenterView state={state} />)}
-      {state.activeView === "release-notes" &&
-        renderView("release-notes", <ReleaseNotesView state={state} />)}
-      {state.activeView === "logs" && renderView("logs", <LogsView state={state} />)}
-      {state.activeView === "ui-rollback" &&
-        renderView("ui-rollback", <UIRollbackView state={state} />)}
-      {state.activeView === "feature-tours" &&
-        renderView("feature-tours", <FeatureTourView state={state} />)}
-      {state.activeView === "ipc-map" &&
-        renderView("ipc-map", <IPCConnectorMapView state={state} />)}
-      {state.activeView === "dev-console" &&
-        renderView("dev-console", <DevConsoleView state={state} />)}
-      {state.activeView === "feature-flags" &&
-        renderView("feature-flags", <FeatureFlagsView state={state} />)}
-      {state.activeView === "data-connectors" &&
-        renderView("data-connectors", <DataConnectorsView state={state} />)}
-      {state.activeView === "brand-assets" &&
-        renderView("brand-assets", <BrandAssetsView state={state} />)}
-      {state.activeView === "release-checklist" &&
-        renderView("release-checklist", <ReleaseChecklistView state={state} />)}
-      {state.activeView === "permissions" &&
-        renderView("permissions", <PermissionsView state={state} />)}
-      {state.activeView === "controller-profile" &&
-        renderView("controller-profile", <ControllerProfileView state={state} />)}
-      {state.activeView === "backup" &&
-        renderView("backup", <BackupRestoreView state={state} />)}
-      {state.activeView === "archive" && renderView("archive", <ArchiveView />)}
-      {state.activeView === "storage" &&
-        renderView("storage", <StorageView dispatch={dispatch} />)}
-      {state.activeView === "safe-mode" && renderView("safe-mode", <SafeModeScreen />)}
-    </>
-  );
+  const viewRenderers: Partial<Record<ViewId, () => ReactNode>> = {
+    chat: () =>
+      renderView(
+        "chat",
+        <WorkspaceView state={state} dispatch={dispatch} selectors={selectors} actions={actions} />
+      ),
+    workspace: () =>
+      renderView(
+        "chat",
+        <WorkspaceView state={state} dispatch={dispatch} selectors={selectors} actions={actions} />
+      ),
+    execution: () => renderView("execution", <ExecutionView state={state} actions={actions} />),
+    project: () => renderView("project", <ProjectView state={state} actions={actions} />),
+    models: () =>
+      renderView("models", <ModelsView state={state} dispatch={dispatch} actions={actions} />),
+    "provider-manager": () =>
+      renderView("provider-manager", <ProviderManagerView state={state} dispatch={dispatch} />),
+    agent: () => renderView("agent", <AgentsView state={state} dispatch={dispatch} actions={actions} />),
+    agents: () => renderView("agent", <AgentsView state={state} dispatch={dispatch} actions={actions} />),
+    memory: () => renderView("memory", <MemoryView state={state} dispatch={dispatch} actions={actions} />),
+    sessions: () => renderView("sessions", <SessionsView state={state} actions={actions} />),
+    cache: () => renderView("cache", <CacheView state={state} />),
+    plugins: () => renderView("plugins", <PluginsView state={state} dispatch={dispatch} />),
+    diagnostics: () => renderView("diagnostics", <DiagnosticsView state={state} actions={actions} />),
+    canvas: () => renderView("canvas", <CanvasView />),
+    terminal: () => renderView("terminal", <TerminalView />),
+    ssh: () => renderView("ssh", <SSHView />),
+    ide: () => renderView("ide", <IDEView />),
+    git: () => renderView("git", <GitView />),
+    "api-lab": () => renderView("api-lab", <ApiLabView />),
+    "cli-maker": () => renderView("cli-maker", <CliMakerView />),
+    browser: () => renderView("browser", <BrowserView />),
+    tunnel: () => renderView("tunnel", <TunnelView />),
+    share: () => renderView("share", <ShareView />),
+    torrent: () => renderView("torrent", <TorrentView />),
+    remote: () => renderView("remote", <RemoteView />),
+    docs: () => renderView("docs", <DocsView />),
+    "prompt-lab": () => renderView("prompt-lab", <PromptLabView />),
+    "prompt-library": () =>
+      renderView("prompt-library", <PromptLibraryView state={state} dispatch={dispatch} />),
+    "prompt-builder": () =>
+      renderView("prompt-builder", <PromptBuilderView state={state} dispatch={dispatch} />),
+    academy: () => renderView("academy", <AcademyView />),
+    graph: () => renderView("graph", <GraphView />),
+    scheduler: () => renderView("scheduler", <SchedulerView />),
+    sync: () => renderView("sync", <SyncView />),
+    orchestrator: () => renderView("orchestrator", <OrchestratorView />),
+    settings: () =>
+      renderView("settings", <SettingsView state={state} dispatch={dispatch} actions={actions} />),
+    security: () => renderView("security", <SecurityView state={state} actions={actions} />),
+    "api-key-vault": () =>
+      renderView("api-key-vault", <ApiKeyVaultView state={state} dispatch={dispatch} />),
+    themes: () => renderView("themes", <ThemesView dispatch={dispatch} />),
+    exports: () => renderView("exports", <ExportsView state={state} actions={actions} />),
+    maintenance: () => renderView("maintenance", <MaintenanceView state={state} actions={actions} />),
+    recovery: () =>
+      renderView("recovery", <RecoveryView state={state} dispatch={dispatch} actions={actions} />),
+    fonts: () => renderView("fonts", <FontManagerView state={state} dispatch={dispatch} />),
+    mcp: () => renderView("mcp", <MCPView />),
+    dashboard: () => renderView("dashboard", <DashboardView state={state} dispatch={dispatch} />),
+    quickstart: () => renderView("quickstart", <QuickStartView state={state} dispatch={dispatch} />),
+    personas: () => renderView("personas", <PersonaManagerView state={state} />),
+    vpn: () => renderView("vpn", <VPNView state={state} />),
+    "lua-scripts": () => renderView("lua-scripts", <LuaScriptsView state={state} />),
+    "plugin-permissions": () =>
+      renderView("plugin-permissions", <PluginPermissionsView state={state} />),
+    about: () => renderView("about", <AboutView state={state} />),
+    "update-center": () => renderView("update-center", <UpdateCenterView state={state} />),
+    "release-notes": () => renderView("release-notes", <ReleaseNotesView state={state} />),
+    logs: () => renderView("logs", <LogsView state={state} />),
+    "ui-rollback": () => renderView("ui-rollback", <UIRollbackView state={state} />),
+    "feature-tours": () => renderView("feature-tours", <FeatureTourView state={state} />),
+    "ipc-map": () => renderView("ipc-map", <IPCConnectorMapView state={state} />),
+    "dev-console": () => renderView("dev-console", <DevConsoleView state={state} />),
+    "feature-flags": () => renderView("feature-flags", <FeatureFlagsView state={state} />),
+    "data-connectors": () => renderView("data-connectors", <DataConnectorsView state={state} />),
+    "brand-assets": () => renderView("brand-assets", <BrandAssetsView state={state} />),
+    "release-checklist": () =>
+      renderView("release-checklist", <ReleaseChecklistView state={state} />),
+    permissions: () => renderView("permissions", <PermissionsView state={state} />),
+    "controller-profile": () =>
+      renderView("controller-profile", <ControllerProfileView state={state} />),
+    backup: () => renderView("backup", <BackupRestoreView state={state} />),
+    archive: () => renderView("archive", <ArchiveView />),
+    storage: () => renderView("storage", <StorageView dispatch={dispatch} />),
+    "safe-mode": () => renderView("safe-mode", <SafeModeScreen />),
+  };
+
+  return <>{viewRenderers[state.activeView]?.() ?? null}</>;
 }

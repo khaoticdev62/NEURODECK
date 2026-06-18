@@ -250,6 +250,13 @@ In the legacy CSS, ID selectors (`#view-*`) have specificity 100, which beats `.
 - **All new modals/overlays must trap focus** — use `frontend/src/react/components/primitives/FocusTrapContainer.tsx` (which wraps `focus-trap.js`) or an equivalent accessible focus-management pattern. This ensures keyboard and gamepad navigation stays trapped.
 - **All interactive controls must have a minimum 40×40px hit target** on primary UI chrome (tabs, sidebar toggles, top-nav buttons). Use `min-width` / `min-height` so layout is not disrupted.
 
+### Duplicate / clone cleanup workflow
+
+- Run a fresh semantic Fallow scan before and after large refactors so duplication work is driven by evidence, not guesses.
+- Prefer extracting local helpers, shared render tables, and token maps over rewriting behavior-heavy logic.
+- Leave user-owned config files alone unless the user explicitly asks for them; in this repo, `llm-term.toml` is treated as user state.
+- After structural UI or shared helper changes, verify with `npm run frontend:typecheck` and `npm run frontend:test` before considering the pass complete.
+
 ---
 
 ## GitOps, CI/CD, and UI Rollback
