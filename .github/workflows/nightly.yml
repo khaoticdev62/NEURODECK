@@ -36,7 +36,7 @@ jobs:
         run: |
           cargo install cargo-outdated 2>/dev/null || true
           cargo outdated > cargo-outdated.txt || echo "cargo-outdated not available" > cargo-outdated.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nightly-outdated-deps
           path: "*-outdated.txt"
@@ -58,7 +58,7 @@ jobs:
           else
             echo "fallow not installed" > fallow-dead-code.txt
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nightly-dead-code
           path: fallow-dead-code.txt

@@ -118,7 +118,7 @@ jobs:
         run: |
           npm audit --audit-level=moderate > npm-audit-report.txt || true
           npm audit fix --dry-run --json > npm-audit-fix-dryrun.json 2>/dev/null || true
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: security-quality-gate-artifacts
           path: |
