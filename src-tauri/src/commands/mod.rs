@@ -3099,50 +3099,15 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .to_string();
 
             tokio::task::spawn_blocking(move || {
-                let repo = git2::Repository::open(&path)
+                let status = crate::commands::git::git_open_repo(path.clone())
                     .map_err(|e| format!("Cannot open repo at '{}': {}", path, e))?;
-                let head = repo.head().map_err(|e| e.to_string())?;
-                let branch = head.shorthand().unwrap_or("HEAD").to_string();
-                let head_oid = head.target().map(|t| t.to_string()).unwrap_or_default();
-
-                let mut dirty = false;
-                let mut opts = git2::StatusOptions::new();
-                opts.include_untracked(true);
-                for entry in repo
-                    .statuses(Some(&mut opts))
-                    .map_err(|e| e.to_string())?
-                    .iter()
-                {
-                    if entry.status() != git2::Status::CURRENT {
-                        dirty = true;
-                        break;
-                    }
-                }
-
-                let (ahead, behind) =
-                    if let Ok(br) = repo.find_branch(&branch, git2::BranchType::Local) {
-                        if let Ok(upstream) = br.upstream() {
-                            match (br.get().target(), upstream.get().target()) {
-                                (Some(l), Some(u)) => repo
-                                    .graph_ahead_behind(l, u)
-                                    .map(|(a, b)| (a as i32, b as i32))
-                                    .unwrap_or((0, 0)),
-                                _ => (0, 0),
-                            }
-                        } else {
-                            (0, 0)
-                        }
-                    } else {
-                        (0, 0)
-                    };
-
                 Ok(serde_json::json!({
                     "path":   path,
-                    "branch": branch,
-                    "head":   head_oid,
-                    "dirty":  dirty,
-                    "ahead":  ahead,
-                    "behind": behind
+                    "branch": status.branch,
+                    "head":   status.head,
+                    "dirty":  status.dirty,
+                    "ahead":  status.ahead,
+                    "behind": status.behind
                 }))
             })
             .await

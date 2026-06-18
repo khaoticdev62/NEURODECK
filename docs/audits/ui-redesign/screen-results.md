@@ -353,3 +353,373 @@ Audit findings are summarized below per refactored screen. Full cross-view theme
 - `frontend/src/react/features/sync/SyncView.tsx`
 - `frontend/src/react/features/memory/MemoryView.tsx`
 - `frontend/src/react/features/git/GitView.tsx`
+
+
+---
+
+# AAAA Screen Redesign — Phase 3 Batch C Results
+
+> Date: 2026-06-17
+> Scope: Low-risk actionable tier — Terminal, SSH, Canvas, API Lab, Docs, Academy, Scheduler, Remote, Models, Workspace, Tunnel
+
+## Refactored Screens
+
+### `frontend/src/react/features/terminal/TerminalScreen.tsx`
+- Restructured sidebar session tab rows so the selectable area is a focusable `<button role="tab">` and Pin/Close actions are sibling `IconButton`s (eliminating nested interactive controls).
+- Replaced the raw search `<input>` with `TextInput`.
+- Labeled and styled the AI assistant `<textarea>` with `nd-*` tokens and `min-h-touch`.
+- Added `terminalError` state and `ErrorState` for `refreshDiagnostics`, workspace persistence, `pty_kill`, and `explainLastCommand` failures.
+- Applied `min-h-touch` to header actions, main tab bar, session list items, Add Tab button, and assistant actions.
+
+### `frontend/src/react/features/ssh/SSHView.tsx`
+- Replaced host/port/user/password/key-path raw `<input>` elements with `TextInput`.
+- Replaced raw auth-type toggles with accessible `Button` components using `aria-pressed` and `min-h-touch`.
+- Surfaced `loadSavedCredential` failures and connect/save errors via `ErrorState`.
+
+### `frontend/src/react/features/canvas/CanvasView.tsx`
+- Migrated remaining legacy semantic tokens to canonical `nd-*` tokens.
+- Labeled and styled the code editor `<textarea>` with `nd-*` tokens and `min-h-touch`.
+- Added `error` state and `ErrorState` for code execution failures.
+- Added `role="log"`, `aria-live="polite"`, and `aria-label="Execution output"` to the streaming output region.
+- Added Ctrl/Cmd+Enter keyboard shortcut to run code.
+
+### `frontend/src/react/features/api-lab/ApiLabView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced raw request URL/method/headers/body inputs with `TextInput` and `Select`.
+- Added `loadError` state and `ErrorState` for collection load failures.
+- Surfaced empty `catch` blocks in request execution and import parsing.
+- Added `min-h-touch` to action buttons and tab bar.
+
+### `frontend/src/react/features/docs/DocsView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced raw search and path inputs with `TextInput`.
+- Added `error` state and `ErrorState` for index/search failures.
+- Added `min-h-touch` to toolbar buttons and document list items.
+
+### `frontend/src/react/features/academy/AcademyView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced raw inputs/selects with `TextInput` and `Select`.
+- Added `error` state and `ErrorState` for progress/portfolio/mentor load failures.
+- Added `min-h-touch` to action buttons and lab cards.
+
+### `frontend/src/react/features/scheduler/SchedulerView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced raw task-name/cron/argument inputs with `TextInput`.
+- Added `error` state and `ErrorState` for list/add/delete failures.
+- Added `min-h-touch` to form buttons and task rows.
+
+### `frontend/src/react/features/remote/RemoteView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced raw host/port/key inputs with `TextInput`.
+- Added `error` state and `ErrorState` for start/stop/status failures.
+- Added `min-h-touch` to action buttons.
+
+### `frontend/src/react/features/models/ModelsView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced raw filter inputs with `TextInput`.
+- Added `error` state and `ErrorState` for model-list and pull failures.
+- Added `min-h-touch` to toolbar actions and model-card buttons.
+
+### `frontend/src/react/features/workspace/WorkspaceView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced raw file-path and search inputs with `TextInput`.
+- Added `error` state and `ErrorState` for workspace file operations.
+- Added `min-h-touch` to toolbar and file-row actions.
+
+### `frontend/src/react/features/tunnel/TunnelView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced raw local/remote port inputs with `TextInput`.
+- Added `error` state and `ErrorState` for tunnel create/stop failures.
+- Added `min-h-touch` to action buttons.
+
+## Validation
+
+| Check | Result |
+|---|---|
+| `npm run frontend:typecheck` | ✅ Pass |
+| `npm run --prefix frontend lint` | ✅ 0 errors, 101 warnings |
+| `npm run production:cleanup-gate` | ✅ Pass |
+| `npm run --prefix frontend build` | ✅ Pass |
+| `npm run --prefix frontend test` | ⚠️ 506 passed, 5 failed (pre-existing feature-view failures: MaintenanceView, OnboardingWizard, OrchestratorView, RecoveryView, SyncView) |
+
+## Files Changed in Phase 3 Batch C
+
+- `frontend/src/react/features/terminal/TerminalScreen.tsx`
+- `frontend/src/react/features/ssh/SSHView.tsx`
+- `frontend/src/react/features/canvas/CanvasView.tsx`
+- `frontend/src/react/features/api-lab/ApiLabView.tsx`
+- `frontend/src/react/features/docs/DocsView.tsx`
+- `frontend/src/react/features/academy/AcademyView.tsx`
+- `frontend/src/react/features/scheduler/SchedulerView.tsx`
+- `frontend/src/react/features/remote/RemoteView.tsx`
+- `frontend/src/react/features/models/ModelsView.tsx`
+- `frontend/src/react/features/workspace/WorkspaceView.tsx`
+- `frontend/src/react/features/tunnel/TunnelView.tsx`
+
+
+---
+
+# AAAA Screen Redesign — Phase 3 Batch D Results
+
+> Date: 2026-06-17
+> Scope: Remaining low-risk feature views — Agents, Cache, Execution, Exports, Fonts, Maintenance, Project, Recovery, Sessions
+
+## Refactored Screens
+
+### `frontend/src/react/features/agents/AgentsView.tsx`
+- Added `data-testid="agents-view"` to the root `Panel` for testability.
+- Already used canonical `nd-*` tokens and shared primitives; no structural changes needed.
+
+### `frontend/src/react/features/cache/CacheView.tsx`
+- Migrated legacy semantic tokens (`text-text-*`, `bg-surface-*`, `border-border-subtle`, `accent-*`) to canonical `nd-*` tokens.
+- Added `data-testid="cache-view"` to the root `Panel`.
+
+### `frontend/src/react/features/execution/ExecutionView.tsx`
+- Migrated all legacy semantic tokens to `nd-*`.
+- Added `data-testid="execution-view"` to the root.
+- Added `min-h-touch` to prompt-template cards so the full clickable area meets the AAAA 44 px minimum.
+
+### `frontend/src/react/features/exports/ExportsView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Added `data-testid="exports-view"` to the root.
+- Added `min-h-touch` to `ExportAction` cards.
+
+### `frontend/src/react/features/fonts/FontManagerView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Replaced undefined `shadow-glow-sm` with `shadow-[var(--nd-glow-brand-sm)]`.
+- Added `data-testid="font-manager-view"` to the root `Panel`.
+- Added `min-h-touch` to font-preview cards.
+
+### `frontend/src/react/features/maintenance/MaintenanceView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Added `data-testid="maintenance-view"` to the root, fixing the previously failing `renders with data-testid` test.
+
+### `frontend/src/react/features/project/ProjectView.tsx`
+- Already used canonical `nd-*` tokens.
+- Added `data-testid="project-view"` to the root.
+
+### `frontend/src/react/features/recovery/RecoveryView.tsx`
+- Migrated legacy tokens to `nd-*`.
+- Added `data-testid="recovery-view"` to the root, fixing the previously failing `renders with data-testid` test.
+- Added `min-h-touch` to `RecoveryAction` rows.
+
+### `frontend/src/react/features/sessions/SessionsView.tsx`
+- Already used canonical `nd-*` tokens and `ErrorState` for load failures.
+- Added `data-testid="sessions-view"` to the root `Panel`.
+
+## Validation
+
+| Check | Result |
+|---|---|
+| `npm run frontend:typecheck` | ✅ Pass |
+| `npm run --prefix frontend lint` | ✅ 0 errors, 101 warnings |
+| `npm run production:cleanup-gate` | ✅ Pass |
+| `npm run --prefix frontend build` | ✅ Pass |
+| `npm run --prefix frontend test` | ⚠️ 508 passed, 3 failed (pre-existing feature-view failures: OnboardingWizard, OrchestratorView, SyncView). MaintenanceView and RecoveryView data-testid tests now pass. |
+
+## Files Changed in Phase 3 Batch D
+
+- `frontend/src/react/features/agents/AgentsView.tsx`
+- `frontend/src/react/features/cache/CacheView.tsx`
+- `frontend/src/react/features/execution/ExecutionView.tsx`
+- `frontend/src/react/features/exports/ExportsView.tsx`
+- `frontend/src/react/features/fonts/FontManagerView.tsx`
+- `frontend/src/react/features/maintenance/MaintenanceView.tsx`
+- `frontend/src/react/features/project/ProjectView.tsx`
+- `frontend/src/react/features/recovery/RecoveryView.tsx`
+- `frontend/src/react/features/sessions/SessionsView.tsx`
+
+
+---
+
+# AAAA Screen Redesign — Test Stabilization Results
+
+> Date: 2026-06-17
+> Scope: Fix the last 3 pre-existing feature-view test failures
+
+## Fixed Tests
+
+### `frontend/src/react/__tests__/features/OrchestratorView.test.tsx`
+- **Failure:** `renders with data-testid` could not find `data-testid="orchestrator-view"`.
+- **Fix:** Added `data-testid="orchestrator-view"` to the root element of `OrchestratorView`.
+
+### `frontend/src/react/__tests__/features/SyncView.test.tsx`
+- **Failure:** `renders the dashboard tab and loads transfer data` could not find `data-testid="sync-view"`.
+- **Fix:** Added `data-testid="sync-view"` to the root element of `SyncView`.
+
+### `frontend/src/react/__tests__/features/OnboardingWizard.test.tsx`
+- **Failure:** `navigates through steps to save preferences and complete setup` timed out looking for "AI Provider Setup" immediately after the Environment step.
+- **Root cause:** The onboarding wizard now includes an `npm` step between Environment and Models; the test was written against the older 7-step flow and did not wait for the environment diagnostics scan to finish before clicking Next.
+- **Fixes:**
+  - Inserted navigation through the NPM Installer step (`getByRole("heading", { name: /npm installer/i })`).
+  - Added a wait for the environment scan loading state to disappear (`queryByText(/scanning subsystem endpoints/i)`) before advancing from Environment.
+  - Bumped the test timeout to `10000ms` because the full wizard navigation is slow when run alongside the entire suite.
+
+## Files Changed
+
+- `frontend/src/react/features/orchestrator/OrchestratorView.tsx`
+- `frontend/src/react/features/sync/SyncView.tsx`
+- `frontend/src/react/__tests__/features/OnboardingWizard.test.tsx`
+
+## Validation
+
+| Check | Result |
+|---|---|
+| `npm run frontend:typecheck` | ✅ Pass |
+| `npm run --prefix frontend lint` | ✅ 0 errors, 101 warnings |
+| `npm run production:cleanup-gate` | ✅ Pass |
+| `npm run --prefix frontend build` | ✅ Pass |
+| `npm run --prefix frontend test` | ✅ **511 passed, 0 failed** |
+
+
+---
+
+# AAAA Screen Redesign — Runtime Bugfix: Duplicate React Keys
+
+> Date: 2026-06-17
+> Issue: Renderer console warnings about duplicate child keys (`ollama`, `openai_compat`)
+
+## Root Cause
+
+- `SettingsView` rendered the AI provider list using `provider.runtimeId` as the React key.
+- The bridge can return multiple provider runtimes that map to the same `runtimeId` (e.g., local and remote OpenAI-compatible runtimes both resolve to `openai_compat`; multiple Ollama runtimes resolve to `ollama`), causing duplicate keys.
+- `MaintenanceView` used `provider.provider` as the key for the AI health list, which could also duplicate if the same provider appeared more than once.
+
+## Fixes
+
+- `frontend/src/react/features/settings/SettingsView.tsx`
+  - Changed provider card key from `provider.runtimeId` to `provider.id`, which is already deduplicated before rendering.
+- `frontend/src/react/features/maintenance/MaintenanceView.tsx`
+  - Changed AI health row key from `provider.provider` to `${provider.provider}-${idx}` to avoid collisions.
+
+## Validation
+
+| Check | Result |
+|---|---|
+| `npm run frontend:typecheck` | ✅ Pass |
+| `npm run --prefix frontend lint` | ✅ 0 errors, 101 warnings |
+| `npm run production:cleanup-gate` | ✅ Pass |
+| `npm run --prefix frontend build` | ✅ Pass |
+| `npm run --prefix frontend test` | ✅ 511 passed, 0 failed |
+
+## Files Changed
+
+- `frontend/src/react/features/settings/SettingsView.tsx`
+- `frontend/src/react/features/maintenance/MaintenanceView.tsx`
+
+---
+
+# AAAA Screen Redesign — Dead-code & Complexity Cleanup (Phase 1)
+
+> Date: 2026-06-17
+> Scope: Remove obvious documentation/legacy-archive dead code and align the cleanup gate with the real `fallow` JSON output
+
+## Deleted Files
+
+Removed two clearly unused archive directories that were flagged in the Fallow baseline dead-code report:
+
+- `docs/design-mockups/workstation-ui-kit/` — 11 files (old React mock-up components superseded by `frontend/src/design-system/`)
+- `docs/legacy-js-archive/` — 37 files (legacy vanilla-JS feature implementations replaced by the React frontend)
+- **Total deleted:** 48 files
+
+These directories were not referenced by the build, tests, runtime, or any active documentation.
+
+## Cleanup Gate Alignment
+
+`scripts/verify/verify-no-dead-code.ts` was already regenerating the dead-code report before reading it, but the report it consumed was at a stale path. The script now reads the report that `npm run quality:fallow:json` produces at:
+
+```
+reports/fallow/dead-code-final-dead-code.json
+```
+
+This ensures the gate reflects the current repository state after deletions.
+
+## Fallow Dead-code Delta
+
+| Metric | Baseline (pre-cleanup) | After cleanup | Delta |
+|---|---|---|---|
+| Dead-code issues | 311 | 26 | −285 (−91.6%) |
+| Unused files | 48 | 0 | −48 |
+| Unused exports | 217 | 1 | −216 |
+| Unresolved imports | 34 | 24 | −10 |
+
+The single remaining allowed unused export is `SCHEMA_VERSION` in `electron/ipc-guards.js`, which is intentionally retained as a compatibility marker.
+
+## Validation
+
+| Check | Result |
+|---|---|
+| `npm run frontend:typecheck` | ✅ Pass |
+| `npm run --prefix frontend lint` | ✅ 0 errors, 101 warnings |
+| `npm run production:cleanup-gate` | ✅ Pass |
+| `npm run --prefix frontend build` | ✅ Pass |
+| `npm run --prefix frontend test` | ✅ 511 passed, 0 failed |
+
+## Files / Directories Changed
+
+- Deleted: `docs/design-mockups/workstation-ui-kit/*`
+- Deleted: `docs/legacy-js-archive/*`
+- `scripts/verify/verify-no-dead-code.ts` — reads the regenerated `reports/fallow/dead-code-final-dead-code.json`
+
+
+---
+
+# AAAA Screen Redesign — Phase 2 Part 1: Fallow Hygiene + Deduplication
+
+> Date: 2026-06-17
+> Scope: Stabilize the Fallow report, remove concrete duplication in Rust backend and verify scripts, fix broken `ROOT` paths in four verify scripts
+
+## Fallow Report Stabilization
+
+- Updated `.fallowrc.json` to add `ignoreUnresolvedImports` for shared-contract false positives (`../../shared/contracts/backendHealth.contracts`, `../../shared/contracts/errors.contracts`).
+- Regenerated `reports/fallow/dead-code-final-dead-code.json` so the dead-code gate reflects the current repository state.
+- The gate (`verify-no-dead-code.ts`) continues to pass with 0 violations.
+
+## Rust Backend Deduplication
+
+| # | Change | Files | Lines Removed |
+|---|---|---|---|
+| 1 | Extracted identical path-sandbox logic into `paths.rs::sanitize_sandbox_path()` and routed `mcp.rs` and `tunnel.rs` through it. | `paths.rs`, `mcp.rs`, `tunnel.rs` | ~70 |
+| 2 | Extracted Gemini candidate/part text extraction into `llm.rs::extract_gemini_text()` and reused it in `transcribe`, `chat_with_image`, and `generate_oneshot`. | `llm.rs` | ~60 |
+| 3 | Extracted HuggingFace array/object response parsing into `llm.rs::parse_hf_response_text()` and reused it in `generate` and `generate_oneshot`. | `llm.rs` | ~30 |
+| 4 | Replaced the inline `git_open_repo` reimplementation in `commands/mod.rs` with a call to `crate::commands::git::git_open_repo()`. | `commands/mod.rs`, `commands/git.rs` | ~45 |
+
+## Verify-Script Deduplication + Root-Path Bugfix
+
+- Created `scripts/verify/lib/fs.ts` with a shared `walkDir()` helper.
+- Created `scripts/verify/lib/mock-scanner.ts` with a parameterized `runMockScanner()` engine.
+- Refactored `verify-no-mocks.ts` and `verify-no-production-mocks.ts` to consume the shared scanner.
+- Refactored `verify-chat-security.ts` and `verify-no-mock-chat.ts` to use the shared `walkDir()`.
+- Fixed the `ROOT` path in all four scripts from `path.resolve(__dirname, '..')` (which pointed at `scripts/`) to `path.resolve(__dirname, '../..')` (project root) so they actually scan production code.
+
+All four scripts still pass with 0 violations after the root-path fix.
+
+## Validation
+
+| Check | Result |
+|---|---|
+| `cargo check --manifest-path src-tauri/Cargo.toml` | ✅ Pass |
+| `npm run production:cleanup-gate` | ✅ Pass |
+| `npm run --prefix frontend typecheck` | ✅ Pass |
+| `npm run --prefix frontend lint` | ✅ 0 errors, 101 warnings |
+| `npm run --prefix frontend test -- --run` | ✅ 511 passed, 0 failed |
+| `npm run verify:no-mocks` | ✅ 0 violations |
+| `npm run verify:no-production-mocks` | ✅ 0 violations |
+| `npm run verify:chat-security` | ✅ 0 critical findings |
+| `npm run verify:no-mock-chat` | ✅ 0 violations |
+
+## Files Changed in Phase 2 Part 1
+
+- `.fallowrc.json`
+- `src-tauri/src/paths.rs`
+- `src-tauri/src/mcp.rs`
+- `src-tauri/src/tunnel.rs`
+- `src-tauri/src/llm.rs`
+- `src-tauri/src/commands/mod.rs`
+- `scripts/verify/lib/fs.ts` (new)
+- `scripts/verify/lib/mock-scanner.ts` (new)
+- `scripts/verify/verify-no-mocks.ts`
+- `scripts/verify/verify-no-production-mocks.ts`
+- `scripts/verify/verify-chat-security.ts`
+- `scripts/verify/verify-no-mock-chat.ts`
+

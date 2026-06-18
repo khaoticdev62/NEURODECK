@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 pub fn get_home_dir() -> Option<PathBuf> {
     #[cfg(target_os = "windows")]
@@ -115,4 +115,47 @@ pub(crate) fn user_bin_dir() -> PathBuf {
     // Keep shell tooling consistent across command execution and PTY sessions.
     // The runtime bin directory lives alongside the user config directory.
     user_config_dir().join("bin")
+}
+
+/// Resolve `path_str` against the current working directory, canonicalize it,
+/// and verify that the result stays inside the current directory sandbox.
+/// Non-existent files are allowed as long as their parent directory exists and
+/// is inside the sandbox.
+pub fn sanitize_sandbox_path(path_str: &str) -> Result<PathBuf, String> {
+    let base_dir =
+        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
+    let target_path = Path::new(path_str);
+
+    let absolute_path = if target_path.is_absolute() {
+        target_path.to_path_buf()
+    } else {
+        base_dir.join(target_path)
+    };
+
+    let canonical_path = match absolute_path.canonicalize() {
+        Ok(p) => p,
+        Err(_) => {
+            if let Some(parent) = absolute_path.parent() {
+                match parent.canonicalize() {
+                    Ok(p_can) => {
+                        let file_name = absolute_path.file_name().ok_or("Invalid filename")?;
+                        p_can.join(file_name)
+                    }
+                    Err(e) => return Err(format!("Invalid path directory: {}", e)),
+                }
+            } else {
+                return Err("Invalid path: no parent directory".to_string());
+            }
+        }
+    };
+
+    let canonical_base = base_dir
+        .canonicalize()
+        .map_err(|e| format!("Failed to canonicalize current directory: {}", e))?;
+
+    if canonical_path.starts_with(&canonical_base) {
+        Ok(canonical_path)
+    } else {
+        Err("Access denied: path escapes S-Term sandbox".to_string())
+    }
 }

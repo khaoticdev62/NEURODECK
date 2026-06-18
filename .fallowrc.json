@@ -4,6 +4,10 @@
     "@playwright/test",
     "@axe-core/playwright"
   ],
+  "ignoreUnresolvedImports": [
+    "../../shared/contracts/backendHealth.contracts",
+    "../../shared/contracts/errors.contracts"
+  ],
   "ignorePatterns": [
     "scripts/**",
     "src/shared/**",

@@ -145,6 +145,22 @@ struct GeminiResponse {
     candidates: Option<Vec<GeminiResponseCandidate>>,
 }
 
+fn extract_gemini_text(response: &GeminiResponse, fallback: &str) -> Result<String, String> {
+    if let Some(candidates) = &response.candidates {
+        if let Some(candidate) = candidates.first() {
+            if let Some(content) = &candidate.content {
+                if let Some(parts) = &content.parts {
+                    let text: String = parts.iter().filter_map(|p| p.text.clone()).collect();
+                    if !text.is_empty() {
+                        return Ok(text);
+                    }
+                }
+            }
+        }
+    }
+    Err(fallback.to_string())
+}
+
 #[derive(Serialize)]
 struct GeminiEmbedRequestContent {
     parts: Vec<GeminiPart>,
@@ -313,19 +329,7 @@ impl LlmProvider for GeminiProvider {
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-            if let Some(candidates) = response_body.candidates {
-                if let Some(candidate) = candidates.first() {
-                    if let Some(content) = &candidate.content {
-                        if let Some(parts) = &content.parts {
-                            let text: String =
-                                parts.iter().filter_map(|p| p.text.clone()).collect();
-                            return Ok(text);
-                        }
-                    }
-                }
-            }
-
-            Err("No text returned from transcription".to_string())
+            return extract_gemini_text(&response_body, "No text returned from transcription");
         })
     }
 
@@ -457,19 +461,7 @@ impl LlmProvider for GeminiProvider {
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-            if let Some(candidates) = response_body.candidates {
-                if let Some(candidate) = candidates.first() {
-                    if let Some(content) = &candidate.content {
-                        if let Some(parts) = &content.parts {
-                            let text: String =
-                                parts.iter().filter_map(|p| p.text.clone()).collect();
-                            return Ok(text);
-                        }
-                    }
-                }
-            }
-
-            Err("No text returned from vision request".to_string())
+            return extract_gemini_text(&response_body, "No text returned from vision request");
         })
     }
 
@@ -536,19 +528,7 @@ impl LlmProvider for GeminiProvider {
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-            if let Some(candidates) = response_body.candidates {
-                if let Some(candidate) = candidates.first() {
-                    if let Some(content) = &candidate.content {
-                        if let Some(parts) = &content.parts {
-                            let text: String =
-                                parts.iter().filter_map(|p| p.text.clone()).collect();
-                            return Ok(text);
-                        }
-                    }
-                }
-            }
-
-            Err("No text returned from oneshot request".to_string())
+            return extract_gemini_text(&response_body, "No text returned from oneshot request");
         })
     }
 }
@@ -835,6 +815,23 @@ struct HfResponse {
     generated_text: String,
 }
 
+fn parse_hf_response_text(body: &str) -> Result<String, String> {
+    let text = if body.trim().starts_with('[') {
+        let parsed: Vec<HfResponse> =
+            serde_json::from_str(body).map_err(|e| format!("HF parse failed: {}", e))?;
+        parsed
+            .into_iter()
+            .next()
+            .map(|r| r.generated_text)
+            .unwrap_or_default()
+    } else {
+        let parsed: HfResponse =
+            serde_json::from_str(body).map_err(|e| format!("HF parse failed: {}", e))?;
+        parsed.generated_text
+    };
+    Ok(text)
+}
+
 impl HuggingFaceProvider {
     pub fn new(
         model: String,
@@ -1045,20 +1042,7 @@ impl LlmProvider for HuggingFaceProvider {
                 .text()
                 .await
                 .map_err(|e| format!("HF read failed: {}", e))?;
-            let text = if body.trim().starts_with('[') {
-                let parsed: Vec<HfResponse> =
-                    serde_json::from_str(&body).map_err(|e| format!("HF parse failed: {}", e))?;
-                parsed
-                    .into_iter()
-                    .next()
-                    .map(|r| r.generated_text)
-                    .unwrap_or_default()
-            } else {
-                let parsed: HfResponse =
-                    serde_json::from_str(&body).map_err(|e| format!("HF parse failed: {}", e))?;
-                parsed.generated_text
-            };
-            Ok(text)
+            parse_hf_response_text(&body)
         })
     }
 
@@ -1099,20 +1083,7 @@ impl LlmProvider for HuggingFaceProvider {
                 .text()
                 .await
                 .map_err(|e| format!("HF read failed: {}", e))?;
-            let text = if body.trim().starts_with('[') {
-                let parsed: Vec<HfResponse> =
-                    serde_json::from_str(&body).map_err(|e| format!("HF parse failed: {}", e))?;
-                parsed
-                    .into_iter()
-                    .next()
-                    .map(|r| r.generated_text)
-                    .unwrap_or_default()
-            } else {
-                let parsed: HfResponse =
-                    serde_json::from_str(&body).map_err(|e| format!("HF parse failed: {}", e))?;
-                parsed.generated_text
-            };
-            Ok(text)
+            parse_hf_response_text(&body)
         })
     }
 }

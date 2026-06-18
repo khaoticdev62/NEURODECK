@@ -78,42 +78,7 @@ where
 }
 
 fn sanitize_tunnel_path(path_str: &str) -> Result<std::path::PathBuf, String> {
-    let base_dir =
-        std::env::current_dir().map_err(|e| format!("Failed to get current directory: {}", e))?;
-    let target_path = std::path::Path::new(path_str);
-
-    let absolute_path = if target_path.is_absolute() {
-        target_path.to_path_buf()
-    } else {
-        base_dir.join(target_path)
-    };
-
-    let canonical_path = match absolute_path.canonicalize() {
-        Ok(p) => p,
-        Err(_) => {
-            if let Some(parent) = absolute_path.parent() {
-                match parent.canonicalize() {
-                    Ok(p_can) => {
-                        let file_name = absolute_path.file_name().ok_or("Invalid filename")?;
-                        p_can.join(file_name)
-                    }
-                    Err(e) => return Err(format!("Invalid path directory: {}", e)),
-                }
-            } else {
-                return Err("Invalid path: no parent directory".to_string());
-            }
-        }
-    };
-
-    let canonical_base = base_dir
-        .canonicalize()
-        .map_err(|e| format!("Failed to canonicalize current directory: {}", e))?;
-
-    if canonical_path.starts_with(&canonical_base) {
-        Ok(canonical_path)
-    } else {
-        Err("Access denied: path escapes S-Term sandbox".to_string())
-    }
+    crate::paths::sanitize_sandbox_path(path_str)
 }
 
 async fn handle_tunnel_request(req: TunnelRequest) -> TunnelResponse {

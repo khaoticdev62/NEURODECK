@@ -207,9 +207,88 @@ Fallow detected **0** clone groups touching React/design-system code.
 - **Fallow dead-code:** Fail (311 issues)
 - **Fallow audit verdict:** Fail
 
+## Cleanup Update (post Phase-1 dead-code pass)
+
+After the Phase 1 cleanup pass the obvious documentation/legacy-archive dead code was removed and the cleanup gate was aligned with the regenerated Fallow JSON report.
+
+- **Directories deleted:** `docs/design-mockups/workstation-ui-kit/` (11 files) and `docs/legacy-js-archive/` (37 files) — 48 files total.
+- **Dead-code issues:** 311 → 26 (−285)
+- **Unused files:** 48 → 0
+- **Unused exports:** 217 → 1 (allowed: `electron/ipc-guards.js [SCHEMA_VERSION]`)
+- **Unresolved imports:** 34 → 24
+
+The dead-code gate (`verify-no-dead-code.ts`) now passes by regenerating `reports/fallow/dead-code-final-dead-code.json` and verifying it after each cleanup pass.
+
+## Deduplication Update (Phase 2 Part 1)
+
+A first mechanical deduplication pass removed duplicated code in the Rust backend and verify scripts:
+
+- `sanitize_mcp_path` / `sanitize_tunnel_path` consolidated into `paths.rs::sanitize_sandbox_path()`.
+- Gemini text-extraction and HuggingFace response-parsing helpers extracted in `llm.rs`.
+- Inline `git_open_repo` implementation in `commands/mod.rs` replaced with a call to `commands/git.rs`.
+- `scripts/verify/lib/mock-scanner.ts` and `scripts/verify/lib/fs.ts` created; `verify-no-mocks.ts`, `verify-no-production-mocks.ts`, `verify-chat-security.ts`, and `verify-no-mock-chat.ts` refactored to use them.
+- Fixed broken `ROOT` paths in those four verify scripts so they scan project source instead of `scripts/`.
+
+All gates continue to pass after the refactor.
+
 ## Recommendations for Phase 2
 
 1. Refactor the top hotspots only if they are touched during screen redesign; avoid broad rewrites purely for Fallow scores.
 2. Consolidate UI duplication clusters when multiple screens share the same layout patterns.
 3. Do not blindly delete dead-code findings; many are likely false positives from dynamic imports, barrel exports, or Storybook entry points.
 4. Focus Phase 2 on shared components and shell; revisit Fallow metrics after Phase 4.
+
+## Frontend Complexity Extraction (Phase 2 Part 2)
+
+The top frontend complexity hotspots were split into focused, behavior-preserving modules. Public component APIs and bridge/state contracts remain unchanged.
+
+### `useNeuroDeckState.ts` modularization
+- `frontend/src/react/state/neurodeckReducer.ts` — reducer + action handling.
+- `frontend/src/react/state/stateUtils.ts` — `nextStatus`, `mergeUniqueModels`, `sanitizeHydrate`.
+- `frontend/src/react/state/useNeuroDeckSelectors.ts` — pure selector memoization.
+- `frontend/src/react/state/useNeurodeckHydration.ts` — hydration effect.
+- `frontend/src/react/state/useNeurodeckPersistence.ts` — persistence effect.
+- `useNeuroDeckState.ts` is now a thin composer that re-exports the same public interface.
+
+### `bridgeAdapter.ts` barrel split
+- `frontend/src/react/services/bridge/errors.ts` — `BridgeError` / `isBridgeError`.
+- `frontend/src/react/services/bridge/utils.ts` — backoff, safe-read command detection, timeouts.
+- `frontend/src/react/services/bridge/http.ts` — `bridgeInvoke` with retry/backoff.
+- `frontend/src/react/services/bridge/transport.ts` — WebSocket lifecycle + `listenBridge`.
+- `frontend/src/react/services/bridge/mappers.ts` — backend-to-frontend mapping helpers.
+- `bridgeAdapter.ts` remains the public barrel so no feature imports changed.
+
+### `IDEView.tsx` extraction
+- `frontend/src/react/features/ide/ideUtils.ts` — language/icon helpers.
+- `frontend/src/react/features/ide/IdeFileExplorer.tsx`
+- `frontend/src/react/features/ide/IdeTabBar.tsx`
+- `frontend/src/react/features/ide/IdeOutputPanel.tsx`
+- `IDEView.tsx` keeps stateful logic and composes the presentational pieces.
+
+### `TerminalScreen.tsx` extraction
+- `frontend/src/react/features/terminal/terminalUtils.ts` — id/pane/workspace helpers, history redaction, suggestion building.
+- `frontend/src/react/features/terminal/TerminalHeader.tsx`
+- `frontend/src/react/features/terminal/TerminalSidebar.tsx`
+- `frontend/src/react/features/terminal/TerminalTabBar.tsx`
+- `frontend/src/react/features/terminal/TerminalPanesGrid.tsx`
+- `frontend/src/react/features/terminal/TerminalAssistantPanel.tsx`
+- `frontend/src/react/features/terminal/TerminalSearchOverlay.tsx`
+- `frontend/src/react/features/terminal/TerminalSessionManagerOverlay.tsx`
+- `frontend/src/react/features/terminal/TerminalPluginPanelOverlay.tsx`
+- `TerminalScreen.tsx` retains workspace state/effects and wires the sub-components.
+
+### `App.tsx` extraction
+- `frontend/src/react/app/useAppActions.ts` — all app-level action callbacks (`runAssistant`, `runAgent`, `scanProject`, `exportSession`, memory ops, etc.).
+- `frontend/src/react/app/useAppKeyboard.ts` — global keyboard shortcut / overlay navigation handler.
+- `frontend/src/react/app/AppViewRouter.tsx` — view-to-component routing map.
+- `frontend/src/react/app/AppOverlays.tsx` — Settings / Notifications / Shortcuts / Controller Prompt / Quick Switcher overlays.
+- `frontend/src/react/app/ViewLoader.tsx` — shared suspense fallback.
+- `App.tsx` is now the orchestration shell: state, layout, controller provider, and composition.
+
+### Validation
+- `npm run --prefix frontend typecheck` ✅
+- `npm run --prefix frontend lint` ✅ (0 errors; 99 pre-existing warnings)
+- `npm run --prefix frontend test -- --run` ✅ (511 passed, 0 failed)
+- `npm run --prefix frontend build` ✅
+- `npm run production:cleanup-gate` ✅
+- `cargo check --manifest-path src-tauri/Cargo.toml` ✅

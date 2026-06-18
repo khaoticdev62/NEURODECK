@@ -12,8 +12,9 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { walkDir } from './lib/fs';
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '../..');
 
 interface SecurityFinding {
   file: string;
@@ -87,28 +88,14 @@ function scanFile(filePath: string): SecurityFinding[] {
   return findings;
 }
 
-function walkDir(dir: string): string[] {
-  const abs = path.join(ROOT, dir);
-  if (!fs.existsSync(abs)) return [];
-  const files: string[] = [];
-  const entries = fs.readdirSync(abs, { withFileTypes: true });
-  for (const entry of entries) {
-    const full = path.join(abs, entry.name);
-    if (entry.isDirectory() && entry.name !== 'node_modules' && entry.name !== 'dist' && entry.name !== '.git') {
-      files.push(...walkDir(path.relative(ROOT, full)));
-    } else if (entry.isFile()) {
-      files.push(full);
-    }
-  }
-  return files;
-}
-
 async function main() {
   console.log('\n=== verify-chat-security ===\n');
 
   const allFindings: SecurityFinding[] = [];
   for (const dir of RENDERER_DIRS) {
-    const files = walkDir(dir);
+    const files = walkDir(ROOT, dir, {
+      skipDirs: new Set(['node_modules', 'dist', '.git']),
+    });
     for (const file of files) {
       allFindings.push(...scanFile(file));
     }
