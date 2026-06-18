@@ -13,7 +13,7 @@ export function ExportsView({
   actions: NeuroDeckAppActions;
 }) {
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
+    <div data-testid="exports-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_360px]">
       <Panel eyebrow="Export Manager" title="Session Exports" className="h-full overflow-hidden">
         <div className="flex h-full flex-col gap-4 overflow-y-auto p-4 scrollbar-thin">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -32,16 +32,16 @@ export function ExportsView({
           </div>
 
           {state.lastExportPath && (
-            <div className="rounded-2xl border border-accent-success/20 bg-accent-success/5 p-4">
+            <div className="rounded-2xl border border-nd-accent-success/20 bg-nd-accent-success/5 p-4">
               <div className="flex items-center gap-2">
                 <Badge tone="success">Last export</Badge>
               </div>
-              <p className="mt-2 break-all text-xs text-text-secondary">{state.lastExportPath}</p>
+              <p className="mt-2 break-all text-xs text-nd-text-secondary">{state.lastExportPath}</p>
             </div>
           )}
 
           <div className="space-y-2 pt-2">
-            <p className="text-2xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+            <p className="text-2xs font-semibold uppercase tracking-[0.2em] text-nd-text-muted">
               Session Summary
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -76,7 +76,7 @@ export function ExportsView({
 
       <Panel eyebrow="Diagnostics Export" title="Support Bundle">
         <div className="space-y-4 p-4">
-          <p className="text-sm leading-relaxed text-text-secondary">
+          <p className="text-sm leading-relaxed text-nd-text-secondary">
             Generate a sanitized diagnostics bundle for sharing with support. Contains runtime info,
             IPC logs, and health data. Secrets are always redacted.
           </p>
@@ -89,7 +89,7 @@ export function ExportsView({
             Export Diagnostics Bundle
           </Button>
           {state.diagnostics?.diagnosticsDir && (
-            <p className="break-all text-xs text-text-muted">
+            <p className="break-all text-xs text-nd-text-muted">
               Output: {state.diagnostics.diagnosticsDir}
             </p>
           )}
@@ -114,11 +114,11 @@ function ExportAction({
     <button
       type="button"
       onClick={onClick}
-      className="flex flex-col gap-2 rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4 text-left transition duration-fast hover:border-accent-primary/30 hover:bg-surface-tertiary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+      className="min-h-touch flex flex-col gap-2 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 text-left transition duration-fast hover:border-nd-accent-primary/30 hover:bg-nd-surface-tertiary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
     >
-      <Icon className="h-6 w-6 text-accent-primary" aria-hidden="true" />
-      <p className="font-semibold text-text-primary">{label}</p>
-      <p className="text-xs leading-5 text-text-muted">{description}</p>
+      <Icon className="h-6 w-6 text-nd-accent-primary" aria-hidden="true" />
+      <p className="font-semibold text-nd-text-primary">{label}</p>
+      <p className="text-xs leading-5 text-nd-text-muted">{description}</p>
     </button>
   );
 }

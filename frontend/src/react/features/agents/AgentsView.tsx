@@ -37,6 +37,7 @@ export function AgentsView({
     <Panel
       eyebrow="Agent Dock"
       title="Specialized Operators"
+      data-testid="agents-view"
       className="agent-shell flex h-full flex-col overflow-hidden"
       bodyClassName="flex flex-1 flex-col min-h-0"
     >

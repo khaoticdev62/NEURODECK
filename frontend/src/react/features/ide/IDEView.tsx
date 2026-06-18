@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Code,
   FileCode,
-  FolderOpen,
   Save,
   Trash2,
   RefreshCw,
@@ -30,92 +29,21 @@ import { EmptyState } from "../../components/primitives/EmptyState";
 import { Panel } from "../../components/primitives/Panel";
 import type { DiagnosticFix } from "./DiagnosticFixPanel";
 import { DiagnosticFixPanel } from "./DiagnosticFixPanel";
-
-interface FileEntry {
-  name: string;
-  path: string;
-  is_dir: boolean;
-  size: number;
-}
-
-interface OpenTab {
-  path: string;
-  name: string;
-  content: string;
-  dirty: boolean;
-  lang: string;
-  lspVersion: number;
-}
+import { IdeFileExplorer } from "./IdeFileExplorer";
+import { IdeOutputPanel } from "./IdeOutputPanel";
+import { IdeTabBar } from "./IdeTabBar";
+import {
+  FileEntry,
+  OpenTab,
+  fileUri,
+  getLanguage,
+  supportsLspLanguage,
+} from "./ideUtils";
 
 interface PendingCommand {
   cmd: CommandTemplate;
   resolveRun: () => void;
   resolveCancel: () => void;
-}
-
-function getLanguage(filename: string) {
-  const ext = filename.split(".").pop()?.toLowerCase() || "";
-  const map: Record<string, string> = {
-    js: "javascript",
-    ts: "typescript",
-    jsx: "jsx",
-    tsx: "tsx",
-    rs: "rust",
-    py: "python",
-    lua: "lua",
-    html: "html",
-    css: "css",
-    scss: "scss",
-    json: "json",
-    md: "markdown",
-    toml: "toml",
-    yaml: "yaml",
-    yml: "yaml",
-    sh: "bash",
-    bash: "bash",
-    zsh: "bash",
-    c: "c",
-    cpp: "cpp",
-    h: "c",
-    hpp: "cpp",
-    go: "go",
-    java: "java",
-    kt: "kotlin",
-    swift: "swift",
-    rb: "ruby",
-    php: "php",
-    sql: "sql",
-    dockerfile: "dockerfile",
-  };
-  return map[ext] || "text";
-}
-
-function getLangIcon(lang: string) {
-  const map: Record<string, string> = {
-    rust: "🦀",
-    javascript: "📜",
-    typescript: "📘",
-    python: "🐍",
-    lua: "🌙",
-    html: "🌐",
-    css: "🎨",
-    json: "📋",
-    markdown: "📝",
-    bash: "💲",
-    go: "🐹",
-    java: "☕",
-    c: "🔧",
-    cpp: "🔧",
-  };
-  return map[lang] || "📄";
-}
-
-function fileUri(path: string): string {
-  return `file:///${path.replace(/\\/g, "/")}`;
-}
-
-function supportsLspLanguage(language: string) {
-  return language !== "text";
 }
 
 export function IDEView() {
@@ -649,103 +577,25 @@ export function IDEView() {
       </header>
 
       <div className="flex min-h-0 flex-1 gap-3" data-controller-zone="ide-workspace">
-        <Panel
-          className="flex w-52 flex-col"
-          eyebrow="Explorer"
-          title="Workspace"
-          bodyClassName="flex flex-1 flex-col min-h-0 p-0"
-        >
-          <div className="min-h-0 flex-1 overflow-auto space-y-0.5">
-            {currentPath && (
-              <Button
-                variant="ghost"
-                size="xs"
-                fullWidth
-                icon={FolderOpen}
-                className="justify-start"
-                onClick={() => {
-                  const parts = currentPath.split(/[/\\]/).filter(Boolean);
-                  loadFiles(parts.slice(0, -1).join("/"));
-                }}
-              >
-                ..
-              </Button>
-            )}
-            <div className="px-2 py-1 text-[10px] text-nd-text-muted/60 truncate">
-              {currentPath || "workspace"}
-            </div>
-            {files.length === 0 && (
-              <div className="px-2 py-1.5 text-xs text-nd-text-muted/50 italic">No files</div>
-            )}
-            {files.map((f) => (
-              <button
-                key={f.path}
-                type="button"
-                onClick={() => (f.is_dir ? loadFiles(f.path) : openFile(f.path, f.name))}
-                className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40 ${
-                  activeTab === f.path
-                    ? "bg-nd-accent-primary/10 text-nd-accent-primary"
-                    : "text-nd-text-muted hover:bg-nd-surface-secondary"
-                }`}
-              >
-                {f.is_dir ? (
-                  <FolderOpen className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                ) : (
-                  <span className="shrink-0 text-xs">{getLangIcon(getLanguage(f.name))}</span>
-                )}
-                <span className="truncate">{f.name}</span>
-              </button>
-            ))}
-          </div>
-        </Panel>
+        <IdeFileExplorer
+          files={files}
+          currentPath={currentPath}
+          activeTab={activeTab}
+          onNavigateUp={() => {
+            const parts = currentPath.split(/[/\\]/).filter(Boolean);
+            loadFiles(parts.slice(0, -1).join("/"));
+          }}
+          onLoadDirectory={loadFiles}
+          onOpenFile={openFile}
+        />
 
         <div className="flex min-w-0 flex-1 flex-col gap-2" data-controller-zone="ide-editor">
-          {openTabs.length > 0 && (
-            <div
-              role="tablist"
-              aria-label="Open editor files"
-              className="flex gap-1 overflow-x-auto"
-            >
-              {openTabs.map((tab) => (
-                <div
-                  key={tab.path}
-                  className={`flex items-center gap-0.5 rounded-lg border px-1.5 py-1 transition ${
-                    activeTab === tab.path
-                      ? "border-nd-accent-primary/30 bg-nd-accent-primary/10"
-                      : "border-nd-border-subtle bg-nd-surface-secondary hover:bg-nd-surface-tertiary"
-                  }`}
-                >
-                  <button
-                    id={`ide-tab-${tab.path.replace(/[^a-z0-9]/gi, "-")}`}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === tab.path}
-                    onClick={() => setActiveTab(tab.path)}
-                    className={`flex min-w-0 items-center gap-1.5 rounded-md px-1.5 py-0.5 text-xs transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40 ${
-                      activeTab === tab.path
-                        ? "text-nd-accent-primary"
-                        : "text-nd-text-muted"
-                    }`}
-                  >
-                    <span aria-hidden="true">{getLangIcon(tab.lang)}</span>
-                    <span className="truncate max-w-[120px]">
-                      {tab.name}
-                      {tab.dirty ? " ●" : ""}
-                    </span>
-                  </button>
-                  <IconButton
-                    aria-label={`Close ${tab.name}`}
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 w-5"
-                    onClick={() => closeTab(tab.path)}
-                  >
-                    <X className="h-3 w-3" aria-hidden="true" />
-                  </IconButton>
-                </div>
-              ))}
-            </div>
-          )}
+          <IdeTabBar
+            tabs={openTabs}
+            activeTab={activeTab}
+            onSelect={setActiveTab}
+            onClose={closeTab}
+          />
 
           <Panel className="relative flex min-h-0 flex-1 flex-col">
             {activeTabData ? (
@@ -941,38 +791,7 @@ export function IDEView() {
             visible={showPredictions && predictions.length > 0}
           />
 
-          <Panel
-            className="h-28 shrink-0"
-            eyebrow="Output"
-            title="Command Log"
-            action={
-              <Button variant="ghost" size="xs" onClick={() => setLogs([])}>
-                Clear
-              </Button>
-            }
-          >
-            <div className="h-[calc(100%-2.5rem)] overflow-auto space-y-0.5 px-1">
-              {logs.length === 0 && (
-                <p className="text-[11px] text-nd-text-muted/40 italic">No output yet</p>
-              )}
-              {logs.map((l, i) => (
-                <div
-                  key={i}
-                  className={`text-[11px] font-mono ${
-                    l.tone === "error"
-                      ? "text-nd-accent-error"
-                      : l.tone === "ok"
-                        ? "text-nd-accent-success"
-                        : l.tone === "warn"
-                          ? "text-nd-accent-warning"
-                          : "text-nd-text-muted"
-                  }`}
-                >
-                  [{new Date().toLocaleTimeString("en-US", { hour12: false })}] {l.text}
-                </div>
-              ))}
-            </div>
-          </Panel>
+          <IdeOutputPanel logs={logs} onClear={() => setLogs([])} />
         </div>
       </div>
 

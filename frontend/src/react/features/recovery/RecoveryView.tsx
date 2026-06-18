@@ -29,25 +29,25 @@ export function RecoveryView({
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
+    <div data-testid="recovery-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Active Error */}
         <Panel eyebrow="Recovery" title="Current Error State">
           <div className="p-4">
             {hasError ? (
-              <div className="rounded-2xl border border-accent-error/25 bg-accent-error/[0.06] p-4">
+              <div className="rounded-2xl border border-nd-accent-error/25 bg-nd-accent-error/[0.06] p-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle
-                    className="mt-0.5 h-5 w-5 shrink-0 text-accent-error"
+                    className="mt-0.5 h-5 w-5 shrink-0 text-nd-accent-error"
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-text-primary">{state.lastError!.title}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-text-secondary">
+                    <p className="font-semibold text-nd-text-primary">{state.lastError!.title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-nd-text-secondary">
                       {state.lastError!.message}
                     </p>
                     {state.lastError!.action && (
-                      <p className="mt-2 rounded-lg bg-accent-error/10 px-3 py-2 text-xs text-accent-error/90">
+                      <p className="mt-2 rounded-lg bg-nd-accent-error/10 px-3 py-2 text-xs text-nd-accent-error/90">
                         {state.lastError!.action}
                       </p>
                     )}
@@ -138,22 +138,22 @@ export function RecoveryView({
                 .map((event) => (
                   <li
                     key={event.id}
-                    className="rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2 transition duration-fast hover:bg-surface-tertiary/30"
+                    className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2 transition duration-fast hover:bg-nd-surface-tertiary/30"
                   >
                     <div className="flex items-center justify-between gap-2">
                       <Badge tone={event.allowed ? "success" : "danger"}>
                         {event.allowed ? "allowed" : "blocked"}
                       </Badge>
-                      <span className="text-2xs text-text-muted">
+                      <span className="text-2xs text-nd-text-muted">
                         {new Date(event.timestamp).toLocaleString()}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs font-medium text-text-primary">
+                    <p className="mt-1 text-xs font-medium text-nd-text-primary">
                       {event.action} · {event.runtimeId}
                       {event.modelId && ` · ${event.modelId}`}
                     </p>
-                    <p className="mt-0.5 text-xs leading-5 text-text-secondary">{event.reason}</p>
-                    <p className="mt-0.5 text-2xs uppercase tracking-wide text-text-muted/70">
+                    <p className="mt-0.5 text-xs leading-5 text-nd-text-secondary">{event.reason}</p>
+                    <p className="mt-0.5 text-2xs uppercase tracking-wide text-nd-text-muted/70">
                       state: {event.state}
                     </p>
                   </li>
@@ -206,12 +206,12 @@ function RecoveryAction({
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-start gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-3 text-left transition duration-fast hover:border-accent-primary/30 hover:bg-surface-tertiary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40"
+      className="flex w-full items-start gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-3 text-left transition duration-fast hover:border-nd-accent-primary/30 hover:bg-nd-surface-tertiary/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/40"
     >
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent-primary" aria-hidden="true" />
+      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-nd-accent-primary" aria-hidden="true" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-text-primary">{label}</p>
-        <p className="mt-0.5 text-xs leading-5 text-text-secondary">{description}</p>
+        <p className="text-sm font-semibold text-nd-text-primary">{label}</p>
+        <p className="mt-0.5 text-xs leading-5 text-nd-text-secondary">{description}</p>
       </div>
       <Badge tone={badgeTone}>{badge}</Badge>
     </button>

@@ -42,13 +42,14 @@ export function FontManagerView({
     <Panel
       eyebrow="Typography"
       title="Font Manager"
+      data-testid="font-manager-view"
       className="flex h-full flex-col overflow-hidden"
     >
       <div className="flex flex-col gap-4 p-4">
-        <p className="text-sm text-text-secondary">
+        <p className="text-sm text-nd-text-secondary">
           {fontOptions.length} typefaces available • Active:{" "}
           <span
-            className="font-medium text-text-primary"
+            className="font-medium text-nd-text-primary"
             style={{ fontFamily: activeFont?.family }}
           >
             {activeFont?.name}
@@ -111,14 +112,14 @@ export function FontManagerView({
                 onClick={() => applyFont(font.id)}
                 aria-pressed={isActive}
                 aria-label={`${font.name}${isActive ? " (active)" : ""}`}
-                className={`group relative flex flex-col rounded-2xl border p-4 text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/60 ${
+                className={`group relative min-h-touch flex flex-col rounded-2xl border p-4 text-left transition duration-fast focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/60 ${
                   isActive
-                    ? "border-accent-primary/50 bg-accent-primary/[0.07] shadow-glow-sm"
-                    : "border-border-subtle bg-surface-secondary/30 hover:border-accent-primary/30 hover:bg-surface-tertiary/30"
+                    ? "border-nd-accent-primary/50 bg-nd-accent-primary/[0.07] shadow-[var(--nd-glow-brand-sm)]"
+                    : "border-nd-border-subtle bg-nd-surface-secondary/30 hover:border-nd-accent-primary/30 hover:bg-nd-surface-tertiary/30"
                 }`}
               >
                 {isActive && (
-                  <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-accent-primary text-surface-primary">
+                  <div className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-nd-accent-primary text-nd-surface-primary">
                     <Check className="h-3.5 w-3.5" aria-hidden="true" />
                   </div>
                 )}
@@ -127,14 +128,14 @@ export function FontManagerView({
                   <Badge tone="neutral" size="sm">
                     {font.category}
                   </Badge>
-                  <span className="text-2xs text-text-muted">{font.weights.length} weights</span>
+                  <span className="text-2xs text-nd-text-muted">{font.weights.length} weights</span>
                 </div>
 
-                <p className="text-sm font-semibold text-text-primary">{font.name}</p>
+                <p className="text-sm font-semibold text-nd-text-primary">{font.name}</p>
 
-                <div className="mt-3 flex-1 rounded-xl border border-border-subtle bg-surface-primary/60 p-3">
+                <div className="mt-3 flex-1 rounded-xl border border-nd-border-subtle bg-nd-surface-primary/60 p-3">
                   <p
-                    className="text-lg leading-relaxed text-text-secondary"
+                    className="text-lg leading-relaxed text-nd-text-secondary"
                     style={{ fontFamily: font.family }}
                   >
                     {preview}
@@ -142,13 +143,13 @@ export function FontManagerView({
                 </div>
 
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-2xs text-text-muted">
+                  <span className="text-2xs text-nd-text-muted">
                     {font.family.split(",")[0].replace(/"/g, "")}
                   </span>
                   {isActive ? (
-                    <span className="text-xs font-medium text-accent-primary">Active</span>
+                    <span className="text-xs font-medium text-nd-accent-primary">Active</span>
                   ) : (
-                    <span className="text-xs text-text-muted">Click to apply</span>
+                    <span className="text-xs text-nd-text-muted">Click to apply</span>
                   )}
                 </div>
               </button>

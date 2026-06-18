@@ -15,6 +15,7 @@ export function CacheView({ state }: { state: NeuroDeckState }) {
     <Panel
       eyebrow="Offline Cache"
       title="Local Readiness Center"
+      data-testid="cache-view"
       className="h-full overflow-hidden"
       bodyClassName="h-full"
     >
@@ -48,16 +49,16 @@ export function CacheView({ state }: { state: NeuroDeckState }) {
             {entries.map((entry) => (
               <article
                 key={entry.id}
-                className="rounded-2xl border border-border-subtle bg-surface-secondary/40 p-4 transition duration-fast hover:border-accent-primary/30 hover:bg-surface-tertiary/30"
+                className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 transition duration-fast hover:border-nd-accent-primary/30 hover:bg-nd-surface-tertiary/30"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/25 bg-accent-primary/10 text-accent-primary">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/25 bg-nd-accent-primary/10 text-nd-accent-primary">
                       <HardDrive className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-text-primary">{entry.label}</h3>
-                      <p className="text-xs text-text-muted">
+                      <h3 className="font-semibold text-nd-text-primary">{entry.label}</h3>
+                      <p className="text-xs text-nd-text-muted">
                         {entry.size} • {entry.updatedAt}
                       </p>
                     </div>

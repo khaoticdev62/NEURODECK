@@ -184,8 +184,17 @@ describe("OnboardingWizard Component", () => {
       expect(screen.getByText("Environment Integrity Check")).toBeDefined();
     });
     expect(mockRunDiagnostics).toHaveBeenCalled();
+    await waitFor(() =>
+      expect(screen.queryByText(/scanning subsystem endpoints/i)).toBeNull()
+    );
 
-    // --- STEP 2 -> STEP 3 (Models) ---
+    // --- STEP 2 -> STEP 3 (NPM Installer) ---
+    await userEvent.click(screen.getByRole("button", { name: /next/i }));
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /npm installer/i })).toBeDefined();
+    });
+
+    // --- STEP 3 -> STEP 4 (Models) ---
     await userEvent.click(screen.getByRole("button", { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText("AI Provider Setup")).toBeDefined();
@@ -198,7 +207,7 @@ describe("OnboardingWizard Component", () => {
       expect(screen.getByText(/successfully connected to/i)).toBeDefined();
     });
 
-    // --- STEP 3 -> STEP 4 (Preferences) ---
+    // --- STEP 4 -> STEP 5 (Preferences) ---
     await userEvent.click(screen.getByRole("button", { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText("Preferences & Styling")).toBeDefined();
@@ -208,13 +217,13 @@ describe("OnboardingWizard Component", () => {
     const selectTheme = screen.getByRole("combobox");
     await userEvent.selectOptions(selectTheme, "hologrid");
 
-    // --- STEP 4 -> STEP 5 (Plugins) ---
+    // --- STEP 5 -> STEP 6 (Plugins) ---
     await userEvent.click(screen.getByRole("button", { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText("Script Automation & Plugins")).toBeDefined();
     });
 
-    // --- STEP 5 -> STEP 6 (Packages) ---
+    // --- STEP 6 -> STEP 7 (Packages) ---
     await userEvent.click(screen.getByRole("button", { name: /next/i }));
     await waitFor(() => {
       expect(screen.getByText("Recommended Packages")).toBeDefined();
@@ -235,7 +244,7 @@ describe("OnboardingWizard Component", () => {
       })
     );
     expect(mockDispatch).toHaveBeenCalledWith({ type: "close-onboarding" });
-  });
+  }, 10000);
 
   it("renders installer controls for missing dependencies and starts install", async () => {
     mockRunDiagnostics.mockResolvedValue({

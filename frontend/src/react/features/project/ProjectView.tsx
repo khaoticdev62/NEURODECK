@@ -57,7 +57,7 @@ export function ProjectView({
   const testReady = Object.values(project.testSignals).filter(Boolean).length;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4">
+    <div data-testid="project-view" className="flex h-full min-h-0 flex-col gap-4">
       <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={FolderOpen}

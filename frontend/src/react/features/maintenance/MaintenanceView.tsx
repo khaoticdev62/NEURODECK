@@ -19,7 +19,7 @@ export function MaintenanceView({
   const [confirmReset, setConfirmReset] = useState(false);
 
   return (
-    <div className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
+    <div data-testid="maintenance-view" className="grid h-full min-h-0 gap-4 xl:grid-cols-[1fr_380px]">
       <div className="flex min-h-0 flex-col gap-4 overflow-y-auto scrollbar-thin">
         {/* Version Info */}
         <Panel eyebrow="Build" title="Application Version">
@@ -37,7 +37,7 @@ export function MaintenanceView({
                 />
               </>
             ) : (
-              <p className="text-sm text-text-secondary">
+              <p className="text-sm text-nd-text-secondary">
                 Run a diagnostics refresh to load build info.
               </p>
             )}
@@ -84,18 +84,18 @@ export function MaintenanceView({
 
           {state.aiHealth.length > 0 ? (
             <div className="space-y-2">
-              {state.aiHealth.map((provider) => (
+              {state.aiHealth.map((provider, idx) => (
                 <div
-                  key={provider.provider}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2.5"
+                  key={`${provider.provider}-${idx}`}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2.5"
                 >
                   <div className="flex items-center gap-2">
                     {provider.available ? (
-                      <CheckCircle2 className="h-4 w-4 text-accent-success" aria-hidden="true" />
+                      <CheckCircle2 className="h-4 w-4 text-nd-accent-success" aria-hidden="true" />
                     ) : (
-                      <Activity className="h-4 w-4 text-accent-warning" aria-hidden="true" />
+                      <Activity className="h-4 w-4 text-nd-accent-warning" aria-hidden="true" />
                     )}
-                    <span className="text-xs text-text-primary">{provider.provider}</span>
+                    <span className="text-xs text-nd-text-primary">{provider.provider}</span>
                   </div>
                   <StatusChip tone={provider.available ? "success" : "warning"} size="sm">
                     {provider.available ? `${provider.latencyMs ?? "?"}ms` : "unavailable"}
@@ -109,7 +109,7 @@ export function MaintenanceView({
               title="No health data yet"
               description="Check AI health to populate provider availability and latency."
               compact
-              className="rounded-2xl border border-dashed border-border-subtle bg-surface-secondary/30"
+              className="rounded-2xl border border-dashed border-nd-border-subtle bg-nd-surface-secondary/30"
             />
           )}
 
@@ -141,9 +141,9 @@ export function MaintenanceView({
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-secondary/40 px-3 py-2">
-      <span className="text-xs text-text-muted">{label}</span>
-      <span className="font-mono text-xs text-text-secondary">{value}</span>
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2">
+      <span className="text-xs text-nd-text-muted">{label}</span>
+      <span className="font-mono text-xs text-nd-text-secondary">{value}</span>
     </div>
   );
 }

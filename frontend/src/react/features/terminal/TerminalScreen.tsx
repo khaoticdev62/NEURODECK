@@ -1,16 +1,4 @@
-﻿import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  LayoutGrid,
-  Plus,
-  RefreshCw,
-  Search,
-  ShieldCheck,
-  SplitSquareHorizontal,
-  SplitSquareVertical,
-  Terminal as TerminalIcon,
-  Trash2,
-  X,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNeuroDeckState } from "../../state/useNeuroDeckState";
 import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
 import {
@@ -19,12 +7,10 @@ import {
 } from "../../../../../src/shared/terminal/terminalCommandPolicy";
 import {
   TERMINAL_PROFILES,
-  type TerminalProfile,
   type TerminalProfileAvailability,
 } from "../../../../../src/shared/terminal/terminalProfiles";
 import type {
   TerminalCommandHistoryEntry,
-  TerminalSession,
   TerminalTab,
 } from "../../../../../src/shared/terminal/terminalContracts";
 import type { TerminalCommandSafety } from "../../../../../src/shared/terminal/terminalSafetyTypes";
@@ -32,209 +18,31 @@ import type {
   TerminalDiagnosticsReport,
   TerminalEnvironmentReport,
 } from "../../../../../src/shared/terminal/terminalDiagnosticsTypes";
-import { Badge } from "../../components/primitives/Badge";
-import { Button } from "../../components/primitives/Button";
-import { IconButton } from "../../components/primitives/IconButton";
-import { StatusChip } from "../../components/primitives/StatusChip";
 import { TerminalCommandPalette } from "./TerminalCommandPalette";
-import { TerminalDiagnosticsPanel } from "./TerminalDiagnosticsPanel";
-import { TerminalProfileSelector } from "./TerminalProfileSelector";
 import { TerminalSafetyConfirmModal } from "./TerminalSafetyConfirmModal";
-import { TerminalViewport } from "./TerminalViewport";
-import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
-
-type PaneRuntime = TerminalSession & {
-  sessionId: string;
-  output: string[];
-  stateMessage?: string;
-  lastExitReason?: string;
-  lastErrorMessage?: string;
-  startedAt?: string;
-  lastActivityAt?: string;
-  recoveryCount: number;
-  commandCount: number;
-  active: boolean;
-};
-
-type WorkspaceSnapshot = {
-  tabs: TerminalTab[];
-  panes: PaneRuntime[];
-  activeTabId: string;
-  activePaneId: string;
-  history: TerminalCommandHistoryEntry[];
-  selectedProfileId: string;
-};
-
-type CommandSource = "user" | "assistant" | "palette" | "controller" | "history";
-
-const WORKSPACE_KEY = "neurodeck:terminal-workspace-v1";
-const HISTORY_KEY = "neurodeck:terminal-history-v1";
-const DEFAULT_PROFILE_ID = "steamos-bash";
-const MAX_OUTPUT_LINES = 250;
-
-function createId(prefix: string) {
-  return `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`;
-}
-
-function platformToProfile(platform: string) {
-  if (platform.startsWith("Win")) return "power-shell";
-  if (platform.includes("Mac") || platform === "darwin") return "macos-zsh";
-  if (platform === "linux") return "linux-bash";
-  return DEFAULT_PROFILE_ID;
-}
-
-function defaultTerminalTab(projectPath: string, profileId: string): TerminalTab {
-  const tabId = createId("tab");
-  const paneId = createId("pane");
-  return {
-    id: tabId,
-    label: "Terminal 1",
-    pinned: false,
-    activePaneId: paneId,
-    layout: "single",
-    cwd: projectPath,
-    profileId,
-    sessionIds: [paneId],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-}
-
-function defaultPane(tabId: string, cwd: string, profile: TerminalProfile): PaneRuntime {
-  const paneId = createId("pane");
-  return {
-    id: paneId,
-    sessionId: createId("pty"),
-    tabId,
-    paneId,
-    title: profile.name,
-    cwd,
-    shell: profile.shellPath,
-    shellArgs: profile.shellArgs,
-    profileId: profile.id,
-    state: "created",
-    cols: 80,
-    rows: 24,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    commandCount: 0,
-    diagnostics: {
-      bytesIn: 0,
-      bytesOut: 0,
-      crashCount: 0,
-      recoveryCount: 0,
-    },
-    output: [],
-    recoveryCount: 0,
-    active: false,
-  };
-}
-
-function fallbackShellForProfile(
-  profileId: string,
-  environment: TerminalEnvironmentReport | null,
-  availableProfiles: TerminalProfileAvailability[]
-) {
-  const profile = availableProfiles.find((entry) => entry.id === profileId);
-  if (profile?.shellAvailable) return profile.detectedPath ?? profile.shellPath;
-  const platform = environment?.platform ?? "";
-  if (platform === "win32" || platform === "windows") {
-    return (
-      availableProfiles.find(
-        (entry) => entry.shellAvailable && entry.shellPath.toLowerCase().includes("powershell")
-      )?.detectedPath ?? "powershell.exe"
-    );
-  }
-  return (
-    availableProfiles.find((entry) => entry.shellAvailable && entry.shellPath === "/bin/sh")
-      ?.detectedPath ??
-    availableProfiles.find((entry) => entry.shellAvailable)?.detectedPath ??
-    "/bin/sh"
-  );
-}
-
-function redactedCommand(command: string) {
-  return command
-    .replace(/(password|token|secret|key)\s*=\s*([^\s]+)/gi, "$1=[REDACTED]")
-    .replace(/(Bearer\s+)[A-Za-z0-9._\-+/=]+/g, "$1[REDACTED]")
-    .replace(/(api[-_ ]?key)\s*[:=]\s*([^\s]+)/gi, "$1=[REDACTED]");
-}
-
-function restoreWorkspace(): WorkspaceSnapshot | null {
-  try {
-    const raw = localStorage.getItem(WORKSPACE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as WorkspaceSnapshot;
-    if (!Array.isArray(parsed.tabs) || !Array.isArray(parsed.panes)) return null;
-    return parsed;
-  } catch {
-    return null;
-  }
-}
-
-function loadHistory(): TerminalCommandHistoryEntry[] {
-  try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as TerminalCommandHistoryEntry[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function stripPromptArtifacts(text: string) {
-  return text.replace(/\u001b\[[0-9;]*[a-zA-Z]/g, "").replace(/\r/g, "");
-}
-
-function collectSuggestions(
-  activeProject: {
-    path: string;
-    scripts?: Record<string, string>;
-    packageManager?: string;
-    frameworks?: string[];
-    name?: string;
-  } | null,
-  environment: TerminalEnvironmentReport | null,
-  profile: TerminalProfileAvailability | undefined
-) {
-  const tools = new Set(
-    (environment?.probes ?? [])
-      .filter((probe) => probe.exists)
-      .flatMap((probe) => [probe.name.toLowerCase(), probe.path.toLowerCase()])
-  );
-  const suggestions: string[] = [];
-
-  if (activeProject?.scripts?.dev) {
-    suggestions.push(`${activeProject.packageManager || "npm"} run dev`);
-  }
-  if (activeProject?.scripts?.test) {
-    suggestions.push(`${activeProject.packageManager || "npm"} run test`);
-  }
-  if (activeProject?.scripts?.build) {
-    suggestions.push(`${activeProject.packageManager || "npm"} run build`);
-  }
-  if (tools.has("cargo")) {
-    suggestions.push("cargo check");
-    suggestions.push("cargo test");
-  }
-  if (tools.has("python") || tools.has("python3")) {
-    suggestions.push("python -m pytest");
-    suggestions.push("python --version");
-  }
-  if (tools.has("go")) {
-    suggestions.push("go test ./...");
-  }
-  if (tools.has("fallow")) {
-    suggestions.push("npx fallow audit --format json");
-  }
-  if (profile?.shellPath.includes("powershell")) {
-    suggestions.push("Get-ChildItem");
-    suggestions.push("git status");
-  }
-
-  return Array.from(new Set(suggestions)).slice(0, 8);
-}
+import { TerminalHeader } from "./TerminalHeader";
+import { TerminalSidebar } from "./TerminalSidebar";
+import { TerminalTabBar } from "./TerminalTabBar";
+import { TerminalPanesGrid } from "./TerminalPanesGrid";
+import { TerminalAssistantPanel } from "./TerminalAssistantPanel";
+import { TerminalSearchOverlay } from "./TerminalSearchOverlay";
+import { TerminalSessionManagerOverlay } from "./TerminalSessionManagerOverlay";
+import { TerminalPluginPanelOverlay } from "./TerminalPluginPanelOverlay";
+import {
+  buildHistoryEntry,
+  collectSuggestions,
+  createId,
+  defaultPane,
+  defaultTerminalTab,
+  fallbackShellForProfile,
+  loadHistory,
+  MAX_OUTPUT_LINES,
+  platformToProfile,
+  restoreWorkspace,
+  stripPromptArtifacts,
+  type CommandSource,
+  type PaneRuntime,
+} from "./terminalUtils";
 
 export function TerminalScreen() {
   const { state } = useNeuroDeckState();
@@ -265,6 +73,9 @@ export function TerminalScreen() {
   const [assistantPrompt, setAssistantPrompt] = useState("");
   const [assistantSuggestions, setAssistantSuggestions] = useState<string[]>([]);
   const [statusMessage, setStatusMessage] = useState("Terminal ready.");
+  const [terminalError, setTerminalError] = useState<
+    { message: string; onRetry?: () => void } | null
+  >(null);
   const hydratedRef = useRef(false);
 
   const activeTab = tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null;
@@ -286,7 +97,7 @@ export function TerminalScreen() {
       nextActivePaneId: string,
       nextHistory: TerminalCommandHistoryEntry[]
     ) => {
-      const snapshot: WorkspaceSnapshot = {
+      const snapshot = {
         tabs: nextTabs,
         panes: Object.values(nextPanes),
         activeTabId: nextActiveTabId,
@@ -298,10 +109,12 @@ export function TerminalScreen() {
           initialProfileId,
       };
       try {
-        localStorage.setItem(WORKSPACE_KEY, JSON.stringify(snapshot));
-        localStorage.setItem(HISTORY_KEY, JSON.stringify(nextHistory));
-      } catch {
-        // ignore persistence failures
+        localStorage.setItem("neurodeck:terminal-workspace-v1", JSON.stringify(snapshot));
+        localStorage.setItem("neurodeck:terminal-history-v1", JSON.stringify(nextHistory));
+      } catch (error) {
+        setTerminalError({
+          message: `Failed to save terminal workspace: ${String(error)}`,
+        });
       }
     },
     [initialProfileId]
@@ -344,21 +157,8 @@ export function TerminalScreen() {
   const recordHistory = useCallback(
     (paneId: string, command: string, safety: TerminalCommandSafety, durationMs?: number) => {
       setHistory((current) => {
-        const pane = panes[paneId];
-        const next: TerminalCommandHistoryEntry = {
-          id: createId("cmd"),
-          sessionId: pane?.sessionId ?? paneId,
-          command,
-          redactedCommand: redactedCommand(command),
-          cwd: pane?.cwd ?? "",
-          shell: pane?.shell ?? "",
-          exitCode: undefined,
-          startedAt: new Date().toISOString(),
-          completedAt: new Date().toISOString(),
-          durationMs,
-          safetyLevel: safety.level,
-        };
-        return [next, ...current].slice(0, 100);
+        const entry = buildHistoryEntry(panes[paneId], paneId, command, safety, durationMs);
+        return [entry, ...current].slice(0, 100);
       });
     },
     [panes]
@@ -380,17 +180,25 @@ export function TerminalScreen() {
   );
 
   const refreshDiagnostics = useCallback(async () => {
-    const [nextEnv, nextProfiles, nextDiagnostics] = await Promise.all([
-      neurodeckApi.terminal.getEnvironment(),
-      neurodeckApi.terminal.getProfiles(),
-      neurodeckApi.terminal.getDiagnostics(),
-    ]);
-    setEnvironment(nextEnv);
-    setProfiles(nextProfiles);
-    setDiagnostics(nextDiagnostics);
-    setStatusMessage(
-      nextDiagnostics.activeSessionCount > 0 ? "Terminal sessions active." : "No active sessions."
-    );
+    try {
+      const [nextEnv, nextProfiles, nextDiagnostics] = await Promise.all([
+        neurodeckApi.terminal.getEnvironment(),
+        neurodeckApi.terminal.getProfiles(),
+        neurodeckApi.terminal.getDiagnostics(),
+      ]);
+      setEnvironment(nextEnv);
+      setProfiles(nextProfiles);
+      setDiagnostics(nextDiagnostics);
+      setStatusMessage(
+        nextDiagnostics.activeSessionCount > 0 ? "Terminal sessions active." : "No active sessions."
+      );
+      setTerminalError(null);
+    } catch (error) {
+      setTerminalError({
+        message: `Failed to refresh terminal diagnostics: ${String(error)}`,
+        onRetry: refreshDiagnostics,
+      });
+    }
   }, []);
 
   const createTab = useCallback(
@@ -411,15 +219,7 @@ export function TerminalScreen() {
       setActivePaneId(pane.id);
       setStatusMessage(`Opened ${profile.name}.`);
     },
-    [
-      activePaneId,
-      activeProfile?.id,
-      activeProjectPath,
-      environment?.cwd,
-      initialProfileId,
-      updatePaneMap,
-      updateTabs,
-    ]
+    [activeProfile?.id, activeProjectPath, environment?.cwd, initialProfileId, updatePaneMap, updateTabs]
   );
 
   const switchTab = useCallback(
@@ -478,7 +278,11 @@ export function TerminalScreen() {
     async (paneId: string) => {
       const pane = panes[paneId];
       if (!pane) return;
-      await neurodeckApi.terminal.kill(pane.sessionId).catch(() => {});
+      await neurodeckApi.terminal.kill(pane.sessionId).catch((error) => {
+        setTerminalError({
+          message: `Failed to kill terminal session: ${String(error)}`,
+        });
+      });
       updatePaneMap((current) => {
         const next = { ...current };
         delete next[paneId];
@@ -547,7 +351,11 @@ export function TerminalScreen() {
       for (const paneId of tab.sessionIds) {
         const pane = panes[paneId];
         if (pane) {
-          await neurodeckApi.terminal.kill(pane.sessionId).catch(() => {});
+          await neurodeckApi.terminal.kill(pane.sessionId).catch((error) => {
+            setTerminalError({
+              message: `Failed to kill terminal session: ${String(error)}`,
+            });
+          });
         }
       }
       updateTabs((current) => current.filter((item) => item.id !== tabId));
@@ -586,13 +394,6 @@ export function TerminalScreen() {
       setStatusMessage("Pane cleared.");
     },
     [panes, patchPane]
-  );
-
-  const resetPane = useCallback(
-    async (paneId: string) => {
-      await restartPane(paneId);
-    },
-    [restartPane]
   );
 
   const requestCommandExecution = useCallback(
@@ -717,18 +518,30 @@ export function TerminalScreen() {
       `Profile: ${pane.profileId}`,
       "Give a concise explanation and a safer follow-up if relevant.",
     ].join("\n");
-    const response = await neurodeckApi.ai.chat({
-      provider: state.selectedProvider,
-      model: state.selectedModelId || "NeuroDraft",
-      persona: state.selectedPersona,
-      prompt,
-      messages: [],
-      projectContext: state.projectContext,
-      activeProjectName: activeProject?.name,
-    });
-    if (response.ok) {
-      setAssistantPrompt(response.message.content);
-      setAssistantOpen(true);
+    try {
+      const response = await neurodeckApi.ai.chat({
+        provider: state.selectedProvider,
+        model: state.selectedModelId || "NeuroDraft",
+        persona: state.selectedPersona,
+        prompt,
+        messages: [],
+        projectContext: state.projectContext,
+        activeProjectName: activeProject?.name,
+      });
+      if (response.ok) {
+        setAssistantPrompt(response.message.content);
+        setAssistantOpen(true);
+      } else {
+        setTerminalError({
+          message: "Failed to explain last command.",
+          onRetry: explainLastCommand,
+        });
+      }
+    } catch (error) {
+      setTerminalError({
+        message: `Failed to explain last command: ${String(error)}`,
+        onRetry: explainLastCommand,
+      });
     }
   }, [
     activePane,
@@ -837,6 +650,22 @@ export function TerminalScreen() {
     void refreshDiagnostics();
   }, [refreshDiagnostics]);
 
+  const cycleTab = useCallback(
+    (delta: number) => {
+      if (!tabs.length) return;
+      const currentIndex = Math.max(
+        0,
+        tabs.findIndex((tab) => tab.id === activeTabId)
+      );
+      const next = tabs[(currentIndex + delta + tabs.length) % tabs.length];
+      if (next) {
+        setActiveTabId(next.id);
+        setActivePaneId(next.activePaneId);
+      }
+    },
+    [activeTabId, tabs]
+  );
+
   useEffect(() => {
     const unsubOutput = listenBridge("pty_output", (payload) => {
       const data = payload as { id?: string; data?: string };
@@ -902,7 +731,16 @@ export function TerminalScreen() {
       unsubExit();
       unsubDeckcode();
     };
-  }, [activePaneId, assistantSuggestions, panes, patchPane, requestCommandExecution]);
+  }, [
+    activePaneId,
+    assistantSuggestions,
+    cycleTab,
+    panes,
+    patchPane,
+    requestCommandExecution,
+    setPaneOutput,
+    splitActivePane,
+  ]);
 
   useEffect(() => {
     const onResize = () => {
@@ -922,26 +760,7 @@ export function TerminalScreen() {
     }
   }, [activePane?.lastCommand, buildAssistantSuggestions]);
 
-  const cycleTab = useCallback(
-    (delta: number) => {
-      if (!tabs.length) return;
-      const currentIndex = Math.max(
-        0,
-        tabs.findIndex((tab) => tab.id === activeTabId)
-      );
-      const next = tabs[(currentIndex + delta + tabs.length) % tabs.length];
-      if (next) {
-        setActiveTabId(next.id);
-        setActivePaneId(next.activePaneId);
-      }
-    },
-    [activeTabId, tabs]
-  );
-
   const selectedProfileAvailability = activeProfile ?? profiles[0] ?? null;
-  const shellLabel = selectedProfileAvailability?.shellAvailable
-    ? selectedProfileAvailability.shellPath
-    : "missing_shell_binary";
   const statusLevel =
     activePane?.state === "blocked"
       ? "blocked"
@@ -962,228 +781,70 @@ export function TerminalScreen() {
       )
     : [];
 
+  const handleSelectProfile = useCallback(
+    (profileId: string) => {
+      updateTabs((current) =>
+        current.map((tab) =>
+          tab.id === activeTabId
+            ? { ...tab, profileId, updatedAt: new Date().toISOString() }
+            : tab
+        )
+      );
+      updatePaneMap((current) => {
+        const next = { ...current };
+        const pane = next[activePaneId];
+        if (pane) {
+          next[activePaneId] = { ...pane, profileId, updatedAt: new Date().toISOString() };
+        }
+        return next;
+      });
+    },
+    [activePaneId, activeTabId, updatePaneMap, updateTabs]
+  );
+
   return (
     <div className="terminal-screen flex h-full min-h-0 flex-col overflow-hidden bg-nd-bg text-nd-text-primary">
-      <header className="flex items-start justify-between gap-4 border-b border-nd-text-muted/15 px-4 py-3">
-        <div className="min-w-0 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-accent-primary/20 bg-nd-accent-primary/10 text-nd-accent-primary">
-            <TerminalIcon className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
-              Terminal Workspace
-            </div>
-            <h2 className="truncate text-lg font-semibold text-nd-text-primary">NeuroShell</h2>
-            <div className="truncate text-xs text-nd-text-muted">{statusMessage}</div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <StatusChip
-            tone={
-              statusLevel === "running"
-                ? "success"
-                : statusLevel === "blocked"
-                  ? "error"
-                  : "warning"
-            }
-            size="sm"
-          >
-            {statusLevel}
-          </StatusChip>
-          <Badge tone="neutral" size="sm" variant="outline">
-            {activeTab?.label ?? "No tab"}
-          </Badge>
-          <Badge tone="neutral" size="sm" variant="outline">
-            {shellLabel}
-          </Badge>
-          <Badge tone="neutral" size="sm" variant="outline" className="max-w-[12rem] truncate">
-            {activePane?.cwd || activeProjectPath || environment?.cwd || "cwd unavailable"}
-          </Badge>
-          <Button
-            id="terminal-new-tab-btn"
-            variant="secondary"
-            size="sm"
-            icon={Plus}
-            onClick={() => createTab()}
-          >
-            New Tab
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={SplitSquareVertical}
-            onClick={() => splitActivePane("vertical")}
-          >
-            Split
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={LayoutGrid}
-            onClick={() => setCommandPaletteOpen(true)}
-          >
-            Palette
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={RefreshCw}
-            onClick={() => void refreshDiagnostics()}
-          >
-            Refresh
-          </Button>
-        </div>
-      </header>
+      <TerminalHeader
+        statusLevel={statusLevel}
+        statusMessage={statusMessage}
+        activeTab={activeTab}
+        activePane={activePane}
+        activeProfile={selectedProfileAvailability}
+        activeProjectPath={activeProjectPath}
+        environment={environment}
+        onCreateTab={() => createTab()}
+        onSplitVertical={() => splitActivePane("vertical")}
+        onOpenPalette={() => setCommandPaletteOpen(true)}
+        onRefreshDiagnostics={refreshDiagnostics}
+      />
 
       <div className="flex min-h-0 flex-1 gap-3 overflow-hidden p-3">
-        <aside className="flex w-80 min-w-[18rem] max-w-[22rem] flex-col gap-3 overflow-hidden">
-          <TerminalProfileSelector
-            profiles={
-              profiles.length
-                ? profiles
-                : TERMINAL_PROFILES.map((profile) => ({
-                    ...profile,
-                    shellAvailable: false,
-                    shellStatus: "unknown",
-                    shellSafety: "unknown",
-                  }))
-            }
-            selectedProfileId={activeProfile?.id ?? initialProfileId}
-            onSelect={(profileId) => {
-              updateTabs((current) =>
-                current.map((tab) =>
-                  tab.id === activeTabId
-                    ? { ...tab, profileId, updatedAt: new Date().toISOString() }
-                    : tab
-                )
-              );
-              updatePaneMap((current) => {
-                const next = { ...current };
-                const pane = next[activePaneId];
-                if (pane) {
-                  next[activePaneId] = { ...pane, profileId, updatedAt: new Date().toISOString() };
-                }
-                return next;
-              });
-            }}
-          />
-
-          <TerminalDiagnosticsPanel
-            diagnostics={diagnostics}
-            environment={environment}
-            activePane={activePane}
-          />
-
-          <section
-            className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-3"
-            tabIndex={0}
-            aria-label="Terminal output"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
-                  Session Manager
-                </p>
-                <h3 className="text-sm font-semibold text-nd-text-primary">Tabs and panes</h3>
-              </div>
-              <IconButton
-                aria-label="Toggle session manager"
-                variant="ghost"
-                size="sm"
-                onClick={() => setSessionManagerOpen((value) => !value)}
-              >
-                <TerminalIcon className="h-4 w-4" aria-hidden="true" />
-              </IconButton>
-            </div>
-            <div className="space-y-2">
-              {tabs.map((tab) => {
-                const pane = panes[tab.activePaneId];
-                return (
-                  <div
-                    key={tab.id}
-                    onClick={() => switchTab(tab.id)}
-                    className={`w-full cursor-pointer rounded-2xl border px-3 py-2 text-left transition ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]" : "border-nd-border-subtle bg-nd-surface-secondary/40 hover:bg-nd-surface-tertiary/60"}`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-semibold text-nd-text-primary">
-                          {tab.label}
-                        </div>
-                        <div className="truncate text-[11px] text-nd-text-muted">
-                          {pane?.shell ?? "unknown shell"}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="secondary"
-                          size="xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            pinTab(tab.id);
-                          }}
-                        >
-                          {tab.pinned ? "Pinned" : "Pin"}
-                        </Button>
-                        <IconButton
-                          aria-label="Close tab"
-                          variant="danger"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void closeTab(tab.id);
-                          }}
-                        >
-                          <X className="h-4 w-4" aria-hidden="true" />
-                        </IconButton>
-                      </div>
-                    </div>
-                    <div className="mt-2 flex items-center gap-2 text-[11px] text-nd-text-muted">
-                      <span>{tab.sessionIds.length} pane(s)</span>
-                      <span>•</span>
-                      <span>{tab.cwd || "workspace"}</span>
-                    </div>
-                  </div>
-                );
-              })}
-              {tabs.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-nd-text-muted/15 bg-nd-surface/20 p-3 text-sm text-nd-text-muted">
-                  No terminal tabs available.
-                </div>
-              )}
-            </div>
-          </section>
-        </aside>
+        <TerminalSidebar
+          profiles={profiles}
+          fallbackProfiles={TERMINAL_PROFILES}
+          activeTabId={activeTabId}
+          activePane={activePane}
+          tabs={tabs}
+          panes={panes}
+          diagnostics={diagnostics}
+          environment={environment}
+          terminalError={terminalError}
+          selectedProfileId={selectedProfileAvailability?.id ?? initialProfileId}
+          onSelectProfile={handleSelectProfile}
+          onSwitchTab={switchTab}
+          onPinTab={pinTab}
+          onCloseTab={closeTab}
+          onToggleSessionManager={() => setSessionManagerOpen((value) => !value)}
+          onClearError={() => setTerminalError(null)}
+        />
 
         <main className="min-w-0 flex-1 overflow-hidden">
-          <div className="mb-3 flex items-center gap-2 rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-2">
-            <div
-              role="tablist"
-              aria-label="Terminal sessions"
-              className="flex flex-1 items-center gap-2 overflow-x-auto scrollbar-none"
-            >
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  id={`term-tab-${tab.id}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={tab.id === activeTabId}
-                  onClick={() => switchTab(tab.id)}
-                  className={`inline-flex min-w-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm transition ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08] text-nd-text-primary" : "border-nd-border-subtle bg-nd-surface-secondary/40 text-nd-text-muted hover:bg-nd-surface-tertiary/60"}`}
-                >
-                  <TerminalIcon className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{tab.label}</span>
-                  {tab.pinned && (
-                    <ShieldCheck className="h-3.5 w-3.5 text-nd-accent-success" aria-hidden="true" />
-                  )}
-                </button>
-              ))}
-            </div>
-            <Button variant="ghost" size="sm" icon={Plus} onClick={() => createTab()}>
-              Add Tab
-            </Button>
-          </div>
+          <TerminalTabBar
+            tabs={tabs}
+            activeTabId={activeTabId}
+            onSwitchTab={switchTab}
+            onCreateTab={() => createTab()}
+          />
 
           <div
             className="grid min-h-0 gap-3"
@@ -1194,165 +855,34 @@ export function TerminalScreen() {
               aria-label={activeTab?.label ?? "Terminal"}
               className="min-h-0 overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/30"
             >
-              {activeTab ? (
-                <div className="flex min-h-0 h-full flex-col">
-                  <div className="flex items-center justify-between border-b border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-2">
-                    <div className="flex items-center gap-2 text-xs text-nd-text-muted">
-                      <Badge tone="neutral" size="sm" variant="outline">
-                        {activeTab.layout}
-                      </Badge>
-                      <span>•</span>
-                      <span className="truncate max-w-[16rem]">
-                        {activeTab.cwd || environment?.cwd || "cwd unavailable"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <IconButton
-                        aria-label="Search terminal output"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSearchOpen((value) => !value)}
-                      >
-                        <Search className="h-4 w-4" aria-hidden="true" />
-                      </IconButton>
-                      <IconButton
-                        aria-label="Split pane horizontally"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => splitActivePane("horizontal")}
-                      >
-                        <SplitSquareHorizontal className="h-4 w-4" aria-hidden="true" />
-                      </IconButton>
-                      <IconButton
-                        aria-label="Reset pane"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => void resetPane(activePaneId)}
-                      >
-                        <RefreshCw className="h-4 w-4" aria-hidden="true" />
-                      </IconButton>
-                      <IconButton
-                        aria-label="Close pane"
-                        variant="danger"
-                        size="sm"
-                        onClick={() => void closePane(activePaneId)}
-                      >
-                        <Trash2 className="h-4 w-4" aria-hidden="true" />
-                      </IconButton>
-                    </div>
-                  </div>
-
-                  <div className="min-h-0 flex-1 overflow-hidden p-2">
-                    <div
-                      className={`grid h-full min-h-0 gap-2 ${activeTab.sessionIds.length <= 1 ? "grid-cols-1" : activeTab.layout === "split-horizontal" ? "grid-rows-2" : "grid-cols-2"}`}
-                    >
-                      {activeTab.sessionIds.map((paneId) => {
-                        const pane = panes[paneId];
-                        if (!pane) return null;
-                        const profile = profiles.find((item) => item.id === pane.profileId) ?? null;
-                        return (
-                          <div
-                            key={pane.id}
-                            className={`min-h-0 overflow-hidden rounded-2xl border ${pane.id === activePaneId ? "border-nd-accent-primary/30 bg-nd-surface-app/60" : "border-nd-border-subtle bg-nd-surface-app/40"}`}
-                          >
-                            <TerminalViewport
-                              pane={pane}
-                              profile={profile}
-                              environment={environment}
-                              active={pane.id === activePaneId}
-                              onFocus={() => setActivePaneId(pane.id)}
-                              onPanePatch={(patch) => patchPane(pane.id, patch)}
-                              onPaneOutput={(chunk) => setPaneOutput(pane.id, chunk)}
-                              onCommandSubmitted={(command) => {
-                                const safety = classifyTerminalCommand(command, "user");
-                                recordHistory(pane.id, command, safety);
-                                patchPane(pane.id, {
-                                  commandCount: pane.commandCount + 1,
-                                  lastCommand: command,
-                                  lastActivityAt: new Date().toISOString(),
-                                  state: "busy",
-                                });
-                              }}
-                              onRequestRestart={() => void restartPane(pane.id)}
-                              onRequestClear={() => clearPane(pane.id)}
-                              onRequestClose={() => void closePane(pane.id)}
-                            />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex min-h-[20rem] items-center justify-center p-6 text-sm text-nd-text-muted">
-                  No active terminal tab.
-                </div>
-              )}
+              <TerminalPanesGrid
+                activeTab={activeTab}
+                activePaneId={activePaneId}
+                panes={panes}
+                profiles={profiles}
+                environment={environment}
+                onSetActivePaneId={setActivePaneId}
+                onPatchPane={patchPane}
+                onSetPaneOutput={setPaneOutput}
+                onRecordHistory={recordHistory}
+                onRequestRestart={restartPane}
+                onRequestClear={clearPane}
+                onRequestClose={closePane}
+                onSplitHorizontal={() => splitActivePane("horizontal")}
+                onToggleSearch={() => setSearchOpen((value) => !value)}
+              />
             </section>
 
             {assistantOpen && (
-              <aside className="min-h-0 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
-                      AI Assistant
-                    </p>
-                    <h3 className="text-sm font-semibold text-nd-text-primary">Command help</h3>
-                  </div>
-                  <IconButton
-                    aria-label="Close command help"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setAssistantOpen(false)}
-                  >
-                    <X className="h-4 w-4" aria-hidden="true" />
-                  </IconButton>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  <textarea
-                    value={assistantPrompt}
-                    onChange={(e) => setAssistantPrompt(e.target.value)}
-                    placeholder="Ask for the next command, explain the last error, or request a safer alternative..."
-                    className="min-h-28 w-full rounded-2xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 text-sm text-nd-text-primary outline-none"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => void buildAssistantSuggestions()}
-                    >
-                      Suggest Commands
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => void explainLastCommand()}>
-                      Explain Last Command
-                    </Button>
-                  </div>
-                  <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-bg/40 p-3 text-xs text-nd-text-muted">
-                    <div className="font-semibold text-nd-text-primary">Suggested commands</div>
-                    <div className="mt-2 space-y-2">
-                      {assistantSuggestions.length === 0 ? (
-                        <div className="text-nd-text-muted">No suggestions yet.</div>
-                      ) : (
-                        assistantSuggestions.map((command) => (
-                          <Button
-                            key={command}
-                            variant="ghost"
-                            size="xs"
-                            fullWidth
-                            className="justify-start font-mono text-[11px]"
-                            onClick={() =>
-                              void requestCommandExecution(activePaneId, command, "assistant")
-                            }
-                          >
-                            {command}
-                          </Button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </aside>
+              <TerminalAssistantPanel
+                prompt={assistantPrompt}
+                suggestions={assistantSuggestions}
+                onPromptChange={setAssistantPrompt}
+                onSuggest={buildAssistantSuggestions}
+                onExplain={explainLastCommand}
+                onRunCommand={(command) => void requestCommandExecution(activePaneId, command, "assistant")}
+                onClose={() => setAssistantOpen(false)}
+              />
             )}
           </div>
         </main>
@@ -1377,162 +907,31 @@ export function TerminalScreen() {
         description={pendingCommand ? `Source: ${pendingCommand.source}` : undefined}
       />
 
-      {searchOpen && (
-        <FocusTrapContainer
-          active={searchOpen}
-          onEscape={() => setSearchOpen(false)}
-          className="fixed inset-x-4 bottom-4 z-[var(--z-modal)] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated"
-          role="dialog"
-          aria-label="Terminal output search"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
-                Search
-              </div>
-              <div className="text-sm font-semibold text-nd-text-primary">Terminal output</div>
-            </div>
-            <IconButton
-              aria-label="Close search"
-              variant="ghost"
-              size="sm"
-              onClick={() => setSearchOpen(false)}
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </IconButton>
-          </div>
-          <div className="mt-3 flex gap-2">
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search output or session id..."
-              className="min-w-0 flex-1 rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none"
-            />
-            <Button size="sm" variant="ghost" onClick={() => setSearchQuery("")}>
-              Clear
-            </Button>
-          </div>
-          <div className="mt-3 max-h-56 overflow-auto rounded-2xl border border-nd-text-muted/15 bg-nd-surface/20 p-3 text-xs text-nd-text-muted">
-            {searchResults.length === 0 ? (
-              <div>No matches.</div>
-            ) : (
-              searchResults.slice(-50).map((entry, index) => (
-                <div
-                  key={`${entry.paneId}-${index}`}
-                  className="mb-2 rounded-xl border border-nd-text-muted/15 bg-nd-bg/40 p-2"
-                >
-                  <div className="font-semibold text-nd-text-primary">{entry.paneId}</div>
-                  <div className="mt-1 font-mono text-[11px] text-nd-text-muted">{entry.line}</div>
-                </div>
-              ))
-            )}
-          </div>
-        </FocusTrapContainer>
-      )}
+      <TerminalSearchOverlay
+        open={searchOpen}
+        query={searchQuery}
+        results={searchResults}
+        onQueryChange={setSearchQuery}
+        onClose={() => setSearchOpen(false)}
+        onClear={() => setSearchQuery("")}
+      />
 
-      {sessionManagerOpen && (
-        <FocusTrapContainer
-          active={sessionManagerOpen}
-          onEscape={() => setSessionManagerOpen(false)}
-          className="fixed right-4 top-24 z-[var(--z-modal)] w-[28rem] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated"
-          role="dialog"
-          aria-label="Terminal session manager"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
-                Sessions
-              </div>
-              <div className="text-sm font-semibold text-nd-text-primary">
-                Terminal tabs and panes
-              </div>
-            </div>
-            <IconButton
-              aria-label="Close session manager"
-              variant="ghost"
-              size="sm"
-              onClick={() => setSessionManagerOpen(false)}
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </IconButton>
-          </div>
-          <div className="mt-3 space-y-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => switchTab(tab.id)}
-                className={`w-full rounded-2xl border px-3 py-2 text-left ${tab.id === activeTabId ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.08]" : "border-nd-text-muted/15 bg-nd-surface/40"}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-nd-text-primary">{tab.label}</span>
-                  <span className="text-xs text-nd-text-muted">
-                    {tab.sessionIds.length} pane(s)
-                  </span>
-                </div>
-                <div className="mt-1 text-xs text-nd-text-muted">{tab.cwd || "workspace"}</div>
-              </button>
-            ))}
-          </div>
-        </FocusTrapContainer>
-      )}
+      <TerminalSessionManagerOverlay
+        open={sessionManagerOpen}
+        tabs={tabs}
+        activeTabId={activeTabId}
+        onSwitchTab={switchTab}
+        onClose={() => setSessionManagerOpen(false)}
+      />
 
-      {pluginPanelOpen && (
-        <FocusTrapContainer
-          active={pluginPanelOpen}
-          onEscape={() => setPluginPanelOpen(false)}
-          className="fixed left-4 top-24 z-[var(--z-modal)] w-[24rem] rounded-2xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-panel-elevated"
-          role="dialog"
-          aria-label="Terminal plugin hooks"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
-                Plugin Hooks
-              </div>
-              <div className="text-sm font-semibold text-nd-text-primary">
-                Lua / Hermes / tool commands
-              </div>
-            </div>
-            <IconButton
-              aria-label="Close plugin panel"
-              variant="ghost"
-              size="sm"
-              onClick={() => setPluginPanelOpen(false)}
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </IconButton>
-          </div>
-          <div className="mt-3 space-y-2 text-sm text-nd-text-muted">
-            <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/40 p-3">
-              Use the active shell profile to run Lua plugin checks, Fallow audits, or Hermes repair
-              commands when the tools are detected in the environment probe.
-            </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              fullWidth
-              onClick={() =>
-                void requestCommandExecution(
-                  activePaneId,
-                  "npx fallow audit --format json",
-                  "palette"
-                )
-              }
-            >
-              Run Fallow audit
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              fullWidth
-              onClick={() => void requestCommandExecution(activePaneId, "lua --version", "palette")}
-            >
-              Check Lua runtime
-            </Button>
-          </div>
-        </FocusTrapContainer>
-      )}
+      <TerminalPluginPanelOverlay
+        open={pluginPanelOpen}
+        onClose={() => setPluginPanelOpen(false)}
+        onRunAudit={() =>
+          void requestCommandExecution(activePaneId, "npx fallow audit --format json", "palette")
+        }
+        onRunLuaCheck={() => void requestCommandExecution(activePaneId, "lua --version", "palette")}
+      />
     </div>
   );
 }
