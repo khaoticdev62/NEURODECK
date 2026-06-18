@@ -1,0 +1,35 @@
+<!-- @dsCard group="Brand" viewport="700x200" name="Tactical Glass Card" subtitle="Dark glass fill · hairline border · soft shadow · cyan focus accent" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-app); color:var(--nd-text-primary);
+         font-family:var(--nd-font-ui); padding:22px; display:flex; gap:16px; }
+  .card { flex:1; background:var(--nd-surface-secondary); border:1px solid var(--nd-border-subtle);
+          border-radius:var(--nd-radius-lg); box-shadow:var(--nd-elevation-card); padding:16px; }
+  .card.active { border-color:rgba(var(--nd-cyan-rgb),0.4); box-shadow:var(--nd-elevation-card), 0 0 24px rgba(var(--nd-cyan-rgb),0.14); }
+  .head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .title { font-size:15px; font-weight:600; }
+  .chip { font-family:var(--nd-font-hud); text-transform:uppercase; letter-spacing:.14em; font-size:10px;
+          padding:3px 8px; border-radius:999px; border:1px solid rgba(var(--nd-green-rgb),0.3);
+          color:var(--nd-green-400); background:rgba(var(--nd-green-rgb),0.1); }
+  .body { font-size:13px; line-height:19px; color:var(--nd-text-muted); }
+  .meta { display:flex; gap:14px; margin-top:12px; font-family:var(--nd-font-mono); font-size:11px; color:var(--nd-text-secondary); }
+  .meta b { color:var(--nd-cyan-400); font-weight:600; }
+</style>
+</head>
+<body>
+  <div class="card active">
+    <div class="head"><span class="title">Llama 3.1 8B</span><span class="chip">✓ Connected</span></div>
+    <div class="body">Local · GGUF Q4_K_M · controller-ready · selected for this session.</div>
+    <div class="meta"><span><b>8192</b> ctx</span><span><b>6.2</b> GB VRAM</span><span><b>42</b> tok/s</span></div>
+  </div>
+  <div class="card">
+    <div class="head"><span class="title">Claude Sonnet</span><span class="chip" style="border-color:rgba(255,200,87,0.3);color:var(--nd-yellow-400);background:rgba(255,200,87,0.1)">! Auth</span></div>
+    <div class="body">Remote · API key required · health check pending.</div>
+    <div class="meta"><span><b>200k</b> ctx</span><span>remote</span><span>—</span></div>
+  </div>
+</body>
+</html>

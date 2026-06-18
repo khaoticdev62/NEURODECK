@@ -22,7 +22,7 @@
     "frontend:build": "npm -w frontend run build",
     "frontend:preview": "npm -w frontend run preview",
     "frontend:typecheck": "npm -w frontend run typecheck",
-    "frontend:test": "bash -c \"cd frontend && node ../node_modules/vitest/dist/cli.js run\"",
+    "frontend:test": "npm -w frontend run test",
     "storybook": "npm -w frontend run storybook",
     "build-storybook": "npm -w frontend run build-storybook",
     "chromatic": "npm -w frontend run chromatic",

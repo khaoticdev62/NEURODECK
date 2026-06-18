@@ -1,0 +1,13 @@
+/* NEURODECK v1.0 — Tactical Glass Theme */
+.theme-tactical-glass {
+  --nd-surface-app: #070b10;
+  --nd-surface-primary: #0b1118;
+  --nd-surface-secondary: rgba(17, 25, 34, 0.88);
+  --nd-surface-tertiary: rgba(28, 40, 53, 0.92);
+  --nd-surface-glass: rgba(17, 25, 34, 0.78);
+  --nd-accent-primary: #68f1ff;
+  --nd-border-default: rgba(104, 241, 255, 0.22);
+  --nd-surface-hover: rgba(104, 241, 255, 0.08);
+  --nd-surface-active: rgba(104, 241, 255, 0.14);
+  --nd-surface-selected: rgba(104, 241, 255, 0.16);
+}

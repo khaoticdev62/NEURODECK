@@ -2,7 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
   "ignoreDependencies": [
     "@playwright/test",
-    "@axe-core/playwright"
+    "@axe-core/playwright",
+    "chrome-launcher",
+    "lighthouse"
   ],
   "ignoreUnresolvedImports": [
     "../../shared/contracts/backendHealth.contracts",
@@ -13,6 +15,8 @@
     "src/shared/**",
     "e2e/**",
     "frontend/src/**/*.test.js",
+    "frontend/src/**/*.test.ts",
+    "frontend/src/**/*.test.tsx",
     "tests/**",
     "temp_inspect/**",
     "scripts/js/test-chat-virtualization.js",

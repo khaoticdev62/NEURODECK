@@ -1,0 +1,33 @@
+<!-- @dsCard group="Brand" viewport="700x140" name="Status Glyphs & Controller Hints" subtitle="icon + label + color · A/B/X/Y lettered chips · no emoji" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-primary); color:var(--nd-text-primary);
+         font-family:var(--nd-font-ui); padding:20px; display:flex; flex-direction:column; gap:16px; justify-content:center; }
+  .row { display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+  .glyph { display:flex; align-items:center; gap:7px; font-size:13px; }
+  .g { font-family:var(--nd-font-mono); font-size:15px; width:18px; text-align:center; }
+  .hint { display:flex; align-items:center; gap:8px; }
+  .btn { width:22px; height:22px; border-radius:999px; display:flex; align-items:center; justify-content:center;
+         font-family:var(--nd-font-mono); font-size:12px; font-weight:700; border:1px solid var(--nd-border-default); }
+  .hl { font-family:var(--nd-font-hud); text-transform:uppercase; letter-spacing:.14em; font-size:10px; color:var(--nd-text-muted); }
+</style>
+</head>
+<body>
+  <div class="row">
+    <span class="glyph" style="color:var(--nd-green-400)"><span class="g">✓</span>Connected</span>
+    <span class="glyph" style="color:var(--nd-yellow-400)"><span class="g">!</span>Degraded</span>
+    <span class="glyph" style="color:var(--nd-red-400)"><span class="g">×</span>Failed</span>
+    <span class="glyph" style="color:var(--nd-cyan-400)"><span class="g">…</span>Running</span>
+  </div>
+  <div class="row">
+    <span class="hint"><span class="btn" style="color:var(--nd-green-400);border-color:rgba(var(--nd-green-rgb),0.4)">A</span><span class="hl">Confirm</span></span>
+    <span class="hint"><span class="btn" style="color:var(--nd-red-400);border-color:rgba(var(--nd-red-rgb),0.4)">B</span><span class="hl">Back</span></span>
+    <span class="hint"><span class="btn" style="color:var(--nd-cyan-400);border-color:rgba(var(--nd-cyan-rgb),0.4)">X</span><span class="hl">Command</span></span>
+    <span class="hint"><span class="btn" style="color:var(--nd-yellow-400);border-color:rgba(var(--nd-yellow-rgb),0.4)">Y</span><span class="hl">Context</span></span>
+  </div>
+</body>
+</html>

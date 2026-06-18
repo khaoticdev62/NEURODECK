@@ -1,0 +1,63 @@
+<!-- @dsCard group="Components" viewport="700x400" name="Feedback — Toast, Modal, ConfirmDialog" subtitle="Notifications and focus-trapping overlays with explicit copy" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-app); color:var(--nd-text-primary);
+         font-family:var(--nd-font-ui); padding:20px; }
+  .stack { display:flex; flex-direction:column; gap:14px; }
+  .toasts { display:flex; flex-direction:column; gap:10px; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .secn { font-family:var(--nd-font-hud); text-transform:uppercase; letter-spacing:.16em;
+          font-size:10px; color:var(--nd-text-muted); margin-bottom:8px; }
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { Toast, Modal, ConfirmDialog, Button } = window.NEURODECKDesignSystem_1b2ea8;
+function Demo(){
+  const [modal, setModal] = React.useState(false);
+  const [confirm, setConfirm] = React.useState(false);
+  return (
+    <div className="stack">
+      <div>
+        <div className="secn">Toasts</div>
+        <div className="toasts">
+          <Toast tone="success" title="Model connected" message="Llama 3.1 8B is ready for this session." onClose={()=>{}}/>
+          <Toast tone="warning" title="High latency" message="Remote provider responding at 1.8s." onClose={()=>{}}/>
+          <Toast tone="error" title="Connection failed" message="Check the provider endpoint and try again." onClose={()=>{}}/>
+        </div>
+      </div>
+      <div>
+        <div className="secn">Overlays</div>
+        <div className="row">
+          <Button variant="secondary" onClick={()=>setModal(true)}>Open modal</Button>
+          <Button variant="danger" onClick={()=>setConfirm(true)}>Delete session…</Button>
+        </div>
+      </div>
+      <Modal open={modal} onClose={()=>setModal(false)} title="Connect remote provider"
+        footer={<>
+          <Button variant="ghost" onClick={()=>setModal(false)}>Cancel</Button>
+          <Button variant="primary" onClick={()=>setModal(false)}>Connect</Button>
+        </>}>
+        Add an API key to enable remote inference. Keys are stored locally on this device and never synced.
+      </Modal>
+      <ConfirmDialog open={confirm}
+        title={'Delete session "Security Lab Notes"?'}
+        consequence="This removes the local copy from this device. This cannot be undone."
+        confirmLabel="Delete Session"
+        onCancel={()=>setConfirm(false)} onConfirm={()=>setConfirm(false)}/>
+    </div>
+  );
+}
+ReactDOM.createRoot(document.getElementById("root")).render(<Demo/>);
+</script>
+</body>
+</html>

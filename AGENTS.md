@@ -4,6 +4,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ---
 
+## Operating Rules
+
+- Work as a senior application engineer: keep changes small, typed, consistent, and covered by proportionate verification.
+- Explain architecture, security, and business tradeoffs in Just Plain English (JPE). Prefer lean, deterministic solutions over framework or service bloat.
+- Treat every boundary as untrusted. Preserve Electron isolation, bridge validation, secret redaction, filesystem containment, and least-privilege behavior.
+- Execute one coherent sprint item at a time. Establish a passing baseline, implement the smallest complete change, verify it, then continue.
+- UI changes must match project screenshots at 1280×800 and use canonical design tokens/components. Wire every control through existing UI state, controller, accessibility, and bridge systems.
+- Never hide a regression with snapshot updates, broad suppressions, or unrelated rewrites. Document intentional static-analysis exceptions beside the affected symbol with a concrete rationale.
+- After a major verified update, use a policy-compliant branch, run `npm run preflight`, and upload the scoped commit to GitHub. Never push directly to `master`, `main`, or `release/*`.
+
+---
+
 ## What This Is
 
 NEURODECK is an Electron desktop app with a Rust sidecar that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, and gamepad-native navigation in one 1280×800 fullscreen window.
@@ -589,10 +601,9 @@ cd src-tauri && cargo test --tests    # Integration tests (10 tests)
 # Use `cargo test --lib` or individual `--test <name>` instead.
 
 # Frontend tests
-npm run frontend:test                 # Runs `cd frontend && node ../node_modules/vitest/dist/cli.js run`
-# Direct `npx vitest run` or `npm -w frontend run test` can hit a Vitest
-# setup-file suite-context bug when started from the workspace root; the
-# root script uses a bash wrapper to avoid this.
+npm run frontend:test                 # Runs the frontend workspace Vitest suite natively
+# The root command delegates through npm workspaces so Windows does not cross
+# into WSL and attempt to load Linux-native Rolldown bindings.
 
 # KFMS
 ./scripts/kfms/khaotic-init.sh stamp     # Re-stamp build block after changes

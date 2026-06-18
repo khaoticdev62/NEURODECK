@@ -1,0 +1,38 @@
+<!-- @dsCard group="Brand" viewport="700x180" name="Brand Mark & Lockup" subtitle="Cyan node 'N' in HUD brackets · favicon, boot logo, status lockup" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-app); color:var(--nd-text-primary);
+         font-family:var(--nd-font-ui); padding:24px; display:flex; align-items:center; gap:30px; }
+  .markbox { width:96px; height:96px; border-radius:var(--nd-radius-lg);
+             background:linear-gradient(135deg, rgba(var(--nd-cyan-rgb),0.15), rgba(var(--nd-green-rgb),0.06));
+             border:1px solid rgba(var(--nd-cyan-rgb),0.25); display:flex; align-items:center; justify-content:center;
+             box-shadow:0 0 28px rgba(var(--nd-cyan-rgb),0.16); }
+  .markbox img { width:60px; height:60px; }
+  .lockup { display:flex; flex-direction:column; gap:10px; }
+  .wm { font-family:var(--nd-font-display); font-weight:800; font-size:30px; letter-spacing:.2em; }
+  .wm .g { color:var(--nd-cyan-400); text-shadow:0 0 16px rgba(var(--nd-cyan-rgb),0.5); }
+  .tag { font-family:var(--nd-font-hud); text-transform:uppercase; letter-spacing:.2em;
+         font-size:11px; color:var(--nd-text-muted); }
+  .swatches { display:flex; gap:6px; margin-top:4px; }
+  .sw { width:22px; height:22px; border-radius:6px; border:1px solid var(--nd-border-subtle); }
+</style>
+</head>
+<body>
+  <div class="markbox"><img src="../assets/neurodeck-mark.svg" alt="NEURODECK mark"></div>
+  <div class="lockup">
+    <div class="wm">NEURO<span class="g">DECK</span></div>
+    <div class="tag">Handheld AI Workstation</div>
+    <div class="swatches">
+      <div class="sw" style="background:#5EEBFF"></div>
+      <div class="sw" style="background:#0A0D10"></div>
+      <div class="sw" style="background:#11161C"></div>
+      <div class="sw" style="background:#E8F4FF"></div>
+      <div class="sw" style="background:#FF5A6A"></div>
+    </div>
+  </div>
+</body>
+</html>

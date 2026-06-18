@@ -15,10 +15,31 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "ignoreDeprecations": "6.0",
     "allowJs": true,
-    "checkJs": false
+    "checkJs": false,
+    "baseUrl": "../",
+    "paths": {
+      "@renderer/*": ["src/renderer/*"],
+      "@features/*": ["src/renderer/features/*"],
+      "@components/*": ["src/renderer/components/*"],
+      "@hooks/*": ["src/renderer/hooks/*"],
+      "@state/*": ["src/renderer/state/*"],
+      "@services/*": ["src/renderer/services/*"],
+      "@theme/*": ["src/renderer/theme/*"],
+      "@input/*": ["src/renderer/input/*"],
+      "@types-renderer/*": ["src/renderer/types/*"],
+      "@ds/*": ["src/renderer/design-system/*"],
+      "@shared/*": ["src/shared/*"]
+    }
   },
-  "include": ["src"],
-  "exclude": ["src/**/_legacy"],
+  "include": [
+    "../src/renderer/**/*",
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "../src/renderer/**/_legacy"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

@@ -1,0 +1,314 @@
+{
+  "name": "NEURODECK Design System",
+  "version": "1.0.0-blended",
+  "namespace": "NEURODECKDesignSystem_1b2ea8",
+  "root": "frontend/src/design-system",
+  "tokens": {
+    "canonical": "tokens/tokens.css",
+    "canonicalJson": "tokens.json",
+    "legacy": {
+      "colors": "tokens/colors.css",
+      "fonts": "tokens/fonts.css",
+      "spacing": "tokens/spacing.css",
+      "typography": "tokens/typography.css"
+    },
+    "themes": [
+      "themes/blacksite.css",
+      "themes/tactical-glass.css",
+      "themes/high-contrast.css",
+      "themes/colorblind-safe.css"
+    ]
+  },
+  "components": {
+    "core": [
+      { "name": "Badge", "path": "components/core/Badge.tsx", "category": "status" },
+      { "name": "Button", "path": "components/core/Button.tsx", "category": "action" },
+      { "name": "IconButton", "path": "components/core/IconButton.tsx", "category": "action" },
+      { "name": "Panel", "path": "components/core/Panel.tsx", "category": "surface" },
+      { "name": "Select", "path": "components/core/Select.tsx", "category": "input" },
+      { "name": "StatusChip", "path": "components/core/StatusChip.tsx", "category": "status" },
+      { "name": "TextInput", "path": "components/core/TextInput.tsx", "category": "input" },
+      { "name": "Toggle", "path": "components/core/Toggle.tsx", "category": "input" }
+    ],
+    "feedback": [
+      {
+        "name": "ConfirmDialog",
+        "path": "components/feedback/ConfirmDialog.tsx",
+        "category": "overlay"
+      },
+      { "name": "Modal", "path": "components/feedback/Modal.tsx", "category": "overlay" },
+      { "name": "Toast", "path": "components/feedback/Toast.tsx", "category": "notification" }
+    ],
+    "systems": [
+      { "name": "AgentCard", "path": "components/systems/AgentCard.tsx", "category": "card" },
+      { "name": "ModelCard", "path": "components/systems/ModelCard.tsx", "category": "card" },
+      { "name": "SessionCard", "path": "components/systems/SessionCard.tsx", "category": "card" }
+    ],
+    "workstation": [
+      { "name": "Shell", "path": "ui_kits/workstation/Shell.tsx", "category": "shell" },
+      { "name": "StatusBar", "path": "ui_kits/workstation/StatusBar.tsx", "category": "shell" },
+      { "name": "NavRail", "path": "ui_kits/workstation/NavRail.tsx", "category": "shell" },
+      {
+        "name": "ChatWorkspace",
+        "path": "ui_kits/workstation/ChatWorkspace.tsx",
+        "category": "shell"
+      },
+      {
+        "name": "InputConsole",
+        "path": "ui_kits/workstation/InputConsole.tsx",
+        "category": "shell"
+      },
+      {
+        "name": "CommandPalette",
+        "path": "ui_kits/workstation/CommandPalette.tsx",
+        "category": "shell"
+      },
+      {
+        "name": "FeatureViews",
+        "path": "ui_kits/workstation/FeatureViews.tsx",
+        "category": "shell"
+      },
+      { "name": "icons", "path": "ui_kits/workstation/icons.tsx", "category": "asset" }
+    ]
+  },
+  "specifications": [
+    {
+      "name": "Button",
+      "tier": "Foundation",
+      "usage": "Global actions",
+      "accessibility": "WCAG label + keyboard activation",
+      "controller": "A confirm",
+      "testPriority": "High",
+      "variants": "primary, secondary, ghost, danger",
+      "status": "implemented"
+    },
+    {
+      "name": "IconButton",
+      "tier": "Foundation",
+      "usage": "Toolbars/cards",
+      "accessibility": "aria-label required",
+      "controller": "A confirm",
+      "testPriority": "High",
+      "variants": "default, primary, ghost, danger",
+      "status": "implemented"
+    },
+    {
+      "name": "Badge",
+      "tier": "Foundation",
+      "usage": "Status metadata",
+      "accessibility": "text required with color",
+      "controller": "read-only",
+      "testPriority": "Medium",
+      "variants": "neutral, info, success, warning, error, agent",
+      "status": "implemented"
+    },
+    {
+      "name": "TextInput",
+      "tier": "Foundation",
+      "usage": "Settings/forms/input",
+      "accessibility": "label/error association",
+      "controller": "virtual keyboard tested",
+      "testPriority": "High",
+      "variants": "default, error, disabled",
+      "status": "implemented"
+    },
+    {
+      "name": "Select",
+      "tier": "Foundation",
+      "usage": "Settings/model choice",
+      "accessibility": "listbox/select semantics",
+      "controller": "D-pad navigation",
+      "testPriority": "Medium",
+      "variants": "default, error, disabled",
+      "status": "implemented"
+    },
+    {
+      "name": "AppShell",
+      "tier": "Layout",
+      "usage": "Root layout",
+      "accessibility": "landmarks",
+      "controller": "global focus graph",
+      "testPriority": "Critical",
+      "variants": "Deck, desktop, wide",
+      "status": "implemented"
+    },
+    {
+      "name": "Panel",
+      "tier": "Layout",
+      "usage": "Cards/sections",
+      "accessibility": "heading relationship",
+      "controller": "focusable if interactive",
+      "testPriority": "High",
+      "variants": "default, raised, active, critical",
+      "status": "implemented"
+    },
+    {
+      "name": "NavRail",
+      "tier": "Layout",
+      "usage": "Primary nav",
+      "accessibility": "selected route semantics",
+      "controller": "D-pad/L1/R1",
+      "testPriority": "Critical",
+      "variants": "compact, expanded",
+      "status": "implemented"
+    },
+    {
+      "name": "TopStatusBar",
+      "tier": "Layout",
+      "usage": "Persistent status",
+      "accessibility": "status labels",
+      "controller": "read-only with shortcuts",
+      "testPriority": "High",
+      "variants": "normal, alert",
+      "status": "implemented"
+    },
+    {
+      "name": "ChatViewport",
+      "tier": "Workspace",
+      "usage": "Conversation",
+      "accessibility": "message roles exposed",
+      "controller": "message focus graph",
+      "testPriority": "Critical",
+      "variants": "empty, streaming, error",
+      "status": "implemented"
+    },
+    {
+      "name": "ResponseCard",
+      "tier": "Workspace",
+      "usage": "Chat messages",
+      "accessibility": "role/status semantics",
+      "controller": "card actions",
+      "testPriority": "Critical",
+      "variants": "user, assistant, system, tool, agent",
+      "status": "implemented"
+    },
+    {
+      "name": "InputConsole",
+      "tier": "Workspace",
+      "usage": "Prompt entry",
+      "accessibility": "textarea label",
+      "controller": "A/B/X/Y mapping",
+      "testPriority": "Critical",
+      "variants": "prompt, command, busy, error",
+      "status": "implemented"
+    },
+    {
+      "name": "CommandPalette",
+      "tier": "Workspace",
+      "usage": "Universal command launcher",
+      "accessibility": "dialog/listbox",
+      "controller": "D-pad + A/B",
+      "testPriority": "Critical",
+      "variants": "open, empty, filtered",
+      "status": "implemented"
+    },
+    {
+      "name": "ModelCard",
+      "tier": "Systems",
+      "usage": "Model manager",
+      "accessibility": "status text/icons",
+      "controller": "action focus",
+      "testPriority": "High",
+      "variants": "available, missing, degraded",
+      "status": "implemented"
+    },
+    {
+      "name": "AgentCard",
+      "tier": "Systems",
+      "usage": "Agent manager",
+      "accessibility": "permission labels",
+      "controller": "action focus",
+      "testPriority": "High",
+      "variants": "trusted, untrusted, running",
+      "status": "implemented"
+    },
+    {
+      "name": "MemoryPanel",
+      "tier": "Systems",
+      "usage": "Memory/context",
+      "accessibility": "source/scope labels",
+      "controller": "entry focus",
+      "testPriority": "High",
+      "variants": "empty, loaded, sensitive",
+      "status": "specified"
+    },
+    {
+      "name": "SessionCard",
+      "tier": "Systems",
+      "usage": "Session browser",
+      "accessibility": "title/time metadata",
+      "controller": "card action focus",
+      "testPriority": "High",
+      "variants": "active, archived",
+      "status": "implemented"
+    },
+    {
+      "name": "PluginCard",
+      "tier": "Systems",
+      "usage": "Plugin manager",
+      "accessibility": "permission badges",
+      "controller": "trust/action focus",
+      "testPriority": "High",
+      "variants": "trusted, untrusted, disabled",
+      "status": "specified"
+    },
+    {
+      "name": "TelemetryWidget",
+      "tier": "Ops",
+      "usage": "Diagnostics/status",
+      "accessibility": "status not color-only",
+      "controller": "read-only/action",
+      "testPriority": "Medium",
+      "variants": "healthy, degraded, failed",
+      "status": "specified"
+    },
+    {
+      "name": "DiagnosticsPanel",
+      "tier": "Ops",
+      "usage": "Doctor view",
+      "accessibility": "issue/fix text",
+      "controller": "section focus",
+      "testPriority": "High",
+      "variants": "pass, warn, fail",
+      "status": "specified"
+    },
+    {
+      "name": "Modal",
+      "tier": "Overlay",
+      "usage": "Critical dialogs",
+      "accessibility": "focus trap",
+      "controller": "B/Escape closes",
+      "testPriority": "Critical",
+      "variants": "normal, destructive",
+      "status": "implemented"
+    },
+    {
+      "name": "Toast",
+      "tier": "Overlay",
+      "usage": "Notifications",
+      "accessibility": "role status/alert",
+      "controller": "non-stealing focus",
+      "testPriority": "Medium",
+      "variants": "info, success, warning, error",
+      "status": "implemented"
+    },
+    {
+      "name": "ConfirmDialog",
+      "tier": "Overlay",
+      "usage": "Confirmation",
+      "accessibility": "explicit consequence copy",
+      "controller": "A confirm/B cancel",
+      "testPriority": "Critical",
+      "variants": "safe, destructive, security",
+      "status": "implemented"
+    }
+  ],
+  "integration": {
+    "primitivesAdapter": "frontend/src/react/components/primitives",
+    "cardsAdapter": "frontend/src/react/components/cards",
+    "shell": "frontend/src/react/components/layout/NeurodeckShell.tsx",
+    "tokenInjector": "frontend/src/react/theme/cssVariableInjector.ts",
+    "barrelExport": "frontend/src/design-system/index.ts"
+  },
+  "status": "integrated"
+}

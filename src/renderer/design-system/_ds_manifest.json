@@ -1,0 +1,970 @@
+{
+  "namespace": "NEURODECKDesignSystem_1b2ea8",
+  "components": [
+    { "name": "Badge", "sourcePath": "components/core/Badge.tsx" },
+    { "name": "Button", "sourcePath": "components/core/Button.tsx" },
+    { "name": "IconButton", "sourcePath": "components/core/IconButton.tsx" },
+    { "name": "Panel", "sourcePath": "components/core/Panel.tsx" },
+    { "name": "Select", "sourcePath": "components/core/Select.tsx" },
+    { "name": "StatusChip", "sourcePath": "components/core/StatusChip.tsx" },
+    { "name": "TextInput", "sourcePath": "components/core/TextInput.tsx" },
+    { "name": "Toggle", "sourcePath": "components/core/Toggle.tsx" },
+    { "name": "ConfirmDialog", "sourcePath": "components/feedback/ConfirmDialog.tsx" },
+    { "name": "Modal", "sourcePath": "components/feedback/Modal.tsx" },
+    { "name": "Toast", "sourcePath": "components/feedback/Toast.tsx" },
+    { "name": "AgentCard", "sourcePath": "components/systems/AgentCard.tsx" },
+    { "name": "ModelCard", "sourcePath": "components/systems/ModelCard.tsx" },
+    { "name": "SessionCard", "sourcePath": "components/systems/SessionCard.tsx" }
+  ],
+  "startingPoints": [
+    {
+      "name": "Button",
+      "path": "components/core/Button.tsx",
+      "previewPath": "components/core/core.card.html",
+      "kind": "component",
+      "section": "Core",
+      "subtitle": "Token-driven action button, 5 variants",
+      "viewport": "700x150"
+    },
+    {
+      "name": "Panel",
+      "path": "components/core/Panel.tsx",
+      "previewPath": "components/core/core.card.html",
+      "kind": "component",
+      "section": "Core",
+      "subtitle": "Titled tactical-glass surface",
+      "viewport": "700x220"
+    },
+    {
+      "name": "ModelCard",
+      "path": "components/systems/ModelCard.tsx",
+      "previewPath": "components/systems/systems.card.html",
+      "kind": "component",
+      "section": "Systems",
+      "subtitle": "Model manager card with health + recovery",
+      "viewport": "700x240"
+    },
+    {
+      "name": "workstation",
+      "path": "ui_kits/workstation/index.html",
+      "previewPath": "ui_kits/workstation/index.html",
+      "kind": "screen",
+      "section": "Workstation",
+      "subtitle": "Full NEURODECK workstation shell, interactive",
+      "viewport": "1280x800"
+    }
+  ],
+  "cards": [
+    {
+      "path": "guidelines/brand-glass-card.card.html",
+      "group": "Brand",
+      "viewport": "700x200",
+      "subtitle": "Dark glass fill · hairline border · soft shadow · cyan focus accent",
+      "name": "Tactical Glass Card"
+    },
+    {
+      "path": "guidelines/brand-mark.card.html",
+      "group": "Brand",
+      "viewport": "700x180",
+      "subtitle": "Cyan node 'N' in HUD brackets · favicon, boot logo, status lockup",
+      "name": "Brand Mark & Lockup"
+    },
+    {
+      "path": "guidelines/brand-status.card.html",
+      "group": "Brand",
+      "viewport": "700x140",
+      "subtitle": "icon + label + color · A/B/X/Y lettered chips · no emoji",
+      "name": "Status Glyphs & Controller Hints"
+    },
+    {
+      "path": "guidelines/color-accent.card.html",
+      "group": "Colors",
+      "viewport": "700x150",
+      "subtitle": "#5EEBFF · focus, primary CTA, active route, caret",
+      "name": "Primary Accent — Cyan"
+    },
+    {
+      "path": "guidelines/color-status.card.html",
+      "group": "Colors",
+      "viewport": "700x160",
+      "subtitle": "Used sparingly, always with icon + label — never color alone",
+      "name": "Semantic Status Accents"
+    },
+    {
+      "path": "guidelines/color-surfaces.card.html",
+      "group": "Colors",
+      "viewport": "700x160",
+      "subtitle": "App shell stacks dark to light by elevation, not gradient",
+      "name": "Surface Ramp — Void to Slate"
+    },
+    {
+      "path": "guidelines/color-text.card.html",
+      "group": "Colors",
+      "viewport": "700x150",
+      "subtitle": "Cool off-white stepping down to muted — on dark only",
+      "name": "Text Ramp"
+    },
+    {
+      "path": "components/core/core.card.html",
+      "group": "Components",
+      "viewport": "700x520",
+      "subtitle": "Button · IconButton · Badge · StatusChip · TextInput · Select · Toggle · Panel",
+      "name": "Core — Buttons, Inputs, Badges, Panel"
+    },
+    {
+      "path": "components/feedback/feedback.card.html",
+      "group": "Components",
+      "viewport": "700x400",
+      "subtitle": "Notifications and focus-trapping overlays with explicit copy",
+      "name": "Feedback — Toast, Modal, ConfirmDialog"
+    },
+    {
+      "path": "components/systems/systems.card.html",
+      "group": "Components",
+      "viewport": "700x460",
+      "subtitle": "ModelCard · AgentCard · SessionCard with health, trust & metadata",
+      "name": "Systems — Model, Agent, Session"
+    },
+    {
+      "path": "guidelines/spacing-elevation.card.html",
+      "group": "Spacing",
+      "viewport": "700x180",
+      "subtitle": "Depth via shadow, not lighter fills · cyan controller focus ring",
+      "name": "Elevation & Focus"
+    },
+    {
+      "path": "guidelines/spacing-motion.card.html",
+      "group": "Spacing",
+      "viewport": "700x150",
+      "subtitle": "Short, reversible, reduced-motion aware · hover swatch to preview",
+      "name": "Motion"
+    },
+    {
+      "path": "guidelines/spacing-radius.card.html",
+      "group": "Spacing",
+      "viewport": "700x150",
+      "subtitle": "0 terminal · 6 controls · 10 cards · 14 panels · 20 modals · pill",
+      "name": "Radius Scale"
+    },
+    {
+      "path": "guidelines/spacing-scale.card.html",
+      "group": "Spacing",
+      "viewport": "700x150",
+      "subtitle": "space.1–12 · the only allowed gaps & padding",
+      "name": "Spacing Scale — 4px Grid"
+    },
+    {
+      "path": "guidelines/type-display.card.html",
+      "group": "Type",
+      "viewport": "700x160",
+      "subtitle": "Wordmark & startup moments · uppercase, wide tracking",
+      "name": "Display — Orbitron"
+    },
+    {
+      "path": "guidelines/type-headings.card.html",
+      "group": "Type",
+      "viewport": "700x190",
+      "subtitle": "The UI workhorse · sentence case · 14px floor on Deck",
+      "name": "Headings & Body — Inter"
+    },
+    {
+      "path": "guidelines/type-hud.card.html",
+      "group": "Type",
+      "viewport": "700x140",
+      "subtitle": "Uppercase, wide-tracked nav & status micro-labels",
+      "name": "HUD Labels — Rajdhani"
+    },
+    {
+      "path": "guidelines/type-mono.card.html",
+      "group": "Type",
+      "viewport": "700x170",
+      "subtitle": "Terminal, code, dense metadata · syntax-tinted",
+      "name": "Mono & Code — JetBrains Mono / Fira Code"
+    },
+    {
+      "path": "ui_kits/workstation/index.html",
+      "group": "Workstation",
+      "viewport": "1280x800",
+      "subtitle": "Interactive Steam Deck app shell — chat, models, agents, sessions, command palette",
+      "name": "NEURODECK Workstation"
+    }
+  ],
+  "templates": [],
+  "globalCssPaths": [
+    "tokens/fonts.css",
+    "tokens/colors.css",
+    "tokens/typography.css",
+    "tokens/spacing.css",
+    "styles.css"
+  ],
+  "tokens": [
+    {
+      "name": "--nd-void-950",
+      "value": "#05070A",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-void-900",
+      "value": "#0A0D10",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-void-850",
+      "value": "#0D1117",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-slate-800",
+      "value": "#11161C",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-slate-700",
+      "value": "#18212B",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-slate-600",
+      "value": "#22303D",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-100",
+      "value": "#E8F4FF",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-300",
+      "value": "#B9CAD8",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-500",
+      "value": "#8DA1B3",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-cyan-400",
+      "value": "#5EEBFF",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-blue-500",
+      "value": "#4F8CFF",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-green-400",
+      "value": "#7CFFB2",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-yellow-400",
+      "value": "#FFC857",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-red-400",
+      "value": "#FF5A6A",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-purple-400",
+      "value": "#B28CFF",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-cyan-rgb",
+      "value": "94, 235, 255",
+      "kind": "other",
+      "definedIn": "tokens/colors.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-green-rgb",
+      "value": "124, 255, 178",
+      "kind": "other",
+      "definedIn": "tokens/colors.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-yellow-rgb",
+      "value": "255, 200, 87",
+      "kind": "other",
+      "definedIn": "tokens/colors.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-red-rgb",
+      "value": "255, 90, 106",
+      "kind": "other",
+      "definedIn": "tokens/colors.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-purple-rgb",
+      "value": "178, 140, 255",
+      "kind": "other",
+      "definedIn": "tokens/colors.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-blue-rgb",
+      "value": "79, 140, 255",
+      "kind": "other",
+      "definedIn": "tokens/colors.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-surface-app",
+      "value": "var(--nd-void-950)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-surface-primary",
+      "value": "var(--nd-void-900)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-surface-secondary",
+      "value": "var(--nd-slate-800)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-surface-tertiary",
+      "value": "var(--nd-slate-700)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-surface-sidebar",
+      "value": "#0D1115",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-surface-input",
+      "value": "#080A0E",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-surface-overlay",
+      "value": "rgba(5, 7, 10, 0.88)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-surface-glass",
+      "value": "rgba(17, 22, 28, 0.82)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-border-subtle",
+      "value": "rgba(141, 161, 179, 0.16)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-border-default",
+      "value": "rgba(141, 161, 179, 0.28)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-border-strong",
+      "value": "rgba(232, 244, 255, 0.42)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-border-focus",
+      "value": "var(--nd-cyan-400)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-primary",
+      "value": "var(--nd-text-100)",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-secondary",
+      "value": "var(--nd-text-300)",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-muted",
+      "value": "var(--nd-text-500)",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-disabled",
+      "value": "rgba(141, 161, 179, 0.45)",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-code",
+      "value": "var(--nd-green-400)",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-text-link",
+      "value": "var(--nd-cyan-400)",
+      "kind": "font",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-accent-primary",
+      "value": "var(--nd-cyan-400)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-accent-info",
+      "value": "var(--nd-blue-500)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-accent-success",
+      "value": "var(--nd-green-400)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-accent-warning",
+      "value": "var(--nd-yellow-400)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-accent-error",
+      "value": "var(--nd-red-400)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-accent-agent",
+      "value": "var(--nd-purple-400)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-glow-cyan",
+      "value": "rgba(var(--nd-cyan-rgb), 0.18)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-accent-soft",
+      "value": "rgba(var(--nd-cyan-rgb), 0.10)",
+      "kind": "color",
+      "definedIn": "tokens/colors.css"
+    },
+    {
+      "name": "--nd-font-display",
+      "value": "\"Orbitron\", \"Rajdhani\", sans-serif",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-font-hud",
+      "value": "\"Rajdhani\", \"Space Grotesk\", sans-serif",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-font-ui",
+      "value": "\"Inter\", system-ui, sans-serif",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-font-mono",
+      "value": "\"JetBrains Mono\", \"IBM Plex Mono\", \"SF Mono\", Consolas, monospace",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-font-code",
+      "value": "\"Fira Code\", \"JetBrains Mono\", monospace",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-display-size",
+      "value": "28px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-display-lh",
+      "value": "36px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-display-weight",
+      "value": "700",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h1-size",
+      "value": "24px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h1-lh",
+      "value": "32px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h1-weight",
+      "value": "700",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h2-size",
+      "value": "20px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h2-lh",
+      "value": "28px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h2-weight",
+      "value": "650",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h3-size",
+      "value": "17px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h3-lh",
+      "value": "24px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-h3-weight",
+      "value": "650",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-body-size",
+      "value": "15px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-body-lh",
+      "value": "22px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-body-weight",
+      "value": "400",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-body-sm-size",
+      "value": "14px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-body-sm-lh",
+      "value": "20px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-body-sm-weight",
+      "value": "400",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-caption-size",
+      "value": "12px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-caption-lh",
+      "value": "16px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-caption-weight",
+      "value": "500",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-micro-size",
+      "value": "11px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-micro-lh",
+      "value": "14px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-micro-weight",
+      "value": "500",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-code-size",
+      "value": "13px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-code-lh",
+      "value": "20px",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-text-code-weight",
+      "value": "400",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-weight-normal",
+      "value": "400",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-weight-medium",
+      "value": "500",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-weight-semibold",
+      "value": "600",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-weight-bold",
+      "value": "700",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-tracking-hud",
+      "value": "0.18em",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-tracking-wordmark",
+      "value": "0.22em",
+      "kind": "font",
+      "definedIn": "tokens/typography.css"
+    },
+    {
+      "name": "--nd-space-0",
+      "value": "0px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-1",
+      "value": "4px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-2",
+      "value": "8px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-3",
+      "value": "12px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-4",
+      "value": "16px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-5",
+      "value": "20px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-6",
+      "value": "24px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-8",
+      "value": "32px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-10",
+      "value": "40px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-space-12",
+      "value": "48px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-shell-statusbar",
+      "value": "40px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-shell-navrail",
+      "value": "72px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-shell-context",
+      "value": "280px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-shell-input-min",
+      "value": "96px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-shell-input-max",
+      "value": "148px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-radius-none",
+      "value": "0px",
+      "kind": "radius",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-radius-sm",
+      "value": "6px",
+      "kind": "radius",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-radius-md",
+      "value": "10px",
+      "kind": "radius",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-radius-lg",
+      "value": "14px",
+      "kind": "radius",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-radius-xl",
+      "value": "20px",
+      "kind": "radius",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-radius-full",
+      "value": "999px",
+      "kind": "radius",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-elevation-none",
+      "value": "none",
+      "kind": "shadow",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-elevation-panel",
+      "value": "0 1px 0 rgba(255, 255, 255, 0.04)",
+      "kind": "shadow",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-elevation-card",
+      "value": "0 8px 24px rgba(0, 0, 0, 0.24)",
+      "kind": "shadow",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-elevation-overlay",
+      "value": "0 24px 80px rgba(0, 0, 0, 0.55)",
+      "kind": "shadow",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-elevation-focus",
+      "value": "0 0 0 2px var(--nd-border-focus), 0 0 24px rgba(var(--nd-cyan-rgb), 0.18)",
+      "kind": "shadow",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-elevation-glow",
+      "value": "0 0 16px rgba(var(--nd-cyan-rgb), 0.18)",
+      "kind": "shadow",
+      "definedIn": "tokens/spacing.css"
+    },
+    {
+      "name": "--nd-motion-instant",
+      "value": "0ms",
+      "kind": "other",
+      "definedIn": "tokens/spacing.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-motion-fast",
+      "value": "90ms",
+      "kind": "other",
+      "definedIn": "tokens/spacing.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-motion-normal",
+      "value": "140ms",
+      "kind": "other",
+      "definedIn": "tokens/spacing.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-motion-slow",
+      "value": "220ms",
+      "kind": "other",
+      "definedIn": "tokens/spacing.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-ease-standard",
+      "value": "cubic-bezier(0.2, 0, 0, 1)",
+      "kind": "other",
+      "definedIn": "tokens/spacing.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-ease-out",
+      "value": "cubic-bezier(0, 0, 0.2, 1)",
+      "kind": "other",
+      "definedIn": "tokens/spacing.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-ease-in",
+      "value": "cubic-bezier(0.4, 0, 1, 1)",
+      "kind": "other",
+      "definedIn": "tokens/spacing.css",
+      "annotation": "other"
+    },
+    {
+      "name": "--nd-glass-blur",
+      "value": "8px",
+      "kind": "spacing",
+      "definedIn": "tokens/spacing.css"
+    }
+  ],
+  "themes": [],
+  "fonts": [],
+  "brandFonts": [
+    {
+      "family": "Orbitron",
+      "status": "ok",
+      "tokens": ["--nd-font-display"],
+      "path": "tokens/typography.css"
+    },
+    {
+      "family": "Rajdhani",
+      "status": "ok",
+      "tokens": ["--nd-font-hud"],
+      "path": "tokens/typography.css"
+    },
+    {
+      "family": "Inter",
+      "status": "ok",
+      "tokens": ["--nd-font-ui"],
+      "path": "tokens/typography.css"
+    },
+    {
+      "family": "JetBrains Mono",
+      "status": "ok",
+      "tokens": ["--nd-font-mono"],
+      "path": "tokens/typography.css"
+    },
+    {
+      "family": "Fira Code",
+      "status": "ok",
+      "tokens": ["--nd-font-code"],
+      "path": "tokens/typography.css"
+    }
+  ],
+  "source": "spa"
+}

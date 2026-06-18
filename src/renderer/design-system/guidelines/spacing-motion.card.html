@@ -1,0 +1,27 @@
+<!-- @dsCard group="Spacing" viewport="700x150" name="Motion" subtitle="Short, reversible, reduced-motion aware · hover swatch to preview" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin:0; background:var(--nd-surface-primary); color:var(--nd-text-primary);
+         font-family:var(--nd-font-ui); padding:20px; display:flex; gap:14px; align-items:center; }
+  .item { flex:1; display:flex; flex-direction:column; gap:8px; }
+  .track { height:38px; border-radius:var(--nd-radius-sm); background:var(--nd-surface-tertiary);
+           border:1px solid var(--nd-border-subtle); position:relative; overflow:hidden; cursor:pointer; }
+  .dot { position:absolute; left:5px; top:50%; transform:translateY(-50%); width:24px; height:24px;
+         border-radius:var(--nd-radius-sm); background:var(--nd-cyan-400); box-shadow:0 0 12px rgba(var(--nd-cyan-rgb),0.4); }
+  .track:hover .dot { left:calc(100% - 29px); }
+  .f .dot { transition:left var(--nd-motion-fast) var(--nd-ease-standard); }
+  .n .dot { transition:left var(--nd-motion-normal) var(--nd-ease-standard); }
+  .s .dot { transition:left var(--nd-motion-slow) var(--nd-ease-standard); }
+  .tok { font-family:var(--nd-font-mono); font-size:10px; color:var(--nd-text-muted); }
+</style>
+</head>
+<body>
+  <div class="item"><div class="track f"><div class="dot"></div></div><span class="tok">fast · 90ms · focus/hover</span></div>
+  <div class="item"><div class="track n"><div class="dot"></div></div><span class="tok">normal · 140ms · panel</span></div>
+  <div class="item"><div class="track s"><div class="dot"></div></div><span class="tok">slow · 220ms · modal/route</span></div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <filter id="nd-glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur"></feGaussianBlur>
+      <feMerge>
+        <feMergeNode in="blur"></feMergeNode>
+        <feMergeNode in="SourceGraphic"></feMergeNode>
+      </feMerge>
+    </filter>
+  </defs>
+
+  
+  <rect width="64" height="64" rx="14" fill="#0B1117"></rect>
+
+  
+  <g stroke="rgba(94,235,255,0.38)" stroke-width="1.5" stroke-linecap="square" fill="none">
+    <path d="M7 15 L7 7 L15 7"></path>
+    <path d="M49 7 L57 7 L57 15"></path>
+    <path d="M7 49 L7 57 L15 57"></path>
+    <path d="M49 57 L57 57 L57 49"></path>
+  </g>
+
+  
+  <g stroke="#5EEBFF" stroke-width="2.5" stroke-linecap="round" fill="none" filter="url(#nd-glow)">
+    
+    <line x1="15" y1="13" x2="15" y2="51"></line>
+    
+    <line x1="49" y1="13" x2="49" y2="51"></line>
+    
+    <line x1="15" y1="13" x2="49" y2="51"></line>
+  </g>
+
+  
+  <g fill="#5EEBFF" filter="url(#nd-glow)">
+    <circle cx="15" cy="13" r="3.5"></circle>
+    <circle cx="49" cy="13" r="3.5"></circle>
+    <circle cx="15" cy="51" r="3.5"></circle>
+    <circle cx="49" cy="51" r="3.5"></circle>
+    <circle cx="32" cy="32" r="2.5"></circle>
+  </g>
+
+  
+  <circle cx="55" cy="55" r="3" fill="#FF5A6A"></circle>
+</svg>
