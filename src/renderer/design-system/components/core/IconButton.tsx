@@ -29,7 +29,7 @@ if (typeof document !== "undefined" && !document.getElementById("nd-iconbtn-css"
   .nd-iconbtn__tip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);
     background:var(--nd-surface-tertiary);color:var(--nd-text-primary);font-family:var(--nd-font-ui);
     font-size:11px;padding:4px 8px;border-radius:var(--nd-radius-sm);border:1px solid var(--nd-border-subtle);
-    white-space:nowrap;opacity:0;pointer-events:none;box-shadow:var(--nd-elevation-card);z-index:var(--z-popover);display:none;}
+    white-space:nowrap;opacity:0;pointer-events:none;box-shadow:var(--nd-elevation-card);z-index:var(--z-tip,5000);display:none;}
   .nd-iconbtn:hover .nd-iconbtn__tip,.nd-iconbtn:focus-visible .nd-iconbtn__tip{opacity:1;display:block;}
   @media (prefers-reduced-motion: reduce){.nd-iconbtn,.nd-iconbtn__tip{transition:none;}}`;
   document.head.appendChild(s);

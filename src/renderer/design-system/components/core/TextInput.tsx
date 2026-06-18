@@ -70,7 +70,9 @@ export function TextInput({
   ...rest
 }: TextInputProps): React.ReactNode {
   const id = React.useMemo(() => `nd-field-${++ndFieldSeq}`, []);
-  const msgId = `${id}-msg`;
+  const errorId = `${id}-error`;
+  const hintId = `${id}-hint`;
+  const describedBy = [error ? errorId : "", hint ? hintId : ""].filter(Boolean).join(" ") || undefined;
   return (
     <div className={["nd-field", className].filter(Boolean).join(" ")}>
       {label ? (
@@ -100,7 +102,7 @@ export function TextInput({
           placeholder={placeholder}
           disabled={disabled}
           aria-invalid={error ? true : undefined}
-          aria-describedby={error || hint ? msgId : undefined}
+          aria-describedby={describedBy}
           onChange={(e) => onChange && onChange(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && onSubmit) onSubmit();
@@ -109,11 +111,12 @@ export function TextInput({
         />
       </div>
       {error ? (
-        <span id={msgId} className="nd-field__msg nd-field__msg--error">
+        <span id={errorId} className="nd-field__msg nd-field__msg--error">
           {error}
         </span>
-      ) : hint ? (
-        <span id={msgId} className="nd-field__msg nd-field__msg--hint">
+      ) : null}
+      {hint ? (
+        <span id={hintId} className="nd-field__msg nd-field__msg--hint">
           {hint}
         </span>
       ) : null}

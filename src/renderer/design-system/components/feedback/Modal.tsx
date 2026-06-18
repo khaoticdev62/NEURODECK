@@ -104,16 +104,16 @@ export function Modal({
   return (
     <div
       className="nd-modal__overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby={title ? "nd-modal-title" : undefined}
-      aria-describedby={description ? "nd-modal-desc" : undefined}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && closeOnBackdrop && closable && onClose) onClose();
       }}
     >
       <div
         ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? "nd-modal-title" : undefined}
+        aria-describedby={description ? "nd-modal-desc" : undefined}
         tabIndex={-1}
         className={[
           "nd-modal",

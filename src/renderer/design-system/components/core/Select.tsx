@@ -12,6 +12,7 @@ if (typeof document !== "undefined" && !document.getElementById("nd-select-css")
     border:1px solid var(--nd-border-default);border-radius:var(--nd-radius-md);height:40px;padding:0 36px 0 12px;
     font-family:var(--nd-font-ui);font-size:14px;outline:none;cursor:pointer;
     transition:border-color var(--nd-motion-fast) var(--nd-ease-standard),box-shadow var(--nd-motion-fast) var(--nd-ease-standard);}
+  .nd-select__field:hover:not(:disabled){border-color:var(--nd-border-default);}
   .nd-select__field:focus-visible{border-color:var(--nd-accent-primary);box-shadow:var(--nd-elevation-focus);}
   .nd-select__field:disabled{opacity:0.5;cursor:not-allowed;}
   .nd-select__field--error{border-color:var(--nd-accent-error);}

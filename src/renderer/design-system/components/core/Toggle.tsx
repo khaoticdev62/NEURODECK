@@ -7,6 +7,9 @@ if (typeof document !== "undefined" && !document.getElementById("nd-toggle-css")
   s.textContent = `
   .nd-toggle{display:inline-flex;align-items:center;gap:10px;font-family:var(--nd-font-ui);cursor:pointer;
     color:var(--nd-text-primary);font-size:14px;user-select:none;}
+  .nd-toggle__label{cursor:pointer;transition:color var(--nd-motion-fast) var(--nd-ease-standard);}
+  .nd-toggle:hover .nd-toggle__label{color:var(--nd-accent-primary);}
+  @media (prefers-reduced-motion: reduce){.nd-toggle__label{transition:none;}}
   .nd-toggle--disabled{opacity:0.5;}
   .nd-toggle__track{position:relative;width:38px;height:22px;border-radius:var(--nd-radius-full);
     background:var(--nd-surface-tertiary);border:1px solid var(--nd-border-default);flex:none;outline:none;
@@ -72,7 +75,7 @@ export const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(function Toggle
       >
         <span className="nd-toggle__knob" />
       </button>
-      {label ? <span onClick={toggle}>{label}</span> : null}
+      {label ? <span className="nd-toggle__label" onClick={toggle}>{label}</span> : null}
     </label>
   );
 });

@@ -104,16 +104,16 @@
   --nd-surface-error: rgba(var(--nd-red-rgb), 0.10);
   --nd-surface-info: rgba(var(--nd-blue-rgb), 0.10);
 
-  /* ---- Z-index scale ---- */
+  /* ---- Z-index scale — aligned to --z-* legacy values in legacy.css ---- */
   --nd-z-behind: -1;
   --nd-z-wallpaper: 0;
   --nd-z-base: 1;
   --nd-z-sticky: 10;
-  --nd-z-dropdown: 20;
-  --nd-z-overlay: 30;
-  --nd-z-modal: 40;
-  --nd-z-toast: 50;
-  --nd-z-tooltip: 60;
+  --nd-z-dropdown: 140;
+  --nd-z-overlay: 9989;
+  --nd-z-modal: 9990;
+  --nd-z-toast: 30000;
+  --nd-z-tooltip: 5000;
 
   /* ---- Semantic borders ---- */
   --nd-border-subtle: rgba(141, 161, 179, 0.16);
