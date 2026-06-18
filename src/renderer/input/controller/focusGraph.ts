@@ -1,4 +1,4 @@
-import type { FocusGraph } from "../../../shared/types/controller";
+import type { FocusGraph } from "../../shared/types/controller";
 
 const FOCUSABLE_SELECTOR = [
   "button:not(:disabled)",

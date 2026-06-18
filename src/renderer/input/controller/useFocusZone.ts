@@ -1,4 +1,4 @@
-import type { FocusZoneKind } from "../../../shared/types/controller";
+import type { FocusZoneKind } from "../../shared/types/controller";
 
 export function useFocusZone(
   zone: FocusZoneKind,

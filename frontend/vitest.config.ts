@@ -27,10 +27,6 @@ export default defineConfig({
     setupFiles: [path.resolve(__dirname, "vitest.setup.js")],
     environment: "happy-dom",
     globals: true,
-    pool: "forks",
-    forks: {
-      singleFork: true,
-    },
     include: ["src/renderer/**/__tests__/**/*.{test,spec}.{ts,tsx}"],
     coverage: {
       provider: "v8",

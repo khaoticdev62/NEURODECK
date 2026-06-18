@@ -12,7 +12,7 @@ import type {
   ControllerAction,
   ControllerRuntimeState,
   ControllerSettings,
-} from "../../../shared/types/controller";
+} from "../../shared/types/controller";
 import { createActionRouter } from "./actionRouter";
 import { controllerRuntimeDefaults } from "./controllerStore";
 import { axisToStep } from "./deadzone";

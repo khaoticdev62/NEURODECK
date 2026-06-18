@@ -21,6 +21,7 @@ export const initialState: NeuroDeckState = {
   selectedModelId: "",
   activeAgentId: "general",
   selectedFont: "inter",
+  searchOpen: false,
   showOnboarding: getInitialShowOnboarding(),
   onboardingMode: "setup",
   composerValue: "",
@@ -47,6 +48,7 @@ export const initialState: NeuroDeckState = {
   messages: [],
   aiRuns: [],
   promptTemplates: [],
+  customThemes: [],
   telemetry: {
     latencyMs: 42,
     contextUsed: 14,

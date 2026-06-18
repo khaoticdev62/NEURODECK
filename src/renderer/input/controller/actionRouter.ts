@@ -1,4 +1,4 @@
-import type { ControllerAction } from "../../../shared/types/controller";
+import type { ControllerAction } from "../../shared/types/controller";
 
 export type ControllerActionHandler = () => boolean | void | Promise<boolean | void>;
 

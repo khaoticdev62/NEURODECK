@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import type { ControllerAction } from "../../../shared/types/controller";
+import type { ControllerAction } from "../../shared/types/controller";
 import { useController } from "./ControllerProvider";
 
 export function useControllerAction(

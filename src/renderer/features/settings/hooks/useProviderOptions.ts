@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { neurodeckApi, runtimeTypeToProvider } from "../../../services/bridgeAdapter";
-import type { ProviderRuntimeProfile } from "../../../../shared/contracts/models.contracts";
+import type { ProviderRuntimeProfile } from "../../../shared/contracts/models.contracts";
 import { OFFLINE_PROVIDER, type ProviderOption } from "../types";
 import { describeRuntime } from "../utils";
 

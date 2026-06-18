@@ -3,7 +3,7 @@ import type {
   ControllerConfirmButton,
   ControllerDevice,
   ControllerDeviceKind,
-} from "../../../shared/types/controller";
+} from "../../shared/types/controller";
 
 export function detectControllerKind(id: string): ControllerDeviceKind {
   const normalized = id.toLowerCase();

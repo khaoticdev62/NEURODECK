@@ -1,10 +1,10 @@
-import type { TerminalCommandSafety } from "../../../../../../src/shared/terminal/terminalSafetyTypes";
+import type { TerminalCommandSafety } from "../../../../shared/terminal/terminalSafetyTypes";
 import type {
   TerminalDiagnosticsReport,
   TerminalEnvironmentReport,
   TerminalSessionSummary,
-} from "../../../../../../src/shared/terminal/terminalDiagnosticsTypes";
-import type { TerminalProfileAvailability } from "../../../../../../src/shared/terminal/terminalProfiles";
+} from "../../../../shared/terminal/terminalDiagnosticsTypes";
+import type { TerminalProfileAvailability } from "../../../../shared/terminal/terminalProfiles";
 import { bridgeInvoke } from "../http";
 
 export type TerminalSpawnOptions = {

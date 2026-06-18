@@ -22,6 +22,7 @@ interface ThemeContextType {
   availableWallpapers: LiveWallpaperProfile[];
   updateSettings: (newSettings: Partial<ThemeSettings>) => Promise<void>;
   resetToDefaults: () => Promise<void>;
+  registerCustomTheme: (theme: NeurodeckTheme) => Promise<void>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -162,6 +163,13 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     await themePersistenceClient.saveSettings(DEFAULT_SETTINGS_FALLBACK);
   };
 
+  const registerCustomTheme = async (theme: NeurodeckTheme) => {
+    const result = themeRegistry.registerCustomTheme(theme);
+    if (!result.ok) {
+      throw new Error(result.error ?? "Unable to register custom theme");
+    }
+  };
+
   return (
     <ThemeContext.Provider
       value={{
@@ -172,6 +180,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         availableWallpapers,
         updateSettings,
         resetToDefaults,
+        registerCustomTheme,
       }}
     >
       {children}

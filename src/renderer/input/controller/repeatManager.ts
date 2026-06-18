@@ -1,4 +1,4 @@
-import type { ControllerAction } from "../../../shared/types/controller";
+import type { ControllerAction } from "../../shared/types/controller";
 
 export interface RepeatDecision {
   fire: boolean;

@@ -1,4 +1,4 @@
-import type { ControllerAction, ControllerDeviceKind } from "../../../shared/types/controller";
+import type { ControllerAction, ControllerDeviceKind } from "../../shared/types/controller";
 
 const GENERIC_HINTS: Partial<Record<ControllerAction, string>> = {
   confirm: "A / Cross",

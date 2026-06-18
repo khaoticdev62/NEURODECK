@@ -1,5 +1,5 @@
 import type { AgentModelPolicy, ModelDetectionResult } from "../../../types/neurodeck";
-import type { ProviderRuntimeProfile } from "../../../../shared/contracts/models.contracts";
+import type { ProviderRuntimeProfile } from "../../../shared/contracts/models.contracts";
 import { bridgeInvoke } from "../http";
 import {
   mapAgentPolicy,
