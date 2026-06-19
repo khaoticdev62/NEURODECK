@@ -2,7 +2,12 @@ import { DeckButtonHint } from "../primitives/DeckButtonHint";
 import { getActionHint } from "../../input/controller/steamInputHints";
 import { useController } from "../../input/controller/ControllerProvider";
 
-const HINTS: Array<{ action: Parameters<typeof getActionHint>[0]; label: string }> = [
+export type HintItem = {
+  action: Parameters<typeof getActionHint>[0];
+  label: string;
+};
+
+const DEFAULT_HINTS: HintItem[] = [
   { action: "confirm", label: "Confirm" },
   { action: "cancel", label: "Back" },
   { action: "reload", label: "Reload" },
@@ -12,7 +17,7 @@ const HINTS: Array<{ action: Parameters<typeof getActionHint>[0]; label: string 
   { action: "openMainMenu", label: "Menu" },
 ];
 
-export function ControllerHintBar() {
+export function ControllerHintBar({ hints = DEFAULT_HINTS }: { hints?: HintItem[] }) {
   const { runtime } = useController();
   const kind = runtime.devices[0]?.kind ?? "steam_deck";
 
@@ -22,7 +27,7 @@ export function ControllerHintBar() {
       aria-label="Controller hints"
       className="flex h-touch shrink-0 items-center justify-center gap-6 border-t border-[var(--nd-border-subtle)] bg-[var(--nd-surface-app)]/80 px-4 text-[var(--nd-text-secondary)] backdrop-blur-sm"
     >
-      {HINTS.map(({ action, label }) => (
+      {hints.map(({ action, label }) => (
         <DeckButtonHint key={action} button={getActionHint(action, kind)} label={label} />
       ))}
     </div>
