@@ -12,6 +12,8 @@
  */
 const { spawn } = require('child_process');
 const http = require('http');
+const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -19,6 +21,20 @@ const VITE_PORT = 1420;
 const VITE_HMR_PORT = 24678;
 const POLL_INTERVAL_MS = 300;
 const VITE_TIMEOUT_MS = 90_000;
+const WATCH_DEBOUNCE_MS = 250;
+
+// Electron's main process has no hot-reload — Vite only refreshes the renderer.
+// Without this watcher, merging/pulling changes to these files while `npm run dev`
+// is already running silently keeps the OLD main process alive: new IPC handlers,
+// preload APIs, and main.js logic are invisible until the app is fully quit and
+// relaunched, which looks indistinguishable from "the UI update didn't apply".
+const REBUILD_WATCH_DIRS = ['src/main', 'src/preload', 'src/shared'].map((p) => path.join(ROOT, p));
+const DIRECT_WATCH_FILES = [
+  'electron/main.js',
+  'electron/preload.js',
+  'electron/ipc-handlers.js',
+  'electron/ipc-registry.js',
+].map((p) => path.join(ROOT, p));
 
 /**
  * Run a one-shot npm script and return a promise that resolves on exit 0.
@@ -88,7 +104,10 @@ function startVite() {
   process.on('SIGTERM', () => { vite.kill(); process.exit(0); });
 
   waitForVite()
-    .then(launchElectron)
+    .then(() => {
+      launchElectron();
+      watchMainProcess();
+    })
     .catch((err) => {
       console.error('[dev-launcher]', err.message);
       vite.kill();
@@ -116,9 +135,16 @@ function waitForVite() {
   });
 }
 
-// ── Launch Electron once Vite is ready ──────────────────────────────────────
+// ── Launch / restart Electron ────────────────────────────────────────────────
+// electronProcess + restarting track the current child so the main-process
+// watcher below can kill and respawn it without tearing down Vite or exiting
+// the whole dev-launcher (which is what the plain 'close' handler does when
+// the user actually quits the app window).
+let electronProcess = null;
+let restarting = false;
+
 function launchElectron() {
-  console.log(`[dev-launcher] Vite ready on :${VITE_PORT}, launching Electron...`);
+  console.log(`[dev-launcher] Launching Electron...`);
 
   const env = {
     ...process.env,
@@ -146,8 +172,15 @@ function launchElectron() {
     env,
     stdio: 'inherit',
   });
+  electronProcess = electron;
 
   electron.on('close', (code) => {
+    if (restarting) {
+      // This close was triggered by restartElectron() below — respawn, don't exit.
+      restarting = false;
+      launchElectron();
+      return;
+    }
     console.log('[dev-launcher] Electron exited, stopping Vite...');
     vite.kill();
     process.exit(code ?? 0);
@@ -158,4 +191,96 @@ function launchElectron() {
     vite.kill();
     process.exit(1);
   });
+}
+
+// Restart just the Electron main process (Vite keeps running, renderer reconnects
+// to the same dev server) — used by the main-process file watcher.
+function restartElectron(reason) {
+  if (!electronProcess || electronProcess.exitCode !== null) return;
+  console.log(`[dev-launcher] ${reason} — restarting Electron main process...`);
+  restarting = true;
+  electronProcess.kill();
+}
+
+// ── Watch main-process sources and auto-restart Electron ────────────────────
+// electron/main.js, preload.js, ipc-handlers.js, ipc-registry.js run directly
+// (no build step). src/main, src/preload, src/shared compile via `build:main`
+// (esbuild) into electron/dist and must be rebuilt first.
+//
+// fs.watch on Windows fires spurious 'change' events from metadata-only
+// touches (AV scanning, indexing, editor swap files) with no actual content
+// change — observed directly while testing this watcher. Hashing the file
+// before deciding to restart filters those out so the watcher only acts on
+// genuine edits.
+const knownHashes = new Map();
+
+function hashFile(filePath) {
+  try {
+    return crypto.createHash('sha1').update(fs.readFileSync(filePath)).digest('hex');
+  } catch {
+    return null; // deleted / transient — treat as "no prior content" below
+  }
+}
+
+function contentActuallyChanged(filePath) {
+  const hash = hashFile(filePath);
+  const prev = knownHashes.get(filePath);
+  if (hash === prev) return false;
+  knownHashes.set(filePath, hash);
+  return true;
+}
+
+function primeHashes(filePaths) {
+  for (const f of filePaths) knownHashes.set(f, hashFile(f));
+}
+
+function watchMainProcess() {
+  primeHashes(DIRECT_WATCH_FILES);
+
+  let pendingRebuild = false;
+  let debounceTimer = null;
+
+  const schedule = (needsRebuild) => {
+    pendingRebuild = pendingRebuild || needsRebuild;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      const doRebuild = pendingRebuild;
+      pendingRebuild = false;
+      if (doRebuild) {
+        runNpmScript('build:main')
+          .then(() => restartElectron('Main-process source changed and rebuilt'))
+          .catch((err) => console.error('[dev-launcher] build:main failed:', err.message));
+      } else {
+        restartElectron('Main-process file changed');
+      }
+    }, WATCH_DEBOUNCE_MS);
+  };
+
+  // Directories compiled by build:main: hash the specific file the event names
+  // (relative to the watched dir) rather than re-hashing the whole tree.
+  const watchRebuildDir = (dir) => {
+    try {
+      fs.watch(dir, { recursive: true }, (_eventType, filename) => {
+        if (!filename) return schedule(true); // no filename info — fall back to rebuilding
+        if (contentActuallyChanged(path.join(dir, filename))) schedule(true);
+      });
+    } catch (err) {
+      console.warn(`[dev-launcher] Could not watch ${dir} (${err.message}); main-process auto-restart disabled for this path.`);
+    }
+  };
+
+  const watchDirectFile = (file) => {
+    try {
+      fs.watch(file, () => {
+        if (contentActuallyChanged(file)) schedule(false);
+      });
+    } catch (err) {
+      console.warn(`[dev-launcher] Could not watch ${file} (${err.message}); main-process auto-restart disabled for this path.`);
+    }
+  };
+
+  for (const dir of REBUILD_WATCH_DIRS) watchRebuildDir(dir);
+  for (const file of DIRECT_WATCH_FILES) watchDirectFile(file);
+
+  console.log('[dev-launcher] Watching main-process sources for changes (auto-restart enabled).');
 }
