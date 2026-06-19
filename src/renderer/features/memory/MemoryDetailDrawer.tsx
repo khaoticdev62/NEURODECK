@@ -56,7 +56,7 @@ export function MemoryDetailDrawer({
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="presentation">
       <div
-        className="absolute inset-0 bg-nd-surface-bg/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-nd-bg/60 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
@@ -156,7 +156,7 @@ export function MemoryDetailDrawer({
 
             {/* Embedding warning */}
             {!record.hasEmbedding && (
-              <div className="rounded-xl border border-nd-status-warning/30 bg-nd-status-warning/5 p-3 text-xs text-nd-status-warning">
+              <div className="rounded-xl border border-nd-warning/30 bg-nd-warning/5 p-3 text-xs text-nd-warning">
                 No embedding — this record is excluded from RAG context search. Facts added via
                 memory_add_fact have empty embedding vectors.
               </div>

@@ -20,12 +20,8 @@ export const memory = {
     });
   },
   async delete(id: string) {
-    const neurodeck = (window as any).neurodeck;
-    if (neurodeck?.memory) {
-      const res = await neurodeck.memory.delete(id);
-      if (res.ok) return res.data;
-      throw new Error(res.error?.message || "Failed to delete memory");
-    }
+    // No "memory:delete" IPC handler is registered in electron/ipc-handlers.js (unlike
+    // search/write), so this must always go through the sidecar HTTP bridge directly.
     return bridgeInvoke<{ status: string }>("memory_delete", { id });
   },
   async pin(id: string, pinned: boolean) {

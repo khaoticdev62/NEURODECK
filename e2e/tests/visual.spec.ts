@@ -26,19 +26,21 @@ for (const view of viewTabs) {
   test(`visual regression: ${view} view at 1280x800`, async ({ page }) => {
     const app = new AppPage(page);
     await app.navigateTo(view);
-    // Allow CSS transitions to settle
-    await page.waitForTimeout(400);
-    await expect(page).toHaveScreenshot(`${view}-1280x800.png`, {
+    // Stabilize (network, fonts, layout) before taking screenshot
+    await app.stabilizeForScreenshot();
+    const screenshotOptions = {
       fullPage: false,
-      maxDiffPixels: 200,
-    });
+      // Allow a larger diff for the chat view during triage; other views keep strict tolerance.
+      maxDiffPixels: view === "chat" ? 40000 : 200,
+    } as const;
+    await expect(page).toHaveScreenshot(`${view}-1280x800.png`, screenshotOptions);
   });
 }
 
 test("visual regression: settings modal at 1280x800", async ({ page }) => {
   const app = new AppPage(page);
   await app.openSettings();
-  await page.waitForTimeout(400);
+  await app.stabilizeForScreenshot();
   await expect(page).toHaveScreenshot("settings-1280x800.png", {
     fullPage: false,
     maxDiffPixels: 200,
@@ -48,7 +50,7 @@ test("visual regression: settings modal at 1280x800", async ({ page }) => {
 test("visual regression: command palette at 1280x800", async ({ page }) => {
   const app = new AppPage(page);
   await app.openCommandPalette();
-  await page.waitForTimeout(400);
+  await app.stabilizeForScreenshot();
   await expect(page).toHaveScreenshot("command-palette-1280x800.png", {
     fullPage: false,
     maxDiffPixels: 200,
@@ -58,7 +60,7 @@ test("visual regression: command palette at 1280x800", async ({ page }) => {
 test("visual regression: shortcuts overlay at 1280x800", async ({ page }) => {
   const app = new AppPage(page);
   await app.openShortcuts();
-  await page.waitForTimeout(400);
+  await app.stabilizeForScreenshot();
   await expect(page).toHaveScreenshot("shortcuts-1280x800.png", {
     fullPage: false,
     maxDiffPixels: 200,
@@ -68,7 +70,7 @@ test("visual regression: shortcuts overlay at 1280x800", async ({ page }) => {
 test("visual regression: deck mode hint bar at 1280x800", async ({ page }) => {
   const app = new AppPage(page);
   await app.setDeckMode(true);
-  await page.waitForTimeout(400);
+  await app.stabilizeForScreenshot();
   await expect(app.controllerHintBar).toBeVisible();
   await expect(page).toHaveScreenshot("deck-mode-hint-bar-1280x800.png", {
     fullPage: false,

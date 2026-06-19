@@ -137,7 +137,7 @@ export function PermissionsView({ state: _state }: { state: NeuroDeckState }) {
                           ? "text-nd-status-success"
                           : perm.status === "denied"
                           ? "text-nd-status-error"
-                          : "text-nd-status-warning"
+                          : "text-nd-warning"
                       }`}
                       aria-hidden
                     />

@@ -66,7 +66,7 @@ function SpotlightOverlay({ rect }: { rect: SpotlightRect | null }) {
   if (!rect) {
     return (
       <div
-        className="fixed inset-0 z-[200]"
+        className="fixed inset-0 z-overlay"
         style={{ background: "rgba(0,0,0,0.75)" }}
         aria-hidden
       />
@@ -74,7 +74,7 @@ function SpotlightOverlay({ rect }: { rect: SpotlightRect | null }) {
   }
   return (
     <svg
-      className="pointer-events-none fixed inset-0 z-[200]"
+      className="pointer-events-none fixed inset-0 z-overlay"
       width="100%"
       height="100%"
       aria-hidden
@@ -182,7 +182,7 @@ export function TutorialOverlay({ tutorial, onComplete, onDismiss }: TutorialOve
   // Compute bubble placement: below the spotlight, or top if near bottom
   const BUBBLE_GAP = 16;
   const PAD = 8;
-  const bubbleStyle: React.CSSProperties = { position: "fixed", zIndex: 210 };
+  const bubbleStyle: React.CSSProperties = { position: "fixed", zIndex: "var(--nd-z-overlay, 9989)" };
   if (rect) {
     const bottom = rect.top + rect.height + PAD;
     if (bottom + 200 < window.innerHeight) {

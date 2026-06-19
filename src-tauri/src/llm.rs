@@ -329,7 +329,7 @@ impl LlmProvider for GeminiProvider {
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-            return extract_gemini_text(&response_body, "No text returned from transcription");
+            extract_gemini_text(&response_body, "No text returned from transcription")
         })
     }
 
@@ -461,7 +461,7 @@ impl LlmProvider for GeminiProvider {
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-            return extract_gemini_text(&response_body, "No text returned from vision request");
+            extract_gemini_text(&response_body, "No text returned from vision request")
         })
     }
 
@@ -528,7 +528,7 @@ impl LlmProvider for GeminiProvider {
                 .await
                 .map_err(|e| format!("Failed to parse response: {}", e))?;
 
-            return extract_gemini_text(&response_body, "No text returned from oneshot request");
+            extract_gemini_text(&response_body, "No text returned from oneshot request")
         })
     }
 }

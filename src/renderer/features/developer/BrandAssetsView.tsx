@@ -80,8 +80,8 @@ export function BrandAssetsView({ state: _state }: { state: NeuroDeckState }) {
           </h2>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
-              { label: "Cyan on Dark", bg: "bg-nd-surface-bg", textColor: "text-nd-accent-primary" },
-              { label: "White on Cyan", bg: "bg-nd-accent-primary", textColor: "text-nd-surface-bg" },
+              { label: "Cyan on Dark", bg: "bg-nd-bg", textColor: "text-nd-accent-primary" },
+              { label: "White on Cyan", bg: "bg-nd-accent-primary", textColor: "text-nd-bg" },
               { label: "Cyan on White", bg: "bg-white", textColor: "text-nd-accent-primary" },
             ].map((variant) => (
               <div

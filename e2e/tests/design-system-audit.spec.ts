@@ -157,20 +157,17 @@ test.describe("Design System Visual Audit", () => {
   });
 
   test("§1.4 — z-index token values are correctly defined", async ({ page }) => {
-    // The React layer (index.css) defines its own z-index scale that
-    // overrides the app.css scale via CSS cascade. Verify the runtime values.
-    //
-    // index.css scale: --z-wallpaper:0, --z-base:1, --z-sticky:10,
-    //   --z-dropdown:20, --z-overlay:30, --z-modal:40, --z-toast:50, --z-tooltip:60
+    // The legacy --z-* aliases now map to the canonical --nd-z-* tokens so
+    // there is one source of truth across CSS, DS components, and Tailwind.
     const checks: [string, number][] = [
       ["--z-wallpaper", 0],
       ["--z-base", 1],
       ["--z-sticky", 10],
-      ["--z-dropdown", 20],
-      ["--z-overlay", 30],
-      ["--z-modal", 40],
-      ["--z-toast", 50],
-      ["--z-tooltip", 60],
+      ["--z-dropdown", 140],
+      ["--z-overlay", 9989],
+      ["--z-modal", 9990],
+      ["--z-toast", 30000],
+      ["--z-tooltip", 5000],
     ];
     for (const [token, expected] of checks) {
       const val = parseInt(await getCSSVar(page, token), 10);
@@ -185,10 +182,10 @@ test.describe("Design System Visual Audit", () => {
       "--z-base",
       "--z-sticky",
       "--z-dropdown",
+      "--z-tooltip",
       "--z-overlay",
       "--z-modal",
       "--z-toast",
-      "--z-tooltip",
     ];
     let prev = -Infinity;
     for (const token of tokens) {

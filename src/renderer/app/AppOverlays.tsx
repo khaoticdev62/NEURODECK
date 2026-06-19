@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import { CheckCircle2, Command, Sparkles, X, AlertCircle, Info } from "lucide-react";
 import { FocusTrapContainer } from "../components/primitives/FocusTrapContainer";
+import { IconButton } from "../components/primitives/IconButton";
 import { GlobalSearch } from "../components/search/GlobalSearch";
 import { ViewLoader } from "./ViewLoader";
 import { listenBridge } from "../services/bridgeAdapter";
@@ -200,14 +201,15 @@ export function AppOverlays({
                       Clear all
                     </button>
                   )}
-                  <button
+                  <IconButton
                     id="close-notif-x"
-                    type="button"
+                    aria-label="Close notifications"
+                    size="sm"
+                    variant="ghost"
                     onClick={() => setNotificationsOpen(false)}
-                    className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-2xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
                   >
-                    Close
-                  </button>
+                    <X className="h-4 w-4" aria-hidden />
+                  </IconButton>
                 </div>
               </div>
               {notifications.length === 0 ? (
@@ -226,7 +228,7 @@ export function AppOverlays({
                             n.type === "success"
                               ? "text-nd-accent-success"
                               : n.type === "error"
-                                ? "text-nd-accent-danger"
+                                ? "text-nd-accent-error"
                                 : "text-nd-accent"
                           }`}
                           aria-hidden
@@ -237,14 +239,14 @@ export function AppOverlays({
                             {new Date(n.timestamp).toLocaleTimeString()}
                           </p>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => dismiss(n.id)}
+                        <IconButton
                           aria-label="Dismiss notification"
-                          className="rounded p-1 text-nd-text-muted hover:text-nd-text"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => dismiss(n.id)}
                         >
                           <X className="h-3 w-3" aria-hidden />
-                        </button>
+                        </IconButton>
                       </li>
                     );
                   })}
@@ -281,14 +283,14 @@ export function AppOverlays({
                 <h2 id="shortcuts-dialog-title" className="text-sm font-semibold text-nd-text">
                   Keyboard Shortcuts
                 </h2>
-                <button
-                  type="button"
-                  onClick={() => setShortcutsOpen(false)}
+                <IconButton
                   aria-label="Close shortcuts"
-                  className="rounded-lg p-1 text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShortcutsOpen(false)}
                 >
-                  <X className="h-4 w-4" />
-                </button>
+                  <X className="h-4 w-4" aria-hidden />
+                </IconButton>
               </div>
               <div className="grid grid-cols-2 gap-x-8 gap-y-2">
                 {[
@@ -348,14 +350,14 @@ export function AppOverlays({
                 </span>
                 Controller Prompt
               </div>
-              <button
-                type="button"
-                onClick={() => setCtrlPromptOpen(false)}
+              <IconButton
                 aria-label="Close controller prompt"
-                className="rounded-lg p-1 text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                size="sm"
+                variant="ghost"
+                onClick={() => setCtrlPromptOpen(false)}
               >
-                <X className="h-4 w-4" />
-              </button>
+                <X className="h-4 w-4" aria-hidden />
+              </IconButton>
             </div>
             <p className="text-sm text-nd-text-muted">
               Press B to close, R4 to accept suggestions, R5 hold to execute, and L5 to save or

@@ -162,6 +162,18 @@ function registerIpcHandlers(mainWindow, lspManager, connectionRegistry, healthP
     return callSidecar(bridgePort, 'save_session', payload);
   });
 
+  guard(IPC.SESSIONS_LOAD, {
+    id: { type: 'string', required: true }
+  }, async (payload) => {
+    return callSidecar(bridgePort, 'load_session_by_id', { id: payload.id });
+  });
+
+  guard(IPC.SESSIONS_DELETE, {
+    id: { type: 'string', required: true }
+  }, async (payload) => {
+    return callSidecar(bridgePort, 'delete_session', { id: payload.id });
+  });
+
   // ── Memory Handlers ────────────────────────────────────────────────
 
   guard(IPC.MEMORY_SEARCH, {

@@ -1,0 +1,15 @@
+{
+  "activeThemeId": "blacksite_prime",
+  "activeWallpaperId": "neural_aurora",
+  "liveWallpaperEnabled": true,
+  "displayProfile": "steamdeck_lcd",
+  "performanceTier": "balanced",
+  "accessibilityProfile": "default",
+  "wallpaperIntensity": 0.5,
+  "wallpaperOpacity": 0.8,
+  "glowIntensity": 0.7,
+  "glassIntensity": 0.8,
+  "motionIntensity": 0.8,
+  "fontScale": 1,
+  "compactMode": false
+}

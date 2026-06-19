@@ -54,7 +54,7 @@ export function ContextIndexingPanel({ projectPath, open, onClose }: ContextInde
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
       role="presentation"
     >
-      <div className="absolute inset-0 bg-nd-surface-bg/60 backdrop-blur-sm" onClick={isDone ? onClose : undefined} aria-hidden />
+      <div className="absolute inset-0 bg-nd-bg/60 backdrop-blur-sm" onClick={isDone ? onClose : undefined} aria-hidden />
       <div
         role="dialog"
         aria-modal="true"

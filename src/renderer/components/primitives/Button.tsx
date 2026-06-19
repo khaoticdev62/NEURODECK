@@ -44,6 +44,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   const iconNode =
     Icon && !loading ? <Icon className={sizeIconClasses[size]} aria-hidden="true" /> : null;
 
+  // Icon-only chrome controls (e.g. close buttons) must still meet the 40×40
+  // minimum hit target. Text buttons still get the minimum height.
+  const isIconOnly = !children && !loading && !!Icon;
+  const touchClasses = isIconOnly ? "min-h-touch min-w-touch" : "min-h-touch";
+
   // Map wrapper sizes to design-system sizes (xs -> sm).
   const dsSize: DSButtonSize = size === "xs" ? "sm" : size;
   // Premium maps to primary visually; soft/outline are rendered as custom class overlays.
@@ -64,7 +69,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
     variant === "outline"
       ? "border-nd-border-subtle bg-transparent text-nd-text-primary hover:border-nd-accent-primary/35 hover:bg-nd-surface-secondary/50"
       : "",
-    size === "xs" ? "min-h-touch px-2 text-2xs gap-1 rounded-lg" : "",
+    touchClasses,
+    size === "xs" ? "px-2 text-2xs gap-1 rounded-lg" : "",
     fullWidth ? "w-full" : "",
     className,
   ]

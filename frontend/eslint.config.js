@@ -47,7 +47,7 @@ export default tseslint.config(
   },
   {
     // vite-env.d.ts uses triple-slash references as required by Vite's type augmentation pattern
-    files: ['src/react/types/vite-env.d.ts'],
+    files: ['**/types/vite-env.d.ts'],
     rules: {
       '@typescript-eslint/triple-slash-reference': 'off',
     },

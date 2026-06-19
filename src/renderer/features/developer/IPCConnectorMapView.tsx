@@ -182,7 +182,7 @@ export function IPCConnectorMapView({ state: _state }: { state: NeuroDeckState }
                           c.status === "ok"
                             ? "text-nd-status-success"
                             : c.status === "degraded"
-                            ? "text-nd-status-warning"
+                            ? "text-nd-warning"
                             : "text-nd-status-error"
                         }`}
                         aria-hidden

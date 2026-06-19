@@ -143,7 +143,7 @@ export function AgentBuilderDrawer({ open, onClose, onSaved }: AgentBuilderDrawe
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="presentation">
       <div
-        className="absolute inset-0 bg-nd-surface-bg/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-nd-bg/60 backdrop-blur-sm"
         onClick={handleClose}
         aria-hidden
       />
@@ -188,7 +188,7 @@ export function AgentBuilderDrawer({ open, onClose, onSaved }: AgentBuilderDrawe
                 <span
                   className={`text-xs ${
                     instructions.length > MAX_INSTRUCTIONS * 0.9
-                      ? "text-nd-status-warning"
+                      ? "text-nd-warning"
                       : "text-nd-text-muted"
                   }`}
                 >

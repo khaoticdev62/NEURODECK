@@ -74,7 +74,7 @@ export function DevicePairingModal({ open, onClose }: DevicePairingModalProps) {
       role="presentation"
     >
       <div
-        className="absolute inset-0 bg-nd-surface-bg/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-nd-bg/70 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden
       />
@@ -115,7 +115,7 @@ export function DevicePairingModal({ open, onClose }: DevicePairingModalProps) {
               <p className="text-nd-status-error">Code expired.</p>
             )}
 
-            {error && <p className="text-xs text-nd-status-warning">{error}</p>}
+            {error && <p className="text-xs text-nd-warning">{error}</p>}
 
             {code && (
               <div

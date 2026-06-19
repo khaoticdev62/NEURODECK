@@ -119,6 +119,7 @@ const IPC_CHANNELS = Object.freeze({
   LSP_HOVER: "lsp:hover",
   LSP_DEFINITION: "lsp:definition",
   LSP_FORMAT: "lsp:format",
+  LSP_GET_DIAGNOSTICS: "lsp:get-diagnostics",
 
   // LLM Models & AI Providers (New Target)
   MODELS_LIST: "models:list",
@@ -130,6 +131,8 @@ const IPC_CHANNELS = Object.freeze({
   SESSIONS_CREATE: "sessions:create",
   SESSIONS_LIST: "sessions:list",
   SESSIONS_SAVE: "sessions:save",
+  SESSIONS_LOAD: "sessions:load",
+  SESSIONS_DELETE: "sessions:delete",
 
   // Memory (New Target)
   MEMORY_SEARCH: "memory:search",
