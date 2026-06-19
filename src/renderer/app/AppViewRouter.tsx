@@ -1,4 +1,4 @@
-import { lazy, Suspense, type ReactNode } from "react";
+import { lazy, memo, Suspense, type ReactNode } from "react";
 import { ViewErrorBoundary } from "../components/system/ViewErrorBoundary";
 import { ViewLoader } from "./ViewLoader";
 import { WorkspaceView } from "../features/workspace/WorkspaceView";
@@ -216,7 +216,7 @@ export type AppViewRouterProps = {
   actions: NeuroDeckAppActions;
 };
 
-export function AppViewRouter({ state, dispatch, selectors, actions }: AppViewRouterProps) {
+function AppViewRouterInner({ state, dispatch, selectors, actions }: AppViewRouterProps) {
   const viewRenderers: Partial<Record<ViewId, () => ReactNode>> = {
     chat: () =>
       renderView(
@@ -307,3 +307,5 @@ export function AppViewRouter({ state, dispatch, selectors, actions }: AppViewRo
 
   return <>{viewRenderers[state.activeView]?.() ?? null}</>;
 }
+
+export const AppViewRouter = memo(AppViewRouterInner);

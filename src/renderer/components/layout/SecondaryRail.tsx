@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { Dispatch } from "react";
 import {
   AlertTriangle,
@@ -16,7 +16,7 @@ import { Badge } from "../primitives/Badge";
 import { Panel } from "../primitives/Panel";
 import { MemoryPanel } from "../systems/MemoryPanel";
 
-export function SecondaryRail({
+export const SecondaryRail = memo(function SecondaryRail({
   state,
   dispatch,
   selectors,
@@ -209,7 +209,7 @@ export function SecondaryRail({
       </div>
     </aside>
   );
-}
+});
 
 function MiniStat({
   icon: Icon,

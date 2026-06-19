@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch } from "react";
 import {
   Activity,
@@ -383,7 +383,7 @@ const commands: CommandItem[] = [
   },
 ];
 
-export function CommandPalette({
+export const CommandPalette = memo(function CommandPalette({
   state,
   dispatch,
   actions,
@@ -721,7 +721,7 @@ export function CommandPalette({
       </div>
     </div>
   );
-}
+});
 
 function Divider({ className = "" }: { className?: string }) {
   return <div className={`h-px bg-[var(--nd-border-subtle)] ${className}`} />;

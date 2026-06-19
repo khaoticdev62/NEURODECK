@@ -47,6 +47,21 @@ const RENDERER_SECURITY_FLAGS = Object.freeze({
   cspActive: true,
 });
 
+/* ── Chromium performance flags ──────────────────────────────────────────── */
+// GPU rasterization and zero-copy texture upload pipeline.
+// These are safe for modern GPUs and give a measurable paint-perf uplift.
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('enable-hardware-overlays', 'single-fullscreen');
+// Larger shared-memory buffer between GPU and renderer (reduces flush stalls).
+app.commandLine.appendSwitch('gpu-rasterization-msaa-sample-count', '0');
+// 128 MB renderer disk cache — avoids re-parsing CSS/JS on repeated loads.
+app.commandLine.appendSwitch('disk-cache-size', String(128 * 1024 * 1024));
+// Chromium throttles inactive-tab timers; keep timers running for background
+// PTY/agent work while the window is out of focus.
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+
 /* ── Windows GPU / network-process stability workaround ─────────────────── */
 // Long-running dev smoke tests on Windows terminate the GPU process
 // ("GPU process exited unexpectedly: exit_code=143") and the network service
@@ -54,14 +69,11 @@ const RENDERER_SECURITY_FLAGS = Object.freeze({
 // typically caused by GPU driver / Chromium sandbox interactions, not by app
 // code. We disable the GPU and network-service sandboxes on Windows only.
 // The renderer sandbox stays enabled, so this is a smaller blast radius than
-// --no-sandbox. Background throttling is also disabled so idle waits in long
-// tests do not trip Chromium watchdogs.
+// --no-sandbox.
 if (process.platform === 'win32') {
   app.commandLine.appendSwitch('disable-gpu-sandbox');
   app.commandLine.appendSwitch('disable-network-service-sandbox');
   app.commandLine.appendSwitch('disable-features', 'IsolateOrigins,site-per-process,SpareRendererForSitePerProcess');
-  app.commandLine.appendSwitch('disable-background-timer-throttling');
-  app.commandLine.appendSwitch('disable-renderer-backgrounding');
 }
 
 /* ── Browser state: bookmarks, history, ad-block, downloads ─────────────── */

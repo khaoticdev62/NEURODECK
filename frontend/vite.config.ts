@@ -18,6 +18,8 @@ export default defineConfig({
     target: ["es2022", "chrome110", "safari15"],
     minify: process.env.NODE_ENV === "production" ? "esbuild" : false,
     sourcemap: process.env.NODE_ENV !== "production",
+    // Skip re-measuring compressed sizes on every build — saves ~2s on CI.
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -30,7 +32,10 @@ export default defineConfig({
           if (id.includes("/features/browser/")) return "view-browser";
           if (id.includes("/features/terminal/") || id.includes("/features/ssh/")) return "view-terminal";
           if (id.includes("/features/settings/")) return "view-settings";
-          if (id.includes("/features/agents/") || id.includes("/features/memory/") || id.includes("/features/project/")) return "view-intel";
+          // Split intel chunk to keep chunk sizes manageable.
+          if (id.includes("/features/agents/")) return "view-agents";
+          if (id.includes("/features/memory/")) return "view-memory";
+          if (id.includes("/features/project/")) return "view-project";
           if (id.includes("/features/api-lab/") || id.includes("/features/cli-maker/") || id.includes("/features/git/")) return "view-devtools";
           if (id.includes("/features/diagnostics/") || id.includes("/features/execution/") || id.includes("/features/cache/") || id.includes("/features/plugins/") || id.includes("/features/sessions/")) return "view-system";
           if (id.includes("/features/models/")) return "view-models";
@@ -38,6 +43,15 @@ export default defineConfig({
       },
     },
     chunkSizeWarningLimit: 900,
+  },
+  // Pre-bundle heavy deps for fast cold dev-server starts.
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react-dom/client",
+      "lucide-react",
+    ],
   },
   plugins: [
     react(),

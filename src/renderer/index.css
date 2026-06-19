@@ -303,6 +303,7 @@ body.wallpaper-active #app-shell {
     #050505;
   background-size: 200% 200%;
   animation: nebula-drift 20s ease infinite alternate;
+  will-change: background-position;
 }
 
 @keyframes nebula-drift {
@@ -324,6 +325,7 @@ body.wallpaper-active #app-shell {
   );
   background-size: 300% 300%;
   animation: aurora-sweep 15s ease infinite alternate;
+  will-change: background-position;
 }
 
 @keyframes aurora-sweep {

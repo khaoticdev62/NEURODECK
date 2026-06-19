@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import type { Dispatch } from "react";
 import { Bell, ChevronRight, Command, Gamepad2, Settings, WifiOff } from "lucide-react";
 import { navItems } from "../../types/seed";
 import type { NeuroDeckAction, NeuroDeckState, ViewId } from "../../types/neurodeck";
 import { Badge } from "../primitives/Badge";
 
-export function PrimarySidebar({
+export const PrimarySidebar = memo(function PrimarySidebar({
   state,
   dispatch,
   onOpenSettings,
@@ -249,4 +249,4 @@ export function PrimarySidebar({
       </div>
     </aside>
   );
-}
+});

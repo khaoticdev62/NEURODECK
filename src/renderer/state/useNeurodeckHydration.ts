@@ -9,33 +9,32 @@ export function useNeurodeckHydration(dispatch: React.Dispatch<NeuroDeckAction>)
     async function hydrate() {
       const stored = (await neurodeckApi.store.get<Partial<NeuroDeckState>>(STORE_KEY)) || {};
 
-      // 1. Fetch live backend initial settings
-      try {
-        const init = await neurodeckApi.getInitialState();
-        if (init) {
-          stored.selectedProvider = (init.provider as any) || stored.selectedProvider;
-          stored.selectedModelId = init.model || stored.selectedModelId;
-          stored.selectedPersona = init.active_persona || stored.selectedPersona;
-          stored.toolStatus = init.tool_status ?? stored.toolStatus;
-        }
-      } catch (_) {
-        // Ignored, fallback to stored/initial
+      // All backend calls run in parallel — fastest possible hydration time.
+      const [initRes, statusRes, memsRes, sessRes, agentsRes, pluginsRes] =
+        await Promise.allSettled([
+          neurodeckApi.getInitialState(),
+          neurodeckApi.getStatusBarState(),
+          neurodeckApi.memory.list(),
+          neurodeckApi.sessions.listMeta(),
+          neurodeckApi.agents.list(),
+          neurodeckApi.plugins.list(),
+        ]);
+
+      if (initRes.status === "fulfilled" && initRes.value) {
+        const init = initRes.value;
+        stored.selectedProvider = (init.provider as any) || stored.selectedProvider;
+        stored.selectedModelId = init.model || stored.selectedModelId;
+        stored.selectedPersona = init.active_persona || stored.selectedPersona;
+        stored.toolStatus = init.tool_status ?? stored.toolStatus;
       }
 
-      // 1b. Fetch consolidated status-bar state
-      try {
-        const status = await neurodeckApi.getStatusBarState();
-        if (status) {
-          stored.statusBar = status;
-        }
-      } catch (_) {
-        // Ignored, fallback to stored/initial
+      if (statusRes.status === "fulfilled" && statusRes.value) {
+        stored.statusBar = statusRes.value;
       }
 
-      // 2. Fetch live memory records
-      try {
-        const mems = await neurodeckApi.memory.list();
-        if (mems && mems.records) {
+      if (memsRes.status === "fulfilled") {
+        const mems = memsRes.value;
+        if (mems?.records) {
           stored.memories = mems.records.map((r: any) => ({
             id: r.id,
             title: r.metadata?.title || r.content.slice(0, 40),
@@ -47,23 +46,15 @@ export function useNeurodeckHydration(dispatch: React.Dispatch<NeuroDeckAction>)
             namespace: r.metadata?.namespace || r.metadata?.source || undefined,
           }));
         }
-      } catch (_) {
-        // Ignored, fallback to stored/initial
       }
 
-      // 3. Fetch live sessions metadata
-      try {
-        const sessList = await neurodeckApi.sessions.listMeta();
-        if (sessList && sessList.length > 0) {
-          stored.sessions = sessList;
-        }
-      } catch (_) {
-        // Ignored, fallback to stored/initial
+      if (sessRes.status === "fulfilled") {
+        const sessList = sessRes.value;
+        if (sessList && sessList.length > 0) stored.sessions = sessList;
       }
 
-      // 4. Fetch live agents
-      try {
-        const agentList = await neurodeckApi.agents.list();
+      if (agentsRes.status === "fulfilled") {
+        const agentList = agentsRes.value;
         if (agentList && agentList.length > 0) {
           stored.agents = agentList.map((a) => ({
             id: a.id,
@@ -76,17 +67,13 @@ export function useNeurodeckHydration(dispatch: React.Dispatch<NeuroDeckAction>)
             task: "Ready",
           }));
         }
-      } catch (_) {
-        // Ignored, fallback to stored/initial
       }
 
-      // 5. Fetch live plugins
-      try {
-        const pluginList = await neurodeckApi.plugins.list();
-        if (pluginList && pluginList.plugins) {
+      if (pluginsRes.status === "fulfilled") {
+        const pluginList = pluginsRes.value;
+        if (pluginList?.plugins) {
           stored.plugins = pluginList.plugins.map((p) => {
-            let status: PluginCard["status"] = "disabled";
-            if (p.enabled) status = "enabled";
+            const status: PluginCard["status"] = p.enabled ? "enabled" : "disabled";
             return {
               id: p.id || p.file_name,
               name: p.name,
@@ -96,8 +83,6 @@ export function useNeurodeckHydration(dispatch: React.Dispatch<NeuroDeckAction>)
             };
           });
         }
-      } catch (_) {
-        // Ignored, fallback to stored/initial
       }
 
       if (mounted) dispatch({ type: "hydrate", payload: stored });
