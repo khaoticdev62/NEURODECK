@@ -25,7 +25,7 @@ function BridgeStatusDot() {
       role="status"
       aria-label={label}
       title={label}
-      className={`pointer-events-auto inline-block h-1.5 w-1.5 shrink-0 rounded-full ${className}`}
+      className={`pointer-events-auto inline-block h-2 w-2 shrink-0 rounded-full ${className}`}
     />
   );
 }

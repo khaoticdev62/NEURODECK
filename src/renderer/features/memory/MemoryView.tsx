@@ -249,6 +249,7 @@ export function MemoryView({
       eyebrow="Memory Vault"
       title="Local-First Recall"
       className="memory-shell flex h-full flex-col overflow-hidden"
+      bodyClassName="flex flex-1 min-h-0 flex-col overflow-hidden"
     >
       <div className="memory-kicker px-4 pt-4 text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
         Memory

@@ -246,6 +246,7 @@
   /* Layout shell dimensions (1280x800 Steam Deck) */
   --nd-shell-statusbar: 40px;
   --nd-shell-navrail: 72px;
+  --nd-sidebar-expanded: 200px;
   --nd-shell-context: 280px;
   --nd-shell-input-min: 96px;
   --nd-shell-input-max: 148px;

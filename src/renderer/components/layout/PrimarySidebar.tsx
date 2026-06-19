@@ -189,7 +189,7 @@ export const PrimarySidebar = memo(function PrimarySidebar({
       </nav>
 
       {/* Footer */}
-      <div className="shrink-0 space-y-1.5 border-t border-[var(--nd-border-subtle)] bg-transparent p-2">
+      <div className="shrink-0 space-y-2 border-t border-[var(--nd-border-subtle)] bg-transparent p-2">
         <div className="flex items-center justify-center">
           {expanded ? (
             <div className="flex w-full min-h-touch items-center justify-between px-1">
@@ -205,7 +205,7 @@ export const PrimarySidebar = memo(function PrimarySidebar({
             />
           )}
         </div>
-        <div className={`flex gap-1 ${expanded ? "" : "flex-col"}`}>
+        <div className={`flex gap-1.5 ${expanded ? "" : "flex-col"}`}>
           <button
             id="settings-btn"
             type="button"

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { BrandLogo } from "../primitives/BrandLogo";
+import { Button } from "../primitives/Button";
 
 const STARTUP_TASKS = [
   "Starting runtime…",
@@ -66,7 +67,7 @@ export function SplashScreen({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-nd-bg"
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-nd-surface-app"
       aria-label="NEURODECK is loading"
       role="status"
       aria-live="polite"
@@ -92,9 +93,9 @@ export function SplashScreen({
 
           {/* Progress bar */}
           {error ? (
-            <div className="flex items-center justify-center gap-2 rounded-lg border border-nd-danger/30 bg-nd-danger/10 px-3 py-2">
-              <AlertTriangle className="h-4 w-4 shrink-0 text-nd-danger" aria-hidden />
-              <p className="text-2xs text-nd-danger">{error}</p>
+            <div className="flex items-center justify-center gap-2 rounded-lg border border-nd-accent-error/30 bg-nd-accent-error/10 px-3 py-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-nd-accent-error" aria-hidden />
+              <p className="text-2xs text-nd-accent-error">{error}</p>
             </div>
           ) : (
             <div
@@ -113,8 +114,8 @@ export function SplashScreen({
 
           {/* Startup warning chip */}
           {warning && (
-            <div className="rounded-lg border border-nd-warning/30 bg-nd-warning/10 px-3 py-2">
-              <p className="text-2xs text-nd-warning">{warning}</p>
+            <div className="rounded-lg border border-nd-accent-warning/30 bg-nd-accent-warning/10 px-3 py-2">
+              <p className="text-2xs text-nd-accent-warning">{warning}</p>
             </div>
           )}
         </div>
@@ -124,34 +125,27 @@ export function SplashScreen({
           {error && (
             <>
               {onOpenDiagnostics && (
-                <button
-                  type="button"
-                  onClick={onOpenDiagnostics}
-                  className="rounded-lg border border-nd-accent/30 bg-nd-accent/10 px-4 py-2 text-xs font-semibold text-nd-accent transition hover:bg-nd-accent/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-nd-accent"
-                >
+                <Button variant="secondary" size="sm" onClick={onOpenDiagnostics}>
                   Open Diagnostics
-                </button>
+                </Button>
               )}
               {onContinueAnyway && (
-                <button
-                  type="button"
-                  onClick={onContinueAnyway}
-                  className="text-2xs text-nd-text-muted underline underline-offset-2 transition hover:text-nd-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-nd-accent"
-                >
+                <Button variant="ghost" size="xs" onClick={onContinueAnyway}>
                   Continue anyway
-                </button>
+                </Button>
               )}
             </>
           )}
 
           {!error && showSlowStartup && onOpenDiagnostics && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="xs"
               onClick={onOpenDiagnostics}
-              className="animate-in fade-in text-2xs text-nd-text-muted underline underline-offset-2 transition hover:text-nd-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-nd-accent"
+              className="animate-in fade-in"
             >
               Slow startup? Open Diagnostics
-            </button>
+            </Button>
           )}
         </div>
       </div>
