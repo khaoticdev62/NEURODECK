@@ -59,7 +59,8 @@
   /* Legacy surface aliases kept for compatibility */
   --nd-bg: var(--nd-surface-app);
   --nd-surface: var(--nd-surface-secondary);
-  --nd-surface-raised: var(--nd-surface-tertiary);
+  --nd-surface-base: var(--nd-surface-primary);
+  --nd-surface-raised: var(--nd-surface-secondary);
   --nd-surface-sunken: #080a0e;
   --nd-surface-panel: var(--nd-slate-800);
   --nd-surface-card: #131a22;

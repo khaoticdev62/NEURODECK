@@ -165,7 +165,7 @@ export function RadialCommandWheel({
 
   return (
     <div
-      className="fixed inset-0 z-modal flex items-center justify-center bg-surface-overlay/80 backdrop-blur-sm"
+      className="fixed inset-0 z-modal flex items-center justify-center bg-nd-surface-overlay/80 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label="Command wheel"
@@ -208,10 +208,10 @@ export function RadialCommandWheel({
               style={{ position: "absolute", left: x - 28, top: y - 28, width: 56, height: 56 }}
               className={`flex flex-col items-center justify-center rounded-full border transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/50 ${
                 isActive
-                  ? "border-accent-primary/50 bg-accent-primary/20 text-accent-primary shadow-lg shadow-accent-primary/20"
+                  ? "border-nd-accent-primary/50 bg-nd-accent-primary/20 text-nd-accent-primary shadow-lg shadow-accent-primary/20"
                   : hasCommands
-                    ? "border-border-subtle bg-surface-secondary/80 text-text-primary hover:border-accent-primary/30 hover:text-accent-primary"
-                    : "border-border-subtle/50 bg-surface-secondary/40 text-text-muted/40 cursor-not-allowed"
+                    ? "border-nd-border-subtle bg-nd-surface-secondary/80 text-nd-text-primary hover:border-nd-accent-primary/30 hover:text-nd-accent-primary"
+                    : "border-nd-border-subtle/50 bg-nd-surface-secondary/40 text-nd-text-muted/40 cursor-not-allowed"
               }`}
             >
               {seg.icon}
@@ -221,29 +221,29 @@ export function RadialCommandWheel({
         })}
 
         <div
-          className="relative z-10 flex flex-col items-center justify-center rounded-full border border-border-subtle bg-surface-app text-center shadow-xl"
+          className="relative z-10 flex flex-col items-center justify-center rounded-full border border-nd-border-subtle bg-nd-surface-app text-center shadow-xl"
           style={{ width: 96, height: 96 }}
         >
-          <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted/60">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-nd-text-muted/60">
             {languageId ?? "IDE"}
           </span>
-          <span className="mt-0.5 text-[9px] text-text-muted/40">
+          <span className="mt-0.5 text-[9px] text-nd-text-muted/40">
             {selectedSegment ? "← Back" : "Select"}
           </span>
         </div>
       </div>
 
       {activeSegment && (
-        <div className="absolute right-4 top-1/2 w-64 -translate-y-1/2 rounded-2xl border border-border-subtle bg-surface-primary p-3 shadow-overlay">
+        <div className="absolute right-4 top-1/2 w-64 -translate-y-1/2 rounded-2xl border border-nd-border-subtle bg-nd-surface-primary p-3 shadow-overlay">
           <div className="mb-2 flex items-center gap-2">
             {activeSegment.icon}
-            <span className="font-semibold text-text-primary">{activeSegment.label}</span>
-            <span className="ml-auto text-[10px] text-text-muted">
+            <span className="font-semibold text-nd-text-primary">{activeSegment.label}</span>
+            <span className="ml-auto text-[10px] text-nd-text-muted">
               {activeSegment.commands.length} cmd
             </span>
           </div>
           {activeSegment.commands.length === 0 ? (
-            <p className="text-xs text-text-muted/60 italic">
+            <p className="text-xs text-nd-text-muted/60 italic">
               No commands available for {languageId}
             </p>
           ) : (
@@ -254,7 +254,7 @@ export function RadialCommandWheel({
                   variant="ghost"
                   size="xs"
                   fullWidth
-                  className={`justify-start ${i === selectedCmd ? "bg-accent-primary/10 text-accent-primary" : ""}`}
+                  className={`justify-start ${i === selectedCmd ? "bg-nd-accent-primary/10 text-nd-accent-primary" : ""}`}
                   onClick={() => onRunCommand(cmd)}
                 >
                   <span className="flex-1 truncate font-mono">{cmd.label}</span>

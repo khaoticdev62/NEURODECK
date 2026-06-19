@@ -57,7 +57,7 @@ export function ModelCard({
             className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border ${
               policyAllowed === false
                 ? "border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error"
-                : "border-accent-agent/30 bg-accent-agent/10 text-accent-agent"
+                : "border-nd-accent-agent/30 bg-nd-accent-agent/10 text-nd-accent-agent"
             }`}
           >
             <BrainCircuit className="h-6 w-6" />

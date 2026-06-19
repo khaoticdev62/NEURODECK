@@ -18,6 +18,13 @@ const INVALID_CLASS_PATTERNS = [
   "nd-status-warning",  // Tailwind does not generate this; should be nd-warning
   "nd-accent-danger",   // Tailwind does not generate this; should be nd-accent-error
   "nd-purple-400",      // Tailwind does not generate this; should be nd-accent-agent or arbitrary var
+  "bg-surface-",        // Removed duplicate semantic alias layer; use bg-nd-surface-*
+  "text-text-",         // Removed duplicate semantic alias layer; use text-nd-text-*
+  "border-border-",     // Removed duplicate semantic alias layer; use border-nd-border-*
+  "text-ds-",           // Removed duplicate semantic alias layer; use text-nd-text-*
+  "text-accent-",       // Removed duplicate semantic alias layer; use text-nd-accent-*
+  "bg-accent-",         // Removed duplicate semantic alias layer; use bg-nd-accent-*
+  "border-accent-",     // Removed duplicate semantic alias layer; use border-nd-accent-*
 ];
 
 const DS_Z_TOKENS: Record<string, string> = {

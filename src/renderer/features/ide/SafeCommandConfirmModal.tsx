@@ -67,36 +67,36 @@ export function SafeCommandConfirmModal({
     >
       <div className="space-y-4">
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-nd-text-muted">
             Command
           </span>
-          <pre className="mt-1 overflow-x-auto rounded-xl border border-border-subtle bg-surface-secondary p-3 text-[11px] font-mono text-text-primary">
+          <pre className="mt-1 overflow-x-auto rounded-xl border border-nd-border-subtle bg-nd-surface-secondary p-3 text-[11px] font-mono text-nd-text-primary">
             {cmdPreview}
           </pre>
         </div>
 
-        <div className="grid gap-3 text-xs text-text-secondary sm:grid-cols-2">
-          <div className="rounded-xl border border-border-subtle bg-surface-secondary/60 px-3 py-2">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Label</span>
+        <div className="grid gap-3 text-xs text-nd-text-secondary sm:grid-cols-2">
+          <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 px-3 py-2">
+            <span className="text-[10px] uppercase tracking-wider text-nd-text-muted">Label</span>
             <p className="mt-1 truncate">{label}</p>
           </div>
-          <div className="rounded-xl border border-border-subtle bg-surface-secondary/60 px-3 py-2">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">Safety</span>
+          <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 px-3 py-2">
+            <span className="text-[10px] uppercase tracking-wider text-nd-text-muted">Safety</span>
             <p
-              className={`mt-1 truncate ${isDangerous ? "text-accent-error" : "text-accent-warning"}`}
+              className={`mt-1 truncate ${isDangerous ? "text-nd-accent-error" : "text-nd-accent-warning"}`}
             >
               {safety}
             </p>
           </div>
         </div>
 
-        {description && <p className="text-xs text-text-secondary">{description}</p>}
+        {description && <p className="text-xs text-nd-text-secondary">{description}</p>}
 
-        <div className="rounded-xl border border-border-subtle bg-surface-secondary/60 px-3 py-2">
-          <span className="text-[10px] uppercase tracking-wider text-text-muted">
+        <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/60 px-3 py-2">
+          <span className="text-[10px] uppercase tracking-wider text-nd-text-muted">
             Working Directory
           </span>
-          <p className="mt-1 truncate font-mono text-xs text-text-secondary">{cwd}</p>
+          <p className="mt-1 truncate font-mono text-xs text-nd-text-secondary">{cwd}</p>
         </div>
 
         {isDangerous && (

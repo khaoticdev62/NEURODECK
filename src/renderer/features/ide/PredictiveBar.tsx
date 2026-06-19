@@ -19,10 +19,10 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const TYPE_COLORS: Record<string, string> = {
-  lsp_completion: "text-accent-primary",
-  snippet: "text-accent-success",
-  command: "text-accent-warning",
-  diagnostic_fix: "text-accent-error",
+  lsp_completion: "text-nd-accent-primary",
+  snippet: "text-nd-accent-success",
+  command: "text-nd-accent-warning",
+  diagnostic_fix: "text-nd-accent-error",
 };
 
 const SAFETY_TONE: Record<string, "warning" | "danger"> = {
@@ -69,9 +69,9 @@ export function PredictiveBar({
 
   if (!visible || predictions.length === 0) {
     return (
-      <div className="flex h-14 shrink-0 items-center gap-2 border-t border-border-subtle bg-surface-secondary/60 px-3">
-        <Zap className="h-3.5 w-3.5 text-text-muted/40" aria-hidden="true" />
-        <span className="text-[11px] text-text-muted/60">
+      <div className="flex h-14 shrink-0 items-center gap-2 border-t border-nd-border-subtle bg-nd-surface-secondary/60 px-3">
+        <Zap className="h-3.5 w-3.5 text-nd-text-muted/40" aria-hidden="true" />
+        <span className="text-[11px] text-nd-text-muted/60">
           {languageId ? `No predictions for ${languageId}` : "Open a file to see predictions"}
         </span>
       </div>
@@ -82,20 +82,20 @@ export function PredictiveBar({
 
   return (
     <div
-      className="flex h-14 shrink-0 flex-col border-t border-border-subtle bg-surface-secondary/60"
+      className="flex h-14 shrink-0 flex-col border-t border-nd-border-subtle bg-nd-surface-secondary/60"
       role="listbox"
       aria-label="Predictive completions"
       aria-activedescendant={`pred-item-${selectedIndex}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2 px-3">
-        <span className={`shrink-0 ${TYPE_COLORS[top.type] ?? "text-text-muted"}`}>
+        <span className={`shrink-0 ${TYPE_COLORS[top.type] ?? "text-nd-text-muted"}`}>
           {TYPE_ICONS[top.type] ?? <Code2 className="h-3 w-3" aria-hidden="true" />}
         </span>
-        <span className="truncate text-xs font-mono font-semibold text-text-primary">
+        <span className="truncate text-xs font-mono font-semibold text-nd-text-primary">
           {top.label}
         </span>
         {top.detail && (
-          <span className="truncate text-[11px] text-text-muted/60">{top.detail}</span>
+          <span className="truncate text-[11px] text-nd-text-muted/60">{top.detail}</span>
         )}
         {top.safety && top.safety !== "safe" && (
           <Badge
@@ -107,7 +107,7 @@ export function PredictiveBar({
             {top.safety}
           </Badge>
         )}
-        <span className="ml-auto flex shrink-0 items-center gap-0.5 text-[10px] text-text-muted/60">
+        <span className="ml-auto flex shrink-0 items-center gap-0.5 text-[10px] text-nd-text-muted/60">
           <ChevronUp className="h-3 w-3" aria-hidden="true" />
           <ChevronDown className="h-3 w-3" aria-hidden="true" />
           <span>
@@ -130,8 +130,8 @@ export function PredictiveBar({
             }}
             className={`flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-mono transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-primary/50 ${
               i === selectedIndex
-                ? "border-accent-primary/40 bg-accent-primary/10 text-accent-primary"
-                : "border-border-subtle bg-surface-secondary text-text-muted hover:border-accent-primary/20 hover:text-text-primary"
+                ? "border-nd-accent-primary/40 bg-nd-accent-primary/10 text-nd-accent-primary"
+                : "border-nd-border-subtle bg-nd-surface-secondary text-nd-text-muted hover:border-nd-accent-primary/20 hover:text-nd-text-primary"
             }`}
           >
             {TYPE_ICONS[p.type]}

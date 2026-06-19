@@ -498,15 +498,15 @@ export function CliMakerView() {
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-transparent">
       <header className="mb-4 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-accent-primary/20 bg-accent-primary/10">
-            <TerminalSquare className="h-5 w-5 text-accent-primary" aria-hidden="true" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-nd-accent-primary/20 bg-nd-accent-primary/10">
+            <TerminalSquare className="h-5 w-5 text-nd-accent-primary" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-text-muted">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
               CLI Maker
             </p>
-            <h2 className="text-lg font-semibold text-text-primary">Command Builder</h2>
-            <p className="text-xs text-text-muted">
+            <h2 className="text-lg font-semibold text-nd-text-primary">Command Builder</h2>
+            <p className="text-xs text-nd-text-muted">
               Build custom commands, macros, and plugin scripts.
             </p>
           </div>
@@ -517,8 +517,8 @@ export function CliMakerView() {
             <div
               className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-xs ${
                 statusIsError
-                  ? "border-accent-error/30 bg-accent-error/10 text-accent-error"
-                  : "border-accent-success/30 bg-accent-success/10 text-accent-success"
+                  ? "border-nd-accent-error/30 bg-nd-accent-error/10 text-nd-accent-error"
+                  : "border-nd-accent-success/30 bg-nd-accent-success/10 text-nd-accent-success"
               }`}
             >
               {statusIsError ? (
@@ -552,8 +552,8 @@ export function CliMakerView() {
                 onClick={() => setCategoryFilter(filter)}
                 className={`rounded-lg border px-2 py-1 text-[10px] font-semibold uppercase tracking-wider transition min-h-touch min-w-[48px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                   categoryFilter === filter
-                    ? "border-accent-primary/40 bg-accent-primary/15 text-accent-primary"
-                    : "border-border-subtle bg-surface-secondary text-text-muted hover:border-border-strong"
+                    ? "border-nd-accent-primary/40 bg-nd-accent-primary/15 text-nd-accent-primary"
+                    : "border-nd-border-subtle bg-nd-surface-secondary text-nd-text-muted hover:border-nd-border-strong"
                 }`}
               >
                 {filter}
@@ -599,19 +599,19 @@ export function CliMakerView() {
                     }}
                     className={`group relative flex items-center justify-between gap-3 rounded-xl border p-3 cursor-pointer transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-primary/40 ${
                       editingId === cmd.id
-                        ? "border-accent-primary/40 bg-accent-primary/5"
-                        : "border-border-subtle bg-surface-secondary hover:border-border-strong hover:bg-surface-tertiary"
+                        ? "border-nd-accent-primary/40 bg-nd-accent-primary/5"
+                        : "border-nd-border-subtle bg-nd-surface-secondary hover:border-nd-border-strong hover:bg-nd-surface-tertiary"
                     }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-border-subtle bg-surface-app text-accent-primary">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-app text-nd-accent-primary">
                         {CATEGORY_ICONS[cmd.category] ?? (
                           <TerminalSquare className="h-4 w-4" aria-hidden="true" />
                         )}
                       </div>
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-text-primary">/{cmd.name}</div>
-                        <div className="text-[10px] text-text-muted truncate max-w-[160px]">
+                        <div className="text-xs font-semibold text-nd-text-primary">/{cmd.name}</div>
+                        <div className="text-[10px] text-nd-text-muted truncate max-w-[160px]">
                           {cmd.description || "No description"}
                         </div>
                       </div>
@@ -628,7 +628,7 @@ export function CliMakerView() {
                         className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                         onClick={(e) => handleDeleteCommand(cmd.id, e)}
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-accent-error" aria-hidden="true" />
+                        <Trash2 className="h-3.5 w-3.5 text-nd-accent-error" aria-hidden="true" />
                       </IconButton>
                     </div>
                   </div>
@@ -642,11 +642,11 @@ export function CliMakerView() {
           <Panel eyebrow="Profile" title="Command Profile">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-text-muted" htmlFor="cli-name">
+                <label className="text-xs font-medium text-nd-text-muted" htmlFor="cli-name">
                   Command Trigger
                 </label>
                 <div className="relative flex items-center">
-                  <span className="absolute left-3.5 text-sm font-semibold text-text-muted">/</span>
+                  <span className="absolute left-3.5 text-sm font-semibold text-nd-text-muted">/</span>
                   <input
                     id="cli-name"
                     type="text"
@@ -775,7 +775,7 @@ export function CliMakerView() {
 
             {category === "chain" && (
               <div className="space-y-3">
-                <label className="text-xs font-medium text-text-muted">Step Sequences</label>
+                <label className="text-xs font-medium text-nd-text-muted">Step Sequences</label>
                 <div className="space-y-2">
                   {chainSteps.map((step, idx) => (
                     <div key={idx} className="flex items-center gap-2">
@@ -805,7 +805,7 @@ export function CliMakerView() {
                         size="sm"
                         onClick={() => setChainSteps(chainSteps.filter((_, i) => i !== idx))}
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-accent-error" aria-hidden="true" />
+                        <Trash2 className="h-3.5 w-3.5 text-nd-accent-error" aria-hidden="true" />
                       </IconButton>
                     </div>
                   ))}
@@ -846,7 +846,7 @@ export function CliMakerView() {
                   Save Command
                 </Button>
 
-                <div className="space-y-3 pt-4 border-t border-border-subtle">
+                <div className="space-y-3 pt-4 border-t border-nd-border-subtle">
                   <TextInput
                     label="Test Input Args"
                     aria-label="Test input args"
@@ -900,10 +900,10 @@ export function CliMakerView() {
                   </Button>
                 </div>
 
-                <div className="space-y-2 pt-4 border-t border-border-subtle">
+                <div className="space-y-2 pt-4 border-t border-nd-border-subtle">
                   <label
                     htmlFor="cli-import-path"
-                    className="text-[10px] font-medium uppercase tracking-wider text-text-muted"
+                    className="text-[10px] font-medium uppercase tracking-wider text-nd-text-muted"
                   >
                     Import from Lua File
                   </label>
@@ -935,15 +935,15 @@ export function CliMakerView() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Panel eyebrow="Help" title="Command Help Preview" className="h-64 flex flex-col">
-              <pre className="flex-1 overflow-auto rounded-xl bg-surface-app p-3 font-mono text-[11px] text-text-muted leading-relaxed select-text whitespace-pre">
+              <pre className="flex-1 overflow-auto rounded-xl bg-nd-surface-app p-3 font-mono text-[11px] text-nd-text-muted leading-relaxed select-text whitespace-pre">
                 {getHelpPreview()}
               </pre>
             </Panel>
 
             <Panel eyebrow="Output" title="Test Execution Output" className="h-64 flex flex-col">
               <pre
-                className={`flex-1 overflow-auto rounded-xl bg-surface-app p-3 font-mono text-[11px] leading-relaxed select-text whitespace-pre-wrap ${
-                  testError ? "text-accent-error" : "text-accent-success"
+                className={`flex-1 overflow-auto rounded-xl bg-nd-surface-app p-3 font-mono text-[11px] leading-relaxed select-text whitespace-pre-wrap ${
+                  testError ? "text-nd-accent-error" : "text-nd-accent-success"
                 }`}
               >
                 {testOutput ||

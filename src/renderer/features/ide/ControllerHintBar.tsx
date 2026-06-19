@@ -54,7 +54,7 @@ export function ControllerHintBar({ ideMode, visible }: ControllerHintBarProps) 
 
   return (
     <div
-      className="flex h-9 shrink-0 items-center gap-5 border-b border-border-subtle bg-surface-primary px-3 overflow-x-auto"
+      className="flex h-9 shrink-0 items-center gap-5 border-b border-nd-border-subtle bg-nd-surface-primary px-3 overflow-x-auto"
       role="status"
       aria-label={`Controller hints for ${ideMode} mode`}
     >

@@ -2,7 +2,7 @@
   "name": "NEURODECK Design System",
   "version": "1.0.0-blended",
   "namespace": "NEURODECKDesignSystem_1b2ea8",
-  "root": "frontend/src/design-system",
+  "root": "src/renderer/design-system",
   "tokens": {
     "canonical": "tokens/tokens.css",
     "canonicalJson": "tokens.json",
@@ -304,11 +304,11 @@
     }
   ],
   "integration": {
-    "primitivesAdapter": "frontend/src/react/components/primitives",
-    "cardsAdapter": "frontend/src/react/components/cards",
-    "shell": "frontend/src/react/components/layout/NeurodeckShell.tsx",
-    "tokenInjector": "frontend/src/react/theme/cssVariableInjector.ts",
-    "barrelExport": "frontend/src/design-system/index.ts"
+    "primitivesAdapter": "src/renderer/components/primitives",
+    "cardsAdapter": "src/renderer/components/cards",
+    "shell": "src/renderer/components/layout/NeurodeckShell.tsx",
+    "tokenInjector": "src/renderer/theme/cssVariableInjector.ts",
+    "barrelExport": "src/renderer/design-system/index.ts"
   },
   "status": "integrated"
 }

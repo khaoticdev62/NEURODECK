@@ -56,6 +56,7 @@ function injectDsTokens(root: HTMLElement, tokens: ThemeTokenSet) {
     "--nd-surface-input": c.surface.input,
     "--nd-surface-overlay": c.surface.overlay,
     "--nd-surface-glass": c.surface.glass,
+    "--nd-surface-modal": c.surface.modal,
     "--nd-border-subtle": c.border.subtle,
     "--nd-border-default": c.border.default,
     "--nd-border-strong": c.border.strong,
@@ -149,7 +150,6 @@ export function injectThemeVariables(tokens: ThemeTokenSet) {
     setVars(root, {
       "--nd-bg": tokens.color.surface.app,
       "--nd-surface": tokens.color.surface.base,
-      "--nd-surface-raised": tokens.color.surface.raised,
       "--nd-surface-sunken": tokens.color.surface.sunken,
       "--nd-surface-overlay": tokens.color.surface.overlay,
       "--nd-surface-modal": tokens.color.surface.modal,

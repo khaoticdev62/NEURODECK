@@ -76,7 +76,7 @@ function scanFileForTokenUsage(filePath: string) {
 
 function run() {
   try {
-    const reactDir = path.resolve(__dirname, "../../src/renderer/react");
+    const reactDir = path.resolve(__dirname, "../../src/renderer");
     const cssFile = path.resolve(__dirname, "../../src/renderer/index.css");
 
     let totalWarnings = 0;
@@ -94,7 +94,7 @@ function run() {
           if (file !== "node_modules" && file !== "__tests__") {
             walk(fullPath);
           }
-        } else if (file.endsWith(".tsx")) {
+        } else if (file.endsWith(".tsx") || file.endsWith(".ts")) {
           totalWarnings += scanFileForTokenUsage(fullPath);
         }
       }

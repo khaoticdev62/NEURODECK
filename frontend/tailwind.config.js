@@ -28,10 +28,12 @@ export default {
         // NEURODECK design tokens — all mapped to runtime CSS custom properties
         nd: {
           // ── Semantic surfaces ──────────────────────────────────────────
-          'surface-base':    withOpacity('var(--nd-surface-base, var(--nd-surface, #11161C))'),
-          'surface-raised':  withOpacity('var(--nd-surface-raised)'),
-          'surface-glass':   withOpacity('var(--nd-surface-glass, rgba(17,22,28,0.72))'),
-          'surface-overlay': withOpacity('var(--nd-surface-overlay, rgba(10,13,16,0.85))'),
+          // Deprecated aliases — retained for back-compat but now resolve through the
+          // canonical DS surface namespace so static CSS and runtime injection agree.
+          'surface-base':    withOpacity('var(--nd-surface-primary)'),
+          'surface-raised':  withOpacity('var(--nd-surface-secondary)'),
+          'surface-glass':   withOpacity('var(--nd-surface-glass, rgba(17, 22, 28, 0.82))'),
+          'surface-overlay': withOpacity('var(--nd-surface-overlay, rgba(5, 7, 10, 0.88))'),
           'surface-modal':   withOpacity('var(--nd-surface-modal, #0F1419)'),
           'surface-danger':  withOpacity('var(--nd-surface-danger, #FF5A6A)'),
           'surface-success': 'var(--nd-surface-success)',
@@ -55,9 +57,9 @@ export default {
 
           // ── Semantic text ──────────────────────────────────────────────
           'text-primary':   withOpacity('var(--nd-text-primary, var(--nd-text, #E8F4FF))'),
-          'text-secondary': withOpacity('var(--nd-text-secondary, #B8CCE0)'),
+          'text-secondary': withOpacity('var(--nd-text-secondary, #b9cad8)'),
           'text-muted':     withOpacity('var(--nd-text-muted)'),
-          'text-disabled':  withOpacity('var(--nd-text-disabled, rgba(255,255,255,0.05))'),
+          'text-disabled':  withOpacity('var(--nd-text-disabled, rgba(141, 161, 179, 0.45))'),
 
           // Legacy text aliases
           text:             withOpacity('var(--nd-text)'),
@@ -96,7 +98,7 @@ export default {
 
           // ── Semantic borders ───────────────────────────────────────────
           'border-subtle':  withOpacity('var(--nd-border-subtle)'),
-          'border-strong':  withOpacity('var(--nd-border-strong, rgba(141,161,179,0.28))'),
+          'border-strong':  withOpacity('var(--nd-border-strong, rgba(232, 244, 255, 0.42))'),
           'border-focus':   withOpacity('var(--nd-border-focus)'),
 
           // Legacy border aliases
@@ -109,35 +111,6 @@ export default {
           'surface-l3': withOpacity('var(--surface-l3, rgba(20,32,42,0.72))'),
         },
 
-        // NEURODECK Design Tokens v1.0 — semantic aliases for use in JSX
-        // e.g. className="bg-surface-primary text-text-primary border-border-subtle"
-        surface: {
-          app:       withOpacity('var(--nd-surface-app)'),
-          primary:   withOpacity('var(--nd-surface-primary)'),
-          secondary: withOpacity('var(--nd-surface-secondary)'),
-          tertiary:  withOpacity('var(--nd-surface-tertiary)'),
-          overlay:   withOpacity('var(--nd-surface-overlay)'),
-          glass:     withOpacity('var(--nd-surface-glass)'),
-        },
-        border: {
-          subtle:  withOpacity('var(--nd-border-subtle)'),
-          DEFAULT: withOpacity('var(--nd-border-default)'),
-          strong:  withOpacity('var(--nd-border-strong)'),
-        },
-        'text-ds': {
-          primary:  withOpacity('var(--nd-text-primary)'),
-          secondary:withOpacity('var(--nd-text-secondary)'),
-          muted:    withOpacity('var(--nd-text-muted)'),
-          disabled: withOpacity('var(--nd-text-disabled)'),
-        },
-        accent: {
-          primary: withOpacity('var(--nd-accent-primary)'),
-          info:    withOpacity('var(--nd-accent-info)'),
-          success: withOpacity('var(--nd-accent-success)'),
-          warning: withOpacity('var(--nd-accent-warning)'),
-          error:   withOpacity('var(--nd-accent-error)'),
-          agent:   withOpacity('var(--nd-accent-agent)'),
-        },
       },
 
       backgroundImage: {

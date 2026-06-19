@@ -22,6 +22,7 @@ export interface DesignTokenInput {
     surface: {
       base: string;
       raised: string;
+      card?: string;
       glass: string;
       overlay: string;
       modal: string;
@@ -106,6 +107,7 @@ export interface SemanticColorTokens {
   surface: {
     base: string;
     raised: string;
+    tertiary: string;
     glass: string;
     overlay: string;
     modal: string;
@@ -292,6 +294,7 @@ export function resolveSemanticTokens(
       surface: {
         base: c.surface.base,
         raised: c.surface.raised,
+        tertiary: c.surface.card ?? c.surface.modal,
         glass: c.surface.glass,
         overlay: c.surface.overlay,
         modal: c.surface.modal,
@@ -394,12 +397,18 @@ export function resolveSemanticTokens(
  */
 export function semanticTokensToCssVars(tokens: SemanticTokenSet): Record<string, string> {
   return {
-    "--nd-surface-base": tokens.color.surface.base,
-    "--nd-surface-raised": tokens.color.surface.raised,
+    // Canonical DS surface namespace
+    "--nd-surface-primary": tokens.color.surface.base,
+    "--nd-surface-secondary": tokens.color.surface.raised,
+    "--nd-surface-tertiary": tokens.color.surface.tertiary,
     "--nd-surface-glass": tokens.color.surface.glass,
     "--nd-surface-overlay": tokens.color.surface.overlay,
     "--nd-surface-modal": tokens.color.surface.modal,
     "--nd-surface-danger": tokens.color.surface.danger,
+
+    // Deprecated JS aliases, kept for back-compat
+    "--nd-surface-base": tokens.color.surface.base,
+    "--nd-surface-raised": tokens.color.surface.raised,
 
     "--nd-border-subtle": tokens.color.border.subtle,
     "--nd-border-strong": tokens.color.border.strong,
