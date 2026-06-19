@@ -40,6 +40,21 @@ export interface LspServerInfo {
   status: string;
 }
 
+export interface LspTextEdit {
+  range: {
+    start: { line: number; character: number };
+    end: { line: number; character: number };
+  };
+  new_text: string;
+}
+
+export interface LspCodeAction {
+  title: string;
+  kind: string | null;
+  is_preferred: boolean;
+  edits: LspTextEdit[];
+}
+
 export interface KnownLspServer {
   language: string;
   label: string;
@@ -121,6 +136,22 @@ export const lsp = {
     character: number
   ): Promise<LspLocation[]> {
     return bridgeInvoke<LspLocation[]>("lsp_get_definitions", { language, uri, line, character });
+  },
+
+  async getCodeActions(
+    language: string,
+    uri: string,
+    line: number,
+    character: number,
+    diagnostics: LspDiagnostic[]
+  ): Promise<LspCodeAction[]> {
+    return bridgeInvoke<LspCodeAction[]>("lsp_get_code_actions", {
+      language,
+      uri,
+      line,
+      character,
+      diagnostics,
+    });
   },
 
   onDiagnostics(
