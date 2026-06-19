@@ -32,6 +32,82 @@ let bridgePort = DEFAULT_PORT;
 let browserView = null;
 let browserBounds = { x: 0, y: 0, width: 1280, height: 600 };
 
+// Tracks the sidecar PID across process lifetimes (separate from the `sidecar`
+// in-memory handle, which is lost whenever Electron exits). `killSidecar()`
+// below only runs on a graceful quit (wired to 'before-quit') — a forced kill
+// of the Electron process itself (Task Manager, a crashed test run, an
+// external watcher restarting dev mode) skips that event entirely on Windows,
+// orphaning the detached sidecar bound to its port forever. Sweeping this
+// lockfile before every spawn bounds the leak to "at most one stray process
+// until the next launch" instead of accumulating indefinitely — this is how
+// 91 orphaned sidecars piled up on http://127.0.0.1:9477-9567 in one day.
+const SIDECAR_LOCKFILE = path.join(app.getPath('userData'), 'sidecar.lock.json');
+
+function isPidAlive(pid) {
+  try {
+    process.kill(pid, 0); // signal 0: liveness check only, no actual signal sent
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Resolves once the kill command itself has exited — but on Windows that does
+// NOT guarantee the OS has released the port the process held. Verified live:
+// without the extra wait loop below, findFreePort() ran immediately after and
+// still saw the just-killed PID's port as taken, landing one port higher every
+// single crash/restart cycle instead of reclaiming the default port.
+function forceKillPid(pid) {
+  return new Promise((resolve) => {
+    if (process.platform === 'win32') {
+      const proc = spawn('taskkill', ['/F', '/PID', String(pid)], { stdio: 'ignore', windowsHide: true });
+      proc.on('exit', () => resolve());
+      proc.on('error', () => resolve());
+    } else {
+      try { process.kill(pid, 'SIGKILL'); } catch {}
+      resolve();
+    }
+  });
+}
+
+function waitForPortRelease(port, timeoutMs = 1500) {
+  return new Promise((resolve) => {
+    const deadline = Date.now() + timeoutMs;
+    const check = () => {
+      const server = net.createServer();
+      server.once('error', () => {
+        if (Date.now() > deadline) return resolve();
+        setTimeout(check, 100);
+      });
+      server.once('listening', () => server.close(() => resolve()));
+      server.listen(port, '127.0.0.1');
+    };
+    check();
+  });
+}
+
+async function sweepStaleSidecar() {
+  let entry;
+  try {
+    entry = JSON.parse(fs.readFileSync(SIDECAR_LOCKFILE, 'utf8'));
+  } catch {
+    return; // no lockfile yet, or unreadable — nothing to sweep
+  }
+  if (entry && typeof entry.pid === 'number' && isPidAlive(entry.pid)) {
+    console.log(`[sidecar] Sweeping stale sidecar from a previous session: PID ${entry.pid} (port ${entry.port})`);
+    await forceKillPid(entry.pid);
+    if (typeof entry.port === 'number') await waitForPortRelease(entry.port);
+  }
+}
+
+function recordSidecarPid(pid, port) {
+  try {
+    fs.writeFileSync(SIDECAR_LOCKFILE, JSON.stringify({ pid, port, recordedAt: Date.now() }));
+  } catch (err) {
+    console.warn('[sidecar] Could not write lockfile:', err.message);
+  }
+}
+
 // Hardening flags applied to the renderer webPreferences. Kept in one place
 // so the security report can return the same values that are actually enforced.
 const RENDERER_SECURITY_FLAGS = Object.freeze({
@@ -402,6 +478,7 @@ Build it first with: cd src-tauri && cargo build --release`);
   }
 
   sidecar = spawn(bin, ['--bridge'], { env, cwd, stdio: ['pipe', 'pipe', 'pipe'] });
+  if (sidecar.pid) recordSidecarPid(sidecar.pid, port);
 
   sidecar.stdout.on('data', (data) => {
     const line = data.toString().trimEnd();
@@ -452,6 +529,7 @@ function spawnSidecarMsys(bin, port, cwd, env) {
     if (/^\d+$/.test(text)) {
       sidecarPid = parseInt(text, 10);
       console.log(`[sidecar] MSYS2 mode — PID ${sidecarPid}`);
+      recordSidecarPid(sidecarPid, port);
     }
   });
 
@@ -731,6 +809,7 @@ app.whenReady().then(async () => {
     }
   });
 
+  await sweepStaleSidecar();
   const port = await findFreePort();
   bridgePort = port;
   console.log(`[electron] Bridge port: ${port}`);
