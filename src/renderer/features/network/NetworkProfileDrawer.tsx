@@ -5,14 +5,8 @@ import { ConfirmDialog } from "../../components/primitives/ConfirmDialog";
 import { FocusTrapContainer } from "../../components/primitives/FocusTrapContainer";
 import { TextInput } from "../../components/primitives/TextInput";
 import { Toggle } from "../../components/primitives/Toggle";
-import { neurodeckApi } from "../../services/bridgeAdapter";
 
 type Protocol = "wireguard" | "openvpn";
-
-type NetworkApi = {
-  saveProfile?: (profile: ProfilePayload) => Promise<unknown>;
-  testProfile?: (id: string) => Promise<{ ok: boolean; message?: string }>;
-};
 
 interface ProfilePayload {
   id?: string;
@@ -27,16 +21,14 @@ interface NetworkProfileDrawerProps {
   open: boolean;
   editProfile?: ProfilePayload | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSave: (profile: ProfilePayload) => void | Promise<void>;
 }
-
-const netApi = () => (neurodeckApi as unknown as { network?: NetworkApi }).network;
 
 export function NetworkProfileDrawer({
   open,
   editProfile,
   onClose,
-  onSaved,
+  onSave,
 }: NetworkProfileDrawerProps) {
   const [name, setName] = useState(editProfile?.name ?? "");
   const [protocol, setProtocol] = useState<Protocol>(editProfile?.protocol ?? "wireguard");
@@ -45,8 +37,6 @@ export function NetworkProfileDrawer({
   const [showKey, setShowKey] = useState(false);
   const [autoConnect, setAutoConnect] = useState(editProfile?.autoConnect ?? false);
   const [saving, setSaving] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [showDiscard, setShowDiscard] = useState(false);
 
   const isDirty =
@@ -66,7 +56,7 @@ export function NetworkProfileDrawer({
     if (!name.trim() || !endpoint.trim()) return;
     setSaving(true);
     try {
-      await netApi()?.saveProfile?.({
+      await onSave({
         id: editProfile?.id,
         name: name.trim(),
         protocol,
@@ -74,28 +64,11 @@ export function NetworkProfileDrawer({
         privateKey,
         autoConnect,
       });
-      onSaved();
       onClose();
-    } catch {
-      // toast handles
     } finally {
       setSaving(false);
     }
-  }, [name, endpoint, privateKey, protocol, autoConnect, editProfile, onSaved, onClose]);
-
-  const handleTest = useCallback(async () => {
-    if (!endpoint.trim()) return;
-    setTesting(true);
-    setTestResult(null);
-    try {
-      const res = await netApi()?.testProfile?.(editProfile?.id ?? "new");
-      setTestResult(res ? { ok: res.ok, message: res.message ?? (res.ok ? "Connected" : "Failed") } : { ok: false, message: "No response" });
-    } catch (e) {
-      setTestResult({ ok: false, message: String(e) });
-    } finally {
-      setTesting(false);
-    }
-  }, [endpoint, editProfile]);
+  }, [name, endpoint, privateKey, protocol, autoConnect, editProfile, onSave, onClose]);
 
   if (!open) return null;
 
@@ -207,20 +180,6 @@ export function NetworkProfileDrawer({
               label="Auto-connect on launch"
             />
 
-            {testResult && (
-              <div
-                role="status"
-                aria-live="polite"
-                className={`rounded-xl border p-3 text-sm ${
-                  testResult.ok
-                    ? "border-nd-status-success/30 bg-nd-status-success/5 text-nd-status-success"
-                    : "border-nd-status-error/30 bg-nd-status-error/5 text-nd-status-error"
-                }`}
-              >
-                {testResult.ok ? `✓ ${testResult.message}` : `✗ ${testResult.message}`}
-              </div>
-            )}
-
             <div className="flex items-start gap-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-3 text-xs text-nd-text-muted">
               <Shield
                 className="mt-0.5 h-4 w-4 flex-shrink-0 text-nd-accent-primary"
@@ -234,16 +193,7 @@ export function NetworkProfileDrawer({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between gap-2 border-t border-nd-border-subtle p-4">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => void handleTest()}
-              loading={testing}
-              disabled={!endpoint.trim()}
-            >
-              Test Connection
-            </Button>
+          <div className="flex items-center justify-end gap-2 border-t border-nd-border-subtle p-4">
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" onClick={handleClose}>
                 Cancel

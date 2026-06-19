@@ -47,6 +47,7 @@ import { cliMaker } from "./bridge/domains/cliMaker";
 import { academy } from "./bridge/domains/academy";
 import { lsp } from "./bridge/domains/lsp";
 import { mcp } from "./bridge/domains/mcp";
+import { search } from "./bridge/domains/search";
 
 import type { ToolStatus, StatusBarState } from "../types/neurodeck";
 
@@ -149,6 +150,10 @@ export type {
   KnownLspServer,
 } from "./bridge/domains/lsp";
 export type { McpStatus } from "./bridge/domains/mcp";
+export type {
+  UniversalSearchResult,
+  UniversalSearchResults,
+} from "./bridge/domains/search";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Standalone API helpers
@@ -226,4 +231,5 @@ export const neurodeckApi = {
   dependency,
   academy,
   mcp,
+  search,
 };

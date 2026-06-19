@@ -1,13 +1,71 @@
-import { lazy, Suspense } from "react";
-import { Command, Sparkles, X } from "lucide-react";
+import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { CheckCircle2, Command, Sparkles, X, AlertCircle, Info } from "lucide-react";
 import { FocusTrapContainer } from "../components/primitives/FocusTrapContainer";
 import { GlobalSearch } from "../components/search/GlobalSearch";
 import { ViewLoader } from "./ViewLoader";
+import { listenBridge } from "../services/bridgeAdapter";
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from "../types/neurodeck";
 
 const SettingsView = lazy(() =>
   import("../features/settings/SettingsView").then((m) => ({ default: m.default }))
 );
+
+interface BridgeNotification {
+  id: string;
+  message: string;
+  type: "success" | "error" | "info";
+  timestamp: number;
+}
+
+const NOTIFICATION_EVENTS: Array<{ event: string; message: (data: unknown) => string; type: BridgeNotification["type"] }> = [
+  { event: "transfer_completed", message: () => "File transfer completed", type: "success" },
+  { event: "transfer_failed", message: (data) => `Transfer failed${data && typeof data === "object" && "transfer_id" in data ? `: ${(data as { transfer_id: string }).transfer_id}` : ""}`, type: "error" },
+  { event: "plugin_reload_done", message: () => "Plugins reloaded", type: "success" },
+  { event: "plugin_reload_error", message: (data) => `Plugin reload failed${data && typeof data === "object" && "error" in data ? `: ${(data as { error: string }).error}` : ""}`, type: "error" },
+  { event: "workflow_started", message: (data) => `Workflow started${data && typeof data === "object" && "name" in data ? `: ${(data as { name: string }).name}` : ""}`, type: "info" },
+  { event: "ollama_pull_done", message: (data) => `Model downloaded${data && typeof data === "object" && "model" in data ? `: ${(data as { model: string }).model}` : ""}`, type: "success" },
+  { event: "hf_download_done", message: () => "HuggingFace download completed", type: "success" },
+  { event: "hf_download_error", message: () => "HuggingFace download failed", type: "error" },
+  { event: "command_done", message: () => "Command completed", type: "success" },
+  { event: "persona_changed", message: (data) => `Persona changed${typeof data === "string" ? ` to ${data}` : ""}`, type: "info" },
+];
+
+const MAX_NOTIFICATIONS = 20;
+
+function useBridgeNotifications() {
+  const [notifications, setNotifications] = useState<BridgeNotification[]>([]);
+
+  const dismiss = useCallback((id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  }, []);
+
+  const clearAll = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+  useEffect(() => {
+    const unsubs: Array<() => void> = [];
+    for (const { event, message, type } of NOTIFICATION_EVENTS) {
+      const unsub = listenBridge(event, (data: unknown) => {
+        setNotifications((prev) => {
+          const next: BridgeNotification = {
+            id: `${event}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            message: message(data),
+            type,
+            timestamp: Date.now(),
+          };
+          return [next, ...prev].slice(0, MAX_NOTIFICATIONS);
+        });
+      });
+      if (unsub) unsubs.push(unsub);
+    }
+    return () => {
+      for (const unsub of unsubs) unsub();
+    };
+  }, []);
+
+  return { notifications, dismiss, clearAll };
+}
 
 export type AppOverlaysProps = {
   state: NeuroDeckState;
@@ -58,6 +116,8 @@ export function AppOverlays({
   recentViews,
   quickSwitcherFocusIdx,
 }: AppOverlaysProps) {
+  const { notifications, dismiss, clearAll } = useBridgeNotifications();
+  const notifCount = notifications.length;
   return (
     <>
       {/* Settings overlay */}
@@ -128,18 +188,68 @@ export function AppOverlays({
             >
               <div className="flex items-center justify-between">
                 <h2 id="notif-dialog-title" className="text-sm font-semibold text-nd-text">
-                  Notifications
+                  Notifications {notifCount > 0 && <span className="ml-1 text-xs text-nd-text-muted">({notifCount})</span>}
                 </h2>
-                <button
-                  id="close-notif-x"
-                  type="button"
-                  onClick={() => setNotificationsOpen(false)}
-                  className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-2xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
-                >
-                  Close
-                </button>
+                <div className="flex items-center gap-2">
+                  {notifCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={clearAll}
+                      className="text-2xs text-nd-text-muted hover:text-nd-text"
+                    >
+                      Clear all
+                    </button>
+                  )}
+                  <button
+                    id="close-notif-x"
+                    type="button"
+                    onClick={() => setNotificationsOpen(false)}
+                    className="rounded-lg border border-nd-text-muted/15 px-2 py-1 text-2xs text-nd-text-muted hover:text-nd-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-              <p className="mt-3 text-sm text-nd-text-muted">No notifications.</p>
+              {notifications.length === 0 ? (
+                <p className="mt-3 text-sm text-nd-text-muted">No notifications.</p>
+              ) : (
+                <ul className="mt-3 max-h-[60vh] space-y-2 overflow-y-auto">
+                  {notifications.map((n) => {
+                    const Icon = n.type === "success" ? CheckCircle2 : n.type === "error" ? AlertCircle : Info;
+                    return (
+                      <li
+                        key={n.id}
+                        className="flex items-start gap-2 rounded-lg border border-nd-border-subtle bg-nd-surface-tertiary/30 p-2"
+                      >
+                        <Icon
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            n.type === "success"
+                              ? "text-nd-accent-success"
+                              : n.type === "error"
+                                ? "text-nd-accent-danger"
+                                : "text-nd-accent"
+                          }`}
+                          aria-hidden
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-nd-text">{n.message}</p>
+                          <p className="text-2xs text-nd-text-muted">
+                            {new Date(n.timestamp).toLocaleTimeString()}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => dismiss(n.id)}
+                          aria-label="Dismiss notification"
+                          className="rounded p-1 text-nd-text-muted hover:text-nd-text"
+                        >
+                          <X className="h-3 w-3" aria-hidden />
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </FocusTrapContainer>
         )}

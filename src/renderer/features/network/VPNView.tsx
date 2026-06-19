@@ -11,6 +11,23 @@ import { TabGroup, TabList, Tab, TabPanel } from "../../components/primitives/Ta
 import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
 import type { NeuroDeckState } from "../../types/neurodeck";
 
+const PROFILE_STORAGE_KEY = "nd:vpn-profiles";
+
+function loadStoredProfiles(): VPNProfile[] {
+  try {
+    const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as VPNProfile[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredProfiles(profiles: VPNProfile[]) {
+  localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(profiles));
+}
+
 interface VPNProfile {
   id: string;
   name: string;
@@ -43,21 +60,30 @@ export function VPNView({ state: _state }: { state: NeuroDeckState }) {
   const [toggling, setToggling] = useState<string | null>(null);
   const [profileDrawerOpen, setProfileDrawerOpen] = useState(false);
 
+  const applyProfiles = useCallback((next: VPNProfile[]) => {
+    setProfiles(next);
+    saveStoredProfiles(next);
+  }, []);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const result = await netApi()?.getVPNProfiles?.();
-      setProfiles(Array.isArray(result) ? (result as VPNProfile[]) : MOCK_PROFILES);
+      if (Array.isArray(result)) {
+        applyProfiles(result as VPNProfile[]);
+      } else {
+        applyProfiles(loadStoredProfiles());
+      }
       const ts = await netApi()?.getTunnelStatus?.();
       setTunnel((ts as TunnelStatus) ?? null);
     } catch {
-      setError("Unable to reach network backend.");
-      setProfiles(MOCK_PROFILES);
+      setError("Unable to reach network backend. Using local profiles.");
+      applyProfiles(loadStoredProfiles());
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [applyProfiles]);
 
   useEffect(() => {
     void loadData();
@@ -257,25 +283,22 @@ export function VPNView({ state: _state }: { state: NeuroDeckState }) {
       <NetworkProfileDrawer
         open={profileDrawerOpen}
         onClose={() => setProfileDrawerOpen(false)}
-        onSaved={() => void loadData()}
+        onSave={(profile) => {
+          const stored = loadStoredProfiles();
+          const index = stored.findIndex((p) => p.id === profile.id);
+          const next: VPNProfile = {
+            id: profile.id ?? crypto.randomUUID(),
+            name: profile.name,
+            type: profile.protocol,
+            endpoint: profile.endpoint,
+            status: "disconnected",
+          };
+          const updated = index >= 0 ? stored.map((p, i) => (i === index ? next : p)) : [...stored, next];
+          applyProfiles(updated);
+        }}
       />
     </Panel>
   );
 }
 
-const MOCK_PROFILES: VPNProfile[] = [
-  {
-    id: "wg-home",
-    name: "Home WireGuard",
-    type: "wireguard",
-    endpoint: "home.example.com:51820",
-    status: "disconnected",
-  },
-  {
-    id: "ovpn-work",
-    name: "Work OpenVPN",
-    type: "openvpn",
-    endpoint: "vpn.work.internal:1194",
-    status: "disconnected",
-  },
-];
+

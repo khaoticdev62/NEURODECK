@@ -3,6 +3,7 @@ import {
   Bot,
   Brain,
   FileText,
+  Folder,
   MessageSquare,
   Puzzle,
   Search,
@@ -20,7 +21,7 @@ import type { Dispatch } from "react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-type SearchScope = "all" | "sessions" | "memory" | "commands" | "views";
+type SearchScope = "all" | "sessions" | "memory" | "projects" | "commands" | "views";
 
 interface SearchResultItem {
   id: string;
@@ -52,6 +53,7 @@ const SCOPE_TABS: { id: SearchScope; label: string }[] = [
   { id: "all", label: "All" },
   { id: "sessions", label: "Sessions" },
   { id: "memory", label: "Memory" },
+  { id: "projects", label: "Projects" },
   { id: "commands", label: "Commands" },
   { id: "views", label: "Views" },
 ];
@@ -81,6 +83,7 @@ export function GlobalSearch({ open, onClose, dispatch }: GlobalSearchProps) {
   const [loading, setLoading] = useState(false);
   const [sessionResults, setSessionResults] = useState<SearchResultItem[]>([]);
   const [memoryResults, setMemoryResults] = useState<SearchResultItem[]>([]);
+  const [projectResults, setProjectResults] = useState<SearchResultItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -131,64 +134,60 @@ export function GlobalSearch({ open, onClose, dispatch }: GlobalSearchProps) {
     [query, onClose]
   );
 
-  // Async IPC search
+  // Async IPC search via universal_search
   useEffect(() => {
     if (query.length < 3) {
       setSessionResults([]);
       setMemoryResults([]);
+      setProjectResults([]);
+      setProjectResults([]);
       return;
     }
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const [sessData, memData] = await Promise.allSettled([
-          neurodeckApi.sessions.listMeta(),
-          neurodeckApi.memory.list(50),
-        ]);
+        const sourceFilter =
+          scope === "sessions" ? "messages" : scope === "memory" ? "memory" : scope === "projects" ? "projects" : undefined;
+        const data = await neurodeckApi.search.universalSearch(query, {
+          limit: 10,
+          sourceFilter,
+        });
 
-        if (sessData.status === "fulfilled" && Array.isArray(sessData.value)) {
-          const q = query.toLowerCase();
-          setSessionResults(
-            sessData.value
-              .filter((s: { id?: string; title?: string; last_active?: string }) =>
-                (s.title ?? s.id ?? "").toLowerCase().includes(q)
-              )
-              .slice(0, 4)
-              .map((s: { id?: string; title?: string; last_active?: string }) => ({
-                id: `sess-${s.id ?? s.title}`,
-                type: "session" as const,
-                title: s.title ?? s.id ?? "Session",
-                meta: s.last_active ?? undefined,
-                icon: MessageSquare,
-                onSelect: () => {
-                  navigateTo("sessions");
-                },
-              }))
-          );
-        }
-
-        if (memData.status === "fulfilled" && memData.value?.records) {
-          const q = query.toLowerCase();
-          setMemoryResults(
-            (memData.value.records as Array<{ id: string; title: string; body: string }>)
-              .filter(
-                (r) =>
-                  r.title.toLowerCase().includes(q) || r.body.toLowerCase().includes(q)
-              )
-              .slice(0, 4)
-              .map((r) => ({
-                id: `mem-${r.id}`,
-                type: "memory" as const,
-                title: r.title,
-                description: r.body.slice(0, 80),
-                icon: Brain,
-                onSelect: () => {
-                  navigateTo("memory");
-                },
-              }))
-          );
-        }
+        setSessionResults(
+          data.messages.slice(0, 5).map((r) => ({
+            id: `sess-${r.id}`,
+            type: "session" as const,
+            title: r.title,
+            description: r.snippet,
+            icon: MessageSquare,
+            onSelect: () => navigateTo("sessions"),
+          }))
+        );
+        setMemoryResults(
+          data.memory.slice(0, 5).map((r) => ({
+            id: `mem-${r.id}`,
+            type: "memory" as const,
+            title: r.title,
+            description: r.snippet,
+            icon: Brain,
+            onSelect: () => navigateTo("memory"),
+          }))
+        );
+        setProjectResults(
+          data.projects.slice(0, 5).map((r) => ({
+            id: `proj-${r.id}`,
+            type: "session" as const,
+            title: r.title,
+            description: r.snippet,
+            icon: Folder,
+            onSelect: () => navigateTo("project"),
+          }))
+        );
+      } catch {
+        setSessionResults([]);
+        setMemoryResults([]);
+        setProjectResults([]);
       } finally {
         setLoading(false);
       }
@@ -196,7 +195,7 @@ export function GlobalSearch({ open, onClose, dispatch }: GlobalSearchProps) {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, navigateTo]);
+  }, [query, scope, navigateTo]);
 
   // Build grouped results based on scope
   const allGroups = useMemo(() => {
@@ -206,12 +205,14 @@ export function GlobalSearch({ open, onClose, dispatch }: GlobalSearchProps) {
       groups.push({ label: "Sessions", type: "session", items: sessionResults });
     if ((scope === "all" || scope === "memory") && memoryResults.length)
       groups.push({ label: "Memory", type: "memory", items: memoryResults });
+    if ((scope === "all" || scope === "projects") && projectResults.length)
+      groups.push({ label: "Projects", type: "session", items: projectResults });
     if ((scope === "all" || scope === "commands") && commandResults.length)
       groups.push({ label: "Commands", type: "command", items: commandResults });
     if ((scope === "all" || scope === "views") && viewResults.length)
       groups.push({ label: "Views", type: "view", items: viewResults });
     return groups;
-  }, [scope, sessionResults, memoryResults, commandResults, viewResults]);
+  }, [scope, sessionResults, memoryResults, projectResults, commandResults, viewResults]);
 
   const flatItems = useMemo(() => allGroups.flatMap((g) => g.items), [allGroups]);
 
