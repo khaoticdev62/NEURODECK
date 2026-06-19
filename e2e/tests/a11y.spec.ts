@@ -1,100 +1,42 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { AppPage } from "../pages/AppPage";
+import {
+  STEAM_DECK_SCREENS,
+  STEAM_DECK_VIEWPORT,
+  openSteamDeckScreen,
+} from "../support/steam-deck-audit";
 
-test.beforeEach(async ({ page }) => {
-  const app = new AppPage(page);
-  await app.mockTauriBackend();
-  await app.goto();
-});
+test.describe("Steam Deck accessibility — WCAG 2.1 AA", () => {
+  test.use({ viewport: STEAM_DECK_VIEWPORT });
 
-const viewTabs = [
-  { id: "chat", name: "Chat" },
-  { id: "canvas", name: "Canvas" },
-  { id: "terminal", name: "Terminal" },
-  { id: "ssh", name: "SSH" },
-  { id: "tunnel", name: "Tunnel" },
-  { id: "share", name: "Share" },
-  { id: "browser", name: "Browser" },
-  { id: "agent", name: "Agent" },
-  { id: "memory", name: "Memory" },
-  { id: "prompt-lab", name: "Prompt Lab" },
-  { id: "remote", name: "Remote" },
-  { id: "docs", name: "Docs" },
-];
+  for (const screen of STEAM_DECK_SCREENS) {
+    test(`a11y: ${screen.id}`, async ({ page }, testInfo) => {
+      const app = new AppPage(page);
+      await app.mockTauriBackend();
+      await app.goto();
+      await openSteamDeckScreen(app, screen);
+      await app.stabilizeForScreenshot();
 
-for (const view of viewTabs) {
-  test(`a11y audit on ${view.name} view`, async ({ page }) => {
-    const app = new AppPage(page);
-    await app.navigateTo(view.id);
+      const results = await new AxeBuilder({ page })
+        .include(screen.root)
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .analyze();
 
-    const axe = new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-      .disableRules(["color-contrast"]);
+      await testInfo.attach(`axe-${screen.id}.json`, {
+        body: Buffer.from(JSON.stringify(results.violations, null, 2)),
+        contentType: "application/json",
+      });
 
-    const results = await axe.analyze();
-
-    if (results.violations.length > 0) {
-      console.log(`\n[${view.name}] A11y violations: ${results.violations.length}`);
-      for (const v of results.violations) {
-        console.log(`  - ${v.id}: ${v.description} (${v.nodes.length} nodes)`);
-        for (const node of v.nodes.slice(0, 3)) {
-          console.log(`      ${node.target.join(", ")}`);
-        }
-      }
-    }
-
-    const hardFail = results.violations.filter(
-      (v) => (v.impact === "critical" || v.impact === "serious") && v.id !== "color-contrast"
-    );
-    expect(hardFail).toEqual([]);
-  });
-}
-
-test("a11y audit on settings modal", async ({ page }) => {
-  const app = new AppPage(page);
-  await app.openSettings();
-
-  const axe = new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-    .disableRules(["color-contrast"]);
-
-  const results = await axe.analyze();
-
-  const hardFail = results.violations.filter(
-    (v) => (v.impact === "critical" || v.impact === "serious") && v.id !== "color-contrast"
-  );
-  expect(hardFail).toEqual([]);
-});
-
-test("a11y audit on command palette", async ({ page }) => {
-  const app = new AppPage(page);
-  await app.openCommandPalette();
-
-  const axe = new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-    .disableRules(["color-contrast"]);
-
-  const results = await axe.analyze();
-
-  const hardFail = results.violations.filter(
-    (v) => (v.impact === "critical" || v.impact === "serious") && v.id !== "color-contrast"
-  );
-  expect(hardFail).toEqual([]);
-});
-
-test("a11y audit on shortcuts overlay", async ({ page }) => {
-  const app = new AppPage(page);
-  await app.openShortcuts();
-
-  const axe = new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-    .disableRules(["color-contrast"]);
-
-  const results = await axe.analyze();
-
-  const hardFail = results.violations.filter(
-    (v) => (v.impact === "critical" || v.impact === "serious") && v.id !== "color-contrast"
-  );
-  expect(hardFail).toEqual([]);
+      const blockers = results.violations.filter(
+        (violation) => violation.impact === "critical" || violation.impact === "serious",
+      );
+      expect(
+        blockers,
+        blockers.map((violation) =>
+          `${violation.id}: ${violation.help} — ${violation.nodes.map((node) => node.target.join(" ")).join(", ")}`
+        ).join("\n"),
+      ).toEqual([]);
+    });
+  }
 });

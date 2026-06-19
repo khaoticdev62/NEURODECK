@@ -19,6 +19,9 @@ const steamDeck = {
     viewport: { width: 1280, height: 800 },
     isMobile: true,
     hasTouch: true,
+    deviceScaleFactor: 1,
+    screen: { width: 1280, height: 800 },
+    userAgent: "NEURODECK-Steam-Deck-E2E",
   },
 };
 
@@ -31,17 +34,19 @@ export default defineConfig({
   retries: IS_CI ? 1 : 0,
   workers: IS_CI ? 2 : undefined,
   fullyParallel: false,
+  outputDir: "test-results",
+  snapshotPathTemplate: "{testDir}/{testFilePath}-snapshots/{arg}{ext}",
   use: {
     actionTimeout: 15000,
     navigationTimeout: 15000,
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
     baseURL: "http://127.0.0.1:4173",
   },
   expect: {
     timeout: 10000,
   },
   reporter: IS_CI ? [["html"], ["list"]] : "html",
-  projects: IS_CI
-    ? [chromiumDesktop]
-    : [chromiumDesktop, ...(INCLUDE_FIREFOX ? [firefoxDesktop] : []), steamDeck],
+  projects: [chromiumDesktop, ...(INCLUDE_FIREFOX && !IS_CI ? [firefoxDesktop] : []), steamDeck],
 });

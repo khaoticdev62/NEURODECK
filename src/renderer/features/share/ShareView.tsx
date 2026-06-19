@@ -138,7 +138,7 @@ function LanPanel() {
               <Users className="h-3.5 w-3.5" aria-hidden="true" />
               Peers ({peers.length})
             </div>
-            <div role="list" className="flex flex-col gap-2">
+            <div role={peers.length ? "list" : undefined} className="flex flex-col gap-2">
               {peers.map((peer) => (
                 <div
                   key={peer.id}
@@ -806,7 +806,7 @@ export function ShareView() {
         role="tabpanel"
         aria-labelledby="share-tab-lan"
         hidden={activePanel !== "lan"}
-        className="flex min-h-0 flex-1 flex-col"
+        className={`${activePanel === "lan" ? "flex" : "hidden"} min-h-0 flex-1 flex-col`}
       >
         <LanPanel />
       </div>
@@ -815,7 +815,7 @@ export function ShareView() {
         role="tabpanel"
         aria-labelledby="share-tab-warpinator"
         hidden={activePanel !== "warpinator"}
-        className="flex min-h-0 flex-1 flex-col"
+        className={`${activePanel === "warpinator" ? "flex" : "hidden"} min-h-0 flex-1 flex-col`}
       >
         <WarpinatorPanel />
       </div>
@@ -824,7 +824,7 @@ export function ShareView() {
         role="tabpanel"
         aria-labelledby="share-tab-torrent"
         hidden={activePanel !== "torrent"}
-        className="flex min-h-0 flex-1 flex-col"
+        className={`${activePanel === "torrent" ? "flex" : "hidden"} min-h-0 flex-1 flex-col`}
       >
         <TorrentView />
       </div>

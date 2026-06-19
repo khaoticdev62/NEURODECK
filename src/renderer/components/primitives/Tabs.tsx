@@ -24,13 +24,16 @@ export function TabGroup({
   onChange,
   children,
   className,
+  idPrefix: explicitIdPrefix,
 }: {
   value: string;
   onChange: (v: string) => void;
   children: ReactNode;
   className?: string;
+  idPrefix?: string;
 }) {
-  const idPrefix = useId();
+  const generatedIdPrefix = useId();
+  const idPrefix = explicitIdPrefix ?? generatedIdPrefix;
   return (
     <TabsContext.Provider value={{ value, onChange, idPrefix }}>
       <div className={className}>{children}</div>

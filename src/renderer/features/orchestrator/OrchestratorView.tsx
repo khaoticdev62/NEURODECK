@@ -404,7 +404,7 @@ export function OrchestratorView() {
             Workflows
           </div>
           <div
-            role="list"
+            role={workflows.length > 0 ? "list" : undefined}
             className="min-h-0 flex-1 space-y-2 overflow-y-auto"
           >
             {workflows.length === 0 ? (

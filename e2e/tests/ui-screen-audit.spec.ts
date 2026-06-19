@@ -13,57 +13,12 @@
 
 import { test, expect } from "@playwright/test";
 import { AppPage } from "../pages/AppPage";
+import { STEAM_DECK_VIEWS } from "../support/steam-deck-audit";
 import * as fs from "fs";
 import * as path from "path";
 
-// All view IDs registered in App.tsx (matches data-view on nav buttons)
-const SIDEBAR_VIEWS = [
-  // Mission Control
-  "chat",
-  "execution",
-  "agent",
-  "memory",
-  // Dev Tools
-  "canvas",
-  "terminal",
-  "ssh",
-  "ide",
-  "git",
-  "api-lab",
-  "cli-maker",
-  // Network
-  "browser",
-  "tunnel",
-  "share",
-  "torrent",
-  "remote",
-  // Knowledge
-  "project",
-  "docs",
-  "prompt-lab",
-  "academy",
-  "graph",
-  "sessions",
-  // Automation
-  "scheduler",
-  "orchestrator",
-  "sync",
-  // System
-  "models",
-  "cache",
-  "plugins",
-  "diagnostics",
-  "settings",
-  "fonts",
-  // Integrations (was missing from sidebar sectionOrder — now fixed)
-  "mcp",
-  // Security & Ops
-  "security",
-  "themes",
-  "exports",
-  "maintenance",
-  "recovery",
-] as const;
+// Canonical view IDs shared by all Steam Deck audit layers.
+const SIDEBAR_VIEWS = STEAM_DECK_VIEWS;
 
 // Ensure screenshot output dir exists before tests run
 test.beforeAll(() => {

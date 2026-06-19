@@ -188,6 +188,7 @@ export const PrimarySidebar = memo(function PrimarySidebar({
                     dispatch={dispatch}
                     markActive={false}
                     ariaLabel={`${item.label} (recent)`}
+                    testId={`recent-nav-tab-${item.id}`}
                   />
                 );
               })}
@@ -322,6 +323,7 @@ function NavButton({
   dispatch,
   markActive = true,
   ariaLabel = item.label,
+  testId = `nav-tab-${item.id}`,
 }: {
   item: (typeof navItems)[number];
   Icon: (typeof navItems)[number]["icon"];
@@ -330,12 +332,13 @@ function NavButton({
   dispatch: Dispatch<NeuroDeckAction>;
   markActive?: boolean;
   ariaLabel?: string;
+  testId?: string;
 }) {
   return (
     <button
       type="button"
-      data-testid={`nav-tab-${item.id}`}
-      data-onboarding-anchor={`nav-${item.id}`}
+      data-testid={testId}
+      data-onboarding-anchor={markActive ? `nav-${item.id}` : undefined}
       data-view={item.id}
       data-active={active && markActive ? "true" : undefined}
       aria-current={active ? "page" : undefined}

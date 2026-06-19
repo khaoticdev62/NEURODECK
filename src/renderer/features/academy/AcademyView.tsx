@@ -154,6 +154,7 @@ export function AcademyView() {
           value={activeTab}
           onChange={(v) => setActiveTab(v as AcademyTab)}
           className="mt-3"
+          idPrefix="academy"
         >
           <TabList aria-label="Academy navigation" className="overflow-x-auto scrollbar-none">
             {TABS.map(({ id, label, icon: Icon }) => (

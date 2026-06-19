@@ -115,8 +115,7 @@ export function TerminalSidebar({
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    role="tab"
-                    aria-selected={tab.id === activeTabId}
+                    aria-pressed={tab.id === activeTabId}
                     tabIndex={0}
                     onClick={() => onSwitchTab(tab.id)}
                     onKeyDown={(e) => {

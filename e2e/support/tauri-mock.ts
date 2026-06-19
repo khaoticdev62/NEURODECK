@@ -29,6 +29,10 @@ export interface TauriMockOptions {
 }
 
 export function buildTauriMock(options: TauriMockOptions = {}) {
+  // Playwright init scripts also run in child frames. Sandboxed Canvas previews
+  // intentionally have no same-origin storage access and must remain untouched.
+  if (typeof window !== "undefined" && window !== window.top) return;
+
   // Polyfill the esbuild keepNames helper when this function is serialized
   // into a browser context by Playwright/tsx (which injects __name calls
   // but does not define the helper in the page).

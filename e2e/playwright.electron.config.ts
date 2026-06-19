@@ -9,10 +9,13 @@ export default defineConfig({
   retries: IS_CI ? 1 : 0,
   workers: 1, // Run tests sequentially in Electron to prevent port/sidecar collisions
   fullyParallel: false,
+  outputDir: "test-results-electron",
   use: {
     actionTimeout: 15000,
     navigationTimeout: 15000,
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
+    video: "retain-on-failure",
   },
   expect: {
     timeout: 10000,

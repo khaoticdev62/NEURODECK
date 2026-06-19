@@ -154,6 +154,7 @@ export class AppPage {
       await item.click();
       await this.closeCommandPalette();
     }
+    await this.page.evaluate(() => window.scrollTo(0, 0));
     await expect(this.page.getByTestId(`view-${view}`)).toHaveClass(/active/);
   }
 
@@ -245,96 +246,30 @@ export class AppPage {
   }
 
   async stabilizeForScreenshot() {
-    // Wait for network idle, ensure fonts loaded, and allow layout to settle.
     await this.page.waitForLoadState("networkidle").catch(() => {});
     await this.page.evaluate(async () => {
-      // `document.fonts.ready` is a Promise that resolves when fonts are loaded.
-      // Guard in case `document.fonts` is not available in the environment.
-      if ((document as any).fonts && (document as any).fonts.ready) {
-        await (document as any).fonts.ready;
-      }
+      if (document.fonts?.ready) await document.fonts.ready;
+      localStorage.setItem("neurodeck:e2e-clock", "2026-06-19T12:00:00.000Z");
     });
-    // Hide or mask dynamic pieces that commonly cause visual diffs
     await this.page.addStyleTag({ content: `
-      /* Mask transient counters, badges, live telemetry, and animations */
-      .badge, .counter, .telemetry-value, .live-timer, .notification-count, .kpi-value { visibility: hidden !important; }
-      .glow, .pulse, .blinking { animation: none !important; }
-
-      /* Charts, graphs and canvases (dynamic render) */
-      .chart, .chart-container, .chart-canvas, .graph, canvas, svg, .sparkline, .heatmap, .usage-graph { visibility: hidden !important; }
-
-      /* Progress indicators and dynamic lists */
-      .progress, .progress-bar, .loading, .loading-spinner, .skeleton { visibility: hidden !important; }
-
-      /* Avatars and dynamically-generated images */
-      .avatar, .avatar-img, .gravatar, .user-initials { visibility: hidden !important; }
-
-      /* Timestamps and live-updated labels */
-      .timestamp, .timeago, .last-updated, .last-seen { visibility: hidden !important; }
-
-      /* Code samples may render with system fonts; keep them stable */
-      pre, code { font-family: monospace !important; }
-
-      /* Stabilize images that may lazy-load or use different rendering */
-      img { image-rendering: auto !important; filter: none !important; }
-      /* Controller hints: keep container visible but hide inner text to
-        preserve visibility assertions while removing dynamic text noise */
-      [aria-label="Controller hints"] * { color: transparent !important; }
-      [aria-label="Controller hints"] { -webkit-text-fill-color: transparent !important; color: transparent !important; }
-      /* Prompt Lab live preview and suggestion lists */
-      .live-prompt-preview, .preview, .preview-panel, .suggestions, .suggestions-list, .saved-prompts, .recorded-macros, .macros-list { visibility: hidden !important; }
-
-      /* More targeted masks based on failing traces: Prompt Lab, Settings, Terminal */
-      [data-testid="view-prompt-lab"] .live-prompt-preview,
-      [data-testid="view-prompt-lab"] .preview-content,
-      [data-testid="view-prompt-lab"] .ranked-suggestions,
-      [data-testid="view-prompt-lab"] .suggestions-list { visibility: hidden !important; }
-
-      [data-testid="view-settings"],
-      [data-testid="view-settings"] img,
-      .settings .theme-preview,
-      .settings .telemetry-preview,
-      .settings .recent-activity { visibility: hidden !important; }
-
-      [data-testid="view-terminal"] .terminal-output,
-      [data-testid="view-terminal"] .xterm-viewport,
-      [data-testid="view-terminal"] .xterm-canvas,
-      [data-testid="view-terminal"] .terminal-cursor,
-      [data-testid="view-terminal"] .cursor { visibility: hidden !important; }
-
-      /* Aggressive fallback masks for remaining noisy views (conservative: hides only inner content) */
-      [data-testid="view-prompt-lab"] .view-content > *,
-      [data-testid="view-settings"] .view-content > *,
-      [data-testid="view-terminal"] .view-content > *,
-      [data-testid="view-canvas"] .view-content > *,
-      [data-testid="view-browser"] .view-content > *,
-      [data-testid="view-memory"] .view-content > *,
-      [data-testid="view-remote"] .view-content > *,
-      [data-testid="view-docs"] .view-content > *,
-      [data-testid="view-agent"] .view-content > * { visibility: hidden !important; }
-      /* KPI / telemetry cards */
-      .kpi, .kpi-card, .telemetry-card, .stats-card, .system-telemetry { visibility: hidden !important; }
-      /* Editor canvases and code/render previews */
-      .editor-canvas, .code-preview, iframe, .preview-iframe { visibility: hidden !important; }
-
-      /* Narrow masks for remaining dynamic sources that caused diffs in CI */
-      /* Monaco editor carets/cursors and blinking terminal cursors */
-      .monaco-editor .cursors, .monaco-editor .cursor, .terminal .cursor, .terminal-cursor, .terminal .blinking { visibility: hidden !important; }
-
-      /* Terminal canvas outputs / xterm canvases */
-      .terminal-canvas, .xterm-canvas, .xterm-viewport canvas { visibility: hidden !important; }
-
-      /* Prompt Lab / live preview specific panels */
-      .prompt-preview, .prompt-preview .preview-content, .prompt-lab .live-preview, .live-prompt-preview .preview-content { visibility: hidden !important; }
-
-      /* Settings modal dynamic sections (theme previews, recent activity, telemetry) */
-      .settings .dynamic, .settings .recent-activity, .settings .theme-preview, .settings .telemetry-preview { visibility: hidden !important; }
-
-      /* Small interactive chips / suggestion badges that change between runs */
-      .suggestion-chip, .suggestion, .chip-counter, .badge-count { visibility: hidden !important; }
+      *, *::before, *::after {
+        animation-delay: 0s !important;
+        animation-duration: 0s !important;
+        caret-color: transparent !important;
+        transition-delay: 0s !important;
+        transition-duration: 0s !important;
+      }
+      .live-timer,
+      .timestamp,
+      .timeago,
+      .last-updated,
+      .last-seen,
+      .terminal-cursor,
+      .monaco-editor .cursors {
+        visibility: hidden !important;
+      }
     ` });
-
-    await this.page.waitForTimeout(300);
+    await this.page.waitForTimeout(100);
   }
 
   // ── Audit helpers ─────────────────────────────────────────────────────────
