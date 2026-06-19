@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Command, Sparkles, X } from "lucide-react";
 import { FocusTrapContainer } from "../components/primitives/FocusTrapContainer";
+import { GlobalSearch } from "../components/search/GlobalSearch";
 import { ViewLoader } from "./ViewLoader";
 import type { NeuroDeckAction, NeuroDeckAppActions, NeuroDeckState, ViewId } from "../types/neurodeck";
 
@@ -316,6 +317,13 @@ export function AppOverlays({
           </FocusTrapContainer>
         )}
       </div>
+
+      {/* Global search overlay */}
+      <GlobalSearch
+        open={state.searchOpen}
+        onClose={() => dispatch({ type: "toggle-search", open: false })}
+        dispatch={dispatch}
+      />
     </>
   );
 }

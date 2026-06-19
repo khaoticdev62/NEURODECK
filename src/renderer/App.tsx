@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFocusRestoration } from "./hooks/useFocusRestoration";
 import { AlertTriangle, Loader2, X } from "lucide-react";
+import { SplashScreen } from "./components/app/SplashScreen";
 import { CommandPalette } from "./components/command/CommandPalette";
 import { OnboardingModal } from "./components/onboarding/OnboardingModal";
 import { OnboardingProvider } from "./onboarding/OnboardingProvider";
@@ -172,12 +173,12 @@ export default function App() {
 
   if (!state.hydrated) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-nd-bg">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-nd-accent/30 border-t-nd-accent" />
-          <p className="text-sm text-nd-text-muted">Loading NEURODECK...</p>
-        </div>
-      </div>
+      <SplashScreen
+        onOpenDiagnostics={() => {
+          dispatch({ type: "hydrate", payload: null });
+          dispatch({ type: "set-view", view: "diagnostics" });
+        }}
+      />
     );
   }
 

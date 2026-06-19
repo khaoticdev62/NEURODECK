@@ -19,6 +19,8 @@ export function neurodeckReducer(
       return { ...state, activeView: action.view, commandOpen: false };
     case "toggle-command":
       return { ...state, commandOpen: action.open ?? !state.commandOpen };
+    case "toggle-search":
+      return { ...state, searchOpen: action.open ?? !state.searchOpen };
     case "toggle-deck-mode":
       return { ...state, deckMode: !state.deckMode };
     case "set-controller-settings":

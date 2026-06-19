@@ -74,6 +74,11 @@ export function useAppKeyboard({
         setCtrlPromptOpen(true);
         return;
       }
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        dispatch({ type: "toggle-search" });
+        return;
+      }
       if (!event.metaKey && !event.ctrlKey && !event.altKey && event.key === "?" && !editingField) {
         event.preventDefault();
         setShortcutsOpen(true);
