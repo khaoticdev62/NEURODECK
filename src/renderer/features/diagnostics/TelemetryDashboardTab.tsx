@@ -269,13 +269,13 @@ export function TelemetryDashboardTab() {
                       <td className="px-3 py-2 font-mono">
                         {new Date(s.timestamp).toLocaleTimeString()}
                       </td>
-                      <td className={`px-3 py-2 font-mono ${s.cpuPct > 80 ? "text-nd-status-warning" : ""}`}>
+                      <td className={`px-3 py-2 font-mono ${s.cpuPct > 80 ? "text-nd-warning" : ""}`}>
                         {s.cpuPct}%
                       </td>
-                      <td className={`px-3 py-2 font-mono ${s.ramMb > 1500 ? "text-nd-status-warning" : ""}`}>
+                      <td className={`px-3 py-2 font-mono ${s.ramMb > 1500 ? "text-nd-warning" : ""}`}>
                         {s.ramMb}
                       </td>
-                      <td className={`px-3 py-2 font-mono ${s.apiLatencyMs > 300 ? "text-nd-status-warning" : ""}`}>
+                      <td className={`px-3 py-2 font-mono ${s.apiLatencyMs > 300 ? "text-nd-warning" : ""}`}>
                         {s.apiLatencyMs}ms
                       </td>
                       <td className="px-3 py-2 font-mono">{s.tokensPerSec}</td>
@@ -310,20 +310,20 @@ function MetricTile({
     <div
       className={`flex items-center justify-between gap-3 rounded-2xl border p-4 transition ${
         warn
-          ? "border-nd-status-warning/30 bg-nd-status-warning/5"
+          ? "border-nd-warning/30 bg-nd-warning/5"
           : "border-nd-border-subtle bg-nd-surface-secondary/20"
       }`}
     >
       <div>
         <div className="flex items-center gap-2">
           <Icon
-            className={`h-4 w-4 ${warn ? "text-nd-status-warning" : "text-nd-text-muted"}`}
+            className={`h-4 w-4 ${warn ? "text-nd-warning" : "text-nd-text-muted"}`}
             aria-hidden
           />
           <p className="text-xs text-nd-text-muted">{label}</p>
         </div>
         <p
-          className={`mt-1 text-xl font-black ${warn ? "text-nd-status-warning" : "text-nd-text-primary"}`}
+          className={`mt-1 text-xl font-black ${warn ? "text-nd-warning" : "text-nd-text-primary"}`}
           aria-label={`${label}: ${value}`}
         >
           {value}

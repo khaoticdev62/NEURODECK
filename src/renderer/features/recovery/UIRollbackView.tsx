@@ -62,9 +62,9 @@ export function UIRollbackView({ state: _state }: { state: NeuroDeckState }) {
     >
       <div className="flex flex-col gap-6 p-4">
         {/* Info banner */}
-        <div className="flex items-start gap-3 rounded-2xl border border-nd-status-warning/30 bg-nd-status-warning/5 p-4">
+        <div className="flex items-start gap-3 rounded-2xl border border-nd-warning/30 bg-nd-warning/5 p-4">
           <AlertTriangle
-            className="mt-0.5 h-5 w-5 shrink-0 text-nd-status-warning"
+            className="mt-0.5 h-5 w-5 shrink-0 text-nd-warning"
             aria-hidden
           />
           <div>

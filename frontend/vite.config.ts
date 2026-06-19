@@ -51,6 +51,8 @@ export default defineConfig({
       "react-dom",
       "react-dom/client",
       "lucide-react",
+      "xterm",
+      "xterm-addon-fit",
     ],
   },
   plugins: [

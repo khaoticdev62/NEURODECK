@@ -6,7 +6,7 @@ if (typeof document !== "undefined" && !document.getElementById("nd-modal-css"))
   s.id = "nd-modal-css";
   s.textContent = `
   .nd-modal__overlay{position:fixed;inset:0;background:var(--nd-surface-overlay);backdrop-filter:blur(2px);
-    display:flex;align-items:center;justify-content:center;padding:24px;z-index:var(--z-modal,9990);
+    display:flex;align-items:center;justify-content:center;padding:24px;z-index:var(--nd-z-modal,9990);
     animation:nd-modal-fade var(--nd-motion-normal) var(--nd-ease-out);}
   .nd-modal{background:var(--nd-surface-tertiary);border:1px solid var(--nd-border-default);
     border-radius:var(--nd-radius-xl);box-shadow:var(--nd-elevation-overlay);width:100%;

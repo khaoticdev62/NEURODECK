@@ -20,14 +20,14 @@ const OPTIONS = [
 ];
 
 export const Default: Story = {
-  render: () => {
+  render: function DefaultStory() {
     const [value, setValue] = useState("gemini");
     return <Select label="Provider" value={value} onChange={setValue} options={OPTIONS} />;
   },
 };
 
 export const WithPlaceholder: Story = {
-  render: () => {
+  render: function WithPlaceholderStory() {
     const [value, setValue] = useState("");
     return (
       <Select
@@ -42,7 +42,7 @@ export const WithPlaceholder: Story = {
 };
 
 export const Error: Story = {
-  render: () => {
+  render: function ErrorStory() {
     const [value, setValue] = useState("");
     return (
       <Select
@@ -57,7 +57,7 @@ export const Error: Story = {
 };
 
 export const Disabled: Story = {
-  render: () => {
+  render: function DisabledStory() {
     const [value, setValue] = useState("gemini");
     return (
       <Select label="Provider" value={value} onChange={setValue} options={OPTIONS} disabled />

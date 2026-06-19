@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint \"../src/renderer/**/*.{ts,tsx}\"",
+    "lint": "cd .. && eslint \"src/renderer/**/*.{ts,tsx}\"",
     "analyze": "cross-env ANALYZE=true vite build",
     "perf:lighthouse": "node ../scripts/perf/lighthouse-audit.js",
     "storybook": "storybook dev -p 6006",

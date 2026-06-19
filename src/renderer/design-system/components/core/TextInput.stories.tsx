@@ -16,14 +16,14 @@ export default meta;
 type Story = StoryObj<typeof TextInput>;
 
 export const Default: Story = {
-  render: () => {
+  render: function DefaultStory() {
     const [value, setValue] = useState("");
     return <TextInput label="Prompt" value={value} onChange={setValue} placeholder="Ask anything..." />;
   },
 };
 
 export const WithIcon: Story = {
-  render: () => {
+  render: function WithIconStory() {
     const [value, setValue] = useState("");
     return (
       <TextInput
@@ -38,7 +38,7 @@ export const WithIcon: Story = {
 };
 
 export const WithHint: Story = {
-  render: () => {
+  render: function WithHintStory() {
     const [value, setValue] = useState("");
     return (
       <TextInput
@@ -53,7 +53,7 @@ export const WithHint: Story = {
 };
 
 export const WithError: Story = {
-  render: () => {
+  render: function WithErrorStory() {
     const [value, setValue] = useState("invalid");
     return (
       <TextInput
@@ -67,7 +67,7 @@ export const WithError: Story = {
 };
 
 export const Disabled: Story = {
-  render: () => {
+  render: function DisabledStory() {
     const [value, setValue] = useState("locked");
     return <TextInput label="Read-only" value={value} onChange={setValue} disabled />;
   },

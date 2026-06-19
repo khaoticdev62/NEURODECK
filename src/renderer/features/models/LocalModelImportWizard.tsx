@@ -64,7 +64,7 @@ function StepIndicator({ current, total }: { current: Step; total: number }) {
                 state === "done"
                   ? "bg-nd-status-success text-white"
                   : state === "active"
-                  ? "bg-nd-accent-primary text-nd-surface-bg"
+                  ? "bg-nd-accent-primary text-nd-bg"
                   : "bg-nd-surface-secondary/60 text-nd-text-muted"
               }`}
               aria-current={state === "active" ? "step" : undefined}
@@ -173,7 +173,7 @@ export function LocalModelImportWizard({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
       <div
-        className="absolute inset-0 bg-nd-surface-bg/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-nd-bg/80 backdrop-blur-sm"
         onClick={() => { if (!importing) onClose(); }}
         aria-hidden
       />

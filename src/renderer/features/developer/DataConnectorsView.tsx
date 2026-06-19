@@ -216,9 +216,9 @@ export function DataConnectorsView({ state: _state }: { state: NeuroDeckState })
                   <div
                     role="alert"
                     aria-live="polite"
-                    className="mt-3 rounded-xl border border-nd-status-warning/30 bg-nd-status-warning/5 px-3 py-2 font-mono text-xs text-nd-text-secondary"
+                    className="mt-3 rounded-xl border border-nd-warning/30 bg-nd-warning/5 px-3 py-2 font-mono text-xs text-nd-text-secondary"
                   >
-                    <span className="text-nd-status-warning">⚠ Token hidden in 10s:</span>{" "}
+                    <span className="text-nd-warning">⚠ Token hidden in 10s:</span>{" "}
                     <span aria-label="Masked token">••••••••••••••••</span>
                   </div>
                 )}

@@ -145,9 +145,9 @@ export function FeatureFlagsView({ state: _state }: { state: NeuroDeckState }) {
         <div
           role="alert"
           aria-live="assertive"
-          className="mx-4 mt-4 flex items-center justify-between rounded-xl border border-nd-status-warning/40 bg-nd-status-warning/10 px-4 py-3"
+          className="mx-4 mt-4 flex items-center justify-between rounded-xl border border-nd-warning/40 bg-nd-warning/10 px-4 py-3"
         >
-          <p className="text-sm text-nd-status-warning">
+          <p className="text-sm text-nd-warning">
             Restart required to apply flag changes.
           </p>
           <Button variant="secondary" size="sm">
@@ -158,7 +158,7 @@ export function FeatureFlagsView({ state: _state }: { state: NeuroDeckState }) {
 
       <div
         role="alert"
-        className="mx-4 mt-4 rounded-xl border border-nd-status-warning/30 bg-nd-status-warning/5 px-4 py-3 text-sm text-nd-text-muted"
+        className="mx-4 mt-4 rounded-xl border border-nd-warning/30 bg-nd-warning/5 px-4 py-3 text-sm text-nd-text-muted"
       >
         ⚠ Experimental features may be unstable. Use with caution.
       </div>

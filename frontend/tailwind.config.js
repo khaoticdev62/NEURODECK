@@ -78,6 +78,8 @@ export default {
           'accent-warning':   withOpacity('var(--nd-accent-warning, #FFC857)'),
           'accent-error':     withOpacity('var(--nd-accent-error, #FF5A6A)'),
           'accent-info':      withOpacity('var(--nd-accent-info, #89DCEB)'),
+          'accent-agent':     withOpacity('var(--nd-accent-agent, #B28CFF)'),
+          'purple-400':       withOpacity('var(--nd-purple-400, #B28CFF)'),
 
           // Legacy accent aliases
           accent:           withOpacity('var(--nd-accent)'),
@@ -239,14 +241,15 @@ export default {
       },
 
       zIndex: {
-        'wallpaper': 'var(--nd-z-wallpaper, 0)',
-        'base':      'var(--nd-z-base, 1)',
-        'sticky':    'var(--nd-z-sticky, 10)',
-        'dropdown':  'var(--nd-z-dropdown, 20)',
-        'overlay':   'var(--nd-z-overlay, 30)',
-        'modal':     'var(--nd-z-modal, 40)',
-        'toast':     'var(--nd-z-toast, 50)',
-        'tooltip':   'var(--nd-z-tooltip, 60)',
+        'wallpaper':  'var(--nd-z-wallpaper, 0)',
+        'base':       'var(--nd-z-base, 1)',
+        'sticky':     'var(--nd-z-sticky, 10)',
+        'dropdown':   'var(--nd-z-dropdown, 140)',
+        'overlay':    'var(--nd-z-overlay, 9989)',
+        'modal':      'var(--nd-z-modal, 9990)',
+        'toast':      'var(--nd-z-toast, 30000)',
+        'tooltip':    'var(--nd-z-tooltip, 5000)',
+        'toast-peak': 'var(--nd-z-toast-peak, 30000)',
       },
 
       keyframes: {

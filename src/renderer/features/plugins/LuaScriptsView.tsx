@@ -89,7 +89,7 @@ export function LuaScriptsView({ state: _state }: { state: NeuroDeckState }) {
             </div>
           </div>
           <textarea
-            className="flex-1 resize-none bg-nd-surface-bg p-4 font-mono text-sm text-nd-text-primary outline-none focus:ring-1 focus:ring-nd-accent-primary/40"
+            className="flex-1 resize-none bg-nd-bg p-4 font-mono text-sm text-nd-text-primary outline-none focus:ring-1 focus:ring-nd-accent-primary/40"
             value={script}
             onChange={(e) => setScript(e.target.value)}
             aria-label="Lua script editor"
@@ -141,7 +141,7 @@ export function LuaScriptsView({ state: _state }: { state: NeuroDeckState }) {
       {hasExecute && (
         <div
           role="alert"
-          className="absolute bottom-16 left-4 right-4 flex items-center gap-2 rounded-xl border border-nd-status-warning/40 bg-nd-status-warning/10 px-4 py-2 text-sm text-nd-status-warning"
+          className="absolute bottom-16 left-4 right-4 flex items-center gap-2 rounded-xl border border-nd-warning/40 bg-nd-warning/10 px-4 py-2 text-sm text-nd-warning"
         >
           <AlertTriangle className="h-4 w-4 shrink-0" aria-hidden />
           This script calls <code className="font-mono">execute()</code> — system commands will run.

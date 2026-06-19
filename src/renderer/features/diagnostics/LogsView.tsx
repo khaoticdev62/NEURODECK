@@ -21,7 +21,7 @@ interface LogEntry {
 
 const LEVEL_COLORS: Record<LogLevel, string> = {
   error: "text-nd-status-error",
-  warn: "text-nd-status-warning",
+  warn: "text-nd-warning",
   info: "text-nd-text-secondary",
   debug: "text-nd-text-muted",
 };

@@ -434,7 +434,7 @@ export function GraphView() {
             viewBox={`0 0 ${W} ${H}`}
             preserveAspectRatio="xMidYMid meet"
             className="h-full w-full cursor-crosshair"
-            role="img"
+            role="group"
             aria-label="System intelligence graph"
             onMouseMove={handleNodeMove}
             onMouseLeave={handleNodeLeave}

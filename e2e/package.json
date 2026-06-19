@@ -6,6 +6,10 @@
   "scripts": {
     "build:frontend": "npm --prefix ../frontend run build",
     "test": "npm run build:frontend && playwright test",
+    "test:steamdeck": "playwright test tests/steam-deck-layout.spec.ts tests/a11y.spec.ts --project=steam-deck --reporter=list",
+    "test:visual": "playwright test tests/visual.spec.ts --project=steam-deck --reporter=list",
+    "test:electron": "playwright test tests/electron-native.spec.ts --config=playwright.electron.config.ts --project=electron --reporter=list",
+    "test:readiness": "npm run test:steamdeck && npm run test:visual && npm run test:electron",
     "generate:pdf": "node support/generate-pdf.cjs"
   },
   "keywords": [],

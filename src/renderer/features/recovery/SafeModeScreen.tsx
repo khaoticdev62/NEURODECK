@@ -21,7 +21,7 @@ export function SafeModeScreen({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-nd-surface-bg"
+      className="fixed inset-0 z-toast-peak flex items-center justify-center bg-nd-bg"
       role="alertdialog"
       aria-modal="true"
       aria-label="NEURODECK Safe Mode"
@@ -30,8 +30,8 @@ export function SafeModeScreen({
       <div className="mx-auto w-full max-w-lg space-y-6 p-8">
         {/* Header */}
         <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-nd-status-warning/40 bg-nd-status-warning/10">
-            <ShieldAlert className="h-8 w-8 text-nd-status-warning" aria-hidden />
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-nd-warning/40 bg-nd-warning/10">
+            <ShieldAlert className="h-8 w-8 text-nd-warning" aria-hidden />
           </div>
           <div>
             <h1 className="text-2xl font-black tracking-tight text-nd-text-primary">SAFE MODE</h1>
@@ -41,7 +41,7 @@ export function SafeModeScreen({
 
         {/* Reason */}
         <div className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-nd-status-warning">
+          <p className="text-xs font-semibold uppercase tracking-widest text-nd-warning">
             Why Safe Mode?
           </p>
           <p className="mt-2 text-sm text-nd-text-secondary">{reason}</p>

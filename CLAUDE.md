@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 NEURODECK is a desktop app built on **Electron + axum bridge** that turns a Steam Deck into an AI-powered terminal OS — LLM chat, live code canvas, PTY shell, autonomous agent, vector memory, LSP, workflow automation, and gamepad-native navigation in one 1280×800 fullscreen window.
 
-**Architecture**: The Rust backend runs as a standalone sidecar process (`neurodeck`/`neurodeck.exe`) exposing an axum HTTP + WebSocket server on `localhost:9477`. Electron spawns the sidecar, polls `/health`, then opens the BrowserWindow. The frontend communicates via `neurobridge.js` (HTTP fetch + WebSocket) — there is no Tauri runtime. See `bridge.rs` and `neurobridge.js`.
+**Architecture**: The Rust backend runs as a standalone sidecar process (`neurodeck`/`neurodeck.exe`) exposing an axum HTTP + WebSocket server on `localhost:9477`. Electron spawns the sidecar, polls `/health`, then opens the BrowserWindow. The frontend (React/TypeScript under `src/renderer/`) communicates via `src/renderer/services/bridge/domains/*.ts` (HTTP fetch + WebSocket directly to the sidecar) plus a secondary Electron IPC relay (`electron/preload.js` + `electron/ipc-handlers.js`) for a subset of channels — there is no Tauri runtime and no `neurobridge.js` (removed; see "IPC Flow" below for the current, corrected picture). See `bridge.rs`.
 
 ---
 
@@ -25,54 +25,20 @@ NEURODECK is a desktop app built on **Electron + axum bridge** that turns a Stea
 
 ## Architecture Map
 
-### IPC Flow
-```
-frontend/src/neurobridge.js
-  └─ invoke("command_name", { args })  ──►  POST http://localhost:9477/api/{command}
-  └─ listen("event_name", handler)     ◄──  WebSocket  ws://localhost:9477/ws
-```
-`neurobridge.js` is a drop-in replacement for `@tauri-apps/api`. It wraps HTTP fetch (for commands) and a WebSocket (for backend→frontend events). All streaming (LLM tokens, PTY output, agent steps) goes through the WebSocket. All request/response goes through `POST /api/{command}`. The Rust sidecar binds to `127.0.0.1:9477` by default; override with the `NEURODECK_PORT` env var. `GET /health` is polled by Electron to know the sidecar is ready.
+### IPC Flow (current — frontend is React, not vanilla JS)
+> **2026-06-19 correction**: the sections below describing a vanilla-JS `main.js` (~8150 lines) with `chat.js`/`agent.js`/`memory.js`/... ES modules under `frontend/src/` are **stale**. That architecture no longer exists. There is no frontend `main.js` — only `electron/main.js` (the Electron *main process*, unrelated). The actual frontend is a React/TypeScript app under `src/renderer/`, routed by `src/renderer/app/AppViewRouter.tsx`. Treat any reference to `frontend/src/*.js` modules below as historical.
 
-### The One Big File Problem
+The real frontend structure:
+- `src/renderer/app/AppViewRouter.tsx` — lazy-loads and routes all feature views by `ViewId`; each view renders into a `<div id={`view-${id}`} className="view-content active">` wrapper.
+- `src/renderer/features/<name>/` — one folder per feature (chat → `workspace/`, terminal, ssh, ide, canvas, memory, scheduler, academy, etc.), built from design-system primitives + Tailwind.
+- `src/renderer/services/bridge/domains/*.ts` — one file per command domain (`ai.ts`, `memory.ts`, `ide.ts`, `transfer.ts`, `git.ts`, ...), exposed together as `neurodeckApi`. **This is the primary transport**: `bridgeInvoke()` does a direct HTTP fetch from the renderer to the Rust sidecar on `127.0.0.1:9477` (or `NEURODECK_PORT`), bypassing the Electron main process entirely.
+- **Secondary transport**: some domains (`ide.ts`, `memory.ts`, `ai.ts`) additionally check `window.neurodeck.*` first — a *second*, parallel channel exposed via `contextBridge.exposeInMainWorld('neurodeck', {...})` in `electron/preload.js`, relayed through `electron/ipc-handlers.js` (`ipcMain.handle(...)`) which itself calls the same sidecar commands (`callSidecar(bridgePort, 'memory_list', ...)` etc.). **`window.neurodeck` is always present in the real app — it is not dead/legacy code** — but every channel it exposes must have a matching registered handler in `ipc-handlers.js` or `ipcRenderer.invoke()` throws "No handler registered" instead of falling back. (A `memory:delete` channel was found missing its handler and fixed 2026-06-19 — see `docs/reports/feature-wiring-checklist.md`.) Before assuming a `window.neurodeck.X.Y()` call is a harmless fallback, trace its channel string through `electron/ipc-registry.js` → `electron/ipc-handlers.js`.
+- `window.electronAPI` (also via `contextBridge`, `electron/preload.js`) — separate surface for Electron-native features (in-app browser tabs, bookmarks, history).
+- WebSocket streaming (LLM tokens, PTY output, agent steps) still goes over `ws://127.0.0.1:9477/ws` per the original design; `GET /health` is polled by Electron before the main window loads.
+- `src/renderer/styles/legacy.css` (~24k lines) — CSS variable shim aliasing legacy `--*` tokens to canonical `--nd-*` design-system tokens, plus per-feature styles. Contains real, live rules alongside large dead blocks left over from the pre-React UI — grep a class name across `src/renderer/**/*.tsx` before trusting any selector in this file is live (a ~540-line dead Workflow Builder node-editor block and a duplicate Task Scheduler redesign were removed 2026-06-19; `#view-workflow`/`.wf-*` have no corresponding React view).
+
+### Rust: The One Big File Problem
 `lib.rs` (~1600 lines) owns everything: command handlers, app state structs, persona definitions, theme palettes, game detection, voice I/O, and the agent loop. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
-
-`main.js` (~8150 lines) is the frontend shell — HTML templates, view routing, IPC wiring, boot sequence, radial menu, and all one-off UI logic. Feature sections are delimited by `// ===` banner comments. New features go at the end of their section, not at the bottom of the file. **Do not search for partial strings in template literals** — always match a full containing element.
-
-The heavy logic modules have been extracted from `main.js` into ES modules:
-
-### Frontend Module Split (ES Modules under `frontend/src/`)
-| Module | What It Owns |
-|---|---|
-| `main.js` | HTML templates, view routing, IPC wiring, boot/onboarding, one-off view init |
-| `neurobridge.js` | Drop-in replacement for `@tauri-apps/api` — wraps HTTP + WebSocket; **all `invoke()`/`listen()` calls go here** |
-| `chat.js` | All chat logic — send flow, RAG context, streaming, history, persona/theme switching, welcome screen |
-| `agent.js` | Agent loop, roundtable mode, computer/browser tool dispatch |
-| `memory.js` | Memory view — list, filter, pin, delete, add fact |
-| `notifications.js` | `addNotification()`, toast rendering, badge management; also sets `window.addNotification` for legacy callers |
-| `canvas.js` | Monaco editor, live preview, collab host/join/stop, AI edit modal |
-| `terminal.js` | xterm.js sessions, tab management, PTY wiring, SSH tab |
-| `state.js` | Shared mutable state object (singleton) |
-| `icons.js` | `createIcon()` / `applyButtonIcon()` — Lucide SVG icon factory |
-| `settings.js` | Settings modal — all settings read/write, theme/persona/LLM config UI |
-| `radial.js` | Radial menu segment registry and L2/backtick menu rendering |
-| `ctrl_prompt.js` | Controller prompt picker — gamepad-native shortcut/prompt selection UI |
-| `shortcuts.js` | Keyboard shortcut bindings and command palette trigger |
-| `slash-commands.js` | Slash command parser and dispatch (e.g., `/formula`, `/promptgen`) |
-| `palette-commands.js` | Command palette command definitions |
-| `dashboard.js` | Dashboard view — system stats, quick-launch widgets |
-| `api_lab.js` | API Lab view — interactive HTTP request builder |
-| `cli_maker.js` | CLI Maker view — visual CLI argument builder |
-| `git.js` | Git view — status, diff, commit, branch ops via bridge |
-| `ide_view.js` | IDE view — file tree, editor tabs, run integration |
-| `lsp_client.js` | LSP client — sends textDocument requests over the bridge, renders diagnostics |
-| `graph_view.js` | Graph view — knowledge/memory relationship visualizer |
-| `orchestrator.js` | Orchestrator view — multi-step LLM pipeline builder |
-| `remote_control_view.js` | Remote control view — UDP remote session UI |
-| `scheduler_view.js` | Scheduler view — cron job list/create/delete UI |
-| `workflow_view.js` | Workflow view — DAG workflow definition and execution UI |
-| `torrent.js` | Torrent view — BitTorrent/magnet link UI |
-| `haptics.js` | Haptic feedback helpers for Steam Deck gamepad |
-| `focus-trap.js` | Focus trap utility for modals/drawers |
 
 ### Rust Module Responsibilities
 | Module | What It Owns |

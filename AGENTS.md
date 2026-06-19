@@ -47,33 +47,33 @@ NEURODECK is an Electron desktop app with a Rust sidecar that turns a Steam Deck
 The NEURODECK Design System is fully wired into the React frontend and blended with the canonical **NEURODECK Design Tokens + Component Library v1.0** package.
 
 ### Location
-- Source of truth: `frontend/src/design-system/`
-- Canonical unified tokens: `frontend/src/design-system/tokens/tokens.css`
-- Canonical token JSON: `frontend/src/design-system/tokens.json`
-- Legacy split tokens: `frontend/src/design-system/tokens/{colors,fonts,spacing,typography}.css`
-- v1.0 theme modifiers: `frontend/src/design-system/themes/{blacksite,tactical-glass,high-contrast,colorblind-safe}.css`
-- Components: `frontend/src/design-system/components/{core,feedback,systems}/`
-- Workstation UI kit: `frontend/src/design-system/ui-kits/workstation/`
-- Blended component registry: `frontend/src/design-system/component-registry.json`
-- Barrel export: `frontend/src/design-system/index.ts`
+- Source of truth: `src/renderer/design-system/`
+- Canonical unified tokens: `src/renderer/design-system/tokens/tokens.css`
+- Canonical token JSON: `src/renderer/design-system/tokens.json`
+- Legacy split tokens: `src/renderer/design-system/tokens/{colors,fonts,spacing,typography}.css`
+- v1.0 theme modifiers: `src/renderer/design-system/themes/{blacksite,tactical-glass,high-contrast,colorblind-safe}.css`
+- Components: `src/renderer/design-system/components/{core,feedback,systems}/`
+- Workstation UI kit: `src/renderer/design-system/ui-kits/workstation/`
+- Blended component registry: `src/renderer/design-system/component-registry.json`
+- Barrel export: `src/renderer/design-system/index.ts`
 
 ### Integration rules
-- **DS tokens are canonical.** `frontend/src/react/index.css` imports the unified DS token file (`tokens/tokens.css`) and the v1.0 theme modifiers. The runtime theme injector in `frontend/src/react/theme/cssVariableInjector.ts` emits the full DS token namespace (`--nd-*`) so every theme participates.
+- **DS tokens are canonical.** `src/renderer/index.css` imports the unified DS token file (`tokens/tokens.css`) and the v1.0 theme modifiers. The runtime theme injector in `src/renderer/theme/cssVariableInjector.ts` emits the full DS token namespace (`--nd-*`) so every theme participates.
 - **Default theme is Tactical Glass Ultra.** `ThemeProvider` defaults to `tactical_glass_ultra` so the v1.0 Tactical Glass theme is visible out of the box (cyan-tinted glass borders `#68F1FF`, brighter accent, translucent surfaces).
 - **v1.0 theme classes are applied to the body.** `ThemeProvider` maps active theme IDs to the bundled v1.0 CSS theme classes (`theme-blacksite`, `theme-tactical-glass`, `theme-high-contrast`, `theme-colorblind-safe`). JS-injected variables remain authoritative; the CSS classes provide a fallback layer and make the v1.0 theme files active.
 - **Tailwind exposes v1.0 semantic aliases.** `frontend/tailwind.config.js` extends the theme with `surface`, `text`, `accent`, and `border` color aliases mapped to the `--nd-*` variables, plus v1.0 font sizes, radius, elevation, and motion tokens. Prefer `bg-surface-primary`, `text-text-primary`, `border-border-subtle`, `shadow-card`, etc.
 - **Production build validates the design system first.** The root `npm run build` now runs `node scripts/validate-design-system.js` before bundling. It checks that `tokens.json`, `tokens/tokens.css`, the four v1.0 theme files, `component-registry.json`, and the `index.css` imports all exist and contain the expected token categories/variables.
-- **Existing primitives delegate to DS.** Files in `frontend/src/react/components/primitives/` are adapters that preserve the legacy prop API while using DS token classes and DS components internally. Backups live in `frontend/src/react/components/primitives/_legacy/`.
-- **System cards delegate to DS.** Files in `frontend/src/react/components/cards/` use DS `Panel`, `Badge`, `Button`, `IconButton`, `StatusChip`, `Modal`, and `TextInput`. Backups live in `frontend/src/react/components/cards/_legacy/`.
-- **App shell now uses the v6 workspace layout.** `frontend/src/react/components/layout/NeurodeckShell.tsx` composes v6-style `TitleBar`, `PrimarySidebar`, and `SecondaryRail` with the live app state. The DS workstation `StatusBar`/`NavRail`/`ControllerHints` are no longer used by the shell; `ChatWorkspace` and `InputConsole` remain for the chat view.
+- **Existing primitives delegate to DS.** Files in `src/renderer/components/primitives/` are adapters that preserve the legacy prop API while using DS token classes and DS components internally. Backups live in `src/renderer/components/primitives/_legacy/`.
+- **System cards delegate to DS.** Files in `src/renderer/components/cards/` use DS `Panel`, `Badge`, `Button`, `IconButton`, `StatusChip`, `Modal`, and `TextInput`. Backups live in `src/renderer/components/cards/_legacy/`.
+- **App shell now uses the v6 workspace layout.** `src/renderer/components/layout/NeurodeckShell.tsx` composes v6-style `TitleBar`, `PrimarySidebar`, and `SecondaryRail` with the live app state. The DS workstation `StatusBar`/`NavRail`/`ControllerHints` are no longer used by the shell; `ChatWorkspace` and `InputConsole` remain for the chat view.
 - **Legacy `_legacy/` directories are excluded from TypeScript** via `tsconfig.json` (`"exclude": ["src/**/_legacy"]`).
 
 ### Adding or modifying components
-1. Add new DS components under `frontend/src/design-system/components/`.
-2. Export them from `frontend/src/design-system/index.ts`.
-3. If a component replaces an existing primitive or card, update the adapter in `frontend/src/react/components/primitives/` or `frontend/src/react/components/cards/` while keeping the public prop interface unchanged.
+1. Add new DS components under `src/renderer/design-system/components/`.
+2. Export them from `src/renderer/design-system/index.ts`.
+3. If a component replaces an existing primitive or card, update the adapter in `src/renderer/components/primitives/` or `src/renderer/components/cards/` while keeping the public prop interface unchanged.
 4. Do not redefine `--nd-*` CSS variables inconsistently; extend `tokens/tokens.css` or the runtime injector instead.
-5. When adding a new theme, create a CSS modifier in `frontend/src/design-system/themes/` and add the theme-ID-to-class mapping in `frontend/src/react/theme/cssVariableInjector.ts`.
+5. When adding a new theme, create a CSS modifier in `src/renderer/design-system/themes/` and add the theme-ID-to-class mapping in `src/renderer/theme/cssVariableInjector.ts`.
 
 ---
 
@@ -81,17 +81,17 @@ The NEURODECK Design System is fully wired into the React frontend and blended w
 
 ### IPC Flow
 ```
-frontend/src/react/App.tsx
+src/renderer/App.tsx
   └─ bridgeAdapter.invoke("command_name", { args })  ──►  POST /api/{cmd}
   └─ bridgeAdapter.listen("event_name", handler)     ◄──  WebSocket  ◄──  WsBroadcaster.emit()
                                                                    (Rust sidecar localhost:9477)
 ```
 All streaming (LLM tokens, PTY output, agent steps, canvas exec output) goes through WebSocket events. All request/response goes through HTTP POST to the bridge server.
 
-The React UI talks to the bridge through `frontend/src/react/services/bridgeAdapter.ts`, not through Electron IPC. `bridgeAdapter` exposes typed `invoke<T>()` and `listen()` helpers, wraps errors in `BridgeError` with stable codes (`invalid_json`, `rate_limited`, `command_not_found`, `command_timeout`, `command_error`), and applies retry/backoff for safe read commands. Non-streaming commands enforce a 30-second HTTP timeout (300 seconds for file transfers/support bundles; no timeout for streaming commands).
+The React UI talks to the bridge through `src/renderer/services/bridgeAdapter.ts`, not through Electron IPC. `bridgeAdapter` exposes typed `invoke<T>()` and `listen()` helpers, wraps errors in `BridgeError` with stable codes (`invalid_json`, `rate_limited`, `command_not_found`, `command_timeout`, `command_error`), and applies retry/backoff for safe read commands. Non-streaming commands enforce a 30-second HTTP timeout (300 seconds for file transfers/support bundles; no timeout for streaming commands).
 
 ### Frontend Architecture
-The frontend is a **React 19 + TypeScript** Vite app (`frontend/src/main.tsx` → `frontend/src/react/App.tsx`). The legacy vanilla-JS `frontend/src/main.js` has been removed; the few remaining shared helpers live in `frontend/src/shared/`. Feature views are co-located under `frontend/src/react/features/` and lazy-loaded in `App.tsx` (only the workspace/chat view is eager). Global state is managed by `frontend/src/react/state/useNeuroDeckState.ts`.
+The frontend is a **React 19 + TypeScript** Vite app (`src/renderer/main.tsx` → `src/renderer/App.tsx`). The legacy vanilla-JS `frontend/src/main.js` has been removed; the few remaining shared helpers live in `src/shared/`. Feature views are co-located under `src/renderer/features/` and lazy-loaded in `App.tsx` (only the workspace/chat view is eager). Global state is managed by `src/renderer/state/useNeuroDeckState.ts`.
 
 ### The One Big File Problem
 `lib.rs` owns `AppState`, the bridge server bootstrap, and module re-exports. The Tauri `run()` entry point and `generate_handler![]` have been removed. Command bodies, personas, themes, game detection, path utilities, and provider factories have been extracted to submodules. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
@@ -178,7 +178,7 @@ Memory context injection is live in bridge `send_command` (`commands/mod.rs`): e
 
 ### Canvas Code Execution
 Canvas Python/Bash/JavaScript execution is **fully implemented** end-to-end:
-- Frontend: `frontend/src/react/features/canvas/CanvasView.tsx` calls `bridgeAdapter.invoke("exec_code_stream", { code, lang })`
+- Frontend: `src/renderer/features/canvas/CanvasView.tsx` calls `bridgeAdapter.invoke("exec_code_stream", { code, lang })`
 - Supported languages: `python`, `bash`, `powershell`, `javascript`/`js` (passed to `exec_code_stream`)
 - Backend: `commands/mod.rs` dispatches to `commands/agent.rs` `exec_code_stream()`
 - Output streams via `canvas_exec_line` WebSocket events; completion via `canvas_exec_done`
@@ -224,8 +224,8 @@ In the legacy CSS, ID selectors (`#view-*`) have specificity 100, which beats `.
 - **Scheduler commands**: `list_scheduled_tasks`, `add_scheduled_task`, `delete_scheduled_task`, `toggle_scheduled_task`, `run_task_now`.
 - **MCP commands**: `get_mcp_status`, `get_mcp_tool_whitelist`, `set_mcp_tool_whitelist`, `start_mcp_server`, `stop_mcp_server`.
 - **Do not use `std::sync::Mutex` across `.await` points** in bridge command handlers — `MutexGuard` is not `Send` and will break axum's `Handler` trait. Use `tokio::sync::Mutex` or rely on `SqlitePool`'s internal thread-safety.
-- **CSS changes**: the React build imports `frontend/src/react/index.css`, which loads the DS tokens. For legacy `app.css` edits, run `npm run --prefix frontend build` — the Vite dev server hot-reloads CSS but Electron's WebView doesn't always pick up the change without a rebuild. For Tailwind class changes, just rebuild.
-- **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `models.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format and the React settings UI (`frontend/src/react/features/settings/`) to match.
+- **CSS changes**: the React build imports `src/renderer/index.css`, which loads the DS tokens. For legacy `app.css` edits, run `npm run --prefix frontend build` — the Vite dev server hot-reloads CSS but Electron's WebView doesn't always pick up the change without a rebuild. For Tailwind class changes, just rebuild.
+- **Persona/theme additions**: personas are `HashMap` entries in the `PERSONAS` lazy_static in `models.rs`; themes are `THEMES`. Add entries there, then update the `get_personas` / `get_themes` command return format and the React settings UI (`src/renderer/features/settings/`) to match.
 - **New PTY sessions**: always call `pty_kill` for the session ID before `pty_spawn` with the same ID. Double-spawning the same ID creates a resource leak (the old reader thread keeps running).
 - **FTP/SSH backend**: use `tokio::task::spawn_blocking` for all `suppaftp` and `std::net::TcpStream` calls — they are synchronous and will block the async executor if called directly.
 - **Window size**: all new views must fit within 1280×800. The flex column layout in `.view-container` is `position: absolute; top: 0; left: 0; width: 100%; height: 100%`. Use `overflow: hidden` on view roots and scroll internally.
@@ -247,7 +247,7 @@ In the legacy CSS, ID selectors (`#view-*`) have specificity 100, which beats `.
 - **Do not use inline `style="..."` attributes for static styling** — all visual styles must use Tailwind classes or CSS classes from the design-token system. Inline styles are reserved for dynamic values controlled by JavaScript (e.g., `display:none` toggles, `width:0%` progress bars).
 - **Do not use magic `z-index` values in CSS** — always use the `--z-*` token scale defined in `:root`. The scale ranges from `--z-behind` (-1) through `--z-toast-peak` (30000) and is documented in `app.css` / `tokens.css`.
 - **Do not set `will-change` statically in CSS** — it must be added dynamically via JavaScript before animations and removed after to avoid GPU memory waste. Use React refs or the `useWillChange` hook pattern for animations.
-- **All new modals/overlays must trap focus** — use `frontend/src/react/components/primitives/FocusTrapContainer.tsx` (which wraps `focus-trap.js`) or an equivalent accessible focus-management pattern. This ensures keyboard and gamepad navigation stays trapped.
+- **All new modals/overlays must trap focus** — use `src/renderer/components/primitives/FocusTrapContainer.tsx` (which wraps `focus-trap.js`) or an equivalent accessible focus-management pattern. This ensures keyboard and gamepad navigation stays trapped.
 - **All interactive controls must have a minimum 40×40px hit target** on primary UI chrome (tabs, sidebar toggles, top-nav buttons). Use `min-width` / `min-height` so layout is not disrupted.
 
 ### Duplicate / clone cleanup workflow
@@ -330,10 +330,10 @@ The project follows the structure documented in `neurodeck-production-package/do
 | `src-tauri/src/db/migrations/` | SQLite schema evolution (001, 002, 003...) |
 | `src-tauri/tests/` | Rust integration tests |
 | `frontend/src/` | React 19 + TypeScript frontend — `main.tsx`, `react/App.tsx`, `react/features/`, `design-system/` |
-| `frontend/src/react/` | React app root, feature views, components, state, services, hooks, theme |
-| `frontend/src/react/services/bridgeAdapter.ts` | Typed bridge client: `invoke<T>()`, `listen()`, `BridgeError`, retry/backoff |
-| `frontend/src/design-system/` | Canonical design tokens, themes, and components |
-| `frontend/src/shared/` | Shared TypeScript types and contracts used by both frontend and backend |
+| `src/renderer/` | React app root, feature views, components, state, services, hooks, theme |
+| `src/renderer/services/bridgeAdapter.ts` | Typed bridge client: `invoke<T>()`, `listen()`, `BridgeError`, retry/backoff |
+| `src/renderer/design-system/` | Canonical design tokens, themes, and components |
+| `src/shared/` | Shared TypeScript types and contracts used by both frontend and backend |
 | `electron/` | Electron main process + preload script |
 | `infrastructure/` | Rust workspace crate — secrets, OAuth, Warpinator |
 | `plugins/` | Lua plugins auto-loaded at startup |
@@ -396,25 +396,25 @@ The project follows the structure documented in `neurodeck-production-package/do
 
 - **`google_client_id` must be set in `llm-term.toml`** under `[llm]` for the OAuth Gemini sign-in flow to work. `start_oauth_flow` reads it from `AppState.config.llm.google_client_id` and returns an error if empty. Register a client at console.cloud.google.com → APIs & Services → Credentials → OAuth 2.0 Client IDs (TV/Device type).
 
-- **Canvas Python/Bash/JS run IS fully implemented** — `exec_code_stream` dispatches via `commands/agent.rs`, streams stdout via `canvas_exec_line` WebSocket events, and enforces a 120s timeout. The React Canvas view calls `bridgeAdapter.invoke("exec_code_stream", { code, lang })` via `frontend/src/react/features/canvas/CanvasView.tsx`. HTML/CSS render in the preview iframe (no exec). Lua uses the separate `execute_lua` path.
+- **Canvas Python/Bash/JS run IS fully implemented** — `exec_code_stream` dispatches via `commands/agent.rs`, streams stdout via `canvas_exec_line` WebSocket events, and enforces a 120s timeout. The React Canvas view calls `bridgeAdapter.invoke("exec_code_stream", { code, lang })` via `src/renderer/features/canvas/CanvasView.tsx`. HTML/CSS render in the preview iframe (no exec). Lua uses the separate `execute_lua` path.
 
 - **`send_command` vs `execute_command_stream`** — there are two different LLM invocation paths. `execute_command_stream` is the older streaming path. `send_command` is the newer, fuller path with RAG injection, game context, persona, and memory storage. Always use `send_command` for new features.
 
 - **Voice STT uses cpal on Windows/macOS**: `audio_recorder.rs` captures 16kHz mono WAV via `cpal` + `hound`, then feeds it to `whisper.cpp` CLI. Linux still prefers `arecord` but falls back to `cpal` if unavailable. The Whisper model path is configurable in `llm-term.toml` `[stt]` section.
 
-- **The 📊 context drawer / TelemetryWidget** is wired and populated via `get_context_stats` — shows provider, model, RAM, memory record count, and session info. The toggle button slides the drawer open from the right side of the chat input bar in `frontend/src/react/components/workspace/TelemetryWidget.tsx`.
+- **The 📊 context drawer / TelemetryWidget** is wired and populated via `get_context_stats` — shows provider, model, RAM, memory record count, and session info. The toggle button slides the drawer open from the right side of the chat input bar in `src/renderer/components/workspace/TelemetryWidget.tsx`.
 
 - **BMAD personas are Lua-registered, not hardcoded** — `/john`, `/sally`, etc. call `setPersona()` via `plugins/bmad.lua`. If the Lua plugin fails to load, those commands silently disappear. The 9 built-in personas (including the BMAD ones) are hardcoded in `models.rs`'s `PERSONAS` lazy_static as a fallback.
 
-- **Radial menu uses backtick for keyboard, L2 for gamepad** — but L2 only works if the Steam Input `.vdf` profile is active. In desktop mode without Steam running, only the backtick shortcut works. The React `ControllerHintBar` (`frontend/src/react/components/layout/ControllerHintBar.tsx`) renders the current radial segments; the legacy `RADIAL_SEGMENTS` array is gone.
+- **Radial menu uses backtick for keyboard, L2 for gamepad** — but L2 only works if the Steam Input `.vdf` profile is active. In desktop mode without Steam running, only the backtick shortcut works. The React `ControllerHintBar` (`src/renderer/components/layout/ControllerHintBar.tsx`) renders the current radial segments; the legacy `RADIAL_SEGMENTS` array is gone.
 
 - **`pty_spawn` now accepts an `args: Option<Vec<String>>` parameter** — this was added to support SSH sessions. All existing callers pass `args: null` or omit the field.
 
-- **Prompt Lab view** (`frontend/src/react/features/prompt-lab/PromptLabView.tsx`) exposes AIDA/SCQA/PASTOR/CoT/ToT/PAS/Role+Constraints formulas, a template gallery, and a JPE explanation pane backed by `generate_jpe_explanation` (calls the active LLM). The Lua plugin `plugins/promptgen.lua` registers `/promptlab`, `/promptgen <task>`, and `/formula <name> <task>` shell commands.
+- **Prompt Lab view** (`src/renderer/features/prompt-lab/PromptLabView.tsx`) exposes AIDA/SCQA/PASTOR/CoT/ToT/PAS/Role+Constraints formulas, a template gallery, and a JPE explanation pane backed by `generate_jpe_explanation` (calls the active LLM). The Lua plugin `plugins/promptgen.lua` registers `/promptlab`, `/promptgen <task>`, and `/formula <name> <task>` shell commands.
 
 - **Cinematic boot screen** is now a React component rendered by `App.tsx` during initial data loading. It calls `list_plugins`, `get_config`, `get_personas`, `get_themes`, `get_doc_count`, and `get_context_stats` during startup to show real system state. It fades out and is removed from the DOM after completion — it does NOT block app initialization.
 
-- **Onboarding wizard** is a React modal (`frontend/src/react/components/onboarding/OnboardingModal.tsx`) shown to first-time users; calls `run_onboarding_diagnostics` to check PTY/network/keychain health. Dismissed state is persisted in `localStorage("neurodeck_onboarding_complete")`.
+- **Onboarding wizard** is a React modal (`src/renderer/components/onboarding/OnboardingModal.tsx`) shown to first-time users; calls `run_onboarding_diagnostics` to check PTY/network/keychain health. Dismissed state is persisted in `localStorage("neurodeck_onboarding_complete")`.
 
 - **Warpinator gRPC** runs on port `42000` inside `transfer.rs`'s `init_transfer_service`. Requires protobuf compilation — `infrastructure/build.rs` uses `protoc-bin-vendored` to avoid a system protoc dependency.
 

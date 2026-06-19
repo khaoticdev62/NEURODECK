@@ -1,172 +1,90 @@
-/**
- * NEURODECK — Steam Deck Layout Tests
- *
- * Validates every screen at 1280×800 (Steam Deck native resolution).
- * Run with the steam-deck Playwright project:
- *
- *   cd e2e && npx playwright test steam-deck-layout.spec.ts --project=steam-deck
- *
- * Screenshots land in test-results/ui-audit/deck-{view}.png
- */
-
 import { test, expect } from "@playwright/test";
 import { AppPage } from "../pages/AppPage";
-import * as fs from "fs";
+import {
+  STEAM_DECK_SCREENS,
+  STEAM_DECK_VIEWPORT,
+  auditSteamDeckScreen,
+  collectRuntimeDiagnostics,
+  expectCleanSteamDeckAudit,
+  openSteamDeckScreen,
+} from "../support/steam-deck-audit";
 
-const DECK_VIEWS = [
-  "chat",
-  "execution",
-  "agent",
-  "memory",
-  "canvas",
-  "terminal",
-  "ssh",
-  "ide",
-  "git",
-  "api-lab",
-  "cli-maker",
-  "browser",
-  "tunnel",
-  "share",
-  "torrent",
-  "remote",
-  "project",
-  "docs",
-  "prompt-lab",
-  "academy",
-  "graph",
-  "sessions",
-  "scheduler",
-  "orchestrator",
-  "sync",
-  "models",
-  "cache",
-  "plugins",
-  "diagnostics",
-  "fonts",
-  "mcp",
-  "security",
-  "themes",
-  "exports",
-  "maintenance",
-  "recovery",
-] as const;
+test.describe("Steam Deck readiness — 1280×800", () => {
+  test.use({ viewport: STEAM_DECK_VIEWPORT });
 
-test.beforeAll(() => {
-  fs.mkdirSync("test-results/ui-audit", { recursive: true });
-});
-
-test.describe("Steam Deck Layout — 1280×800", () => {
-  test.beforeEach(async ({ page }) => {
-    const app = new AppPage(page);
-    await app.mockTauriBackend();
-    await app.goto();
-  });
-
-  for (const viewId of DECK_VIEWS) {
-    test(`deck: ${viewId} — no overflow, content visible`, async ({ page }) => {
+  for (const screen of STEAM_DECK_SCREENS) {
+    test(`screen: ${screen.id} — geometry, runtime and content audit`, async ({ page }, testInfo) => {
+      const runtime = collectRuntimeDiagnostics(page);
       const app = new AppPage(page);
+      await app.mockTauriBackend();
+      await app.goto();
+      await openSteamDeckScreen(app, screen);
+      await app.stabilizeForScreenshot();
 
-      await app.navigateTo(viewId);
-      await page.waitForLoadState("networkidle").catch(() => {});
-
-      // Screenshot at deck resolution
-      await page.screenshot({
-        path: `test-results/ui-audit/deck-${viewId}.png`,
-        fullPage: false, // only viewport — Steam Deck doesn't scroll
+      const viewport = page.viewportSize();
+      expect(viewport).toEqual(STEAM_DECK_VIEWPORT);
+      await expect(page.locator(screen.root)).toBeVisible();
+      await testInfo.attach(`steam-deck-${screen.id}.png`, {
+        body: await page.screenshot({ fullPage: false }),
+        contentType: "image/png",
       });
 
-      // No horizontal overflow at 1280px
-      await app.assertNoHorizontalOverflow();
-
-      // View renders something meaningful (not blank)
-      const viewEl = page.getByTestId(`view-${viewId}`);
-      await expect(viewEl).toHaveClass(/active/);
-
-      // View has at least one visible text element
-      const textCount = await viewEl.locator("h1, h2, h3, p, span").count();
-      expect(textCount, `view ${viewId} appears blank — no text elements`).toBeGreaterThan(0);
+      const report = await auditSteamDeckScreen(page, screen, runtime, testInfo);
+      expectCleanSteamDeckAudit(report);
     });
   }
 
-  test("deck: sidebar renders in icon-only mode at 1280px", async ({ page }) => {
-    // The sidebar starts collapsed (icon-only) at 1280px without hover
-    // First aside is the primary nav sidebar; second is the context panel (xl:flex)
-    const sidebar = page.locator("aside").first();
-    await expect(sidebar).toBeVisible();
-    // All nav items should be present even in collapsed state
-    const navItems = page.locator("button[data-view]");
-    const count = await navItems.count();
-    expect(count, "sidebar should have all nav items").toBeGreaterThanOrEqual(36);
-  });
-
-  test("deck: primary action touch targets are adequate", async ({ page }) => {
-    // Check chat input area (primary interaction surface)
+  test("primary navigation supports focus, Enter and visible focus", async ({ page }) => {
     const app = new AppPage(page);
-    await app.navigateTo("chat");
+    await app.mockTauriBackend();
+    await app.goto();
 
-    const smallTargets = await app.checkTouchTargets();
-    // Report but don't hard-fail on icon-only buttons (they're legitimately small at 28px)
-    // Hard-fail only if a primary CTA is under 36px
-    const criticallySmall = smallTargets.filter(
-      (t) => t.h < 28 && t.text.length > 3 // text buttons (not icon-only)
-    );
+    const chat = page.getByTestId("nav-tab-chat").filter({ visible: true }).first();
+    await chat.focus();
+    await expect(chat).toBeFocused();
+    const focusStyle = await chat.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return { outline: style.outlineStyle, width: style.outlineWidth, shadow: style.boxShadow };
+    });
     expect(
-      criticallySmall,
-      `primary text buttons under 28px: ${JSON.stringify(criticallySmall)}`
-    ).toEqual([]);
+      focusStyle.outline !== "none" && focusStyle.width !== "0px" || focusStyle.shadow !== "none",
+      "focused navigation must have a visible outline or focus shadow",
+    ).toBe(true);
+
+    await page.getByTestId("nav-tab-memory").filter({ visible: true }).first().focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("view-memory")).toHaveClass(/active/);
   });
 
-  test("deck: settings overlay fits within viewport", async ({ page }) => {
+  test("settings traps focus and Escape restores it", async ({ page }) => {
     const app = new AppPage(page);
-    await app.openSettings();
+    await app.mockTauriBackend();
+    await app.goto();
 
-    const overlay = page.locator("#settings-overlay");
-    await expect(overlay).toHaveClass(/active/);
-
-    // Settings modal should not overflow viewport height
-    const overflowY = await page.evaluate(() => {
-      const modal = document.querySelector("#settings-overlay");
-      if (!modal) return false;
-      const rect = modal.getBoundingClientRect();
-      return rect.bottom > window.innerHeight + 1;
-    });
-    expect(overflowY, "settings overlay exceeds viewport height at 1280×800").toBe(false);
-
-    await page.screenshot({ path: "test-results/ui-audit/deck-settings-overlay.png" });
-    await app.closeSettings();
+    await app.settingsBtn.focus();
+    await app.settingsBtn.press("Enter");
+    await expect(app.settingsOverlay).toHaveClass(/active/);
+    await page.keyboard.press("Tab");
+    const focusInside = await page.evaluate(() =>
+      Boolean(document.activeElement?.closest("#settings-overlay")));
+    expect(focusInside, "settings focus must stay inside the modal").toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(app.settingsOverlay).not.toHaveClass(/active/);
+    await expect(app.settingsBtn).toBeFocused();
   });
 
-  test("deck: command palette fits within viewport", async ({ page }) => {
+  test("controller mode remains inside the viewport and exposes named hints", async ({ page }) => {
     const app = new AppPage(page);
-    await app.openCommandPalette();
-
-    const overflowY = await page.evaluate(() => {
-      const overlay = document.querySelector("#command-palette-overlay");
-      if (!overlay) return false;
-      const rect = overlay.getBoundingClientRect();
-      return rect.bottom > window.innerHeight + 1;
-    });
-    expect(overflowY, "command palette exceeds viewport at 1280×800").toBe(false);
-
-    await page.screenshot({ path: "test-results/ui-audit/deck-command-palette.png" });
-    await app.closeCommandPalette();
-  });
-
-  test("deck: controller hint bar renders in deck mode and fits viewport", async ({ page }) => {
-    const app = new AppPage(page);
+    await app.mockTauriBackend();
+    await app.goto();
     await app.setDeckMode(true);
-    await app.navigateTo("chat");
-
     await expect(app.controllerHintBar).toBeVisible();
-
-    const hintRect = await app.controllerHintBar.evaluate((el) => {
-      const r = el.getBoundingClientRect();
-      return { height: r.height, bottom: r.bottom };
-    });
-    expect(hintRect.height, "hint bar should be at least 40px tall").toBeGreaterThanOrEqual(40);
-    expect(hintRect.bottom, "hint bar should sit inside viewport").toBeLessThanOrEqual(800);
-
-    await page.screenshot({ path: "test-results/ui-audit/deck-mode-hint-bar.png" });
+    const rect = await app.controllerHintBar.boundingBox();
+    expect(rect).not.toBeNull();
+    expect(rect!.y + rect!.height).toBeLessThanOrEqual(STEAM_DECK_VIEWPORT.height);
+    const unnamed = await app.controllerHintBar
+      .locator("button:not([aria-label])")
+      .count();
+    expect(unnamed).toBe(0);
   });
 });

@@ -150,7 +150,7 @@ export function SchedulerView() {
         )}
 
         <div
-          role="list"
+          role={!loading && !loadError && tasks.length > 0 ? "list" : undefined}
           aria-label="Scheduled tasks"
           className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 pb-4 scrollbar-thin"
         >

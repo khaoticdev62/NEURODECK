@@ -67,7 +67,7 @@ export function SplashScreen({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-nd-surface-app"
+      className="fixed inset-0 z-toast-peak flex flex-col items-center justify-center bg-nd-surface-app"
       aria-label="NEURODECK is loading"
       role="status"
       aria-live="polite"

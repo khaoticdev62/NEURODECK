@@ -275,7 +275,7 @@ export function GlobalSearch({ open, onClose, dispatch }: GlobalSearchProps) {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-start justify-center pt-[12vh]"
+      className="fixed inset-0 z-overlay flex items-start justify-center pt-[12vh]"
       role="presentation"
       onKeyDown={handleKeyDown}
     >

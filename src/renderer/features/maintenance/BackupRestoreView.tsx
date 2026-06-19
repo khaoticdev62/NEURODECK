@@ -188,7 +188,7 @@ export function BackupRestoreView({ state: _state }: { state: NeuroDeckState }) 
 
       {restoring && (
         <div
-          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-nd-surface-bg/90 backdrop-blur-sm"
+          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 bg-nd-bg/90 backdrop-blur-sm"
           role="status"
           aria-live="polite"
           aria-label={`Restoring backup: ${restoreProgress}%`}

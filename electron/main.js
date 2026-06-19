@@ -581,21 +581,36 @@ function loadMainWindowURL() {
 
   // Dev: load Vite dev server if running, otherwise fall back to built files.
   // Use an HTTP GET with explicit 127.0.0.1 to prevent Windows IPv6 resolution mismatches.
+  // dev-launcher.js already waits for Vite to respond before spawning Electron, so a
+  // single probe failure here is almost always a transient blip (AV scan, port not yet
+  // listening) rather than "Vite isn't running" — retry a few times before giving up,
+  // otherwise the whole session silently loads the stale frontend/dist build with no
+  // way to recover short of restarting Electron.
   if (process.env.ELECTRON_DEV) {
-    const req = require('http').get('http://127.0.0.1:1420/', (res) => {
-      res.resume();
-      mainWindow.loadURL('http://127.0.0.1:1420');
-      mainWindow.webContents.openDevTools();
-    });
-    req.setTimeout(3000, () => {
-      req.destroy();
-      console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
-      mainWindow.loadURL('neurodeck://app/index.html');
-    });
-    req.once('error', () => {
-      console.log('[main] Vite dev server not running on port 1420. Loading built production files.');
-      mainWindow.loadURL('neurodeck://app/index.html');
-    });
+    const maxAttempts = 5;
+    const retryDelayMs = 500;
+    const probeTimeoutMs = 1500;
+
+    const probe = (attempt) => {
+      const req = require('http').get('http://127.0.0.1:1420/', (res) => {
+        res.resume();
+        console.log('[main] Loaded Vite dev server (HMR) on http://127.0.0.1:1420');
+        mainWindow.loadURL('http://127.0.0.1:1420');
+        mainWindow.webContents.openDevTools();
+      });
+      const giveUpOrRetry = () => {
+        req.destroy();
+        if (attempt < maxAttempts) {
+          setTimeout(() => probe(attempt + 1), retryDelayMs);
+        } else {
+          console.log(`[main] Vite dev server not reachable on port 1420 after ${maxAttempts} attempts. Loaded production build from frontend/dist.`);
+          mainWindow.loadURL('neurodeck://app/index.html');
+        }
+      };
+      req.setTimeout(probeTimeoutMs, giveUpOrRetry);
+      req.once('error', giveUpOrRetry);
+    };
+    probe(1);
   } else {
     mainWindow.loadURL('neurodeck://app/index.html');
   }

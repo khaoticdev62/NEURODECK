@@ -119,7 +119,9 @@ export function RemoteView() {
   }, [status.running, ttl, log]);
 
   useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (logs.length > 0) {
+      logsEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
   }, [logs]);
 
   useEffect(() => {

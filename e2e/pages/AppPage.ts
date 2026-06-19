@@ -154,6 +154,7 @@ export class AppPage {
       await item.click();
       await this.closeCommandPalette();
     }
+    await this.page.evaluate(() => window.scrollTo(0, 0));
     await expect(this.page.getByTestId(`view-${view}`)).toHaveClass(/active/);
   }
 
@@ -170,9 +171,14 @@ export class AppPage {
   }
 
   async openCommandPalette() {
+    // Ensure the app finished basic rendering and the button is present.
+    await this.page.waitForSelector('#main-content', { state: 'visible', timeout: 15000 }).catch(() => {});
+    await this.page.waitForSelector('#command-palette-btn', { state: 'visible', timeout: 15000 }).catch(() => {});
     // Use evaluate click so it works even when the sidebar is hidden on narrow
     // viewports (the button is still in the DOM).
     await this.commandPaletteBtn.evaluate((el) => (el as HTMLButtonElement).click());
+    // Allow short stabilization for overlays/animations before asserting.
+    await this.page.waitForTimeout(120);
     await expect(this.commandPaletteOverlay).toHaveClass(/active/);
   }
 
@@ -237,6 +243,33 @@ export class AppPage {
 
   async mockBridgeBackend() {
     await this.mockTauriBackend();
+  }
+
+  async stabilizeForScreenshot() {
+    await this.page.waitForLoadState("networkidle").catch(() => {});
+    await this.page.evaluate(async () => {
+      if (document.fonts?.ready) await document.fonts.ready;
+      localStorage.setItem("neurodeck:e2e-clock", "2026-06-19T12:00:00.000Z");
+    });
+    await this.page.addStyleTag({ content: `
+      *, *::before, *::after {
+        animation-delay: 0s !important;
+        animation-duration: 0s !important;
+        caret-color: transparent !important;
+        transition-delay: 0s !important;
+        transition-duration: 0s !important;
+      }
+      .live-timer,
+      .timestamp,
+      .timeago,
+      .last-updated,
+      .last-seen,
+      .terminal-cursor,
+      .monaco-editor .cursors {
+        visibility: hidden !important;
+      }
+    ` });
+    await this.page.waitForTimeout(100);
   }
 
   // ── Audit helpers ─────────────────────────────────────────────────────────

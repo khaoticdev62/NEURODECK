@@ -31,17 +31,18 @@
   --nd-spacing-touch-target: var(--nd-target-min);
   --nd-spacing-item: 8px;
 
-  /* Z-index scale (matches AGENTS.md documented range) */
-  --z-behind: -1;
-  --z-wallpaper: 0;
-  --z-base: 1;
-  --z-sticky: 10;
-  --z-dropdown: 20;
-  --z-overlay: 30;
-  --z-modal: 40;
-  --z-toast: 50;
-  --z-tooltip: 60;
-  --z-toast-peak: 30000;
+  /* Z-index scale — aliases to the canonical --nd-z-* tokens so there is
+     a single source of truth across legacy CSS, DS components, and Tailwind. */
+  --z-behind: var(--nd-z-behind, -1);
+  --z-wallpaper: var(--nd-z-wallpaper, 0);
+  --z-base: var(--nd-z-base, 1);
+  --z-sticky: var(--nd-z-sticky, 10);
+  --z-dropdown: var(--nd-z-dropdown, 140);
+  --z-overlay: var(--nd-z-overlay, 9989);
+  --z-modal: var(--nd-z-modal, 9990);
+  --z-toast: var(--nd-z-toast, 30000);
+  --z-tooltip: var(--nd-z-tooltip, 5000);
+  --z-toast-peak: var(--nd-z-toast-peak, 30000);
 }
 
 /* Density overrides */

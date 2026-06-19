@@ -61,7 +61,11 @@ export const PrimarySidebar = memo(function PrimarySidebar({
   const toggleSection = useCallback((section: string) => {
     setCollapsedSections((prev) => {
       const next = new Set(prev);
-      next.has(section) ? next.delete(section) : next.add(section);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
       try { localStorage.setItem(LS_SECTIONS, JSON.stringify([...next])); } catch { /* noop */ }
       return next;
     });
@@ -182,6 +186,9 @@ export const PrimarySidebar = memo(function PrimarySidebar({
                     active={active}
                     expanded={expanded}
                     dispatch={dispatch}
+                    markActive={false}
+                    ariaLabel={`${item.label} (recent)`}
+                    testId={`recent-nav-tab-${item.id}`}
                   />
                 );
               })}
@@ -314,22 +321,29 @@ function NavButton({
   active,
   expanded,
   dispatch,
+  markActive = true,
+  ariaLabel = item.label,
+  testId = `nav-tab-${item.id}`,
 }: {
   item: (typeof navItems)[number];
   Icon: (typeof navItems)[number]["icon"];
   active: boolean;
   expanded: boolean;
   dispatch: Dispatch<NeuroDeckAction>;
+  markActive?: boolean;
+  ariaLabel?: string;
+  testId?: string;
 }) {
   return (
     <button
       type="button"
-      data-testid={`nav-tab-${item.id}`}
-      data-onboarding-anchor={`nav-${item.id}`}
+      data-testid={testId}
+      data-onboarding-anchor={markActive ? `nav-${item.id}` : undefined}
       data-view={item.id}
+      data-active={active && markActive ? "true" : undefined}
       aria-current={active ? "page" : undefined}
-      aria-label={item.label}
-      title={item.label}
+      aria-label={ariaLabel}
+      title={ariaLabel}
       onClick={() => dispatch({ type: "set-view", view: item.id as ViewId })}
       onKeyDown={(e) => {
         const nav = e.currentTarget.closest("nav");
@@ -342,7 +356,7 @@ function NavButton({
       }}
       className={`no-drag group/nav flex w-full min-h-touch items-center rounded-[var(--nd-radius-md)] px-2 py-2 text-left transition-[background-color,border-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
         active
-          ? "active border-l-2 border-[var(--nd-border-focus)] bg-gradient-to-r from-[rgba(139,114,255,0.14)] to-[rgba(94,235,255,0.06)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]"
+          ? `${markActive ? "active" : ""} border-l-2 border-[var(--nd-border-focus)] bg-gradient-to-r from-[rgba(139,114,255,0.14)] to-[rgba(94,235,255,0.06)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]`
           : "border-l-2 border-transparent text-[var(--nd-text-muted)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-text-primary)]"
       } ${expanded ? "" : "justify-center"}`}
     >

@@ -14,14 +14,14 @@ export default meta;
 type Story = StoryObj<typeof Toggle>;
 
 export const Default: Story = {
-  render: () => {
+  render: function DefaultStory() {
     const [checked, setChecked] = useState(false);
     return <Toggle label="Enable notifications" checked={checked} onChange={setChecked} />;
   },
 };
 
 export const Checked: Story = {
-  render: () => {
+  render: function CheckedStory() {
     const [checked, setChecked] = useState(true);
     return <Toggle label="Deck Mode" checked={checked} onChange={setChecked} />;
   },
@@ -32,7 +32,7 @@ export const Disabled: Story = {
 };
 
 export const NoLabel: Story = {
-  render: () => {
+  render: function NoLabelStory() {
     const [checked, setChecked] = useState(false);
     return <Toggle checked={checked} onChange={setChecked} aria-label="Toggle feature" />;
   },

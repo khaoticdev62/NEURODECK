@@ -607,7 +607,7 @@ function SetupOnboardingModal({ state, dispatch }: OnboardingModalProps) {
     <div
       id="onboarding-overlay"
       data-controller-overlay="true"
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 px-4 backdrop-blur-md"
+      className="fixed inset-0 z-modal flex items-center justify-center bg-black/75 px-4 backdrop-blur-md"
     >
       <div
         ref={wizardRef}

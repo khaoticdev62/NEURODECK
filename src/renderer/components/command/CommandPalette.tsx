@@ -53,6 +53,7 @@ import type {
 import type { OnboardingMode } from "../../onboarding/onboarding.types";
 import { useControllerAction } from "../../input/controller/useControllerAction";
 import { Badge } from "../primitives/Badge";
+import { FocusTrapContainer } from "../primitives/FocusTrapContainer";
 
 const RECENT_KEY = "neurodeck:recent-commands";
 const MAX_RECENT = 6;
@@ -586,9 +587,11 @@ export const CommandPalette = memo(function CommandPalette({
       style={{ backgroundColor: "var(--nd-surface-overlay)" }}
       onMouseDown={() => dispatch({ type: "toggle-command", open: false })}
     >
-      <div
+      <FocusTrapContainer
+        active={isOpen}
+        onEscape={() => dispatch({ type: "toggle-command", open: false })}
         className="no-drag mt-[10vh] w-full max-w-2xl overflow-hidden rounded-[var(--nd-radius-lg)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-modal)] shadow-[var(--nd-elevation-overlay)]"
-        onMouseDown={(event) => event.stopPropagation()}
+        onMouseDown={(event: React.MouseEvent) => event.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-[var(--nd-border-subtle)] px-4 py-3">
           <Search className="h-5 w-5 text-[var(--nd-accent-primary)]" aria-hidden="true" />
@@ -718,7 +721,7 @@ export const CommandPalette = memo(function CommandPalette({
             <Trash2 className="h-4 w-4" /> Reset local UI state
           </button>
         </div>
-      </div>
+      </FocusTrapContainer>
     </div>
   );
 });

@@ -4,7 +4,7 @@
    ============================================================
    This file is the single source of truth for the CSS custom
    property namespace used by components in
-   frontend/src/design-system/ and the wider React UI.
+   src/renderer/design-system/ and the wider React UI.
 
    It merges the canonical v1.0 token set with the extended
    semantic aliases required by the existing workstation shell

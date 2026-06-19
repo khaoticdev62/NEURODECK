@@ -35,7 +35,7 @@ const SCOPE_META: Record<LuaScope, { label: string; description: string; risk: "
 
 const RISK_COLORS: Record<"low" | "medium" | "high", string> = {
   low: "text-nd-status-success",
-  medium: "text-nd-status-warning",
+  medium: "text-nd-warning",
   high: "text-nd-status-error",
 };
 

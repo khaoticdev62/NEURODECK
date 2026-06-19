@@ -33,6 +33,7 @@ export function LabCard({ lab, completed, onStart }: LabCardProps) {
       {/* Difficulty pips */}
       <div
         className="flex shrink-0 flex-col items-center gap-0.5 pt-0.5"
+        role="img"
         aria-label={`Difficulty ${lab.difficulty} of 5`}
       >
         {Array.from({ length: 5 }, (_, i) => (
