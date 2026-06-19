@@ -148,6 +148,8 @@ export type {
   LspLocation,
   LspServerInfo,
   KnownLspServer,
+  LspCodeAction,
+  LspTextEdit,
 } from "./bridge/domains/lsp";
 export type { McpStatus } from "./bridge/domains/mcp";
 export type {

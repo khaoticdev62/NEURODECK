@@ -4250,6 +4250,30 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             Ok(serde_json::json!(locs))
         }
 
+        "lsp_get_code_actions" => {
+            let language = args
+                .get("language")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'language'")?
+                .to_string();
+            let uri = args
+                .get("uri")
+                .and_then(|v| v.as_str())
+                .ok_or("Missing 'uri'")?
+                .to_string();
+            let line = args.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let character = args.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32;
+            let diagnostics: Vec<crate::lsp::LspDiagnostic> = args
+                .get("diagnostics")
+                .and_then(|v| serde_json::from_value(v.clone()).ok())
+                .unwrap_or_default();
+            let actions = crate::lsp::lsp_get_code_actions(
+                language, uri, line, character, diagnostics, state.lsp.clone(),
+            )
+            .await?;
+            Ok(serde_json::json!(actions))
+        }
+
         // ────────────────────────────────────────────────────────────────────
         // Browser Extended
         // ────────────────────────────────────────────────────────────────────

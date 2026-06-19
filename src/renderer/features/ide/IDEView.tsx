@@ -10,7 +10,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { neurodeckApi } from "../../services/bridgeAdapter";
-import type { LspDiagnostic, LspCompletionItem, LspHover } from "../../services/bridgeAdapter";
+import type { LspDiagnostic, LspCompletionItem, LspHover, LspTextEdit } from "../../services/bridgeAdapter";
 import type { PredictionResult, CommandTemplate, IdeMode } from "../../shared/ide/ideContracts";
 import { getProfileForFile } from "../../shared/ide/languageProfiles";
 import { getTopCommands } from "../../shared/ide/languageCommands";
@@ -66,6 +66,7 @@ export function IDEView() {
   const [pendingCommand, setPendingCommand] = useState<PendingCommand | null>(null);
   const [diagnosticFixes, setDiagnosticFixes] = useState<DiagnosticFix[]>([]);
   const [showDiagnosticPanel, setShowDiagnosticPanel] = useState(false);
+  const [loadingFixes, setLoadingFixes] = useState(false);
   const [activeDiagnosticMsg, setActiveDiagnosticMsg] = useState("");
   const [, setCommandOutput] = useState<{ type: string; data: string }[]>([]);
 
@@ -261,6 +262,70 @@ export function IDEView() {
     setLineCount(lines);
   }, []);
 
+  // Apply LSP TextEdits to a string in reverse order so earlier positions stay valid.
+  const applyTextEdits = useCallback((content: string, edits: LspTextEdit[]): string => {
+    const sorted = [...edits].sort((a, b) => {
+      if (b.range.start.line !== a.range.start.line)
+        return b.range.start.line - a.range.start.line;
+      return b.range.start.character - a.range.start.character;
+    });
+    const lines = content.split("\n");
+    for (const edit of sorted) {
+      const sl = edit.range.start.line;
+      const sc = edit.range.start.character;
+      const el = edit.range.end.line;
+      const ec = edit.range.end.character;
+      if (sl === el) {
+        const line = lines[sl] ?? "";
+        lines[sl] = line.slice(0, sc) + edit.new_text + line.slice(ec);
+      } else {
+        const prefix = (lines[sl] ?? "").slice(0, sc);
+        const suffix = (lines[el] ?? "").slice(ec);
+        const replacement = (prefix + edit.new_text + suffix).split("\n");
+        lines.splice(sl, el - sl + 1, ...replacement);
+      }
+    }
+    return lines.join("\n");
+  }, []);
+
+  // Open the DiagnosticFixPanel and fetch real code actions from LSP for the given diagnostic.
+  const openCodeActionPanel = useCallback(
+    async (diag: LspDiagnostic) => {
+      if (!activeTab) return;
+      const tab = openTabs.find((t) => t.path === activeTab);
+      setActiveDiagnosticMsg(diag.message);
+      setDiagnosticFixes([]);
+      setShowDiagnosticPanel(true);
+
+      if (!tab || !supportsLspLanguage(tab.lang) || lspStatus !== "ready") return;
+
+      setLoadingFixes(true);
+      try {
+        const actions = await neurodeckApi.lsp.getCodeActions(
+          tab.lang,
+          fileUri(activeTab),
+          diag.range.start.line,
+          diag.range.start.character,
+          diagnostics
+        );
+        setDiagnosticFixes(
+          actions.map((a, i) => ({
+            id: `action-${i}`,
+            title: a.title,
+            kind: a.kind ?? undefined,
+            isPreferred: a.is_preferred,
+            edits: a.edits,
+          }))
+        );
+      } catch (e) {
+        log(`Code actions failed: ${e}`, "warn");
+      } finally {
+        setLoadingFixes(false);
+      }
+    },
+    [activeTab, openTabs, lspStatus, diagnostics, log]
+  );
+
   const onEditorCursorChange = useCallback(() => {
     if (!activeTab || !editorRef.current) return;
     const tab = openTabs.find((t) => t.path === activeTab);
@@ -394,9 +459,8 @@ export function IDEView() {
           log(`Applied: ${p.label}`, "ok");
         }
       } else if (p.type === "diagnostic_fix") {
-        setShowDiagnosticPanel(true);
-        setActiveDiagnosticMsg(diagnostics[0]?.message ?? "Diagnostic");
-        setDiagnosticFixes([{ id: "apply-fix", title: "Apply suggested fix", kind: "quickfix" }]);
+        const diag = diagnostics[0];
+        if (diag) void openCodeActionPanel(diag);
       }
       setShowPredictions(false);
     },
@@ -631,9 +695,8 @@ export function IDEView() {
                       icon={AlertCircle}
                       className="ml-auto text-nd-accent-error hover:bg-nd-accent-error/10"
                       onClick={() => {
-                        setShowDiagnosticPanel(true);
-                        setActiveDiagnosticMsg(diagnostics[0]?.message ?? "");
-                        setDiagnosticFixes([]);
+                        const diag = diagnostics[0];
+                        if (diag) void openCodeActionPanel(diag);
                       }}
                     >
                       {diagnostics.length} issue{diagnostics.length !== 1 ? "s" : ""}
@@ -698,8 +761,43 @@ export function IDEView() {
                   <DiagnosticFixPanel
                     fixes={diagnosticFixes}
                     diagnosticMessage={activeDiagnosticMsg}
-                    onApply={(fix) => {
-                      log(`Applied fix: ${fix.title}`, "ok");
+                    loading={loadingFixes}
+                    onApply={async (fix) => {
+                      if (!activeTab || !editorRef.current) return;
+                      if (fix.edits.length === 0) {
+                        log(`No edits available for: ${fix.title}`, "warn");
+                        setShowDiagnosticPanel(false);
+                        return;
+                      }
+                      const newContent = applyTextEdits(editorRef.current.value, fix.edits);
+                      editorRef.current.value = newContent;
+                      setOpenTabs((prev) =>
+                        prev.map((t) =>
+                          t.path === activeTab
+                            ? { ...t, content: newContent, dirty: true, lspVersion: t.lspVersion + 1 }
+                            : t
+                        )
+                      );
+                      updateLineNumbers();
+                      // Notify LSP of the change.
+                      const tab = openTabs.find((t) => t.path === activeTab);
+                      if (tab && supportsLspLanguage(tab.lang)) {
+                        neurodeckApi.lsp
+                          .changeDocument(tab.lang, fileUri(activeTab), newContent, tab.lspVersion + 1)
+                          .catch(() => {});
+                      }
+                      // Auto-save after applying a fix.
+                      try {
+                        await neurodeckApi.ide.writeWorkspaceFile(activeTab, newContent);
+                        setOpenTabs((prev) =>
+                          prev.map((t) =>
+                            t.path === activeTab ? { ...t, dirty: false } : t
+                          )
+                        );
+                        log(`Fix applied and saved: ${fix.title}`, "ok");
+                      } catch (e) {
+                        log(`Fix applied but save failed: ${e}`, "warn");
+                      }
                       setShowDiagnosticPanel(false);
                     }}
                     onClose={() => setShowDiagnosticPanel(false)}

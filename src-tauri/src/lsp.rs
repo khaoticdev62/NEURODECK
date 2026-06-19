@@ -67,6 +67,27 @@ pub struct LspLocation {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LspTextEdit {
+    pub range: LspRange,
+    pub new_text: String,
+}
+
+/// A single code action returned by `textDocument/codeAction`.
+/// `edits` contains the TextEdits for the requested file URI (if the server
+/// provided them inline; some require a `codeAction/resolve` round-trip which
+/// we do automatically when the initial result has no edits).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct LspCodeAction {
+    pub title: String,
+    pub kind: Option<String>,
+    pub is_preferred: bool,
+    /// Text edits scoped to the requested file URI, ready to apply.
+    pub edits: Vec<LspTextEdit>,
+    /// Raw action value stored so callers can do resolve if edits is empty.
+    pub raw: Value,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct LspServerInfo {
     pub language: String,
     pub command: String,
@@ -755,6 +776,144 @@ pub async fn lsp_get_definitions(
     };
 
     Ok(locs)
+}
+
+/// Request code actions (quick fixes, refactors) for a diagnostic range.
+///
+/// Returns actions whose `edits` field is pre-populated for `uri`. When the
+/// initial response carries no edit (the server expects `codeAction/resolve`),
+/// a resolve round-trip is made automatically.
+pub async fn lsp_get_code_actions(
+    language: String,
+    uri: String,
+    line: u32,
+    character: u32,
+    diagnostics: Vec<LspDiagnostic>,
+    state: Arc<Mutex<LspManager>>,
+) -> Result<Vec<LspCodeAction>, String> {
+    let (stdin_tx, pending, next_id) =
+        take_channels(&state.lock().unwrap_or_else(|e| e.into_inner()), &language)
+            .ok_or_else(|| format!("LSP '{}' not running", language))?;
+
+    let position = json!({ "line": line, "character": character });
+    let range = json!({ "start": position, "end": position });
+    let diag_values: Vec<Value> = diagnostics
+        .iter()
+        .map(|d| serde_json::to_value(d).unwrap_or(Value::Null))
+        .collect();
+
+    let result = send_request(
+        stdin_tx.clone(),
+        pending.clone(),
+        next_id.clone(),
+        "textDocument/codeAction",
+        json!({
+            "textDocument": { "uri": uri },
+            "range": range,
+            "context": { "diagnostics": diag_values, "only": ["quickfix", "source"] }
+        }),
+        8,
+    )
+    .await?;
+
+    if result.is_null() {
+        return Ok(vec![]);
+    }
+
+    let raw_actions: Vec<Value> = result.as_array().cloned().unwrap_or_default();
+    let mut actions: Vec<LspCodeAction> = Vec::with_capacity(raw_actions.len());
+
+    for raw in raw_actions {
+        // Skip pure Command entries (no edit field and kind == null).
+        let title = raw["title"].as_str().unwrap_or("Fix").to_string();
+        let kind = raw.get("kind").and_then(|k| k.as_str()).map(|s| s.to_string());
+        let is_preferred = raw.get("isPreferred").and_then(|v| v.as_bool()).unwrap_or(false);
+
+        // Extract TextEdits for our URI from edit.changes or edit.documentChanges.
+        let edits = extract_edits_for_uri(&raw, &uri);
+
+        // If server returned no edits inline, attempt a codeAction/resolve round-trip.
+        let edits = if edits.is_empty() {
+            match send_request(
+                stdin_tx.clone(),
+                pending.clone(),
+                next_id.clone(),
+                "codeAction/resolve",
+                raw.clone(),
+                5,
+            )
+            .await
+            {
+                Ok(resolved) => extract_edits_for_uri(&resolved, &uri),
+                Err(_) => vec![],
+            }
+        } else {
+            edits
+        };
+
+        actions.push(LspCodeAction { title, kind, is_preferred, edits, raw });
+    }
+
+    // Surface preferred fixes first.
+    actions.sort_by(|a, b| b.is_preferred.cmp(&a.is_preferred));
+    Ok(actions)
+}
+
+fn extract_edits_for_uri(action: &Value, uri: &str) -> Vec<LspTextEdit> {
+    let edit = match action.get("edit") {
+        Some(e) => e,
+        None => return vec![],
+    };
+
+    // Prefer documentChanges (versioned) over changes (unversioned).
+    if let Some(doc_changes) = edit.get("documentChanges").and_then(|v| v.as_array()) {
+        for change in doc_changes {
+            let change_uri = change
+                .get("textDocument")
+                .and_then(|td| td.get("uri"))
+                .and_then(|u| u.as_str())
+                .unwrap_or("");
+            if change_uri == uri {
+                if let Some(edits) = change.get("edits").and_then(|e| e.as_array()) {
+                    return parse_text_edits(edits);
+                }
+            }
+        }
+        return vec![];
+    }
+
+    // Fall back to edit.changes[uri].
+    if let Some(changes) = edit.get("changes").and_then(|c| c.as_object()) {
+        if let Some(edits) = changes.get(uri).and_then(|e| e.as_array()) {
+            return parse_text_edits(edits);
+        }
+    }
+
+    vec![]
+}
+
+fn parse_text_edits(raw: &[Value]) -> Vec<LspTextEdit> {
+    raw.iter()
+        .filter_map(|e| {
+            let range = e.get("range")?;
+            let start = range.get("start")?;
+            let end = range.get("end")?;
+            let new_text = e.get("newText").and_then(|t| t.as_str()).unwrap_or("").to_string();
+            Some(LspTextEdit {
+                range: LspRange {
+                    start: LspPosition {
+                        line: start.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+                        character: start.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+                    },
+                    end: LspPosition {
+                        line: end.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+                        character: end.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+                    },
+                },
+                new_text,
+            })
+        })
+        .collect()
 }
 
 /// Return the catalog of well-known language servers.
