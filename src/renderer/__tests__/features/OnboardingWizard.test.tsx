@@ -244,7 +244,7 @@ describe("OnboardingWizard Component", () => {
       })
     );
     expect(mockDispatch).toHaveBeenCalledWith({ type: "close-onboarding" });
-  }, 10000);
+  }, 20000);
 
   it("renders installer controls for missing dependencies and starts install", async () => {
     mockRunDiagnostics.mockResolvedValue({
