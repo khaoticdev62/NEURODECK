@@ -1,13 +1,18 @@
+import type React from "react";
+
 export function BrandLogo({
   className = "h-16 w-16",
+  style,
   "aria-hidden": ariaHidden = true,
 }: {
   className?: string;
+  style?: React.CSSProperties;
   "aria-hidden"?: boolean;
 }) {
   return (
     <svg
       className={className}
+      style={style}
       viewBox="0 0 512 512"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

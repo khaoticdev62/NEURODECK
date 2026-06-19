@@ -62,7 +62,8 @@ export function EmptyState({
       {showBox ? (
         <div
           className={[
-            "mb-5 flex items-center justify-center border border-nd-border-subtle bg-nd-surface-secondary/60 shadow-panel",
+            "mb-5 flex items-center justify-center border border-nd-border-subtle shadow-panel",
+            "bg-gradient-to-b from-[var(--nd-surface-secondary)] to-[var(--nd-surface-tertiary)]",
             v.iconBox,
           ].join(" ")}
         >
@@ -83,7 +84,7 @@ export function EmptyState({
       <p className={`${v.desc} mt-2 leading-relaxed text-nd-text-muted`}>
         {description}
       </p>
-      {action && <div className="mt-6">{action}</div>}
+      {action && <div className={variant === "deck" ? "mt-8" : "mt-6"}>{action}</div>}
     </div>
   );
 }

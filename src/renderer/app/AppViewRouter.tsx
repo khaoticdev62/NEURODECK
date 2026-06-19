@@ -195,6 +195,7 @@ const SafeModeScreen = lazy(() =>
 function renderView(id: ViewId, content: ReactNode) {
   return (
     <div
+      key={id}
       id={`view-${id}`}
       data-testid={`view-${id}`}
       data-controller-screen={id}

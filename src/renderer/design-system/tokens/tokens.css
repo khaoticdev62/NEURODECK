@@ -150,6 +150,8 @@
   --nd-accent-warning: var(--nd-yellow-400);
   --nd-accent-error: var(--nd-red-400);
   --nd-accent-agent: var(--nd-purple-400);
+  --nd-accent-violet: #8B72FF;
+  --nd-accent-violet-rgb: 139, 114, 255;
 
   /* Legacy accent aliases */
   --nd-accent: var(--nd-accent-primary);
@@ -278,10 +280,10 @@
   --nd-radius-input: var(--nd-radius-sm);
   --nd-radius-badge: var(--nd-radius-full);
 
-  /* Elevation */
+  /* Elevation — hairline top-edge highlight for physical depth */
   --nd-elevation-none: none;
-  --nd-elevation-panel: 0 1px 0 rgba(255, 255, 255, 0.04);
-  --nd-elevation-card: 0 8px 24px rgba(0, 0, 0, 0.24);
+  --nd-elevation-panel: 0 1px 0 rgba(255, 255, 255, 0.04), 0 4px 16px rgba(0, 0, 0, 0.35);
+  --nd-elevation-card: 0 2px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.40);
   --nd-elevation-overlay: 0 24px 80px rgba(0, 0, 0, 0.55);
   --nd-elevation-focus: 0 0 0 2px var(--nd-focus-ring), 0 0 24px rgba(var(--nd-cyan-rgb), 0.18);
   --nd-elevation-glow: 0 0 16px rgba(var(--nd-cyan-rgb), 0.18);
@@ -317,7 +319,7 @@
   --nd-ease-in: cubic-bezier(0.4, 0, 1, 1);
 
   /* Glass */
-  --nd-glass-blur: 8px;
+  --nd-glass-blur: 12px;
 
   /* ============================================================
      Typography

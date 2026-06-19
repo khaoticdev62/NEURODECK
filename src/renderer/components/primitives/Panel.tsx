@@ -3,6 +3,7 @@ import "../../design-system/components/core/Panel";
 
 type PanelVariant = "glass" | "flat" | "elevated" | "surface";
 type PanelEmphasis = "default" | "raised" | "active" | "critical";
+type PanelDepth = "surface" | "float" | "sunken";
 
 const emphasisMap: Record<PanelVariant, PanelEmphasis> = {
   glass: "default",
@@ -23,6 +24,8 @@ interface PanelOwnProps {
   eyebrow?: string;
   action?: ReactNode;
   variant?: PanelVariant;
+  /** Visual depth. "float" adds strong drop-shadow with inset highlight. @default "surface" */
+  depth?: PanelDepth;
   children: ReactNode;
   className?: string;
   bodyClassName?: string;
@@ -35,6 +38,7 @@ export function Panel({
   eyebrow,
   action,
   variant = "glass",
+  depth = "surface",
   children,
   className = "",
   bodyClassName,
@@ -46,6 +50,7 @@ export function Panel({
   const cls = [
     "nd-panel",
     emphasis !== "default" ? `nd-panel--${emphasis}` : "",
+    depth === "float" ? "nd-panel--float" : "",
     variantLegacyClasses[variant],
     scrollable ? "flex h-full flex-col overflow-hidden" : "",
     className,

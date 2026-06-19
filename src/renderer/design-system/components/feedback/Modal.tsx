@@ -28,7 +28,7 @@ if (typeof document !== "undefined" && !document.getElementById("nd-modal-css"))
   .nd-modal__foot{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 20px;
     border-top:1px solid var(--nd-border-subtle);background:var(--nd-surface-secondary);}
   @keyframes nd-modal-fade{from{opacity:0;}to{opacity:1;}}
-  @keyframes nd-modal-rise{from{opacity:0;transform:translateY(8px) scale(0.98);}to{opacity:1;transform:none;}}
+  @keyframes nd-modal-rise{from{opacity:0;transform:translateY(10px) scale(0.96);}to{opacity:1;transform:none;}}
   @media (prefers-reduced-motion: reduce){.nd-modal,.nd-modal__overlay{animation:none;}}`;
   document.head.appendChild(s);
 }

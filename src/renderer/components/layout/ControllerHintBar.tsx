@@ -20,7 +20,7 @@ export function ControllerHintBar() {
     <div
       role="complementary"
       aria-label="Controller hints"
-      className="flex h-touch shrink-0 items-center justify-center gap-5 border-t border-[var(--nd-border-subtle)] bg-[var(--nd-surface-primary)] px-4 text-[var(--nd-text-secondary)]"
+      className="flex h-touch shrink-0 items-center justify-center gap-6 border-t border-[var(--nd-border-subtle)] bg-[var(--nd-surface-app)]/80 px-4 text-[var(--nd-text-secondary)] backdrop-blur-sm"
     >
       {HINTS.map(({ action, label }) => (
         <DeckButtonHint key={action} button={getActionHint(action, kind)} label={label} />

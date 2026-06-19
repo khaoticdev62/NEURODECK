@@ -4,14 +4,16 @@ if (typeof document !== "undefined" && !document.getElementById("nd-panel-css"))
   const s = document.createElement("style");
   s.id = "nd-panel-css";
   s.textContent = `
-  .nd-panel{background:var(--nd-surface-secondary);border:1px solid var(--nd-border-subtle);
-    border-radius:var(--nd-radius-lg);box-shadow:var(--nd-elevation-card);overflow:hidden;
+  .nd-panel{background:linear-gradient(180deg,rgba(255,255,255,0.025) 0%,transparent 40%),var(--nd-surface-secondary);
+    border:1px solid var(--nd-border-subtle);border-radius:var(--nd-radius-xl);
+    box-shadow:var(--nd-elevation-card);overflow:hidden;
     font-family:var(--nd-font-ui);color:var(--nd-text-primary);}
   .nd-panel--raised{box-shadow:var(--nd-elevation-card),0 0 0 1px var(--nd-border-subtle);}
   .nd-panel--active{border-color:rgba(var(--nd-cyan-rgb),0.4);box-shadow:var(--nd-elevation-card),0 0 24px rgba(var(--nd-cyan-rgb),0.14);}
   .nd-panel--critical{border-color:rgba(var(--nd-red-rgb),0.4);box-shadow:var(--nd-elevation-card),0 0 24px rgba(var(--nd-red-rgb),0.14);}
+  .nd-panel--float{box-shadow:0 4px 0 rgba(0,0,0,0.4),0 16px 40px rgba(0,0,0,0.5),inset 0 1px 0 rgba(255,255,255,0.06);}
   .nd-panel__head{display:flex;align-items:center;justify-content:space-between;gap:12px;
-    padding:14px 16px;border-bottom:1px solid var(--nd-border-subtle);}
+    padding:12px 16px;border-bottom:1px solid var(--nd-border-subtle);}
   .nd-panel__titles{display:flex;flex-direction:column;gap:2px;min-width:0;}
   .nd-panel__title{font-size:15px;font-weight:600;line-height:20px;}
   .nd-panel__eyebrow{font-size:10px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--nd-accent-primary);opacity:0.85;line-height:14px;}
@@ -20,7 +22,8 @@ if (typeof document !== "undefined" && !document.getElementById("nd-panel-css"))
   .nd-panel__body{}
   .nd-panel__body--compact{padding:12px;}
   .nd-panel__body--normal{padding:16px;}
-  .nd-panel__body--spacious{padding:20px;}`;
+  .nd-panel__body--spacious{padding:20px;}
+  @media(prefers-reduced-motion:reduce){.nd-panel{transition:none;}}`;
   document.head.appendChild(s);
 }
 

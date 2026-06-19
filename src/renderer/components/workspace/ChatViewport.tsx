@@ -12,7 +12,6 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "../../components/primitives/Button";
-import { EmptyState } from "../../components/primitives/EmptyState";
 import { BrandLogo } from "../../components/primitives/BrandLogo";
 import { ResponseCard } from "./ResponseCard";
 import type { AIMessage } from "../../types/neurodeck";
@@ -110,13 +109,18 @@ export function ChatViewport({
     >
       {showWelcome ? (
         <div className="flex flex-col items-center py-6 text-center">
-          <EmptyState
-            icon={BrandLogo}
-            showBox={false}
-            title="NEURODECK"
-            description="Local-first AI workstation OS. Attach project context, pick a runtime, and start building."
-            className="py-4"
-          />
+          <div className="flex flex-col items-center gap-3 py-4">
+            <BrandLogo
+              className="h-20 w-20"
+              style={{ filter: "drop-shadow(0 0 24px rgba(94,235,255,0.22))" }}
+              aria-hidden
+            />
+            <div className="text-center">
+              <p className="nd-view-eyebrow mb-1">Local-First AI Workstation</p>
+              <h1 className="nd-view-title">NEURODECK</h1>
+              <p className="nd-view-subtitle mt-1">Attach context, pick a model, and start building.</p>
+            </div>
+          </div>
 
           {/* Starter grid with staggered entrance */}
           <div className="mt-8 grid w-full max-w-2xl gap-3 px-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -125,7 +129,7 @@ export function ChatViewport({
                 key={s.label}
                 type="button"
                 onClick={() => onRunStarter(s.hint)}
-                className="group relative overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 text-left transition-all duration-fast hover:-translate-y-0.5 hover:border-nd-accent-primary/30 hover:bg-nd-accent-primary/[0.04] hover:shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50"
+                className="animate-panel-enter group relative overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 text-left transition-all duration-fast hover:-translate-y-0.5 hover:border-nd-accent-primary/30 hover:bg-nd-accent-primary/[0.04] hover:shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50"
                 style={{ animationDelay: `${index * 60}ms` }}
               >
                 <div
@@ -141,7 +145,7 @@ export function ChatViewport({
                   </div>
                   <p className="text-xs font-semibold text-nd-text-primary/90">{s.label}</p>
                 </div>
-                <p className="mt-2 text-[11px] leading-4 text-nd-text-muted/70">{s.hint}</p>
+                <p className="mt-2 text-[11px] leading-4 text-nd-text-muted/60">{s.hint}</p>
               </button>
             ))}
           </div>

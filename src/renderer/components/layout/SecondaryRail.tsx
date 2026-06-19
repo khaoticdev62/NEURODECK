@@ -60,7 +60,7 @@ export const SecondaryRail = memo(function SecondaryRail({
             localStorage.setItem("nd:rail-collapsed", "true");
             setCollapsed(true);
           }}
-          className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] text-[var(--nd-text-muted)] transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/30 hover:text-[var(--nd-accent-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
+          className="inline-flex min-h-touch min-w-touch items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] text-[var(--nd-text-muted)] transition-[border-color,background-color,color] duration-[var(--nd-motion-fast)] hover:bg-[var(--nd-surface-hover)] hover:border-[var(--nd-accent-primary)]/30 hover:text-[var(--nd-accent-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
           aria-label="Collapse side panel"
           aria-expanded={true}
           title="Collapse side panel"
@@ -82,7 +82,7 @@ export const SecondaryRail = memo(function SecondaryRail({
               <MiniStat icon={Database} label="Pins" value={selectors.pinnedMemories} />
               <MiniStat icon={PlugZap} label="Plugins" value={selectors.enabledPlugins} />
             </div>
-            <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/25 p-3">
+            <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/50 p-3 shadow-[0_1px_0_rgba(255,255,255,0.03),0_2px_8px_rgba(0,0,0,0.30)]">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[var(--nd-text-muted)]">Context Used</span>
                 <span className="font-mono text-[var(--nd-accent-primary)]">
@@ -90,7 +90,7 @@ export const SecondaryRail = memo(function SecondaryRail({
                 </span>
               </div>
               <div
-                className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--nd-border-subtle)]"
+                className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--nd-border-subtle)]"
                 role="progressbar"
                 aria-label="Context used"
                 aria-valuemin={0}
@@ -98,12 +98,12 @@ export const SecondaryRail = memo(function SecondaryRail({
                 aria-valuenow={state.telemetry.contextUsed}
               >
                 <div
-                  className="h-full rounded-full bg-[var(--nd-accent-primary)] transition-[width] duration-[var(--nd-motion-normal)]"
+                  className="h-full rounded-full bg-gradient-to-r from-[var(--nd-accent-primary)] to-[var(--nd-accent-violet,#8B72FF)] transition-[width] duration-[var(--nd-motion-normal)]"
                   style={{ width: `${state.telemetry.contextUsed}%` }}
                 />
               </div>
             </div>
-            <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/25 p-3">
+            <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/50 p-3 shadow-[0_1px_0_rgba(255,255,255,0.03),0_2px_8px_rgba(0,0,0,0.30)]">
               <div className="flex items-center gap-2">
                 <FolderOpen className="h-4 w-4 text-[var(--nd-accent-primary)]" />
                 <span className="min-w-0 truncate text-xs font-semibold text-[var(--nd-text-secondary)]">

@@ -9,6 +9,7 @@ import { Badge } from "../../components/primitives/Badge";
 import { Panel } from "../../components/primitives/Panel";
 import { EmptyState } from "../../components/primitives/EmptyState";
 import { ErrorState } from "../../components/primitives/ErrorState";
+import { useToast } from "../../components/primitives/Toast";
 
 const LANG_OPTIONS: { value: CodeLang; label: string }[] = [
   { value: "html", label: "HTML" },
@@ -29,6 +30,7 @@ const DEFAULT_CODE: Partial<Record<CodeLang, string>> = {
 };
 
 export function CanvasView() {
+  const { toast } = useToast();
   const [lang, setLang] = useState<CodeLang>("html");
   const [code, setCode] = useState(DEFAULT_CODE.html ?? "");
   const [output, setOutput] = useState("");
@@ -169,24 +171,34 @@ export function CanvasView() {
           >
             <Trash2 className="h-4 w-4" aria-hidden="true" />
           </IconButton>
-          <IconButton
-            id="canvas-ai-edit-btn"
-            aria-label="AI edit (requires active session)"
-            title="AI edit — connect to a session to enable"
-            variant="subtle"
-            disabled
-          >
-            <Sparkles className="h-4 w-4" aria-hidden="true" />
-          </IconButton>
-          <IconButton
-            id="canvas-collab-btn"
-            aria-label="Collaborate (requires active session)"
-            title="Collaborate — connect to a session to enable"
-            variant="subtle"
-            disabled
-          >
-            <Users className="h-4 w-4" aria-hidden="true" />
-          </IconButton>
+          <div className="relative">
+            <IconButton
+              id="canvas-ai-edit-btn"
+              aria-label="AI edit (coming soon — requires active session)"
+              title="AI edit — connect to a Workspace session to enable"
+              variant="subtle"
+              onClick={() => toast("AI Edit requires an active Workspace session", "info")}
+            >
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+            </IconButton>
+            <span className="pointer-events-none absolute -right-1 -top-1 rounded-full bg-[var(--nd-surface-tertiary)] px-1 py-px text-[8px] font-bold uppercase leading-none tracking-wide text-[var(--nd-text-muted)]">
+              soon
+            </span>
+          </div>
+          <div className="relative">
+            <IconButton
+              id="canvas-collab-btn"
+              aria-label="Collaborate (coming soon — requires active session)"
+              title="Collaborate — connect to a Workspace session to enable"
+              variant="subtle"
+              onClick={() => toast("Collaboration requires an active Workspace session", "info")}
+            >
+              <Users className="h-4 w-4" aria-hidden="true" />
+            </IconButton>
+            <span className="pointer-events-none absolute -right-1 -top-1 rounded-full bg-[var(--nd-surface-tertiary)] px-1 py-px text-[8px] font-bold uppercase leading-none tracking-wide text-[var(--nd-text-muted)]">
+              soon
+            </span>
+          </div>
         </div>
       </header>
 

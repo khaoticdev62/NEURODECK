@@ -1,12 +1,28 @@
-/* NEURODECK v1.0 — Blacksite Theme (default dark tactical) */
+/* NEURODECK v1.1 — Blacksite / NeuroSpatial Theme (deep graphite-violet) */
 .theme-blacksite {
-  --nd-surface-app: #0D0F14;
-  --nd-surface-primary: #13161E;
-  --nd-surface-secondary: #1A1E27;
-  --nd-surface-tertiary: #222a36;
-  --nd-accent-primary: #5eebff;
+  /* Surfaces — deep graphite-violet base instead of cold blue-black */
+  --nd-surface-app: #0C0B10;
+  --nd-surface-primary: #131118;
+  --nd-surface-secondary: #1A1726;
+  --nd-surface-tertiary: #211E2D;
+  --nd-surface-sidebar: #0a0910;
+  --nd-surface-input: #07060c;
+  --nd-surface-glass: rgba(19, 17, 24, 0.85);
+  --nd-surface-overlay: rgba(7, 6, 12, 0.92);
+  --nd-surface-modal: #0f0d16;
+
+  /* Accents — functional muted cyan + new violet dimensional accent */
+  --nd-accent-primary: #6ADFEE;
+  --nd-accent-violet: #8B72FF;
   --nd-accent-agent: #b28cff;
-  --nd-surface-hover: rgba(141, 161, 179, 0.08);
-  --nd-surface-active: rgba(94, 235, 255, 0.12);
-  --nd-surface-selected: rgba(94, 235, 255, 0.14);
+
+  /* Borders — violet-tinted subtle borders vs cold grey */
+  --nd-border-subtle: rgba(200, 190, 255, 0.10);
+  --nd-border-default: rgba(200, 190, 255, 0.18);
+
+  /* Interaction surfaces — violet-tinted selected state */
+  --nd-surface-hover: rgba(160, 150, 220, 0.08);
+  --nd-surface-active: rgba(106, 223, 238, 0.12);
+  --nd-surface-selected: rgba(139, 114, 255, 0.14);
+  --nd-surface-selected-violet: rgba(139, 114, 255, 0.16);
 }

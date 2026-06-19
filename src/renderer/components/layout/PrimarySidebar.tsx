@@ -51,7 +51,7 @@ export const PrimarySidebar = memo(function PrimarySidebar({
           id="command-palette-btn"
           type="button"
           data-onboarding-anchor="command-palette-trigger"
-          className="no-drag flex w-full min-h-touch items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-accent-primary)]/20 bg-[var(--nd-accent-primary)]/[0.06] px-2 py-2 text-left transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/40 hover:bg-[var(--nd-accent-primary)]/[0.10] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
+          className="no-drag flex w-full min-h-touch items-center justify-center rounded-[var(--nd-radius-md)] border border-[var(--nd-accent-primary)]/20 bg-[var(--nd-accent-primary)]/[0.08] px-2 py-2 text-left shadow-[0_0_12px_rgba(94,235,255,0.08)] transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/40 hover:bg-[var(--nd-accent-primary)]/[0.12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)]"
           onClick={() => dispatch({ type: "toggle-command", open: true })}
           aria-label="Open command palette"
         >
@@ -113,7 +113,10 @@ export const PrimarySidebar = memo(function PrimarySidebar({
                 }`}
               >
                 {expanded ? (
-                  section
+                  <span className="flex items-center gap-2">
+                    <span>{section}</span>
+                    <span className="h-px flex-1 bg-[var(--nd-border-subtle)]/40" aria-hidden="true" />
+                  </span>
                 ) : (
                   <div className="h-px w-6 bg-[var(--nd-border-subtle)]" aria-hidden="true" />
                 )}
@@ -155,7 +158,7 @@ export const PrimarySidebar = memo(function PrimarySidebar({
                       }}
                       className={`no-drag group/nav flex w-full min-h-touch items-center rounded-[var(--nd-radius-md)] px-2 py-2 text-left transition-[background-color,border-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
                         active
-                          ? "active border-l-2 border-[var(--nd-border-focus)] bg-[var(--nd-surface-selected)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]"
+                          ? "active border-l-2 border-[var(--nd-border-focus)] bg-gradient-to-r from-[rgba(139,114,255,0.14)] to-[rgba(94,235,255,0.06)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]"
                           : "border-l-2 border-transparent text-[var(--nd-text-muted)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-text-primary)]"
                       } ${expanded ? "" : "justify-center"}`}
                     >

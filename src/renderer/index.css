@@ -126,15 +126,28 @@ a,
 .glass-panel,
 .nd-panel.glass-panel {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, transparent 100%),
     linear-gradient(135deg, var(--nd-surface-glass) 0%, color-mix(in srgb, var(--nd-surface-glass) 75%, transparent) 100%) !important;
   background-blend-mode: overlay !important;
   border: 1px solid color-mix(in srgb, var(--nd-text-muted) 12%, transparent) !important;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 4px 16px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
-  backdrop-filter: blur(var(--nd-glass-blur, 8px)) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(var(--nd-glass-blur, 12px)) !important;
+}
+
+.glass-panel-deep,
+.nd-panel.glass-panel-deep {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, transparent 30%),
+    linear-gradient(135deg, var(--nd-surface-glass) 0%, color-mix(in srgb, var(--nd-surface-glass) 60%, transparent) 100%) !important;
+  background-blend-mode: overlay !important;
+  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 14%, transparent) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 16px 40px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(calc(var(--nd-glass-blur, 12px) * 1.5)) !important;
 }
 
 .glass-panel-elevated,
@@ -185,17 +198,128 @@ a,
 @keyframes view-enter {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateY(6px) scale(0.99);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modal-backdrop {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
 .animate-view-enter {
   opacity: 0;
-  animation: view-enter var(--nd-motion-normal, 200ms) var(--nd-ease-out, ease-out) forwards;
+  animation: view-enter var(--nd-motion-normal, 140ms) var(--nd-ease-out, ease-out) forwards;
+}
+
+.animate-panel-enter {
+  opacity: 0;
+  animation: panel-enter 200ms var(--nd-ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+
+.animate-modal-enter {
+  animation: modal-enter 240ms var(--nd-ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+.animate-modal-backdrop {
+  animation: modal-backdrop 160ms ease-out both;
+}
+
+.animate-toast-in {
+  animation: toast-in 200ms var(--nd-ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1)) both;
+}
+
+/* Comprehensive reduced-motion guard */
+@media (prefers-reduced-motion: reduce) {
+  .animate-view-enter,
+  .animate-panel-enter,
+  .animate-modal-enter,
+  .animate-modal-backdrop,
+  .animate-toast-in,
+  .animate-slide-up,
+  .animate-fade-in,
+  .animate-slide-in-right {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+  }
+
+  .nd-btn,
+  .nd-toggle__track,
+  .nd-toggle__knob,
+  .nd-panel {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Typography Utilities — canonical view hierarchy
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.nd-view-eyebrow {
+  font-size: var(--nd-text-micro-size, 11px);
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--nd-text-muted);
+  opacity: 0.75;
+  line-height: var(--nd-text-micro-lh, 14px);
+}
+
+.nd-view-title {
+  font-size: var(--nd-text-h2-size, 20px);
+  font-weight: 650;
+  line-height: var(--nd-text-h2-lh, 28px);
+  color: var(--nd-text-primary);
+}
+
+.nd-view-subtitle {
+  font-size: var(--nd-text-caption-size, 12px);
+  line-height: var(--nd-text-caption-lh, 16px);
+  color: var(--nd-text-muted);
+}
+
+.nd-section-rule {
+  height: 1px;
+  background: var(--nd-border-subtle);
+  margin: 16px 0;
+  border: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
