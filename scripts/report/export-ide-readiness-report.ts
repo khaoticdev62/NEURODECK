@@ -7,12 +7,12 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const PROFILES_DIR = path.resolve(__dirname, '../assets/language-profiles');
-const LSP_MANAGER = path.resolve(__dirname, '../electron/services/lsp/lsp-manager.js');
-const IPC_REGISTRY = path.resolve(__dirname, '../electron/ipc-registry.js');
-const ACTION_REGISTRY = path.resolve(__dirname, '../frontend/src/react/utils/controller/action-registry.ts');
-const REPORTS_DIR = path.resolve(__dirname, '../reports/ide');
-const DOCS_DIR = path.resolve(__dirname, '../docs/ide');
+const PROFILES_DIR = path.resolve(__dirname, '../../assets/language-profiles');
+const LSP_MANAGER = path.resolve(__dirname, '../../electron/services/lsp/lsp-manager.js');
+const IPC_REGISTRY = path.resolve(__dirname, '../../electron/ipc-registry.js');
+const ACTION_REGISTRY = path.resolve(__dirname, '../../src/renderer/utils/controller/action-registry.ts');
+const REPORTS_DIR = path.resolve(__dirname, '../../reports/ide');
+const DOCS_DIR = path.resolve(__dirname, '../../docs/ide');
 
 interface LanguageReport {
   id: string;
@@ -99,8 +99,8 @@ function readLsp(): LspReport {
 
   const managerExists = fs.existsSync(LSP_MANAGER);
 
-  const preloadContent = fs.existsSync(path.resolve(__dirname, '../electron/preload.js'))
-    ? fs.readFileSync(path.resolve(__dirname, '../electron/preload.js'), 'utf8')
+  const preloadContent = fs.existsSync(path.resolve(__dirname, '../../electron/preload.js'))
+    ? fs.readFileSync(path.resolve(__dirname, '../../electron/preload.js'), 'utf8')
     : '';
   const preloadMethods = [
     'startServer', 'stopServer', 'openDocument', 'changeDocument', 'closeDocument',

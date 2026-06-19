@@ -8,9 +8,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
-const REPORTS_DIR = path.resolve(__dirname, '../reports/browser');
-const DOCS_DIR = path.resolve(__dirname, '../docs/browser');
-const SERVICES_DIR = path.resolve(__dirname, '../src/main/services/browser');
+const REPORTS_DIR = path.resolve(__dirname, '../../reports/browser');
+const DOCS_DIR = path.resolve(__dirname, '../../docs/browser');
+const SERVICES_DIR = path.resolve(__dirname, '../../src/main/services/browser');
 
 interface ServiceAudit {
   name: string;

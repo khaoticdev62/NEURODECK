@@ -16,10 +16,10 @@ function pass(msg: string) { console.log(`[PASS] ${msg}`); checks++; }
 function fail(msg: string) { console.error(`[FAIL] ${msg}`); failures++; checks++; }
 function info(msg: string) { console.log(`[INFO] ${msg}`); }
 
-const IPC_REGISTRY = path.resolve(__dirname, '../electron/ipc-registry.js');
-const PRELOAD_PATH = path.resolve(__dirname, '../electron/preload.js');
-const LSP_MANAGER = path.resolve(__dirname, '../electron/services/lsp/lsp-manager.js');
-const IDE_VIEW = path.resolve(__dirname, '../frontend/src/react/features/ide/IDEView.tsx');
+const IPC_REGISTRY = path.resolve(__dirname, '../../electron/ipc-registry.js');
+const PRELOAD_PATH = path.resolve(__dirname, '../../electron/preload.js');
+const LSP_MANAGER = path.resolve(__dirname, '../../electron/services/lsp/lsp-manager.js');
+const IDE_VIEW = path.resolve(__dirname, '../../src/renderer/features/ide/IDEView.tsx');
 
 const REQUIRED_LSP_CHANNELS = [
   'lsp:start-server',
@@ -118,8 +118,8 @@ function main() {
   ], 'IDEView.tsx');
 
   info('--- No fake completions in production IDE code ---');
-  const ideDir = path.resolve(__dirname, '../frontend/src/react/features/ide');
-  const electronIdeDir = path.resolve(__dirname, '../electron/services/ide');
+  const ideDir = path.resolve(__dirname, '../../src/renderer/features/ide');
+  const electronIdeDir = path.resolve(__dirname, '../../electron/services/ide');
 
   for (const dir of [ideDir, electronIdeDir]) {
     if (!fs.existsSync(dir)) continue;

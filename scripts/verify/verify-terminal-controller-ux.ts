@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-const source = fs.readFileSync(path.resolve(__dirname, "../src/shared/terminal/terminalControllerMap.ts"), "utf8");
+const source = fs.readFileSync(path.resolve(__dirname, "../../src/shared/terminal/terminalControllerMap.ts"), "utf8");
 const required = ["open-command-palette", "open-ai-assistant", "focus-input", "split-pane", "confirm"];
 const missing = required.filter((needle) => !source.includes(needle));
 

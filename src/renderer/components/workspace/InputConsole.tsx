@@ -53,7 +53,7 @@ export function InputConsole({
 
   return (
     <div
-      className="border-t border-nd-border-subtle bg-nd-surface/50 p-3 backdrop-blur-sm"
+      className="border-t border-nd-border-subtle bg-[var(--nd-surface-glass)]/40 p-3 backdrop-blur-[var(--nd-glass-blur,8px)]"
       data-controller-zone="form"
     >
       {/* Status row */}
@@ -79,7 +79,7 @@ export function InputConsole({
       </div>
 
       {/* Composer */}
-      <div className="flex items-end gap-2 rounded-2xl border border-nd-border-subtle bg-nd-surface-raised/60 p-2 shadow-sm transition focus-within:border-nd-border-focus focus-within:bg-nd-surface-raised focus-within:shadow-focus">
+      <div className="flex items-end gap-2 rounded-2xl border border-nd-border-subtle bg-[var(--nd-surface-glass)]/60 p-2 shadow-sm transition focus-within:border-nd-border-focus focus-within:bg-[var(--nd-surface-glass)]/80 focus-within:shadow-focus">
         {/* Attachments */}
         <div className="relative flex gap-1 pb-1 pl-1">
           <IconButton

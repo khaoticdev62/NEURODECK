@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 
-const terminalRenderer = fs.readFileSync(path.resolve(__dirname, "../frontend/src/react/features/terminal/TerminalScreen.tsx"), "utf8");
+const terminalRenderer = fs.readFileSync(path.resolve(__dirname, "../../src/renderer/features/terminal/TerminalScreen.tsx"), "utf8");
 const forbidden = ["child_process", "node-pty", "process.env", "ipcRenderer", "spawn("];
 const hits = forbidden.filter((needle) => terminalRenderer.includes(needle));
 

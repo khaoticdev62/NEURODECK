@@ -8,10 +8,10 @@ import fs from 'fs';
 import path from 'path';
 
 const PRODUCTION_DIRS = [
-  path.resolve('frontend/src/react/features/ide'),
+  path.resolve('src/renderer/features/ide'),
   path.resolve('electron/services/ide'),
-  path.resolve('frontend/src/shared/ide'),
-  path.resolve('frontend/src/shared/contracts'),
+  path.resolve('src/renderer/shared/ide'),
+  path.resolve('src/renderer/shared/contracts'),
 ];
 
 const EXCLUDE_PATTERNS = [
@@ -81,14 +81,14 @@ describe('No mock IDE data in production paths', () => {
   });
 
   it('IDEView does not import from __mocks__', () => {
-    const viewPath = path.resolve('frontend/src/react/features/ide/IDEView.tsx');
+    const viewPath = path.resolve('src/renderer/features/ide/IDEView.tsx');
     if (!fs.existsSync(viewPath)) return;
     const content = fs.readFileSync(viewPath, 'utf8');
     expect(content).not.toMatch(/from ['"].*__mocks__/);
   });
 
   it('language profile service returns profiles from JSON assets, not inline strings', () => {
-    const profilesPath = path.resolve('frontend/src/shared/ide/languageProfiles.ts');
+    const profilesPath = path.resolve('src/renderer/shared/ide/languageProfiles.ts');
     if (!fs.existsSync(profilesPath)) return;
     const content = fs.readFileSync(profilesPath, 'utf8');
     // Must import from JSON files, not define profiles inline

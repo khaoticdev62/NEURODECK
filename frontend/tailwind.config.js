@@ -38,6 +38,10 @@ export default {
           'surface-warning': 'var(--nd-surface-warning)',
           'surface-error':   'var(--nd-surface-error)',
           'surface-info':    'var(--nd-surface-info)',
+          'surface-app':       withOpacity('var(--nd-surface-app)'),
+          'surface-primary':   withOpacity('var(--nd-surface-primary)'),
+          'surface-secondary': withOpacity('var(--nd-surface-secondary)'),
+          'surface-tertiary':  withOpacity('var(--nd-surface-tertiary)'),
 
           // Legacy surface aliases (kept for compatibility during migration)
           bg:               withOpacity('var(--nd-bg)'),

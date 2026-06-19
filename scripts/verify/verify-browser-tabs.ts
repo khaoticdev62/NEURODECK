@@ -12,7 +12,7 @@ function pass(msg: string) { console.log(`[PASS] ${msg}`); checks++; }
 function fail(msg: string) { console.error(`[FAIL] ${msg}`); failures++; checks++; }
 function info(msg: string) { console.log(`[INFO] ${msg}`); }
 
-const TAB_MGR_PATH = path.resolve(__dirname, '../electron/dist/main/services/browser/browserTabManager.js');
+const TAB_MGR_PATH = path.resolve(__dirname, '../../electron/dist/main/services/browser/browserTabManager.js');
 
 function main() {
   info('--- BrowserTabManager File Existence ---');

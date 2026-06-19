@@ -16,7 +16,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { PREDEFINED_AGENTS } from '../src/shared/registries/agentRegistry';
+import { PREDEFINED_AGENTS } from '../../src/shared/registries/agentRegistry';
 
 const PORT = process.env.NEURODECK_PORT ?? '9477';
 const BASE_URL = `http://127.0.0.1:${PORT}`;

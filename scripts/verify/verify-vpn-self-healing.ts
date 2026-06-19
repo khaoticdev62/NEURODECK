@@ -1,5 +1,5 @@
 import assert from "assert";
-import { vpnSelfHealingService } from "../src/main/services/browser-vpn/vpnSelfHealingService";
+import { vpnSelfHealingService } from "../../src/main/services/browser-vpn/vpnSelfHealingService";
 
 async function main() {
   const event = await vpnSelfHealingService.recover("profile-a", "degraded", "test");

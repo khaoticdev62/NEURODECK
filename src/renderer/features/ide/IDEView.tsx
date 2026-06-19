@@ -640,10 +640,10 @@ export function IDEView() {
                     </Button>
                   )}
                 </div>
-                <div className="relative flex min-h-0 flex-1">
+                <div className="relative flex min-h-0 flex-1 m-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 overflow-hidden">
                   <div
                     ref={lineNumbersRef}
-                    className="w-10 shrink-0 overflow-hidden py-3"
+                    className="w-10 shrink-0 overflow-hidden py-3 border-r border-nd-border-subtle/35 bg-nd-surface-secondary/10 select-none"
                     aria-hidden="true"
                   >
                     {Array.from({ length: lineCount }, (_, i) => (
@@ -690,7 +690,7 @@ export function IDEView() {
                         onEditorInput();
                       }
                     }}
-                    className="min-h-0 flex-1 resize-none bg-transparent py-3 pr-3 font-mono text-sm leading-5 text-nd-text-primary/90 outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-nd-accent-primary/40"
+                    className="min-h-0 flex-1 resize-none bg-transparent py-3 px-3 font-mono text-sm leading-5 text-nd-text-primary/90 outline-none"
                     spellCheck={false}
                     aria-label="Code editor"
                   />

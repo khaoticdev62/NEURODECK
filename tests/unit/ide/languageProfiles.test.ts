@@ -14,7 +14,7 @@ import {
   getProfileForFile,
   getProfilesForExtension,
   createLanguageProfileRegistry,
-} from '../../../frontend/src/shared/ide/languageProfiles';
+} from '../../../src/renderer/shared/ide/languageProfiles';
 
 describe('createLanguageProfileRegistry', () => {
   it('returns an object with version, updatedAt, and profiles array', () => {

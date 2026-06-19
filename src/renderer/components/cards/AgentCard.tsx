@@ -24,7 +24,7 @@ export function AgentCard({ agent, isBusy = false, onRun, onCycle }: AgentCardPr
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--nd-radius-md)] border border-accent-agent/30 bg-accent-agent/10 text-accent-agent"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 border-accent-agent text-accent-agent font-black bg-nd-surface-secondary/20 shadow-[var(--nd-glow-brand-sm)]"
             aria-hidden="true"
           >
             <Bot className="h-5 w-5" />
@@ -75,7 +75,7 @@ export function AgentCard({ agent, isBusy = false, onRun, onCycle }: AgentCardPr
 
 function AgentRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex gap-3 rounded-[var(--nd-radius-md)] border border-nd-border-subtle bg-nd-surface-tertiary px-3 py-2">
+    <div className="flex gap-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 px-3 py-2">
       <dt className="w-16 shrink-0 uppercase tracking-[var(--nd-tracking-hud)] text-nd-text-muted">
         {label}
       </dt>

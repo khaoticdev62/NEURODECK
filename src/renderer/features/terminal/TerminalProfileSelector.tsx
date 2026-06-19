@@ -1,4 +1,4 @@
-﻿import type { TerminalProfileAvailability } from "../../../shared/terminal/terminalProfiles";
+import type { TerminalProfileAvailability } from "../../../shared/terminal/terminalProfiles";
 
 const PLATFORM_LABELS: Record<string, string> = {
   steamdeck: "Steam Deck",
@@ -23,7 +23,7 @@ export function TerminalProfileSelector({ profiles, selectedProfileId, onSelect 
   }, {});
 
   return (
-    <section className="rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
+    <section className="rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/20 p-3">
       <div className="mb-2">
         <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
           Profile
@@ -33,7 +33,7 @@ export function TerminalProfileSelector({ profiles, selectedProfileId, onSelect 
       <select
         value={selectedProfileId}
         onChange={(e) => onSelect(e.target.value)}
-        className="w-full rounded-xl border border-nd-text-muted/15 bg-nd-surface/40 px-3 py-2 text-sm text-nd-text-primary outline-none"
+        className="w-full rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 px-3 py-2 text-sm text-nd-text-primary outline-none"
         aria-label="Select shell profile"
       >
         {Object.entries(byPlatform).map(([platform, group]) => (

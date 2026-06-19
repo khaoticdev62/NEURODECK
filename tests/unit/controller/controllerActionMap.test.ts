@@ -9,7 +9,7 @@ import {
   defaultActions,
   defaultSteamDeckProfile,
   ActionRegistry,
-} from '../../../frontend/src/react/utils/controller/action-registry';
+} from '../../../src/renderer/utils/controller/action-registry';
 
 describe('ActionId enum', () => {
   it('contains core navigation actions', () => {

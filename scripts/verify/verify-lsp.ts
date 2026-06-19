@@ -16,7 +16,7 @@ function assert(condition: boolean, message: string) {
 
 async function run() {
   try {
-    const LspTransport = require(path.resolve(__dirname, '../electron/services/lsp/lsp-transport.js'));
+    const LspTransport = require(path.resolve(__dirname, '../../electron/services/lsp/lsp-transport.js'));
 
     // 1. Create mock stdio streams
     const mockStdout = new Readable({

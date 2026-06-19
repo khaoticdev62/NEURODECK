@@ -1,5 +1,5 @@
-import { themePresets } from "../src/shared/theme/themePresets";
-import { validateTheme } from "../src/shared/theme/themeSchemas";
+import { themePresets } from "../../src/shared/theme/themePresets";
+import { validateTheme } from "../../src/shared/theme/themeSchemas";
 
 console.log("--- STARTING THEME DESIGN TOKENS COMPLIANCE TEST ---");
 

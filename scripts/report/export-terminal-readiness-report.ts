@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
 
-const reportDir = path.resolve(__dirname, "../reports/terminal");
-const docsDir = path.resolve(__dirname, "../docs/terminal");
+const reportDir = path.resolve(__dirname, "../../reports/terminal");
+const docsDir = path.resolve(__dirname, "../../docs/terminal");
 fs.mkdirSync(reportDir, { recursive: true });
 fs.mkdirSync(docsDir, { recursive: true });
 

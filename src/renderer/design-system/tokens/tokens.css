@@ -15,13 +15,13 @@
   color-scheme: dark;
 
   /* ---- Primitive: Void / Slate surfaces ---- */
-  --nd-void-975: #040608; /* deepest IDE/editor background */
-  --nd-void-950: #05070a; /* deepest background */
-  --nd-void-900: #0a0d10; /* app shell */
-  --nd-void-850: #0d1117; /* panel base */
-  --nd-slate-800: #11161c; /* secondary surface */
-  --nd-slate-700: #18212b; /* raised surface */
-  --nd-slate-600: #22303d; /* hard borders */
+  --nd-void-975: #05070a; /* deepest IDE/editor background */
+  --nd-void-950: #0D0F14; /* deepest background - Surface BG */
+  --nd-void-900: #13161E; /* app shell - Surface 1 */
+  --nd-void-850: #171b26; /* panel base */
+  --nd-slate-800: #1A1E27; /* secondary surface - Surface 2 */
+  --nd-slate-700: #222a36; /* raised surface */
+  --nd-slate-600: #2c3647; /* hard borders */
 
   /* ---- Primitive: Text ---- */
   --nd-text-100: #e8f4ff; /* primary */

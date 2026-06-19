@@ -4,7 +4,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import { BACKEND_SERVICE_INVENTORY } from '../src/main/services/backend/backendHealthRegistry';
+import { BACKEND_SERVICE_INVENTORY } from '../../src/main/services/backend/backendHealthRegistry';
 
 const ROOT = path.resolve(__dirname, '..');
 const REPORTS = path.join(ROOT, 'reports', 'backend');

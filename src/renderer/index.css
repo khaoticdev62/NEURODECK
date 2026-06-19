@@ -123,36 +123,39 @@ a,
    dynamic theming via CSS custom properties.
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.glass-panel {
+.glass-panel,
+.nd-panel.glass-panel {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%),
-    linear-gradient(135deg, var(--nd-surface) 0%, var(--nd-bg) 100%);
-  background-blend-mode: overlay;
-  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 12%, transparent);
+    linear-gradient(135deg, var(--nd-surface-glass) 0%, color-mix(in srgb, var(--nd-surface-glass) 75%, transparent) 100%) !important;
+  background-blend-mode: overlay !important;
+  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 12%, transparent) !important;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 4px 16px rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(var(--nd-glass-blur, 8px));
+    inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(var(--nd-glass-blur, 8px)) !important;
 }
 
-.glass-panel-elevated {
+.glass-panel-elevated,
+.nd-panel.glass-panel-elevated {
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%),
-    linear-gradient(135deg, var(--nd-surface-raised) 0%, var(--nd-surface) 100%);
-  background-blend-mode: overlay;
-  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 16%, transparent);
+    linear-gradient(135deg, color-mix(in srgb, var(--nd-surface-glass) 90%, white 10%) 0%, var(--nd-surface-glass) 100%) !important;
+  background-blend-mode: overlay !important;
+  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 16%, transparent) !important;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.25),
     0 8px 24px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(calc(var(--nd-glass-blur, 8px) * 1.5));
+    inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(calc(var(--nd-glass-blur, 8px) * 1.5)) !important;
 }
 
-.glass-panel-flat {
-  background: var(--nd-surface);
-  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 10%, transparent);
-  box-shadow: none;
+.glass-panel-flat,
+.nd-panel.glass-panel-flat {
+  background: var(--nd-surface) !important;
+  border: 1px solid color-mix(in srgb, var(--nd-text-muted) 10%, transparent) !important;
+  box-shadow: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

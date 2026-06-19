@@ -1,9 +1,9 @@
 /* NEURODECK v1.0 — Blacksite Theme (default dark tactical) */
 .theme-blacksite {
-  --nd-surface-app: #05070a;
-  --nd-surface-primary: #0a0d10;
-  --nd-surface-secondary: #11161c;
-  --nd-surface-tertiary: #18212b;
+  --nd-surface-app: #0D0F14;
+  --nd-surface-primary: #13161E;
+  --nd-surface-secondary: #1A1E27;
+  --nd-surface-tertiary: #222a36;
   --nd-accent-primary: #5eebff;
   --nd-accent-agent: #b28cff;
   --nd-surface-hover: rgba(141, 161, 179, 0.08);

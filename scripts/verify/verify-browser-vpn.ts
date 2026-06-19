@@ -1,9 +1,9 @@
 import assert from "assert";
-import { vpnConfigImportService } from "../src/main/services/browser-vpn/vpnConfigImportService";
-import { vpnProfileService } from "../src/main/services/browser-vpn/vpnProfileService";
-import { vpnProviderAdapterRegistry } from "../src/main/services/browser-vpn/vpnProviderAdapterRegistry";
-import { vpnRedactionService } from "../src/main/services/browser-vpn/vpnRedactionService";
-import { VPN_CONFIG_TEMPLATES } from "../src/shared/browser-vpn/vpnConfigTemplates";
+import { vpnConfigImportService } from "../../src/main/services/browser-vpn/vpnConfigImportService";
+import { vpnProfileService } from "../../src/main/services/browser-vpn/vpnProfileService";
+import { vpnProviderAdapterRegistry } from "../../src/main/services/browser-vpn/vpnProviderAdapterRegistry";
+import { vpnRedactionService } from "../../src/main/services/browser-vpn/vpnRedactionService";
+import { VPN_CONFIG_TEMPLATES } from "../../src/shared/browser-vpn/vpnConfigTemplates";
 
 const templates = VPN_CONFIG_TEMPLATES;
 assert.ok(templates.length > 0, "Expected VPN templates to exist");

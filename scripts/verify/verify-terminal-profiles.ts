@@ -1,4 +1,4 @@
-import { TERMINAL_PROFILES } from "../src/shared/terminal/terminalProfiles";
+import { TERMINAL_PROFILES } from "../../src/shared/terminal/terminalProfiles";
 
 if (!TERMINAL_PROFILES.length) {
   throw new Error("No terminal profiles found");

@@ -6,7 +6,7 @@
  * - Have a cwdStrategy
  */
 import { describe, it, expect } from 'vitest';
-import { getAllProfiles } from '../../../frontend/src/shared/ide/languageProfiles';
+import { getAllProfiles } from '../../../src/renderer/shared/ide/languageProfiles';
 
 const VALID_SAFETY = ['safe', 'confirm', 'dangerous', 'blocked'] as const;
 const VALID_CWD_STRATEGY = ['workspaceRoot', 'fileDirectory', 'nearestPackageRoot', 'nearestGitRoot'] as const;

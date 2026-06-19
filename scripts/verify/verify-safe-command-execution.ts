@@ -17,8 +17,8 @@ function pass(msg: string) { console.log(`[PASS] ${msg}`); checks++; }
 function fail(msg: string) { console.error(`[FAIL] ${msg}`); failures++; checks++; }
 function info(msg: string) { console.log(`[INFO] ${msg}`); }
 
-const SERVICE_PATH = path.resolve(__dirname, '../electron/services/ide/safeCommandExecutionService.js');
-const PRELOAD_PATH = path.resolve(__dirname, '../electron/preload.js');
+const SERVICE_PATH = path.resolve(__dirname, '../../electron/services/ide/safeCommandExecutionService.js');
+const PRELOAD_PATH = path.resolve(__dirname, '../../electron/preload.js');
 const RENDERER_SRC = path.resolve(__dirname, '../frontend/src');
 
 const MUST_BE_BLOCKED = [

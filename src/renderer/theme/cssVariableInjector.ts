@@ -49,9 +49,9 @@ function injectDsTokens(root: HTMLElement, tokens: ThemeTokenSet) {
 
   setVars(root, {
     "--nd-surface-app": c.surface.app,
-    "--nd-surface-primary": c.surface.app,
-    "--nd-surface-secondary": c.surface.base,
-    "--nd-surface-tertiary": c.surface.raised,
+    "--nd-surface-primary": c.surface.base,
+    "--nd-surface-secondary": c.surface.raised,
+    "--nd-surface-tertiary": c.surface.card,
     "--nd-surface-sidebar": c.surface.sidebar,
     "--nd-surface-input": c.surface.input,
     "--nd-surface-overlay": c.surface.overlay,

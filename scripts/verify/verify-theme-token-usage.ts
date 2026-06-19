@@ -76,8 +76,8 @@ function scanFileForTokenUsage(filePath: string) {
 
 function run() {
   try {
-    const reactDir = path.resolve(__dirname, "../frontend/src/react");
-    const cssFile = path.resolve(__dirname, "../frontend/src/react/index.css");
+    const reactDir = path.resolve(__dirname, "../../src/renderer/react");
+    const cssFile = path.resolve(__dirname, "../../src/renderer/index.css");
 
     let totalWarnings = 0;
 

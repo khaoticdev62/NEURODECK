@@ -1,7 +1,7 @@
 import assert from "assert";
-import { parseOpenVpnConfig } from "../src/main/services/browser-vpn/openVpnConfigParser";
-import { vpnRedactionService } from "../src/main/services/browser-vpn/vpnRedactionService";
-import { VPN_CONFIG_TEMPLATES } from "../src/shared/browser-vpn/vpnConfigTemplates";
+import { parseOpenVpnConfig } from "../../src/main/services/browser-vpn/openVpnConfigParser";
+import { vpnRedactionService } from "../../src/main/services/browser-vpn/vpnRedactionService";
+import { VPN_CONFIG_TEMPLATES } from "../../src/shared/browser-vpn/vpnConfigTemplates";
 
 const template = VPN_CONFIG_TEMPLATES.find((item) => item.protocol === "openvpn");
 assert.ok(template, "OpenVPN template missing");

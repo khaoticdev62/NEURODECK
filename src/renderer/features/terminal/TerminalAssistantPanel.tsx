@@ -22,7 +22,7 @@ export function TerminalAssistantPanel({
   onClose,
 }: TerminalAssistantPanelProps) {
   return (
-    <aside className="min-h-0 overflow-hidden rounded-2xl border border-nd-text-muted/15 bg-nd-surface/30 p-3">
+    <aside className="min-h-0 overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/20 p-3">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-text-muted">
@@ -45,7 +45,7 @@ export function TerminalAssistantPanel({
             value={prompt}
             onChange={(e) => onPromptChange(e.target.value)}
             placeholder="Ask for the next command, explain the last error, or request a safer alternative..."
-            className="mt-1 min-h-touch min-h-28 w-full rounded-2xl border border-nd-text-muted/15 bg-nd-bg/60 p-3 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40"
+            className="mt-1 min-h-touch min-h-28 w-full rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 p-3 text-sm text-nd-text-primary outline-none focus:border-nd-accent-primary/40 focus-visible:ring-1 focus-visible:ring-nd-accent-primary/40"
           />
         </label>
         <div className="flex gap-2">
@@ -56,7 +56,7 @@ export function TerminalAssistantPanel({
             Explain Last Command
           </Button>
         </div>
-        <div className="rounded-2xl border border-nd-text-muted/15 bg-nd-bg/40 p-3 text-xs text-nd-text-muted">
+        <div className="rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 p-3 text-xs text-nd-text-muted">
           <div className="font-semibold text-nd-text-primary">Suggested commands</div>
           <div className="mt-2 space-y-2">
             {suggestions.length === 0 ? (

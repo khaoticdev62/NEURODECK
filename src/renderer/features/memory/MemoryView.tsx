@@ -369,7 +369,7 @@ export function MemoryView({
         <div
           role="region"
           aria-label="Backup files"
-          className="mx-4 mt-2 rounded-xl border border-nd-border-subtle bg-nd-surface/40"
+          className="mx-4 mt-2 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20"
         >
           {!backups || backups.length === 0 ? (
             <p className="px-4 py-3 text-xs italic text-nd-text-muted/60">
@@ -517,15 +517,15 @@ export function MemoryView({
               >
               <article
                 aria-label={memory.title ?? "(untitled)"}
-                className={`rounded-3xl border p-4 transition ${
+                className={`rounded-2xl border p-4 transition ${
                   memory.pinned
-                    ? "border-nd-accent-primary/30 bg-nd-accent-primary/[0.055]"
-                    : "border-nd-border-subtle bg-nd-surface/40 hover:border-nd-accent-primary/25"
+                    ? "border-nd-accent-primary/40 bg-nd-accent-primary/[0.08]"
+                    : "border-nd-border-subtle bg-nd-surface-secondary/20 hover:border-nd-accent-primary/25"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div
-                    className="flex h-11 w-11 items-center justify-center rounded-2xl border border-nd-border-subtle bg-nd-surface/40 text-nd-accent-primary"
+                    className="flex h-11 w-11 items-center justify-center rounded-xl border-2 border-nd-accent-primary text-nd-accent-primary font-black bg-nd-surface-secondary/20 shadow-[var(--nd-glow-brand-sm)]"
                     aria-hidden="true"
                   >
                     <Database className="h-5 w-5" />

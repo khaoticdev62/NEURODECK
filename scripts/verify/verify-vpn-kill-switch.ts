@@ -1,5 +1,5 @@
 import assert from "assert";
-import { vpnKillSwitchService } from "../src/main/services/browser-vpn/vpnKillSwitchService";
+import { vpnKillSwitchService } from "../../src/main/services/browser-vpn/vpnKillSwitchService";
 
 vpnKillSwitchService.setState("profile-a", "disconnected", true, "test");
 assert.strictEqual(vpnKillSwitchService.isBlocked("profile-a"), true);

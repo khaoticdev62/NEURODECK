@@ -1,7 +1,7 @@
 import assert from "assert";
-import { parseWireGuardConfig } from "../src/main/services/browser-vpn/wireGuardConfigParser";
-import { vpnRedactionService } from "../src/main/services/browser-vpn/vpnRedactionService";
-import { VPN_CONFIG_TEMPLATES } from "../src/shared/browser-vpn/vpnConfigTemplates";
+import { parseWireGuardConfig } from "../../src/main/services/browser-vpn/wireGuardConfigParser";
+import { vpnRedactionService } from "../../src/main/services/browser-vpn/vpnRedactionService";
+import { VPN_CONFIG_TEMPLATES } from "../../src/shared/browser-vpn/vpnConfigTemplates";
 
 const template = VPN_CONFIG_TEMPLATES.find((item) => item.protocol === "wireguard");
 assert.ok(template, "WireGuard template missing");

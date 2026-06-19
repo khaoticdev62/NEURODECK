@@ -37,11 +37,11 @@ export function TelemetryWidget({
       {items.map((item, index) => (
         <div
           key={item.label}
-          className="relative overflow-hidden rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/30 p-2.5 transition duration-fast hover:border-nd-accent-primary/25 hover:bg-nd-surface-tertiary/40"
+          className="relative overflow-hidden rounded-xl border border-nd-border-subtle bg-[var(--nd-surface-glass)]/25 p-2.5 transition duration-fast hover:border-nd-accent-primary/25 hover:bg-[var(--nd-surface-hover)]"
           style={{ animationDelay: `${index * 40}ms` }}
         >
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-tertiary text-nd-accent-primary">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-tertiary/20 text-nd-accent-primary">
               <item.icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">

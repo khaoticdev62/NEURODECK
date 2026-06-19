@@ -34,7 +34,7 @@ export function TitleBar({ subtitle }: { subtitle: string }) {
   return (
     <header
       role="banner"
-      className="drag-region flex h-11 shrink-0 items-center justify-between border-b border-[var(--nd-border-subtle)] bg-[var(--nd-surface-primary)] px-3"
+      className="drag-region flex h-11 shrink-0 items-center justify-between border-b border-nd-border-subtle bg-nd-surface-primary/35 backdrop-blur-[var(--nd-glass-blur,8px)] px-3"
     >
       <div className="flex min-w-0 items-center gap-3">
         <div className="no-drag flex gap-1.5 pl-1" aria-hidden="true">

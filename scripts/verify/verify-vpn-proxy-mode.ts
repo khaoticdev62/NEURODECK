@@ -1,5 +1,5 @@
 import assert from "assert";
-import { parseProxyConfig } from "../src/main/services/browser-vpn/proxyConfigParser";
+import { parseProxyConfig } from "../../src/main/services/browser-vpn/proxyConfigParser";
 
 const parsed = parseProxyConfig(JSON.stringify({
   name: "Proxy",

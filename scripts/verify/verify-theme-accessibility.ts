@@ -1,6 +1,6 @@
-import { themeRegistry } from "../src/shared/theme/themeRegistry";
-import { adjustTokensForAccessibility } from "../src/shared/theme/accessibilityProfiles";
-import { themePresets } from "../src/shared/theme/themePresets";
+import { themeRegistry } from "../../src/shared/theme/themeRegistry";
+import { adjustTokensForAccessibility } from "../../src/shared/theme/accessibilityProfiles";
+import { themePresets } from "../../src/shared/theme/themePresets";
 
 console.log("--- STARTING THEME ACCESSIBILITY SPEC COMPLIANCE TEST ---");
 

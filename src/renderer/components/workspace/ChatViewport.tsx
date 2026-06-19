@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "../../components/primitives/Button";
 import { EmptyState } from "../../components/primitives/EmptyState";
+import { BrandLogo } from "../../components/primitives/BrandLogo";
 import { ResponseCard } from "./ResponseCard";
 import type { AIMessage } from "../../types/neurodeck";
 
@@ -110,7 +111,8 @@ export function ChatViewport({
       {showWelcome ? (
         <div className="flex flex-col items-center py-6 text-center">
           <EmptyState
-            icon={Sparkles}
+            icon={BrandLogo}
+            showBox={false}
             title="NEURODECK"
             description="Local-first AI workstation OS. Attach project context, pick a runtime, and start building."
             className="py-4"

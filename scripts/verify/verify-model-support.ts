@@ -8,14 +8,14 @@ import {
   isProviderRuntimeProfile,
   isAgentModelPolicy,
   scoreSteamDeckCompatibility,
-} from '../frontend/src/shared/index';
+} from '../../src/renderer/shared/index';
 import type {
   SupportedModelProfile,
   ProviderRuntimeProfile,
   AgentModelPolicy,
-} from '../frontend/src/shared/index';
+} from '../../src/renderer/shared/index';
 
-const ASSETS_DIR = path.resolve(__dirname, '../assets/model-registry');
+const ASSETS_DIR = path.resolve(__dirname, '../../assets/model-registry');
 let failure = false;
 
 function fail(message: string) {

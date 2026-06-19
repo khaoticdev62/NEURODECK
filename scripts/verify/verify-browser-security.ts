@@ -12,7 +12,7 @@ function pass(msg: string) { console.log(`[PASS] ${msg}`); checks++; }
 function fail(msg: string) { console.error(`[FAIL] ${msg}`); failures++; checks++; }
 function info(msg: string) { console.log(`[INFO] ${msg}`); }
 
-const SECURITY_SERVICE_PATH = path.resolve(__dirname, '../electron/dist/main/services/browser/browserSecurityService.js');
+const SECURITY_SERVICE_PATH = path.resolve(__dirname, '../../electron/dist/main/services/browser/browserSecurityService.js');
 
 function main() {
   info('--- BrowserSecurityService File Existence ---');

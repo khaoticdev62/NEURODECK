@@ -40,7 +40,7 @@ export function PrimarySidebar({
 
   return (
     <aside
-      className="group/sidebar relative hidden shrink-0 flex-col border-r border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] transition-[width] duration-[var(--nd-motion-normal)] ease-[var(--nd-ease-standard)] lg:flex"
+      className="group/sidebar relative hidden shrink-0 flex-col border-r border-nd-border-subtle bg-nd-surface-sidebar/35 backdrop-blur-[var(--nd-glass-blur,8px)] transition-[width] duration-[var(--nd-motion-normal)] ease-[var(--nd-ease-standard)] lg:flex"
       style={{ width: expanded ? "var(--nd-sidebar-expanded, 200px)" : "var(--nd-shell-navrail)" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -189,7 +189,7 @@ export function PrimarySidebar({
       </nav>
 
       {/* Footer */}
-      <div className="shrink-0 space-y-1.5 border-t border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/40 p-2">
+      <div className="shrink-0 space-y-1.5 border-t border-[var(--nd-border-subtle)] bg-transparent p-2">
         <div className="flex items-center justify-center">
           {expanded ? (
             <div className="flex w-full min-h-touch items-center justify-between px-1">

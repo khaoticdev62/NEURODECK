@@ -27,7 +27,7 @@ export function WorkspaceHeader({
   onSetAgent,
 }: WorkspaceHeaderProps) {
   return (
-    <header className="flex items-center justify-between gap-3 rounded-2xl border border-nd-border-subtle bg-nd-surface-raised/40 px-4 py-2.5 shadow-panel">
+    <header className="flex items-center justify-between gap-3 rounded-2xl border border-nd-border-subtle bg-nd-surface-raised/40 backdrop-blur-[var(--nd-glass-blur,8px)] px-4 py-2.5 shadow-panel">
       <div className="flex items-center gap-3 min-w-0">
         <StatusChip tone="success" size="sm" pulse icon={CircleDot}>
           live

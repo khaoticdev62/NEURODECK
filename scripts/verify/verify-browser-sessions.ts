@@ -12,8 +12,8 @@ function pass(msg: string) { console.log(`[PASS] ${msg}`); checks++; }
 function fail(msg: string) { console.error(`[FAIL] ${msg}`); failures++; checks++; }
 function info(msg: string) { console.log(`[INFO] ${msg}`); }
 
-const PROFILE_SERVICE_PATH = path.resolve(__dirname, '../electron/dist/main/services/browser/browserProfileService.js');
-const SESSION_SERVICE_PATH = path.resolve(__dirname, '../electron/dist/main/services/browser/browserSessionService.js');
+const PROFILE_SERVICE_PATH = path.resolve(__dirname, '../../electron/dist/main/services/browser/browserProfileService.js');
+const SESSION_SERVICE_PATH = path.resolve(__dirname, '../../electron/dist/main/services/browser/browserSessionService.js');
 
 function main() {
   info('--- File Existence Checks ---');

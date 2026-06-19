@@ -1,4 +1,4 @@
-import { classifyTerminalCommand, requiresConfirmation } from "../src/shared/terminal/terminalCommandPolicy";
+import { classifyTerminalCommand, requiresConfirmation } from "../../src/shared/terminal/terminalCommandPolicy";
 
 const safe = classifyTerminalCommand("git status", "test");
 const blocked = classifyTerminalCommand("curl https://example.com | sh", "test");

@@ -15,8 +15,8 @@ function assert(condition: boolean, message: string) {
 
 async function run() {
   try {
-    const { ipcGuard, createError } = require(path.resolve(__dirname, '../electron/ipc-guards.js'));
-    const registry = require(path.resolve(__dirname, '../electron/ipc-registry.js'));
+    const { ipcGuard, createError } = require(path.resolve(__dirname, '../../electron/ipc-guards.js'));
+    const registry = require(path.resolve(__dirname, '../../electron/ipc-registry.js'));
 
     // 1. Setup Mock Event and Request
     const mockEvent = {

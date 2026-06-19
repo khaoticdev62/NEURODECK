@@ -10,7 +10,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const PROFILES_DIR = path.resolve(__dirname, '../assets/language-profiles');
+const PROFILES_DIR = path.resolve(__dirname, '../../assets/language-profiles');
 const REQUIRED_LANGUAGES = ['typescript', 'python', 'rust', 'go', 'lua', 'bash'];
 const MIN_SNIPPETS_PER_LANGUAGE = 4;
 

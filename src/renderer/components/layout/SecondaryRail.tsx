@@ -38,7 +38,7 @@ export function SecondaryRail({
           localStorage.setItem("nd:rail-collapsed", "false");
           setCollapsed(false);
         }}
-        className="hidden h-full shrink-0 items-center border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] px-1 text-[var(--nd-text-muted)] transition-[color,background-color] duration-[var(--nd-motion-fast)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-accent-primary)] desktop:flex"
+        className="hidden h-full shrink-0 items-center border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)]/35 backdrop-blur-[var(--nd-glass-blur,8px)] px-1 text-[var(--nd-text-muted)] transition-[color,background-color] duration-[var(--nd-motion-fast)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-accent-primary)] desktop:flex"
         aria-label="Expand side panel"
         title="Expand side panel (B)"
       >
@@ -49,7 +49,7 @@ export function SecondaryRail({
 
   return (
     <aside
-      className="hidden shrink-0 flex-col border-l border-[var(--nd-border-subtle)] bg-[var(--nd-surface-sidebar)] desktop:flex"
+      className="hidden shrink-0 flex-col border-l border-nd-border-subtle bg-nd-surface-sidebar/30 backdrop-blur-[var(--nd-glass-blur,8px)] desktop:flex"
       style={{ width: "var(--nd-shell-context)" }}
     >
       {/* Collapse toggle */}
@@ -82,7 +82,7 @@ export function SecondaryRail({
               <MiniStat icon={Database} label="Pins" value={selectors.pinnedMemories} />
               <MiniStat icon={PlugZap} label="Plugins" value={selectors.enabledPlugins} />
             </div>
-            <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3">
+            <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/25 p-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[var(--nd-text-muted)]">Context Used</span>
                 <span className="font-mono text-[var(--nd-accent-primary)]">
@@ -103,7 +103,7 @@ export function SecondaryRail({
                 />
               </div>
             </div>
-            <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3">
+            <div className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/25 p-3">
               <div className="flex items-center gap-2">
                 <FolderOpen className="h-4 w-4 text-[var(--nd-accent-primary)]" />
                 <span className="min-w-0 truncate text-xs font-semibold text-[var(--nd-text-secondary)]">
@@ -144,7 +144,7 @@ export function SecondaryRail({
             {state.agents.map((agent) => (
               <li
                 key={agent.id}
-                className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]"
+                className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/25 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -170,7 +170,7 @@ export function SecondaryRail({
               </li>
             ))}
             {!thinking.length && (
-              <li className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/40 p-3 text-xs leading-5 text-[var(--nd-text-muted)]">
+              <li className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/20 p-3 text-xs leading-5 text-[var(--nd-text-muted)]">
                 No agents are actively thinking. That is either peaceful or suspicious. Probably
                 both.
               </li>
@@ -222,7 +222,7 @@ function MiniStat({
 }) {
   return (
     <div
-      className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/60 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]"
+      className="rounded-[var(--nd-radius-md)] border border-[var(--nd-border-subtle)] bg-[var(--nd-surface-secondary)]/25 p-3 transition-[border-color,background-color] duration-[var(--nd-motion-fast)] hover:border-[var(--nd-accent-primary)]/20 hover:bg-[var(--nd-surface-hover)]"
       role="status"
       aria-label={`${label}: ${value}`}
     >

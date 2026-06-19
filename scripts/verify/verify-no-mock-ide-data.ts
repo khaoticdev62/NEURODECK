@@ -40,8 +40,8 @@ const MOCK_PATTERNS = [
 ];
 
 const SCAN_DIRS = [
-  path.resolve(__dirname, '../frontend/src/react/features/ide'),
-  path.resolve(__dirname, '../electron/services/ide'),
+  path.resolve(__dirname, '../../src/renderer/features/ide'),
+  path.resolve(__dirname, '../../electron/services/ide'),
 ];
 
 const SKIP_PATTERNS = [

@@ -9,12 +9,12 @@ const ROOT = path.resolve(__dirname, '../..');
 
 describe('Session storage contract', () => {
   it('sessions list call uses real bridge path', () => {
-    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/state/useNeuroDeckState.ts'), 'utf8');
+    const src = fs.readFileSync(path.join(ROOT, 'src/renderer/state/useNeurodeckHydration.ts'), 'utf8');
     expect(src).toContain('sessions.listMeta');
   });
 
   it('SessionCard export uses bridgeInvoke, not alert stub', () => {
-    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/components/cards/SessionCard.tsx'), 'utf8');
+    const src = fs.readFileSync(path.join(ROOT, 'src/renderer/components/cards/SessionCard.tsx'), 'utf8');
     expect(src).toContain('export_session_markdown');
     expect(src).not.toContain("Export specific session is currently handled via the active session pane");
   });
@@ -36,7 +36,7 @@ describe('Session storage contract', () => {
 
 describe('Memory storage contract', () => {
   it('memory list call uses real bridge path', () => {
-    const src = fs.readFileSync(path.join(ROOT, 'frontend/src/react/state/useNeuroDeckState.ts'), 'utf8');
+    const src = fs.readFileSync(path.join(ROOT, 'src/renderer/state/useNeurodeckHydration.ts'), 'utf8');
     expect(src).toContain('memory.list');
   });
 

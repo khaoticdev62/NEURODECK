@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const DS_ROOT = path.join(ROOT, 'frontend', 'src', 'design-system');
+const DS_ROOT = path.join(ROOT, 'src', 'renderer', 'design-system');
 
 const requiredFiles = [
   { path: path.join(DS_ROOT, 'tokens.json'), label: 'Canonical tokens JSON' },
@@ -101,12 +101,12 @@ if (fs.existsSync(registryPath)) {
 }
 
 // 4. index.css imports the unified tokens + v1.0 themes
-const indexCssPath = path.join(ROOT, 'frontend', 'src', 'react', 'index.css');
+const indexCssPath = path.join(ROOT, 'src', 'renderer', 'index.css');
 if (fs.existsSync(indexCssPath)) {
   const indexCss = fs.readFileSync(indexCssPath, 'utf8');
   for (const imp of requiredImports) {
     if (!indexCss.includes(imp)) {
-      fail(`frontend/src/react/index.css missing import: ${imp}`);
+      fail(`src/renderer/index.css missing import: ${imp}`);
     } else {
       ok(`index.css imports ${imp}`);
     }

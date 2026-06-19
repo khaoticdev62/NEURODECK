@@ -16,7 +16,7 @@ function reportSuccess(message: string) {
 
 try {
   // 1. Validate Channel Registry duplicates
-  const registryPath = path.resolve(__dirname, '../electron/ipc-registry.js');
+  const registryPath = path.resolve(__dirname, '../../electron/ipc-registry.js');
   if (!fs.existsSync(registryPath)) {
     reportFailure(`ipc-registry.js not found at ${registryPath}`);
   } else {
@@ -30,7 +30,7 @@ try {
   }
 
   // 2. Scan Electron files for forbidden imports/patterns
-  const electronDir = path.resolve(__dirname, '../electron');
+  const electronDir = path.resolve(__dirname, '../../electron');
   const filesToScan: string[] = [];
   
   function walkDir(dir: string) {
@@ -72,7 +72,7 @@ try {
   }
 
   // 3. Verify Preload exposed APIs
-  const preloadPath = path.resolve(__dirname, '../electron/preload.js');
+  const preloadPath = path.resolve(__dirname, '../../electron/preload.js');
   if (!fs.existsSync(preloadPath)) {
     reportFailure(`preload.js not found at ${preloadPath}`);
   } else {
@@ -85,7 +85,7 @@ try {
   }
 
   // 4. Check for drift between ipc-registry.js and ipc-handlers.js
-  const handlersPath = path.resolve(__dirname, '../electron/ipc-handlers.js');
+  const handlersPath = path.resolve(__dirname, '../../electron/ipc-handlers.js');
   if (fs.existsSync(handlersPath)) {
     const handlersContent = fs.readFileSync(handlersPath, 'utf8');
     const registry = require(registryPath);

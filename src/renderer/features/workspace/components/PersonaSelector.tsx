@@ -17,7 +17,7 @@ export function PersonaSelector({ value, onChange }: PersonaSelectorProps) {
     bridgeInvoke<string[]>("get_personas")
       .then((personas) => {
         if (!mounted) return;
-        setOptions(personas ?? []);
+        setOptions(Array.isArray(personas) ? personas : []);
       })
       .catch(() => setOptions([]))
       .finally(() => setLoading(false));
@@ -27,7 +27,8 @@ export function PersonaSelector({ value, onChange }: PersonaSelectorProps) {
   }, []);
 
   const selectOptions = useMemo(() => {
-    const all = Array.from(new Set([value, ...options].filter(Boolean)));
+    const safeOptions = Array.isArray(options) ? options : [];
+    const all = Array.from(new Set([value, ...safeOptions].filter(Boolean)));
     return all.map((name) => ({ value: name, label: name }));
   }, [value, options]);
 

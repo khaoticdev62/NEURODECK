@@ -1,6 +1,6 @@
-import { wallpaperRegistry } from "../src/shared/theme/wallpaperRegistry";
-import { wallpaperAssetService } from "../src/main/services/theme/wallpaperAssetService";
-import { validateWallpaperProfile } from "../src/shared/theme/themeSchemas";
+import { wallpaperRegistry } from "../../src/shared/theme/wallpaperRegistry";
+import { wallpaperAssetService } from "../../src/main/services/theme/wallpaperAssetService";
+import { validateWallpaperProfile } from "../../src/shared/theme/themeSchemas";
 
 console.log("--- STARTING LIVE WALLPAPER CONFIGURATION AND SECURITY TEST ---");
 

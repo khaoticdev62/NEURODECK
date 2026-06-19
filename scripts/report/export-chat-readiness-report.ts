@@ -8,7 +8,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { PREDEFINED_AGENTS } from '../src/shared/registries/agentRegistry';
+import { PREDEFINED_AGENTS } from '../../src/shared/registries/agentRegistry';
 
 const ROOT = path.resolve(__dirname, '..');
 const CHAT_REPORTS_DIR = path.join(ROOT, 'reports/chat');

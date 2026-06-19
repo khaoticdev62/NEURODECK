@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import type { ReactNode, ComponentType } from "react";
 
 export function EmptyState({
   icon: Icon,
@@ -9,8 +9,9 @@ export function EmptyState({
   compact = false,
   variant: variantProp,
   className = "",
+  showBox = true,
 }: {
-  icon: LucideIcon;
+  icon: LucideIcon | ComponentType<any>;
   title: string;
   description: string;
   action?: ReactNode;
@@ -18,6 +19,7 @@ export function EmptyState({
   /** Visual weight. `deck` is the large, full-panel empty state for 1280×800. */
   variant?: "compact" | "default" | "deck";
   className?: string;
+  showBox?: boolean;
 }) {
   const variant = compact ? "compact" : variantProp ?? "default";
 
@@ -57,17 +59,26 @@ export function EmptyState({
         .filter(Boolean)
         .join(" ")}
     >
-      <div
-        className={[
-          "mb-5 flex items-center justify-center border border-nd-border-subtle bg-nd-surface-secondary/60 shadow-panel",
-          v.iconBox,
-        ].join(" ")}
-      >
-        <Icon
-          className={`${v.icon} text-nd-accent-primary motion-reduce:transition-none`}
-          aria-hidden="true"
-        />
-      </div>
+      {showBox ? (
+        <div
+          className={[
+            "mb-5 flex items-center justify-center border border-nd-border-subtle bg-nd-surface-secondary/60 shadow-panel",
+            v.iconBox,
+          ].join(" ")}
+        >
+          <Icon
+            className={`${v.icon} text-nd-accent-primary motion-reduce:transition-none`}
+            aria-hidden="true"
+          />
+        </div>
+      ) : (
+        <div className="mb-5 flex items-center justify-center">
+          <Icon
+            className="h-16 w-16 text-nd-accent-primary motion-reduce:transition-none"
+            aria-hidden="true"
+          />
+        </div>
+      )}
       <h3 className={`${v.title} font-semibold text-nd-text-primary`}>{title}</h3>
       <p className={`${v.desc} mt-2 leading-relaxed text-nd-text-muted`}>
         {description}
@@ -76,3 +87,4 @@ export function EmptyState({
     </div>
   );
 }
+

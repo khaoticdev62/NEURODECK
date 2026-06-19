@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { VPN_CONFIG_TEMPLATES } from "../src/shared/browser-vpn/vpnConfigTemplates";
+import { VPN_CONFIG_TEMPLATES } from "../../src/shared/browser-vpn/vpnConfigTemplates";
 
 const root = process.cwd();
 const reportsDir = resolve(root, "reports/browser-vpn");

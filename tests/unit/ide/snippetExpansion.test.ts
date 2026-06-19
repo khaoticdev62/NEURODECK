@@ -10,7 +10,7 @@ import {
   searchSnippets,
   getControllerFriendlySnippets,
   expandSnippetPlaceholders,
-} from '../../../frontend/src/shared/ide/predictiveSnippets';
+} from '../../../src/renderer/shared/ide/predictiveSnippets';
 
 describe('getSnippetsForLanguage', () => {
   it('returns snippets for typescript', () => {

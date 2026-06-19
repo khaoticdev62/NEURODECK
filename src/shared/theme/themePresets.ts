@@ -171,6 +171,21 @@ export function getDefaultTokens(): ThemeTokenSet {
   };
 }
 
+function lightenHex(hex: string, percent: number): string {
+  if (!hex || !hex.startsWith("#")) return hex;
+  const num = parseInt(hex.slice(1), 16);
+  if (isNaN(num)) return hex;
+  let r = (num >> 16);
+  let g = (num >> 8) & 0x00ff;
+  let b = num & 0x0000ff;
+
+  r = Math.min(255, Math.floor(r + (255 - r) * percent));
+  g = Math.min(255, Math.floor(g + (255 - g) * percent));
+  b = Math.min(255, Math.floor(b + (255 - b) * percent));
+
+  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+}
+
 // Helper to clone and override colors
 function buildTheme(
   id: string,
@@ -185,12 +200,34 @@ function buildTheme(
   const tokens = getDefaultTokens();
   tokens.color.accent.primary = accent;
   tokens.color.accent.strong = accent;
-  tokens.color.surface.app = bg;
-  tokens.color.surface.base = bg;
-  tokens.color.surface.raised = surface;
-  tokens.color.surface.panel = bg;
-  tokens.color.surface.card = surface;
+  
+  let baseColor = surface;
+  let raisedColor = surface;
+  
+  if (id === "blacksite_prime" || id === "blacksite") {
+    tokens.color.surface.app = "#0D0F14";
+    baseColor = "#13161E";
+    raisedColor = "#1A1E27";
+    tokens.color.surface.card = "#1A1E27";
+    tokens.color.surface.tooltip = "#222a36";
+  } else if (id === "tactical_glass_ultra") {
+    tokens.color.surface.app = "#070b10";
+    baseColor = "#0b1118";
+    raisedColor = "#101923";
+    tokens.color.surface.card = "#101923";
+    tokens.color.surface.tooltip = "#16222f";
+  } else {
+    tokens.color.surface.app = bg;
+    baseColor = bg;
+    raisedColor = lightenHex(surface, 0.05);
+    tokens.color.surface.card = lightenHex(surface, 0.05);
+  }
+  
+  tokens.color.surface.base = baseColor;
+  tokens.color.surface.raised = raisedColor;
+  tokens.color.surface.panel = baseColor;
   tokens.color.surface.sidebar = bg;
+  tokens.color.surface.input = bg;
   tokens.color.text.primary = text;
 
   return {
@@ -232,7 +269,7 @@ function buildTheme(
 
 export const themePresets: NeurodeckTheme[] = [
   // ── Core Themes ──
-  buildTheme("blacksite_prime", "Blacksite Prime", "core", "#00F0FF", "#050505", "#11161B", "#D9F7FF", "Default cyber cyan terminal HUD"),
+  buildTheme("blacksite_prime", "Blacksite Prime", "core", "#5EEBFF", "#0D0F14", "#1A1E27", "#D9F7FF", "Default cyber cyan terminal HUD"),
   buildTheme("tactical_glass_ultra", "Tactical Glass Ultra", "core", "#6AF0D5", "#091015", "#101923", "#ECFBFF", "Glassmorphic tactical signaling layer"),
   buildTheme("ghost_terminal_pro", "Ghost Terminal Pro", "core", "#B8F7FF", "#080A0B", "#101314", "#F0FCFF", "Low contrast ambient workspace for developers"),
   buildTheme("hologrid_command", "Hologrid Command", "core", "#7AA7FF", "#070B14", "#0E1628", "#EEF5FF", "Deep-space blue mission command dashboard"),

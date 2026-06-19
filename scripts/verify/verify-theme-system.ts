@@ -1,6 +1,6 @@
-import { themeRegistry } from "../src/shared/theme/themeRegistry";
-import { themeSettingsService } from "../src/main/services/theme/themeSettingsService";
-import { validateTheme, validateThemeSettings } from "../src/shared/theme/themeSchemas";
+import { themeRegistry } from "../../src/shared/theme/themeRegistry";
+import { themeSettingsService } from "../../src/main/services/theme/themeSettingsService";
+import { validateTheme, validateThemeSettings } from "../../src/shared/theme/themeSchemas";
 
 console.log("--- STARTING THEME SYSTEM SERVICE VALIDATION ---");
 

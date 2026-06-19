@@ -1,7 +1,7 @@
-import { themeSettingsService } from "../src/main/services/theme/themeSettingsService";
-import { themeDiagnosticsService } from "../src/main/services/theme/themeDiagnosticsService";
-import { adjustTokensForMotion } from "../src/shared/theme/motionProfiles";
-import { themePresets } from "../src/shared/theme/themePresets";
+import { themeSettingsService } from "../../src/main/services/theme/themeSettingsService";
+import { themeDiagnosticsService } from "../../src/main/services/theme/themeDiagnosticsService";
+import { adjustTokensForMotion } from "../../src/shared/theme/motionProfiles";
+import { themePresets } from "../../src/shared/theme/themePresets";
 
 console.log("--- STARTING THEME PERFORMANCE AND HARDWARE PROFILE TEST ---");
 

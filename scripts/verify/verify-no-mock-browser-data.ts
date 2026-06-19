@@ -12,8 +12,8 @@ function pass(msg: string) { console.log(`[PASS] ${msg}`); checks++; }
 function fail(msg: string) { console.error(`[FAIL] ${msg}`); failures++; checks++; }
 function info(msg: string) { console.log(`[INFO] ${msg}`); }
 
-const BOOKMARK_SERVICE_PATH = path.resolve(__dirname, '../electron/dist/main/services/browser/browserBookmarkService.js');
-const HISTORY_SERVICE_PATH = path.resolve(__dirname, '../electron/dist/main/services/browser/browserHistoryService.js');
+const BOOKMARK_SERVICE_PATH = path.resolve(__dirname, '../../electron/dist/main/services/browser/browserBookmarkService.js');
+const HISTORY_SERVICE_PATH = path.resolve(__dirname, '../../electron/dist/main/services/browser/browserHistoryService.js');
 
 function main() {
   info('--- Audit Bookmarks Service ---');

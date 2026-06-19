@@ -1,10 +1,10 @@
 import * as fs from "fs";
 import * as path from "path";
-import { themeRegistry } from "../src/shared/theme/themeRegistry";
-import { wallpaperRegistry } from "../src/shared/theme/wallpaperRegistry";
+import { themeRegistry } from "../../src/shared/theme/themeRegistry";
+import { wallpaperRegistry } from "../../src/shared/theme/wallpaperRegistry";
 
-const REPORTS_DIR = path.resolve(__dirname, "../reports/theme");
-const DOCS_DIR = path.resolve(__dirname, "../docs/theme");
+const REPORTS_DIR = path.resolve(__dirname, "../../reports/theme");
+const DOCS_DIR = path.resolve(__dirname, "../../docs/theme");
 
 interface ThemeReportItem {
   id: string;

@@ -201,19 +201,21 @@ export function CanvasView() {
             <label htmlFor="canvas-monaco" className="px-3 pt-3 text-xs font-medium text-nd-text-muted">
               Source code
             </label>
-            <textarea
-              id="canvas-monaco"
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-                  e.preventDefault();
-                  run();
-                }
-              }}
-              spellCheck={false}
-              className="min-h-0 min-h-touch flex-1 resize-none bg-transparent p-3 font-mono text-sm leading-relaxed text-nd-text-primary outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-nd-accent-primary/30"
-            />
+            <div className="flex-1 min-h-0 m-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 overflow-hidden">
+              <textarea
+                id="canvas-monaco"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+                    e.preventDefault();
+                    run();
+                  }
+                }}
+                spellCheck={false}
+                className="w-full h-full resize-none bg-transparent p-3 font-mono text-sm leading-relaxed text-nd-text-primary outline-none focus-visible:ring-inset focus-visible:ring-1 focus-visible:ring-nd-accent-primary/30"
+              />
+            </div>
           </div>
         </Panel>
 
@@ -223,46 +225,48 @@ export function CanvasView() {
           eyebrow={lang === "html" ? "Render" : "Stream"}
           bodyClassName="flex flex-1 flex-col min-h-0 p-0"
         >
-          {lang === "html" ? (
-            <iframe
-              id="canvas-preview-frame"
-              key={previewKey}
-              src={htmlBlob ?? undefined}
-              title="Canvas Preview"
-              sandbox="allow-scripts allow-forms allow-pointer-lock allow-top-navigation-by-user-activation"
-              className="min-h-0 flex-1 w-full border-none bg-nd-surface-app"
-            />
-          ) : (
-            <div className="relative min-h-0 flex-1">
-              {error && (
-                <ErrorState
-                  title="Execution failed"
-                  message={error}
-                  onRetry={run}
-                  onClose={() => setError(null)}
-                />
-              )}
-              {output ? (
-                <pre
-                  ref={outputRef}
-                  aria-live="polite"
-                  role="log"
-                  aria-label="Execution output"
-                  className="h-full overflow-auto p-3 font-mono text-sm leading-relaxed text-nd-text-secondary"
-                >
-                  {output}
-                </pre>
-              ) : (
-                <EmptyState
-                  icon={Play}
-                  title="Ready to run"
-                  description={`Click Run to execute your ${lang} code. Output streams here in real time.`}
-                  compact
-                  className="h-full"
-                />
-              )}
-            </div>
-          )}
+          <div className="flex-1 min-h-0 m-3 rounded-xl border border-nd-border-subtle bg-nd-surface-secondary/20 overflow-hidden relative">
+            {lang === "html" ? (
+              <iframe
+                id="canvas-preview-frame"
+                key={previewKey}
+                src={htmlBlob ?? undefined}
+                title="Canvas Preview"
+                sandbox="allow-scripts allow-forms allow-pointer-lock allow-top-navigation-by-user-activation"
+                className="h-full w-full border-none bg-transparent"
+              />
+            ) : (
+              <div className="absolute inset-0 overflow-auto">
+                {error && (
+                  <ErrorState
+                    title="Execution failed"
+                    message={error}
+                    onRetry={run}
+                    onClose={() => setError(null)}
+                  />
+                )}
+                {output ? (
+                  <pre
+                    ref={outputRef}
+                    aria-live="polite"
+                    role="log"
+                    aria-label="Execution output"
+                    className="h-full w-full p-3 font-mono text-sm leading-relaxed text-nd-text-secondary bg-transparent"
+                  >
+                    {output}
+                  </pre>
+                ) : (
+                  <EmptyState
+                    icon={Play}
+                    title="Ready to run"
+                    description={`Click Run to execute your ${lang} code. Output streams here in real time.`}
+                    compact
+                    className="h-full bg-transparent"
+                  />
+                )}
+              </div>
+            )}
+          </div>
         </Panel>
       </div>
     </div>

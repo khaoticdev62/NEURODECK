@@ -12,7 +12,7 @@ function pass(msg: string) { console.log(`[PASS] ${msg}`); checks++; }
 function fail(msg: string) { console.error(`[FAIL] ${msg}`); failures++; checks++; }
 function info(msg: string) { console.log(`[INFO] ${msg}`); }
 
-const DOWNLOAD_SERVICE_PATH = path.resolve(__dirname, '../electron/dist/main/services/browser/browserDownloadService.js');
+const DOWNLOAD_SERVICE_PATH = path.resolve(__dirname, '../../electron/dist/main/services/browser/browserDownloadService.js');
 
 function main() {
   info('--- BrowserDownloadService File Existence ---');

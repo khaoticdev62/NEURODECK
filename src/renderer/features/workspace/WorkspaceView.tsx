@@ -147,7 +147,7 @@ export function WorkspaceView({
         />
       </Panel>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface/30 shadow-nd-elevation-card">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-nd-border-subtle bg-[var(--nd-surface-glass)]/40 backdrop-blur-[var(--nd-glass-blur,8px)] shadow-nd-elevation-card">
         <ChatViewport
           messages={state.messages}
           busyLabel={state.busyLabel}

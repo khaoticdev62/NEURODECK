@@ -10,7 +10,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-const PROFILES_DIR = path.resolve(__dirname, '../assets/language-profiles');
+const PROFILES_DIR = path.resolve(__dirname, '../../assets/language-profiles');
 const VALID_SAFETY = new Set(['safe', 'confirm', 'dangerous', 'blocked']);
 const VALID_CWD = new Set(['workspaceRoot', 'fileDirectory', 'nearestPackageRoot', 'nearestGitRoot']);
 

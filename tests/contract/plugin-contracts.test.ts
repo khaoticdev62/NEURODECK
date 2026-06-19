@@ -71,8 +71,8 @@ describe('Lua plugin system contract', () => {
 
 describe('Plugin security contract', () => {
   it('Lua AI shell-code execution has confirm gate in frontend', () => {
-    const chatJsPath = path.join(ROOT, 'frontend/src/chat.js');
-    const mainJsPath = path.join(ROOT, 'frontend/src/main.js');
+    const chatJsPath = path.join(ROOT, 'src/renderer/chat.js');
+    const mainJsPath = path.join(ROOT, 'src/renderer/main.js');
     const legacyPath = path.join(ROOT, 'frontend/main.js');
 
     const found = [chatJsPath, mainJsPath, legacyPath].filter(p => fs.existsSync(p));

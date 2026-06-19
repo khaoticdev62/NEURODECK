@@ -12,7 +12,7 @@ function pass(msg: string) { console.log(`[PASS] ${msg}`); checks++; }
 function fail(msg: string) { console.error(`[FAIL] ${msg}`); failures++; checks++; }
 function info(msg: string) { console.log(`[INFO] ${msg}`); }
 
-const ACTION_REGISTRY_PATH = path.resolve(__dirname, '../frontend/src/react/utils/controller/action-registry.ts');
+const ACTION_REGISTRY_PATH = path.resolve(__dirname, '../../src/renderer/utils/controller/action-registry.ts');
 const REQUIRED_IDE_ACTIONS = [
   'IDE_ACCEPT_COMPLETION',
   'IDE_NEXT_COMPLETION',
@@ -39,7 +39,7 @@ const REQUIRED_CONTROLLER_COMPONENTS = [
   'RadialCommandWheel.tsx',
 ];
 
-const IDE_VIEW_PATH = path.resolve(__dirname, '../frontend/src/react/features/ide/IDEView.tsx');
+const IDE_VIEW_PATH = path.resolve(__dirname, '../../src/renderer/features/ide/IDEView.tsx');
 
 function checkFileContains(filePath: string, patterns: string[], label: string) {
   if (!fs.existsSync(filePath)) {
@@ -85,7 +85,7 @@ function main() {
   }
 
   info('--- Controller UI components ---');
-  const ideDir = path.resolve(__dirname, '../frontend/src/react/features/ide');
+  const ideDir = path.resolve(__dirname, '../../src/renderer/features/ide');
   for (const component of REQUIRED_CONTROLLER_COMPONENTS) {
     const componentPath = path.join(ideDir, component);
     if (fs.existsSync(componentPath)) {
@@ -107,7 +107,7 @@ function main() {
   ], 'IDEView.tsx');
 
   info('--- Preload IDE/controller namespaces ---');
-  const preloadPath = path.resolve(__dirname, '../electron/preload.js');
+  const preloadPath = path.resolve(__dirname, '../../electron/preload.js');
   checkFileContains(preloadPath, [
     "ide:",
     'detectProject',

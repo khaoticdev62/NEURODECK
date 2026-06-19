@@ -17,9 +17,9 @@ function reportSuccess(message: string) {
 try {
   // 1. Scan codebase for forbidden mock terms in theme files
   const searchPaths = [
-    path.resolve(__dirname, "../src/shared/theme"),
-    path.resolve(__dirname, "../src/main/services/theme"),
-    path.resolve(__dirname, "../frontend/src/react/theme"),
+    path.resolve(__dirname, "../../src/shared/theme"),
+    path.resolve(__dirname, "../../src/main/services/theme"),
+    path.resolve(__dirname, "../../src/renderer/theme"),
   ];
 
   const filesToScan: string[] = [];

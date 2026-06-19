@@ -6,9 +6,9 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { runAllProbes } from '../src/main/services/backend/backendProbeRunner';
-import { saveProbeResults, saveReadinessReport } from '../src/main/services/backend/backendEvidenceStore';
-import { BACKEND_SERVICE_INVENTORY } from '../src/main/services/backend/backendHealthRegistry';
+import { runAllProbes } from '../../src/main/services/backend/backendProbeRunner';
+import { saveProbeResults, saveReadinessReport } from '../../src/main/services/backend/backendEvidenceStore';
+import { BACKEND_SERVICE_INVENTORY } from '../../src/main/services/backend/backendHealthRegistry';
 
 async function main() {
   console.log('\n=== verify-backend ===\n');
