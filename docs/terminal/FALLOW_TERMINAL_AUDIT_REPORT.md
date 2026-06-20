@@ -2,11 +2,26 @@
 
 ## Scope
 
-This report captures the results of a Fallow-style audit of the terminal feature: dead code, duplicate logic, unwired backend paths, and unsafe renderer imports.
+This report combines the automated Fallow gate with a terminal-focused manual source audit covering dead code, duplicate logic, unwired backend paths, and unsafe renderer imports.
 
 ## Audit Date
 
 2026-06-19
+
+## Automated Fallow Result
+
+Fallow 2.98.0 was executed from the clean `docs/terminal-backend-runbooks` worktree after the runbook changes:
+
+```text
+fallow audit --format json
+verdict: pass
+dead_code_issues: 0
+complexity_findings: 0
+duplication_clone_groups: 0
+elapsed_ms: 384
+```
+
+The gate is configured as `new-only`; Markdown-only documentation changes produce no analyzable changed-code files. The findings below are therefore the separate terminal-focused manual audit, not invented Fallow output.
 
 ## Files Audited
 

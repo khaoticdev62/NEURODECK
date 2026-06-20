@@ -44,6 +44,8 @@ This can mislead operators into believing a real PTY session exists when the log
 
 ## Remediation
 
+**Status:** Open — the terminal runtime is mock-free, but the diagnostics log fallback remains production-visible and requires a separate UI fix.
+
 1. Remove `generateMockLogs()` from `LogsView.tsx`.
 2. When log loading fails, display an error state with:
    - A clear message such as "Unable to load logs."
