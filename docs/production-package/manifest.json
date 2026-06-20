@@ -26,10 +26,10 @@
     "docs/02_Software_Design_Specification.md",
     "docs/03_Implementation_Roadmap.md",
     "docs/04_Security_Privacy_Hardening.md",
-    "docs/05_Steam_Deck_UX_Release_Gate.md",
+    "neurodeck-production-package/docs/05_Steam_Deck_UX_Release_Gate.md",
     "docs/06_QA_Testing_Release_Gates.md",
-    "docs/07_Repository_CI_CD_Setup.md",
-    "docs/08_Plugin_Automation_Workflow_Spec.md",
-    "docs/09_Release_Packaging_Observability.md"
+    "neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md",
+    "neurodeck-production-package/docs/08_Plugin_Automation_Workflow_Spec.md",
+    "neurodeck-production-package/docs/09_Release_Packaging_Observability.md"
   ]
 }

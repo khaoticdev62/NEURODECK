@@ -317,7 +317,7 @@ See:
 
 ## Repository Structure
 
-The project follows the structure documented in `neurodeck-production-package/docs/07_CI_CD_Setup.md`. Key locations:
+The project follows the structure documented in `docs/production-package/neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md`. Key locations:
 
 | Directory | What Lives Here |
 |---|---|
@@ -339,7 +339,7 @@ The project follows the structure documented in `neurodeck-production-package/do
 | `plugins/` | Lua plugins auto-loaded at startup |
 | `assets/` | Static assets — brand, steam-grid, steam_input, deckcode schemas |
 | `docs/` | All documentation — epics, roadmaps, architecture, user guide |
-| `neurodeck-production-package/` | **North star** — PRD, SDS, release gates, backlog, CI templates |
+| `docs/production-package/neurodeck-production-package/` | **North star** — PRD, SDS, release gates, backlog, CI templates |
 | `production_code_prompt_system/` | PromptFlow CLI + 15 production prompts |
 | `scripts/` | Build & utility scripts — `brand/`, `dev/`, `git/`, `git-hooks/`, `kfms/`, `perf/`, `powershell/`, `release/`, `report/`, `shell/`, `steamdeck/`, `ui/`, `verify/` |
 | `scripts/dev/` | Development utilities (CSS, JS, JSON, Lua, Python helpers) |
@@ -351,29 +351,29 @@ The project follows the structure documented in `neurodeck-production-package/do
 | `aur/` | Arch Linux PKGBUILD |
 | `flatpak/` | Flatpak manifest & build scripts |
 
-**Do not create new top-level directories without updating `neurodeck-production-package/docs/07_CI_CD_Setup.md`.**
+**Do not create new top-level directories without updating `docs/production-package/neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md`.**
 
 ---
 
 ## Deeper Docs
 
-> **Primary reference (north star):** `neurodeck-production-package/` — This is the single source of truth for architecture, specs, release gates, and backlog. All other docs are supplementary.
+> **Primary reference (north star):** `docs/production-package/neurodeck-production-package/` — This is the single source of truth for architecture, specs, release gates, and backlog. All other docs are supplementary.
 
 | Resource | Location |
 |---|---|
-| **Production Package (SSoT)** | `neurodeck-production-package/` — Architecture blueprint, PRD, SDS, release gates, backlog |
-| Master blueprint (architecture, 12 release gates, KFMS) | `neurodeck-production-package/docs/00_NEURODECK_Master_PRD_SDS_Implementation_Blueprint.md` |
-| Product PRD (feature definitions, acceptance criteria) | `neurodeck-production-package/docs/01_Product_PRD.md` |
-| Software Design Spec (module map, IPC, data flow) | `neurodeck-production-package/docs/02_Software_Design_Specification.md` |
-| Implementation Roadmap (sprint history, next work) | `neurodeck-production-package/docs/03_Implementation_Roadmap.md` |
-| Security & Privacy Hardening | `neurodeck-production-package/docs/04_Security_Privacy_Hardening.md` |
-| Steam Deck UX Release Gate | `neurodeck-production-package/docs/05_Steam_Deck_UX_Release_Gate.md` |
-| QA & Testing Release Gates | `neurodeck-production-package/docs/06_QA_Testing_Release_Gates.md` |
-| CI/CD & Repository Setup | `neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md` |
-| Plugin SDK & Workflow Engine | `neurodeck-production-package/docs/08_Plugin_Automation_Workflow_Spec.md` |
-| Release Packaging & Observability | `neurodeck-production-package/docs/09_Release_Packaging_Observability.md` |
-| Final Release Checklist | `neurodeck-production-package/checklists/FINAL_1_0_RELEASE_CHECKLIST.md` |
-| Production Backlog | `neurodeck-production-package/checklists/PRODUCTION_BACKLOG.md` |
+| **Production Package (SSoT)** | `docs/production-package/neurodeck-production-package/` — Architecture blueprint, PRD, SDS, release gates, backlog |
+| Master blueprint (architecture, 12 release gates, KFMS) | `docs/production-package/neurodeck-production-package/docs/00_NEURODECK_Master_PRD_SDS_Implementation_Blueprint.md` |
+| Product PRD (feature definitions, acceptance criteria) | `docs/production-package/neurodeck-production-package/docs/01_Product_PRD.md` |
+| Software Design Spec (module map, IPC, data flow) | `docs/production-package/neurodeck-production-package/docs/02_Software_Design_Specification.md` |
+| Implementation Roadmap (sprint history, next work) | `docs/production-package/neurodeck-production-package/docs/03_Implementation_Roadmap.md` |
+| Security & Privacy Hardening | `docs/production-package/neurodeck-production-package/docs/04_Security_Privacy_Hardening.md` |
+| Steam Deck UX Release Gate | `docs/production-package/neurodeck-production-package/docs/05_Steam_Deck_UX_Release_Gate.md` |
+| QA & Testing Release Gates | `docs/production-package/neurodeck-production-package/docs/06_QA_Testing_Release_Gates.md` |
+| CI/CD & Repository Setup | `docs/production-package/neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md` |
+| Plugin SDK & Workflow Engine | `docs/production-package/neurodeck-production-package/docs/08_Plugin_Automation_Workflow_Spec.md` |
+| Release Packaging & Observability | `docs/production-package/neurodeck-production-package/docs/09_Release_Packaging_Observability.md` |
+| Final Release Checklist | `docs/production-package/neurodeck-production-package/checklists/FINAL_1_0_RELEASE_CHECKLIST.md` |
+| Production Backlog | `docs/production-package/neurodeck-production-package/checklists/PRODUCTION_BACKLOG.md` |
 | Full feature backlog + priority matrix | `docs/ANTIGRAVITY_HANDOFF.md` |
 | Architecture overview | `docs/ARCHITECTURE.md` |
 | Bridge server protocol & telemetry | `docs/BRIDGE_SERVER.md` |
