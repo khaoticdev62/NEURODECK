@@ -62,3 +62,9 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ## Epic 12: Recovered Epic from BMAD Artifacts
 ### [x] Story 12.1: Allow switching personas via command
 ### [x] Story 12.2: Implement dual-agent discussion (roundtable)
+## Epic 13: Production Data Wiring & Mock Elimination
+### [ ] Story 13.1: Wire real telemetry metrics into the diagnostics dashboard
+### [ ] Story 13.2: Wire Whisper/provider-native STT into Ollama, Hugging Face, Kimi, and OpenAI-compatible providers
+### [ ] Story 13.3: Resolve computer-use cross-platform support boundary
+### [ ] Story 13.4: Activate Canvas AI Edit and Collaboration buttons
+### [ ] Story 13.5: Wire headless PTY execution into the workflow engine
