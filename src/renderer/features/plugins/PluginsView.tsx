@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type Dispatch } from "react";
+import { useCallback, useEffect, useRef, useState, type Dispatch } from "react";
 import {
   Plug,
   RefreshCw,
@@ -61,6 +61,14 @@ export function PluginsView({
   // Confirmation modals state
   const [confirmUninstallId, setConfirmUninstallId] = useState<string | null>(null);
   const [showPermissionWarning, setShowPermissionWarning] = useState<PluginInfo | null>(null);
+
+  // Read via ref, not a `load` dependency: load() itself dispatches a fresh
+  // `state.plugins` array on every run (map() is never referentially equal),
+  // so depending on it directly made `load`'s identity change on every call,
+  // re-triggering the mount effect below — an unbounded fetch+validate loop.
+  // Verified live: ~80-100ms re-render/refetch tasks back-to-back for ~14s.
+  const statePluginsRef = useRef(state?.plugins);
+  statePluginsRef.current = state?.plugins;
 
   // Helper to determine security risk level for a single permission
   const getPermissionRisk = (perm: string): "high" | "medium" | "low" => {
@@ -130,8 +138,8 @@ export function PluginsView({
       void validateAll(list);
     } catch (e) {
       setError(String(e));
-      if (state?.plugins) {
-        const fallbackList = state.plugins.map((p) => ({
+      if (statePluginsRef.current) {
+        const fallbackList = statePluginsRef.current.map((p) => ({
           name: p.name,
           file_name: p.id,
           enabled: p.status === "enabled",
@@ -151,7 +159,7 @@ export function PluginsView({
     } finally {
       setLoading(false);
     }
-  }, [dispatch, state?.plugins]);
+  }, [dispatch]);
 
   const validateAll = async (list: PluginInfo[]) => {
     const results: Record<string, { passed: boolean; errors: string[]; warnings: string[] }> = {};

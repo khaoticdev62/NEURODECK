@@ -258,10 +258,19 @@ function watchMainProcess() {
 
   // Directories compiled by build:main: hash the specific file the event names
   // (relative to the watched dir) rather than re-hashing the whole tree.
+  //
+  // Windows can fire a recursive fs.watch callback with filename === null
+  // under load (verified live: this happened mid-investigation with zero
+  // actual edits to src/main|preload|shared, restarting Electron and killing
+  // an unrelated debugging session). Treating that as "rebuild anyway" was
+  // wrong — skip it. A real edit still fires its own named event right after,
+  // so the only cost of skipping is not reacting to the rare case where an
+  // edit's named event is itself lost, which is far better than a spurious
+  // restart on every busy-disk hiccup.
   const watchRebuildDir = (dir) => {
     try {
       fs.watch(dir, { recursive: true }, (_eventType, filename) => {
-        if (!filename) return schedule(true); // no filename info — fall back to rebuilding
+        if (!filename) return;
         if (contentActuallyChanged(path.join(dir, filename))) schedule(true);
       });
     } catch (err) {
