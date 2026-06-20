@@ -200,6 +200,24 @@ export const diagnostics = {
       return { rss_mb: 0 };
     }
   },
+  // Story 13.1: real CPU/tokens-per-sec/IPC-throughput/model-load-time,
+  // replacing the dashboard's previously hardcoded zeros. The 0 fallback here
+  // only fires when the bridge itself is unreachable (mirrors memoryUsage()'s
+  // existing convention above) — the caller's outer try/catch in
+  // TelemetryDashboardTab skips the whole tick on failure rather than
+  // displaying this fallback as if it were a real reading.
+  async telemetrySnapshot(): Promise<{
+    cpu_pct: number;
+    tokens_per_sec: number;
+    ipc_throughput_kbps: number;
+    model_load_ms: number;
+  }> {
+    try {
+      return await bridgeInvoke("get_telemetry_snapshot");
+    } catch (_) {
+      return { cpu_pct: 0, tokens_per_sec: 0, ipc_throughput_kbps: 0, model_load_ms: 0 };
+    }
+  },
   async geminiKeyStatus(): Promise<{ set: boolean }> {
     try {
       const key = await bridgeInvoke<string>("get_gemini_api_key");

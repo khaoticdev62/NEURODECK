@@ -96,6 +96,13 @@ pub struct AppState {
     // Canvas streaming execution cancellation.
     pub(crate) canvas_exec_cancel_tx: Option<tokio::sync::oneshot::Sender<()>>,
     pub(crate) boot_self_heal: self_heal::SelfHealReport,
+    // Story 13.1 — Telemetry: a persistent System so sysinfo can compute a real
+    // CPU delta between polls (a fresh System per call always reads 0% — there
+    // is no prior sample to diff against). last_tokens_per_sec/last_model_load_ms
+    // hold the most recently *measured* value, not a live instantaneous one.
+    pub(crate) cpu_sysinfo: sysinfo::System,
+    pub(crate) last_tokens_per_sec: f64,
+    pub(crate) last_model_load_ms: u64,
     // Privacy / sealed record unlock state
     pub(crate) unlock_state: privacy::UnlockState,
 }
