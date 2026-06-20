@@ -95,13 +95,13 @@ export const PrimarySidebar = memo(function PrimarySidebar({
 
   return (
     <aside
-      className="group/sidebar relative hidden shrink-0 flex-col border-r border-nd-border-subtle bg-nd-surface-sidebar/35 backdrop-blur-[var(--nd-glass-blur,8px)] transition-[width] duration-[var(--nd-motion-normal)] ease-[var(--nd-ease-standard)] lg:flex"
+      className="group/sidebar relative hidden shrink-0 flex-col border-r border-nd-border-subtle bg-[var(--nd-surface-sidebar)] transition-[width] duration-[var(--nd-motion-normal)] ease-[var(--nd-ease-standard)] lg:flex"
       style={{ width: expanded ? "var(--nd-sidebar-expanded, 200px)" : "var(--nd-shell-navrail)" }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Command button + pin toggle */}
-      <div className="shrink-0 space-y-1 p-2">
+      <div className="shrink-0 space-y-1.5 border-b border-[var(--nd-border-subtle)] p-2.5">
         <button
           id="command-palette-btn"
           type="button"
@@ -158,9 +158,9 @@ export const PrimarySidebar = memo(function PrimarySidebar({
         {recentItems.length > 0 && (
           <div className="mb-2">
             <div
-              className={`mb-1 transition-opacity duration-[var(--nd-motion-fast)] ${
+            className={`mb-1 transition-opacity duration-[var(--nd-motion-fast)] ${
                 expanded
-                  ? "px-2 py-1 text-[10px] font-bold uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]/60"
+                  ? "px-2 py-1 font-mono text-[11px] font-bold uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]"
                   : "flex justify-center py-1"
               }`}
             >
@@ -206,7 +206,7 @@ export const PrimarySidebar = memo(function PrimarySidebar({
               <div
                 className={`mb-1 transition-opacity duration-[var(--nd-motion-fast)] ${
                   expanded
-                    ? "cursor-pointer select-none rounded-[var(--nd-radius-sm)] px-2 py-1 text-[10px] font-bold uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)]/60 hover:text-[var(--nd-text-muted)]/90"
+                    ? "cursor-pointer select-none rounded-[var(--nd-radius-sm)] px-2 py-1 font-mono text-[11px] font-bold uppercase tracking-[var(--nd-tracking-hud)] text-[var(--nd-text-muted)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-text-primary)]"
                     : "flex justify-center py-1"
                 }`}
                 onClick={expanded ? () => toggleSection(section) : undefined}
@@ -252,7 +252,7 @@ export const PrimarySidebar = memo(function PrimarySidebar({
       </nav>
 
       {/* Footer */}
-      <div className="shrink-0 space-y-2 border-t border-[var(--nd-border-subtle)] bg-transparent p-2">
+      <div className="shrink-0 space-y-2 border-t border-[var(--nd-border-subtle)] bg-[var(--nd-surface-primary)] p-2.5">
         <div className="flex items-center justify-center">
           {expanded ? (
             <div className="flex w-full min-h-touch items-center justify-between px-1">
@@ -354,14 +354,14 @@ function NavButton({
         else if (e.key === "Home") { e.preventDefault(); btns[0]?.focus(); }
         else if (e.key === "End") { e.preventDefault(); btns[btns.length - 1]?.focus(); }
       }}
-      className={`no-drag group/nav flex w-full min-h-touch items-center rounded-[var(--nd-radius-md)] px-2 py-2 text-left transition-[background-color,border-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
+      className={`no-drag group/nav nd-controller-focus flex w-full min-h-touch items-center rounded-[var(--nd-radius-md)] px-2 py-2 text-left transition-[background-color,border-color,color] duration-[var(--nd-motion-fast)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--nd-focus-ring)] ${
         active
-          ? `${markActive ? "active" : ""} border-l-2 border-[var(--nd-border-focus)] bg-gradient-to-r from-[rgba(139,114,255,0.14)] to-[rgba(94,235,255,0.06)] pl-1.5 font-semibold text-[var(--nd-accent-primary)]`
+          ? `${markActive ? "active" : ""} border-l-2 border-[var(--nd-border-focus)] bg-[var(--nd-surface-selected)] pl-1.5 font-semibold text-[var(--nd-text-primary)] shadow-[inset_8px_0_20px_rgba(94,235,255,0.04)]`
           : "border-l-2 border-transparent text-[var(--nd-text-muted)] hover:bg-[var(--nd-surface-hover)] hover:text-[var(--nd-text-primary)]"
       } ${expanded ? "" : "justify-center"}`}
     >
-      <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center">
-        <Icon className="h-4 w-4" aria-hidden="true" />
+      <span className={`inline-flex h-6 w-6 shrink-0 items-center justify-center ${active ? "text-[var(--nd-accent-primary)]" : ""}`}>
+        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
       </span>
       <span
         className={`ml-2.5 overflow-hidden whitespace-nowrap text-sm font-medium transition-opacity duration-[var(--nd-motion-fast)] ${

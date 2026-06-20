@@ -4,9 +4,12 @@ import path from "path";
 
 const ELECTRON_PROJECT = "electron";
 
-export const test = base.extend<{ page: Page; electronApp: ElectronApplication | null }>({
-  electronApp: async ({}, use, testInfo) => {
-    if (testInfo.project.name !== ELECTRON_PROJECT) {
+export const test = base.extend<
+  { page: Page },
+  { electronApp: ElectronApplication | null }
+>({
+  electronApp: [async ({}, use, workerInfo) => {
+    if (workerInfo.project.name !== ELECTRON_PROJECT) {
       await use(null);
       return;
     }
@@ -32,7 +35,7 @@ export const test = base.extend<{ page: Page; electronApp: ElectronApplication |
     } finally {
       await app.close();
     }
-  },
+  }, { scope: "worker" }],
 
   page: async ({ electronApp }, use, testInfo) => {
     if (testInfo.project.name === ELECTRON_PROJECT) {

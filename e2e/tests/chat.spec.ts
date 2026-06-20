@@ -3,6 +3,7 @@ import { ChatPage } from "../pages/ChatPage";
 
 test.beforeEach(async ({ page }) => {
   const chat = new ChatPage(page);
+  await page.routeWebSocket(/\/ws$/, () => {});
   await chat.mockTauriBackend();
   await chat.goto();
 });

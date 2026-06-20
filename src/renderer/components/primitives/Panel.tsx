@@ -68,7 +68,7 @@ export function Panel({
         <header id={headerId} className="nd-panel__head">
           <div className="nd-panel__titles">
             {eyebrow && (
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-nd-accent-primary/80">
+              <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-nd-accent-primary">
                 {eyebrow}
               </p>
             )}

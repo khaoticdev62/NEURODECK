@@ -1,19 +1,20 @@
 import { Minus, Square, X } from "lucide-react";
 import { IconButton } from "../primitives/IconButton";
+import { BrandLogo } from "../primitives/BrandLogo";
 import { useBridgeStatus } from "../../hooks/useBridgeStatus";
 
 const STATUS_CONFIG = {
   connected: {
     label: "Backend connected",
-    className: "bg-[var(--nd-accent-success)]",
+    className: "border-[var(--nd-accent-success)]/30 bg-[var(--nd-surface-success)] text-[var(--nd-text-success)]",
   },
   connecting: {
     label: "Backend connecting…",
-    className: "animate-pulse bg-[var(--nd-accent-warning)]",
+    className: "border-[var(--nd-accent-warning)]/30 bg-[var(--nd-surface-warning)] text-[var(--nd-text-warning)]",
   },
   disconnected: {
     label: "Backend disconnected",
-    className: "bg-[var(--nd-accent-error)]",
+    className: "border-[var(--nd-accent-error)]/30 bg-[var(--nd-surface-error)] text-[var(--nd-text-danger)]",
   },
 } as const;
 
@@ -25,8 +26,11 @@ function BridgeStatusDot() {
       role="status"
       aria-label={label}
       title={label}
-      className={`pointer-events-auto inline-block h-2 w-2 shrink-0 rounded-full ${className}`}
-    />
+      className={`pointer-events-auto inline-flex min-h-7 items-center gap-1.5 rounded-full border px-2.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em] ${className}`}
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+      {label.replace("Backend ", "")}
+    </span>
   );
 }
 
@@ -34,21 +38,17 @@ export function TitleBar({ subtitle }: { subtitle: string }) {
   return (
     <header
       role="banner"
-      className="drag-region flex h-10 shrink-0 items-center justify-between border-b border-nd-border-subtle bg-gradient-to-r from-[var(--nd-surface-primary)] via-[var(--nd-surface-primary)] to-[var(--nd-surface-secondary)] backdrop-blur-[var(--nd-glass-blur,12px)] px-3"
+      className="drag-region flex h-12 shrink-0 items-center justify-between border-b border-nd-border-subtle bg-[var(--nd-surface-sidebar)] px-3"
     >
       <div className="flex min-w-0 items-center gap-3">
-        <div className="no-drag group flex gap-1.5 pl-1" aria-hidden="true">
-          <span className="h-2.5 w-5 rounded-full bg-[var(--nd-accent-error)]/80 transition-opacity duration-[var(--nd-motion-fast)]" />
-          <span className="h-2.5 w-5 rounded-full bg-[var(--nd-accent-warning)]/80 transition-opacity duration-[var(--nd-motion-fast)]" />
-          <span className="h-2.5 w-5 rounded-full bg-[var(--nd-accent-success)]/80 transition-opacity duration-[var(--nd-motion-fast)]" />
-        </div>
+        <BrandLogo className="h-7 w-7 shrink-0" aria-hidden />
         <div className="h-5 w-px bg-[var(--nd-border-subtle)]" />
         <div className="min-w-0 flex items-center gap-2">
           <div>
-            <p className="truncate text-xs font-bold uppercase tracking-[var(--nd-tracking-wordmark)] text-[var(--nd-text-primary)] drop-shadow-[0_0_20px_rgba(94,235,255,0.3)]">
+            <p className="truncate font-display text-xs font-bold uppercase tracking-[var(--nd-tracking-wordmark)] text-[var(--nd-text-primary)]">
               NEURODECK
             </p>
-            <p className="truncate text-[10px] uppercase tracking-[0.16em] text-[var(--nd-text-muted)]">
+            <p className="truncate font-mono text-[11px] uppercase tracking-[0.14em] text-[var(--nd-text-muted)]">
               {subtitle}
             </p>
           </div>
@@ -60,7 +60,7 @@ export function TitleBar({ subtitle }: { subtitle: string }) {
         <IconButton
           aria-label="Minimize window"
           variant="ghost"
-          size="md"
+          size="touch"
           onClick={() => window.neurodeck?.window?.minimize?.()}
         >
           <Minus className="h-4 w-4" />
@@ -68,7 +68,7 @@ export function TitleBar({ subtitle }: { subtitle: string }) {
         <IconButton
           aria-label="Maximize window"
           variant="ghost"
-          size="md"
+          size="touch"
           onClick={() => window.neurodeck?.window?.maximizeToggle?.()}
         >
           <Square className="h-3.5 w-3.5" />
@@ -76,7 +76,7 @@ export function TitleBar({ subtitle }: { subtitle: string }) {
         <IconButton
           aria-label="Close window"
           variant="danger"
-          size="md"
+          size="touch"
           onClick={() => window.neurodeck?.window?.close?.()}
         >
           <X className="h-4 w-4" />

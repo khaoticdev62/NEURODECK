@@ -53,11 +53,11 @@ export function InputConsole({
 
   return (
     <div
-      className="border-t border-nd-border-subtle bg-[var(--nd-surface-glass)]/40 p-3 backdrop-blur-[var(--nd-glass-blur,8px)]"
+      className="border-t border-nd-border-subtle bg-[var(--nd-surface-sidebar)] p-3"
       data-controller-zone="form"
     >
       {/* Status row */}
-      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+      <div className="mb-2 flex min-h-7 flex-wrap items-center gap-2 font-mono text-xs" aria-label="Active inference configuration">
         <Badge tone="accent" variant="outline">
           {provider}
         </Badge>
@@ -72,14 +72,14 @@ export function InputConsole({
         <Badge tone={providerCount > 1 ? "success" : "neutral"}>
           {providerCount} provider{providerCount === 1 ? "" : "s"} ready
         </Badge>
-        <span className="ml-auto inline-flex items-center gap-1 text-nd-text-muted">
-          <Keyboard className="h-3 w-3" aria-hidden="true" />
+        <span className="ml-auto inline-flex items-center gap-1.5 text-nd-text-secondary">
+          <Keyboard className="h-3.5 w-3.5" aria-hidden="true" />
           Enter to send
         </span>
       </div>
 
       {/* Composer */}
-      <div className="flex items-end gap-2 rounded-2xl border border-nd-border-subtle bg-[var(--nd-surface-glass)]/60 p-2 shadow-sm transition focus-within:border-nd-border-focus focus-within:bg-[var(--nd-surface-glass)]/80 focus-within:shadow-focus">
+      <div className="flex items-end gap-2 rounded-[var(--nd-radius-lg)] border border-nd-border-default bg-[var(--nd-surface-input)] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] transition-[border-color,box-shadow] focus-within:border-nd-border-focus focus-within:shadow-focus">
         {/* Attachments */}
         <div className="relative flex gap-1 pb-1 pl-1">
           <IconButton
@@ -207,7 +207,7 @@ export function InputConsole({
           aria-disabled={isBusy}
           disabled={isBusy}
           rows={1}
-          className="max-h-32 min-h-[40px] flex-1 resize-none bg-transparent py-2.5 text-sm leading-5 text-nd-text-primary outline-none placeholder:text-nd-text-muted/70 disabled:cursor-not-allowed disabled:opacity-50"
+          className="max-h-32 min-h-11 flex-1 resize-none bg-transparent px-1 py-3 text-sm leading-5 text-nd-text-primary outline-none placeholder:text-nd-text-muted disabled:cursor-not-allowed disabled:opacity-60"
         />
 
         {/* Send */}

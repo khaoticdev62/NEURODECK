@@ -108,50 +108,50 @@ export function ChatViewport({
       tabIndex={0}
     >
       {showWelcome ? (
-        <div className="flex flex-col items-center py-6 text-center">
-          <div className="flex flex-col items-center gap-3 py-4">
+        <div className="mx-auto flex min-h-full w-full max-w-5xl flex-col justify-center px-5 py-6">
+          <div className="flex items-center gap-5 border-b border-nd-border-subtle pb-5 text-left">
             <BrandLogo
-              className="h-20 w-20"
-              style={{ filter: "drop-shadow(0 0 24px rgba(94,235,255,0.22))" }}
+              className="h-16 w-16 shrink-0"
               aria-hidden
             />
-            <div className="text-center">
-              <p className="nd-view-eyebrow mb-1">Local-First AI Workstation</p>
-              <h1 className="nd-view-title">NEURODECK</h1>
-              <p className="nd-view-subtitle mt-1">Attach context, pick a model, and start building.</p>
+            <div className="min-w-0">
+              <p className="nd-view-eyebrow mb-1">Local intelligence layer / ready</p>
+              <h1 className="font-display text-[28px] font-bold tracking-[0.12em] text-nd-text-primary">NEURODECK</h1>
+              <p className="mt-1 max-w-2xl text-sm leading-6 text-nd-text-secondary">
+                Build, inspect, and operate from one controller-first workspace. Choose a mission brief or enter a command below.
+              </p>
             </div>
           </div>
 
           {/* Starter grid with staggered entrance */}
-          <div className="mt-8 grid w-full max-w-2xl gap-3 px-2 sm:grid-cols-2 lg:grid-cols-3">
-            {STARTERS.map((s, index) => (
+          <div className="mt-5 grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {STARTERS.map((s) => (
               <button
                 key={s.label}
                 type="button"
                 onClick={() => onRunStarter(s.hint)}
-                className="animate-panel-enter group relative overflow-hidden rounded-2xl border border-nd-border-subtle bg-nd-surface-secondary/40 p-4 text-left transition-all duration-fast hover:-translate-y-0.5 hover:border-nd-accent-primary/30 hover:bg-nd-accent-primary/[0.04] hover:shadow-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent-primary/50"
-                style={{ animationDelay: `${index * 60}ms` }}
+                className="group relative min-h-[112px] overflow-hidden rounded-[var(--nd-radius-lg)] border border-nd-border-subtle bg-[var(--nd-surface-glass)] p-4 text-left transition-[border-color,background-color] duration-fast hover:border-nd-accent-primary/40 hover:bg-[var(--nd-surface-tertiary)] focus-visible:outline-none"
               >
                 <div
-                  className={`absolute inset-x-0 top-0 h-1 ${TONE_BAR[s.tone]}`}
+                  className={`absolute bottom-3 left-0 top-3 w-0.5 ${TONE_BAR[s.tone]}`}
                   aria-hidden="true"
                 />
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-nd-border-subtle bg-nd-surface-tertiary transition group-hover:border-nd-accent-primary/30 group-hover:bg-nd-accent-primary/10">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-[var(--nd-radius-md)] border border-nd-border-subtle bg-nd-surface-tertiary transition group-hover:border-nd-accent-primary/30 group-hover:bg-nd-accent-primary/10">
                     <s.icon
                       className="h-4 w-4 text-nd-accent-primary transition group-hover:scale-110"
                       aria-hidden="true"
                     />
                   </div>
-                  <p className="text-xs font-semibold text-nd-text-primary/90">{s.label}</p>
+                  <p className="text-sm font-semibold text-nd-text-primary">{s.label}</p>
                 </div>
-                <p className="mt-2 text-[11px] leading-4 text-nd-text-muted/60">{s.hint}</p>
+                <p className="mt-2 text-[13px] leading-5 text-nd-text-muted">{s.hint}</p>
               </button>
             ))}
           </div>
 
           {/* Quick action chips */}
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <div className="mt-4 flex flex-wrap gap-2" aria-label="Workspace actions">
             <QuickChip icon={FolderOpen} label="Scan Project" onClick={onScanProject} />
             <QuickChip icon={FileJson} label="Build Context" onClick={onBuildContext} />
             <QuickChip icon={BrainCircuit} label="AI Health" onClick={onCheckHealth} />
@@ -159,20 +159,19 @@ export function ChatViewport({
           </div>
 
           {/* Typing hint */}
-          <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-nd-border-subtle bg-nd-surface-secondary/40 px-3 py-1.5 text-[11px] text-nd-text-muted">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-nd-accent-primary" />
-            Start typing below or pick a starter
+          <div className="mt-4 inline-flex min-h-11 w-fit items-center gap-2 rounded-full border border-nd-border-subtle bg-nd-surface-secondary/40 px-4 py-2 text-[13px] text-nd-text-secondary">
+            <span className="inline-block h-2 w-2 rounded-full bg-nd-accent-success" aria-hidden="true" />
+            Ready for keyboard, touch, or controller input
           </div>
         </div>
       ) : (
         <div className="space-y-4">
-          {messages.map((msg, index) => (
+          {messages.map((msg) => (
             <ResponseCard
               key={msg.id}
               message={msg}
               onRegenerate={onRegenerate}
               isStreaming={msg.id === streamingMessageId}
-              style={{ animationDelay: `${index * 40}ms` }}
             />
           ))}
           {busyLabel && !streamingMessageId && (
@@ -206,7 +205,7 @@ function QuickChip({
   onClick: () => void;
 }) {
   return (
-    <Button variant="soft" size="xs" icon={Icon} iconPosition="left" onClick={onClick}>
+    <Button variant="soft" size="md" icon={Icon} iconPosition="left" onClick={onClick}>
       {label}
     </Button>
   );

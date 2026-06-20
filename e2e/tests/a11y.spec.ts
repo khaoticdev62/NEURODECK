@@ -7,7 +7,7 @@ import {
   openSteamDeckScreen,
 } from "../support/steam-deck-audit";
 
-test.describe("Steam Deck accessibility — WCAG 2.1 AA", () => {
+test.describe("Steam Deck accessibility — applicable WCAG 2.2 AAA", () => {
   test.use({ viewport: STEAM_DECK_VIEWPORT });
 
   for (const screen of STEAM_DECK_SCREENS) {
@@ -20,7 +20,7 @@ test.describe("Steam Deck accessibility — WCAG 2.1 AA", () => {
 
       const results = await new AxeBuilder({ page })
         .include(screen.root)
-        .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .withTags(["wcag2a", "wcag2aa", "wcag2aaa", "wcag21aa", "wcag21aaa", "wcag22aa", "wcag22aaa"])
         .analyze();
 
       await testInfo.attach(`axe-${screen.id}.json`, {

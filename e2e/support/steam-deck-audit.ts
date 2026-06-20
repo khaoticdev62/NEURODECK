@@ -204,8 +204,8 @@ export async function auditSteamDeckScreen(
     for (const element of document.querySelectorAll<HTMLElement>(primarySelector)) {
       if (!isVisible(element)) continue;
       const rect = element.getBoundingClientRect();
-      if (rect.width < 40 || rect.height < 40) {
-        findings.push({ selector: describe(element), message: `primary hit target is ${Math.round(rect.width)}×${Math.round(rect.height)}; minimum is 40×40`, bounds: bounds(element) });
+      if (rect.width < 44 || rect.height < 44) {
+        findings.push({ selector: describe(element), message: `primary hit target is ${Math.round(rect.width)}×${Math.round(rect.height)}; minimum is 44×44`, bounds: bounds(element) });
       }
     }
 

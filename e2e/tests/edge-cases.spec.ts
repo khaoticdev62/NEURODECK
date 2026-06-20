@@ -237,6 +237,7 @@ test.describe("Viewport edge cases", () => {
 test.describe("Error state resilience", () => {
   test.beforeEach(async ({ page }) => {
     const app = new AppPage(page);
+    await page.routeWebSocket(/\/ws$/, () => {});
     await app.mockTauriBackend();
     await app.goto();
   });

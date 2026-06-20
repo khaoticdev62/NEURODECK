@@ -45,6 +45,7 @@ test.describe("Security & Ops — View Navigation", () => {
     // Scope to the view to avoid hidden SettingsView buttons
     const view = page.getByTestId("view-themes");
     const cards = view.locator('[aria-pressed]');
+    await expect(cards.first()).toBeVisible();
     expect(await cards.count()).toBeGreaterThanOrEqual(7);
   });
 

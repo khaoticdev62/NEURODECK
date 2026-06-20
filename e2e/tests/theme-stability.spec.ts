@@ -33,7 +33,7 @@ test.beforeEach(async ({ page }) => {
 // ── 1. Favicon reference ──────────────────────────────────────────────────────
 
 test("favicon reference is present in <head>", async ({ page }) => {
-  const faviconLink = page.locator('link[rel="icon"][href="./favicon.svg"]');
+  const faviconLink = page.locator('link[rel="icon"][href$="favicon.svg"]');
   await expect(faviconLink).toHaveCount(1);
 });
 

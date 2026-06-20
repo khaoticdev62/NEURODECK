@@ -301,8 +301,7 @@ export default function App() {
             data-controller-screen="app-shell"
             data-onboarding-anchor="app-shell"
             data-density={state.deckMode ? "deck" : "comfortable"}
-            className={`flex h-full flex-col overflow-hidden tactical-grid outline-none ${state.deckMode ? "text-[15px]" : ""}`}
-            style={{ color: "var(--nd-text)" }}
+            className={`flex h-full flex-col overflow-hidden outline-none ${state.deckMode ? "text-[15px]" : ""}`}
           >
             <input
               ref={shortcutSinkRef}
@@ -371,7 +370,7 @@ export default function App() {
               <main
                 id="main-content"
                 data-onboarding-anchor="main-content"
-                className="min-w-0 flex-1 overflow-hidden p-3 md:p-4"
+                className="min-w-0 flex-1 overflow-hidden p-2.5 md:p-3"
               >
                 <div className="view-container h-full min-h-0">
                   <AppViewRouter state={state} dispatch={dispatch} selectors={selectors} actions={appActions} />

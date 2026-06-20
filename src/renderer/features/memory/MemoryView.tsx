@@ -286,8 +286,7 @@ export function MemoryView({
           ref={fileInputRef}
           type="file"
           accept=".ndmem,.json"
-          aria-hidden="true"
-          className="sr-only"
+          className="hidden"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) void handleImportFile(file);

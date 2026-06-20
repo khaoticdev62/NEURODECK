@@ -140,7 +140,7 @@ export function AppOverlays({
               aria-modal="true"
               aria-labelledby="settings-dialog-title"
               tabIndex={-1}
-              className="settings-modal-card absolute inset-3 rounded-3xl border border-nd-text-muted/15 p-0 shadow-2xl shadow-nd-accent/10 outline-none"
+              className="settings-modal-card absolute inset-3 rounded-[var(--nd-radius-3xl)] border border-nd-border-default bg-[var(--nd-surface-modal)] p-0 shadow-[var(--nd-elevation-overlay)] outline-none"
               data-settings-theme={settingsPanel}
               data-controller-zone="dialog"
               onMouseDown={(e) => e.stopPropagation()}
@@ -184,11 +184,11 @@ export function AppOverlays({
               aria-modal="true"
               aria-labelledby="notif-dialog-title"
               tabIndex={-1}
-              className="notif-modal-card absolute right-4 top-14 w-[360px] rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10 outline-none"
+              className="notif-modal-card absolute right-4 top-16 w-[380px] rounded-[var(--nd-radius-3xl)] border border-nd-border-default bg-[var(--nd-surface-modal)] p-5 shadow-[var(--nd-elevation-overlay)] outline-none"
               onMouseDown={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between">
-                <h2 id="notif-dialog-title" className="text-sm font-semibold text-nd-text">
+                <h2 id="notif-dialog-title" className="text-lg font-bold text-nd-text">
                   Notifications {notifCount > 0 && <span className="ml-1 text-xs text-nd-text-muted">({notifCount})</span>}
                 </h2>
                 <div className="flex items-center gap-2">
@@ -196,7 +196,7 @@ export function AppOverlays({
                     <button
                       type="button"
                       onClick={clearAll}
-                      className="text-2xs text-nd-text-muted hover:text-nd-text"
+                      className="min-h-11 rounded-[var(--nd-radius-md)] px-3 text-sm font-semibold text-nd-text-muted hover:bg-nd-surface-hover hover:text-nd-text"
                     >
                       Clear all
                     </button>
@@ -221,7 +221,7 @@ export function AppOverlays({
                     return (
                       <li
                         key={n.id}
-                        className="flex items-start gap-2 rounded-lg border border-nd-border-subtle bg-nd-surface-tertiary/30 p-2"
+                        className="flex min-h-14 items-start gap-3 rounded-[var(--nd-radius-md)] border border-nd-border-subtle bg-nd-surface-tertiary/40 p-3"
                       >
                         <Icon
                           className={`mt-0.5 h-4 w-4 shrink-0 ${
@@ -234,8 +234,8 @@ export function AppOverlays({
                           aria-hidden
                         />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs text-nd-text">{n.message}</p>
-                          <p className="text-2xs text-nd-text-muted">
+                          <p className="text-sm leading-5 text-nd-text">{n.message}</p>
+                          <p className="font-mono text-xs text-nd-text-muted">
                             {new Date(n.timestamp).toLocaleTimeString()}
                           </p>
                         </div>
@@ -276,11 +276,11 @@ export function AppOverlays({
               aria-modal="true"
               aria-labelledby="shortcuts-dialog-title"
               tabIndex={-1}
-              className="absolute left-1/2 top-16 z-modal w-[760px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-5 shadow-2xl shadow-nd-accent/10 outline-none"
+              className="absolute left-1/2 top-16 z-modal w-[760px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-[var(--nd-radius-3xl)] border border-nd-border-default bg-[var(--nd-surface-modal)] p-6 shadow-[var(--nd-elevation-overlay)] outline-none"
               onMouseDown={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between">
-                <h2 id="shortcuts-dialog-title" className="text-sm font-semibold text-nd-text">
+                <h2 id="shortcuts-dialog-title" className="text-xl font-bold text-nd-text">
                   Keyboard Shortcuts
                 </h2>
                 <IconButton
@@ -305,8 +305,8 @@ export function AppOverlays({
                   ["Ctrl + D", "Diagnostics"],
                 ].map(([key, label]) => (
                   <div key={key} className="flex items-center justify-between gap-3 py-1">
-                    <span className="text-xs text-nd-text-muted">{label}</span>
-                    <kbd className="rounded border border-nd-text-muted/20 bg-nd-surface/60 px-2 py-0.5 text-[10px] font-mono text-nd-accent">
+                    <span className="text-sm text-nd-text-secondary">{label}</span>
+                    <kbd className="rounded border border-nd-border-default bg-nd-surface/60 px-2 py-1 font-mono text-xs text-nd-accent">
                       {key}
                     </kbd>
                   </div>
@@ -333,7 +333,7 @@ export function AppOverlays({
             aria-modal="true"
             aria-labelledby="ctrlprompt-dialog-title"
             tabIndex={-1}
-            className="absolute left-1/2 top-20 z-modal w-[720px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10 outline-none"
+            className="absolute left-1/2 top-20 z-modal w-[720px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-[var(--nd-radius-3xl)] border border-nd-border-default bg-[var(--nd-surface-modal)] p-5 shadow-[var(--nd-elevation-overlay)] outline-none"
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="mb-2 flex items-center justify-between">
@@ -383,10 +383,10 @@ export function AppOverlays({
             aria-modal="true"
             aria-labelledby="qs-dialog-title"
             tabIndex={-1}
-            className="absolute left-1/2 top-20 z-modal w-[520px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-3xl border border-nd-text-muted/15 bg-nd-bg/96 p-4 shadow-2xl shadow-nd-accent/10 outline-none"
+            className="absolute left-1/2 top-20 z-modal w-[520px] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-[var(--nd-radius-3xl)] border border-nd-border-default bg-[var(--nd-surface-modal)] p-5 shadow-[var(--nd-elevation-overlay)] outline-none"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <h2 id="qs-dialog-title" className="text-sm font-semibold text-nd-text">
+            <h2 id="qs-dialog-title" className="text-lg font-bold text-nd-text">
               Quick Switcher
             </h2>
             <div
@@ -408,14 +408,14 @@ export function AppOverlays({
                   role="option"
                   aria-selected={index === quickSwitcherFocusIdx}
                   data-qs-item
-                  className={`quick-switcher-item flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nd-accent/40 ${index === quickSwitcherFocusIdx ? "active border-nd-accent/35 bg-nd-accent/10 text-nd-accent" : "border-nd-text-muted/15 bg-nd-surface/40 text-nd-text/80 hover:bg-nd-surface/60"}`}
+                  className={`quick-switcher-item flex min-h-11 w-full items-center justify-between rounded-[var(--nd-radius-md)] border px-3 py-2 text-left transition focus-visible:outline-none ${index === quickSwitcherFocusIdx ? "active border-nd-accent/45 bg-nd-accent/10 text-nd-text" : "border-nd-border-subtle bg-nd-surface/40 text-nd-text-secondary hover:bg-nd-surface/60"}`}
                   onClick={() => {
                     dispatch({ type: "set-view", view });
                     setQuickSwitcherOpen(false);
                   }}
                 >
                   <span className="capitalize">{view.replace(/-/g, " ")}</span>
-                  <span className="text-[10px] uppercase tracking-[0.2em] text-nd-text-muted">
+                  <span className="font-mono text-xs uppercase tracking-[0.16em] text-nd-text-muted">
                     {index === 0 ? "previous" : "recent"}
                   </span>
                 </button>

@@ -505,20 +505,20 @@ test.describe("Design System Visual Audit", () => {
      §13  VISUAL REGRESSION SCREENSHOTS
      ═══════════════════════════════════════════════════ */
 
-  test("§13.1 — screenshot: default chat view at 1280×800", async ({ page }) => {
+  test("§13.1 — screenshot: default chat view at 1280×800", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.waitForTimeout(400);
-    await expect(page).toHaveScreenshot("audit-chat-1280x800.png", {
+    await app.stabilizeForScreenshot();
+    await expect(page).toHaveScreenshot(`audit-chat-1280x800-${testInfo.project.name}-${process.platform}.png`, {
       fullPage: false,
       maxDiffPixels: 300,
     });
   });
 
-  test("§13.2 — screenshot: settings modal at 1280×800", async ({ page }) => {
+  test("§13.2 — screenshot: settings modal at 1280×800", async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await app.openSettings();
-    await page.waitForTimeout(600);
-    await expect(page).toHaveScreenshot("audit-settings-1280x800.png", {
+    await app.stabilizeForScreenshot();
+    await expect(page).toHaveScreenshot(`audit-settings-1280x800-${testInfo.project.name}-${process.platform}.png`, {
       fullPage: false,
       maxDiffPixels: 300,
     });

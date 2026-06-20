@@ -205,8 +205,10 @@ test("ssh and share transfer surfaces expose the refined shell hierarchy", async
   await expect(page.locator('[data-testid="view-share"] h2')).toBeVisible();
 
   // Tabs use role="tab" + data-panel attribute
-  await page.locator('[role="tab"][data-panel="torrent"]').click();
-  await expect(page.locator("#share-panel-torrent")).toHaveClass(/active/);
+  const torrentTab = page.locator('[role="tab"][data-panel="torrent"]');
+  await torrentTab.click();
+  await expect(torrentTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator("#share-panel-torrent")).toBeVisible();
   // TorrentView inside the panel uses Panel eyebrow "BitTorrent"
   await expect(page.getByText("BitTorrent").first()).toBeVisible();
 });

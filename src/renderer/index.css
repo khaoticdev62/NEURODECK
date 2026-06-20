@@ -72,6 +72,71 @@ body {
   background: var(--nd-bg);
   color: var(--nd-text);
   font-family: var(--nd-font-ui);
+  font-size: var(--nd-text-body-sm-size);
+  line-height: var(--nd-text-body-sm-lh);
+}
+
+/* Premium controller focus frame: the product's signature interaction cue. */
+:where(button, input, textarea, select, a, [role="button"], [role="tab"]):focus-visible {
+  outline: 2px solid var(--nd-focus-ring) !important;
+  outline-offset: 2px;
+  box-shadow: var(--nd-elevation-focus) !important;
+}
+
+#app-shell {
+  isolation: isolate;
+  background: color-mix(in srgb, var(--nd-surface-app) 96%, transparent);
+}
+
+#main-content {
+  background: color-mix(in srgb, var(--nd-surface-app) 72%, transparent);
+}
+
+.view-container > [data-testid^="view-"] {
+  border-radius: var(--nd-radius-lg);
+}
+
+/* Screen-family accents make the workstation legible without turning status
+   color into decoration. The active family edge is always paired with the
+   screen's visible title and navigation state. */
+.nd-view-frame {
+  --nd-view-accent: var(--nd-accent-primary);
+  position: relative;
+}
+
+.nd-view-frame::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  z-index: var(--nd-z-base);
+  width: 2px;
+  background: var(--nd-view-accent);
+  content: "";
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.nd-view-frame[data-view-family="tool"] {
+  --nd-view-accent: var(--nd-accent-primary);
+}
+
+.nd-view-frame[data-view-family="intelligence"] {
+  --nd-view-accent: var(--nd-accent-agent);
+}
+
+.nd-view-frame[data-view-family="network"] {
+  --nd-view-accent: var(--nd-accent-info);
+}
+
+.nd-view-frame[data-view-family="operations"] {
+  --nd-view-accent: var(--nd-accent-warning);
+}
+
+.nd-view-frame[data-view-family="configuration"] {
+  --nd-view-accent: var(--nd-text-secondary);
+}
+
+.nd-view-frame .nd-panel__head {
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--nd-view-accent) 70%, transparent);
 }
 
 /* Drag regions for Electron frameless window */
@@ -126,43 +191,34 @@ a,
 
 .glass-panel,
 .nd-panel.glass-panel {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.045) 0%, transparent 100%),
-    linear-gradient(135deg, var(--nd-surface-glass) 0%, color-mix(in srgb, var(--nd-surface-glass) 75%, transparent) 100%) !important;
-  background-blend-mode: overlay !important;
+  background: var(--nd-surface-glass) !important;
   border: 1px solid color-mix(in srgb, var(--nd-text-muted) 12%, transparent) !important;
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.2),
     0 4px 16px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(var(--nd-glass-blur, 12px)) !important;
+  backdrop-filter: none !important;
 }
 
 .glass-panel-deep,
 .nd-panel.glass-panel-deep {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.055) 0%, transparent 30%),
-    linear-gradient(135deg, var(--nd-surface-glass) 0%, color-mix(in srgb, var(--nd-surface-glass) 60%, transparent) 100%) !important;
-  background-blend-mode: overlay !important;
+  background: color-mix(in srgb, var(--nd-surface-modal) 96%, black) !important;
   border: 1px solid color-mix(in srgb, var(--nd-text-muted) 14%, transparent) !important;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 16px 40px rgba(0, 0, 0, 0.55) !important;
-  backdrop-filter: blur(calc(var(--nd-glass-blur, 12px) * 1.5)) !important;
+  backdrop-filter: blur(8px) !important;
 }
 
 .glass-panel-elevated,
 .nd-panel.glass-panel-elevated {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, transparent 100%),
-    linear-gradient(135deg, color-mix(in srgb, var(--nd-surface-glass) 90%, white 10%) 0%, var(--nd-surface-glass) 100%) !important;
-  background-blend-mode: overlay !important;
+  background: color-mix(in srgb, var(--nd-surface-glass) 92%, var(--nd-surface-tertiary)) !important;
   border: 1px solid color-mix(in srgb, var(--nd-text-muted) 16%, transparent) !important;
   box-shadow:
     0 2px 4px rgba(0, 0, 0, 0.25),
     0 8px 24px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(calc(var(--nd-glass-blur, 8px) * 1.5)) !important;
+  backdrop-filter: none !important;
 }
 
 .glass-panel-flat,

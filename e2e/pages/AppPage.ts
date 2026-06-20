@@ -136,12 +136,12 @@ export class AppPage {
   }
 
   async navigateTo(view: string) {
-    const tab = this.page.locator(`button[data-view="${view}"]:visible`).first();
+    const tab = this.page.locator(`button[data-view="${view}"]`).first();
     const count = await tab.count();
     if (count > 0) {
-      await tab.scrollIntoViewIfNeeded();
-      // Direct click dispatch avoids hover-expand sidebar shifting between
-      // mousedown/mouseup and works for both desktop and mobile bars.
+      // React still receives programmatic clicks for responsive navigation
+      // controls that remain mounted but are visually hidden at narrow widths.
+      // This is more deterministic than routing through the command palette.
       await tab.evaluate((el) => (el as HTMLButtonElement).click());
     } else {
       // Narrow/mobile viewports only expose primary tabs; fall back to the

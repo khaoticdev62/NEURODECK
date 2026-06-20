@@ -136,7 +136,7 @@ test.describe("Workspace view", () => {
     const chatViewport = page.locator("#chat-viewport");
     await expect(chatViewport.getByRole("heading", { name: "NEURODECK" })).toBeVisible({ timeout: 5000 });
     await expect(
-      chatViewport.getByText("Local-first AI workstation OS.")
+      chatViewport.getByText("Build, inspect, and operate from one controller-first workspace.")
     ).toBeVisible({ timeout: 3000 });
   });
 

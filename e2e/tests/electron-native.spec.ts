@@ -95,6 +95,20 @@ test.describe('Electron Native', () => {
       expect(overflow.height).toBeLessThanOrEqual(801);
     }
 
+    await page.locator('button[data-view="browser"]:visible').first().evaluate((element) =>
+      (element as HTMLButtonElement).click());
+    await expect(page.getByTestId('view-browser')).toHaveClass(/active/);
+    const addressInput = page.getByPlaceholder('Search or enter web URL...');
+    await expect(addressInput).toBeVisible();
+    await addressInput.fill('https://example.com');
+    await page.getByRole('button', { name: 'Go' }).click();
+    await expect.poll(async () => page.evaluate(async () => {
+      const browser = (window as any).neurodeck?.browser;
+      return browser ? browser.getTabs() : [];
+    })).toEqual(expect.arrayContaining([
+      expect.objectContaining({ url: expect.stringContaining('example.com') }),
+    ]));
+
     await page.locator('#settings-btn').evaluate((element) => (element as HTMLButtonElement).click());
     await expect(page.locator('#settings-overlay')).toHaveClass(/active/);
     await page.keyboard.press('Escape');

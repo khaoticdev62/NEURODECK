@@ -192,6 +192,18 @@ const SafeModeScreen = lazy(() =>
   import("../features/recovery/SafeModeScreen").then((m) => ({ default: m.SafeModeScreen }))
 );
 
+const VIEW_FAMILIES: Partial<Record<ViewId, "tool" | "intelligence" | "network" | "operations" | "configuration">> = {
+  terminal: "tool", ssh: "tool", canvas: "tool", ide: "tool", git: "tool", browser: "tool",
+  "api-lab": "tool", "cli-maker": "tool", execution: "tool",
+  agent: "intelligence", memory: "intelligence", project: "intelligence", "prompt-lab": "intelligence",
+  academy: "intelligence", graph: "intelligence", sessions: "intelligence", chat: "intelligence",
+  tunnel: "network", share: "network", torrent: "network", remote: "network", sync: "network",
+  scheduler: "operations", orchestrator: "operations", models: "operations", cache: "operations",
+  plugins: "operations", diagnostics: "operations", fonts: "operations", mcp: "operations",
+  security: "operations", exports: "operations", maintenance: "operations", recovery: "operations",
+  settings: "configuration", themes: "configuration",
+};
+
 function renderView(id: ViewId, content: ReactNode) {
   return (
     <div
@@ -199,9 +211,10 @@ function renderView(id: ViewId, content: ReactNode) {
       id={`view-${id}`}
       data-testid={`view-${id}`}
       data-controller-screen={id}
+      data-view-family={VIEW_FAMILIES[id] ?? "operations"}
       data-controller-screen-active="true"
       data-controller-default="true"
-      className="view-content active h-full min-h-0 animate-view-enter"
+      className="nd-view-frame view-content active h-full min-h-0 animate-view-enter"
     >
       <ViewErrorBoundary viewId={id}>
         <Suspense fallback={<ViewLoader />}>{content}</Suspense>

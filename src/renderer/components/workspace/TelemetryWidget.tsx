@@ -35,11 +35,10 @@ export function TelemetryWidget({
       className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5"
       aria-label="System telemetry"
     >
-      {items.map((item, index) => (
+      {items.map((item) => (
         <div
           key={item.label}
           className="relative overflow-hidden rounded-xl border border-nd-border-subtle bg-[var(--nd-surface-glass)]/25 p-2.5 transition duration-fast hover:border-nd-accent-primary/25 hover:bg-[var(--nd-surface-hover)]"
-          style={{ animationDelay: `${index * 40}ms` }}
         >
           <div className="grid grid-cols-[36px_minmax(0,1fr)] grid-rows-2 items-center gap-x-2.5">
             <div className="row-span-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-nd-border-subtle bg-nd-surface-tertiary/20 text-nd-accent-primary">

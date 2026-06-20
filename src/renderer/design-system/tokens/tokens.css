@@ -26,7 +26,7 @@
   /* ---- Primitive: Text ---- */
   --nd-text-100: #e8f4ff; /* primary */
   --nd-text-300: #b9cad8; /* secondary */
-  --nd-text-500: #8da1b3; /* muted */
+  --nd-text-500: #a9bdcc; /* muted; AAA-safe on app and panel surfaces */
 
   /* ---- Primitive: Accents ---- */
   --nd-cyan-400: #5eebff; /* primary accent */
@@ -51,10 +51,10 @@
   --nd-surface-primary: var(--nd-void-900);
   --nd-surface-secondary: var(--nd-slate-800);
   --nd-surface-tertiary: var(--nd-slate-700);
-  --nd-surface-sidebar: #0d1115;
+  --nd-surface-sidebar: #090d12;
   --nd-surface-input: #080a0e;
   --nd-surface-overlay: rgba(5, 7, 10, 0.88);
-  --nd-surface-glass: rgba(17, 22, 28, 0.82);
+  --nd-surface-glass: rgba(13, 19, 25, 0.94);
 
   /* Legacy surface aliases kept for compatibility */
   --nd-bg: var(--nd-surface-app);
@@ -80,7 +80,7 @@
   --nd-glow-brand-lg: 0 0 40px rgba(var(--nd-cyan-rgb), 0.38);
 
   /* ---- Semantic interaction surfaces ---- */
-  --nd-surface-hover: rgba(141, 161, 179, 0.08);
+  --nd-surface-hover: rgba(169, 189, 204, 0.09);
   --nd-surface-active: rgba(94, 235, 255, 0.12);
   --nd-surface-selected: rgba(94, 235, 255, 0.14);
   --nd-surface-disabled: rgba(141, 161, 179, 0.06);
@@ -116,9 +116,9 @@
   --nd-z-tooltip: 5000;
 
   /* ---- Semantic borders ---- */
-  --nd-border-subtle: rgba(141, 161, 179, 0.16);
-  --nd-border-default: rgba(141, 161, 179, 0.28);
-  --nd-border-strong: rgba(232, 244, 255, 0.42);
+  --nd-border-subtle: rgba(169, 189, 204, 0.10);
+  --nd-border-default: rgba(169, 189, 204, 0.16);
+  --nd-border-strong: rgba(232, 244, 255, 0.22);
   --nd-border-focus: var(--nd-cyan-400);
   --nd-border: var(--nd-border-default);
   --nd-border-danger: var(--nd-red-400);
@@ -129,7 +129,7 @@
   --nd-text-primary: var(--nd-text-100);
   --nd-text-secondary: var(--nd-text-300);
   --nd-text-muted: var(--nd-text-500);
-  --nd-text-disabled: rgba(141, 161, 179, 0.45);
+  --nd-text-disabled: rgba(169, 189, 204, 0.58);
   --nd-text-code: var(--nd-green-400);
   --nd-text-link: var(--nd-cyan-400);
 
@@ -248,7 +248,7 @@
   /* Layout shell dimensions (1280x800 Steam Deck) */
   --nd-shell-statusbar: 40px;
   --nd-shell-navrail: 72px;
-  --nd-sidebar-expanded: 200px;
+  --nd-sidebar-expanded: 232px;
   --nd-shell-context: 280px;
   --nd-shell-input-min: 96px;
   --nd-shell-input-max: 148px;
@@ -285,8 +285,8 @@
   --nd-elevation-panel: 0 1px 0 rgba(255, 255, 255, 0.04), 0 4px 16px rgba(0, 0, 0, 0.35);
   --nd-elevation-card: 0 2px 0 rgba(255, 255, 255, 0.03), 0 8px 24px rgba(0, 0, 0, 0.40);
   --nd-elevation-overlay: 0 24px 80px rgba(0, 0, 0, 0.55);
-  --nd-elevation-focus: 0 0 0 2px var(--nd-focus-ring), 0 0 24px rgba(var(--nd-cyan-rgb), 0.18);
-  --nd-elevation-glow: 0 0 16px rgba(var(--nd-cyan-rgb), 0.18);
+  --nd-elevation-focus: 0 0 0 2px var(--nd-surface-app), 0 0 0 4px var(--nd-focus-ring), 0 0 22px rgba(var(--nd-cyan-rgb), 0.2);
+  --nd-elevation-glow: 0 0 14px rgba(var(--nd-cyan-rgb), 0.14);
 
   /* Legacy elevation aliases */
   --nd-elevation-shadow-1: 0 1px 2px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.12);
@@ -354,10 +354,10 @@
   --nd-text-body-sm-size: 14px;
   --nd-text-body-sm-lh: 20px;
   --nd-text-body-sm-weight: 400;
-  --nd-text-caption-size: 12px;
+  --nd-text-caption-size: 13px;
   --nd-text-caption-lh: 16px;
   --nd-text-caption-weight: 500;
-  --nd-text-micro-size: 11px;
+  --nd-text-micro-size: 12px;
   --nd-text-micro-lh: 14px;
   --nd-text-micro-weight: 500;
   --nd-text-code-size: 13px;
@@ -380,6 +380,36 @@
   outline: none;
   box-shadow: var(--nd-elevation-focus);
   border-color: var(--nd-accent-primary);
+}
+
+/* Controller-focus signature for primary/controller chrome (Design Notes:
+   "precise controller-focus frame with a cyan 2px ring, restrained corner
+   brackets"). Layered on top of the existing ring rather than replacing it,
+   so Tailwind's focus-visible:ring-2 utility keeps working unmodified.
+   Two opposing L-brackets (not all four corners) keep it restrained rather
+   than a full targeting-reticle effect. */
+.nd-controller-focus {
+  position: relative;
+}
+.nd-controller-focus:focus-visible::before,
+.nd-controller-focus:focus-visible::after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  pointer-events: none;
+}
+.nd-controller-focus:focus-visible::before {
+  top: -5px;
+  left: -5px;
+  border-top: 2px solid var(--nd-cyan-400);
+  border-left: 2px solid var(--nd-cyan-400);
+}
+.nd-controller-focus:focus-visible::after {
+  bottom: -5px;
+  right: -5px;
+  border-bottom: 2px solid var(--nd-cyan-400);
+  border-right: 2px solid var(--nd-cyan-400);
 }
 
 /* Scrollbar treatment aligned with the dark tactical shell */
