@@ -49,6 +49,17 @@ The frontend diagnostics panel (`src/renderer/features/terminal/TerminalDiagnost
 
 `TerminalScreen.tsx` calls `refreshDiagnostics()` to keep the panel current.
 
+## PTY Spawn Timeout and Session Lifetime
+
+`src-tauri/src/pty_manager.rs` enforces two independent lifecycle guards:
+
+- `SPAWN_TIMEOUT_SECS` is **15 seconds**. Shell creation runs on a dedicated thread and the caller waits with `recv_timeout()`. A timeout returns an explicit `Shell spawn timed out` error, and the session is not inserted into `PtyState.sessions`.
+- `MAX_SESSION_LIFETIME_SECS` is **7,200 seconds (2 hours)**. A watchdog wakes every 60 seconds, removes expired sessions, and closes their writer/master handles so reader threads can exit.
+
+The current watchdog is an absolute session-lifetime cap, not an activity-based idle timer. Operators diagnosing an unexpected session closure should compare the session `created_at`/`spawned_at` values to the two-hour limit. A future idle policy must track last input/output activity separately rather than relabeling this lifetime guard.
+
+When a shell cannot start, verify the requested binary and working directory before retrying. On Windows, a cold WSL launch can consume most of the timeout; use a native PowerShell or Command Prompt profile to distinguish WSL startup latency from a PTY failure.
+
 ## Onboarding Diagnostics
 
 During first-run onboarding, `run_onboarding_diagnostics()` checks:
