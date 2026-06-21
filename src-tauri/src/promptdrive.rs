@@ -670,6 +670,28 @@ pub fn slot_map_from_value(value: &Value) -> Result<HashMap<String, String>, Str
 mod tests {
     use super::*;
 
+    #[test]
+    fn loads_and_validates_real_builtin_packs() {
+        let packs = load_builtin_packs().expect("builtin packs in assets/prompt-packs/ must parse and validate");
+        let pack_ids: HashSet<&str> = packs.iter().map(|p| p.id.as_str()).collect();
+        assert!(pack_ids.contains("core"));
+        assert!(pack_ids.contains("coding.production"));
+        assert!(
+            pack_ids.contains("production-code-prompt-system"),
+            "Epic 14's recovered specialist prompt pack must be discoverable via load_builtin_packs()"
+        );
+
+        let specialist_pack = packs
+            .iter()
+            .find(|p| p.id == "production-code-prompt-system")
+            .unwrap();
+        assert_eq!(
+            specialist_pack.templates.len(),
+            15,
+            "expected all 15 specialist prompts to be present"
+        );
+    }
+
     fn test_template() -> PromptTemplate {
         PromptTemplate {
             id: "core.test".to_string(),

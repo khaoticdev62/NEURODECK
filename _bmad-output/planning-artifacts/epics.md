@@ -69,8 +69,8 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ### [x] Story 13.4: Activate Canvas AI Edit and Collaboration buttons
 ### [x] Story 13.5: Wire headless PTY execution into the workflow engine
 ## Epic 14: Production Code Prompt System — Activate PromptFlow
-### [ ] Story 14.1: Confirm docs/prompt-system as canonical and retire the stale root scratch folder
-### [ ] Story 14.2: Install and configure the real PromptFlow CLI against this repo
-### [ ] Story 14.3: Lightweight coding-agent entry point (npm script) for quick prompt loading
-### [ ] Story 14.4: Wire the 15-prompt pack into the in-app Prompt Lab tab (PromptDrive)
-### [ ] Story 14.5: Document the system and cross-link it from CLAUDE.md
+### [x] Story 14.1: Confirm docs/prompt-system as canonical and retire the stale root scratch folder
+### [x] Story 14.2: Install and configure the real PromptFlow CLI against this repo
+### [x] Story 14.3: Lightweight coding-agent entry point (npm script) for quick prompt loading
+### [ ] Story 14.4: Wire the 15-prompt pack into the in-app Prompt Lab tab (PromptDrive) — backend done & tested (`loads_and_validates_real_builtin_packs`); manual in-app click-through (AC4) still outstanding
+### [x] Story 14.5: Document the system and cross-link it from CLAUDE.md

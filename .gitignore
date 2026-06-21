@@ -78,6 +78,3 @@ test-results/
 t2_err.txt
 t2_out.txt
 .tmp/
-
-# --- Prompt engineering system — Python venv and caches left behind after source moved to docs/ ---
-production_code_prompt_system/
