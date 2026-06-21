@@ -80,7 +80,13 @@ export function Panel({
       <div
         className={
           bodyClassName ??
-          `nd-panel__body nd-panel__body--normal ${scrollable ? "flex-1 min-h-0 overflow-y-auto" : ""}`
+          // flex-1/min-h-0 are no-ops unless the <section> above is itself a flex
+          // container (e.g. callers passing className="flex h-full flex-col
+          // overflow-hidden" to render their own internal scroll area) — applying
+          // them unconditionally lets that pattern actually fill height and scroll
+          // instead of silently overflowing past the section's `overflow:hidden`
+          // with no scrollbar. Harmless for the common non-flex Panel usage.
+          `nd-panel__body nd-panel__body--normal flex-1 min-h-0 ${scrollable ? "overflow-y-auto" : ""}`
         }
       >
         {children}

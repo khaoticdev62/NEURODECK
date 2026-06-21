@@ -12,6 +12,9 @@ if (typeof document !== "undefined" && !document.getElementById("nd-iconbtn-css"
   .nd-iconbtn:hover{background:var(--nd-surface-tertiary);color:var(--nd-text-primary);}
   .nd-iconbtn:active{transform:scale(0.92);}
   .nd-iconbtn:focus-visible{box-shadow:var(--nd-elevation-focus);border-color:var(--nd-accent-primary);}
+  .nd-iconbtn:focus-visible::before,.nd-iconbtn:focus-visible::after{content:"";position:absolute;width:9px;height:9px;pointer-events:none;}
+  .nd-iconbtn:focus-visible::before{top:-5px;left:-5px;border-top:2px solid var(--nd-cyan-400);border-left:2px solid var(--nd-cyan-400);}
+  .nd-iconbtn:focus-visible::after{bottom:-5px;right:-5px;border-bottom:2px solid var(--nd-cyan-400);border-right:2px solid var(--nd-cyan-400);}
   .nd-iconbtn:disabled{pointer-events:none;opacity:0.4;}
   .nd-iconbtn--sm{min-width:var(--nd-target-min,44px);min-height:var(--nd-target-min,44px);width:28px;height:28px;}
   .nd-iconbtn--md{min-width:var(--nd-target-min,44px);min-height:var(--nd-target-min,44px);width:36px;height:36px;}
