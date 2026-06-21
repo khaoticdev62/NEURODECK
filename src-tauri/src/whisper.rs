@@ -116,16 +116,20 @@ pub async fn transcribe_audio_bytes(audio_data: &[u8]) -> Result<String, String>
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_nanos())
         .unwrap_or_default();
-    let wav_path = crate::paths::user_config_dir()
-        .join(format!("temp_provider_stt_{}_{}.wav", std::process::id(), nonce));
+    let wav_path = crate::paths::user_config_dir().join(format!(
+        "temp_provider_stt_{}_{}.wav",
+        std::process::id(),
+        nonce
+    ));
 
     std::fs::write(&wav_path, audio_data)
         .map_err(|e| format!("Failed to write temp audio file for transcription: {}", e))?;
 
     let wav_str = wav_path.to_string_lossy().to_string();
-    let result = tokio::task::spawn_blocking(move || transcribe(&wav_str, &binary_path, &model_path))
-        .await
-        .map_err(|e| format!("Thread error: {}", e))?;
+    let result =
+        tokio::task::spawn_blocking(move || transcribe(&wav_str, &binary_path, &model_path))
+            .await
+            .map_err(|e| format!("Thread error: {}", e))?;
 
     let _ = std::fs::remove_file(&wav_path);
     let _ = std::fs::remove_file(format!("{}.txt", wav_path.to_string_lossy()));

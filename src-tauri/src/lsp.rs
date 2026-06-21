@@ -826,8 +826,14 @@ pub async fn lsp_get_code_actions(
     for raw in raw_actions {
         // Skip pure Command entries (no edit field and kind == null).
         let title = raw["title"].as_str().unwrap_or("Fix").to_string();
-        let kind = raw.get("kind").and_then(|k| k.as_str()).map(|s| s.to_string());
-        let is_preferred = raw.get("isPreferred").and_then(|v| v.as_bool()).unwrap_or(false);
+        let kind = raw
+            .get("kind")
+            .and_then(|k| k.as_str())
+            .map(|s| s.to_string());
+        let is_preferred = raw
+            .get("isPreferred")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
 
         // Extract TextEdits for our URI from edit.changes or edit.documentChanges.
         let edits = extract_edits_for_uri(&raw, &uri);
@@ -851,7 +857,13 @@ pub async fn lsp_get_code_actions(
             edits
         };
 
-        actions.push(LspCodeAction { title, kind, is_preferred, edits, raw });
+        actions.push(LspCodeAction {
+            title,
+            kind,
+            is_preferred,
+            edits,
+            raw,
+        });
     }
 
     // Surface preferred fixes first.
@@ -898,16 +910,22 @@ fn parse_text_edits(raw: &[Value]) -> Vec<LspTextEdit> {
             let range = e.get("range")?;
             let start = range.get("start")?;
             let end = range.get("end")?;
-            let new_text = e.get("newText").and_then(|t| t.as_str()).unwrap_or("").to_string();
+            let new_text = e
+                .get("newText")
+                .and_then(|t| t.as_str())
+                .unwrap_or("")
+                .to_string();
             Some(LspTextEdit {
                 range: LspRange {
                     start: LspPosition {
                         line: start.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
-                        character: start.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+                        character: start.get("character").and_then(|v| v.as_u64()).unwrap_or(0)
+                            as u32,
                     },
                     end: LspPosition {
                         line: end.get("line").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
-                        character: end.get("character").and_then(|v| v.as_u64()).unwrap_or(0) as u32,
+                        character: end.get("character").and_then(|v| v.as_u64()).unwrap_or(0)
+                            as u32,
                     },
                 },
                 new_text,

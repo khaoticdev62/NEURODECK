@@ -672,7 +672,8 @@ mod tests {
 
     #[test]
     fn loads_and_validates_real_builtin_packs() {
-        let packs = load_builtin_packs().expect("builtin packs in assets/prompt-packs/ must parse and validate");
+        let packs = load_builtin_packs()
+            .expect("builtin packs in assets/prompt-packs/ must parse and validate");
         let pack_ids: HashSet<&str> = packs.iter().map(|p| p.id.as_str()).collect();
         assert!(pack_ids.contains("core"));
         assert!(pack_ids.contains("coding.production"));

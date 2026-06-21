@@ -3174,8 +3174,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         .to_string()
                 });
 
-            let files: Vec<crate::commands::git::GitFileStatus> = tokio::task::spawn_blocking(
-                move || match crate::commands::git::git_status(path) {
+            let files: Vec<crate::commands::git::GitFileStatus> =
+                tokio::task::spawn_blocking(move || match crate::commands::git::git_status(path) {
                     Ok(files) => Ok(files),
                     Err(e)
                         if e.to_lowercase().contains("could not find repository")
@@ -3184,10 +3184,9 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         Ok(vec![])
                     }
                     Err(e) => Err(e),
-                },
-            )
-            .await
-            .map_err(|e| format!("Spawn error: {}", e))??;
+                })
+                .await
+                .map_err(|e| format!("Spawn error: {}", e))??;
 
             let staged: Vec<Value> = files
                 .iter()
@@ -4350,7 +4349,12 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .and_then(|v| serde_json::from_value(v.clone()).ok())
                 .unwrap_or_default();
             let actions = crate::lsp::lsp_get_code_actions(
-                language, uri, line, character, diagnostics, state.lsp.clone(),
+                language,
+                uri,
+                line,
+                character,
+                diagnostics,
+                state.lsp.clone(),
             )
             .await?;
             Ok(serde_json::json!(actions))
@@ -5849,9 +5853,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                  editing instruction. Apply the instruction and return ONLY the complete edited \
                  {lang} source code — no markdown code fences, no explanation, no commentary."
             );
-            let prompt = format!(
-                "Instruction: {instruction}\n\n--- Current {lang} code ---\n{content}"
-            );
+            let prompt =
+                format!("Instruction: {instruction}\n\n--- Current {lang} code ---\n{content}");
 
             let result = provider
                 .chat_with_image(&prompt, &system_prompt, None, None)

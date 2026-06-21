@@ -381,7 +381,11 @@ async fn dispatch_command(
         Some(duration) => match tokio::time::timeout(duration, dispatch_fut).await {
             Ok(r) => r,
             Err(_) => {
-                tracing::warn!("Bridge command '{}' timed out after {:?}", command, duration);
+                tracing::warn!(
+                    "Bridge command '{}' timed out after {:?}",
+                    command,
+                    duration
+                );
                 return Err(BridgeError::timeout(command, duration));
             }
         },
@@ -432,7 +436,11 @@ async fn api_command(
             Err(e) => {
                 return bridge_error_response(
                     StatusCode::BAD_REQUEST,
-                    BridgeError::new("invalid_json", format!("Invalid JSON body: {}", e), &command),
+                    BridgeError::new(
+                        "invalid_json",
+                        format!("Invalid JSON body: {}", e),
+                        &command,
+                    ),
                 );
             }
         }
