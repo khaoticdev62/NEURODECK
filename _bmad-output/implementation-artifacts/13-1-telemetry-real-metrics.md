@@ -1,6 +1,6 @@
 # Story 13.1: Wire real telemetry metrics into the diagnostics dashboard
 
-Status: pending
+Status: done
 
 ## Story
 
@@ -19,26 +19,39 @@ so that I can diagnose performance issues instead of looking at hardcoded zeros.
 
 ## Tasks / Subtasks
 
-- [ ] CPU %: Add a new Tauri command (e.g. `get_cpu_usage`) or extend `get_memory_usage` in `src-tauri/src/commands/mod.rs` (~line 3368) to also return `cpu_pct`, using `sysinfo::System::new_all()` + `refresh_cpu()` + `process(pid).cpu_usage()` (process-scoped) or `global_cpu_usage()` (system-wide) — decide and document which scope is more useful for the dashboard.
-- [ ] CPU %: Update `src/renderer/services/bridge/domains/diagnostics.ts` `memoryUsage()` (or add a new method) to surface the new field, and update `TelemetryDashboardTab.tsx` line 104 to consume it instead of the literal `0`.
-- [ ] Tokens/sec: Identify (or add) an instrumentation point inside each provider's `stream_response` in `src-tauri/src/llm.rs` (Gemini, Ollama, Hugging Face, Kimi, OpenAI-compatible — 5 implementations at lines ~186, ~603, ~893, ~1227, ~1642) to count tokens/chunks emitted and elapsed time.
-- [ ] Tokens/sec: Decide on a transport mechanism — either accumulate in `AppState` and expose via a poll command, or `app_handle.emit("telemetry:update", ...)` during streaming — and implement it.
-- [ ] Tokens/sec: Update `TelemetryDashboardTab.tsx` line 107 to consume the real value.
-- [ ] IPC throughput: Instrument `src-tauri/src/bridge.rs` to track bytes sent/received over a rolling window (e.g. last 1s), exposed via a new command or the `telemetry:update` event.
-- [ ] IPC throughput: Update `TelemetryDashboardTab.tsx` line 108 to consume the real value.
-- [ ] Model load time: Identify the model manager / provider initialization path (provider construction in `llm.rs`, or wherever `set_config`/provider-switch happens) and wrap it with a timer; persist the last measured load time in `AppState`.
-- [ ] Model load time: Expose via command or event; update `TelemetryDashboardTab.tsx` line 109 to consume the real value.
-- [ ] Decide and implement the no-data fallback UI state ("—") for each of the 4 metrics, mirroring the existing `apiLatencyMs` zero-connection fallback pattern (lines ~95-101).
-- [ ] Remove now-stale `// TODO:` comments at lines 104, 107, 108, 109 once each is wired.
-- [ ] Manual verification: open the Diagnostics view, trigger an LLM completion and a few IPC round-trips, confirm all 4 metrics move off zero/placeholder.
+- [x] CPU %: Added `AppState.cpu_sysinfo: sysinfo::System` (persistent across calls — a fresh `System` per call always reads 0% since sysinfo needs a prior sample to diff against) and a new `get_telemetry_snapshot` command that refreshes it and returns `global_cpu_usage()`.
+- [x] CPU %: Added `diagnostics.telemetrySnapshot()` in `diagnostics.ts`; `TelemetryDashboardTab.tsx` now consumes `telemetry.cpu_pct`.
+- [x] Tokens/sec: Instrumented centrally at the two places that actually *consume* `stream_response()`'s output in `commands/mod.rs` (the real `"send_command"` match-arm loop, and the `dispatch_send_command()` helper used by `promptdrive_execute_prompt`) — counting stream chunks ÷ elapsed time — instead of inside each of the 5 provider implementations in `llm.rs`. One chokepoint per consumer is simpler than 5x duplicated counters and was confirmed correct live (see Dev Agent Record).
+- [x] Tokens/sec: Chose poll model (see below) — `AppState.last_tokens_per_sec` is set when a stream completes with ≥1 real chunk, then read by `get_telemetry_snapshot` on the next poll tick.
+- [x] Tokens/sec: `TelemetryDashboardTab.tsx` now consumes `telemetry.tokens_per_sec`.
+- [x] IPC throughput: Added a 5-second rolling `bytes_window: VecDeque<(Instant, u64)>` to `BridgeTelemetry` in `bridge.rs`, fed by `record_bytes(request_bytes + response_bytes)` in `api_command` (the single HTTP handler all 235+ commands pass through) — covers both directions combined.
+- [x] IPC throughput: `TelemetryDashboardTab.tsx` now consumes `telemetry.ipc_throughput_kbps`.
+- [x] Model load time: Wrapped all 4 real `app_state.provider = ...` reassignment sites (`set_config`, `set_model`, `set_provider`, the `provider_from_agent` agent-switch site) with `Instant` timing, storing into `AppState.last_model_load_ms`.
+- [x] Model load time: `TelemetryDashboardTab.tsx` now consumes `telemetry.model_load_ms`.
+- [x] No-data fallback: kept the existing top-level `live ? value : "—"` gate (shows "—" for all 4 new metrics together when no snapshot has ever succeeded) rather than adding per-field null handling — a smaller, lower-risk change that still satisfies "never display a fake number," at the cost of not distinguishing "never connected" from "this one field is N/A while others are live." Documented as a deliberate scope trade-off, not an oversight.
+- [x] Removed the 4 stale `// TODO:` comments and the dormant `listenBridge("telemetry:update", ...)` subscription (AC #5 — committed to poll-only since nothing ever emitted that event).
+- [x] Manual verification: live-tested via direct HTTP calls to the running bridge (`set_provider`, `set_model`, `send_command`, `get_telemetry_snapshot`) plus a raw WebSocket listener to confirm real `command_token`/`command_done` events — see Dev Agent Record for actual observed values.
 
 ## Dev Notes
 
-- Reuse the existing `sysinfo = "0.33"` dependency already declared in `src-tauri/Cargo.toml` (line 59) — do not add a new crate for CPU metrics.
-- The frontend already has a `listenBridge("telemetry:update", ...)` subscription wired up and waiting (`TelemetryDashboardTab.tsx` lines 121-132) — evaluate whether to drive metrics through this event channel (push model) vs. extending the existing 3-second `fetchSnapshot` poll (pull model, line 119) before implementing, to avoid having two competing data paths.
-- Token/sec measurement needs a clear definition: is it tokens-per-second averaged over the whole response, or a live/instantaneous rate? Pick one and document the choice in code comments, since the dashboard sparkline implies a time series.
-- IPC throughput direction (frontend→backend vs. backend→frontend vs. both combined) is undefined in the current code — make an explicit decision and note it in the command's doc comment.
+- Reused the existing `sysinfo = "0.33"` dependency — no new crate added.
+- Decision: **poll model**, not push. Removed the dormant `telemetry:update` listener entirely rather than keeping two competing data paths.
+- Decision: tokens/sec is "chunks-per-second of the most recently completed stream" (last-measured value, persists until the next completion), not a live instantaneous rate — matches how `model_load_ms` already behaves for consistency.
+- Decision: IPC throughput is combined request+response bytes (not split by direction), measured at the single `api_command` HTTP handler all commands pass through — this was a better instrumentation point than originally scoped (`bridge.rs` byte-counting in general) because it's one chokepoint instead of needing per-call-site tracking.
+- Real gotcha hit during implementation: the streaming loop actually reached by `/api/send_command` is a second, separate `while let Some(chunk_res) = stream.next().await` loop inside the literal `"send_command" =>` match arm (~line 1393) — NOT the similarly-named `dispatch_send_command()` async function (~line 159, used only by `promptdrive_execute_prompt`). First implementation pass instrumented only the latter, which compiled fine and looked correct but `tokens_per_sec` stayed at `0.0` under live testing because that code path was never reached by a real chat message. Found and fixed by attaching a raw WebSocket listener and confirming real `command_token` events while checking which counter moved.
+- `model_load_ms` is real measured provider-construction time, but for the current providers that's just constructing a struct/HTTP client wrapper (no actual network "warm-up") — it legitimately measures ~0ms most of the time. This is an honest measurement, not a hardcoded zero, but it won't be a very informative number until/unless a future story instruments actual model warm-up (e.g. Ollama's lazy VRAM load on first request).
 
 ## Dev Agent Record
 ### Agent Model Used
-[unassigned]
+Claude Sonnet 4.6
+
+### Verification Evidence
+- `cargo check` / `cargo build --release`: clean, no warnings introduced.
+- `cargo test` (src-tauri): 162 tests passed.
+- `npm run frontend:typecheck`: clean.
+- `npm run frontend:test`: 457 tests passed.
+- Live verification against the built sidecar (real Ollama `hermes3:8b` model running locally):
+  - `cpu_pct`: observed 74.76–78.95 (genuinely fluctuating across calls)
+  - `ipc_throughput_kbps`: observed 0.05–1.30 (genuinely fluctuating with traffic)
+  - `tokens_per_sec`: 0.0 before any completion → 3.09 immediately after a real 2-chunk completion (confirmed via a raw WS listener that the chunks were real `command_token`/`command_done` events, not an error path)
+  - `model_load_ms`: confirmed timing code runs on `set_provider`/`set_model` calls; reads as 0 because provider construction is sub-millisecond for HTTP-API-backed providers (see Dev Notes)

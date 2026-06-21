@@ -343,11 +343,20 @@ pub async fn dispatch_send_command(
                 }
             }
         } else {
+            // Story 13.1: chunk_count/stream_start feed the diagnostics
+            // dashboard's tokens/sec metric (was hardcoded to 0). "Tokens" here
+            // means stream chunks, not a true tokenizer count — each provider's
+            // stream already deltas in roughly model-token-sized pieces, so
+            // this is a real, not fake, throughput measurement, just an
+            // approximation of true token granularity.
+            let stream_start = std::time::Instant::now();
+            let mut chunk_count: u64 = 0;
             let mut stream = provider_clone.stream_response(&message_clone, &system_prompt);
             while let Some(chunk_res) = stream.next().await {
                 match chunk_res {
                     Ok(chunk) => {
                         full_response.push_str(&chunk);
+                        chunk_count += 1;
                         broadcaster.emit(
                             "command_token",
                             serde_json::json!({ "token": chunk.clone() }),
@@ -370,6 +379,12 @@ pub async fn dispatch_send_command(
             let trailing = tts_buf.trim().to_string();
             if !trailing.is_empty() {
                 broadcaster.emit("tts_chunk", serde_json::json!({ "text": trailing }));
+            }
+
+            let elapsed_secs = stream_start.elapsed().as_secs_f64();
+            if elapsed_secs > 0.0 && chunk_count > 0 {
+                let mut app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                app.last_tokens_per_sec = chunk_count as f64 / elapsed_secs;
             }
         }
 
@@ -1375,11 +1390,21 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                         }
                     }
                 } else {
+                    // Story 13.1: this is the streaming loop actually reached by the
+                    // "send_command" dispatch arm (NOT the similarly-named
+                    // dispatch_send_command() helper used by promptdrive_execute_prompt,
+                    // which is instrumented separately above) — confirmed live via a
+                    // direct WS listener during implementation. See that earlier
+                    // comment for why chunk-count is used as a real-but-approximate
+                    // tokens/sec proxy.
+                    let stream_start = std::time::Instant::now();
+                    let mut chunk_count: u64 = 0;
                     let mut stream = provider_clone.stream_response(&message_clone, &system_prompt);
                     while let Some(chunk_res) = stream.next().await {
                         match chunk_res {
                             Ok(chunk) => {
                                 full_response.push_str(&chunk);
+                                chunk_count += 1;
                                 broadcaster
                                     .emit("command_token", serde_json::json!({ "token": chunk }));
                             }
@@ -1391,6 +1416,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                                 return;
                             }
                         }
+                    }
+                    let elapsed_secs = stream_start.elapsed().as_secs_f64();
+                    if elapsed_secs > 0.0 && chunk_count > 0 {
+                        let mut app = app_state_clone.lock().unwrap_or_else(|e| e.into_inner());
+                        app.last_tokens_per_sec = chunk_count as f64 / elapsed_secs;
                     }
                 }
 
@@ -2625,7 +2655,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .map_err(|e| format!("Failed to save config: {}", e))?;
 
             app_state.config = config.clone();
-            app_state.provider = crate::create_provider(&config);
+            {
+                // Story 13.1: real measured provider-construction time feeds the
+                // diagnostics dashboard's model load metric (was hardcoded to 0).
+                let load_start = std::time::Instant::now();
+                app_state.provider = crate::create_provider(&config);
+                app_state.last_model_load_ms = load_start.elapsed().as_millis() as u64;
+            }
 
             Ok(serde_json::json!({
                 "status": "updated",
@@ -2807,7 +2843,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .map_err(|e| format!("Failed to save config: {}", e))?;
 
             app_state.config = config.clone();
-            app_state.provider = crate::create_provider(&config);
+            {
+                // Story 13.1: real measured provider-construction time feeds the
+                // diagnostics dashboard's model load metric (was hardcoded to 0).
+                let load_start = std::time::Instant::now();
+                app_state.provider = crate::create_provider(&config);
+                app_state.last_model_load_ms = load_start.elapsed().as_millis() as u64;
+            }
 
             Ok(serde_json::json!({
                 "status": "updated",
@@ -2851,7 +2893,13 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 .map_err(|e| format!("Failed to save config: {}", e))?;
 
             app_state.config = config.clone();
-            app_state.provider = crate::create_provider(&config);
+            {
+                // Story 13.1: real measured provider-construction time feeds the
+                // diagnostics dashboard's model load metric (was hardcoded to 0).
+                let load_start = std::time::Instant::now();
+                app_state.provider = crate::create_provider(&config);
+                app_state.last_model_load_ms = load_start.elapsed().as_millis() as u64;
+            }
 
             let active_model = match backend_provider {
                 "gemini" => config.llm.gemini_model.clone(),
@@ -3383,6 +3431,36 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             }))
         }
 
+        // Story 13.1 — real telemetry for the diagnostics dashboard (was 4
+        // hardcoded zeros: cpuPct, tokensPerSec, ipcThroughputKbps, modelLoadMs).
+        // CPU% needs a System that persists across calls (AppState.cpu_sysinfo)
+        // because sysinfo computes usage as a delta since the last refresh —
+        // a fresh System every call always reads 0%. tokens_per_sec and
+        // model_load_ms are "last measured value", not a live instantaneous
+        // rate — they're updated where streaming completes / the provider is
+        // (re)constructed, not computed here.
+        "get_telemetry_snapshot" => {
+            let (cpu_pct, tokens_per_sec, model_load_ms) = {
+                let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
+                app_state.cpu_sysinfo.refresh_cpu_usage();
+                (
+                    app_state.cpu_sysinfo.global_cpu_usage() as f64,
+                    app_state.last_tokens_per_sec,
+                    app_state.last_model_load_ms,
+                )
+            };
+            let ipc_throughput_kbps = {
+                let tel = state.telemetry.lock().unwrap_or_else(|e| e.into_inner());
+                tel.throughput_kbps()
+            };
+            Ok(serde_json::json!({
+                "cpu_pct": cpu_pct,
+                "tokens_per_sec": tokens_per_sec,
+                "ipc_throughput_kbps": ipc_throughput_kbps,
+                "model_load_ms": model_load_ms,
+            }))
+        }
+
         // Session Extended handlers moved to primary session section
 
         // ────────────────────────────────────────────────────────────────────
@@ -3492,7 +3570,11 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
                 app_state.config.llm.active_agent_id = id.to_string();
                 // Rebuild provider so subsequent send_command calls use the new agent's
                 // provider/model without needing an explicit agent_id per request.
-                app_state.provider = crate::providers::provider_from_agent(&agent);
+                {
+                    let load_start = std::time::Instant::now();
+                    app_state.provider = crate::providers::provider_from_agent(&agent);
+                    app_state.last_model_load_ms = load_start.elapsed().as_millis() as u64;
+                }
                 let path = crate::get_config_path();
                 crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
                 agent
