@@ -5741,6 +5741,58 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
         }
 
         // ────────────────────────────────────────────────────────────────────
+        // Canvas AI Edit
+        // ────────────────────────────────────────────────────────────────────
+        "canvas_ai_edit" => {
+            let content = args.get("content").and_then(|v| v.as_str()).unwrap_or("");
+            let lang = args.get("lang").and_then(|v| v.as_str()).unwrap_or("html");
+            let instruction = args
+                .get("instruction")
+                .and_then(|v| v.as_str())
+                .map(|s| s.trim())
+                .filter(|s| !s.is_empty())
+                .ok_or("Missing or empty 'instruction'")?;
+
+            let provider = {
+                state
+                    .app_state
+                    .lock()
+                    .unwrap_or_else(|e| e.into_inner())
+                    .provider
+                    .clone()
+            };
+
+            let system_prompt = format!(
+                "You are a precise code editor. You will be given {lang} source code and an \
+                 editing instruction. Apply the instruction and return ONLY the complete edited \
+                 {lang} source code — no markdown code fences, no explanation, no commentary."
+            );
+            let prompt = format!(
+                "Instruction: {instruction}\n\n--- Current {lang} code ---\n{content}"
+            );
+
+            let result = provider
+                .chat_with_image(&prompt, &system_prompt, None, None)
+                .await
+                .map_err(|e| format!("AI edit failed: {}", e))?;
+
+            // Models occasionally ignore the "no fences" instruction anyway —
+            // strip a leading/trailing ``` fence (with optional language tag)
+            // defensively so the canvas doesn't end up with literal backticks.
+            let trimmed = result.trim();
+            let unfenced = trimmed
+                .strip_prefix("```")
+                .map(|rest| match rest.find('\n') {
+                    Some(idx) => &rest[idx + 1..],
+                    None => rest,
+                })
+                .unwrap_or(trimmed);
+            let cleaned = unfenced.trim_end_matches("```").trim();
+
+            Ok(serde_json::json!({ "content": cleaned }))
+        }
+
+        // ────────────────────────────────────────────────────────────────────
         // Network / LAN
         // ────────────────────────────────────────────────────────────────────
         "get_lan_ip" => {
@@ -8019,6 +8071,8 @@ pub async fn dispatch(state: ServerState, command: &str, args: Value) -> Result<
             let mut app_state = state.app_state.lock().unwrap_or_else(|e| e.into_inner());
             app_state.config.stt.whisper_binary = binary.clone();
             app_state.config.stt.whisper_model = model.clone();
+            app_state.whisper_binary = binary.clone();
+            app_state.whisper_model = model.clone();
             let path = crate::get_config_path();
             crate::config::save_config(&path, &app_state.config).map_err(|e| e.to_string())?;
             Ok(serde_json::json!({ "status": "updated", "binary": binary, "model": model }))

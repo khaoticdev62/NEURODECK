@@ -22,6 +22,22 @@ pub struct ComputerTextMatch {
     pub confidence: f32,
 }
 
+/// Computer-use (screenshot/mouse/keyboard) only ships real implementations
+/// for Windows, Linux (Steam Deck/SteamOS), and macOS — see Story 13.3 /
+/// docs/MOCK_DATA_WIRING_HANDOFF.md. These four strings share one template so
+/// a user who somehow hits the fallback gets a consistent, actionable error
+/// naming the actual supported platforms, not a generic stub message.
+const PLATFORM_UNSUPPORTED_SCREENSHOT: &str =
+    "Desktop screenshots are only supported on Windows, Linux, and macOS.";
+const PLATFORM_UNSUPPORTED_MOUSE_MOVE: &str =
+    "Mouse movement is only supported on Windows, Linux, and macOS.";
+const PLATFORM_UNSUPPORTED_MOUSE_CLICK: &str =
+    "Mouse clicks are only supported on Windows, Linux, and macOS.";
+const PLATFORM_UNSUPPORTED_TYPE_TEXT: &str =
+    "Keyboard typing is only supported on Windows, Linux, and macOS.";
+const PLATFORM_UNSUPPORTED_KEY: &str =
+    "Keyboard key press is only supported on Windows, Linux, and macOS.";
+
 #[derive(Clone, Debug)]
 struct OcrWord {
     text: String,
@@ -246,8 +262,13 @@ $bitmap.Dispose()
         return ensure_file_exists(path, "screenshot");
     }
 
+    // NEURODECK ships for Windows, Linux (Steam Deck/SteamOS), and macOS only —
+    // see docs/MOCK_DATA_WIRING_HANDOFF.md and Story 13.3. This is unreachable
+    // dead code on every supported build (eliminated by the #[cfg] blocks
+    // above) and exists only as a defensive fallback for a hypothetical build
+    // with none of those three `target_os` values set.
     #[allow(unreachable_code)]
-    Err("Desktop screenshots are not supported on this platform.".to_string())
+    Err(PLATFORM_UNSUPPORTED_SCREENSHOT.to_string())
 }
 
 fn platform_mouse_move(x: i32, y: i32) -> Result<(), String> {
@@ -294,8 +315,10 @@ fn platform_mouse_move(x: i32, y: i32) -> Result<(), String> {
         return Ok(());
     }
 
+    // See the comment on PLATFORM_UNSUPPORTED_SCREENSHOT — unreachable dead
+    // code on every supported build, kept only as a defensive fallback.
     #[allow(unreachable_code)]
-    Err("Mouse movement is not supported on this platform.".to_string())
+    Err(PLATFORM_UNSUPPORTED_MOUSE_MOVE.to_string())
 }
 
 fn platform_mouse_click(button: &'static str) -> Result<(), String> {
@@ -364,8 +387,10 @@ fn platform_mouse_click(button: &'static str) -> Result<(), String> {
         return Ok(());
     }
 
+    // See the comment on PLATFORM_UNSUPPORTED_SCREENSHOT — unreachable dead
+    // code on every supported build, kept only as a defensive fallback.
     #[allow(unreachable_code)]
-    Err("Mouse click is not supported on this platform.".to_string())
+    Err(PLATFORM_UNSUPPORTED_MOUSE_CLICK.to_string())
 }
 
 fn platform_type_text(text: String) -> Result<(), String> {
@@ -400,8 +425,10 @@ if ($null -ne $previous) { Set-Clipboard -Value $previous }
         return run_applescript(&script);
     }
 
+    // See the comment on PLATFORM_UNSUPPORTED_SCREENSHOT — unreachable dead
+    // code on every supported build, kept only as a defensive fallback.
     #[allow(unreachable_code)]
-    Err("Keyboard typing is not supported on this platform.".to_string())
+    Err(PLATFORM_UNSUPPORTED_TYPE_TEXT.to_string())
 }
 
 fn platform_key(key: String) -> Result<(), String> {
@@ -427,8 +454,10 @@ Add-Type -AssemblyName System.Windows.Forms
         return run_applescript(&script);
     }
 
+    // See the comment on PLATFORM_UNSUPPORTED_SCREENSHOT — unreachable dead
+    // code on every supported build, kept only as a defensive fallback.
     #[allow(unreachable_code)]
-    Err("Keyboard key press is not supported on this platform.".to_string())
+    Err(PLATFORM_UNSUPPORTED_KEY.to_string())
 }
 
 fn find_text_with_tesseract(needle: &str) -> Result<ComputerTextMatch, String> {

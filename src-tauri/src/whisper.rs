@@ -8,6 +8,7 @@
 
 use std::path::Path;
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Attempt to transcribe `wav_path` using the whisper.cpp CLI.
 ///
@@ -83,6 +84,53 @@ pub fn transcribe(wav_path: &str, binary_path: &str, model_path: &str) -> Result
          Settings → Whisper STT."
             .to_string(),
     )
+}
+
+/// Transcribe a raw WAV byte buffer using whatever Whisper binary/model the
+/// user has configured in Settings → Voice, reading config fresh from disk
+/// (so a change to `set_whisper_config` is picked up without restarting the
+/// already-constructed `LlmProvider`).
+///
+/// Used as the shared local-STT fallback by every non-Gemini provider's
+/// `transcribe_audio` implementation, since none of them carry a reference
+/// to `AppState`.
+pub async fn transcribe_audio_bytes(audio_data: &[u8]) -> Result<String, String> {
+    let config = crate::config::load_config(crate::paths::get_config_path());
+    let model_path = config.stt.whisper_model;
+    let binary_path = config.stt.whisper_binary;
+
+    if model_path.is_empty() {
+        return Err(
+            "Whisper model path not set. Go to Settings → Voice to download a model or set an existing one."
+                .to_string(),
+        );
+    }
+    if !Path::new(&model_path).exists() {
+        return Err(format!(
+            "Whisper model not found at '{}'. Go to Settings → Voice to download it.",
+            model_path
+        ));
+    }
+
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos())
+        .unwrap_or_default();
+    let wav_path = crate::paths::user_config_dir()
+        .join(format!("temp_provider_stt_{}_{}.wav", std::process::id(), nonce));
+
+    std::fs::write(&wav_path, audio_data)
+        .map_err(|e| format!("Failed to write temp audio file for transcription: {}", e))?;
+
+    let wav_str = wav_path.to_string_lossy().to_string();
+    let result = tokio::task::spawn_blocking(move || transcribe(&wav_str, &binary_path, &model_path))
+        .await
+        .map_err(|e| format!("Thread error: {}", e))?;
+
+    let _ = std::fs::remove_file(&wav_path);
+    let _ = std::fs::remove_file(format!("{}.txt", wav_path.to_string_lossy()));
+
+    result
 }
 
 /// Return true if any whisper binary is reachable (or `binary_path` file exists).

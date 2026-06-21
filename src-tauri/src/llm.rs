@@ -658,11 +658,10 @@ impl LlmProvider for OllamaProvider {
 
     fn transcribe_audio(
         &self,
-        _audio_data: &[u8],
+        audio_data: &[u8],
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
-        Box::pin(
-            async move { Err("Audio transcription not supported by Ollama provider".to_string()) },
-        )
+        let audio_vec = audio_data.to_vec();
+        Box::pin(async move { crate::whisper::transcribe_audio_bytes(&audio_vec).await })
     }
 
     fn generate_embedding(
@@ -942,11 +941,10 @@ impl LlmProvider for HuggingFaceProvider {
 
     fn transcribe_audio(
         &self,
-        _audio_data: &[u8],
+        audio_data: &[u8],
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
-        Box::pin(async move {
-            Err("Audio transcription not supported by Hugging Face provider".to_string())
-        })
+        let audio_vec = audio_data.to_vec();
+        Box::pin(async move { crate::whisper::transcribe_audio_bytes(&audio_vec).await })
     }
 
     fn generate_embedding(
@@ -1309,11 +1307,10 @@ impl LlmProvider for KimiProvider {
 
     fn transcribe_audio(
         &self,
-        _audio_data: &[u8],
+        audio_data: &[u8],
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
-        Box::pin(
-            async move { Err("Audio transcription not supported by Kimi provider".to_string()) },
-        )
+        let audio_vec = audio_data.to_vec();
+        Box::pin(async move { crate::whisper::transcribe_audio_bytes(&audio_vec).await })
     }
 
     fn generate_embedding(
@@ -1706,10 +1703,43 @@ impl LlmProvider for OpenAICompatProvider {
 
     fn transcribe_audio(
         &self,
-        _audio_data: &[u8],
+        audio_data: &[u8],
     ) -> Pin<Box<dyn std::future::Future<Output = Result<String, String>> + Send + '_>> {
+        let audio_vec = audio_data.to_vec();
+        let url = format!("{}/audio/transcriptions", self.base_url);
+        let auth = self.auth_header();
+        let model = self.model.clone();
         Box::pin(async move {
-            Err("Audio transcription not supported by OpenAI-compatible provider. Configure Whisper in Settings → Voice.".to_string())
+            #[derive(Deserialize)]
+            struct OaTranscriptionResponse {
+                text: String,
+            }
+
+            // Prefer the provider's native Whisper-API-compatible endpoint
+            // (LM Studio, llama.cpp server, etc. all implement this shape).
+            let part = reqwest::multipart::Part::bytes(audio_vec.clone())
+                .file_name("audio.wav")
+                .mime_str("audio/wav");
+            if let Ok(part) = part {
+                let form = reqwest::multipart::Form::new()
+                    .part("file", part)
+                    .text("model", model);
+                let client = http_client();
+                let mut req = client.post(&url).multipart(form);
+                if let Some(auth_val) = auth.clone() {
+                    req = req.header("Authorization", auth_val);
+                }
+                if let Ok(res) = req.send().await {
+                    if res.status().is_success() {
+                        if let Ok(body) = res.json::<OaTranscriptionResponse>().await {
+                            return Ok(body.text);
+                        }
+                    }
+                    // 404/unsupported/unparsable — fall through to local Whisper.
+                }
+            }
+
+            crate::whisper::transcribe_audio_bytes(&audio_vec).await
         })
     }
 
