@@ -215,7 +215,7 @@ dependencies = [
  "nix 0.29.0",
  "pbkdf2",
  "portable-pty",
- "rand 0.8.6",
+ "rand 0.10.1",
  "regex",
  "reqwest",
  "ring",
