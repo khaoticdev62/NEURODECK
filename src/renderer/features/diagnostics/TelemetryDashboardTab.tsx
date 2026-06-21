@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Activity, Cpu, MemoryStick, RefreshCcw, Wifi, Zap } from "lucide-react";
 import { Button } from "../../components/primitives/Button";
 import { Panel } from "../../components/primitives/Panel";
-import { listenBridge, neurodeckApi } from "../../services/bridgeAdapter";
+import { neurodeckApi } from "../../services/bridgeAdapter";
 
 interface TelemetrySnapshot {
   timestamp: number;
@@ -87,9 +87,14 @@ export function TelemetryDashboardTab() {
 
   const fetchSnapshot = useCallback(async () => {
     try {
-      const [mem, probe] = await Promise.all([
+      // Story 13.1: poll-based telemetry, chosen over the dormant
+      // "telemetry:update" push event (which nothing on the backend ever
+      // emitted) — one data path, sourced from the same 3s cadence already
+      // used for memory/latency below.
+      const [mem, probe, telemetry] = await Promise.all([
         neurodeckApi.diagnostics.memoryUsage(),
         neurodeckApi.diagnostics.runHealthProbe(),
+        neurodeckApi.diagnostics.telemetrySnapshot(),
       ]);
       const connectedEntries = probe.data.filter((d) => d.state === "connected");
       const avgLatency =
@@ -101,12 +106,12 @@ export function TelemetryDashboardTab() {
           : 0;
       const snap: TelemetrySnapshot = {
         timestamp: Date.now(),
-        cpuPct: 0,                    // TODO: expose cpu_pct from Rust backend
+        cpuPct: Math.round(telemetry.cpu_pct),
         ramMb: mem.rss_mb > 0 ? mem.rss_mb : 0,
         apiLatencyMs: avgLatency,
-        tokensPerSec: 0,              // TODO: expose tokens_per_sec from inference backend
-        ipcThroughputKbps: 0,         // TODO: expose ipc bytes/s from bridge
-        modelLoadMs: 0,               // TODO: expose model_load_ms from model manager
+        tokensPerSec: Math.round(telemetry.tokens_per_sec),
+        ipcThroughputKbps: Math.round(telemetry.ipc_throughput_kbps),
+        modelLoadMs: telemetry.model_load_ms,
       };
       pushSnapshot(snap);
     } catch {
@@ -119,24 +124,10 @@ export function TelemetryDashboardTab() {
     void fetchSnapshot().finally(() => setLoading(false));
     intervalRef.current = setInterval(() => void fetchSnapshot(), 3000);
 
-    const unsub = listenBridge("telemetry:update", (payload: unknown) => {
-      const s = payload as Partial<TelemetrySnapshot>;
-      pushSnapshot({
-        timestamp: s.timestamp ?? Date.now(),
-        cpuPct: s.cpuPct ?? 0,
-        ramMb: s.ramMb ?? 0,
-        apiLatencyMs: s.apiLatencyMs ?? 0,
-        tokensPerSec: s.tokensPerSec ?? 0,
-        ipcThroughputKbps: s.ipcThroughputKbps ?? 0,
-        modelLoadMs: s.modelLoadMs ?? 0,
-      });
-    });
-
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      unsub?.();
     };
-  }, [fetchSnapshot, pushSnapshot]);
+  }, [fetchSnapshot]);
 
   const field = (key: keyof TelemetrySnapshot) =>
     snapshots.map((s) => s[key] as number);

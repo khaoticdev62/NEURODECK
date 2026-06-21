@@ -142,12 +142,36 @@ impl CommandTelemetry {
 pub struct BridgeTelemetry {
     pub commands: HashMap<String, CommandTelemetry>,
     pub unknown_commands: u64,
+    /// Rolling window of (timestamp, request+response bytes) for IPC throughput.
+    /// Story 13.1: replaces the dashboard's hardcoded `ipcThroughputKbps: 0`.
+    pub bytes_window: std::collections::VecDeque<(std::time::Instant, u64)>,
 }
 
 impl BridgeTelemetry {
     pub fn reset(&mut self) {
         self.commands.clear();
         self.unknown_commands = 0;
+        self.bytes_window.clear();
+    }
+
+    /// Record one request/response round-trip's total byte size and prune
+    /// entries older than the 5-second measurement window.
+    pub fn record_bytes(&mut self, bytes: u64) {
+        let now = std::time::Instant::now();
+        self.bytes_window.push_back((now, bytes));
+        while let Some((t, _)) = self.bytes_window.front() {
+            if now.duration_since(*t).as_secs_f64() > 5.0 {
+                self.bytes_window.pop_front();
+            } else {
+                break;
+            }
+        }
+    }
+
+    /// Real measured IPC throughput over the last 5 seconds, in KB/s.
+    pub fn throughput_kbps(&self) -> f64 {
+        let total: u64 = self.bytes_window.iter().map(|(_, b)| *b).sum();
+        (total as f64 / 1024.0) / 5.0
     }
 
     pub fn summary(&self) -> Value {
@@ -357,7 +381,11 @@ async fn dispatch_command(
         Some(duration) => match tokio::time::timeout(duration, dispatch_fut).await {
             Ok(r) => r,
             Err(_) => {
-                tracing::warn!("Bridge command '{}' timed out after {:?}", command, duration);
+                tracing::warn!(
+                    "Bridge command '{}' timed out after {:?}",
+                    command,
+                    duration
+                );
                 return Err(BridgeError::timeout(command, duration));
             }
         },
@@ -408,15 +436,27 @@ async fn api_command(
             Err(e) => {
                 return bridge_error_response(
                     StatusCode::BAD_REQUEST,
-                    BridgeError::new("invalid_json", format!("Invalid JSON body: {}", e), &command),
+                    BridgeError::new(
+                        "invalid_json",
+                        format!("Invalid JSON body: {}", e),
+                        &command,
+                    ),
                 );
             }
         }
     };
 
+    let request_bytes = body.len() as u64;
     let start = std::time::Instant::now();
     let result = dispatch_command(state.clone(), &command, args).await;
     let duration_ms = start.elapsed().as_millis() as u64;
+
+    // Story 13.1: real measured request+response size feeds the dashboard's
+    // IPC throughput metric — was previously hardcoded to 0.
+    let response_bytes = match &result {
+        Ok(v) => serde_json::to_vec(v).map(|b| b.len() as u64).unwrap_or(0),
+        Err(err) => serde_json::to_vec(err).map(|b| b.len() as u64).unwrap_or(0),
+    };
 
     {
         let mut tel = state.telemetry.lock().unwrap_or_else(|e| e.into_inner());
@@ -430,6 +470,7 @@ async fn api_command(
                 }
             }
         }
+        tel.record_bytes(request_bytes + response_bytes);
     }
 
     match result {
@@ -709,6 +750,9 @@ pub async fn run_bridge_server(
         collab_mdns: None,
         canvas_exec_cancel_tx: None,
         boot_self_heal: boot_self_heal.report,
+        cpu_sysinfo: sysinfo::System::new_all(),
+        last_tokens_per_sec: 0.0,
+        last_model_load_ms: 0,
         unlock_state: Default::default(),
     };
 

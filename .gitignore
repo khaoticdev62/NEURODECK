@@ -51,6 +51,7 @@ e2e/debug.log
 scratch/
 temp_inspect/
 data/
+!src/renderer/features/academy/data/
 promptflow_runs/
 
 # --- Python / UV ---
@@ -78,6 +79,3 @@ test-results/
 t2_err.txt
 t2_out.txt
 .tmp/
-
-# --- Prompt engineering system — Python venv and caches left behind after source moved to docs/ ---
-production_code_prompt_system/

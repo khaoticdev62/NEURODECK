@@ -41,7 +41,10 @@ interface GraphData {
 }
 
 const W = 800;
-const H = 520;
+// H has headroom beyond R_LEAF's reach (250) plus the +14px label offset below
+// a leaf node, so labels on leaves pointing straight down never clip the
+// viewBox's own bottom edge.
+const H = 560;
 const CX = W / 2;
 const CY = H / 2;
 const R_CATEGORY = 130;

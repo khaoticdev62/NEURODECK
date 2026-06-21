@@ -11,6 +11,8 @@
     "electron"
   ],
   "scripts": {
+    "prompt-pack:load": "node scripts/promptpack/load-prompt.mjs",
+    "prompt-pack:generate": "node scripts/promptpack/generate-production-prompt-pack.mjs",
     "dev:autokill": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/powershell/dev-autokill.ps1",
     "build:main": "npx esbuild \"src/**/*.ts\" --platform=node --format=cjs --outdir=electron/dist --outbase=src",
     "dev": "npm run build:main && npm run dev:autokill && node electron/scripts/dev-launcher.js",

@@ -152,6 +152,7 @@ ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active
 | User-facing feature documentation | `docs/USER_GUIDE.md` |
 | BMAD agent personas + sprint config | `_bmad/custom/config.toml` |
 | Sprint artifacts | `_bmad-output/implementation-artifacts/` |
+| PromptFlow — 15-stage audit/security/testing/release-cert prompt CLI | `docs/prompt-system/README.md`. Quick-load one prompt without installing it: `npm run prompt-pack:load -- <number-or-name>` (e.g. `security`, `release`). Browse/copy them in-app via the **Prompt Lab** tab's "Production Code Prompt System" pack. See `docs/PRODUCTION_PROMPT_PACK_HANDOFF.md`. |
 
 ---
 

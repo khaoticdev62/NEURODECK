@@ -62,3 +62,15 @@ This file tracks the epics and user stories for the SteamOS LLM Terminal project
 ## Epic 12: Recovered Epic from BMAD Artifacts
 ### [x] Story 12.1: Allow switching personas via command
 ### [x] Story 12.2: Implement dual-agent discussion (roundtable)
+## Epic 13: Production Data Wiring & Mock Elimination
+### [x] Story 13.1: Wire real telemetry metrics into the diagnostics dashboard
+### [x] Story 13.2: Wire Whisper/provider-native STT into Ollama, Hugging Face, Kimi, and OpenAI-compatible providers
+### [x] Story 13.3: Resolve computer-use cross-platform support boundary
+### [x] Story 13.4: Activate Canvas AI Edit and Collaboration buttons
+### [x] Story 13.5: Wire headless PTY execution into the workflow engine
+## Epic 14: Production Code Prompt System — Activate PromptFlow
+### [x] Story 14.1: Confirm docs/prompt-system as canonical and retire the stale root scratch folder
+### [x] Story 14.2: Install and configure the real PromptFlow CLI against this repo
+### [x] Story 14.3: Lightweight coding-agent entry point (npm script) for quick prompt loading
+### [x] Story 14.4: Wire the 15-prompt pack into the in-app Prompt Lab tab (PromptDrive)
+### [x] Story 14.5: Document the system and cross-link it from CLAUDE.md
