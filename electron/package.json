@@ -14,7 +14,7 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "devDependencies": {
-    "cross-env": "^7.0.3",
+    "cross-env": "^10.1.0",
     "electron": "39.8.5",
     "electron-builder": "26.15.3"
   }
