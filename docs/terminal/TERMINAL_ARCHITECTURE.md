@@ -8,4 +8,3 @@ The renderer never receives raw PTY handles or shell access. It only:
 2. Streams input/output through typed bridge calls.
 3. Renders diagnostics and history state.
 4. Uses command safety classification before execution.
-

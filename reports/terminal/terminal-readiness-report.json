@@ -1,0 +1,53 @@
+{
+  "generatedAt": "2026-06-20T23:06:30.453Z",
+  "terminalAreas": [
+    {
+      "area": "PTY Backend",
+      "status": "production_ready"
+    },
+    {
+      "area": "Terminal Renderer",
+      "status": "production_ready"
+    },
+    {
+      "area": "Terminal Tabs",
+      "status": "production_ready"
+    },
+    {
+      "area": "Split Panes",
+      "status": "production_ready"
+    },
+    {
+      "area": "Shell Profiles",
+      "status": "production_ready"
+    },
+    {
+      "area": "Command Safety",
+      "status": "production_ready"
+    },
+    {
+      "area": "AI Command Assist",
+      "status": "production_ready"
+    },
+    {
+      "area": "History",
+      "status": "production_ready"
+    },
+    {
+      "area": "Session Restore",
+      "status": "production_ready"
+    },
+    {
+      "area": "Controller UX",
+      "status": "production_ready"
+    },
+    {
+      "area": "Diagnostics",
+      "status": "in_progress"
+    },
+    {
+      "area": "No Mock Data",
+      "status": "production_ready"
+    }
+  ]
+}

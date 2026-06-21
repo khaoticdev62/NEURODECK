@@ -28,7 +28,7 @@ NEURODECK is an Electron desktop app with a Rust sidecar that turns a Steam Deck
   1. `$NEURODECK_CONFIG_PATH` env var (highest priority)
   2. Primary: `~/.config/neurodeck/llm-term.toml` (Linux), `%APPDATA%\neurodeck\llm-term.toml` (Windows), `~/Library/Application Support/neurodeck/llm-term.toml` (macOS)
   3. Dev fallbacks (only when `CARGO_MANIFEST_DIR` is set): `../llm-term.toml`, `./llm-term.toml`
-  The root `llm-term.toml` is no longer read at runtime unless the env var points to it.
+     The root `llm-term.toml` is no longer read at runtime unless the env var points to it.
 - **`GEMINI_API_KEY` must be set as an env var** before `npm run dev`. If absent, the binary silently falls back to Ollama with no user-visible error.
 - **`NEURODECK_SAFE_MODE`**: if set (any value), the sidecar skips all Lua plugin loading at startup. The bridge logs `SAFE MODE active — plugin loading is disabled`. Use when a broken plugin prevents boot.
 - **`NEURODECK_PORT`**: overrides the bridge port (default `9477`). Electron's `findFreePort()` auto-selects the next free port in `9477–9577` if the default is occupied and sets this env var before spawning the sidecar.
@@ -47,6 +47,7 @@ NEURODECK is an Electron desktop app with a Rust sidecar that turns a Steam Deck
 The NEURODECK Design System is fully wired into the React frontend and blended with the canonical **NEURODECK Design Tokens + Component Library v1.0** package.
 
 ### Location
+
 - Source of truth: `src/renderer/design-system/`
 - Canonical unified tokens: `src/renderer/design-system/tokens/tokens.css`
 - Canonical token JSON: `src/renderer/design-system/tokens.json`
@@ -58,6 +59,7 @@ The NEURODECK Design System is fully wired into the React frontend and blended w
 - Barrel export: `src/renderer/design-system/index.ts`
 
 ### Integration rules
+
 - **DS tokens are canonical.** `src/renderer/index.css` imports the unified DS token file (`tokens/tokens.css`) and the v1.0 theme modifiers. The runtime theme injector in `src/renderer/theme/cssVariableInjector.ts` emits the full DS token namespace (`--nd-*`) so every theme participates.
 - **Default theme is Tactical Glass Ultra.** `ThemeProvider` defaults to `tactical_glass_ultra` so the v1.0 Tactical Glass theme is visible out of the box (cyan-tinted glass borders `#68F1FF`, brighter accent, translucent surfaces).
 - **v1.0 theme classes are applied to the body.** `ThemeProvider` maps active theme IDs to the bundled v1.0 CSS theme classes (`theme-blacksite`, `theme-tactical-glass`, `theme-high-contrast`, `theme-colorblind-safe`). JS-injected variables remain authoritative; the CSS classes provide a fallback layer and make the v1.0 theme files active.
@@ -69,6 +71,7 @@ The NEURODECK Design System is fully wired into the React frontend and blended w
 - **Legacy `_legacy/` directories are excluded from TypeScript** via `tsconfig.json` (`"exclude": ["src/**/_legacy"]`).
 
 ### Adding or modifying components
+
 1. Add new DS components under `src/renderer/design-system/components/`.
 2. Export them from `src/renderer/design-system/index.ts`.
 3. If a component replaces an existing primitive or card, update the adapter in `src/renderer/components/primitives/` or `src/renderer/components/cards/` while keeping the public prop interface unchanged.
@@ -80,104 +83,115 @@ The NEURODECK Design System is fully wired into the React frontend and blended w
 ## Architecture Map
 
 ### IPC Flow
+
 ```
 src/renderer/App.tsx
   └─ bridgeAdapter.invoke("command_name", { args })  ──►  POST /api/{cmd}
   └─ bridgeAdapter.listen("event_name", handler)     ◄──  WebSocket  ◄──  WsBroadcaster.emit()
                                                                    (Rust sidecar localhost:9477)
 ```
+
 All streaming (LLM tokens, PTY output, agent steps, canvas exec output) goes through WebSocket events. All request/response goes through HTTP POST to the bridge server.
 
 The React UI talks to the bridge through `src/renderer/services/bridgeAdapter.ts`, not through Electron IPC. `bridgeAdapter` exposes typed `invoke<T>()` and `listen()` helpers, wraps errors in `BridgeError` with stable codes (`invalid_json`, `rate_limited`, `command_not_found`, `command_timeout`, `command_error`), and applies retry/backoff for safe read commands. Non-streaming commands enforce a 30-second HTTP timeout (300 seconds for file transfers/support bundles; no timeout for streaming commands).
 
 ### Frontend Architecture
+
 The frontend is a **React 19 + TypeScript** Vite app (`src/renderer/main.tsx` → `src/renderer/App.tsx`). The legacy vanilla-JS `frontend/src/main.js` has been removed; the few remaining shared helpers live in `src/shared/`. Feature views are co-located under `src/renderer/features/` and lazy-loaded in `App.tsx` (only the workspace/chat view is eager). Global state is managed by `src/renderer/state/useNeuroDeckState.ts`.
 
 ### The One Big File Problem
+
 `lib.rs` owns `AppState`, the bridge server bootstrap, and module re-exports. The Tauri `run()` entry point and `generate_handler![]` have been removed. Command bodies, personas, themes, game detection, path utilities, and provider factories have been extracted to submodules. When adding a new feature, look for the existing pattern first before adding a new state struct — `AppState` is a grab-bag of `Arc<Mutex<T>>` fields.
 
 `commands/mod.rs` remains the single bridge dispatch table (~5,400 lines). New commands are defined in a `src/` module and wired into the dispatch table; keep handlers short and delegate to module functions to avoid inflating the table further.
 
 ### Module Responsibilities
-| Module | What It Owns |
-|---|---|
-| `lib.rs` | `AppState`, bridge server bootstrap, module re-exports |
-| `models.rs` | `Theme`, `CustomPersona`, `PERSONAS`, `THEMES` |
-| `config.rs` | TOML config parsing/validation and runtime config structs |
-| `game.rs` | Game detection: `detect_game`, `steam_library_paths`, `game_exe_map`, `get_game_details` |
-| `paths.rs` | `get_config_path`, `user_config_dir`, `user_bin_dir`, `get_home_dir`, `load_env_file` |
-| `providers.rs` | `create_provider`, `provider_from_agent`, `default_agents` |
-| `llm.rs` | `GeminiProvider`, `OllamaProvider`, HuggingFace, Kimi, OpenAI-compat providers; `generate_embedding()` for RAG |
-| `lua.rs` | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona` |
-| `pty_manager.rs` / `terminal.rs` | PTY sessions via `portable-pty`; `terminal.rs` owns higher-level terminal command handlers and diagnostics |
-| `memory.rs` | Cosine-similarity vector DB; SQLite-backed with in-memory cache for fast search |
-| `projects.rs` | Project Knowledge Spaces CRUD; associates sessions and memory with projects |
-| `search.rs` | Universal Search engine using FTS5 `search_index` across messages, memory, and projects |
-| `context_packs.rs` | Context Packs CRUD + memory association; scoped RAG filter by `pack_id` |
-| `privacy.rs` | Privacy levels (`Standard`/`Private`/`Sensitive`/`Sealed`), `UnlockState`, `PrivacyFilter` for RAG/search/export gating |
-| `dashboard.rs` | Workspace Intelligence Dashboard stats aggregation (sessions, messages, memory, privacy breakdown) |
-| `db/` | SQLite persistence layer: `DbPool`, migrations runner, schema definitions |
-| `ftp.rs` / `sftp.rs` | FTP/SFTP list/download/upload via `suppaftp`/`ssh2`; all sync ops wrapped in `spawn_blocking` |
-| `tunnel.rs` | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge |
-| `transfer.rs` | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery |
-| `canvas_collab.rs` | TCP live canvas collaboration — host binds a port, join connects to peer |
-| `deckcode/` | DeckCode input orchestration: schema parsing, raw input loop, bindings mapping, frontend IPC dispatch |
-| `mcp.rs` | Model Context Protocol server (HTTP/JSON-RPC 2.0) on `127.0.0.1:{port}` (default 13337); tool whitelist |
-| `orchestrator.rs` | Multi-agent pipeline/orchestrator: `Pipeline`, `AgentTask`, `OrchestratorPlan`, `execute_pipeline` |
-| `scheduler.rs` | Cron-based scheduled tasks via `tokio-cron-scheduler`; persists to `data/scheduler/tasks.json` |
-| `permissions.rs` | Capability/permission registry (`Capability`, permission profiles, agent→profile mapping) |
-| `security.rs` | Agent workspace sandboxing, permission checks, security reports |
-| `self_heal.rs` | Boot health recovery, automatic repair workflows |
-| `sync.rs` | Cross-device sync for memory/sessions via configurable API base URL |
-| `storage.rs` | Disk-backed key/value storage helpers |
-| `torrent.rs` | BitTorrent metadata/magnet handling |
-| `promptdrive.rs` | Prompt presets library CRUD |
-| `model_registry.rs` / `hf_model_mgr.rs` / `ollama_mgr.rs` | Model discovery, HuggingFace/Ollama model management |
-| `npm_packages.rs` | Frontend package manager integration for plugin/dependency installs |
-| `audio_recorder.rs` / `whisper.rs` | Voice STT capture and Whisper-based transcription |
-| `computer_use.rs` | Desktop automation: mouse, keyboard, screenshot, OCR |
-| `lsp.rs` | Language Server Protocol client integration |
-| `error.rs` / `bridge.rs` | Typed `BridgeError` and bridge server/telemetry |
-| `doc_indexer.rs` | Document indexing pipeline for RAG |
-| `workflow.rs` / `workflow_engine.rs` | 9 node types, template substitution, `eval_condition` with `preprocess_expr()` pre-pass |
-| `plugin_mgr.rs` | Plugin lifecycle: load, toggle, install from URL, hot-reload, QA gate; `audit_log_path()` is `pub` |
-| `remote_control.rs` | UDP remote control server — `start_remote_server_bridge()` / `stop_remote_server_bridge()` — ACTIVE in bridge |
-| `commands/system.rs` | `generate_support_bundle` (redacted diagnostic archive), `get_system_health`, `get_bridge_telemetry`, `redact_line` |
-| `commands/agent.rs` | Agent execution, streaming code execution (`exec_code_stream`) |
-| `commands/academy.rs` | Academy learning progress, portfolio, mentor queries |
-| `commands/api_lab.rs` | HTTP API client, collections, cURL import |
-| `commands/cli_maker.rs` | Custom CLI commands/hooks definitions |
-| `commands/git.rs` | Git repo discovery, status, commits, branches, diff |
-| `commands/browser.rs` | Headless browser automation, citations, sessions |
-| `commands/ide.rs` | IDE/workspace file operations |
-| `commands/session.rs` | Session save/fork/export/delete |
-| `commands/config.rs` | Runtime config get/set |
+
+| Module                                                    | What It Owns                                                                                                            |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `lib.rs`                                                  | `AppState`, bridge server bootstrap, module re-exports                                                                  |
+| `models.rs`                                               | `Theme`, `CustomPersona`, `PERSONAS`, `THEMES`                                                                          |
+| `config.rs`                                               | TOML config parsing/validation and runtime config structs                                                               |
+| `game.rs`                                                 | Game detection: `detect_game`, `steam_library_paths`, `game_exe_map`, `get_game_details`                                |
+| `paths.rs`                                                | `get_config_path`, `user_config_dir`, `user_bin_dir`, `get_home_dir`, `load_env_file`                                   |
+| `providers.rs`                                            | `create_provider`, `provider_from_agent`, `default_agents`                                                              |
+| `llm.rs`                                                  | `GeminiProvider`, `OllamaProvider`, HuggingFace, Kimi, OpenAI-compat providers; `generate_embedding()` for RAG          |
+| `lua.rs`                                                  | mlua runtime; globals: `print`, `execute`, `registerCommand`, `registerHook`, `setPersona`                              |
+| `pty_manager.rs` / `terminal.rs`                          | PTY sessions via `portable-pty`; `terminal.rs` owns higher-level terminal command handlers and diagnostics              |
+| `memory.rs`                                               | Cosine-similarity vector DB; SQLite-backed with in-memory cache for fast search                                         |
+| `projects.rs`                                             | Project Knowledge Spaces CRUD; associates sessions and memory with projects                                             |
+| `search.rs`                                               | Universal Search engine using FTS5 `search_index` across messages, memory, and projects                                 |
+| `context_packs.rs`                                        | Context Packs CRUD + memory association; scoped RAG filter by `pack_id`                                                 |
+| `privacy.rs`                                              | Privacy levels (`Standard`/`Private`/`Sensitive`/`Sealed`), `UnlockState`, `PrivacyFilter` for RAG/search/export gating |
+| `dashboard.rs`                                            | Workspace Intelligence Dashboard stats aggregation (sessions, messages, memory, privacy breakdown)                      |
+| `db/`                                                     | SQLite persistence layer: `DbPool`, migrations runner, schema definitions                                               |
+| `ftp.rs` / `sftp.rs`                                      | FTP/SFTP list/download/upload via `suppaftp`/`ssh2`; all sync ops wrapped in `spawn_blocking`                           |
+| `tunnel.rs`                                               | TCP loopback tunnel for SteamOS Game Mode → Desktop Mode bridge                                                         |
+| `transfer.rs`                                             | LAN P2P file transfer + Warpinator gRPC server; uses mDNS/mdns-sd peer discovery                                        |
+| `canvas_collab.rs`                                        | TCP live canvas collaboration — host binds a port, join connects to peer                                                |
+| `deckcode/`                                               | DeckCode input orchestration: schema parsing, raw input loop, bindings mapping, frontend IPC dispatch                   |
+| `mcp.rs`                                                  | Model Context Protocol server (HTTP/JSON-RPC 2.0) on `127.0.0.1:{port}` (default 13337); tool whitelist                 |
+| `orchestrator.rs`                                         | Multi-agent pipeline/orchestrator: `Pipeline`, `AgentTask`, `OrchestratorPlan`, `execute_pipeline`                      |
+| `scheduler.rs`                                            | Cron-based scheduled tasks via `tokio-cron-scheduler`; persists to `data/scheduler/tasks.json`                          |
+| `permissions.rs`                                          | Capability/permission registry (`Capability`, permission profiles, agent→profile mapping)                               |
+| `security.rs`                                             | Agent workspace sandboxing, permission checks, security reports                                                         |
+| `self_heal.rs`                                            | Boot health recovery, automatic repair workflows                                                                        |
+| `sync.rs`                                                 | Cross-device sync for memory/sessions via configurable API base URL                                                     |
+| `storage.rs`                                              | Disk-backed key/value storage helpers                                                                                   |
+| `torrent.rs`                                              | BitTorrent metadata/magnet handling                                                                                     |
+| `promptdrive.rs`                                          | Prompt presets library CRUD                                                                                             |
+| `model_registry.rs` / `hf_model_mgr.rs` / `ollama_mgr.rs` | Model discovery, HuggingFace/Ollama model management                                                                    |
+| `npm_packages.rs`                                         | Frontend package manager integration for plugin/dependency installs                                                     |
+| `audio_recorder.rs` / `whisper.rs`                        | Voice STT capture and Whisper-based transcription                                                                       |
+| `computer_use.rs`                                         | Desktop automation: mouse, keyboard, screenshot, OCR                                                                    |
+| `lsp.rs`                                                  | Language Server Protocol client integration                                                                             |
+| `error.rs` / `bridge.rs`                                  | Typed `BridgeError` and bridge server/telemetry                                                                         |
+| `doc_indexer.rs`                                          | Document indexing pipeline for RAG                                                                                      |
+| `workflow.rs` / `workflow_engine.rs`                      | 9 node types, template substitution, `eval_condition` with `preprocess_expr()` pre-pass                                 |
+| `plugin_mgr.rs`                                           | Plugin lifecycle: load, toggle, install from URL, hot-reload, QA gate; `audit_log_path()` is `pub`                      |
+| `remote_control.rs`                                       | UDP remote control server — `start_remote_server_bridge()` / `stop_remote_server_bridge()` — ACTIVE in bridge           |
+| `commands/system.rs`                                      | `generate_support_bundle` (redacted diagnostic archive), `get_system_health`, `get_bridge_telemetry`, `redact_line`     |
+| `commands/agent.rs`                                       | Agent execution, streaming code execution (`exec_code_stream`)                                                          |
+| `commands/academy.rs`                                     | Academy learning progress, portfolio, mentor queries                                                                    |
+| `commands/api_lab.rs`                                     | HTTP API client, collections, cURL import                                                                               |
+| `commands/cli_maker.rs`                                   | Custom CLI commands/hooks definitions                                                                                   |
+| `commands/git.rs`                                         | Git repo discovery, status, commits, branches, diff                                                                     |
+| `commands/browser.rs`                                     | Headless browser automation, citations, sessions                                                                        |
+| `commands/ide.rs`                                         | IDE/workspace file operations                                                                                           |
+| `commands/session.rs`                                     | Session save/fork/export/delete                                                                                         |
+| `commands/config.rs`                                      | Runtime config get/set                                                                                                  |
 
 ### Infrastructure Crate (`infrastructure/`)
+
 A workspace crate (`neurodeck_infrastructure`) providing platform services. Used by the Rust sidecar (`src-tauri/`) as a path dependency.
 
-| Module | What It Owns |
-|---|---|
-| `secrets.rs` | OS keychain (keyring 4.x) — `save_gemini_api_key`, `get_gemini_api_key`, `delete_gemini_api_key`, `test_keychain_access` |
-| `oauth.rs` | Google OAuth2 Device Flow — `request_device_code` → `poll_for_token`; reads `google_client_id` from config |
+| Module          | What It Owns                                                                                                             |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `secrets.rs`    | OS keychain (keyring 4.x) — `save_gemini_api_key`, `get_gemini_api_key`, `delete_gemini_api_key`, `test_keychain_access` |
+| `oauth.rs`      | Google OAuth2 Device Flow — `request_device_code` → `poll_for_token`; reads `google_client_id` from config               |
 | `warpinator.rs` | Warpinator-compatible gRPC server (tonic 0.11); `WarpinatorCallbacks` trait; `start_warpinator_service(callbacks, port)` |
 
 **Key infrastructure quirks:**
+
 - `keyring` is at `4.x` — uses `delete_credential()` (the 2.x API was `delete_password()`)
 - `tonic-build` 0.11 uses `.compile()` not `.compile_protos()` — `build.rs` uses `unsafe { set_var("PROTOC", ...) }`
 - `reqwest` 0.12 without `form` feature has no `.form()` method — use manual URL encoding with `Content-Type: application/x-www-form-urlencoded`
 - `mdns-sd` pinned to `0.11` for the `HashMap<String, String>` properties API in `ServiceInfo::new()`
 
 ### RAG Is Active
+
 Memory context injection is live in bridge `send_command` (`commands/mod.rs`): every user message generates an embedding via `provider.generate_embedding()`, searches the vector DB for top-10 relevant records, applies **pack scoping** (`pack_id` arg) and **privacy filtering** (`PrivacyFilter::can_inject` + `UnlockState`), then prepends up to 3 approved records to the LLM context. The `LlmProvider` trait requires `generate_embedding()` and `supports_embedding()`; Ollama, HuggingFace, and OpenAI-compat providers have real implementations. If the active provider does not support embeddings, a keyword fallback is used.
 
 ### PTY Session Routing + Timeout
+
 `pty_output` and `pty_exit` events carry a session `id` field. Multiple PTY sessions can coexist in `PtyState.sessions`. The main terminal uses `ptySessionId = "main_pty_session"`. The SSH tab creates sessions named `ssh_session_<timestamp>`. Both are routed in the same `listen("pty_output", ...)` handler by ID.
 
 **PTY spawn timeout**: `pty_spawn` wraps `command_builder.spawn()` in a `tokio::time::timeout` (default 30s). On timeout the child is killed, the session is removed from `PtyState`, and `pty_exit` emits `{"reason": "spawn_timeout"}`. A background TTL watchdog kills sessions idle >2 hours.
 
 ### Canvas Code Execution
+
 Canvas Python/Bash/JavaScript execution is **fully implemented** end-to-end:
+
 - Frontend: `src/renderer/features/canvas/CanvasView.tsx` calls `bridgeAdapter.invoke("exec_code_stream", { code, lang })`
 - Supported languages: `python`, `bash`, `powershell`, `javascript`/`js` (passed to `exec_code_stream`)
 - Backend: `commands/mod.rs` dispatches to `commands/agent.rs` `exec_code_stream()`
@@ -187,10 +201,13 @@ Canvas Python/Bash/JavaScript execution is **fully implemented** end-to-end:
 - HTML/CSS/other langs render in the preview iframe (no exec path)
 
 ### CSS Specificity Trap (legacy `app.css`)
+
 In the legacy CSS, ID selectors (`#view-*`) have specificity 100, which beats `.view-content.active` (specificity 20). **Never add `display: flex` or `display: block` to `#view-*` ID rules** — it will permanently override the `.view-content { display: none }` hide rule and break any remaining static tab switching. The React app mounts views as components, so this trap mainly matters for the residual `app.css` chrome and any embedded HTML previews.
 
 ### Electron Security Model
+
 `electron/main.js` implements a hardened security posture:
+
 - `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `webSecurity: true` on all windows
 - `devTools` only enabled when `ELECTRON_DEV` is set
 - **Content Security Policy** injected via `session.defaultSession.webRequest.onHeadersReceived`:
@@ -309,6 +326,7 @@ Agent-driven PRs must include an `## Agent report` section (see `.github/PULL_RE
 If a published release must be retracted, use the **Emergency Rollback** GitHub Actions workflow. It creates a `rollback/<tag>` branch, updates `health.json` to `rolled-back`, and drafts a rollback release for human review.
 
 See:
+
 - `docs/AGENT-GITOPS.md` for full agent rules.
 - `docs/UI-ROLLBACK.md` for the UI checkpoint system.
 - `docs/CI-CD-PIPELINE.md` for workflow documentation.
@@ -319,37 +337,37 @@ See:
 
 The project follows the structure documented in `docs/production-package/neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md`. Key locations:
 
-| Directory | What Lives Here |
-|---|---|
-| `src/` | Shared TypeScript contracts, schemas, registries, and types used by frontend and backend |
-| `src/shared/contracts/` | IPC/bridge contracts (agent, chat, errors, providers, sessions, backend health) |
-| `src/shared/terminal/` | Terminal contracts, profiles, safety types, controller map |
-| `src/shared/theme/` | Theme registry, design tokens, motion/accessibility profiles |
-| `src-tauri/src/` | Rust backend — ~5,400-line dispatch table in `commands/mod.rs`, all modules |
-| `src-tauri/src/commands/` | Bridge command implementations (agent, browser, git, system, session...) |
-| `src-tauri/src/db/migrations/` | SQLite schema evolution (001, 002, 003...) |
-| `src-tauri/tests/` | Rust integration tests |
-| `frontend/src/` | React 19 + TypeScript frontend — `main.tsx`, `react/App.tsx`, `react/features/`, `design-system/` |
-| `src/renderer/` | React app root, feature views, components, state, services, hooks, theme |
-| `src/renderer/services/bridgeAdapter.ts` | Typed bridge client: `invoke<T>()`, `listen()`, `BridgeError`, retry/backoff |
-| `src/renderer/design-system/` | Canonical design tokens, themes, and components |
-| `src/shared/` | Shared TypeScript types and contracts used by both frontend and backend |
-| `electron/` | Electron main process + preload script |
-| `infrastructure/` | Rust workspace crate — secrets, OAuth, Warpinator |
-| `plugins/` | Lua plugins auto-loaded at startup |
-| `assets/` | Static assets — brand, steam-grid, steam_input, deckcode schemas |
-| `docs/` | All documentation — epics, roadmaps, architecture, user guide |
-| `docs/production-package/neurodeck-production-package/` | **North star** — PRD, SDS, release gates, backlog, CI templates |
-| `production_code_prompt_system/` | PromptFlow CLI + 15 production prompts |
-| `scripts/` | Build & utility scripts — `brand/`, `dev/`, `git/`, `git-hooks/`, `kfms/`, `perf/`, `powershell/`, `release/`, `report/`, `shell/`, `steamdeck/`, `ui/`, `verify/` |
-| `scripts/dev/` | Development utilities (CSS, JS, JSON, Lua, Python helpers) |
-| `scripts/verify/` | TypeScript verification scripts for architecture, security, IPC, wiring, real-data |
-| `scripts/ui/` | UI checkpoint/rollback scripts |
-| `e2e/` | Playwright E2E tests (~390 tests) |
-| `tests/` | Shared test fixtures (config, memory, plugins) + Vitest contract/integration/unit tests |
-| `infra/` | KFMS metadata and telemetry |
-| `aur/` | Arch Linux PKGBUILD |
-| `flatpak/` | Flatpak manifest & build scripts |
+| Directory                                               | What Lives Here                                                                                                                                                    |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/`                                                  | Shared TypeScript contracts, schemas, registries, and types used by frontend and backend                                                                           |
+| `src/shared/contracts/`                                 | IPC/bridge contracts (agent, chat, errors, providers, sessions, backend health)                                                                                    |
+| `src/shared/terminal/`                                  | Terminal contracts, profiles, safety types, controller map                                                                                                         |
+| `src/shared/theme/`                                     | Theme registry, design tokens, motion/accessibility profiles                                                                                                       |
+| `src-tauri/src/`                                        | Rust backend — ~5,400-line dispatch table in `commands/mod.rs`, all modules                                                                                        |
+| `src-tauri/src/commands/`                               | Bridge command implementations (agent, browser, git, system, session...)                                                                                           |
+| `src-tauri/src/db/migrations/`                          | SQLite schema evolution (001, 002, 003...)                                                                                                                         |
+| `src-tauri/tests/`                                      | Rust integration tests                                                                                                                                             |
+| `frontend/src/`                                         | React 19 + TypeScript frontend — `main.tsx`, `react/App.tsx`, `react/features/`, `design-system/`                                                                  |
+| `src/renderer/`                                         | React app root, feature views, components, state, services, hooks, theme                                                                                           |
+| `src/renderer/services/bridgeAdapter.ts`                | Typed bridge client: `invoke<T>()`, `listen()`, `BridgeError`, retry/backoff                                                                                       |
+| `src/renderer/design-system/`                           | Canonical design tokens, themes, and components                                                                                                                    |
+| `src/shared/`                                           | Shared TypeScript types and contracts used by both frontend and backend                                                                                            |
+| `electron/`                                             | Electron main process + preload script                                                                                                                             |
+| `infrastructure/`                                       | Rust workspace crate — secrets, OAuth, Warpinator                                                                                                                  |
+| `plugins/`                                              | Lua plugins auto-loaded at startup                                                                                                                                 |
+| `assets/`                                               | Static assets — brand, steam-grid, steam_input, deckcode schemas                                                                                                   |
+| `docs/`                                                 | All documentation — epics, roadmaps, architecture, user guide                                                                                                      |
+| `docs/production-package/neurodeck-production-package/` | **North star** — PRD, SDS, release gates, backlog, CI templates                                                                                                    |
+| `production_code_prompt_system/`                        | PromptFlow CLI + 15 production prompts                                                                                                                             |
+| `scripts/`                                              | Build & utility scripts — `brand/`, `dev/`, `git/`, `git-hooks/`, `kfms/`, `perf/`, `powershell/`, `release/`, `report/`, `shell/`, `steamdeck/`, `ui/`, `verify/` |
+| `scripts/dev/`                                          | Development utilities (CSS, JS, JSON, Lua, Python helpers)                                                                                                         |
+| `scripts/verify/`                                       | TypeScript verification scripts for architecture, security, IPC, wiring, real-data                                                                                 |
+| `scripts/ui/`                                           | UI checkpoint/rollback scripts                                                                                                                                     |
+| `e2e/`                                                  | Playwright E2E tests (~390 tests)                                                                                                                                  |
+| `tests/`                                                | Shared test fixtures (config, memory, plugins) + Vitest contract/integration/unit tests                                                                            |
+| `infra/`                                                | KFMS metadata and telemetry                                                                                                                                        |
+| `aur/`                                                  | Arch Linux PKGBUILD                                                                                                                                                |
+| `flatpak/`                                              | Flatpak manifest & build scripts                                                                                                                                   |
 
 **Do not create new top-level directories without updating `docs/production-package/neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md`.**
 
@@ -359,34 +377,34 @@ The project follows the structure documented in `docs/production-package/neurode
 
 > **Primary reference (north star):** `docs/production-package/neurodeck-production-package/` — This is the single source of truth for architecture, specs, release gates, and backlog. All other docs are supplementary.
 
-| Resource | Location |
-|---|---|
-| **Production Package (SSoT)** | `docs/production-package/neurodeck-production-package/` — Architecture blueprint, PRD, SDS, release gates, backlog |
+| Resource                                                | Location                                                                                                            |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| **Production Package (SSoT)**                           | `docs/production-package/neurodeck-production-package/` — Architecture blueprint, PRD, SDS, release gates, backlog  |
 | Master blueprint (architecture, 12 release gates, KFMS) | `docs/production-package/neurodeck-production-package/docs/00_NEURODECK_Master_PRD_SDS_Implementation_Blueprint.md` |
-| Product PRD (feature definitions, acceptance criteria) | `docs/production-package/neurodeck-production-package/docs/01_Product_PRD.md` |
-| Software Design Spec (module map, IPC, data flow) | `docs/production-package/neurodeck-production-package/docs/02_Software_Design_Specification.md` |
-| Implementation Roadmap (sprint history, next work) | `docs/production-package/neurodeck-production-package/docs/03_Implementation_Roadmap.md` |
-| Security & Privacy Hardening | `docs/production-package/neurodeck-production-package/docs/04_Security_Privacy_Hardening.md` |
-| Steam Deck UX Release Gate | `docs/production-package/neurodeck-production-package/docs/05_Steam_Deck_UX_Release_Gate.md` |
-| QA & Testing Release Gates | `docs/production-package/neurodeck-production-package/docs/06_QA_Testing_Release_Gates.md` |
-| CI/CD & Repository Setup | `docs/production-package/neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md` |
-| Plugin SDK & Workflow Engine | `docs/production-package/neurodeck-production-package/docs/08_Plugin_Automation_Workflow_Spec.md` |
-| Release Packaging & Observability | `docs/production-package/neurodeck-production-package/docs/09_Release_Packaging_Observability.md` |
-| Final Release Checklist | `docs/production-package/neurodeck-production-package/checklists/FINAL_1_0_RELEASE_CHECKLIST.md` |
-| Production Backlog | `docs/production-package/neurodeck-production-package/checklists/PRODUCTION_BACKLOG.md` |
-| Full feature backlog + priority matrix | `docs/ANTIGRAVITY_HANDOFF.md` |
-| Architecture overview | `docs/ARCHITECTURE.md` |
-| Bridge server protocol & telemetry | `docs/BRIDGE_SERVER.md` |
-| Electron/React migration handoff | `docs/ELECTRON_MIGRATION_HANDOFF.md` |
-| Developer handoff guide | `docs/DEVELOPER_HANDOFF.md` |
-| Plugin development guide | `docs/PLUGIN_DEV_GUIDE.md` |
-| Fallow quality gates | `docs/FALLOW_GATES.md` |
-| Project identity, sprint history, command registry | `docs/project-context.md` |
-| Steam Deck Game Mode integration | `docs/gamescope_guide.md` |
-| Steam Input controller mapping | `docs/steam_input_guide.md` |
-| User-facing feature documentation | `docs/USER_GUIDE.md` |
-| BMAD agent personas + sprint config | `_bmad/custom/config.toml` |
-| Sprint artifacts | `_bmad-output/implementation-artifacts/` |
+| Product PRD (feature definitions, acceptance criteria)  | `docs/production-package/neurodeck-production-package/docs/01_Product_PRD.md`                                       |
+| Software Design Spec (module map, IPC, data flow)       | `docs/production-package/neurodeck-production-package/docs/02_Software_Design_Specification.md`                     |
+| Implementation Roadmap (sprint history, next work)      | `docs/production-package/neurodeck-production-package/docs/03_Implementation_Roadmap.md`                            |
+| Security & Privacy Hardening                            | `docs/production-package/neurodeck-production-package/docs/04_Security_Privacy_Hardening.md`                        |
+| Steam Deck UX Release Gate                              | `docs/production-package/neurodeck-production-package/docs/05_Steam_Deck_UX_Release_Gate.md`                        |
+| QA & Testing Release Gates                              | `docs/production-package/neurodeck-production-package/docs/06_QA_Testing_Release_Gates.md`                          |
+| CI/CD & Repository Setup                                | `docs/production-package/neurodeck-production-package/docs/07_Repository_CI_CD_Setup.md`                            |
+| Plugin SDK & Workflow Engine                            | `docs/production-package/neurodeck-production-package/docs/08_Plugin_Automation_Workflow_Spec.md`                   |
+| Release Packaging & Observability                       | `docs/production-package/neurodeck-production-package/docs/09_Release_Packaging_Observability.md`                   |
+| Final Release Checklist                                 | `docs/production-package/neurodeck-production-package/checklists/FINAL_1_0_RELEASE_CHECKLIST.md`                    |
+| Production Backlog                                      | `docs/production-package/neurodeck-production-package/checklists/PRODUCTION_BACKLOG.md`                             |
+| Full feature backlog + priority matrix                  | `docs/ANTIGRAVITY_HANDOFF.md`                                                                                       |
+| Architecture overview                                   | `docs/ARCHITECTURE.md`                                                                                              |
+| Bridge server protocol & telemetry                      | `docs/BRIDGE_SERVER.md`                                                                                             |
+| Electron/React migration handoff                        | `docs/ELECTRON_MIGRATION_HANDOFF.md`                                                                                |
+| Developer handoff guide                                 | `docs/DEVELOPER_HANDOFF.md`                                                                                         |
+| Plugin development guide                                | `docs/PLUGIN_DEV_GUIDE.md`                                                                                          |
+| Fallow quality gates                                    | `docs/FALLOW_GATES.md`                                                                                              |
+| Project identity, sprint history, command registry      | `docs/project-context.md`                                                                                           |
+| Steam Deck Game Mode integration                        | `docs/gamescope_guide.md`                                                                                           |
+| Steam Input controller mapping                          | `docs/steam_input_guide.md`                                                                                         |
+| User-facing feature documentation                       | `docs/USER_GUIDE.md`                                                                                                |
+| BMAD agent personas + sprint config                     | `_bmad/custom/config.toml`                                                                                          |
+| Sprint artifacts                                        | `_bmad-output/implementation-artifacts/`                                                                            |
 
 ---
 
@@ -447,6 +465,7 @@ The project follows the structure documented in `docs/production-package/neurode
 Version governance for this project. One Egyptian god codename per MINOR version line.
 
 ### Codename Assignment
+
 ```
 REGISTRY[MINOR] = codename
 tag format      = v{semver}-{codename_lower}
@@ -456,15 +475,17 @@ next:    v1.9.x → Thoth   (MINOR=9, index 9)
 ```
 
 ### Key Files
-| File | Purpose |
-|---|---|
-| `infra/meta/meta.json` | Primary KFMS metadata — version, codename, build SHA, governance flags |
-| `infra/meta/meta.schema.json` | JSON Schema draft-07 — CI enforces this on every `meta.json` change |
-| `infra/meta/CODENAME_REGISTRY.md` | Full 20-god codename table with status and assignment |
-| `infra/telemetry/health.json` | BMAD orchestration readiness — 5 boolean checks must all be `true`; also carries `release_plan` with GO/HOLD/NO-GO score |
-| `scripts/kfms/khaotic-init.sh` | Bootstrap utility: `sweep` / `stamp` / `validate` / `status` / `sync` |
+
+| File                              | Purpose                                                                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `infra/meta/meta.json`            | Primary KFMS metadata — version, codename, build SHA, governance flags                                                   |
+| `infra/meta/meta.schema.json`     | JSON Schema draft-07 — CI enforces this on every `meta.json` change                                                      |
+| `infra/meta/CODENAME_REGISTRY.md` | Full 20-god codename table with status and assignment                                                                    |
+| `infra/telemetry/health.json`     | BMAD orchestration readiness — 5 boolean checks must all be `true`; also carries `release_plan` with GO/HOLD/NO-GO score |
+| `scripts/kfms/khaotic-init.sh`    | Bootstrap utility: `sweep` / `stamp` / `validate` / `status` / `sync`                                                    |
 
 ### KFMS CLI
+
 ```bash
 ./scripts/kfms/khaotic-init.sh sweep     # Move loose root files → .loose/inbox/ (non-destructive)
 ./scripts/kfms/khaotic-init.sh stamp     # Re-stamp build block (git SHA, tag, timestamp, dirty flag)
@@ -476,47 +497,49 @@ next:    v1.9.x → Thoth   (MINOR=9, index 9)
 The post-commit hook in `.git/hooks/post-commit` runs `stamp` + `validate` + amends the commit with updated KFMS artifacts (`meta.json`, `health.json`, `CODENAME_REGISTRY.md`, `IMPLEMENTATION_PLAN.md`) automatically.
 
 ### Release Score
+
 `health.json` carries a `release_plan.readiness_score` (0–100). GO threshold is 85. Gates:
 
-| Gate | Weight | Pass condition |
-|---|---|---|
-| `hardening_check` | +30 | Security audit script exits 0 |
-| `cargo_check` | +25 | `cargo check` exits 0 |
-| `cargo_test` | +25 | `cargo test --lib` exits 0 |
-| `frontend_build` | +20 | `npm run --prefix frontend build` exits 0 |
-| `workspace_state: clean` | 0 penalty | No uncommitted changes |
-| `workspace_state: manual-uncommitted` | −20 | Uncommitted changes present |
-| `loose_root_files > 0` | −10 | Run `sweep` to move loose files |
+| Gate                                  | Weight    | Pass condition                            |
+| ------------------------------------- | --------- | ----------------------------------------- |
+| `hardening_check`                     | +30       | Security audit script exits 0             |
+| `cargo_check`                         | +25       | `cargo check` exits 0                     |
+| `cargo_test`                          | +25       | `cargo test --lib` exits 0                |
+| `frontend_build`                      | +20       | `npm run --prefix frontend build` exits 0 |
+| `workspace_state: clean`              | 0 penalty | No uncommitted changes                    |
+| `workspace_state: manual-uncommitted` | −20       | Uncommitted changes present               |
+| `loose_root_files > 0`                | −10       | Run `sweep` to move loose files           |
 
 ### CI Workflows (`.github/workflows/`)
 
 All active workflows:
 
-| Workflow | Trigger | Purpose |
-|---|---|---|
-| `ci.yml` | PR + push master | Main CI: check, lint, test, build |
-| `ci-gate.yml` | PR | 6-gate production quality gate |
-| `production-ci.yml` | push master | Simplified main-branch CI |
-| `release-build.yml` | workflow_dispatch / tag | Multi-platform release (Windows NSIS + Linux AppImage) with sccache + mold |
-| `production-release.yml` | workflow_dispatch | Production release automation |
-| `steam-deck-validation.yml` | push master | AppImage runtime, glibc, gamepad, Vulkan/OpenGL, binary arch validation |
-| `plugin-qa.yml` | `plugins/**` change | Lua QA: annotations, size ≤ 512 KB, 8 blocked API patterns |
-| `validate-codename.yml` | `infra/meta/**` change | KFMS codename collision detection, registry alignment, tag format |
-| `kfms-release.yml` | release tag push | Full KFMS validation on publish |
-| `validate-meta-schema.yml` | `infra/meta/**` change | `meta.json` JSON Schema validation via `ajv-cli` |
-| `verify-telemetry.yml` | `infra/meta/**` change | `health.json` integrity, 5-check truth, version/codename drift |
-| `security.yml` | push master | `cargo-audit`, `cargo-deny`, `npm-audit`, CodeQL SAST, secret scanning |
-| `branch-policy.yml` | PR / push | Enforces branch naming and direct-push protection |
-| `accessibility.yml` | PR + push master | axe-core accessibility checks |
-| `visual-regression.yml` | PR + push master | Playwright visual regression (informational) |
-| `ui-checkpoint-gate.yml` | PR | Validates UI checkpoint metadata and rollback integrity |
-| `emergency-rollback.yml` | workflow_dispatch | Publishes a rollback release for a broken tag |
-| `release-manifest.yml` | release | Generates and attaches release manifest artifacts |
-| `model-support-report.yml` | workflow_dispatch | Probes provider/model compatibility matrix |
-| `chromatic.yml` | push master | Chromatic visual review / Storybook |
-| `nightly.yml` | schedule | Nightly build + long-running tests |
+| Workflow                    | Trigger                 | Purpose                                                                    |
+| --------------------------- | ----------------------- | -------------------------------------------------------------------------- |
+| `ci.yml`                    | PR + push master        | Main CI: check, lint, test, build                                          |
+| `ci-gate.yml`               | PR                      | 6-gate production quality gate                                             |
+| `production-ci.yml`         | push master             | Simplified main-branch CI                                                  |
+| `release-build.yml`         | workflow_dispatch / tag | Multi-platform release (Windows NSIS + Linux AppImage) with sccache + mold |
+| `production-release.yml`    | workflow_dispatch       | Production release automation                                              |
+| `steam-deck-validation.yml` | push master             | AppImage runtime, glibc, gamepad, Vulkan/OpenGL, binary arch validation    |
+| `plugin-qa.yml`             | `plugins/**` change     | Lua QA: annotations, size ≤ 512 KB, 8 blocked API patterns                 |
+| `validate-codename.yml`     | `infra/meta/**` change  | KFMS codename collision detection, registry alignment, tag format          |
+| `kfms-release.yml`          | release tag push        | Full KFMS validation on publish                                            |
+| `validate-meta-schema.yml`  | `infra/meta/**` change  | `meta.json` JSON Schema validation via `ajv-cli`                           |
+| `verify-telemetry.yml`      | `infra/meta/**` change  | `health.json` integrity, 5-check truth, version/codename drift             |
+| `security.yml`              | push master             | `cargo-audit`, `cargo-deny`, `npm-audit`, CodeQL SAST, secret scanning     |
+| `branch-policy.yml`         | PR / push               | Enforces branch naming and direct-push protection                          |
+| `accessibility.yml`         | PR + push master        | axe-core accessibility checks                                              |
+| `visual-regression.yml`     | PR + push master        | Playwright visual regression (informational)                               |
+| `ui-checkpoint-gate.yml`    | PR                      | Validates UI checkpoint metadata and rollback integrity                    |
+| `emergency-rollback.yml`    | workflow_dispatch       | Publishes a rollback release for a broken tag                              |
+| `release-manifest.yml`      | release                 | Generates and attaches release manifest artifacts                          |
+| `model-support-report.yml`  | workflow_dispatch       | Probes provider/model compatibility matrix                                 |
+| `chromatic.yml`             | push master             | Chromatic visual review / Storybook                                        |
+| `nightly.yml`               | schedule                | Nightly build + long-running tests                                         |
 
 ### Rules When Bumping Versions
+
 - **PATCH bump** (1.8.x): run `./scripts/kfms/khaotic-init.sh stamp` — codename and `meta.json` governance fields stay the same.
 - **MINOR bump** (1.9.0): update `meta.json` with new version, `codename.name = "Thoth"`, `registry_index = 9`, `minor_line = 9`, `tag = "v1.9.0-thoth"`. Update `health.json` version/codename to match.
 - **MAJOR bump** (2.0.0): all codenames reset to index 0 → Anubis.

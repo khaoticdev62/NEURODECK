@@ -14,10 +14,10 @@
   },
   "tag": "v1.8.0-ptah",
   "build": {
-    "git_sha": "2e5b626cb71341a04a05f0d45e97e020bb20f11d",
+    "git_sha": "03bd08ac46a020501782cd6e429665ec951d6f62",
     "git_tag": null,
-    "built_at_utc": "2026-06-20T00:19:32Z",
-    "dirty": false
+    "built_at_utc": "2026-06-21T05:55:12Z",
+    "dirty": true
   },
   "studio": {
     "name": "Khaotic Labs",

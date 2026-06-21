@@ -10,12 +10,11 @@
 
 ## Status
 
-| Area | Status | Notes |
-|---|---|---|
-| PTY spawn/write/resize/kill | production_ready | Real shell processes in Rust main process |
-| Terminal renderer | production_ready | xterm-backed pane viewport |
-| Command policy | production_ready | Shared safety classifier and confirmation gate |
-| Shell profiles | production_ready | Shared profile registry and runtime availability probing |
-| Diagnostics | in_progress | Reporting exists; deeper runtime probes can be expanded |
-| Self-healing | in_progress | Recovery state and restart flow exist; more failure modes can be added |
-
+| Area                        | Status           | Notes                                                                  |
+| --------------------------- | ---------------- | ---------------------------------------------------------------------- |
+| PTY spawn/write/resize/kill | production_ready | Real shell processes in Rust main process                              |
+| Terminal renderer           | production_ready | xterm-backed pane viewport                                             |
+| Command policy              | production_ready | Shared safety classifier and confirmation gate                         |
+| Shell profiles              | production_ready | Shared profile registry and runtime availability probing               |
+| Diagnostics                 | in_progress      | Reporting exists; deeper runtime probes can be expanded                |
+| Self-healing                | in_progress      | Recovery state and restart flow exist; more failure modes can be added |
