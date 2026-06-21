@@ -5,6 +5,11 @@ import { visualizer } from "rollup-plugin-visualizer";
 
 const repoRoot = path.resolve(__dirname, "..");
 const rendererRoot = path.resolve(repoRoot, "src/renderer");
+const usePolling = process.env.VITE_USE_POLLING === "true";
+const generatedWatchPaths = [
+  /(^|[/\\])(?:\.git|node_modules|target|dist-electron|coverage|playwright-report|test-results(?:-[^/\\]+)?)(?:[/\\]|$)/,
+  /[/\\]frontend[/\\]dist(?:[/\\]|$)/,
+];
 
 export default defineConfig({
   // Root is repo root so index.html and src/renderer/ are resolved correctly
@@ -72,8 +77,11 @@ export default defineConfig({
     port: 1420,
     strictPort: true,
     watch: {
-      usePolling: process.platform === "win32",
+      // Native Windows watching avoids repeatedly stat-ing the repository's
+      // large Rust and Electron build trees. Polling remains an opt-in fallback.
+      usePolling,
       interval: 300,
+      ignored: generatedWatchPaths,
     },
     hmr: {
       host: "127.0.0.1",
