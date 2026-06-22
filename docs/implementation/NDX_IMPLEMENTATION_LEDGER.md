@@ -617,13 +617,15 @@ npm audit --omit=dev → 0 vulnerabilities
 - **Split panes** — not built this slice; single active editor pane only.
 - **Peek/Rename/Find references/Pin (Symbol Navigator), Explain/Add to AI context** — need deeper language-service integration or Epic 9 respectively.
 
-## Epic 11 — System integration (Recovery Service slice only)
+## Epic 11 — System integration (Recovery Service + System Metrics Service)
 
 ### Scope decision
 
-Epic 11 ("System integration") is 16 items: System Metrics, Dashboard, Controller Settings, Display/Theme, Network/VPN, Privacy, Storage+Recovery, Integrations, Updates, Quick Access, Power Menu, Recovery Timeline, Before/After Diff, Emergency Stop (already real, Epic 4), Error Recovery, About/Diagnostics. Asked the user directly which slice to prioritize; the answer was the Recovery Service specifically, since it's what every prior epic's "deferred — needs Recovery" notes were pointing at (Epic 5's file writes, Epic 6's Git restore/discard, Epic 7's editor save). Building Recovery first, rather than working the full 16-item list in spec order, unblocks real work in three already-shipped epics instead of producing 16 thin, mostly-unblocked screens.
+Epic 11 ("System integration") is 16 items: System Metrics, Dashboard, Controller Settings, Display/Theme, Network/VPN, Privacy, Storage+Recovery, Integrations, Updates, Quick Access, Power Menu, Recovery Timeline, Before/After Diff, Emergency Stop (already real, Epic 4), Error Recovery, About/Diagnostics. Asked the user directly which slice to prioritize; the answer was the Recovery Service specifically, since it's what every prior epic's "deferred — needs Recovery" notes were pointing at (Epic 5's file writes, Epic 6's Git restore/discard, Epic 7's editor save). Building Recovery first, rather than working the full 16-item list in spec order, unblocked real work in three already-shipped epics instead of producing 16 thin, mostly-unblocked screens.
 
-The other 15 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build (System Metrics, model storage accounting, browser data, log-file inventory, package/update infrastructure).
+A second slice then built the **System Metrics Service** (§27) for real — `core/system/SystemMetricsService.ts` — because Epic 9's Routing Profiles and resource-aware model selection genuinely needed it; this was Epic 9 pulling a real Epic 11 dependency forward rather than faking the resource data it needed. See the System Metrics summary under Epic 9's ledger entry above for what the service actually measures (capability-detected CPU/memory/swap/storage/network/process, plus Linux-only battery/thermal/fan/GPU sensors, with explicit unavailable reporting rather than fabrication).
+
+The other 14 of 16 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build yet: ND-042 System Dashboard needs shared contracts/IPC/UI on top of the metrics core that now exists; Controller Settings needs the Input Profile Manager UI (Epic 2 left it backend-only); Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access (full build), and Power Menu each need their own service; Error Recovery and About/Diagnostics need a dedicated screen this slice doesn't build.
 
 ### What was built
 
@@ -729,52 +731,55 @@ npm audit --omit=dev → 0 vulnerabilities
 - **Retry failed node / Skip optional node / Re-run from checkpoint / Export report** (ND-034) — need per-step retry semantics and a report format not yet designed.
 - **Workflow Forge's free-form graph canvas** — built as a controller-friendly ordered list instead; see scope decision above.
 
-## Epic 9 — Models (partial; scoped to provider connectivity)
+### Addendum — Agent Runtime core (after Epic 9 landed)
 
-### Scope decision
+Once Epic 9 delivered a real Model Router, the original blocker for Agent Runtime ("an agent with no model to plan with would be an empty shell") was gone, so the core lifecycle was built: `core/agents/AgentStore.ts` (persisted `AgentDefinition`s — name/role/goal/workspace scope/model profile/tool allowlist/permission ceiling/resource limits — and `AgentRun`s with a real timeline) and `core/agents/AgentRuntime.ts` (`start()`/`cancel()`). `start()` calls the real `ModelRouter.complete()` (via an injected `AgentModelPort`, keeping `core/agents/` decoupled from the concrete router) with a system prompt built from the agent's real role/goal/scope/tool-allowlist/permission-ceiling, and a real per-run timeout (`setTimeout` + `AbortController`, configurable via `resourceLimits.timeoutMs`) that genuinely aborts the in-flight provider request. The system prompt explicitly instructs the model not to claim tool execution or file modification — this slice plans, it does not act. Every state transition (`planning`/`completed`/`failed`/`cancelled`/`cancelling`) and real token usage from the completion is persisted to the run's timeline.
 
-The Model Router (§18) spec calls for local model management (load/unload, benchmark), cloud provider integration, capability-aware routing, and Routing Profiles driven by "real availability and measured resource data" (battery, thermal, memory pressure). Two structural gaps make most of this unbuildable honestly right now: (1) there is no bundled local model inference runtime — no Ollama/llama.cpp wrapper exists in this repo, so there's no "loaded model" state to manage; (2) Routing Profiles explicitly require real measured resource data, and no System Metrics Service exists yet to measure it (that's Epic 11 §27, still 15-of-16 items deferred).
+**What is not yet built**: typed IPC/preload/renderer wiring for any of this (so it's not reachable from the UI yet), ActionQueue-backed tool execution (an agent's plan is never turned into submitted tool calls — it only produces a text completion), pause/resume, child-agent/budget bounds beyond the per-run timeout, and ND-016/ND-017 screens. Do not mark Agent Runtime or Epic 8 complete until those land and are tested end-to-end through the UI.
 
-What *is* genuinely buildable without fabrication: providers in this ecosystem (local runtimes like Ollama, and cloud services) overwhelmingly expose an OpenAI-compatible HTTP API, including a real `/models` endpoint that reports the real models actually available. A real HTTP client against that endpoint — real connection test, real capability discovery, real error handling for unreachable/misconfigured endpoints — is honest, useful, and needs zero fabricated data. Confirmed this scope split with the user before starting: build provider connectivity for real, defer the local runtime and Routing Profiles.
+## Epic 9 — Models (chat routing and managed Ollama core complete)
 
-### What was built
+### History
 
-- **`shared/contracts/model.ts`**: `ModelProvider` (never includes the API key — `hasApiKey: boolean` only), `ModelInfo`/`ConnectionTestResult` (exactly what a provider's `/models` response reports), `AddModelProviderRequest`.
-- **`core/models/SecretCipher.ts`**: a dependency-injected interface (`isAvailable`/`encrypt`/`decrypt`) so `core/` stays plain Node and testable without Electron — matching the existing convention (`FileService`, `GitService`, etc. don't import `electron` either).
-- **`core/models/ModelProviderStore.ts`**: real CRUD over providers, persisted via the established `JsonStore` pattern. API keys are encrypted through the injected `SecretCipher` before they ever touch disk; if the cipher reports unavailable (e.g. a Linux box with no keyring), `add()` throws rather than silently storing a plaintext key. `list()`/`add()`/`get()` only ever return `ModelProvider` (no key field); only `getApiKey()` — called exclusively by `ModelProviderService` inside the main process — decrypts the real key.
-- **`core/models/ModelProviderService.ts`**: a real OpenAI-compatible HTTP client. `testConnection()` calls the provider's actual `${baseUrl}/models` endpoint (`Authorization: Bearer` header if a key is present), with a real 8-second `AbortController` timeout, and reports exactly what came back — HTTP error status, network failure, or the real list of model IDs/owners from the response body. No fabricated model list, no fabricated latency/throughput numbers.
-- **`src/main/security/electronSecretCipher.ts`**: the real `SecretCipher` implementation, wrapping Electron's `safeStorage` (OS-level encryption — Keychain/DPAPI/libsecret) — never a homegrown cipher.
-- **IPC**: `registerModelHandlers.ts` (`modelProvider.list/add/remove/testConnection`, all Zod-validated) wired into `src/main/ipc/index.ts`; `NdxBridge.modelProviders` in `shared/contracts/bridge.ts`; preload implementation in `src/preload/index.ts`; renderer client in `services/ipc/modelClient.ts`.
-- **ND-035 Model Control Center** (`features/models/ModelControlCenter.tsx`): real Add Provider form (name/kind/base URL/optional API key, with a real cloud-processing warning shown only for cloud providers), real provider list, real per-provider Test Connection (shows the real result message and, on the Detail screen, the real discovered model list), real Remove.
-- **ND-036 Model Detail** (`features/models/ModelDetail.tsx`): real Overview (credential status, added date), a real Capabilities section driven by the same `testConnection` call showing real discovered models, real Remove.
+This epic landed in two passes. The first pass (superseded) scoped Epic 9 down to provider connectivity only — a real OpenAI-compatible HTTP client with connection tests and model discovery — and explicitly deferred the local model runtime and Routing Profiles, reasoning that neither a bundled model runtime nor a System Metrics Service existed yet. A second pass then built the System Metrics Service (Epic 11 §27, see that section below), a real chat-completion path, capability-detected Ollama runtime controls, and all eight Routing Profiles on top of that foundation, closing those deferrals for real rather than leaving them open. See `docs/implementation/NDX_EPIC_9_MODELS.md` for the dedicated delivered/security/evidence breakdown this pass produced; this section folds that into the main ledger for continuity with the rest of the epic history.
+
+### What was built (cumulative)
+
+- **`shared/contracts/model.ts`**: `ModelProvider` (`enabled` flag, never includes the API key — `hasApiKey: boolean` only), `ModelInfo`/`ConnectionTestResult`, `ModelCompletionRequest`/`ModelCompletionResult` (real chat messages, real token usage), `ModelRouteRequest`/`ModelRouteDecision` (profile id, measured inputs, human-readable reasons), `RoutingProfileId` (all eight: Balanced, Local First, Offline, Battery Saver, Maximum Quality, Fast Coding, Private Workspace, Low Cost), `LocalModelStatus`/`ModelBenchmarkResult` (Ollama runtime state).
+- **`core/models/SecretCipher.ts`** / **`src/main/security/electronSecretCipher.ts`**: dependency-injected encryption (real `safeStorage` implementation) so `core/` stays plain Node and testable without Electron.
+- **`core/models/ModelProviderStore.ts`**: real CRUD over providers (including `enabled`/disable state, persisted), API keys encrypted before they ever touch disk; refuses to store a key when the cipher is unavailable rather than falling back to plaintext.
+- **`core/models/ModelProviderService.ts`**: real OpenAI-compatible HTTP client — `testConnection()` (real `/models` discovery, real timeout/error handling) and `complete()` (real `/chat/completions` invocation, returns the provider's real token usage when reported). Also exposes the Ollama-specific runtime endpoints (`/api/ps`, load, unload) used only for providers detected as Ollama — generic OpenAI-compatible endpoints never receive these calls, since they aren't part of that protocol.
+- **`core/system/SystemMetricsService.ts`** (Epic 11 §27, consumed first by Epic 9): real, capability-detected host metrics — CPU usage (sampled, not estimated), memory, swap, storage, network interfaces, process list, and, on Linux, battery/thermal/fan/GPU sensors read from real `sysfs`/`procfs` paths. Every field is `{ available, value?, source, reason? }` — an unavailable sensor (e.g. no battery on a desktop, no Linux sysfs on another OS) is reported as explicitly unavailable, never fabricated or zero-filled.
+- **`core/models/ModelRouter.ts`**: the real routing engine. `route()` reads a live `SystemMetricsService.collect()` snapshot, filters to `enabled` providers, enforces privacy/offline/local constraints per profile (Local First/Offline/Private Workspace/Low Cost reject cloud candidates outright), probes each permitted provider with a real connection test, scores candidates using the measured memory/thermal data (e.g. local candidates lose score under measured memory/thermal pressure; Battery Saver favors cloud when reachable), and returns a `ModelRouteDecision` with human-readable `reasons` and the real `measured` values that drove the decision — a genuinely auditable trail, not a black box. `complete()` routes, then invokes the selected provider for real and returns the response with timing.
+- **IPC**: extended `registerModelHandlers.ts` with completion, routing, enable/disable, and the Ollama-only runtime endpoints (status/load/unload/benchmark), all Zod-validated; `NdxBridge.modelProviders` extended to match.
+- **ND-035 Model Control Center**: real Add Provider form (with a real cloud-processing warning), real provider list with enable/disable/delete, real per-provider connection test, navigation to Routing Profiles.
+- **ND-036 Model Detail**: real provider overview, real model/capability discovery, capability-detected Ollama running state with real load/unload/benchmark, real measured benchmark results (duration, tokens/sec when reported).
+- **ND-037 Routing Profiles** (`features/models/RoutingProfiles.tsx`): all eight profiles in a controller-focusable list; selecting one previews a real `ModelRouter.route()` decision with the actual measured inputs and reasons behind it — not a static description of what the profile is supposed to do.
+
+### Security boundaries
+
+- Stored API keys use `safeStorage` and are decrypted only inside the main process, only for the duration of one outbound request.
+- Private/Offline/Local First/Low Cost routing profiles cannot select a cloud provider — enforced in `ModelRouter.isPermitted()`, not just hidden in the UI.
+- Disabled or unreachable providers are filtered out of routing before any request is attempted.
+- No model daemon is installed, launched, or granted elevated privileges by NeuroDeck — Ollama (if used) must already be running; NeuroDeck only calls its already-exposed local HTTP API.
+- Ollama-specific runtime calls (`/api/ps`, load, unload) are only ever sent to providers detected as Ollama — a generic OpenAI-compatible endpoint never receives them.
 
 ### Tests and evidence
 
-| Suite                                                                                                                         | Location                                                  | Count |
-| ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ----- |
-| `ModelProviderStore` (empty, add without key, real encryption round-trip, rejects key when cipher unavailable, remove, get)    | `core/models/__tests__/ModelProviderStore.test.ts`         | 6     |
-| `ModelProviderService.testConnection` (real local HTTP server: real model discovery, real Authorization header, real HTTP error, real connection failure to a closed port, trailing-slash base URL) | `core/models/__tests__/ModelProviderService.test.ts`       | 5     |
-| `ModelControlCenter` (empty state, real list, real add round trip, real test-connection result, real remove)                  | `features/models/__tests__/ModelControlCenter.test.tsx`    | 5     |
-| `ModelDetail` (not-found error state, real overview, real test-connection with real discovered models)                        | `features/models/__tests__/ModelDetail.test.tsx`           | 3     |
-
-Total: 306 tests passing (up from 287). The `ModelProviderService` tests use a real `node:http` server bound to an ephemeral local port — not a mocked `fetch` — so the real-HTTP-error and real-connection-failure (port with nothing listening) cases are genuinely exercised, not asserted against a stub.
+Total: 312 tests passing across 66 files (cumulative, including the System Metrics and Agent Runtime additions below). Real loopback HTTP servers (not mocked `fetch`) verify discovery, privacy-constrained routing, measured-input routing, and completion invocation; `SystemMetricsService` tests use injected dependencies (fake `cpus()`/`readFile()`/etc.) to deterministically exercise both the "sensor present" and "sensor absent, explicitly reported as such" paths without depending on the actual host's hardware.
 
 ```text
 npm run typecheck    → 0 errors
 npm run lint          → 0 errors, 0 warnings
-npm run test          → 63 files, 306 tests passed
+npm run test          → 66 files, 312 tests passed
 npm run build         → succeeded
 npm run test:e2e      → 1 passed
 npm audit --production → 0 vulnerabilities
 ```
 
-No new runtime dependencies were added — `fetch`, `node:http` (tests only), and Electron's `safeStorage` are all already available.
-
 ### Deferred items with explicit reason
 
-- **Local model inference runtime** (load/unload, benchmark, context-limit/tool-restriction controls, model storage management) — no bundled Ollama/llama.cpp wrapper exists; "local" providers are reached over HTTP exactly like cloud ones, at a local base URL.
-- **ND-037 Routing Profiles** — the spec requires real measured resource data (battery, thermal, memory pressure); needs a System Metrics Service that doesn't exist yet (Epic 11 §27, still 15-of-16 items deferred). Building this against fabricated thresholds would violate the no-fake-production-behavior rule.
-- **Resource-aware model selection / cost limits** — same System Metrics Service dependency, plus a request/cost-accounting system not yet designed.
-- **Non-OpenAI-compatible provider adapters** — out of scope; every provider this slice supports speaks the OpenAI-compatible `/models` shape.
-- **Usage visibility** (ND-036 Usage tab) — needs request/token accounting infrastructure this slice doesn't build.
-- **ND-036 Performance/Logs tabs** — need the local runtime this slice doesn't have.
+- **Non-OpenAI-compatible provider adapters** (vision, speech-to-text, text-to-speech, embeddings) — every provider this epic supports speaks the OpenAI-compatible chat/completions shape; a provider exposing a genuinely different protocol for these modalities would need its own adapter.
+- **Usage/cost accounting** (ND-036 Usage tab, Low Cost profile's cost-limit routing factor) — needs a request/token cost-accounting system not yet designed; per-completion token usage is surfaced when a provider reports it, but nothing aggregates it yet.
+- **ND-036 Logs tab** — needs durable per-provider request logging, not yet built.
+- **Provider-reported capability/context-size/pricing metadata** — OpenAI-compatible discovery doesn't standardize these fields; NeuroDeck reports only what a provider's `/models` response actually contains and does not infer them from model names.

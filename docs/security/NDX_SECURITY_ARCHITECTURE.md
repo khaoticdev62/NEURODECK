@@ -142,3 +142,19 @@ Matches mega-prompt §5.1:
 - `condition`/`validator` expressions are structured data (`{variable, operator, value}`), evaluated by `evaluateCondition()` via a fixed `switch` over five enumerated operators — never `eval()`, `new Function()`, or any form of dynamic code execution. A malicious or malformed workflow definition cannot execute arbitrary JavaScript through a condition.
 - Workflow definitions and run history are persisted via the same Zod-validated IPC pattern as every other store (`registerWorkflowHandlers.ts`) — the renderer cannot write arbitrary JSON to disk outside the validated schema.
 - `user-approval` steps require a real, explicit human decision (`resolveApproval()`, wired to a UI button) before the run continues; there is no default/auto-approve path and no timeout that silently approves.
+
+## 15. Model Router and System Metrics security (Epic 9 / Epic 11 §27)
+
+- API keys are encrypted via Electron's `safeStorage` (OS-level: Keychain/DPAPI/libsecret) before they ever reach disk, and are decrypted only inside the main process, only for the duration of a single outbound request (`ModelProviderService.testConnection()`/`complete()`). They are never included in any IPC response — `ModelProvider` always carries `hasApiKey: boolean`, never the key itself.
+- `ModelRouter.isPermitted()` enforces privacy/offline/local constraints in code, not just in the UI: Local First, Offline, Private Workspace, and Low Cost routing profiles cannot select a cloud provider, even if one is configured and enabled. A disabled or unreachable provider is filtered out before any request is attempted.
+- Ollama-specific runtime calls (`/api/ps`, load, unload) are only ever sent to providers the service has detected as Ollama; a generic OpenAI-compatible endpoint never receives them, so there's no risk of sending a vendor-specific control call to an arbitrary third-party endpoint.
+- NeuroDeck never installs, launches, or elevates a model runtime's privileges — Ollama (if used) must already be running and reachable; the app only calls its already-exposed local HTTP API, the same way it would call a remote one.
+- `SystemMetricsService` is strictly read-only: it reads `node:os` and (on Linux) `sysfs`/`procfs` files, and never writes to any of them. All sensor access is wrapped in `try`/`catch` with an explicit `{ available: false, reason }` fallback — a missing or permission-denied sensor cannot crash the collector or silently fabricate a value.
+- Every Model Router IPC handler (completion, routing, enable/disable, Ollama runtime status/load/unload/benchmark) is Zod-validated like every other surface in the app — no unvalidated payload reaches `core/models/`.
+
+## 16. Agent Runtime security (Epic 8 addendum, core lifecycle only)
+
+- `AgentRuntime` plans through the real Model Router but does not execute tools — its system prompt explicitly instructs the model not to claim tool execution or file modification, and there is no code path in this slice that turns a completion into a submitted `ActionQueue` action. An agent run today can only produce a text plan; it cannot touch a file, run a command, or call a tool.
+- Every agent run has a real, enforced timeout (`resourceLimits.timeoutMs`, via `setTimeout` + `AbortController`) that genuinely aborts the in-flight provider request — a misbehaving or slow provider cannot keep a run alive indefinitely.
+- Cancellation (`cancel()`) aborts the same controller a timeout would, so there is one real cancellation path, not two divergent ones.
+- This is a partial security boundary, not a complete one: once ActionQueue-backed tool execution is added (deferred — see the Epic 8 ledger addendum), it must reuse the exact same registry → permission → approval → audit pipeline every other tool caller uses in this codebase, per the Workflow Engine precedent in §14. Do not give Agent Runtime a separate, weaker execution path when that lands.
