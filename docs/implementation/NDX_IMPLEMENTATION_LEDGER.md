@@ -918,12 +918,12 @@ Epic 10 is three real systems: Browser (§24), Remote Systems (§26), and Learni
 
 ### Tests and evidence
 
-| Suite                                                                                                                                     | Location                                            | Count |
-| ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | ----- |
-| `isAllowedBrowserUrl` (allows http/https, rejects javascript/file/data/chrome/view-source/malformed)                                       | `main/security/__tests__/browserUrlPolicy.test.ts`   | 7     |
-| `BrowserTabStore` (empty, real workspace-scoped create, real metadata update, missing-tab update, real remove)                             | `core/browser/__tests__/BrowserTabStore.test.ts`     | 5     |
-| `BrowserHub` (active-workspace gate, real empty state, real tab list, real remove round trip)                                              | `features/browser/__tests__/BrowserHub.test.tsx`     | 4     |
-| `BrowserView` (real activate + address/back-forward state, real error state, real navigate-on-Enter, real back/forward/reload round trip)  | `features/browser/__tests__/BrowserView.test.tsx`    | 4     |
+| Suite                                                                                                                                     | Location                                           | Count |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ----- |
+| `isAllowedBrowserUrl` (allows http/https, rejects javascript/file/data/chrome/view-source/malformed)                                      | `main/security/__tests__/browserUrlPolicy.test.ts` | 7     |
+| `BrowserTabStore` (empty, real workspace-scoped create, real metadata update, missing-tab update, real remove)                            | `core/browser/__tests__/BrowserTabStore.test.ts`   | 5     |
+| `BrowserHub` (active-workspace gate, real empty state, real tab list, real remove round trip)                                             | `features/browser/__tests__/BrowserHub.test.tsx`   | 4     |
+| `BrowserView` (real activate + address/back-forward state, real error state, real navigate-on-Enter, real back/forward/reload round trip) | `features/browser/__tests__/BrowserView.test.tsx`  | 4     |
 
 Total: 373 tests passing (up from 365). The e2e suite (`e2e/app.spec.ts`) was extended with a real route-navigation check to `/browser`, confirming the real route renders its real active-workspace gate in the packaged app — the deepest verification available for `BrowserSessionService` without a real network call inside CI.
 
@@ -944,3 +944,17 @@ No new runtime dependencies were added — `WebContentsView`/`shell.openExternal
 - **Interactive permission-prompt UI** — every permission request is currently default-denied; building a real prompt needs the same kind of review surface `ConfirmationDialog`/`PermissionDialog` provide elsewhere, not yet wired to browser permission requests.
 - **Remote Systems Service, ND-040, ND-041** — need a real SSH client integration (host-identity verification, credential storage, remote file/command execution) that doesn't exist yet; a substantial scope on the order of Epic 6's Git/Terminal work.
 - **Learning Hub, Guided Lab** — need real instructional content and progress tracking; the "AI coach" boundary Guided Lab needs is now unblocked by Epic 9's real model router, but there is no learning-content system to attach it to yet.
+
+### A real, production-relevant bug found and fixed (preload bridge silently failed everywhere)
+
+Launching the packaged app for manual verification surfaced a real bug undetected by the existing e2e test, lint, typecheck, or unit suite: **`window.ndx` never existed in any build** — the entire typed IPC bridge silently failed to initialize, on every screen, since long before this epic. The shell still rendered (every screen already has a real "bridge unavailable" fallback — `bridgeUnavailableError()` — by design), so the app looked superficially fine; every IPC-backed feature, however, was permanently stuck on its empty/error state.
+
+**Root cause**: `electron-vite` externalizes npm dependencies from the main/preload build by default (`build.externalizeDeps` defaults to `true`), which is correct for the unsandboxed main process (real Node `require()` resolution) but wrong for this app's preload script, which runs **sandboxed** (`sandbox: true`, required by the hardening baseline in `windowSecurity.ts`). A sandboxed preload's `require()` is Electron's own polyfilled loader exposing only a small allowlist of Node built-ins — it cannot resolve arbitrary npm packages from `node_modules` at all. The bundled preload shipped a bare `const zod = require("zod")` (from `shared/contracts`'s Zod schemas), which threw `Error: module not found: zod` the instant the preload script ran, aborting it before `contextBridge.exposeInMainWorld('ndx', ndx)` ever executed.
+
+**Why nothing caught it sooner**: the existing e2e test only asserted on visible shell chrome (`getByRole('banner')`, nav links, "No active workspace" empty states) — all of which render identically whether or not the bridge exists, because every screen's empty/error states are real, intentional fallbacks for "no workspace"/"bridge unavailable," not just for this bug. Unit tests stub `window.ndx` directly and never exercise the real preload bundle. Nothing in the existing suite ever launched the real packaged preload and checked that `window.ndx` actually came into existence.
+
+**Fix**: `electron.vite.config.ts`'s `preload` build now sets `build.externalizeDeps.exclude: ['zod']`, forcing Vite to bundle `zod` into the preload output instead of leaving it as an unresolvable `require()`. **Diagnosis method**: launched the real packaged app via Playwright's `_electron` launcher (the same API the e2e suite already uses) with a `console`/`pageerror` listener attached to the renderer — the preload's load failure logs directly to the renderer's console, which is otherwise invisible from outside the running window.
+
+**Regression test added**: `e2e/app.spec.ts` now asserts `typeof window.ndx === 'object'` as its first check, before any UI assertions. Verified this test actually catches the regression by reverting the config change and re-running it — it failed with `Expected: "object", Received: "undefined"` as expected, then passed again once the fix was restored.
+
+**Lesson for future preload changes**: any new dependency imported into `src/preload/index.ts` or anything it transitively imports (including all of `shared/contracts/`) must be either dependency-free of npm packages, or explicitly excluded from `externalizeDeps` in `electron.vite.config.ts`'s `preload` block — a sandboxed preload can never `require()` an npm package at runtime, regardless of whether `node_modules` is present on disk.

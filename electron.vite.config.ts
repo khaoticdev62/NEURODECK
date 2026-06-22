@@ -16,6 +16,20 @@ export default defineConfig({
       alias: {
         '@shared': resolve('src/shared')
       }
+    },
+    // The preload script runs sandboxed (sandbox: true, required by our
+    // hardening baseline) — Electron's sandboxed preload environment has its
+    // own polyfilled `require` that can only resolve a small set of Node
+    // built-ins, not arbitrary npm packages. electron-vite externalizes all
+    // npm dependencies by default (fine for the unsandboxed main process,
+    // which has real Node module resolution), so without this the preload
+    // bundle ships a bare `require("zod")` that throws at runtime and the
+    // whole preload script — including `contextBridge.exposeInMainWorld`
+    // for `window.ndx` — silently fails to run. Bundle zod in instead.
+    build: {
+      externalizeDeps: {
+        exclude: ['zod']
+      }
     }
   },
   renderer: {

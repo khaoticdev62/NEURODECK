@@ -18,6 +18,19 @@ test('boots and renders the baseline shell', async () => {
     env: env as Record<string, string>
   })
   const window = await app.firstWindow()
+
+  // Regression guard: the preload script (window.ndx) has previously failed
+  // to load silently — electron-vite externalizes npm dependencies by
+  // default, but a *sandboxed* preload can't `require()` them (only the
+  // unsandboxed main process can), so a bare `require("zod")` in the
+  // bundled preload threw and contextBridge.exposeInMainWorld never ran.
+  // The shell still rendered (every screen has a real "bridge unavailable"
+  // fallback), so this is the only check that actually catches it.
+  const bridgeType = await window.evaluate(
+    () => typeof (window as unknown as { ndx?: unknown }).ndx
+  )
+  expect(bridgeType).toBe('object')
+
   await expect(window.getByRole('banner')).toBeVisible()
   await expect(window.getByRole('navigation', { name: 'Primary' })).toBeVisible()
   await expect(window.getByRole('link', { name: 'Home' })).toBeVisible()
