@@ -63,6 +63,7 @@ import type {
 import type { SystemMetricsSnapshot } from './system'
 import type { DiagnosticsInfo } from './diagnostics'
 import type { ControllerSettings, SetControllerSettingsRequest } from './controllerSettings'
+import type { DisplaySettings, SetDisplaySettingsRequest } from './displaySettings'
 import type {
   AgentDefinition,
   AgentIdRequest,
@@ -182,5 +183,9 @@ export interface NdxBridge {
   controllerSettings: {
     get: () => Promise<NdxResult<ControllerSettings>>
     set: (request: SetControllerSettingsRequest) => Promise<NdxResult<ControllerSettings>>
+  }
+  displaySettings: {
+    get: () => Promise<NdxResult<DisplaySettings>>
+    set: (request: SetDisplaySettingsRequest) => Promise<NdxResult<DisplaySettings>>
   }
 }

@@ -14,6 +14,7 @@ import { ActivityAndNotificationsOverlay } from '../../features/activity/Activit
 import { EmergencyStopOverlay } from '../../features/ai-canvas/EmergencyStopOverlay'
 import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwitcherOverlay'
 import { useDisplayMode } from '../../state/useDisplayMode'
+import { useDisplaySettings } from '../../state/useDisplaySettings'
 
 export interface ShellLayoutProps {
   systemRailStatus?: SystemRailStatus
@@ -25,20 +26,30 @@ export interface ShellLayoutProps {
  * active view, optional context panel, bottom controller rail. Focus and
  * split modes collapse the nav rail and context panel to maximize content
  * width (§3.3) — theater mode instead scales density via the
- * `data-display-mode` attribute consumed in tokens.css. The Command Palette
- * (ND-009), Activity/Notifications overlay (ND-011/012), and Emergency Stop
- * (ND-054) are global — always mounted here, each managing its own open
- * state via the controller action stream, not via a prop passed down a route.
+ * `data-display-mode` attribute consumed in tokens.css. ND-044's real
+ * reduce-motion/high-contrast/text-scale overrides use the same
+ * attribute-driven-CSS pattern via `data-reduce-motion`/`data-high-contrast`/
+ * `data-text-size`. The Command Palette (ND-009), Activity/Notifications
+ * overlay (ND-011/012), and Emergency Stop (ND-054) are global — always
+ * mounted here, each managing its own open state via the controller action
+ * stream, not via a prop passed down a route.
  */
 export function ShellLayout({
   systemRailStatus = UNAVAILABLE_SYSTEM_RAIL_STATUS,
   contextItem
 }: ShellLayoutProps): React.JSX.Element {
   const { baseMode } = useDisplayMode()
+  const { reduceMotion, highContrast, textScale } = useDisplaySettings()
   const collapsesRails = baseMode === 'focus' || baseMode === 'split'
 
   return (
-    <div data-display-mode={baseMode} className="flex h-full flex-col bg-canvas">
+    <div
+      data-display-mode={baseMode}
+      data-reduce-motion={reduceMotion}
+      data-high-contrast={highContrast}
+      data-text-size={textScale}
+      className="flex h-full flex-col bg-canvas"
+    >
       <SystemRail status={systemRailStatus} />
       <div className="flex min-h-0 flex-1">
         <NavigationRail hidden={collapsesRails} />

@@ -10,6 +10,7 @@ import { AgentOperationsCenter } from '../../features/agents/AgentOperationsCent
 import { GitControlCenter } from '../../features/git/GitControlCenter'
 import { AboutDiagnostics } from '../../features/system/AboutDiagnostics'
 import { ControllerSettings } from '../../features/system/ControllerSettings'
+import { DisplayThemeSettings } from '../../features/system/DisplayThemeSettings'
 import { PowerMenu } from '../../features/system/PowerMenu'
 import { SystemDashboard } from '../../features/system/SystemDashboard'
 import { ModelControlCenter } from '../../features/models/ModelControlCenter'
@@ -332,6 +333,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: <ControllerSettings />
+  },
+  {
+    routeId: 'display-theme-settings',
+    screenId: 'ND-044',
+    path: '/settings/display',
+    title: 'Display and Theme Settings',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <DisplayThemeSettings />
   },
   {
     routeId: 'power',

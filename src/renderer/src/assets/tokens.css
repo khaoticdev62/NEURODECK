@@ -44,11 +44,15 @@
   --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.45);
   --shadow-focus-bloom: 0 0 0 4px rgb(122 162 255 / 0.35);
 
-  /* Type scale: 16px minimum body text, 14px only for secondary metadata (spec §8.3) */
-  --font-size-body: 1rem;
-  --font-size-meta: 0.875rem;
-  --font-size-title: 1.25rem;
-  --font-size-display: 1.75rem;
+  /* Type scale: 16px minimum body text, 14px only for secondary metadata (spec §8.3).
+     Each size multiplies by --ndx-text-scale (default 1, real ND-044 override below)
+     rather than hard-coding rem, since rem is always relative to the root element and
+     wouldn't respond to a scale set on a nested element the way this custom-property
+     cascade does. */
+  --font-size-body: calc(1rem * var(--ndx-text-scale));
+  --font-size-meta: calc(0.875rem * var(--ndx-text-scale));
+  --font-size-title: calc(1.25rem * var(--ndx-text-scale));
+  --font-size-display: calc(1.75rem * var(--ndx-text-scale));
 }
 
 /* Non-Tailwind-namespace tokens: layout, motion, z-index, target sizing.
@@ -83,6 +87,9 @@
 
   /* Theater mode density multiplier — scales spacing/typography for docked/at-distance use */
   --ndx-density: 1;
+
+  /* ND-044 real text-scale override (default = no scaling) */
+  --ndx-text-scale: 1;
 }
 
 [data-display-mode='theater'] {
@@ -103,4 +110,28 @@
     --color-text-secondary: rgb(208 212 222 / 0.9);
     --color-text-tertiary: rgb(208 212 222 / 0.7);
   }
+}
+
+/* ND-044 real user-forced overrides — independent of the OS-level media
+   queries above. Applied to the same element DisplayModeProvider already
+   sets `data-display-mode` on, so they cascade via custom-property
+   inheritance exactly like `--ndx-density` does. */
+[data-reduce-motion='true'] {
+  --ndx-motion-fast: 0.01ms;
+  --ndx-motion-base: 0.01ms;
+  --ndx-motion-slow: 0.01ms;
+}
+
+[data-high-contrast='true'] {
+  --color-border: #5a6070;
+  --color-text-secondary: rgb(208 212 222 / 0.9);
+  --color-text-tertiary: rgb(208 212 222 / 0.7);
+}
+
+[data-text-size='large'] {
+  --ndx-text-scale: 1.125;
+}
+
+[data-text-size='larger'] {
+  --ndx-text-scale: 1.25;
 }

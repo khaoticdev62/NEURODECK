@@ -66,5 +66,7 @@ export const IPC_CHANNELS = {
   powerRestartApp: 'power.restartApp',
   powerQuitApp: 'power.quitApp',
   controllerSettingsGet: 'controllerSettings.get',
-  controllerSettingsSet: 'controllerSettings.set'
+  controllerSettingsSet: 'controllerSettings.set',
+  displaySettingsGet: 'displaySettings.get',
+  displaySettingsSet: 'displaySettings.set'
 } as const

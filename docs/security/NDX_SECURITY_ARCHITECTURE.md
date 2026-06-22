@@ -172,3 +172,9 @@ Matches mega-prompt §5.1:
 - `registerControllerSettingsHandlers.ts`'s `set` handler validates its payload with `controllerSettingsSchema` like every other surface — a malformed or out-of-enum `hapticsIntensity` value is rejected before it ever reaches `ControllerSettingsStore`.
 - The persisted setting is a single enum value (`off`/`low`/`medium`/`high`); there is no free-form input, no file path, and no way for this store to be used to write arbitrary data anywhere else on disk.
 - `FocusEngineProvider`'s mount-time load swallows a failed/unavailable bridge call (`.catch(() => {})`) rather than throwing, so a missing or malformed settings file can never crash app startup — it just falls back to the in-memory default (`medium`).
+
+## 19. Display and Theme Settings security (Epic 11 addendum)
+
+- `registerDisplaySettingsHandlers.ts`'s `set` handler validates its payload with `displaySettingsSchema` — two booleans and a three-value enum, the same low-risk shape as Controller Settings. There is no free-form input.
+- The persisted settings only ever drive CSS custom-property values (`data-reduce-motion`/`data-high-contrast`/`data-text-size` attributes consumed by `tokens.css`) — there is no code path from this store to executable code, a file path, or a network request.
+- `DisplaySettingsProvider`'s mount-time load uses the same `.catch(() => {})` fallback-to-default pattern as Controller Settings, for the same reason: a missing/unavailable settings file must never crash app startup.

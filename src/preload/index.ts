@@ -135,6 +135,10 @@ const ndx: NdxBridge = {
   controllerSettings: {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.controllerSettingsGet),
     set: (request) => ipcRenderer.invoke(IPC_CHANNELS.controllerSettingsSet, request)
+  },
+  displaySettings: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.displaySettingsGet),
+    set: (request) => ipcRenderer.invoke(IPC_CHANNELS.displaySettingsSet, request)
   }
 }
 

@@ -7,6 +7,7 @@ import { ToastProvider } from '../../../components/overlays/Toast'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { DisplayModeProvider } from '../../../state/displayMode'
+import { DisplaySettingsProvider } from '../../../state/displaySettings'
 import { useDisplayMode } from '../../../state/useDisplayMode'
 import { WorkspaceProvider } from '../../../features/workspaces/WorkspaceProvider'
 import { ShellLayout } from '../ShellLayout'
@@ -33,13 +34,15 @@ function renderShell(): ReturnType<typeof render> {
         <AiSafetyProvider>
           <WorkspaceProvider>
             <DisplayModeProvider>
-              <MemoryRouter initialEntries={['/']}>
-                <Routes>
-                  <Route element={<ShellLayout />}>
-                    <Route path="/" element={<ModeSwitcher />} />
-                  </Route>
-                </Routes>
-              </MemoryRouter>
+              <DisplaySettingsProvider>
+                <MemoryRouter initialEntries={['/']}>
+                  <Routes>
+                    <Route element={<ShellLayout />}>
+                      <Route path="/" element={<ModeSwitcher />} />
+                    </Route>
+                  </Routes>
+                </MemoryRouter>
+              </DisplaySettingsProvider>
             </DisplayModeProvider>
           </WorkspaceProvider>
         </AiSafetyProvider>

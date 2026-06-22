@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
 import { ControllerSettingsStore } from '../../core/controller/ControllerSettingsStore'
+import { DisplaySettingsStore } from '../../core/display/DisplaySettingsStore'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
 import { ModelProviderService } from '../../core/models/ModelProviderService'
@@ -20,6 +21,7 @@ import { IPC_CHANNELS } from '@shared/contracts'
 import { registerAgentHandlers } from './registerAgentHandlers'
 import { registerControllerSettingsHandlers } from './registerControllerSettingsHandlers'
 import { registerDiagnosticsHandlers } from './registerDiagnosticsHandlers'
+import { registerDisplaySettingsHandlers } from './registerDisplaySettingsHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
 import { registerModelHandlers } from './registerModelHandlers'
@@ -71,6 +73,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerPowerHandlers()
   registerControllerSettingsHandlers(
     new ControllerSettingsStore(join(app.getPath('userData'), 'controller-settings.json'))
+  )
+  registerDisplaySettingsHandlers(
+    new DisplaySettingsStore(join(app.getPath('userData'), 'display-settings.json'))
   )
   return registerTerminalHandlers(terminalService, workspaceStore, getWindow)
 }
