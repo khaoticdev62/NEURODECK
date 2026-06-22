@@ -1,5 +1,4 @@
-import { NavLink } from 'react-router-dom'
-import { cn } from '../primitives/cn'
+import { NavigationRailItem } from './NavigationRailItem'
 import { NAVIGATION_DESTINATIONS } from './navigationDestinations'
 
 export interface NavigationRailProps {
@@ -9,9 +8,10 @@ export interface NavigationRailProps {
 }
 
 /**
- * Primary Navigation Rail (wireframe §6.2). `LB/RB` cycling, `X` quick actions,
- * and `L3` pin/unpin are controller behaviors wired up in Epic 2 — this
- * component owns layout, the destination list, and route activation only.
+ * Primary Navigation Rail (wireframe §6.2). Each destination registers as a
+ * real Spatial Focus Engine node (Epic 2) via `NavigationRailItem`. `X` quick
+ * actions and `L3` pin/unpin still have no consumer (no per-destination
+ * quick-action menu exists yet) and are deferred to the epics that add one.
  */
 export function NavigationRail({
   hidden = false,
@@ -29,24 +29,7 @@ export function NavigationRail({
       }}
     >
       {NAVIGATION_DESTINATIONS.map((destination) => (
-        <NavLink
-          key={destination.id}
-          to={destination.path}
-          end={destination.path === '/'}
-          aria-label={destination.label}
-          className={({ isActive }) =>
-            cn(
-              'flex items-center rounded-md px-3 text-meta font-medium text-text-secondary transition-colors',
-              'min-h-[var(--ndx-target-min)]',
-              expanded ? 'justify-start gap-3' : 'justify-center',
-              isActive ? 'bg-surface-raised text-text-primary' : 'hover:bg-surface-raised/60',
-              'focus-visible:ring-2 focus-visible:ring-border-focus'
-            )
-          }
-        >
-          <span aria-hidden className="size-2 shrink-0 rounded-full bg-current opacity-60" />
-          <span className={expanded ? undefined : 'sr-only'}>{destination.label}</span>
-        </NavLink>
+        <NavigationRailItem key={destination.id} destination={destination} expanded={expanded} />
       ))}
     </nav>
   )

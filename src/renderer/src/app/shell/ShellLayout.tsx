@@ -9,6 +9,7 @@ import {
   type SystemRailStatus
 } from '../../components/navigation/systemRailStatus'
 import { useDisplayMode } from '../../state/useDisplayMode'
+import { FocusDebugOverlay } from '../../controller/testing/FocusDebugOverlay'
 
 export interface ShellLayoutProps {
   systemRailStatus?: SystemRailStatus
@@ -44,6 +45,7 @@ export function ShellLayout({
       </div>
       <BottomControllerRail />
       {overlayOpen && overlayContent}
+      <FocusDebugOverlay />
     </div>
   )
 }

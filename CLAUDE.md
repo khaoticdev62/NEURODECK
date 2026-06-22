@@ -12,7 +12,7 @@ This file orients any Claude Code session (or other coding agent) working in thi
 - **Tech stack:** Electron + React + TypeScript + Tailwind CSS, with a hardened local core service (TypeScript/Node, with Rust permitted for performance/security-critical pieces only)
 - **Maturity target:** Production architecture from day one — not an MVP or visual prototype
 
-**Current repository state:** Epic 0 (Baseline and safety) and Epic 1 (Shell and design system) complete. The shell anatomy (top/bottom rails, nav rail, context panel), display modes (standard/focus/split/theater + overlay), design tokens, route registry, and core overlay/feedback primitives are real and tested. No actual screens (Epic 3+) exist yet — routes render an honest placeholder naming the screen ID and owning epic. See `HANDOFF.md` and `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` for current state and next steps.
+**Current repository state:** Epics 0–2 complete (Baseline and safety, Shell and design system, Controller runtime). Real Gamepad API + keyboard adapters, the Spatial Focus Engine, haptics, and a dev-only focus debug overlay all exist and are tested — `NavigationRail` items are real registered focus nodes, and `Modal` closes on a real controller `back` action. Steam Input/native-adapter support (needed for Steam Deck's rear grip buttons) is an explicit, documented gap, not a missing mapping. No actual screens (Epic 3+) exist yet — routes render an honest placeholder naming the screen ID and owning epic. See `HANDOFF.md` and `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` for current state and next steps.
 
 ## 2. Source-of-truth documents (read in this order)
 

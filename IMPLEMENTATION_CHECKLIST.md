@@ -30,15 +30,17 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Route registry — `src/renderer/src/app/routing/routes.tsx` (11 primary destinations, each declaring routeId/screenId/title/owningEpic/controllerHints/restoreOnRevisit); routes render an honest `EpicBoundaryPlaceholder` until their owning epic builds the real screen
 - [x] Responsive 16:10 layout — `--breakpoint-deck/docked/docked-2k` custom breakpoints in tokens.css; safe-inset and rail sizing all token-driven
 
-### Epic 2 — Controller runtime
+### Epic 2 — Controller runtime ✅ core complete (Steam Input/native adapter and per-feature profiles deferred)
 
-- [ ] Steam Input adapters
-- [ ] Semantic actions (universal mapping + chorded controls + hold behavior, wireframe §4)
-- [ ] Spatial Focus Engine (focus node contract, rules, visual state, wireframe §5)
-- [ ] Haptics service
-- [ ] Input profile manager
-- [ ] Focus/controller debug overlay
-- [ ] Focus traversal tests
+- [x] Adapters — real W3C Gamepad API adapter (`gamepadAdapter.ts`, covers Steam Deck/Xbox/DualSense/generic "standard"-mapping devices in one implementation) + keyboard fallback (`keyboardAdapter.ts`) + test-mode injection adapter (`testAdapter.ts`)
+  - [ ] Steam Input adapter — **deferred**: rear grip buttons (L4/L5/R4/R5), Quick Access, and the Steam button are not exposed by the standard Gamepad API; reaching them needs Steam Input or a native/SDL adapter (mega-prompt §9.1 lists both as optional). Documented gap, not a missing mapping — see ledger.
+- [x] Semantic actions — full `ControllerAction` union (wireframe §4.1) normalized from raw buttons/axes/keys (`controllerAction.ts`, `gamepadPolling.ts`); 3 of 9 spec chords implemented generically (LB+RB home, LT+RT workspace.switcher, Menu+B emergency.stop) — remaining 6 require grip/Quick-Access buttons unavailable via generic Gamepad API; hold behavior (700ms) implemented for non-repeatable actions, repeat delay/rate for nav/tab/pane
+- [x] Spatial Focus Engine — focus node contract + registry (`FocusRegistry.ts`), deterministic directional navigation (explicit neighbor → same-group geometric → broad geometric → fallback → stay-put, wireframe §5.2), modal trap stack, focus-change pub/sub, never drops to `document.body`
+  - Note: spec step 4 ("group-level transition") folded into the broad geometric search rather than implemented as a separate heuristic — documented scope simplification, see ledger
+- [x] Haptics service — real `GamepadHapticActuator`/`playEffect('dual-rumble')` integration with off/low/medium/high intensity scaling and honest capability detection (`hapticsService.ts`); wired to focus-movement and selection events
+- [ ] Input profile manager — **deferred**: per-controller-type button mapping exists (`standardGamepadMapping.ts`) and controller-glyph adaptation exists (`controllerGlyphs.ts`), but no user-facing remapping/profile-switching UI yet (that's ND-043 Controller Settings, Epic 11)
+- [x] Focus/controller debug overlay — `FocusDebugOverlay.tsx` (dev-only), shows current focus, registered nodes, trap depth; duplicate-ID and unreachable-node detection from the full §10.3 list deferred (`Map`-backed registration makes duplicates silently overwrite rather than collide — needs separate instrumentation)
+- [x] Focus traversal tests — `FocusRegistry.test.ts` (11), `gamepadPolling.test.ts` (9), `keyboardAdapter.test.ts` (8), `hapticsService.test.ts` (7), plus live integration via `NavigationRailItem` (real focus nodes registered) and `Modal.focusEngine.test.tsx` (controller `back` closes a real modal)
 
 ### Epic 3 — Onboarding and global UX
 

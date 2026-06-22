@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
+import { useOptionalFocusEngine } from '../../controller/focus/useFocusEngine'
 import { cn } from '../primitives/cn'
 
 export interface ModalProps {
@@ -36,6 +37,12 @@ export function Modal({
     onCloseRef.current = onClose
   }, [onClose])
 
+  // Optional: Modal must keep working in isolation (its own unit tests, and
+  // any future host without a controller runtime) — `back` is wired through
+  // the FocusEngine's action stream only when a provider exists, in addition
+  // to the always-available Escape keydown handler below.
+  const focusEngine = useOptionalFocusEngine()
+
   useEffect(() => {
     if (!open) return
 
@@ -49,11 +56,13 @@ export function Modal({
     }
 
     document.addEventListener('keydown', handleKeyDown)
+    const unsubscribeBack = focusEngine?.subscribe('back', () => onCloseRef.current())
     return () => {
       document.removeEventListener('keydown', handleKeyDown)
+      unsubscribeBack?.()
       invokerRef.current?.focus()
     }
-  }, [open])
+  }, [open, focusEngine])
 
   if (!open) return null
 

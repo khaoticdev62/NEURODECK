@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
+import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
+import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { DisplayModeProvider } from '../../../state/displayMode'
 import { useDisplayMode } from '../../../state/useDisplayMode'
 import { ShellLayout } from '../ShellLayout'
@@ -23,15 +25,17 @@ function ModeSwitcher(): React.JSX.Element {
 
 function renderShell(): ReturnType<typeof render> {
   return render(
-    <DisplayModeProvider>
-      <MemoryRouter initialEntries={['/']}>
-        <Routes>
-          <Route element={<ShellLayout />}>
-            <Route path="/" element={<ModeSwitcher />} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </DisplayModeProvider>
+    <FocusEngineProvider adapters={[new TestAdapter()]}>
+      <DisplayModeProvider>
+        <MemoryRouter initialEntries={['/']}>
+          <Routes>
+            <Route element={<ShellLayout />}>
+              <Route path="/" element={<ModeSwitcher />} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      </DisplayModeProvider>
+    </FocusEngineProvider>
   )
 }
 
