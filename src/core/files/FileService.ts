@@ -1,5 +1,5 @@
-import { readdir, readFile, realpath, stat } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { readdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { FileEntry } from '@shared/contracts/file'
 
 const MAX_PREVIEW_BYTES = 256 * 1024
@@ -11,14 +11,13 @@ export class PathOutsideWorkspaceError extends Error {
 }
 
 /**
- * Real file service (mega-prompt §20) — read-only today (listing, reading,
- * metadata). Write/copy/move/rename/duplicate/compress/extract/trash are
- * deliberately not implemented yet: every one of them is a destructive or
- * semi-destructive operation, and the spec requires a real recovery path
- * before any destructive action ships (mega-prompt §2.4) — Recovery Service
- * doesn't exist until Epic 11. Building delete/move now would mean either
- * skipping that requirement or faking the recovery path; neither is
- * acceptable, so this stays read-only until Recovery lands.
+ * Real file service (mega-prompt §20). `write()` is the first destructive
+ * operation implemented — it shipped alongside the real Recovery Service
+ * (Epic 11), satisfying mega-prompt §2.4's "no destructive action without
+ * a real recovery path." Copy/move/rename/duplicate/compress/extract/trash
+ * remain unimplemented: each needs its own recovery-checkpoint shape
+ * (recording a move isn't the same as recording a content overwrite) that
+ * hasn't been designed yet.
  */
 export class FileService {
   /**
@@ -78,4 +77,47 @@ export class FileService {
     const content = buffer.subarray(0, MAX_PREVIEW_BYTES).toString('utf-8')
     return { content, truncated, sizeBytes: info.size }
   }
+
+  /** Like `read()`, but returns `null` instead of throwing when the file doesn't exist yet — used to capture "previous content" before a write, including the "this is a brand-new file" case. */
+  async readIfExists(rootPath: string, relativePath: string): Promise<string | null> {
+    try {
+      return (await this.read(rootPath, relativePath)).content
+    } catch (error) {
+      if (isNotFound(error)) return null
+      throw error
+    }
+  }
+
+  /**
+   * Resolves a path for a write whose leaf may not exist yet — `realpath`
+   * (used by `resolveWithinRoot`) requires the full path to already exist,
+   * which breaks "create a new file." Instead, this resolves the parent
+   * directory (which must exist; directory creation isn't supported) and
+   * verifies *that* stays inside the root, closing the same symlink-escape
+   * gap for the directory side of a write.
+   */
+  private async resolveForWrite(rootPath: string, relativePath: string): Promise<string> {
+    const root = await realpath(rootPath)
+    const target = resolve(root, relativePath)
+    const realParentDir = await realpath(dirname(target))
+    const real = join(realParentDir, basename(target))
+
+    const rel = relative(root, real)
+    if (rel === '..' || rel.startsWith(`..${sep}`) || isAbsolute(rel)) {
+      throw new PathOutsideWorkspaceError(relativePath)
+    }
+    return real
+  }
+
+  /** Atomic write (temp file + rename, same pattern as `JsonStore`) — a crash mid-write can never corrupt the existing file. */
+  async write(rootPath: string, relativePath: string, content: string): Promise<void> {
+    const filePath = await this.resolveForWrite(rootPath, relativePath)
+    const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`
+    await writeFile(tempPath, content, 'utf-8')
+    await rename(tempPath, filePath)
+  }
+}
+
+function isNotFound(error: unknown): boolean {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
 }

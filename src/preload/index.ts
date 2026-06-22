@@ -26,7 +26,14 @@ const ndx: NdxBridge = {
   },
   files: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileList, request),
-    read: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileRead, request)
+    read: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileRead, request),
+    write: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileWrite, request)
+  },
+  recovery: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.recoveryList, request),
+    diff: (request) => ipcRenderer.invoke(IPC_CHANNELS.recoveryDiff, request),
+    restore: (request) => ipcRenderer.invoke(IPC_CHANNELS.recoveryRestore, request),
+    storageSummary: (request) => ipcRenderer.invoke(IPC_CHANNELS.recoveryStorageSummary, request)
   },
   git: {
     status: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, request),

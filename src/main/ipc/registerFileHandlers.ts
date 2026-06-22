@@ -4,17 +4,27 @@ import {
   listFilesRequestSchema,
   ndxError,
   readFileRequestSchema,
+  writeFileRequestSchema,
   type FileEntry,
   type NdxResult,
   type ReadFileResult
 } from '@shared/contracts'
 import type { FileService } from '../../core/files/FileService'
 import { PathOutsideWorkspaceError } from '../../core/files/FileService'
+import type { RecoveryService } from '../../core/recovery/RecoveryService'
 import type { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
 
-/** Real handlers backed by `FileService`, scoped to a workspace's root by `workspaceId` — never an arbitrary absolute path from the renderer. */
+/**
+ * Real handlers backed by `FileService`, scoped to a workspace's root by
+ * `workspaceId` — never an arbitrary absolute path from the renderer.
+ * `fileWrite` orchestrates `FileService` + `RecoveryService` directly here
+ * (rather than inside either service) so a recovery checkpoint is always
+ * recorded before content is overwritten — there is no code path to
+ * `FileService.write()` that skips it.
+ */
 export function registerFileHandlers(
   fileService: FileService,
+  recoveryService: RecoveryService,
   workspaceStore: WorkspaceStore
 ): void {
   ipcMain.handle(
@@ -71,6 +81,44 @@ export function registerFileHandlers(
           ok: true,
           data: await fileService.read(workspace.rootPath, parsed.data.relativePath)
         }
+      } catch (error) {
+        return { ok: false, error: toFileError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.fileWrite,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = writeFileRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That file write request is invalid.')
+        }
+      }
+
+      const workspace = await workspaceStore.get(parsed.data.workspaceId)
+      if (!workspace) {
+        return {
+          ok: false,
+          error: ndxError('not-found', 'workspace-not-found', 'That workspace no longer exists.')
+        }
+      }
+
+      try {
+        const previousContent = await fileService.readIfExists(
+          workspace.rootPath,
+          parsed.data.relativePath
+        )
+        await recoveryService.recordCheckpoint(
+          workspace.id,
+          parsed.data.relativePath,
+          previousContent,
+          parsed.data.description
+        )
+        await fileService.write(workspace.rootPath, parsed.data.relativePath, parsed.data.content)
+        return { ok: true, data: null }
       } catch (error) {
         return { ok: false, error: toFileError(error) }
       }

@@ -123,6 +123,15 @@ Matches mega-prompt §5.1:
 ## 12. Build Studio security (Epic 7)
 
 - Monaco Editor and its language workers are bundled locally via Vite's `?worker` import (`monacoWorkers.ts`) and `loader.config({ monaco })` (`CodeEditor.tsx`) — there is no CDN fetch, satisfying the offline-first/no-cloud-dependency rule and avoiding a third-party script dependency in a renderer process.
-- The editor is hard-coded `readOnly: true`; there is no code path that writes file content back to disk. File reads go through the same `FileService`/`readFile` IPC path File Manager and File Preview already use (Epic 5) — no separate or weaker file-access surface was introduced for Build Studio.
 - `monaco-editor@0.55.1` pulls in `dompurify@3.2.7` transitively, which has multiple known XSS CVEs (DOMPurify is used by Monaco for sanitizing hover/markdown content). Pinned via `package.json`'s `overrides` to `dompurify@^3.4.11`, which patches them. `npm audit --omit=dev` confirms zero production vulnerabilities after the override.
 - Diagnostics and symbols are read from Monaco's own bundled TypeScript compiler worker (a real, sandboxed Web Worker) — no code from an opened file is ever evaluated or executed by NeuroDeck itself; Monaco's tokenizers and the TS compiler only parse and analyze text.
+- **Real editing and saving landed in Epic 11**, once the Recovery Service existed to back it. File writes go through the same `FileService`/`fileWrite` IPC path described in §13 below — no separate or weaker file-write surface was introduced for Build Studio specifically.
+
+## 13. Recovery Service security (Epic 11)
+
+- Recovery checkpoints and their content snapshots are stored entirely outside the user's own workspace — under `app.getPath('userData')/recovery/<workspaceId>/` — so they can never be committed to the user's Git history, swept up by a `git clean`, or otherwise confused with the user's own files.
+- `FileService.write()` is never reachable without a checkpoint first: `registerFileHandlers.ts`'s `fileWrite` handler always calls `fileService.readIfExists()` → `recoveryService.recordCheckpoint()` → `fileService.write()`, in that fixed order, in the main process. The renderer cannot invoke `write()` directly — only the validated `file.write` IPC channel, which always runs this sequence.
+- `resolveForWrite()` (the write-safe sibling to `FileService`'s existing `resolveWithinRoot()`) still resolves the parent directory via `realpath` and rejects symlink escapes — the same path-traversal defense as `read()`/`list()`, extended to cover the "the leaf doesn't exist yet" case a write needs to support.
+- Restoring a checkpoint reuses `FileService.write()` under the hood (via the `recovery.restore` handler), so a restore is itself checkpointed — there is no separate, less-validated "restore" code path that bypasses the write pipeline's protections.
+- The `recovery.diff` handler computes diffs with the `diff` npm package (pure JS, no native dependency, no shell invocation) — there is no risk of command injection from file content, unlike if this had shelled out to a system `diff` binary.
+- 50-checkpoint-per-workspace retention deletes pruned snapshot files for real (not just removing the index entry) — recovery storage cannot grow unbounded per workspace.

@@ -79,10 +79,10 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] ND-018 Workspace Hub — `features/workspaces/WorkspaceHub.tsx`; real cards, real native folder picker via `dialog.showOpenDialog`
 - [x] ND-019 Workspace Detail — `features/workspaces/WorkspaceDetail.tsx`; Overview + Files + local Git tabs real; Sessions/Tasks/Models/Permissions/Environment/History deferred (need Epic 8/9/10 services)
 - [x] ND-020 Workspace Switcher — `features/workspaces/WorkspaceSwitcherOverlay.tsx`; opens on the real `workspace.switcher` action (LT+RT chord, wired in Epic 2), switches the real active workspace
-- [x] File Service (§20) — `core/files/FileService.ts`; real `list`/`read`, path-traversal protection via `fs.realpath` (catches symlink escapes, not just literal `../`, verified with a real symlink in tests). Write/copy/move/rename/delete/compress/extract/secure-delete **deferred** — every one is destructive and needs the Recovery Service (Epic 11) first
+- [x] File Service (§20) — `core/files/FileService.ts`; real `list`/`read`, path-traversal protection via `fs.realpath` (catches symlink escapes, not just literal `../`, verified with a real symlink in tests). `write()` landed in Epic 11, unconditionally recovery-checkpointed. Copy/move/rename/delete/compress/extract/secure-delete remain deferred — each needs its own recovery-checkpoint shape (recording a move/delete isn't the same as recording a content overwrite) not yet designed
 - [x] ND-026 File Manager — `features/workspaces/FileManager.tsx`; real workspace-scoped directory listing, breadcrumb navigation, read-only
 - [x] ND-027 File Preview — `features/workspaces/FilePreview.tsx`; real text/code preview with truncation notice over 256 KB; images/PDF/audio/video/archive/diff deferred (each needs its own renderer)
-- [ ] Recovery integration (checkpoints on file ops) — **deferred**: no destructive operations exist yet to checkpoint; revisit with Epic 11
+- [x] Recovery integration (checkpoints on file ops) — **real as of Epic 11**: every `FileService.write()` call is preceded by a real `RecoveryService.recordCheckpoint()` — see Epic 11 ledger entry
 
 ### Epic 6 — Terminal and Git
 
@@ -95,16 +95,16 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Diff views — `features/git/GitDiffViewer.tsx`; read-only unified diff for staged, unstaged, and untracked files with safe text rendering and controller-selectable file rows
 - [ ] Git recovery branches
 
-### Epic 7 — Build Studio ⚠️ read-only by design; save waits for Recovery Service (see ledger)
+### Epic 7 — Build Studio ⚠️ real editing + save landed in Epic 11; structural edits/AI features still deferred (see ledger)
 
-- [ ] ND-021 Build Studio shell/modes — **partially real**: `/build` route with real project tree, editor tabs, problems panel, symbol navigator, and a minimal Git summary (branch + change count). Navigate mode only — Edit/Review/Debug/Test modes are not built since there's no save, no diff-review target, no debugger, and no test runner integration. Task runner and AI coding panel regions are not built (need a run-configuration concept and Epic 9's model router respectively)
-- [ ] ND-022 Code Editor — **partially real, read-only**: real Monaco editor (locally bundled, no CDN), real file tabs, real syntax highlighting for all Monaco-supported languages. No save — file writes wait for Epic 11's Recovery Service, same rule that kept File Manager read-only in Epic 5. Edit mode, structural actions (extract method, wrap block, etc.), predictive token wheel, voice-to-code, and diff review are not built — most need either a real save path or Epic 9's model router
+- [x] ND-021 Build Studio shell/modes — **partially real**: `/build` route with real project tree, editor tabs (real editing + save as of Epic 11), problems panel, symbol navigator, and a minimal Git summary (branch + change count). Edit mode is now real (save lands a real Recovery checkpoint). Review/Debug/Test modes are not built — no diff-review target inline, no debugger, no test runner integration. Task runner and AI coding panel regions are not built (need a run-configuration concept and Epic 9's model router respectively)
+- [x] ND-022 Code Editor — **partially real**: real Monaco editor (locally bundled, no CDN), real file tabs, real syntax highlighting for all Monaco-supported languages, real editing, and real save (Ctrl+S or the Save button) — every save is checkpointed by the real Recovery Service (Epic 11) before the prior content is overwritten. Structural actions (extract method, wrap block, etc.), predictive token wheel, voice-to-code, and diff review are not built — most need a real code-fix provider or Epic 9's model router
 - [x] LSP integration — **real for TypeScript/JavaScript only**, via Monaco's bundled TypeScript language service worker (the actual TS compiler running in a Web Worker, not a fake) — real diagnostics, real navigation-tree symbols. No real LSP server exists for any other language; those get Monarch syntax highlighting only, honestly labeled "No symbol provider for this language" rather than a fake empty outline
 - [x] ND-023 Symbol Navigator — **partially real**: real navigation-tree symbols (Classes/Functions/Methods/Variables/Types) for TS/JS with Jump. Peek/Rename/Find references/Pin need a real multi-file language service; Explain/Add to AI context need Epic 9
 - [x] ND-024 Diagnostics and Problems — **partially real**: real `monaco.editor.IMarker`s grouped by severity then file, live-updated via `onDidChangeMarkers`. By-source/by-test/by-accessibility-category groupings and bulk operations (fix all, repair plan, export report) are not built — need a real test runner or AI planner
 - [ ] Predictive editing — **deferred**: needs Epic 9's model router
-- [ ] Controller-native structural edits (§12 editor requirements) — **deferred**: most structural actions need a real save path (Epic 11) or a real code-fix provider beyond what this slice builds
-- [x] Editor tests — `detectLanguage.test.ts` (4), `useOpenFiles.test.ts` (4), `ProjectTree.test.tsx` (3), `DiagnosticsPanel.test.tsx` (3), `SymbolNavigator.test.tsx` (3). Monaco's own editor surface is not re-tested (it's a trusted, established library) — tests cover the real logic this slice adds around it
+- [ ] Controller-native structural edits (§12 editor requirements) — **deferred**: most structural actions need a real code-fix provider beyond what this slice builds (save now exists, so this is no longer blocked on Recovery — it's blocked on the structural-edit logic itself)
+- [x] Editor tests — `detectLanguage.test.ts` (4), `useOpenFiles.test.ts` (7, including real save success/failure paths), `ProjectTree.test.tsx` (3), `DiagnosticsPanel.test.tsx` (3), `SymbolNavigator.test.tsx` (3). Monaco's own editor surface is not re-tested (it's a trusted, established library) — tests cover the real logic this slice adds around it
 
 ### Epic 8 — Agents and workflows
 
@@ -139,23 +139,24 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] ND-038 Learning Hub
 - [ ] ND-039 Guided Lab (with AI coach boundaries)
 
-### Epic 11 — System integration
+### Epic 11 — System integration ⚠️ Recovery Service slice complete; remaining 11 of 16 items deferred (see ledger)
 
-- [ ] System Metrics Service (real metrics, §27)
-- [ ] ND-042 System Dashboard
-- [ ] ND-043 Controller Settings
-- [ ] ND-044 Display and Theme Settings
-- [ ] ND-045 Network and VPN
-- [ ] ND-046 Privacy and Permissions
-- [ ] ND-047 Storage and Recovery
-- [ ] ND-048 Integrations
-- [ ] ND-049 Updates
-- [ ] ND-050 Quick Access Overlay (full build)
-- [ ] ND-051 Power Menu
-- [ ] ND-052 Recovery Timeline
-- [ ] ND-053 Before/After Diff
-- [ ] ND-055 Error Recovery
-- [ ] ND-056 About and Diagnostics
+- [ ] System Metrics Service (real metrics, §27) — **deferred**: no real consumer needs it yet
+- [ ] ND-042 System Dashboard — **deferred**: needs System Metrics Service
+- [ ] ND-043 Controller Settings — **deferred**: needs the Input Profile Manager UI (Epic 2 left it backend-only)
+- [ ] ND-044 Display and Theme Settings — **deferred**
+- [ ] ND-045 Network and VPN — **deferred**
+- [ ] ND-046 Privacy and Permissions — **deferred**
+- [x] ND-047 Storage and Recovery — **partially real**: real recovery-checkpoint storage summary (count + bytes) and a real link into Recovery Timeline; disk usage/model storage/workspace cache/browser data/logs/trash sections are honestly labeled "not real yet" rather than showing fabricated numbers — each needs a service this epic doesn't own
+- [ ] ND-048 Integrations — **deferred**
+- [ ] ND-049 Updates — **deferred**
+- [ ] ND-050 Quick Access Overlay (full build) — **deferred**
+- [ ] ND-051 Power Menu — **deferred**
+- [x] **Recovery Service (§29)** — `core/recovery/RecoveryService.ts`: real checkpoints with content snapshots stored outside the user's workspace (`app.getPath('userData')/recovery/`), 50-checkpoint-per-workspace retention with real snapshot-file cleanup, tested against real temp directories. `FileService.write()` — the first destructive file operation — now exists and is unconditionally checkpointed before every overwrite (orchestrated in `registerFileHandlers.ts`'s `fileWrite` handler, not skippable)
+- [x] ND-052 Recovery Timeline — **partially real**: real checkpoint list (File changes only — package/settings/workflow/Git/agent/system-config events need services that don't exist), Inspect/Compare/Restore-to-point are real; Revert event/Branch from point/Export snapshot deferred (need recovery-event kinds beyond `file-write`)
+- [x] ND-053 Before/After Diff — **partially real**: real unified diff (via the `diff` npm package) between a checkpoint's snapshot and current content, reusing `GitDiffViewer`; Restore original is real; Previous/next change, Accept/reject chunk, Explain change, Run validation are deferred (need chunk-level apply infra or Epic 9's model router)
+- [ ] ND-055 Error Recovery — **deferred**: existing `ErrorState`/`ConfirmationDialog` patterns plus Recovery Timeline cover the core "what failed, how do I recover" loop, but the dedicated error-structure screen (plain-language problem/technical code/diagnostic export) isn't built
+- [ ] ND-056 About and Diagnostics — **deferred**
 
 ### Epic 12 — Packaging and hardening
 

@@ -582,13 +582,13 @@ The other major scope question was LSP. Standing up real language servers (tsser
 
 ### Tests and evidence
 
-| Suite                                                                                   | Location                                                          | Count |
-| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----- |
-| `detectLanguage` (extension mapping, case-insensitivity, fallback, nested-dot paths)      | `features/build-studio/__tests__/detectLanguage.test.ts`             | 4     |
-| `useOpenFiles` (open/activate, no-refetch-if-already-open, real error capture, close+fallback) | `features/build-studio/__tests__/useOpenFiles.test.ts`         | 4     |
-| `ProjectTree` (real top-level listing, real subdirectory expansion, open-file callback)  | `features/build-studio/__tests__/ProjectTree.test.tsx`               | 3     |
-| `DiagnosticsPanel` (empty state, severity grouping/ordering, select callback)             | `features/build-studio/__tests__/DiagnosticsPanel.test.tsx`          | 3     |
-| `SymbolNavigator` (unsupported-language message, empty state, nested symbols + jump)      | `features/build-studio/__tests__/SymbolNavigator.test.tsx`           | 3     |
+| Suite                                                                                          | Location                                                    | Count |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ----- |
+| `detectLanguage` (extension mapping, case-insensitivity, fallback, nested-dot paths)           | `features/build-studio/__tests__/detectLanguage.test.ts`    | 4     |
+| `useOpenFiles` (open/activate, no-refetch-if-already-open, real error capture, close+fallback) | `features/build-studio/__tests__/useOpenFiles.test.ts`      | 4     |
+| `ProjectTree` (real top-level listing, real subdirectory expansion, open-file callback)        | `features/build-studio/__tests__/ProjectTree.test.tsx`      | 3     |
+| `DiagnosticsPanel` (empty state, severity grouping/ordering, select callback)                  | `features/build-studio/__tests__/DiagnosticsPanel.test.tsx` | 3     |
+| `SymbolNavigator` (unsupported-language message, empty state, nested symbols + jump)           | `features/build-studio/__tests__/SymbolNavigator.test.tsx`  | 3     |
 
 Total: 228 tests passing (up from 215). Monaco's own editor internals are not re-tested — it's an established, independently-maintained library; tests cover only the real logic this slice adds around it (tabs, tree, diagnostics/symbol extraction and grouping).
 
@@ -614,3 +614,57 @@ npm audit --omit=dev → 0 vulnerabilities
 - **Task runner, AI coding panel** — task runner needs a real "run configuration" concept not yet defined; AI coding panel needs Epic 9.
 - **Split panes** — not built this slice; single active editor pane only.
 - **Peek/Rename/Find references/Pin (Symbol Navigator), Explain/Add to AI context** — need deeper language-service integration or Epic 9 respectively.
+
+## Epic 11 — System integration (Recovery Service slice only)
+
+### Scope decision
+
+Epic 11 ("System integration") is 16 items: System Metrics, Dashboard, Controller Settings, Display/Theme, Network/VPN, Privacy, Storage+Recovery, Integrations, Updates, Quick Access, Power Menu, Recovery Timeline, Before/After Diff, Emergency Stop (already real, Epic 4), Error Recovery, About/Diagnostics. Asked the user directly which slice to prioritize; the answer was the Recovery Service specifically, since it's what every prior epic's "deferred — needs Recovery" notes were pointing at (Epic 5's file writes, Epic 6's Git restore/discard, Epic 7's editor save). Building Recovery first, rather than working the full 16-item list in spec order, unblocks real work in three already-shipped epics instead of producing 16 thin, mostly-unblocked screens.
+
+The other 15 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build (System Metrics, model storage accounting, browser data, log-file inventory, package/update infrastructure).
+
+### What was built
+
+- **`RecoveryService`** (`core/recovery/RecoveryService.ts`): real checkpoints stored entirely outside the user's own workspace, under `app.getPath('userData')/recovery/<workspaceId>/` — an index file (`index.json`, via the existing `JsonStore`) plus one real snapshot file per checkpoint that had previous content. Checkpoints never collide with the user's Git history or get swept up by `git clean`. Retention: the newest 50 checkpoints per workspace are kept; older ones are pruned along with their real snapshot files on disk.
+- **`FileService.write()`** (`core/files/FileService.ts`): the first real destructive file operation. Added `resolveForWrite()` — a write-safe sibling to the existing `resolveWithinRoot()` that resolves the *parent* directory via `realpath` (closing the same symlink-escape gap) while allowing the leaf file itself to not exist yet, which `resolveWithinRoot()` couldn't do (its `realpath` call requires the full target to already exist). Also added `readIfExists()` (returns `null` on `ENOENT` instead of throwing) to capture "previous content or null" before a write.
+- **Orchestration lives in the IPC handler, not either service**: `registerFileHandlers.ts`'s `fileWrite` handler always calls `fileService.readIfExists()` → `recoveryService.recordCheckpoint()` → `fileService.write()`, in that order, with no code path that reaches `FileService.write()` without a checkpoint being recorded first. This was a deliberate placement choice — putting the orchestration in either service would create either a circular dependency (`FileService` importing `RecoveryService` or vice versa) or a "trust the caller to call both" footgun.
+- **Restore is itself recorded as a new checkpoint** (`registerRecoveryHandlers.ts`'s `recoveryRestore` handler calls `fileService.write()` under the hood) — restoring isn't a special unchecked path; it's "write this content back," which means restoring is itself undoable. A real redo path falls out of this for free, not as a special case.
+- **`recoveryDiff` handler**: real unified diff (via the `diff` npm package's `createTwoFilesPatch`) between the checkpoint's snapshot content and the file's current content — reused by the renderer's existing `GitDiffViewer` component (no second diff-rendering component built).
+- **Build Studio gained real Save** (Epic 7's read-only gap, closed): `useOpenFiles` gained `updateContent`/`saveFile`; `CodeEditor` is no longer hard-coded `readOnly: true` and gained an `onChange` prop; `BuildStudio.tsx` wires Ctrl+S (via `editor.addCommand`, reading the latest `saveFile` through a ref to avoid a stale closure from the one-time `onMount` callback) and a visible Save button with a dirty-tab indicator (`●`).
+- **ND-052 Recovery Timeline + ND-053 Before/After Diff** (`features/recovery/RecoveryTimeline.tsx`): combined into one screen the same way ND-025 Git Control Center wraps its diff viewer — real checkpoint list, real diff on selection, real "Restore to this point" behind its own `ConfirmationDialog` (separate review surface, same pattern as Epic 6's push review). Scoped to "File changes" only — package installation/settings/workflow/Git/agent/system-config events need recovery-event kinds and services this slice doesn't build.
+- **ND-047 Storage and Recovery** (`features/recovery/StorageAndRecovery.tsx`): real recovery-checkpoint storage summary (count + total snapshot bytes) and a link into the Recovery Timeline. Disk usage/model storage/workspace cache/browser data/logs/trash are shown as an honestly-labeled "not real yet" section rather than fabricated numbers — directly satisfies §47's "no one-click magic cleanup that hides what's being deleted" by having nothing fake to show.
+- **Dependency**: added `diff`/`@types/diff` (pure JS, MIT, no native build step — unlike `node-pty`, no toolchain risk).
+
+### A real bug found and fixed
+
+`react-hooks/set-state-in-effect` recurred a third time (after Epic 5's `WorkspaceProvider`/`FileManager`/`FilePreview`): `RecoveryTimeline`'s mount effect called a `useCallback`-wrapped `refresh()` function whose only `await` precedes every `setState` call — genuinely async, no synchronous setState in the effect body. The lint rule still flagged it, suggesting its static analysis doesn't reliably trace through `useCallback`-wrapped async functions called from an effect. Fixed with the same pattern as before: inline the fetch directly in the effect (with an `active` flag for cancellation-safety) instead of calling the named callback. The named `refresh()` callback is kept for use from event handlers (e.g., after a restore), where this lint rule doesn't apply.
+
+### Tests and evidence
+
+| Suite                                                                                                    | Location                                                  | Count |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----- |
+| `RecoveryService` (empty state, snapshot capture, new-file case, ordering, workspace isolation, storage summary, retention+real file cleanup) | `core/recovery/__tests__/RecoveryService.test.ts`             | 7     |
+| `FileService.readIfExists`/`write` (create, overwrite, subdirectory, traversal rejection, symlink-escape rejection, no leftover temp file) | `core/files/__tests__/FileService.test.ts` (+10 to existing) | 10    |
+| `useOpenFiles` save paths (dirty tracking, real save success updates `savedContent`, real save failure preserves it and records `saveError`) | `features/build-studio/__tests__/useOpenFiles.test.ts` (+3) | 3     |
+| `RecoveryTimeline` (active-workspace gate, empty state, real checkpoint list + diff load, reviewed restore + refresh) | `features/recovery/__tests__/RecoveryTimeline.test.tsx`       | 4     |
+| `StorageAndRecovery` (active-workspace gate, real storage summary, navigation to Recovery Timeline)      | `features/recovery/__tests__/StorageAndRecovery.test.tsx`     | 3     |
+
+Total: 253 tests passing (up from 246).
+
+```text
+npm run typecheck   → 0 errors
+npm run lint         → 0 errors, 0 warnings
+npm run test         → 52 files, 253 tests passed
+npm run build        → succeeded (initial renderer JS 930.33 kB, lazy Build Studio JS unchanged at ~7.34 MB)
+npm run test:e2e     → 1 passed
+npm audit --omit=dev → 0 vulnerabilities
+```
+
+### Deferred items with explicit reason
+
+- **The other 15 of 16 Epic 11 items** (System Metrics, Dashboard, Controller Settings, Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access full build, Power Menu, Error Recovery, About/Diagnostics) — each needs a service this slice doesn't build.
+- **Copy/move/rename/delete/compress/extract/secure-delete** (Epic 5's File Service) — each needs its own recovery-checkpoint shape (a move/delete isn't the same kind of event as a content overwrite); only `write()` shipped this slice.
+- **Git restore/discard/force-push/branch-delete** (Epic 6) — still need either Recovery integration for Git-specific events or an explicit irreversibility warning surface; the `RecoveryService` built this slice is scoped to `file-write` events, not Git history rewrites.
+- **Recovery Timeline's Revert event/Branch from point/Export snapshot** — need recovery-event kinds beyond `file-write`.
+- **Before/After Diff's Previous/next change, Accept/reject chunk, Explain change, Run validation** — need chunk-level apply infrastructure or Epic 9's model router.
+- **Build Studio's structural edits, predictive editing, voice-to-code** — structural edits need a real code-fix provider beyond this slice; predictive/voice need Epic 9.

@@ -89,3 +89,66 @@ describe('FileService.read', () => {
     expect(result.sizeBytes).toBe(big.length)
   })
 })
+
+describe('FileService.readIfExists', () => {
+  it('returns the real content when the file exists', async () => {
+    await writeFile(join(root, 'a.txt'), 'hello')
+    expect(await service.readIfExists(root, 'a.txt')).toBe('hello')
+  })
+
+  it('returns null when the file does not exist', async () => {
+    expect(await service.readIfExists(root, 'missing.txt')).toBeNull()
+  })
+})
+
+describe('FileService.write', () => {
+  it('creates a real new file atomically', async () => {
+    await service.write(root, 'new.txt', 'hello')
+
+    expect(await service.read(root, 'new.txt')).toEqual({
+      content: 'hello',
+      truncated: false,
+      sizeBytes: 5
+    })
+  })
+
+  it('overwrites an existing real file', async () => {
+    await writeFile(join(root, 'a.txt'), 'old')
+
+    await service.write(root, 'a.txt', 'new content')
+
+    expect((await service.read(root, 'a.txt')).content).toBe('new content')
+  })
+
+  it('creates a file inside a real subdirectory', async () => {
+    await mkdir(join(root, 'src'))
+
+    await service.write(root, 'src/index.ts', 'export {}')
+
+    expect((await service.read(root, 'src/index.ts')).content).toBe('export {}')
+  })
+
+  it('rejects a write that escapes the workspace root', async () => {
+    await expect(service.write(root, '../outside.txt', 'nope')).rejects.toThrow(
+      PathOutsideWorkspaceError
+    )
+  })
+
+  it('rejects a write through a symlinked subdirectory that escapes the root', async () => {
+    const secretDir = join(dir, 'secret')
+    await mkdir(secretDir)
+    await symlink(secretDir, join(root, 'escape-link'), 'dir')
+
+    await expect(service.write(root, 'escape-link/evil.txt', 'nope')).rejects.toThrow(
+      PathOutsideWorkspaceError
+    )
+  })
+
+  it('does not leave a temp file behind after a successful write', async () => {
+    await service.write(root, 'a.txt', 'content')
+
+    const { readdir } = await import('node:fs/promises')
+    const files = await readdir(root)
+    expect(files).toEqual(['a.txt'])
+  })
+})

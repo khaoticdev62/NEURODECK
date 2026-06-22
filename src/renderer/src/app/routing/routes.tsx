@@ -6,6 +6,8 @@ import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
 import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
 import { GitControlCenter } from '../../features/git/GitControlCenter'
+import { RecoveryTimeline } from '../../features/recovery/RecoveryTimeline'
+import { StorageAndRecovery } from '../../features/recovery/StorageAndRecovery'
 import { FileManager } from '../../features/workspaces/FileManager'
 import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
 import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
@@ -235,6 +237,26 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true
+  },
+  {
+    routeId: 'recovery',
+    screenId: 'ND-052',
+    path: '/recovery',
+    title: 'Recovery Timeline',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <RecoveryTimeline />
+  },
+  {
+    routeId: 'storage',
+    screenId: 'ND-047',
+    path: '/storage',
+    title: 'Storage and Recovery',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <StorageAndRecovery />
   }
 ]
 

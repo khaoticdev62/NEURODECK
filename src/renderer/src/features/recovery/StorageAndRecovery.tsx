@@ -1,0 +1,90 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { getRecoveryStorageSummary } from '../../services/ipc/recoveryClient'
+import { useWorkspaces } from '../workspaces/useWorkspaces'
+
+/**
+ * ND-047 Storage and Recovery, scoped to the one section with a real
+ * backing service: recovery checkpoint storage. Disk usage, model
+ * storage, workspace cache, browser data, logs, and trash each need a
+ * service that doesn't exist yet (Epic 9's model runtime, Epic 10's
+ * browser, a real log-file inventory) — showing fabricated numbers for
+ * them would violate the "no one-click magic cleanup that hides what's
+ * being deleted" rule by definition, since there'd be nothing real to
+ * show in the first place.
+ */
+export function StorageAndRecovery(): React.JSX.Element {
+  const { activeWorkspace } = useWorkspaces()
+  const navigate = useNavigate()
+  const [summary, setSummary] = useState<{ checkpointCount: number; totalBytes: number } | null>(
+    null
+  )
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!activeWorkspace) return
+    let active = true
+    void getRecoveryStorageSummary({ workspaceId: activeWorkspace.id }).then((result) => {
+      if (!active) return
+      if (result.ok) {
+        setSummary(result.data)
+        setError(null)
+      } else {
+        setError(result.error.userMessage)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [activeWorkspace])
+
+  if (!activeWorkspace) {
+    return (
+      <EmptyState
+        title="No active workspace"
+        description="Open a workspace to see its recovery storage."
+      />
+    )
+  }
+
+  return (
+    <div className="flex h-full flex-col gap-4 p-4">
+      <p className="text-title font-semibold text-text-primary">Storage and Recovery</p>
+
+      {error && <ErrorState title="Couldn't load recovery storage" description={error} />}
+
+      <section className="border border-border bg-surface p-3">
+        <p className="mb-1 text-meta font-semibold text-text-primary">Recovery points</p>
+        {summary ? (
+          <p className="text-meta text-text-secondary">
+            {summary.checkpointCount} checkpoint{summary.checkpointCount === 1 ? '' : 's'} ·{' '}
+            {formatBytes(summary.totalBytes)} of snapshots
+          </p>
+        ) : (
+          <p className="text-meta text-text-secondary">Loading…</p>
+        )}
+        <ControllerButton variant="primary" className="mt-2" onClick={() => navigate('/recovery')}>
+          Open Recovery Timeline
+        </ControllerButton>
+      </section>
+
+      <section className="border border-dashed border-border bg-canvas/40 p-3">
+        <p className="mb-1 text-meta font-semibold text-text-tertiary">
+          Disk usage, model storage, workspace cache, browser data, logs, and trash
+        </p>
+        <p className="text-meta text-text-tertiary">
+          Not real yet — each needs a service this epic doesn&apos;t own (system metrics, Epic
+          9&apos;s model runtime, Epic 10&apos;s browser, a real log-file inventory).
+        </p>
+      </section>
+    </div>
+  )
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}

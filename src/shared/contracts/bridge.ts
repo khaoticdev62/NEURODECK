@@ -1,6 +1,14 @@
 import type { FileEntry, ListFilesRequest, ReadFileRequest, ReadFileResult } from './file'
 import type { NdxResult } from './error'
 import type {
+  RecoveryCheckpoint,
+  RecoveryCheckpointRequest,
+  RecoveryDiffResult,
+  RecoveryStorageSummary,
+  WorkspaceRecoveryRequest,
+  WriteFileRequest
+} from './recovery'
+import type {
   GitBranch,
   GitCheckoutRequest,
   GitCommit,
@@ -49,6 +57,15 @@ export interface NdxBridge {
   files: {
     list: (request: ListFilesRequest) => Promise<NdxResult<FileEntry[]>>
     read: (request: ReadFileRequest) => Promise<NdxResult<ReadFileResult>>
+    write: (request: WriteFileRequest) => Promise<NdxResult<null>>
+  }
+  recovery: {
+    list: (request: WorkspaceRecoveryRequest) => Promise<NdxResult<RecoveryCheckpoint[]>>
+    diff: (request: RecoveryCheckpointRequest) => Promise<NdxResult<RecoveryDiffResult>>
+    restore: (request: RecoveryCheckpointRequest) => Promise<NdxResult<null>>
+    storageSummary: (
+      request: WorkspaceRecoveryRequest
+    ) => Promise<NdxResult<RecoveryStorageSummary>>
   }
   git: {
     status: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStatus>>

@@ -1,6 +1,6 @@
 import type { Monaco } from '@monaco-editor/react'
 import type * as monacoEditor from 'monaco-editor'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { useFocusable } from '../../controller/focus/useFocusable'
@@ -10,7 +10,7 @@ import { CodeEditor } from './CodeEditor'
 import { DiagnosticsPanel, type DiagnosticItem } from './DiagnosticsPanel'
 import { ProjectTree } from './ProjectTree'
 import { SymbolNavigator, type SymbolItem } from './SymbolNavigator'
-import { useOpenFiles } from './useOpenFiles'
+import { useOpenFiles, type UseOpenFilesResult } from './useOpenFiles'
 
 const SEVERITY_BY_MONACO_LEVEL: Record<number, DiagnosticItem['severity']> = {
   8: 'error',
@@ -21,14 +21,13 @@ const SEVERITY_BY_MONACO_LEVEL: Record<number, DiagnosticItem['severity']> = {
 
 /**
  * ND-021 Build Studio shell. Real regions: project tree, editor stack
- * (tabs), problems panel, symbol navigator, and a minimal Git summary
- * (branch + change count, reusing the real `GitService` from Epic 6).
- * Task runner and AI coding panel are not built — task runner needs a
- * real "run configuration" concept this slice doesn't define, and the AI
- * coding panel needs Epic 9's model router. The Terminal region is
- * reachable via the existing `/terminal` route instead of being
- * duplicated inline. Read-only: see the ledger's Epic 7 scope decision —
- * saving waits for Epic 11's Recovery Service.
+ * (tabs, real editing + save as of Epic 11), problems panel, symbol
+ * navigator, and a minimal Git summary (branch + change count, reusing
+ * the real `GitService` from Epic 6). Task runner and AI coding panel are
+ * not built — task runner needs a real "run configuration" concept this
+ * slice doesn't define, and the AI coding panel needs Epic 9's model
+ * router. The Terminal region is reachable via the existing `/terminal`
+ * route instead of being duplicated inline.
  */
 export function BuildStudio(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
@@ -46,7 +45,12 @@ export function BuildStudio(): React.JSX.Element {
 }
 
 function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.JSX.Element {
-  const { openFiles, activePath, openFile, closeFile, setActivePath } = useOpenFiles(workspaceId)
+  const { openFiles, activePath, openFile, closeFile, setActivePath, updateContent, saveFile } =
+    useOpenFiles(workspaceId)
+  const saveFileRef = useRef<UseOpenFilesResult['saveFile']>(saveFile)
+  useEffect(() => {
+    saveFileRef.current = saveFile
+  }, [saveFile])
   const [diagnosticsByPath, setDiagnosticsByPath] = useState<Record<string, DiagnosticItem[]>>({})
   const [symbolsByPath, setSymbolsByPath] = useState<Record<string, SymbolItem[]>>({})
   const [gitSummary, setGitSummary] = useState<{
@@ -97,6 +101,10 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
         setSymbolsByPath((current) => ({ ...current, [path]: symbols }))
       })
 
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+        void saveFileRef.current(path, `Edit ${path} in Build Studio`)
+      })
+
       editor.onDidDispose(() => subscription.dispose())
     },
     []
@@ -132,14 +140,28 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
                 key={file.path}
                 path={file.path}
                 active={file.path === activePath}
+                dirty={file.content !== file.savedContent}
                 onSelect={() => setActivePath(file.path)}
                 onClose={() => closeFile(file.path)}
               />
             ))}
           </div>
-          <span className="shrink-0 pl-2 text-meta uppercase tracking-[0.14em] text-text-tertiary">
-            View only
-          </span>
+          {activeFile && !activeFile.error && (
+            <div className="flex shrink-0 items-center gap-2 pl-2">
+              {activeFile.saveError && (
+                <span className="text-meta text-status-error">{activeFile.saveError}</span>
+              )}
+              <ControllerButton
+                variant="primary"
+                disabled={activeFile.saving || activeFile.content === activeFile.savedContent}
+                onClick={() =>
+                  void saveFile(activeFile.path, `Edit ${activeFile.path} in Build Studio`)
+                }
+              >
+                {activeFile.saving ? 'Saving…' : 'Save'}
+              </ControllerButton>
+            </div>
+          )}
         </div>
         <div className="min-h-0 flex-1">
           {!activeFile ? (
@@ -154,6 +176,7 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
               path={activeFile.path}
               content={activeFile.content}
               onMount={handleEditorMount}
+              onChange={(content) => updateContent(activeFile.path, content)}
             />
           )}
         </div>
@@ -232,11 +255,13 @@ function convertNavigationTree(
 function Tab({
   path,
   active,
+  dirty,
   onSelect,
   onClose
 }: {
   path: string
   active: boolean
+  dirty: boolean
   onSelect: () => void
   onClose: () => void
 }): React.JSX.Element {
@@ -250,6 +275,7 @@ function Tab({
   return (
     <div className="flex shrink-0 items-center">
       <ControllerButton ref={ref} variant={active ? 'secondary' : 'ghost'} onClick={onSelect}>
+        {dirty ? '● ' : ''}
         {name}
       </ControllerButton>
       <button
