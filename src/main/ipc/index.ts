@@ -1,5 +1,7 @@
 import { app, type BrowserWindow } from 'electron'
 import { join } from 'node:path'
+import { AgentRuntime } from '../../core/agents/AgentRuntime'
+import { AgentStore } from '../../core/agents/AgentStore'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
 import { ModelProviderService } from '../../core/models/ModelProviderService'
@@ -13,6 +15,8 @@ import { WorkflowRunStore } from '../../core/workflows/WorkflowRunStore'
 import { WorkflowStore } from '../../core/workflows/WorkflowStore'
 import { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
 import { electronSecretCipher } from '../security/electronSecretCipher'
+import { IPC_CHANNELS } from '@shared/contracts'
+import { registerAgentHandlers } from './registerAgentHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
 import { registerModelHandlers } from './registerModelHandlers'
@@ -41,6 +45,13 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     new SystemMetricsService()
   )
   const ollamaRuntime = new OllamaRuntimeService()
+  const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
+  const agentRuntime = new AgentRuntime(agentStore, modelRouter, (run) => {
+    const window = getWindow()
+    if (window && !window.webContents.isDestroyed()) {
+      window.webContents.send(IPC_CHANNELS.agentRunUpdate, run)
+    }
+  })
 
   registerWorkspaceHandlers(workspaceStore, getWindow)
   registerFileHandlers(fileService, recoveryService, workspaceStore)
@@ -48,5 +59,6 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerRecoveryHandlers(recoveryService, fileService, workspaceStore)
   registerWorkflowHandlers(workflowStore, workflowRunStore)
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)
+  registerAgentHandlers(agentStore, agentRuntime)
   return registerTerminalHandlers(terminalService, workspaceStore, getWindow)
 }

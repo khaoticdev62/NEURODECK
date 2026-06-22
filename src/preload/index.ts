@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import {
+  agentRunSchema,
   IPC_CHANNELS,
   terminalDataEventSchema,
   terminalExitEventSchema,
@@ -99,6 +100,27 @@ const ndx: NdxBridge = {
     loadLocal: (request) => ipcRenderer.invoke(IPC_CHANNELS.localModelLoad, request),
     unloadLocal: (request) => ipcRenderer.invoke(IPC_CHANNELS.localModelUnload, request),
     benchmarkLocal: (request) => ipcRenderer.invoke(IPC_CHANNELS.localModelBenchmark, request)
+  },
+  agents: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentList, request),
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentCreate, request),
+    update: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentUpdate, request),
+    setEnabled: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentSetEnabled, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRemove, request)
+  },
+  agentRuns: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunList, request),
+    get: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunGet, request),
+    start: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunStart, request),
+    cancel: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunCancel, request),
+    onUpdate: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = agentRunSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.agentRunUpdate, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.agentRunUpdate, handler)
+    }
   }
 }
 

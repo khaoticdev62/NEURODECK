@@ -737,6 +737,31 @@ Once Epic 9 delivered a real Model Router, the original blocker for Agent Runtim
 
 **What is not yet built**: typed IPC/preload/renderer wiring for any of this (so it's not reachable from the UI yet), ActionQueue-backed tool execution (an agent's plan is never turned into submitted tool calls — it only produces a text completion), pause/resume, child-agent/budget bounds beyond the per-run timeout, and ND-016/ND-017 screens. Do not mark Agent Runtime or Epic 8 complete until those land and are tested end-to-end through the UI.
 
+### Addendum 2 — Agent Runtime IPC + UI (ND-016/ND-017)
+
+The remaining gap from the addendum above — no typed IPC, no UI — was closed for the parts that don't need tool execution.
+
+**`AgentStore` gained real CRUD parity** with the other stores: `update()`, `setEnabled()`, `remove()`. **`AgentRuntime` gained an `onUpdate` constructor callback** (default no-op, so the existing tests needed no changes) called every time a run is persisted — this is the hook the IPC layer uses to push live run state to the renderer, the same way `TerminalService`'s `onData`/`onExit` work.
+
+**IPC**: `registerAgentHandlers.ts` exposes `agent.list/create/update/setEnabled/remove` and `agentRun.list/get/start/cancel`, all Zod-validated. `agentRun.update` is a push channel, not a request/response one — wired in `src/main/ipc/index.ts` by passing a callback into `AgentRuntime`'s constructor that calls `getWindow()?.webContents.send(...)`, exactly mirroring `registerTerminalHandlers.ts`'s PTY data/exit pattern. `NdxBridge.agents`/`agentRuns` and the preload implementation follow.
+
+**ND-016 Agent Operations Center** (`features/agents/AgentOperationsCenter.tsx`): real workspace-scoped agent list, a real create form whose tool-allowlist `<select>` is populated from the real `ToolRegistry.list()` (matching `WorkflowForge`'s precedent — never an invented capability list), real enable/disable toggle, real remove.
+
+**ND-017 Agent Detail** (`features/agents/AgentDetail.tsx`): real agent overview (goal, tool allowlist, resource limits), a real "start a run" control that calls `agentRun.start`, a real run list that updates live via the `agentRun.update` push subscription (not polling), real per-run timeline/output/token-usage display, and real cancel.
+
+**Still not built, same reason as before**: ActionQueue-backed tool execution. Every screen here is honest about it — the Detail screen doesn't show Files/Tools/Permissions/Logs tabs, because an agent run today never touches a file or calls a tool; there's nothing real to put in those tabs yet.
+
+**Tests**: `AgentStore.test.ts` (6, new CRUD methods), `AgentOperationsCenter.test.tsx` (6: empty state, real list, real create round trip, real enable/disable toggle, real remove), `AgentDetail.test.tsx` (4: not-found error state, real overview + past runs, real start-run round trip, real cancel round trip). Total: 328 tests passing (up from 312).
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 69 files, 328 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
 ## Epic 9 — Models (chat routing and managed Ollama core complete)
 
 ### History

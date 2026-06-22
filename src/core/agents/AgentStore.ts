@@ -33,6 +33,38 @@ export class AgentStore {
     return agent
   }
 
+  async update(agentId: string, request: CreateAgentRequest): Promise<AgentDefinition> {
+    const index = await this.store.read()
+    const existing = index.agents.find((agent) => agent.id === agentId)
+    if (!existing) throw new Error('Agent not found.')
+    const updated: AgentDefinition = { ...existing, ...request, updatedAt: Date.now() }
+    await this.store.write({
+      ...index,
+      agents: index.agents.map((agent) => (agent.id === agentId ? updated : agent))
+    })
+    return updated
+  }
+
+  async setEnabled(agentId: string, enabled: boolean): Promise<AgentDefinition> {
+    const index = await this.store.read()
+    const existing = index.agents.find((agent) => agent.id === agentId)
+    if (!existing) throw new Error('Agent not found.')
+    const updated: AgentDefinition = { ...existing, enabled, updatedAt: Date.now() }
+    await this.store.write({
+      ...index,
+      agents: index.agents.map((agent) => (agent.id === agentId ? updated : agent))
+    })
+    return updated
+  }
+
+  async remove(agentId: string): Promise<void> {
+    const index = await this.store.read()
+    await this.store.write({
+      ...index,
+      agents: index.agents.filter((agent) => agent.id !== agentId)
+    })
+  }
+
   async saveRun(run: AgentRun): Promise<void> {
     const index = await this.store.read()
     const runs = index.runs.some((item) => item.id === run.id)

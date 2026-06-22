@@ -60,6 +60,18 @@ import type {
   TerminalSnapshot,
   TerminalWriteRequest
 } from './terminal'
+import type {
+  AgentDefinition,
+  AgentIdRequest,
+  AgentRun,
+  AgentRunIdRequest,
+  CreateAgentRequest,
+  ListAgentRunsRequest,
+  SetAgentEnabledRequest,
+  StartAgentRunRequest,
+  UpdateAgentRequest,
+  WorkspaceAgentRequest
+} from './agent'
 
 /**
  * The shape of the real preload bridge (`window.ndx`). Defined here, in
@@ -139,5 +151,19 @@ export interface NdxBridge {
     loadLocal: (request: LocalModelRequest) => Promise<NdxResult<null>>
     unloadLocal: (request: LocalModelRequest) => Promise<NdxResult<null>>
     benchmarkLocal: (request: LocalModelRequest) => Promise<NdxResult<ModelBenchmarkResult>>
+  }
+  agents: {
+    list: (request: WorkspaceAgentRequest) => Promise<NdxResult<AgentDefinition[]>>
+    create: (request: CreateAgentRequest) => Promise<NdxResult<AgentDefinition>>
+    update: (request: UpdateAgentRequest) => Promise<NdxResult<AgentDefinition>>
+    setEnabled: (request: SetAgentEnabledRequest) => Promise<NdxResult<AgentDefinition>>
+    remove: (request: AgentIdRequest) => Promise<NdxResult<null>>
+  }
+  agentRuns: {
+    list: (request: ListAgentRunsRequest) => Promise<NdxResult<AgentRun[]>>
+    get: (request: AgentRunIdRequest) => Promise<NdxResult<AgentRun>>
+    start: (request: StartAgentRunRequest) => Promise<NdxResult<AgentRun>>
+    cancel: (request: AgentRunIdRequest) => Promise<NdxResult<AgentRun>>
+    onUpdate: (listener: (run: AgentRun) => void) => () => void
   }
 }

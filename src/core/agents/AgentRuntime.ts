@@ -13,7 +13,8 @@ export class AgentRuntime {
 
   constructor(
     private readonly store: AgentStore,
-    private readonly model: AgentModelPort
+    private readonly model: AgentModelPort,
+    private readonly onUpdate: (run: AgentRun) => void = () => {}
   ) {}
 
   async start(agentId: string, objective: string): Promise<AgentRun> {
@@ -32,7 +33,7 @@ export class AgentRuntime {
       updatedAt: now
     }
     run = this.event(run, 'planning', 'Planning with the configured model profile.')
-    await this.store.saveRun(run)
+    await this.persist(run)
     const controller = new AbortController()
     this.controllers.set(run.id, controller)
     void this.execute(agent, run, controller)
@@ -43,7 +44,7 @@ export class AgentRuntime {
     const run = await this.requireRun(runId)
     if (terminal(run.state)) return run
     const cancelling = this.event(run, 'cancelling', 'Cancellation requested by the user.')
-    await this.store.saveRun(cancelling)
+    await this.persist(cancelling)
     this.controllers.get(runId)?.abort()
     return cancelling
   }
@@ -94,8 +95,13 @@ export class AgentRuntime {
     } finally {
       clearTimeout(timeout)
       this.controllers.delete(run.id)
-      await this.store.saveRun(run)
+      await this.persist(run)
     }
+  }
+
+  private async persist(run: AgentRun): Promise<void> {
+    await this.store.saveRun(run)
+    this.onUpdate(run)
   }
 
   private async requireRun(runId: string): Promise<AgentRun> {

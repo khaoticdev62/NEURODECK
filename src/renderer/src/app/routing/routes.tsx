@@ -5,6 +5,8 @@ import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
 import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
 import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
+import { AgentDetail } from '../../features/agents/AgentDetail'
+import { AgentOperationsCenter } from '../../features/agents/AgentOperationsCenter'
 import { GitControlCenter } from '../../features/git/GitControlCenter'
 import { ModelControlCenter } from '../../features/models/ModelControlCenter'
 import { ModelDetail } from '../../features/models/ModelDetail'
@@ -277,6 +279,26 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: <RoutingProfiles />
+  },
+  {
+    routeId: 'agents',
+    screenId: 'ND-016',
+    path: '/agents',
+    title: 'Agent Operations Center',
+    owningEpic: 'Epic 8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <AgentOperationsCenter />
+  },
+  {
+    routeId: 'agent-detail',
+    screenId: 'ND-017',
+    path: '/agents/:agentId',
+    title: 'Agent Detail',
+    owningEpic: 'Epic 8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <AgentDetail />
   },
   {
     routeId: 'learn',

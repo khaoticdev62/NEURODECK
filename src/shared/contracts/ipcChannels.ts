@@ -50,5 +50,15 @@ export const IPC_CHANNELS = {
   localModelStatus: 'localModel.status',
   localModelLoad: 'localModel.load',
   localModelUnload: 'localModel.unload',
-  localModelBenchmark: 'localModel.benchmark'
+  localModelBenchmark: 'localModel.benchmark',
+  agentList: 'agent.list',
+  agentCreate: 'agent.create',
+  agentUpdate: 'agent.update',
+  agentSetEnabled: 'agent.setEnabled',
+  agentRemove: 'agent.remove',
+  agentRunList: 'agentRun.list',
+  agentRunGet: 'agentRun.get',
+  agentRunStart: 'agentRun.start',
+  agentRunCancel: 'agentRun.cancel',
+  agentRunUpdate: 'agentRun.update'
 } as const

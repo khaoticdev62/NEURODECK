@@ -71,3 +71,30 @@ export const agentRunSchema = z.object({
   updatedAt: z.number()
 })
 export type AgentRun = z.infer<typeof agentRunSchema>
+
+export const workspaceAgentRequestSchema = z.object({ workspaceId: z.string().min(1) })
+export type WorkspaceAgentRequest = z.infer<typeof workspaceAgentRequestSchema>
+
+export const agentIdRequestSchema = z.object({ agentId: z.string().min(1) })
+export type AgentIdRequest = z.infer<typeof agentIdRequestSchema>
+
+export const updateAgentRequestSchema = agentIdRequestSchema.extend({
+  agent: createAgentRequestSchema
+})
+export type UpdateAgentRequest = z.infer<typeof updateAgentRequestSchema>
+
+export const setAgentEnabledRequestSchema = agentIdRequestSchema.extend({
+  enabled: z.boolean()
+})
+export type SetAgentEnabledRequest = z.infer<typeof setAgentEnabledRequestSchema>
+
+export const startAgentRunRequestSchema = agentIdRequestSchema.extend({
+  objective: z.string().min(1)
+})
+export type StartAgentRunRequest = z.infer<typeof startAgentRunRequestSchema>
+
+export const agentRunIdRequestSchema = z.object({ runId: z.string().min(1) })
+export type AgentRunIdRequest = z.infer<typeof agentRunIdRequestSchema>
+
+export const listAgentRunsRequestSchema = z.object({ agentId: z.string().min(1).optional() })
+export type ListAgentRunsRequest = z.infer<typeof listAgentRunsRequestSchema>
