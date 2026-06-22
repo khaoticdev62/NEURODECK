@@ -15,6 +15,10 @@ const UniversalTerminal = lazy(async () => {
   const module = await import('../../features/terminal/UniversalTerminal')
   return { default: module.UniversalTerminal }
 })
+const CommandBuilder = lazy(async () => {
+  const module = await import('../../features/terminal/CommandBuilder')
+  return { default: module.CommandBuilder }
+})
 
 /**
  * Route registry (mega-prompt §11). Every route declares the metadata fields
@@ -159,6 +163,20 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     element: (
       <Suspense fallback={<p className="p-4 text-meta text-text-secondary">Loading terminal…</p>}>
         <UniversalTerminal />
+      </Suspense>
+    )
+  },
+  {
+    routeId: 'terminal-command-builder',
+    screenId: 'ND-029',
+    path: '/terminal/builder',
+    title: 'Command Builder',
+    owningEpic: 'Epic 6',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: (
+      <Suspense fallback={<p className="p-4 text-meta text-text-secondary">Loading builder…</p>}>
+        <CommandBuilder />
       </Suspense>
     )
   },

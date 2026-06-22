@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge, TerminalExitEvent } from '@shared/contracts'
 import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
@@ -42,7 +43,9 @@ function renderTerminal(active = true): ReturnType<typeof render> {
       <FocusEngineProvider adapters={[new TestAdapter()]}>
         <AiSafetyProvider>
           <WorkspaceContext.Provider value={workspaceValue(active)}>
-            <UniversalTerminal />
+            <MemoryRouter>
+              <UniversalTerminal />
+            </MemoryRouter>
           </WorkspaceContext.Provider>
         </AiSafetyProvider>
       </FocusEngineProvider>

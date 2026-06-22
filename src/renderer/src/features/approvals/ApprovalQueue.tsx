@@ -45,6 +45,12 @@ export function ApprovalQueue(): React.JSX.Element {
               value={record.plan.createdBy === 'user' ? 'You' : record.plan.createdBy}
             />
             <Field label="Reason" value={record.plan.goal} />
+            {typeof record.action.arguments.command === 'string' && (
+              <Field label="Exact command" value={record.action.arguments.command} />
+            )}
+            {typeof record.action.arguments.target === 'string' && (
+              <Field label="Target" value={record.action.arguments.target} />
+            )}
             <Field label="Scope" value={record.action.scope.description} />
             <div className="flex items-center gap-2">
               <dt className="text-text-tertiary">Risk</dt>

@@ -107,4 +107,6 @@ Matches mega-prompt §5.1:
 - Streaming event payloads are validated again in preload before renderer listeners receive them.
 - ND-028 renders terminal bytes through xterm.js as terminal data, never with `innerHTML`; web-link activation is not enabled. Snapshot/event sequence numbers prevent duplicate or reordered hydration at view mount.
 - Termination uses the shared confirmation surface and states that foreground processes will stop.
-- Direct user terminal input is allowed. AI/generated commands and privileged-command approval are not implemented in this backend slice and must route through the existing plan/policy/permission/review pipeline when ND-029 lands.
+- Direct user terminal input is allowed. AI-generated/intent commands are not implemented; any future model proposal must enter the same plan/policy/permission/review pipeline now used by ND-029 structured user proposals.
+- ND-029 structured commands serialize values/paths with platform-shell quoting and emit pipes, redirects, and conditionals only from enumerated operator blocks. Risk classification is deterministic and advisory; it is not treated as the sole security boundary.
+- All Command Builder submissions use fixed registered tools and revoke prior terminal grants before submission, forcing a new approval. Approval cards show the exact command and terminal target from action arguments before execution. Privileged patterns require `terminal.privileged`; other commands require `terminal.execute`.

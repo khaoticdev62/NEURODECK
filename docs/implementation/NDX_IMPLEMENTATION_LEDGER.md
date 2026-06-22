@@ -524,3 +524,16 @@ Implement the real local PTY/service and cross-process lifecycle required by meg
 - Full validation: typecheck and lint pass with zero errors/warnings; 40 files and 198 tests pass; Electron E2E passes; runtime audit reports zero vulnerabilities. Production build: main 35.49 kB, preload 6.70 kB, initial renderer CSS 29.47 kB / JS 905.83 kB, lazy terminal CSS 7.11 kB / JS 428.83 kB.
 
 ND-028 remains partial: Command Builder, Intent, History, Split, Remote, AI suggestions/explanations, search, copy selection, and richer controller text entry are not fabricated.
+
+### ND-029 Command Builder (partial)
+
+- Added a lazy `/terminal/builder` route and linked it from Universal Terminal.
+- The editor models Program, Subcommand, Flag, Value, Path, Pipe, Redirect, Conditional, and Environment blocks. Values and paths receive POSIX/PowerShell/cmd-specific quoting; only allowlisted operator block values can emit shell control syntax.
+- A deterministic classifier labels known local, network/install, destructive, and privileged patterns. The classifier informs risk presentation and tool choice but is not the security boundary.
+- Four fixed terminal tools (`low`, `medium`, `high`, `privileged`) are globally registered with static capabilities/risk. Every submit revokes the applicable prior grant, enters `ActionQueue`, and requires explicit approval before `writeTerminal` appends Enter.
+- Approval Queue now renders exact command and target fields from the action arguments. This prevents a compromised or incorrect caller description from hiding the actual terminal payload.
+- Command blocks, type cycling, values, target session, copy, add/remove, and review actions register with the Spatial Focus Engine. Running-session exit events remove stale targets.
+- `commandBuilderModel.test.ts` covers quoting, operator allowlisting, environment syntax, risk classification, and tool routing. `terminalCommandTools.test.ts` covers fixed registrations, argument validation, and real client delegation. `CommandBuilder.test.tsx` proves the command remains unexecuted until Approval Queue approval, then reaches the selected terminal exactly once.
+- Full validation: typecheck and lint pass with zero errors/warnings; 43 files and 205 tests pass. Production build succeeds with a 16.39 kB lazy Command Builder chunk; main 35.49 kB, preload 6.70 kB, initial renderer CSS 29.95 kB / JS 910.32 kB. Runtime audit remains zero production vulnerabilities.
+
+ND-029 remains partial: context-aware option catalogs, local man-page explanations, saved reusable actions, remote targets, and AI-generated/intent proposals are not fabricated.

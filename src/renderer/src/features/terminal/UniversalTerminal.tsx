@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { TerminalSession, Workspace } from '@shared/contracts'
 import { EmptyState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
@@ -36,6 +37,7 @@ function WorkspaceTerminal({
 }: {
   workspace: Workspace
 }): React.JSX.Element {
+  const navigate = useNavigate()
   const [sessions, setSessions] = useState<TerminalSession[]>([])
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -108,6 +110,7 @@ function WorkspaceTerminal({
         </header>
         <div className="p-2">
           <NewSessionButton onCreate={() => void handleCreate()} />
+          <BuilderButton onOpen={() => navigate('/terminal/builder')} />
         </div>
         <div className="min-h-0 flex-1 overflow-auto px-2 pb-2">
           {sessions.map((session) => (
@@ -187,6 +190,19 @@ function WorkspaceTerminal({
         onCancel={() => setTerminateReviewSessionId(null)}
       />
     </div>
+  )
+}
+
+function BuilderButton({ onOpen }: { onOpen: () => void }): React.JSX.Element {
+  const { ref } = useFocusable<HTMLButtonElement>({
+    id: 'terminal-open-command-builder',
+    groupId: 'terminal-workstation',
+    onActivate: onOpen
+  })
+  return (
+    <ControllerButton ref={ref} variant="ghost" className="mt-1 w-full" onClick={onOpen}>
+      Command Builder
+    </ControllerButton>
   )
 }
 
