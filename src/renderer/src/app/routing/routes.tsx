@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import type { ControllerHintProps } from '../../components/navigation/ControllerHint'
 import { DEFAULT_PRIMARY_HINTS } from '../../components/navigation/defaultControllerHints'
 import { ControllerCalibration } from '../../features/onboarding/ControllerCalibration'
@@ -420,4 +421,3 @@ export function renderRouteElement(route: RouteDefinition): React.JSX.Element {
     />
   )
 }
-import { lazy, Suspense } from 'react'
