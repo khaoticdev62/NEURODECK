@@ -49,7 +49,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] ND-003 First-Run Welcome — `features/onboarding/FirstRunWelcome.tsx`; purely informational, no backend dependency
 - [x] ND-004 Controller Calibration — `features/onboarding/ControllerCalibration.tsx`; button detection and haptics intensity are real (Epic 2 runtime); dead zone/hold duration shown as real read-only values, not fake sliders (adjustability deferred to Epic 11)
 - [ ] ND-005 AI Provider Setup — **deferred**: needs Model Router (Epic 9) and secure secret storage (Epic 4/10); a form that can't actually connect to anything would be fake
-- [ ] ND-006 Workspace Discovery — **deferred**: needs typed IPC (Epic 4) and Workspace Service (Epic 5) for real filesystem scanning
+- [ ] ND-006 Workspace Discovery — **partially real as of Epic 5**: the manual native folder picker (`WorkspaceHub`) is real; multi-source scanning (Git repos, Steam library, SSH hosts, removable storage) still needs those respective services (Epic 6/10)
 - [ ] ND-007 Guided Controller Tutorial — **deferred**: only 2 of 7 lessons (move focus, open/back) have real backing today; the rest need AI plans/approval (Epic 4) and task pause/resume (Epic 8)
 - [x] ND-008 Home Command Center — `features/home/HomeCommandCenter.tsx`; renders the spec's own defined Empty State ("Create or discover a workspace") since zero workspaces genuinely exist; Continue/Pinned/Recommendations modules wait for Epic 5/8
 - [x] ND-009 Universal Command Palette — `features/command-palette/CommandPalette.tsx`; real, modal-trapped, searches the real route registry ("Screens" domain only — files/workspaces/workflows/agents/settings domains wait for their owning epics)
@@ -71,17 +71,18 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] Prompt-injection resistance verified (§15.4) — **deferred**: nothing untrusted is ingested yet (no browser/terminal/file content pipelines exist — Epics 5/6/10); moot until there's untrusted content to defend against
 - **New real tool**: `ai-safety/tools/resetHapticsIntensityTool.ts`, registered via `CoreToolsBootstrap.tsx`, reachable from the Command Palette's new "Tools" domain — demonstrates the full registry → permission → approval → execution → audit pipeline end to end with a genuinely real, low-risk, reversible action
 
-### Epic 5 — Workspaces and files
+### Epic 5 — Workspaces and files ⚠️ read-only by design; destructive file ops wait for Recovery Service (see ledger)
 
-- [ ] Workspace Service (persistence, §19)
-- [ ] Workspace discovery (ND-006 real backend)
-- [ ] ND-018 Workspace Hub
-- [ ] ND-019 Workspace Detail
-- [ ] ND-020 Workspace Switcher
-- [ ] File Service (§20)
-- [ ] ND-026 File Manager
-- [ ] ND-027 File Preview
-- [ ] Recovery integration (checkpoints on file ops)
+- [x] Typed cross-process IPC contracts (§14) — `shared/contracts/{error,workspace,file,ipcChannels,bridge}.ts`; Zod-validated request/response schemas, normalized `NdxError`/`NdxResult`. This is the trigger Epic 4's ledger flagged ("revisit when Epic 5/6 add tools that need main-process access") — real now because workspace persistence and file access both need Node's `fs`/main process.
+- [x] Workspace Service (persistence, §19) — `core/workspaces/WorkspaceStore.ts` on top of `core/persistence/JsonStore.ts`; real create (verifies the folder exists via `fs.stat`)/list/remove/get, persisted to `app.getPath('userData')`
+- [ ] Workspace discovery (ND-006 real backend, full version) — **deferred**: only the manual native folder picker is real; Git repos/Steam library/SSH hosts/removable storage scanning still need those respective services (Epic 6/10)
+- [x] ND-018 Workspace Hub — `features/workspaces/WorkspaceHub.tsx`; real cards, real native folder picker via `dialog.showOpenDialog`
+- [x] ND-019 Workspace Detail — `features/workspaces/WorkspaceDetail.tsx`; Overview + Files tabs real; Sessions/Git/Tasks/Models/Permissions/Environment/History deferred (need Epic 6/8/9/10 services)
+- [x] ND-020 Workspace Switcher — `features/workspaces/WorkspaceSwitcherOverlay.tsx`; opens on the real `workspace.switcher` action (LT+RT chord, wired in Epic 2), switches the real active workspace
+- [x] File Service (§20) — `core/files/FileService.ts`; real `list`/`read`, path-traversal protection via `fs.realpath` (catches symlink escapes, not just literal `../`, verified with a real symlink in tests). Write/copy/move/rename/delete/compress/extract/secure-delete **deferred** — every one is destructive and needs the Recovery Service (Epic 11) first
+- [x] ND-026 File Manager — `features/workspaces/FileManager.tsx`; real workspace-scoped directory listing, breadcrumb navigation, read-only
+- [x] ND-027 File Preview — `features/workspaces/FilePreview.tsx`; real text/code preview with truncation notice over 256 KB; images/PDF/audio/video/archive/diff deferred (each needs its own renderer)
+- [ ] Recovery integration (checkpoints on file ops) — **deferred**: no destructive operations exist yet to checkpoint; revisit with Epic 11
 
 ### Epic 6 — Terminal and Git
 

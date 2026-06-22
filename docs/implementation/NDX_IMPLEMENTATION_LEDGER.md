@@ -360,3 +360,70 @@ npm run test:e2e     → 1 passed
 - **§14 Typed cross-process IPC contracts** — the one real tool is renderer-only; no real cross-process tool exists yet to justify building the IPC layer. Revisit the moment Epic 5/6 introduce a tool needing main-process access (filesystem, shell).
 - **Spec's "Terminate safe processes" / "Explain" buttons on Emergency Stop** — no safe/unsafe process classification or AI explanation feature exists to back them.
 - **Per-capability permission UI customization** (ND-015's "Customize: change scope, approve specific files only, read-only instead...") — only "Approve once" and "Deny" are wired; the richer customization options need real per-file/per-resource scoping that doesn't exist until Epic 5/6 tools have actual file/resource arguments to scope.
+
+## Epic 5 — Workspaces and files
+
+### Scope decision
+
+This is the first epic with a real reason to cross the main/renderer process boundary: workspaces need durable persistence (`app.getPath('userData')`) and file browsing needs Node's `fs`, neither of which the renderer can do directly under the hardened `contextIsolation`/`sandbox` baseline from Epic 0. That's exactly the trigger the Epic 4 ledger entry flagged for revisiting §14's typed IPC layer — so Epic 5 builds it for real: Zod-validated request/response schemas in `shared/contracts/`, normalized `NdxError`/`NdxResult` shapes, and a narrow `window.ndx` preload bridge (replacing the unused generic `@electron-toolkit/preload` wrapper, which is now uninstalled).
+
+File operations are scoped to **read-only** (list/read/stat) on purpose. Mega-prompt §2.4's "no destructive action without a real recovery path" is non-negotiable, and copy/move/rename/delete/compress/extract/secure-delete are all destructive or semi-destructive — every one of them needs the Recovery Service (Epic 11) before it can ship honestly. Building any of them now would mean either skipping the recovery requirement or faking it; read-only listing/reading needed neither, so that's where the line is drawn.
+
+Workspace Detail (ND-019) ships with only its Overview and Files tabs real. The spec's other seven tabs (Sessions, Git, Tasks, Models, Permissions, Environment, History) each need a service this epic doesn't own (Epic 6 terminal/Git, Epic 8 tasks/workflows, Epic 9 models, Epic 10 environment). File Preview (ND-027) ships with only text/code preview real — Markdown rendering, images, PDF, audio, video, archive contents, and diff views each need a dedicated renderer that doesn't exist yet; showing raw text instead of a fake rich preview is the honest behavior until each one is built.
+
+### What was built
+
+- **Shared IPC contracts** (`src/shared/contracts/`): `error.ts` (`NdxError`, `NdxResult<T>`, `nextCorrelationId()`, `ndxError()`), `workspace.ts` and `file.ts` (Zod schemas + inferred types for every request/response shape), `ipcChannels.ts` (single source of truth for channel name strings), `bridge.ts` (the `NdxBridge` interface — defined in `shared`, not `preload`, specifically so renderer code can reference it without crossing into preload's separate TypeScript project and tripping the composite-project file-listing rule).
+- **`JsonStore<T>`** (`core/persistence/JsonStore.ts`): generic JSON-file persistence with atomic writes (temp file + rename, so a crash mid-write can't corrupt the existing file). Tested against real temp directories (`os.tmpdir()`), not mocked `fs`.
+- **`WorkspaceStore`** (`core/workspaces/WorkspaceStore.ts`): real `list`/`create`/`remove`/`get`, built on `JsonStore`. `create()` verifies the folder actually exists and is a directory (via real `fs.stat`) before persisting it — rejects files and missing paths with real errors, not silently.
+- **`FileService`** (`core/files/FileService.ts`): real `list`/`read` scoped to a workspace root. The path-traversal defense (`resolveWithinRoot`) uses `fs.realpath` on both the root and the resolved target — this catches not just literal `../` strings but **symlink-based escapes** (a symlink inside the workspace pointing to a directory outside it), verified by a real test that creates an actual symlink via `fs.symlink` and confirms it's rejected.
+- **Main-process IPC wiring** (`src/main/ipc/`): `registerWorkspaceHandlers.ts` and `registerFileHandlers.ts` — every handler parses its payload with the matching Zod schema before touching the store/service, and returns a typed `NdxResult` (never throws across the IPC boundary). `workspace.pickFolder` uses Electron's real `dialog.showOpenDialog`. `src/main/index.ts` now tracks the live `BrowserWindow` reference and calls `registerIpcHandlers()` once on `app.whenReady()`.
+- **New preload bridge** (`src/preload/index.ts`): replaced the generic `@electron-toolkit/preload` `electronAPI`/`window.electron`/`window.api` exposure (confirmed unused anywhere in the renderer) with a narrow `window.ndx` object — `workspaces.{list,create,remove,pickFolder}` and `files.{list,read}` — each method maps to exactly one validated channel via `ipcRenderer.invoke`, never a raw `send`/`on` passthrough. The `@electron-toolkit/preload` package itself was uninstalled.
+- **Renderer IPC clients** (`renderer/src/services/ipc/`): `ndxBridge.ts` (the `getNdxBridge()`/`bridgeUnavailableError()` guard so a missing bridge produces a real typed error instead of a `TypeError` crash), `workspaceClient.ts`, `fileClient.ts`.
+- **`WorkspaceProvider`** (`features/workspaces/WorkspaceProvider.tsx` + `WorkspaceContext.ts` + `useWorkspaces.ts`): real workspace list/active-workspace state, mounted in `AppProviders` between `AiSafetyProvider` and `DisplayModeProvider`. "Active workspace" is renderer-only UI state today — it doesn't yet persist across restarts, since that needs the "UI resume state" piece of the spec's workspace record, deferred until something else (Epic 6 sessions, Epic 8 tasks) needs resuming too.
+- **ND-018 Workspace Hub** (`WorkspaceHub.tsx`): real cards backed by `WorkspaceStore`; "Add workspace" opens the genuine native folder picker.
+- **ND-019 Workspace Detail** (`WorkspaceDetail.tsx`): Overview (name/root path/created date — only fields that are actually real) and Files tabs.
+- **ND-020 Workspace Switcher** (`WorkspaceSwitcherOverlay.tsx`): opens on the real `workspace.switcher` action (the LT+RT chord wired back in Epic 2), modal-trapped, switches the real active workspace.
+- **ND-026 File Manager** (`FileManager.tsx`): real directory listing for the active workspace with breadcrumb navigation, read-only.
+- **ND-027 File Preview** (`FilePreview.tsx`): real text/code content rendering, with a real truncation notice for files over the 256 KB preview cap.
+- **Routes wired**: `/workspaces` → Workspace Hub, `/workspaces/detail` → Workspace Detail, `/files` → File Manager (all previously epic-boundary placeholders).
+
+### A real bug found and fixed
+
+Two `react-hooks/set-state-in-effect` lint errors (a React Compiler rule new to this epic's code, not previously triggered): `WorkspaceProvider`'s mount effect called `void refresh()`, and `refresh()`'s first synchronous statement was `setLoading(true)` — a synchronous setState call disguised behind an async function call. Fixed by inlining the mount-only fetch directly in the effect so every `setState` call happens inside the `.then()` continuation, never synchronously in the effect body. The same pattern recurred in `FileManager` and `FilePreview` (both called `setLoading(true)` synchronously before their first `await`) — fixed by initializing `loading` from the relevant prop/state (`Boolean(activeWorkspace)` / `Boolean(relativePath)`) instead of imperatively flipping it back to `true` inside the effect on every dependency change.
+
+### Test inventory additions
+
+| Suite                                                                                                                 | Location                                                          | Count |
+| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----- |
+| `JsonStore` (default value, write/read real JSON, creates parent dirs, no leftover temp file, full overwrite)         | `core/persistence/__tests__/JsonStore.test.ts`                     | 5     |
+| `WorkspaceStore` (empty list, create from real dir, rejects missing/non-dir paths, remove, persists across instances) | `core/workspaces/__tests__/WorkspaceStore.test.ts`                 | 6     |
+| `FileService` (list/read real files, subdirectory listing, rejects `../` escape, rejects symlink escape, directory-as-file rejection, truncation)                                                                                        | `core/files/__tests__/FileService.test.ts`                         | 8     |
+| `workspaceClient` (bridge-unavailable fallback, delegates list/create/remove/pickFolder)                              | `renderer/src/services/ipc/__tests__/workspaceClient.test.ts`      | 5     |
+| `fileClient` (bridge-unavailable fallback, delegates list/read)                                                       | `renderer/src/services/ipc/__tests__/fileClient.test.ts`           | 3     |
+| `WorkspaceHub` (empty state, real list, add-from-picker flow, remove flow)                                            | `features/workspaces/__tests__/WorkspaceHub.test.tsx`              | 4     |
+| `FileManager` (no-workspace empty state, real listing, directory navigation, real preview on file activation)        | `features/workspaces/__tests__/FileManager.test.tsx`               | 4     |
+| `WorkspaceSwitcherOverlay` (opens/closes on real `workspace.switcher` action, empty state, switches active workspace) | `features/workspaces/__tests__/WorkspaceSwitcherOverlay.test.tsx`  | 4     |
+| `WorkspaceDetail` (no-workspace empty state, real Overview metadata, switches to real File Manager)                  | `features/workspaces/__tests__/WorkspaceDetail.test.tsx`           | 3     |
+
+Total: 171 tests passing — was 129 at end of Epic 4.
+
+### Validation evidence
+
+```text
+npm run typecheck   → 0 errors
+npm run lint         → 0 errors, 0 warnings
+npm run test         → 33 files, 171 tests passed
+npm run build        → succeeded (renderer bundle: 26.38 kB CSS, 881.45 kB JS; main bundle grew from 2.73 kB to 12.77 kB with real IPC code)
+npm run test:e2e     → 1 passed
+```
+
+### Deferred items with explicit reason
+
+- **All destructive file operations** (write/copy/move/rename/duplicate/compress/extract/trash/secure-delete) — every one needs a real recovery path first; Recovery Service is Epic 11.
+- **Workspace Detail's Sessions/Git/Tasks/Models/Permissions/Environment/History tabs** — each needs a service this epic doesn't own (Epic 6/8/9/10).
+- **Multi-source workspace discovery** (Git repos, Steam library, SSH hosts, removable storage) — only the manual native folder picker is real; ND-006 (Workspace Discovery) remains partial from Epic 3.
+- **File Preview's images/PDF/audio/video/archive/diff support** — each needs its own renderer; only text/code preview is real.
+- **AI actions on file preview** (Summarize/Explain/etc.) — no AI/model exists yet (Epic 9).
+- **Recovery integration/checkpoints** — explicitly out of scope since no destructive operations exist yet to checkpoint.
+- **Workspace "branch/health/last-opened" card fields** (spec's richer Workspace Hub card) — need Git (Epic 6) and task/session state (Epic 8).

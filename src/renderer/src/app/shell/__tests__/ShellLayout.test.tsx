@@ -8,6 +8,7 @@ import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvid
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { DisplayModeProvider } from '../../../state/displayMode'
 import { useDisplayMode } from '../../../state/useDisplayMode'
+import { WorkspaceProvider } from '../../../features/workspaces/WorkspaceProvider'
 import { ShellLayout } from '../ShellLayout'
 
 function ModeSwitcher(): React.JSX.Element {
@@ -30,15 +31,17 @@ function renderShell(): ReturnType<typeof render> {
     <ToastProvider>
       <FocusEngineProvider adapters={[new TestAdapter()]}>
         <AiSafetyProvider>
-          <DisplayModeProvider>
-            <MemoryRouter initialEntries={['/']}>
-              <Routes>
-                <Route element={<ShellLayout />}>
-                  <Route path="/" element={<ModeSwitcher />} />
-                </Route>
-              </Routes>
-            </MemoryRouter>
-          </DisplayModeProvider>
+          <WorkspaceProvider>
+            <DisplayModeProvider>
+              <MemoryRouter initialEntries={['/']}>
+                <Routes>
+                  <Route element={<ShellLayout />}>
+                    <Route path="/" element={<ModeSwitcher />} />
+                  </Route>
+                </Routes>
+              </MemoryRouter>
+            </DisplayModeProvider>
+          </WorkspaceProvider>
         </AiSafetyProvider>
       </FocusEngineProvider>
     </ToastProvider>

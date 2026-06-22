@@ -5,6 +5,9 @@ import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
 import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
 import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
+import { FileManager } from '../../features/workspaces/FileManager'
+import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
+import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
 /**
@@ -97,7 +100,18 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'Workspace Hub',
     owningEpic: 'Epic 5',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <WorkspaceHub />
+  },
+  {
+    routeId: 'workspaces-detail',
+    screenId: 'ND-019',
+    path: '/workspaces/detail',
+    title: 'Workspace Detail',
+    owningEpic: 'Epic 5',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <WorkspaceDetail />
   },
   {
     routeId: 'build',
@@ -115,7 +129,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'File Manager',
     owningEpic: 'Epic 5',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <FileManager />
   },
   {
     routeId: 'terminal',

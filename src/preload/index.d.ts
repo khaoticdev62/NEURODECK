@@ -1,8 +1,7 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
+import type { NdxBridge } from '../shared/contracts'
 
 declare global {
   interface Window {
-    electron: ElectronAPI
-    api: unknown
+    ndx: NdxBridge
   }
 }
