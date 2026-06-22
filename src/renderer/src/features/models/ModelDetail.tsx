@@ -126,14 +126,14 @@ export function ModelDetail(): React.JSX.Element {
             {busy ? 'Working…' : 'Probe provider'}
           </ControllerButton>
         </div>
-      {!testResult && (
+        {!testResult && (
           <p className="text-meta text-text-tertiary">
             Probe the real endpoint to discover models. Capabilities are not inferred from model
             names.
           </p>
-      )}
-      {testResult && <p className="text-meta text-text-secondary">{testResult.message}</p>}
-      {testResult?.models.map((model) => (
+        )}
+        {testResult && <p className="text-meta text-text-secondary">{testResult.message}</p>}
+        {testResult?.models.map((model) => (
           <div
             key={model.id}
             className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2"

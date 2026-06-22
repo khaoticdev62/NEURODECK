@@ -76,18 +76,25 @@ export class ModelProviderService {
     baseUrl: string,
     apiKey: string | null,
     modelId: string,
-    request: ModelCompletionRequest
+    request: ModelCompletionRequest,
+    signal?: AbortSignal
   ): Promise<ProviderCompletion> {
-    const response = await this.request(baseUrl, apiKey, '/chat/completions', {
-      method: 'POST',
-      body: JSON.stringify({
-        model: modelId,
-        messages: request.messages,
-        temperature: request.temperature,
-        max_tokens: request.maxTokens,
-        stream: false
-      })
-    })
+    const response = await this.request(
+      baseUrl,
+      apiKey,
+      '/chat/completions',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model: modelId,
+          messages: request.messages,
+          temperature: request.temperature,
+          max_tokens: request.maxTokens,
+          stream: false
+        })
+      },
+      signal
+    )
     if (!response.ok) throw new Error(`Provider responded with HTTP ${response.status}.`)
     const body = (await response.json()) as OpenAiCompletionResponse
     const content = body.choices?.[0]?.message?.content
@@ -106,12 +113,15 @@ export class ModelProviderService {
     baseUrl: string,
     apiKey: string | null,
     path: string,
-    init: RequestInit = {}
+    init: RequestInit = {},
+    externalSignal?: AbortSignal
   ): Promise<Response> {
     const headers = new Headers(init.headers)
     headers.set('Content-Type', 'application/json')
     if (apiKey) headers.set('Authorization', `Bearer ${apiKey}`)
     const controller = new AbortController()
+    const abort = (): void => controller.abort()
+    externalSignal?.addEventListener('abort', abort, { once: true })
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
     try {
       return await fetch(`${baseUrl.replace(/\/+$/, '')}${path}`, {
@@ -121,6 +131,7 @@ export class ModelProviderService {
       })
     } finally {
       clearTimeout(timeout)
+      externalSignal?.removeEventListener('abort', abort)
     }
   }
 }

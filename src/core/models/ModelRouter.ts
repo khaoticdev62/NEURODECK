@@ -51,7 +51,10 @@ export class ModelRouter {
     }
   }
 
-  async complete(request: ModelCompletionRequest): Promise<ModelCompletionResult> {
+  async complete(
+    request: ModelCompletionRequest,
+    signal?: AbortSignal
+  ): Promise<ModelCompletionResult> {
     const startedAt = Date.now()
     const decision = await this.route(request)
     const provider = await this.store.get(decision.providerId)
@@ -61,7 +64,8 @@ export class ModelRouter {
       provider.baseUrl,
       apiKey,
       decision.modelId,
-      request
+      request,
+      signal
     )
     return {
       ...decision,

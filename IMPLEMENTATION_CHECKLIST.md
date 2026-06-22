@@ -108,7 +108,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 ### Epic 8 — Agents and workflows ⚠️ Workflow Engine real (sequential model); Agent Runtime fully deferred to Epic 9 (see ledger)
 
-- [ ] Agent Runtime (§17) — **deferred**: an agent is fundamentally an AI-driven entity (Role/Goal/Model profile that plans and decides); with no model router, a real agent would be an empty shell. Confirmed scope with the user before starting Epic 8.
+- [ ] Agent Runtime (§17) — **core lifecycle real; execution/UI integration remains**: persisted definitions and runs now include every required identity/scope/policy/resource field; planning uses the real Epic 9 router; cancellation aborts provider requests; all state transitions and token usage are persisted. Typed IPC, ActionQueue-backed tool execution, pause/resume, child-agent bounds, ND-016, and ND-017 remain for subsequent sprint items.
 - [ ] ND-016 Agent Operations Center — **deferred**: needs Agent Runtime
 - [ ] ND-017 Agent Detail — **deferred**: needs Agent Runtime
 - [x] ND-032 Workflow Library — **real**: lists persisted workflow definitions for the active workspace, real Run/Open/Remove actions
