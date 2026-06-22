@@ -17,6 +17,7 @@ interface SessionRecord {
   pty: IPty
   output: string
   truncated: boolean
+  sequence: number
   dataSubscription: IDisposable
   exitSubscription: IDisposable
 }
@@ -81,13 +82,15 @@ export class TerminalService {
     record.pty = pty
     record.output = ''
     record.truncated = false
+    record.sequence = 0
     record.dataSubscription = pty.onData((data) => {
+      record.sequence += 1
       record.output += data
       if (record.output.length > MAX_OUTPUT_CHARS) {
         record.output = record.output.slice(-MAX_OUTPUT_CHARS)
         record.truncated = true
       }
-      const event = { sessionId: info.id, data }
+      const event = { sessionId: info.id, data, sequence: record.sequence }
       for (const listener of this.dataListeners) listener(event)
     })
     record.exitSubscription = pty.onExit(({ exitCode }) => {
@@ -108,7 +111,12 @@ export class TerminalService {
 
   snapshot(sessionId: string): TerminalSnapshot {
     const record = this.requireSession(sessionId)
-    return { session: { ...record.info }, output: record.output, truncated: record.truncated }
+    return {
+      session: { ...record.info },
+      output: record.output,
+      truncated: record.truncated,
+      lastSequence: record.sequence
+    }
   }
 
   write(sessionId: string, data: string): void {

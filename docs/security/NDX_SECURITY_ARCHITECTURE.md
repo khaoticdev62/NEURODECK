@@ -105,4 +105,6 @@ Matches mega-prompt §5.1:
 - PTY input is runtime-schema limited to 64 KiB per message; geometry and session counts are bounded; retained output is capped at 1 MiB per session.
 - Secret-like inherited variables (`TOKEN`, `SECRET`, `PASSWORD`, `API_KEY`, private-key and authorization names) are removed before shell creation.
 - Streaming event payloads are validated again in preload before renderer listeners receive them.
+- ND-028 renders terminal bytes through xterm.js as terminal data, never with `innerHTML`; web-link activation is not enabled. Snapshot/event sequence numbers prevent duplicate or reordered hydration at view mount.
+- Termination uses the shared confirmation surface and states that foreground processes will stop.
 - Direct user terminal input is allowed. AI/generated commands and privileged-command approval are not implemented in this backend slice and must route through the existing plan/policy/permission/review pipeline when ND-029 lands.

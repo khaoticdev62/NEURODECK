@@ -21,5 +21,7 @@ test('boots and renders the baseline shell', async () => {
   await expect(window.getByRole('banner')).toBeVisible()
   await expect(window.getByRole('navigation', { name: 'Primary' })).toBeVisible()
   await expect(window.getByRole('link', { name: 'Home' })).toBeVisible()
+  await window.getByRole('link', { name: 'Terminal' }).click()
+  await expect(window.getByText('No active workspace')).toBeVisible()
   await app.close()
 })

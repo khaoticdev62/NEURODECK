@@ -511,3 +511,16 @@ Implement the real local PTY/service and cross-process lifecycle required by meg
 - `terminalClient.test.ts` covers bridge absence, method delegation, and streaming subscription cleanup.
 - Full validation: typecheck and lint pass with zero errors/warnings; 38 files and 195 tests pass; production build succeeds (main 35.25 kB, preload 6.60 kB, renderer CSS 28.67 kB / JS 902.25 kB); Electron E2E smoke test passes with the native PTY dependency loaded; `npm audit --omit=dev` reports zero runtime vulnerabilities.
 - Deferred: ND-028, ND-029, persisted history, search, copy selection, SSH terminals, structured proposals, intent mode, privileged-command classification/review, and richer secret redaction.
+
+### ND-028 Universal Terminal — Direct mode (partial)
+
+- Added `/terminal` as a real lazy-loaded route. `@xterm/xterm` and `@xterm/addon-fit` are isolated in a 428.83 kB route chunk instead of increasing the initial renderer bundle.
+- `UniversalTerminal.tsx` provides a controller-focusable session rail, real workspace and Git-branch context, create/select/terminate lifecycle, live running/exited status, and explicit empty/error/loading states.
+- `TerminalViewport.tsx` owns one xterm instance, forwards user input to the real PTY, fits/resizes with the viewport, and renders ANSI terminal output without raw HTML.
+- Snapshot hydration and live events now carry monotonic per-session sequence numbers. Events received during hydration are queued, already-snapshotted events are discarded, and only newer events append, preventing duplicate or reordered terminal text.
+- Termination now requires the shared confirmation dialog and explicitly warns that foreground processes will stop.
+- Stable merged refs prevent focus registration churn; the xterm surface, new-session action, session selectors, and termination action register with the Spatial Focus Engine.
+- `UniversalTerminal.test.tsx` covers workspace gating, real client delegation, create/select, branch context, reviewed termination, and exit state. `TerminalViewport.test.tsx` proves ordered snapshot/event hydration. E2E now opens the lazy terminal route.
+- Full validation: typecheck and lint pass with zero errors/warnings; 40 files and 198 tests pass; Electron E2E passes; runtime audit reports zero vulnerabilities. Production build: main 35.49 kB, preload 6.70 kB, initial renderer CSS 29.47 kB / JS 905.83 kB, lazy terminal CSS 7.11 kB / JS 428.83 kB.
+
+ND-028 remains partial: Command Builder, Intent, History, Split, Remote, AI suggestions/explanations, search, copy selection, and richer controller text entry are not fabricated.

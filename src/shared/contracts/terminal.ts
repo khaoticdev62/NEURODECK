@@ -45,13 +45,15 @@ export type ListTerminalSessionsRequest = z.infer<typeof listTerminalSessionsReq
 export const terminalSnapshotSchema = z.object({
   session: terminalSessionSchema,
   output: z.string(),
-  truncated: z.boolean()
+  truncated: z.boolean(),
+  lastSequence: z.number().int().nonnegative()
 })
 export type TerminalSnapshot = z.infer<typeof terminalSnapshotSchema>
 
 export const terminalDataEventSchema = z.object({
   sessionId: z.string().uuid(),
-  data: z.string()
+  data: z.string(),
+  sequence: z.number().int().positive()
 })
 export type TerminalDataEvent = z.infer<typeof terminalDataEventSchema>
 

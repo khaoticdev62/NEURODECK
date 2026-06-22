@@ -2,7 +2,7 @@
 
 ## Current state
 
-**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** Local Git integration includes a dedicated partial ND-025 Git Control Center. The Terminal Service foundation is now real too: `node-pty` local shells, multiple workspace-scoped sessions, resize/input/output/terminate lifecycle, exit status, bounded output snapshots, typed streaming IPC, and shutdown cleanup. ND-028/ND-029 UI and advanced terminal capabilities remain incomplete.
+**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** Local Git integration includes a dedicated partial ND-025 Git Control Center. ND-028 Universal Terminal now has a real Direct mode: lazy-loaded xterm.js over the real PTY service, multiple session switching, workspace/Git context, ordered snapshot + live output, input/resize, exit state, controller focus registration, and reviewed termination. ND-029 and advanced terminal modes remain incomplete.
 
 ### What exists right now
 
@@ -66,15 +66,15 @@ Neurodeck/
 ```bash
 npm run typecheck   # 0 errors
 npm run lint         # 0 errors, 0 warnings
-npm run test         # 195/195 unit tests passing across 38 files
+npm run test         # 198/198 unit tests passing across 40 files
 npm run build        # electron-vite build succeeds (current bundle evidence in implementation ledger)
 npm run test:e2e     # 1/1 Playwright Electron smoke test passing
 ```
 
 ## What to do next
 
-1. **Continue Epic 6 with ND-028 Universal Terminal.** Build the controller-native terminal UI on the real PTY service; do not use a fake terminal transcript or `exec` fallback.
-2. Then build ND-029 Command Builder with structured proposals and the existing permission/review pipeline before any generated command can execute.
+1. **Continue Epic 6 with ND-029 Command Builder.** Build structured, editable command proposals and integrate the existing permission/review pipeline before any generated command can execute.
+2. Return to ND-028's History/Split/Remote modes only when their real supporting services are available; do not fabricate them.
 3. Do not mark Git Service or ND-025 complete until fetch/pull/push/restore/stash/conflict detection/remote inspection, remotes, pull requests, and recovery branches are real and tested.
 4. Alternatively, **finish more of Epic 3/4's deferred screens** if a dependency becomes available sooner (e.g. if Epic 9's Model Router lands out of order, ND-013 AI Command Canvas and ND-005 AI Provider Setup both become buildable).
 5. Keep `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` current as each epic lands — it's not a one-time artifact.

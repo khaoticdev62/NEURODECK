@@ -87,7 +87,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 ### Epic 6 — Terminal and Git
 
 - [ ] Terminal Service / PTY (§21) — **partially real**: `node-pty` local shells, multiple workspace-scoped sessions, resize, streaming output, bounded snapshots, cancellation, exit status, working directory, sanitized inherited environment, and typed IPC are real; history/search/copy selection/SSH/proposals/Command Builder/intent mode remain
-- [ ] ND-028 Universal Terminal
+- [ ] ND-028 Universal Terminal — **partially real**: `/terminal` Direct mode uses xterm.js over real PTY sessions with controller-focusable create/select/focus/terminate controls, resize, ordered streaming, exit state, workspace/branch context, and reviewed termination; Command Builder/Intent/History/Split/Remote modes and AI suggestions remain
 - [ ] ND-029 Command Builder
 - [ ] AI intent-to-command proposals (reviewed, not auto-executed)
 - [ ] Git Service (§22) — **partially real**: repository detection, status, diff, stage, unstage, commit, local branch list/checkout, and log are implemented through typed IPC; fetch/pull/push/restore/stash/conflict detection/remote inspection remain

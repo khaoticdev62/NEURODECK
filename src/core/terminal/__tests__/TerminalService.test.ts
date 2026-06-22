@@ -28,6 +28,7 @@ describe('TerminalService', () => {
     await outputPromise
     const snapshot = service.snapshot(session.id)
     expect(snapshot.output).toContain('NDX_PTY_OK')
+    expect(snapshot.lastSequence).toBeGreaterThan(0)
     expect(snapshot.session).toMatchObject({ cols: 120, rows: 40, status: 'running' })
 
     const exitPromise = waitForExit(service, session.id)

@@ -11,6 +11,11 @@ import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
 import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
+const UniversalTerminal = lazy(async () => {
+  const module = await import('../../features/terminal/UniversalTerminal')
+  return { default: module.UniversalTerminal }
+})
+
 /**
  * Route registry (mega-prompt §11). Every route declares the metadata fields
  * the spec requires; fields owned by epics that haven't landed yet are
@@ -150,7 +155,12 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'Universal Terminal',
     owningEpic: 'Epic 6',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: (
+      <Suspense fallback={<p className="p-4 text-meta text-text-secondary">Loading terminal…</p>}>
+        <UniversalTerminal />
+      </Suspense>
+    )
   },
   {
     routeId: 'browser',
@@ -209,3 +219,4 @@ export function renderRouteElement(route: RouteDefinition): React.JSX.Element {
     />
   )
 }
+import { lazy, Suspense } from 'react'
