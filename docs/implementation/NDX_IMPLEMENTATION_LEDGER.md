@@ -711,7 +711,7 @@ npm audit --production → 0 vulnerabilities
 
 ### Addendum — ND-044 Display and Theme Settings
 
-`tokens.css` already had two OS-driven overrides — `@media (prefers-reduced-motion: reduce)` and `@media (prefers-contrast: more)` — that the app honors automatically but the user could never force independently of the OS setting. This slice adds three real, persisted, user-facing overrides on top: `[data-reduce-motion='true']` and `[data-high-contrast='true']` attribute selectors mirroring those exact media-query blocks, plus a genuinely new capability — `--ndx-text-scale`, a custom-property multiplier the whole `rem`-based type scale (`--font-size-body`/`-meta`/`-title`/`-display`) now multiplies by via `calc()`. Text scale couldn't be implemented by setting `font-size` on a nested element the way you might expect, because `rem` units are always relative to the *root* element regardless of nesting depth — the multiplier approach avoids that trap entirely and follows the exact precedent `--ndx-density` (theater mode) already set for cascading a numeric override through nested custom properties.
+`tokens.css` already had two OS-driven overrides — `@media (prefers-reduced-motion: reduce)` and `@media (prefers-contrast: more)` — that the app honors automatically but the user could never force independently of the OS setting. This slice adds three real, persisted, user-facing overrides on top: `[data-reduce-motion='true']` and `[data-high-contrast='true']` attribute selectors mirroring those exact media-query blocks, plus a genuinely new capability — `--ndx-text-scale`, a custom-property multiplier the whole `rem`-based type scale (`--font-size-body`/`-meta`/`-title`/`-display`) now multiplies by via `calc()`. Text scale couldn't be implemented by setting `font-size` on a nested element the way you might expect, because `rem` units are always relative to the _root_ element regardless of nesting depth — the multiplier approach avoids that trap entirely and follows the exact precedent `--ndx-density` (theater mode) already set for cascading a numeric override through nested custom properties.
 
 `state/displaySettings.tsx` (`DisplaySettingsProvider`/`DisplaySettingsContext`/`useDisplaySettings`) mirrors `state/displayMode.tsx`'s existing shape precisely — load once on mount (wrapped in `.catch(() => {})` for the same bridge-unavailable-during-tests reason `FocusEngineProvider`'s haptics load needed it), expose setters that persist immediately. `ShellLayout.tsx` reads the context and sets `data-reduce-motion`/`data-high-contrast`/`data-text-size` on the same root div that already carries `data-display-mode` — one attribute-driven-CSS convention, not two.
 
@@ -728,16 +728,33 @@ npm run test:e2e      → 1 passed
 npm audit --production → 0 vulnerabilities
 ```
 
+### Addendum — ND-046 Privacy and Permissions
+
+Built directly on the real Epic 4 safety pipeline rather than inventing a separate privacy model: "Effective access by tool" reads `ToolRegistry.list()` for each tool's real `requiredCapability` and calls the live `PermissionBroker.evaluate()` to show its real current decision (`granted`/`requires-approval`); Revoke calls the real `broker.revoke()`, which is immediately visible — the next render's `evaluate()` call for that capability returns `requires-approval`, satisfying the spec's "revocation applies immediately where technically possible" requirement for real, not by convention. Audit history is the real, live `AuditLog.list()` via a new `useAuditEntries()` hook (mirrors `useActionQueueRecords()`'s `onChange`-subscription shape exactly).
+
+The spec's "permission matrix" (rows: agents/tools/providers, columns: capabilities) is **not** fully real: `PermissionBroker.grants` is a single `Map<PermissionCapability, PermissionGrant>` — a capability is granted broker-wide, not scoped to which agent or tool holds it, so there is no way to honestly render "agent X has capability Y but tool Z doesn't." The per-tool "effective access" view is the closest honest substitute available with today's broker, and the screen's own doc comment says so rather than presenting a fabricated multi-actor matrix.
+
+`PrivacyPermissions.test.tsx` (4: real tool + capability + decision shown, real deferred-reason text, real revoke-takes-effect-immediately round trip, real empty audit-history state) — brings the cumulative total to 353 tests passing (up from 349).
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 77 files, 353 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
 ### Deferred items with explicit reason
 
-- **The other 6 of 16 Epic 11 items** (Network/VPN, Privacy, Integrations, Updates, Quick Access full build, Error Recovery) — each needs a service this slice doesn't build. System Metrics, ND-042 System Dashboard, ND-043 Controller Settings, ND-044 Display and Theme Settings, ND-051 Power Menu, and ND-056 About/Diagnostics are now real; see the addenda above.
+- **The other 5 of 16 Epic 11 items** (Network/VPN, Integrations, Updates, Quick Access full build, Error Recovery) — each needs a service this slice doesn't build. System Metrics, ND-042 System Dashboard, ND-043 Controller Settings, ND-044 Display and Theme Settings, ND-046 Privacy and Permissions, ND-051 Power Menu, and ND-056 About/Diagnostics are now real; see the addenda above.
 - **Power Menu's Lock/Suspend/Restart core service/Restart device/Shut down** — Lock needs ND-002 (not built); this architecture has no separate core-service process to restart independently; real OS suspend/reboot/shutdown are irreversible against the whole host machine and need a dedicated native-integration design and explicit sign-off before being wired — not attempted in this slice for safety reasons, not just scope.
 - **About/Diagnostics's Core version/Database version/build hash** — no separate core-service process, no database, and no build-time commit-hash injection step exist in this architecture; omitted rather than invented.
 - **Controller Settings' button remapping, app profiles, rear buttons, gyro, trackpad fallback, accessibility** — remapping/profiles need the `gamepadPolling.ts` config-threading refactor; rear buttons/gyro/trackpad need Steam Input or a native/SDL adapter (the same documented gap as Epic 2); accessibility needs its own design pass.
 - **Display and Theme Settings' Appearance, Transparency, Focus style, Wallpaper, Live wallpaper performance, OLED-safe behavior** — each needs a real visual system (light theme, glass/blur effects, an alternate focus-ring style, a wallpaper system) that doesn't exist yet; none are stubbed or faked.
+- **Privacy and Permissions' Provider data policy, Workspace boundaries, Network destinations, Consent rules, and the full per-actor permission matrix** — each needs either a new policy store (none of these exist) or per-actor grant tracking `PermissionBroker` doesn't implement.
 - **Copy/move/rename/delete/compress/extract/secure-delete** (Epic 5's File Service) — each needs its own recovery-checkpoint shape (a move/delete isn't the same kind of event as a content overwrite); only `write()` shipped this slice.
 - **Git restore/discard/force-push/branch-delete** (Epic 6) — still need either Recovery integration for Git-specific events or an explicit irreversibility warning surface; the `RecoveryService` built this slice is scoped to `file-write` events, not Git history rewrites.
-- **Copy/move/rename/delete/compress/extract/secure-delete** (Epic 5's File Service) — each needs its own recovery-checkpoint shape (a move/delete isn't the same kind of event as a content overwrite); only `write()` shipped this slice.
 - **Git restore/discard/force-push/branch-delete** (Epic 6) — still need either Recovery integration for Git-specific events or an explicit irreversibility warning surface; the `RecoveryService` built this slice is scoped to `file-write` events, not Git history rewrites.
 - **Recovery Timeline's Revert event/Branch from point/Export snapshot** — need recovery-event kinds beyond `file-write`.
 - **Before/After Diff's Previous/next change, Accept/reject chunk, Explain change, Run validation** — need chunk-level apply infrastructure or Epic 9's model router.

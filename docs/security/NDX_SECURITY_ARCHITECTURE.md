@@ -178,3 +178,9 @@ Matches mega-prompt §5.1:
 - `registerDisplaySettingsHandlers.ts`'s `set` handler validates its payload with `displaySettingsSchema` — two booleans and a three-value enum, the same low-risk shape as Controller Settings. There is no free-form input.
 - The persisted settings only ever drive CSS custom-property values (`data-reduce-motion`/`data-high-contrast`/`data-text-size` attributes consumed by `tokens.css`) — there is no code path from this store to executable code, a file path, or a network request.
 - `DisplaySettingsProvider`'s mount-time load uses the same `.catch(() => {})` fallback-to-default pattern as Controller Settings, for the same reason: a missing/unavailable settings file must never crash app startup.
+
+## 20. Privacy and Permissions security (Epic 11 addendum)
+
+- `PrivacyPermissions.tsx` is read-mostly: it surfaces real `PermissionBroker`/`AuditLog` state through existing renderer-only objects — no new IPC surface, no new persisted store, nothing new to validate at a process boundary.
+- The only mutation this screen performs is `broker.revoke()`, gated behind the same `ConfirmationDialog` pattern every other medium-risk action in the app uses (action/consequence/confirm). There is no grant path here — this screen can only take capabilities away, never add one, so it cannot be used to escalate privilege.
+- Because `PermissionBroker` grants are broker-wide rather than per-actor, revoking a capability here affects every tool that requires it, not just one — the screen's copy says so explicitly rather than implying a narrower, per-tool revoke that isn't real.

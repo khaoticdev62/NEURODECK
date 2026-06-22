@@ -11,6 +11,7 @@ import { GitControlCenter } from '../../features/git/GitControlCenter'
 import { AboutDiagnostics } from '../../features/system/AboutDiagnostics'
 import { ControllerSettings } from '../../features/system/ControllerSettings'
 import { DisplayThemeSettings } from '../../features/system/DisplayThemeSettings'
+import { PrivacyPermissions } from '../../features/system/PrivacyPermissions'
 import { PowerMenu } from '../../features/system/PowerMenu'
 import { SystemDashboard } from '../../features/system/SystemDashboard'
 import { ModelControlCenter } from '../../features/models/ModelControlCenter'
@@ -343,6 +344,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: <DisplayThemeSettings />
+  },
+  {
+    routeId: 'privacy-permissions',
+    screenId: 'ND-046',
+    path: '/settings/privacy',
+    title: 'Privacy and Permissions',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <PrivacyPermissions />
   },
   {
     routeId: 'power',
