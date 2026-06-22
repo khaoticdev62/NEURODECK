@@ -895,3 +895,52 @@ npm audit --production → 0 vulnerabilities
 - **Usage/cost accounting** (ND-036 Usage tab, Low Cost profile's cost-limit routing factor) — needs a request/token cost-accounting system not yet designed; per-completion token usage is surfaced when a provider reports it, but nothing aggregates it yet.
 - **ND-036 Logs tab** — needs durable per-provider request logging, not yet built.
 - **Provider-reported capability/context-size/pricing metadata** — OpenAI-compatible discovery doesn't standardize these fields; NeuroDeck reports only what a provider's `/models` response actually contains and does not infer them from model names.
+
+## Epic 10 — Browser System (real, scoped); Remote Systems and Learning untouched
+
+### Scope decision
+
+Epic 10 is three real systems: Browser (§24), Remote Systems (§26), and Learning (no numbered spec section — wireframe-only ND-038/039). Remote Systems needs a genuine SSH client integration (host-identity verification, credential storage separate from the model-provider secret store, remote file/command execution) — a substantial new security surface on its own, comparable in scope to Epic 6's Git/Terminal integration. Learning needs real instructional content and progress tracking, neither of which this repository has any source for yet — building either screen now would mean inventing fake lesson content. Browser, by contrast, builds entirely on Electron's own `WebContentsView` API and this codebase's already-established patterns (persisted-store + IPC + real native integration, the same shape Terminal/Git/Models took) — so it was built first.
+
+### What was built
+
+- **`shared/contracts/browser.ts`**: `BrowserTab` (id/workspaceId/url/title/loading/canGoBack/canGoForward/createdAt/updatedAt), request schemas for create/navigate/setBounds/remove, all Zod-validated.
+- **`main/security/browserUrlPolicy.ts`**: a pure, Electron-free `isAllowedBrowserUrl()` predicate (mirrors `urlPolicy.ts`'s shape) allowing only `http`/`https` — the embedded browser's whole purpose is navigating to arbitrary web destinations, unlike the main shell's navigation policy (which allowlists only the app's own origin). Rejects `javascript:`, `file:`, `data:`, `chrome:`, `view-source:`, and anything malformed.
+- **`core/browser/BrowserTabStore.ts`**: real, persisted tab metadata (`app.getPath('userData')/browser-tabs.json`), workspace-scoped, following the same `JsonStore`-backed pattern as every other store in this codebase. Fully unit-tested — it has no Electron dependency.
+- **`main/browser/BrowserSessionService.ts`**: the real `WebContentsView` lifecycle. Only one tab's view is ever attached to the window's `contentView` at a time — switching tabs calls `webContents.close()` (the documented disposal API for a `WebContentsView` not owned by a `BrowserWindow`) on the previous tab and creates a fresh view on reactivation, rather than keeping every open tab's renderer process resident. Every view gets: a real per-workspace session partition (`persist:browser-${workspaceId}`), a default-deny `setPermissionRequestHandler` (no interactive permission-prompt UI exists yet), a real `will-navigate` guard enforcing `isAllowedBrowserUrl`, and a real `setWindowOpenHandler` that routes window-open attempts to `shell.openExternal` (allowed URLs only) instead of opening an uncontrolled new window. Real navigation-state events (`did-navigate`, `page-title-updated`, `did-start-loading`/`did-stop-loading`) are forwarded via an injected callback.
+- **`registerBrowserHandlers.ts`**: orchestrates `BrowserTabStore` (persistence) and `BrowserSessionService` (live view) the same way `registerFileHandlers.ts` orchestrates `FileService`/`RecoveryService` — e.g. `browserTab.create` persists the tab row, then opens the real view, rolling back the persisted row if opening fails. Live navigation-state events from the service are persisted back to the store and pushed to the renderer over `browserTab.update`.
+- **ND-030 Browser Hub** (`features/browser/BrowserHub.tsx`): real workspace-scoped tab list, New Tab, Open, Close.
+- **ND-031 Browser View** (`features/browser/BrowserView.tsx`): real address bar (navigate on Enter), Back/Forward/Reload (disabled state driven by the real `canGoBack`/`canGoForward` the service reports), a `ResizeObserver`-measured placeholder `<div>` whose real `getBoundingClientRect()` is continuously reported over IPC so the native view tracks it pixel-for-pixel, and a real "Open externally" action. Unmounting collapses the view to zero bounds (hides it) rather than destroying it, since reactivating any tab already recreates its view from scratch per the one-resident-tab model above.
+
+### A real architectural constraint, not a bug
+
+`BrowserSessionService` requires a live `app.whenReady()` `BrowserWindow` to do anything — `WebContentsView` has no meaningful existence outside a running Electron app. This makes it the first `core`-adjacent service in this codebase that cannot be unit-tested in Vitest's plain-Node/jsdom environment, unlike `TerminalService` (wraps `node-pty`, which runs standalone) or every persisted store (plain `JsonStore` reads/writes). The pure logic it depends on — `browserUrlPolicy.ts` and `BrowserTabStore.ts` — is fully unit-tested; the service itself is covered by the Playwright e2e suite's route-navigation check and by manual verification. This is now documented precedent for any future Electron-native-view integration (e.g. if Remote Systems ever needs a similar native surface).
+
+### Tests and evidence
+
+| Suite                                                                                                                                     | Location                                            | Count |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- | ----- |
+| `isAllowedBrowserUrl` (allows http/https, rejects javascript/file/data/chrome/view-source/malformed)                                       | `main/security/__tests__/browserUrlPolicy.test.ts`   | 7     |
+| `BrowserTabStore` (empty, real workspace-scoped create, real metadata update, missing-tab update, real remove)                             | `core/browser/__tests__/BrowserTabStore.test.ts`     | 5     |
+| `BrowserHub` (active-workspace gate, real empty state, real tab list, real remove round trip)                                              | `features/browser/__tests__/BrowserHub.test.tsx`     | 4     |
+| `BrowserView` (real activate + address/back-forward state, real error state, real navigate-on-Enter, real back/forward/reload round trip)  | `features/browser/__tests__/BrowserView.test.tsx`    | 4     |
+
+Total: 373 tests passing (up from 365). The e2e suite (`e2e/app.spec.ts`) was extended with a real route-navigation check to `/browser`, confirming the real route renders its real active-workspace gate in the packaged app — the deepest verification available for `BrowserSessionService` without a real network call inside CI.
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 81 files, 373 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
+No new runtime dependencies were added — `WebContentsView`/`shell.openExternal` are already part of Electron.
+
+### Deferred items with explicit reason
+
+- **Reader mode, downloads, site profiles, history, "add page to workspace context," AI summarization** — each needs real infrastructure this slice doesn't build (a readability extraction step, a downloads manager and its UI, a profile-switching concept, a history index, a workspace-context attachment model, and a real model-router call with the "privacy confirmation" the spec explicitly requires for summarization).
+- **Interactive permission-prompt UI** — every permission request is currently default-denied; building a real prompt needs the same kind of review surface `ConfirmationDialog`/`PermissionDialog` provide elsewhere, not yet wired to browser permission requests.
+- **Remote Systems Service, ND-040, ND-041** — need a real SSH client integration (host-identity verification, credential storage, remote file/command execution) that doesn't exist yet; a substantial scope on the order of Epic 6's Git/Terminal work.
+- **Learning Hub, Guided Lab** — need real instructional content and progress tracking; the "AI coach" boundary Guided Lab needs is now unblocked by Epic 9's real model router, but there is no learning-content system to attach it to yet.

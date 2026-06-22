@@ -28,5 +28,10 @@ test('boots and renders the baseline shell', async () => {
   })
   await expect(window).toHaveURL(/terminal\/builder/)
   await expect(window.getByText('No active workspace')).toBeVisible()
+  await window.evaluate(() => {
+    window.location.hash = '/browser'
+  })
+  await expect(window).toHaveURL(/browser/)
+  await expect(window.getByText('No active workspace')).toBeVisible()
   await app.close()
 })

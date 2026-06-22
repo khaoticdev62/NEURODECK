@@ -65,6 +65,14 @@ import type { DiagnosticsInfo } from './diagnostics'
 import type { ControllerSettings, SetControllerSettingsRequest } from './controllerSettings'
 import type { DisplaySettings, SetDisplaySettingsRequest } from './displaySettings'
 import type {
+  BrowserTab,
+  BrowserTabIdRequest,
+  CreateBrowserTabRequest,
+  NavigateBrowserTabRequest,
+  SetBrowserTabBoundsRequest,
+  WorkspaceBrowserRequest
+} from './browser'
+import type {
   AgentDefinition,
   AgentIdRequest,
   AgentRun,
@@ -187,5 +195,18 @@ export interface NdxBridge {
   displaySettings: {
     get: () => Promise<NdxResult<DisplaySettings>>
     set: (request: SetDisplaySettingsRequest) => Promise<NdxResult<DisplaySettings>>
+  }
+  browserTabs: {
+    list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>
+    create: (request: CreateBrowserTabRequest) => Promise<NdxResult<BrowserTab>>
+    setActive: (request: BrowserTabIdRequest) => Promise<NdxResult<BrowserTab>>
+    navigate: (request: NavigateBrowserTabRequest) => Promise<NdxResult<null>>
+    goBack: (request: BrowserTabIdRequest) => Promise<NdxResult<null>>
+    goForward: (request: BrowserTabIdRequest) => Promise<NdxResult<null>>
+    reload: (request: BrowserTabIdRequest) => Promise<NdxResult<null>>
+    setBounds: (request: SetBrowserTabBoundsRequest) => Promise<NdxResult<null>>
+    remove: (request: BrowserTabIdRequest) => Promise<NdxResult<null>>
+    openExternal: (url: string) => Promise<NdxResult<null>>
+    onUpdate: (listener: (tab: BrowserTab) => void) => () => void
   }
 }

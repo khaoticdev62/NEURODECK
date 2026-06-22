@@ -130,16 +130,16 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] ND-035 Model Control Center — real provider setup, encrypted credentials, enable/disable/delete, live connection tests, Ollama provider type, and navigation to real Routing Profiles.
 - [x] ND-036 Model Detail — real provider/model discovery plus capability-detected Ollama running state, load, unload, and measured benchmark results. Unsupported provider data is not invented; token usage is exposed when the provider returns it.
 
-### Epic 10 — Browser, remote, learning
+### Epic 10 — Browser, remote, learning ⚠️ Browser System real (scoped); Remote Systems and Learning untouched
 
-- [ ] Browser Session Service (§24)
-- [ ] ND-030 Browser Hub
-- [ ] ND-031 Browser View
-- [ ] Remote Systems Service (§26)
-- [ ] ND-040 Remote Systems
-- [ ] ND-041 Remote Session
-- [ ] ND-038 Learning Hub
-- [ ] ND-039 Guided Lab (with AI coach boundaries)
+- [x] Browser Session Service (§24) — **partially real**: `core/browser/BrowserTabStore.ts` (persisted tab metadata, unit-tested) + `main/browser/BrowserSessionService.ts` (real `WebContentsView` lifecycle — create/navigate/back/forward/reload/bounds/close). Only one tab's view is resident at a time (switching tabs closes the previous `webContents` and recreates fresh on reactivation) — a deliberate scope simplification, not a memory-leak workaround. Reader mode, downloads, permission-prompt UI (currently default-deny), site profiles, history, "add to workspace context", and AI summarization are deferred — each needs infrastructure this slice doesn't build
+- [x] ND-030 Browser Hub — **real**: `features/browser/BrowserHub.tsx` — real workspace-scoped persisted tab list, real New Tab/Open/Close
+- [x] ND-031 Browser View — **real**: `features/browser/BrowserView.tsx` — real address bar/Back/Forward/Reload wired to the live `WebContentsView`, a real `ResizeObserver`-measured placeholder `<div>` whose bounds are continuously reported over IPC so the native view tracks it exactly, real "Open externally" via `shell.openExternal`. `BrowserSessionService` itself cannot be unit-tested in Vitest (it requires a real `app.whenReady()` window) — it's covered by the Playwright e2e route check and manual verification instead
+- [ ] Remote Systems Service (§26) — **not built**: needs a real SSH client integration (host-identity verification, credential storage, remote file/command execution) — none of that exists yet
+- [ ] ND-040 Remote Systems — **not built**: needs Remote Systems Service
+- [ ] ND-041 Remote Session — **not built**: needs Remote Systems Service
+- [ ] ND-038 Learning Hub — **not built**: needs real learning content and progress tracking, neither of which exist
+- [ ] ND-039 Guided Lab (with AI coach boundaries) — **not built**: needs Learning Hub content plus Epic 9's model router for the "AI coach" — the model router exists now, but no learning-content system does
 
 ### Epic 11 — System integration ⚠️ System Metrics, Recovery, System Dashboard, Controller Settings, Display/Theme Settings, Privacy and Permissions, Power Menu (safe subset), and About/Diagnostics real; remaining settings integrations remain
 

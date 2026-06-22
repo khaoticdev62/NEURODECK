@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import {
   agentRunSchema,
+  browserTabSchema,
   IPC_CHANNELS,
   terminalDataEventSchema,
   terminalExitEventSchema,
@@ -139,6 +140,26 @@ const ndx: NdxBridge = {
   displaySettings: {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.displaySettingsGet),
     set: (request) => ipcRenderer.invoke(IPC_CHANNELS.displaySettingsSet, request)
+  },
+  browserTabs: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),
+    setActive: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabSetActive, request),
+    navigate: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabNavigate, request),
+    goBack: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabGoBack, request),
+    goForward: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabGoForward, request),
+    reload: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabReload, request),
+    setBounds: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabSetBounds, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabRemove, request),
+    openExternal: (url) => ipcRenderer.invoke(IPC_CHANNELS.browserOpenExternal, { url }),
+    onUpdate: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = browserTabSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.browserTabUpdate, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.browserTabUpdate, handler)
+    }
   }
 }
 

@@ -68,5 +68,16 @@ export const IPC_CHANNELS = {
   controllerSettingsGet: 'controllerSettings.get',
   controllerSettingsSet: 'controllerSettings.set',
   displaySettingsGet: 'displaySettings.get',
-  displaySettingsSet: 'displaySettings.set'
+  displaySettingsSet: 'displaySettings.set',
+  browserTabList: 'browserTab.list',
+  browserTabCreate: 'browserTab.create',
+  browserTabSetActive: 'browserTab.setActive',
+  browserTabNavigate: 'browserTab.navigate',
+  browserTabGoBack: 'browserTab.goBack',
+  browserTabGoForward: 'browserTab.goForward',
+  browserTabReload: 'browserTab.reload',
+  browserTabSetBounds: 'browserTab.setBounds',
+  browserTabRemove: 'browserTab.remove',
+  browserTabUpdate: 'browserTab.update',
+  browserOpenExternal: 'browser.openExternal'
 } as const

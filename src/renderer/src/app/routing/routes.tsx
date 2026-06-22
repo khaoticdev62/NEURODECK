@@ -9,6 +9,8 @@ import { AgentDetail } from '../../features/agents/AgentDetail'
 import { AgentOperationsCenter } from '../../features/agents/AgentOperationsCenter'
 import { GitControlCenter } from '../../features/git/GitControlCenter'
 import { AboutDiagnostics } from '../../features/system/AboutDiagnostics'
+import { BrowserHub } from '../../features/browser/BrowserHub'
+import { BrowserView } from '../../features/browser/BrowserView'
 import { ControllerSettings } from '../../features/system/ControllerSettings'
 import { DisplayThemeSettings } from '../../features/system/DisplayThemeSettings'
 import { PrivacyPermissions } from '../../features/system/PrivacyPermissions'
@@ -214,7 +216,18 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'Browser Hub',
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <BrowserHub />
+  },
+  {
+    routeId: 'browser-view',
+    screenId: 'ND-031',
+    path: '/browser/:tabId',
+    title: 'Browser View',
+    owningEpic: 'Epic 10',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <BrowserView />
   },
   {
     routeId: 'automations',
