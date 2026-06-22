@@ -18,16 +18,17 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Mock/stub inventory completed (danger-pattern search, §4.2)
 - [x] Dead-code analysis
 
-### Epic 1 — Shell and design system
+### Epic 1 — Shell and design system ✅ complete (core scope; some primitives deferred to consuming epics)
 
-- [ ] Design tokens (mega-prompt §8.1)
-- [ ] Core primitives (§8.2)
-- [ ] Shell (top system rail, primary nav rail, bottom controller rail, context panel)
-- [ ] Rails (Standard / Focus / Split / Overlay / Theater display modes)
-- [ ] Global modals/overlays (confirmation, critical confirmation, permission, input overlay, AI radial menu, context menu, model/workspace pickers)
-- [ ] Error boundaries
-- [ ] Route registry
-- [ ] Responsive 16:10 layout (1280×800 native, 1920×1080 / 2560×1440 docked)
+- [x] Design tokens (mega-prompt §8.1) — `src/renderer/src/assets/tokens.css` (Tailwind v4 `@theme` + plain CSS vars for layout/motion/z-index)
+- [x] Core primitives (§8.2) needed by the shell itself: `ControllerButton`, `StatusBadge`, `EmptyState`/`ErrorState`/`OfflineState`/`RestrictedState`, `Modal`, `ConfirmationDialog`, `CriticalConfirmationDialog`, `Toast`/`ToastProvider`, `SystemRail`, `NavigationRail`, `ContextPanel`, `ControllerHint`
+  - Deferred to the epics that consume them (not built without a real consumer — avoids dead/unused primitives): `FocusList`/`FocusGrid`/`FocusTree`/`VirtualizedFocusList` (Epic 2), `PaneGroup` (Epic 7), `PermissionDialog` (Epic 4), `CommandPalette`/`RadialActionMenu` (Epic 4), `ProgressTimeline` (Epic 4/8), `PredictiveInput`/`SecureInput` (Epic 2/10), `DiffViewer`/`LogViewer` (Epic 6/7), `MetricCard`/`TaskCard`/`WorkspaceCard`/`AgentCard`/`ModelCard`/`WorkflowCard` (Epics 5/8/9)
+- [x] Shell (top system rail, primary nav rail, bottom controller rail, context panel) — `src/renderer/src/app/shell/ShellLayout.tsx`
+- [x] Rails (Standard / Focus / Split / Overlay / Theater display modes) — `src/renderer/src/state/displayMode.tsx` + `ShellLayout`; overlay modeled as a layering flag rather than a base mode (matches spec's "without destroying underlying state")
+- [x] Global modals/overlays — `Modal`, `ConfirmationDialog`, `CriticalConfirmationDialog` (hold-to-confirm), `Toast` built. `PermissionDialog`, `InputOverlay`, `AIRadialMenu`, `ItemContextMenu`, `ModelPicker`, `WorkspacePicker` deferred to Epics 4/5/9 (feature-specific content, no consumer yet)
+- [x] Error boundaries — `src/renderer/src/app/error-boundaries/RootErrorBoundary.tsx`
+- [x] Route registry — `src/renderer/src/app/routing/routes.tsx` (11 primary destinations, each declaring routeId/screenId/title/owningEpic/controllerHints/restoreOnRevisit); routes render an honest `EpicBoundaryPlaceholder` until their owning epic builds the real screen
+- [x] Responsive 16:10 layout — `--breakpoint-deck/docked/docked-2k` custom breakpoints in tokens.css; safe-inset and rail sizing all token-driven
 
 ### Epic 2 — Controller runtime
 

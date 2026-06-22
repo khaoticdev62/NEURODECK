@@ -18,6 +18,8 @@ test('boots and renders the baseline shell', async () => {
     env: env as Record<string, string>
   })
   const window = await app.firstWindow()
-  await expect(window.getByText('NeuroDeck OS')).toBeVisible()
+  await expect(window.getByRole('banner')).toBeVisible()
+  await expect(window.getByRole('navigation', { name: 'Primary' })).toBeVisible()
+  await expect(window.getByRole('link', { name: 'Home' })).toBeVisible()
   await app.close()
 })

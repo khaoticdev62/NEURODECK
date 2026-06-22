@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import './tokens.css';
 
 *,
 *::before,
@@ -20,6 +20,8 @@ ul {
 
 body {
   color-scheme: dark;
+  background-color: var(--color-canvas);
+  color: var(--color-text-primary);
   line-height: 1.6;
   font-family:
     Inter,
@@ -28,8 +30,13 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
+  font-size: var(--font-size-body);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   user-select: none;
+}
+
+:focus-visible {
+  outline: none;
 }

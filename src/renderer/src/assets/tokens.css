@@ -1,0 +1,106 @@
+@import 'tailwindcss';
+
+/**
+ * NDX design tokens (wireframe spec §3.1, mega-prompt §8.1).
+ * Single source of truth — components must reference these, not literal values.
+ * Tailwind's @theme namespaces (color/spacing/radius/shadow/font-size/breakpoint)
+ * auto-generate matching utility classes (e.g. --color-canvas -> bg-canvas, text-canvas).
+ */
+@theme {
+  /* Breakpoints: native Steam Deck canvas, then docked resolutions (wireframe §3.1) */
+  --breakpoint-deck: 1280px;
+  --breakpoint-docked: 1920px;
+  --breakpoint-docked-2k: 2560px;
+
+  /* Surfaces and backgrounds */
+  --color-canvas: #0b0c10;
+  --color-surface: #14161c;
+  --color-surface-raised: #1c1f27;
+  --color-overlay: rgb(11 12 16 / 0.85);
+
+  /* Borders */
+  --color-border: #2a2e38;
+  --color-border-strong: #3a3f4c;
+  --color-border-focus: #7aa2ff;
+
+  /* Text hierarchy */
+  --color-text-primary: rgb(245 246 250 / 0.95);
+  --color-text-secondary: rgb(208 212 222 / 0.7);
+  --color-text-tertiary: rgb(208 212 222 / 0.45);
+
+  /* Status colors — always paired with text/icon, never color alone (spec §8.3) */
+  --color-status-info: #5ea8ff;
+  --color-status-success: #4fd18b;
+  --color-status-warning: #f2b84b;
+  --color-status-error: #f05b6e;
+  --color-status-approval: #b48bff;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Shadow / elevation */
+  --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.45);
+  --shadow-focus-bloom: 0 0 0 4px rgb(122 162 255 / 0.35);
+
+  /* Type scale: 16px minimum body text, 14px only for secondary metadata (spec §8.3) */
+  --font-size-body: 1rem;
+  --font-size-meta: 0.875rem;
+  --font-size-title: 1.25rem;
+  --font-size-display: 1.75rem;
+}
+
+/* Non-Tailwind-namespace tokens: layout, motion, z-index, target sizing.
+   Referenced via var(--ndx-*) rather than auto-generated utilities. */
+:root {
+  /* Layout (wireframe §3.1) */
+  --ndx-safe-inset: 24px;
+  --ndx-spacing-grid: 8px;
+  --ndx-rail-top-height: 56px;
+  --ndx-rail-bottom-height: 56px;
+  --ndx-rail-primary-collapsed: 88px;
+  --ndx-rail-primary-expanded: 240px;
+  --ndx-context-panel-width: 320px;
+  --ndx-modal-max-width: 760px;
+  --ndx-dialog-safe-width: 1184px;
+  --ndx-target-min: 48px;
+  --ndx-button-height: 52px;
+  --ndx-list-row-height: 72px;
+
+  /* Motion (spec §32, §33 — respected by prefers-reduced-motion below) */
+  --ndx-motion-fast: 100ms;
+  --ndx-motion-base: 180ms;
+  --ndx-motion-slow: 320ms;
+  --ndx-motion-easing: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Z-index scale */
+  --ndx-z-rail: 10;
+  --ndx-z-context-panel: 15;
+  --ndx-z-overlay: 100;
+  --ndx-z-modal: 200;
+  --ndx-z-toast: 300;
+
+  /* Theater mode density multiplier — scales spacing/typography for docked/at-distance use */
+  --ndx-density: 1;
+}
+
+[data-display-mode='theater'] {
+  --ndx-density: 1.25;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ndx-motion-fast: 0.01ms;
+    --ndx-motion-base: 0.01ms;
+    --ndx-motion-slow: 0.01ms;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --color-border: #5a6070;
+    --color-text-secondary: rgb(208 212 222 / 0.9);
+    --color-text-tertiary: rgb(208 212 222 / 0.7);
+  }
+}
