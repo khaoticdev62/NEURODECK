@@ -88,11 +88,11 @@ Matches mega-prompt §5.1:
 
 ## 8. Outstanding items for later epics
 
-| Item                                                                     | Owning epic                          | Why deferred                                                                                  |
-| ------------------------------------------------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------- |
-| Permission broker, audit log, destructive-action review pipeline         | Epic 4 (done)                        | Real as of Epic 4 — `ActionQueue`/`PermissionBroker`/`AuditLog`, demonstrated end to end       |
-| Typed, Zod-validated IPC contracts replacing the generic preload wrapper | Epic 5 (done)                        | Real as of Epic 5 — `shared/contracts/`, `src/main/ipc/`, `window.ndx`                         |
-| Destructive file operations (write/copy/move/rename/delete/compress/extract) | Epic 11                          | Need the Recovery Service's checkpoint/undo path before any destructive op can ship safely     |
-| Secrets vault / encrypted storage                                        | Epic 10 (identity) / X10             | No credential-requiring feature exists yet (no AI provider connections, no remote auth)        |
-| `applyNavigationPolicy` integration test against a live `BrowserWindow`  | Epic 12 security pass                | Requires Electron test harness beyond current unit-test scope                                 |
-| Vitest dependency chain vulnerabilities                                  | Epic 12 security pass                | Dev-only exposure, breaking upgrade out of scope for baseline                                 |
+| Item                                                                         | Owning epic              | Why deferred                                                                               |
+| ---------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
+| Permission broker, audit log, destructive-action review pipeline             | Epic 4 (done)            | Real as of Epic 4 — `ActionQueue`/`PermissionBroker`/`AuditLog`, demonstrated end to end   |
+| Typed, Zod-validated IPC contracts replacing the generic preload wrapper     | Epic 5 (done)            | Real as of Epic 5 — `shared/contracts/`, `src/main/ipc/`, `window.ndx`                     |
+| Destructive file operations (write/copy/move/rename/delete/compress/extract) | Epic 11                  | Need the Recovery Service's checkpoint/undo path before any destructive op can ship safely |
+| Secrets vault / encrypted storage                                            | Epic 10 (identity) / X10 | No credential-requiring feature exists yet (no AI provider connections, no remote auth)    |
+| `applyNavigationPolicy` integration test against a live `BrowserWindow`      | Epic 12 security pass    | Requires Electron test harness beyond current unit-test scope                              |
+| Vitest dependency chain vulnerabilities                                      | Epic 12 security pass    | Dev-only exposure, breaking upgrade out of scope for baseline                              |

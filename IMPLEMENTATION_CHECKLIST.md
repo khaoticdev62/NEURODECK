@@ -77,7 +77,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Workspace Service (persistence, §19) — `core/workspaces/WorkspaceStore.ts` on top of `core/persistence/JsonStore.ts`; real create (verifies the folder exists via `fs.stat`)/list/remove/get, persisted to `app.getPath('userData')`
 - [ ] Workspace discovery (ND-006 real backend, full version) — **deferred**: only the manual native folder picker is real; Git repos/Steam library/SSH hosts/removable storage scanning still need those respective services (Epic 6/10)
 - [x] ND-018 Workspace Hub — `features/workspaces/WorkspaceHub.tsx`; real cards, real native folder picker via `dialog.showOpenDialog`
-- [x] ND-019 Workspace Detail — `features/workspaces/WorkspaceDetail.tsx`; Overview + Files tabs real; Sessions/Git/Tasks/Models/Permissions/Environment/History deferred (need Epic 6/8/9/10 services)
+- [x] ND-019 Workspace Detail — `features/workspaces/WorkspaceDetail.tsx`; Overview + Files + local Git tabs real; Sessions/Tasks/Models/Permissions/Environment/History deferred (need Epic 8/9/10 services)
 - [x] ND-020 Workspace Switcher — `features/workspaces/WorkspaceSwitcherOverlay.tsx`; opens on the real `workspace.switcher` action (LT+RT chord, wired in Epic 2), switches the real active workspace
 - [x] File Service (§20) — `core/files/FileService.ts`; real `list`/`read`, path-traversal protection via `fs.realpath` (catches symlink escapes, not just literal `../`, verified with a real symlink in tests). Write/copy/move/rename/delete/compress/extract/secure-delete **deferred** — every one is destructive and needs the Recovery Service (Epic 11) first
 - [x] ND-026 File Manager — `features/workspaces/FileManager.tsx`; real workspace-scoped directory listing, breadcrumb navigation, read-only
@@ -90,7 +90,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] ND-028 Universal Terminal
 - [ ] ND-029 Command Builder
 - [ ] AI intent-to-command proposals (reviewed, not auto-executed)
-- [ ] Git Service (§22)
+- [ ] Git Service (§22) — **partially real**: repository detection, status, diff, stage, unstage, commit, local branch list/checkout, and log are implemented through typed IPC; fetch/pull/push/restore/stash/conflict detection/remote inspection remain
 - [ ] ND-025 Git Control Center
 - [ ] Diff views
 - [ ] Git recovery branches

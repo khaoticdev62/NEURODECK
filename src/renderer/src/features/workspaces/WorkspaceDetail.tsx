@@ -2,15 +2,16 @@ import { useState } from 'react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState } from '../../components/feedback/UXState'
 import { FileManager } from './FileManager'
+import { WorkspaceGitTab } from './WorkspaceGitTab'
 import { useWorkspaces } from './useWorkspaces'
 
-type Tab = 'overview' | 'files'
+type Tab = 'overview' | 'files' | 'git'
 
 /**
- * ND-019 Workspace Detail, scoped to two of the spec's nine tabs (Overview,
- * Files) — the other seven (Sessions, Git, Tasks, Models, Permissions,
+ * ND-019 Workspace Detail, scoped to three of the spec's nine tabs (Overview,
+ * Files, Git) — the other six (Sessions, Tasks, Models, Permissions,
  * Environment, History) each need a service that doesn't exist yet (Epic
- * 6/8/9/10). Overview only shows fields that are genuinely real: name,
+ * 8/9/10). Overview only shows fields that are genuinely real: name,
  * root path, created date. "Workspace health," "recommended next
  * actions," and "current agents" all need services this epic doesn't own.
  */
@@ -46,6 +47,12 @@ export function WorkspaceDetail(): React.JSX.Element {
         >
           Files
         </ControllerButton>
+        <ControllerButton
+          variant={tab === 'git' ? 'primary' : 'secondary'}
+          onClick={() => setTab('git')}
+        >
+          Git
+        </ControllerButton>
       </div>
       <div className="min-h-0 flex-1">
         {tab === 'overview' ? (
@@ -61,8 +68,10 @@ export function WorkspaceDetail(): React.JSX.Element {
               <dd className="text-text-primary">None yet — Recovery Service ships in Epic 11</dd>
             </div>
           </dl>
-        ) : (
+        ) : tab === 'files' ? (
           <FileManager />
+        ) : (
+          <WorkspaceGitTab workspaceId={activeWorkspace.id} />
         )}
       </div>
     </div>

@@ -1,5 +1,6 @@
 export * from './error'
 export * from './workspace'
 export * from './file'
+export * from './git'
 export * from './ipcChannels'
 export * from './bridge'

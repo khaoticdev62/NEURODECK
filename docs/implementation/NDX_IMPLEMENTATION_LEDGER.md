@@ -394,17 +394,17 @@ Two `react-hooks/set-state-in-effect` lint errors (a React Compiler rule new to 
 
 ### Test inventory additions
 
-| Suite                                                                                                                 | Location                                                          | Count |
-| ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ | ----- |
-| `JsonStore` (default value, write/read real JSON, creates parent dirs, no leftover temp file, full overwrite)         | `core/persistence/__tests__/JsonStore.test.ts`                     | 5     |
-| `WorkspaceStore` (empty list, create from real dir, rejects missing/non-dir paths, remove, persists across instances) | `core/workspaces/__tests__/WorkspaceStore.test.ts`                 | 6     |
-| `FileService` (list/read real files, subdirectory listing, rejects `../` escape, rejects symlink escape, directory-as-file rejection, truncation)                                                                                        | `core/files/__tests__/FileService.test.ts`                         | 8     |
-| `workspaceClient` (bridge-unavailable fallback, delegates list/create/remove/pickFolder)                              | `renderer/src/services/ipc/__tests__/workspaceClient.test.ts`      | 5     |
-| `fileClient` (bridge-unavailable fallback, delegates list/read)                                                       | `renderer/src/services/ipc/__tests__/fileClient.test.ts`           | 3     |
-| `WorkspaceHub` (empty state, real list, add-from-picker flow, remove flow)                                            | `features/workspaces/__tests__/WorkspaceHub.test.tsx`              | 4     |
-| `FileManager` (no-workspace empty state, real listing, directory navigation, real preview on file activation)        | `features/workspaces/__tests__/FileManager.test.tsx`               | 4     |
-| `WorkspaceSwitcherOverlay` (opens/closes on real `workspace.switcher` action, empty state, switches active workspace) | `features/workspaces/__tests__/WorkspaceSwitcherOverlay.test.tsx`  | 4     |
-| `WorkspaceDetail` (no-workspace empty state, real Overview metadata, switches to real File Manager)                  | `features/workspaces/__tests__/WorkspaceDetail.test.tsx`           | 3     |
+| Suite                                                                                                                                             | Location                                                          | Count |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----- |
+| `JsonStore` (default value, write/read real JSON, creates parent dirs, no leftover temp file, full overwrite)                                     | `core/persistence/__tests__/JsonStore.test.ts`                    | 5     |
+| `WorkspaceStore` (empty list, create from real dir, rejects missing/non-dir paths, remove, persists across instances)                             | `core/workspaces/__tests__/WorkspaceStore.test.ts`                | 6     |
+| `FileService` (list/read real files, subdirectory listing, rejects `../` escape, rejects symlink escape, directory-as-file rejection, truncation) | `core/files/__tests__/FileService.test.ts`                        | 8     |
+| `workspaceClient` (bridge-unavailable fallback, delegates list/create/remove/pickFolder)                                                          | `renderer/src/services/ipc/__tests__/workspaceClient.test.ts`     | 5     |
+| `fileClient` (bridge-unavailable fallback, delegates list/read)                                                                                   | `renderer/src/services/ipc/__tests__/fileClient.test.ts`          | 3     |
+| `WorkspaceHub` (empty state, real list, add-from-picker flow, remove flow)                                                                        | `features/workspaces/__tests__/WorkspaceHub.test.tsx`             | 4     |
+| `FileManager` (no-workspace empty state, real listing, directory navigation, real preview on file activation)                                     | `features/workspaces/__tests__/FileManager.test.tsx`              | 4     |
+| `WorkspaceSwitcherOverlay` (opens/closes on real `workspace.switcher` action, empty state, switches active workspace)                             | `features/workspaces/__tests__/WorkspaceSwitcherOverlay.test.tsx` | 4     |
+| `WorkspaceDetail` (no-workspace empty state, real Overview metadata, switches to real File Manager)                                               | `features/workspaces/__tests__/WorkspaceDetail.test.tsx`          | 3     |
 
 Total: 171 tests passing — was 129 at end of Epic 4.
 
@@ -427,3 +427,41 @@ npm run test:e2e     → 1 passed
 - **AI actions on file preview** (Summarize/Explain/etc.) — no AI/model exists yet (Epic 9).
 - **Recovery integration/checkpoints** — explicitly out of scope since no destructive operations exist yet to checkpoint.
 - **Workspace "branch/health/last-opened" card fields** (spec's richer Workspace Hub card) — need Git (Epic 6) and task/session state (Epic 8).
+
+---
+
+## Epic 6 — Local Git foundation (partial)
+
+### Requirement
+
+Begin mega-prompt §22 with a real, workspace-scoped Git adapter and expose the safe local operations needed to unblock Workspace Detail's Git tab. This is one slice of Epic 6, not completion of the full Git Service or ND-025.
+
+### Implementation and real integration
+
+- `core/git/GitService.ts` runs the installed Git executable with `execFile` argument arrays and a fixed workspace `cwd`; no shell interpolation is used.
+- Real repository detection, porcelain-v2 status, diff, stage, unstage, commit, local branch listing/checkout, and log operations are implemented.
+- Zod request contracts, fixed IPC channel names, main-process handlers, the frozen preload bridge, and typed renderer client extend the established Epic 5 process boundary.
+- `WorkspaceGitTab.tsx` renders the current branch, ahead/behind counts, staged and unstaged changes, editable commit message, local branches, and real commit history. `WorkspaceDetail.tsx` now mounts it as the third real tab.
+
+### Controller behavior and states
+
+- Tab selection, stage/unstage, commit, and checkout use `ControllerButton`, so they register with the Spatial Focus Engine and remain controller-operable.
+- Loading, non-repository, operation-error, empty staged/unstaged, and empty-history states are explicit.
+- A lifecycle defect inherited in the unfinished work was fixed: initial IPC reads now update state only from the asynchronous continuation, cancel state updates after unmount, and show a real error state instead of remaining on `Loading…` after failure.
+
+### Security and remaining risks
+
+- Git executes only in the main process; the renderer receives no process or filesystem capability.
+- User values are passed as discrete `execFile` arguments, not through a shell command string.
+- Push is not bundled with commit. No remote mutation is exposed in this slice.
+- Still deferred: fetch, pull, push, restore/discard, stash, conflict detection, remote inspection, recovery branches, AI commit-message assistance, diff UI, and the dedicated ND-025 screen. Restore/discard must wait for Epic 11 recovery or an explicit irreversibility review.
+
+### Tests and evidence
+
+- `GitService.test.ts`: 8 tests against real temporary Git repositories, covering non-repositories, branch/status, staged and untracked changes, stage/unstage, commit, diff, checkout, and history.
+- `WorkspaceDetail.test.tsx`: Git tab wiring and workspace ID delegation added.
+- `npm run typecheck` → 0 errors.
+- `npm run lint` → 0 errors, 0 warnings.
+- `npm run test` → 34 files, 180 tests passed.
+- `npm run build` → succeeded (main 22.68 kB, preload 3.63 kB, renderer CSS 26.43 kB / JS 892.57 kB).
+- `npm run test:e2e` → 1 Playwright Electron smoke test passed. On the managed Windows runner this must execute outside the filesystem sandbox because Chromium needs write access to its runtime GPU/cache profile.

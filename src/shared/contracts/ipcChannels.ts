@@ -5,5 +5,13 @@ export const IPC_CHANNELS = {
   workspaceRemove: 'workspace.remove',
   workspacePickFolder: 'workspace.pickFolder',
   fileList: 'file.list',
-  fileRead: 'file.read'
+  fileRead: 'file.read',
+  gitStatus: 'git.status',
+  gitDiff: 'git.diff',
+  gitStage: 'git.stage',
+  gitUnstage: 'git.unstage',
+  gitCommit: 'git.commit',
+  gitBranches: 'git.branches',
+  gitCheckout: 'git.checkout',
+  gitLog: 'git.log'
 } as const

@@ -1,5 +1,16 @@
 import type { FileEntry, ListFilesRequest, ReadFileRequest, ReadFileResult } from './file'
 import type { NdxResult } from './error'
+import type {
+  GitBranch,
+  GitCheckoutRequest,
+  GitCommit,
+  GitCommitRequest,
+  GitDiffRequest,
+  GitDiffResult,
+  GitStagePathsRequest,
+  GitStatus,
+  WorkspaceGitRequest
+} from './git'
 import type { CreateWorkspaceRequest, Workspace } from './workspace'
 
 /**
@@ -21,5 +32,15 @@ export interface NdxBridge {
   files: {
     list: (request: ListFilesRequest) => Promise<NdxResult<FileEntry[]>>
     read: (request: ReadFileRequest) => Promise<NdxResult<ReadFileResult>>
+  }
+  git: {
+    status: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStatus>>
+    diff: (request: GitDiffRequest) => Promise<NdxResult<GitDiffResult>>
+    stage: (request: GitStagePathsRequest) => Promise<NdxResult<null>>
+    unstage: (request: GitStagePathsRequest) => Promise<NdxResult<null>>
+    commit: (request: GitCommitRequest) => Promise<NdxResult<null>>
+    branches: (request: WorkspaceGitRequest) => Promise<NdxResult<GitBranch[]>>
+    checkout: (request: GitCheckoutRequest) => Promise<NdxResult<null>>
+    log: (request: WorkspaceGitRequest) => Promise<NdxResult<GitCommit[]>>
   }
 }

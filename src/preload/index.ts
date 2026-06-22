@@ -22,6 +22,16 @@ const ndx: NdxBridge = {
   files: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileList, request),
     read: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileRead, request)
+  },
+  git: {
+    status: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, request),
+    diff: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitDiff, request),
+    stage: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStage, request),
+    unstage: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitUnstage, request),
+    commit: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitCommit, request),
+    branches: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitBranches, request),
+    checkout: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitCheckout, request),
+    log: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitLog, request)
   }
 }
 

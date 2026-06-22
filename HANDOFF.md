@@ -2,7 +2,7 @@
 
 ## Current state
 
-**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design** — each has explicitly deferred items behind documented backend dependencies, not silently skipped (see `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md`'s "Scope decision" entries). The app has a real Gamepad API + keyboard input layer, a working Spatial Focus Engine, haptics, a real AI-safety pipeline (typed tool registry, permission broker, audit log, action queue), and — new in Epic 5 — the first real cross-process IPC layer (Zod-validated contracts, narrow `window.ndx` preload bridge), real workspace persistence, and real read-only, path-traversal-protected file access.
+**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** The first Epic 6 slice is real local Git integration: repository detection, status, diff, stage/unstage, commit, local branches/checkout, and log run in the main process through Zod-validated IPC and are wired into Workspace Detail's Git tab. Remote Git, recovery-dependent Git operations, the full ND-025 Git Control Center, and Terminal/PTTY remain incomplete.
 
 ### What exists right now
 
@@ -53,7 +53,8 @@ Neurodeck/
 │       ├── persistence/JsonStore.ts (+ __tests__ — real temp-dir tests, atomic write)
 │       ├── workspaces/WorkspaceStore.ts (+ __tests__)
 │       ├── files/FileService.ts (+ __tests__ — real symlink-escape test)
-│       └── (agents/audit/browser/git/models/permissions/recovery/remote/system/terminal/workflows — still empty; the AI safety pipeline lives in src/renderer/src/ai-safety/ for now, see ledger)
+│       ├── git/GitService.ts (+ __tests__ — real temporary-repository tests)
+│       └── (agents/audit/browser/models/permissions/recovery/remote/system/terminal/workflows — still empty; the AI safety pipeline lives in src/renderer/src/ai-safety/ for now, see ledger)
 ├── e2e/app.spec.ts                 (Playwright Electron boot smoke test — asserts shell roles)
 ├── electron.vite.config.ts, tsconfig*.json, vitest.config.mts, playwright.config.ts
 ├── package.json                    (scripts: typecheck, lint, test, test:e2e, build, build:linux/win/mac)
@@ -65,15 +66,15 @@ Neurodeck/
 ```bash
 npm run typecheck   # 0 errors
 npm run lint         # 0 errors, 0 warnings
-npm run test         # 171/171 unit tests passing (was 129 at end of Epic 4)
-npm run build        # electron-vite build succeeds (renderer: 26.38 kB CSS, 881.45 kB JS; main: 12.77 kB)
+npm run test         # 180/180 unit tests passing across 34 files
+npm run build        # electron-vite build succeeds (renderer: 26.43 kB CSS, 892.57 kB JS; main: 22.68 kB)
 npm run test:e2e     # 1/1 Playwright Electron smoke test passing
 ```
 
 ## What to do next
 
-1. **Epic 6 — Terminal and Git** is next in Phase A order. It will need its own real PTY/terminal service (likely `node-pty` or equivalent, main-process only) and a real Git porcelain wrapper — both following the same pattern Epic 5 established: Zod-validated IPC contracts in `shared/contracts/`, handlers in `src/main/ipc/`, a typed client in `src/renderer/src/services/ipc/`.
-2. Git landing in Epic 6 also unblocks Workspace Detail's Git tab and the richer Workspace Hub card fields (branch/health) that Epic 5 deferred.
+1. **Continue Epic 6 — Git before Terminal.** Build the dedicated ND-025 Git Control Center and diff viewer on top of the existing local Git adapter. Do not mark Git Service complete until fetch/pull/push/restore/stash/conflict detection/remote inspection are real and tested.
+2. After the local Git UI slice, implement the real PTY/terminal service (main-process only) and ND-028/ND-029 using the established typed IPC pattern.
 3. Alternatively, **finish more of Epic 3/4's deferred screens** if a dependency becomes available sooner (e.g. if Epic 9's Model Router lands out of order, ND-013 AI Command Canvas and ND-005 AI Provider Setup both become buildable).
 4. Keep `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` current as each epic lands — it's not a one-time artifact.
 5. **Phase A (core, Epics 0–12) must fully land before Phase B (platform completion, Epics X1–X15) begins.** Explicit instruction from `specs/START_HERE_NeuroDeck_OS_Complete_Platform.md`.

@@ -92,4 +92,38 @@ describe('WorkspaceDetail', () => {
 
     expect(await screen.findByText('Empty folder')).toBeInTheDocument()
   })
+
+  it('switches to the real Git view when the Git tab is activated', async () => {
+    const status = vi.fn().mockResolvedValue({
+      ok: true,
+      data: { isRepository: true, branch: 'main', ahead: 0, behind: 0, changes: [] }
+    })
+    stubBridge({
+      git: {
+        status,
+        branches: vi.fn().mockResolvedValue({
+          ok: true,
+          data: [{ name: 'main', current: true }]
+        }),
+        log: vi.fn().mockResolvedValue({ ok: true, data: [] })
+      } as never
+    })
+
+    const user = userEvent.setup()
+    renderDetail(
+      makeValue({
+        activeWorkspace: {
+          id: 'w1',
+          name: 'my-project',
+          rootPath: '/home/deck/my-project',
+          createdAt: Date.now()
+        }
+      })
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Git' }))
+
+    expect(await screen.findByText('main', { selector: 'span' })).toBeInTheDocument()
+    expect(status).toHaveBeenCalledWith({ workspaceId: 'w1' })
+  })
 })
