@@ -39,5 +39,16 @@ export const IPC_CHANNELS = {
   workflowRemove: 'workflow.remove',
   workflowRunList: 'workflowRun.list',
   workflowRunCreate: 'workflowRun.create',
-  workflowRunUpdate: 'workflowRun.update'
+  workflowRunUpdate: 'workflowRun.update',
+  modelProviderList: 'modelProvider.list',
+  modelProviderAdd: 'modelProvider.add',
+  modelProviderRemove: 'modelProvider.remove',
+  modelProviderTestConnection: 'modelProvider.testConnection',
+  modelProviderSetEnabled: 'modelProvider.setEnabled',
+  modelRoute: 'model.route',
+  modelComplete: 'model.complete',
+  localModelStatus: 'localModel.status',
+  localModelLoad: 'localModel.load',
+  localModelUnload: 'localModel.unload',
+  localModelBenchmark: 'localModel.benchmark'
 } as const

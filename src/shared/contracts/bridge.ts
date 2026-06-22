@@ -27,6 +27,20 @@ import type {
 } from './git'
 import type { CreateWorkspaceRequest, Workspace } from './workspace'
 import type {
+  AddModelProviderRequest,
+  ConnectionTestResult,
+  ModelProvider,
+  ModelProviderIdRequest,
+  ModelCompletionRequest,
+  ModelCompletionResult,
+  ModelRouteDecision,
+  ModelRouteRequest,
+  SetModelProviderEnabledRequest,
+  LocalModelRequest,
+  LocalModelStatus,
+  ModelBenchmarkResult
+} from './model'
+import type {
   CreateWorkflowRunRequest,
   SaveWorkflowRequest,
   UpdateWorkflowRunRequest,
@@ -112,5 +126,18 @@ export interface NdxBridge {
     list: (request: WorkspaceWorkflowRequest) => Promise<NdxResult<WorkflowRun[]>>
     create: (request: CreateWorkflowRunRequest) => Promise<NdxResult<WorkflowRun>>
     update: (request: UpdateWorkflowRunRequest) => Promise<NdxResult<null>>
+  }
+  modelProviders: {
+    list: () => Promise<NdxResult<ModelProvider[]>>
+    add: (request: AddModelProviderRequest) => Promise<NdxResult<ModelProvider>>
+    remove: (request: ModelProviderIdRequest) => Promise<NdxResult<null>>
+    testConnection: (request: ModelProviderIdRequest) => Promise<NdxResult<ConnectionTestResult>>
+    setEnabled: (request: SetModelProviderEnabledRequest) => Promise<NdxResult<ModelProvider>>
+    route: (request: ModelRouteRequest) => Promise<NdxResult<ModelRouteDecision>>
+    complete: (request: ModelCompletionRequest) => Promise<NdxResult<ModelCompletionResult>>
+    localStatus: (request: ModelProviderIdRequest) => Promise<NdxResult<LocalModelStatus>>
+    loadLocal: (request: LocalModelRequest) => Promise<NdxResult<null>>
+    unloadLocal: (request: LocalModelRequest) => Promise<NdxResult<null>>
+    benchmarkLocal: (request: LocalModelRequest) => Promise<NdxResult<ModelBenchmarkResult>>
   }
 }

@@ -118,15 +118,15 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] Checkpoints — **deferred from the workflow-step level**: file-write recovery checkpoints exist (Epic 11), but no current workflow tool-action performs a file write, so there's nothing to link yet
 - [x] ND-034 Workflow Run Detail — **partially real**: real Timeline (live + persisted step status/messages) and Approvals (real approve/reject wired to the engine) and Cancel. Inputs/Outputs/Logs/Recovery/Metrics tabs and Retry/Skip/Re-run-from-checkpoint/Export are deferred — each needs infrastructure (structured per-step logs, recovery-checkpoint linkage, performance instrumentation, a report format) this slice doesn't build
 
-### Epic 9 — Models
+### Epic 9 — Models ✅ complete for OpenAI-compatible providers and managed Ollama endpoints
 
-- [ ] Model Router (§18)
-- [ ] Provider adapters (§18.3)
-- [ ] Local model runtime
-- [ ] ND-037 Routing Profiles
-- [ ] Resource-aware model selection
-- [ ] ND-035 Model Control Center
-- [ ] ND-036 Model Detail
+- [x] Model Router (§18) — `ModelRouter` performs real provider/model availability probes, enforces enabled/private/offline/local constraints, reads live `SystemMetricsService` memory/battery/thermal data, returns an auditable route decision, and invokes the selected provider's real `/chat/completions` endpoint. API keys remain encrypted via Electron `safeStorage` and never cross IPC.
+- [x] Provider adapters (§18.3) — **real for the OpenAI-compatible shape only**: secure credential entry (encrypted, main-process-only), real connection test, real capability discovery, clear cloud-processing warning in the Add Provider form, provider disable/delete. No provider-specific (non-OpenAI-compatible) adapters exist. Usage visibility is not implemented (needs request/token accounting infra).
+- [x] Local model runtime — configured Ollama providers expose real `/api/ps` running state and real load/unload/benchmark controls. Generic local OpenAI-compatible endpoints remain discovery/inference-only because those controls are not part of the OpenAI protocol. NeuroDeck does not silently install or launch a third-party daemon.
+- [x] ND-037 Routing Profiles — all eight required profiles are present in a controller-focusable screen and preview a real route decision with the measurements and reasons used.
+- [x] Resource-aware model selection — live memory pressure and thermal measurements affect local selection; Battery Saver prefers cloud execution when reachable; unavailable sensors remain explicitly unavailable rather than fabricated.
+- [x] ND-035 Model Control Center — real provider setup, encrypted credentials, enable/disable/delete, live connection tests, Ollama provider type, and navigation to real Routing Profiles.
+- [x] ND-036 Model Detail — real provider/model discovery plus capability-detected Ollama running state, load, unload, and measured benchmark results. Unsupported provider data is not invented; token usage is exposed when the provider returns it.
 
 ### Epic 10 — Browser, remote, learning
 

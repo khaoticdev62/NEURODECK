@@ -85,6 +85,20 @@ const ndx: NdxBridge = {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowRunList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowRunCreate, request),
     update: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowRunUpdate, request)
+  },
+  modelProviders: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.modelProviderList),
+    add: (request) => ipcRenderer.invoke(IPC_CHANNELS.modelProviderAdd, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.modelProviderRemove, request),
+    testConnection: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.modelProviderTestConnection, request),
+    setEnabled: (request) => ipcRenderer.invoke(IPC_CHANNELS.modelProviderSetEnabled, request),
+    route: (request) => ipcRenderer.invoke(IPC_CHANNELS.modelRoute, request),
+    complete: (request) => ipcRenderer.invoke(IPC_CHANNELS.modelComplete, request),
+    localStatus: (request) => ipcRenderer.invoke(IPC_CHANNELS.localModelStatus, request),
+    loadLocal: (request) => ipcRenderer.invoke(IPC_CHANNELS.localModelLoad, request),
+    unloadLocal: (request) => ipcRenderer.invoke(IPC_CHANNELS.localModelUnload, request),
+    benchmarkLocal: (request) => ipcRenderer.invoke(IPC_CHANNELS.localModelBenchmark, request)
   }
 }
 

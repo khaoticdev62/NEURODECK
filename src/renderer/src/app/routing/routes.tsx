@@ -6,6 +6,9 @@ import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
 import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
 import { GitControlCenter } from '../../features/git/GitControlCenter'
+import { ModelControlCenter } from '../../features/models/ModelControlCenter'
+import { ModelDetail } from '../../features/models/ModelDetail'
+import { RoutingProfiles } from '../../features/models/RoutingProfiles'
 import { RecoveryTimeline } from '../../features/recovery/RecoveryTimeline'
 import { StorageAndRecovery } from '../../features/recovery/StorageAndRecovery'
 import { WorkflowForge } from '../../features/workflows/WorkflowForge'
@@ -252,7 +255,28 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'Model Control Center',
     owningEpic: 'Epic 9',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <ModelControlCenter />
+  },
+  {
+    routeId: 'model-detail',
+    screenId: 'ND-036',
+    path: '/models/:providerId',
+    title: 'Model Detail',
+    owningEpic: 'Epic 9',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <ModelDetail />
+  },
+  {
+    routeId: 'model-routing-profiles',
+    screenId: 'ND-037',
+    path: '/models/routing-profiles',
+    title: 'Routing Profiles',
+    owningEpic: 'Epic 9',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <RoutingProfiles />
   },
   {
     routeId: 'learn',

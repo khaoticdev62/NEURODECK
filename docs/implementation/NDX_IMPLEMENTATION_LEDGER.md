@@ -1,5 +1,7 @@
 # NDX Implementation Ledger
 
+> **Epic 9 completion addendum (2026-06-22):** The historical Epic 9 partial entry below is superseded by `docs/implementation/NDX_EPIC_9_MODELS.md`. The completed slice includes real OpenAI-compatible completions, all eight measured routing profiles, privacy/offline constraints, provider enable/disable, and capability-detected Ollama runtime controls.
+
 Required by `specs/NeuroDeck_OS_Production_Implementation_Mega_Prompt.md` §4.3. This document must stay current throughout implementation — update it as part of every epic, not just at the end of Epic 0.
 
 ---
@@ -677,7 +679,7 @@ Epic 8 covers two halves with very different buildability. The Workflow Engine (
 
 The Workflow Engine itself is scoped to a **sequential step model**, not an arbitrary node graph. Building a full DAG executor — parallel branches, merges, cycle detection, labeled jumps — is disproportionate scope for this slice; this is the same kind of deliberate simplification Epic 2 made for focus-engine group transitions. Steps run in order; `condition`/`validator` are the only nodes that affect control flow, and they can only stop the run early, never branch or loop. AI decision (needs Epic 9), Script (needs a new headless, non-interactive execution primitive `TerminalService` doesn't provide — it's built for live, human-attended PTY sessions), Parallel branch, Merge, and Rollback are not implemented.
 
-ND-033 Workflow Forge ships as a controller-friendly ordered step list (add/reorder/remove/configure), not a free-form pan/zoom node canvas with drag-to-connect edges. Building a real 2D graph canvas with controller-native pan/zoom/connect interactions is a substantial UI undertaking on its own, disproportionate to this slice's time budget — and a linear list is arguably *more* honest for controller-first requirements than a canvas that would need extensive custom input handling to avoid being mouse-only in practice.
+ND-033 Workflow Forge ships as a controller-friendly ordered step list (add/reorder/remove/configure), not a free-form pan/zoom node canvas with drag-to-connect edges. Building a real 2D graph canvas with controller-native pan/zoom/connect interactions is a substantial UI undertaking on its own, disproportionate to this slice's time budget — and a linear list is arguably _more_ honest for controller-first requirements than a canvas that would need extensive custom input handling to avoid being mouse-only in practice.
 
 ### What was built
 
@@ -695,15 +697,15 @@ First test run of `WorkflowEngine`'s tool-action path timed out after 5 seconds 
 
 ### Tests and evidence
 
-| Suite                                                                                                                    | Location                                                            | Count |
-| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----- |
-| `WorkflowStore` (empty, real versioned create/update, remove, workspace isolation)                                       | `core/workflows/__tests__/WorkflowStore.test.ts`                         | 5     |
-| `WorkflowRunStore` (empty, real create, update, ordering, workspace isolation)                                            | `core/workflows/__tests__/WorkflowRunStore.test.ts`                      | 5     |
-| `evaluateCondition` (all 5 real operators, missing-variable handling)                                                     | `renderer/src/workflows/__tests__/evaluateCondition.test.ts`             | 4     |
-| `WorkflowEngine` (real tool-action success/failure through the real `ActionQueue`, unregistered-tool failure, condition gate stop, validator failure, real user-approval pause/resume/reject, cancel, output recording) | `renderer/src/workflows/__tests__/WorkflowEngine.test.ts`                | 9     |
-| `WorkflowLibrary` (active-workspace gate, empty state, real list, real remove)                                            | `features/workflows/__tests__/WorkflowLibrary.test.tsx`                  | 4     |
-| `WorkflowForge` (real step add/save round trip, real load-for-edit, real step removal)                                   | `features/workflows/__tests__/WorkflowForge.test.tsx`                    | 3     |
-| `WorkflowRunDetail` (real live state, persisted-run fallback, real approve/reject, real cancel)                          | `features/workflows/__tests__/WorkflowRunDetail.test.tsx`                | 4     |
+| Suite                                                                                                                                                                                                                   | Location                                                     | Count |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----- |
+| `WorkflowStore` (empty, real versioned create/update, remove, workspace isolation)                                                                                                                                      | `core/workflows/__tests__/WorkflowStore.test.ts`             | 5     |
+| `WorkflowRunStore` (empty, real create, update, ordering, workspace isolation)                                                                                                                                          | `core/workflows/__tests__/WorkflowRunStore.test.ts`          | 5     |
+| `evaluateCondition` (all 5 real operators, missing-variable handling)                                                                                                                                                   | `renderer/src/workflows/__tests__/evaluateCondition.test.ts` | 4     |
+| `WorkflowEngine` (real tool-action success/failure through the real `ActionQueue`, unregistered-tool failure, condition gate stop, validator failure, real user-approval pause/resume/reject, cancel, output recording) | `renderer/src/workflows/__tests__/WorkflowEngine.test.ts`    | 9     |
+| `WorkflowLibrary` (active-workspace gate, empty state, real list, real remove)                                                                                                                                          | `features/workflows/__tests__/WorkflowLibrary.test.tsx`      | 4     |
+| `WorkflowForge` (real step add/save round trip, real load-for-edit, real step removal)                                                                                                                                  | `features/workflows/__tests__/WorkflowForge.test.tsx`        | 3     |
+| `WorkflowRunDetail` (real live state, persisted-run fallback, real approve/reject, real cancel)                                                                                                                         | `features/workflows/__tests__/WorkflowRunDetail.test.tsx`    | 4     |
 
 Total: 287 tests passing (up from 253).
 
@@ -726,3 +728,53 @@ npm audit --omit=dev → 0 vulnerabilities
 - **Workflow-level checkpoints/recovery linkage** — no current workflow tool-action performs a file write, so there's nothing to link to a `RecoveryCheckpoint` yet; the plumbing (`recoveryCheckpointId` field) exists on `WorkflowStepRun` for when one does.
 - **Retry failed node / Skip optional node / Re-run from checkpoint / Export report** (ND-034) — need per-step retry semantics and a report format not yet designed.
 - **Workflow Forge's free-form graph canvas** — built as a controller-friendly ordered list instead; see scope decision above.
+
+## Epic 9 — Models (partial; scoped to provider connectivity)
+
+### Scope decision
+
+The Model Router (§18) spec calls for local model management (load/unload, benchmark), cloud provider integration, capability-aware routing, and Routing Profiles driven by "real availability and measured resource data" (battery, thermal, memory pressure). Two structural gaps make most of this unbuildable honestly right now: (1) there is no bundled local model inference runtime — no Ollama/llama.cpp wrapper exists in this repo, so there's no "loaded model" state to manage; (2) Routing Profiles explicitly require real measured resource data, and no System Metrics Service exists yet to measure it (that's Epic 11 §27, still 15-of-16 items deferred).
+
+What *is* genuinely buildable without fabrication: providers in this ecosystem (local runtimes like Ollama, and cloud services) overwhelmingly expose an OpenAI-compatible HTTP API, including a real `/models` endpoint that reports the real models actually available. A real HTTP client against that endpoint — real connection test, real capability discovery, real error handling for unreachable/misconfigured endpoints — is honest, useful, and needs zero fabricated data. Confirmed this scope split with the user before starting: build provider connectivity for real, defer the local runtime and Routing Profiles.
+
+### What was built
+
+- **`shared/contracts/model.ts`**: `ModelProvider` (never includes the API key — `hasApiKey: boolean` only), `ModelInfo`/`ConnectionTestResult` (exactly what a provider's `/models` response reports), `AddModelProviderRequest`.
+- **`core/models/SecretCipher.ts`**: a dependency-injected interface (`isAvailable`/`encrypt`/`decrypt`) so `core/` stays plain Node and testable without Electron — matching the existing convention (`FileService`, `GitService`, etc. don't import `electron` either).
+- **`core/models/ModelProviderStore.ts`**: real CRUD over providers, persisted via the established `JsonStore` pattern. API keys are encrypted through the injected `SecretCipher` before they ever touch disk; if the cipher reports unavailable (e.g. a Linux box with no keyring), `add()` throws rather than silently storing a plaintext key. `list()`/`add()`/`get()` only ever return `ModelProvider` (no key field); only `getApiKey()` — called exclusively by `ModelProviderService` inside the main process — decrypts the real key.
+- **`core/models/ModelProviderService.ts`**: a real OpenAI-compatible HTTP client. `testConnection()` calls the provider's actual `${baseUrl}/models` endpoint (`Authorization: Bearer` header if a key is present), with a real 8-second `AbortController` timeout, and reports exactly what came back — HTTP error status, network failure, or the real list of model IDs/owners from the response body. No fabricated model list, no fabricated latency/throughput numbers.
+- **`src/main/security/electronSecretCipher.ts`**: the real `SecretCipher` implementation, wrapping Electron's `safeStorage` (OS-level encryption — Keychain/DPAPI/libsecret) — never a homegrown cipher.
+- **IPC**: `registerModelHandlers.ts` (`modelProvider.list/add/remove/testConnection`, all Zod-validated) wired into `src/main/ipc/index.ts`; `NdxBridge.modelProviders` in `shared/contracts/bridge.ts`; preload implementation in `src/preload/index.ts`; renderer client in `services/ipc/modelClient.ts`.
+- **ND-035 Model Control Center** (`features/models/ModelControlCenter.tsx`): real Add Provider form (name/kind/base URL/optional API key, with a real cloud-processing warning shown only for cloud providers), real provider list, real per-provider Test Connection (shows the real result message and, on the Detail screen, the real discovered model list), real Remove.
+- **ND-036 Model Detail** (`features/models/ModelDetail.tsx`): real Overview (credential status, added date), a real Capabilities section driven by the same `testConnection` call showing real discovered models, real Remove.
+
+### Tests and evidence
+
+| Suite                                                                                                                         | Location                                                  | Count |
+| ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ----- |
+| `ModelProviderStore` (empty, add without key, real encryption round-trip, rejects key when cipher unavailable, remove, get)    | `core/models/__tests__/ModelProviderStore.test.ts`         | 6     |
+| `ModelProviderService.testConnection` (real local HTTP server: real model discovery, real Authorization header, real HTTP error, real connection failure to a closed port, trailing-slash base URL) | `core/models/__tests__/ModelProviderService.test.ts`       | 5     |
+| `ModelControlCenter` (empty state, real list, real add round trip, real test-connection result, real remove)                  | `features/models/__tests__/ModelControlCenter.test.tsx`    | 5     |
+| `ModelDetail` (not-found error state, real overview, real test-connection with real discovered models)                        | `features/models/__tests__/ModelDetail.test.tsx`           | 3     |
+
+Total: 306 tests passing (up from 287). The `ModelProviderService` tests use a real `node:http` server bound to an ephemeral local port — not a mocked `fetch` — so the real-HTTP-error and real-connection-failure (port with nothing listening) cases are genuinely exercised, not asserted against a stub.
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 63 files, 306 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
+No new runtime dependencies were added — `fetch`, `node:http` (tests only), and Electron's `safeStorage` are all already available.
+
+### Deferred items with explicit reason
+
+- **Local model inference runtime** (load/unload, benchmark, context-limit/tool-restriction controls, model storage management) — no bundled Ollama/llama.cpp wrapper exists; "local" providers are reached over HTTP exactly like cloud ones, at a local base URL.
+- **ND-037 Routing Profiles** — the spec requires real measured resource data (battery, thermal, memory pressure); needs a System Metrics Service that doesn't exist yet (Epic 11 §27, still 15-of-16 items deferred). Building this against fabricated thresholds would violate the no-fake-production-behavior rule.
+- **Resource-aware model selection / cost limits** — same System Metrics Service dependency, plus a request/cost-accounting system not yet designed.
+- **Non-OpenAI-compatible provider adapters** — out of scope; every provider this slice supports speaks the OpenAI-compatible `/models` shape.
+- **Usage visibility** (ND-036 Usage tab) — needs request/token accounting infrastructure this slice doesn't build.
+- **ND-036 Performance/Logs tabs** — need the local runtime this slice doesn't have.
