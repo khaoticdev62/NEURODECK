@@ -13,5 +13,13 @@ export const IPC_CHANNELS = {
   gitCommit: 'git.commit',
   gitBranches: 'git.branches',
   gitCheckout: 'git.checkout',
-  gitLog: 'git.log'
+  gitLog: 'git.log',
+  terminalCreate: 'terminal.create',
+  terminalList: 'terminal.list',
+  terminalSnapshot: 'terminal.snapshot',
+  terminalWrite: 'terminal.write',
+  terminalResize: 'terminal.resize',
+  terminalTerminate: 'terminal.terminate',
+  terminalData: 'terminal.data',
+  terminalExit: 'terminal.exit'
 } as const

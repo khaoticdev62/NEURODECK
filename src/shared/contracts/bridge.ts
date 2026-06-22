@@ -12,6 +12,17 @@ import type {
   WorkspaceGitRequest
 } from './git'
 import type { CreateWorkspaceRequest, Workspace } from './workspace'
+import type {
+  CreateTerminalRequest,
+  ListTerminalSessionsRequest,
+  TerminalDataEvent,
+  TerminalExitEvent,
+  TerminalResizeRequest,
+  TerminalSession,
+  TerminalSessionRequest,
+  TerminalSnapshot,
+  TerminalWriteRequest
+} from './terminal'
 
 /**
  * The shape of the real preload bridge (`window.ndx`). Defined here, in
@@ -42,5 +53,15 @@ export interface NdxBridge {
     branches: (request: WorkspaceGitRequest) => Promise<NdxResult<GitBranch[]>>
     checkout: (request: GitCheckoutRequest) => Promise<NdxResult<null>>
     log: (request: WorkspaceGitRequest) => Promise<NdxResult<GitCommit[]>>
+  }
+  terminal: {
+    create: (request: CreateTerminalRequest) => Promise<NdxResult<TerminalSession>>
+    list: (request: ListTerminalSessionsRequest) => Promise<NdxResult<TerminalSession[]>>
+    snapshot: (request: TerminalSessionRequest) => Promise<NdxResult<TerminalSnapshot>>
+    write: (request: TerminalWriteRequest) => Promise<NdxResult<null>>
+    resize: (request: TerminalResizeRequest) => Promise<NdxResult<null>>
+    terminate: (request: TerminalSessionRequest) => Promise<NdxResult<null>>
+    onData: (listener: (event: TerminalDataEvent) => void) => () => void
+    onExit: (listener: (event: TerminalExitEvent) => void) => () => void
   }
 }

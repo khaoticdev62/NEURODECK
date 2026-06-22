@@ -66,7 +66,7 @@ Matches mega-prompt §5.1:
 - **Renderer** (`src/renderer/src/**`): presentation, focus state, controller UX, view-level state only. No direct filesystem/shell/secret/DB access — every file/workspace operation goes through `window.ndx` → validated IPC → core service.
 - **Preload** (`src/preload/**`): narrow bridge only, no business logic — `window.ndx` exposes exactly the methods in `NdxBridge`, each a single-purpose `ipcRenderer.invoke` call.
 - **Main** (`src/main/**`): window lifecycle, navigation policy, security baseline, plus (Epic 5) IPC handler registration (`src/main/ipc/`) — handlers validate input and delegate to `src/core/`, no business logic lives in the handlers themselves.
-- **Core** (`src/core/**`): `persistence/JsonStore.ts`, `workspaces/WorkspaceStore.ts`, `files/FileService.ts` are real as of Epic 5. Remaining ownership directories (`actions/`, `permissions/`, `models/`, `agents/`, `workflows/`, `terminal/`, `git/`, `browser/`, `remote/`, `system/`, `recovery/`, `audit/`) are still scaffolded-but-empty — real services for those land starting Epic 6.
+- **Core** (`src/core/**`): persistence, workspace, file, local Git, and local PTY terminal services are real. Remaining ownership directories land in their assigned epics.
 
 ## 7. Dependency security
 
@@ -96,3 +96,13 @@ Matches mega-prompt §5.1:
 | Secrets vault / encrypted storage                                            | Epic 10 (identity) / X10 | No credential-requiring feature exists yet (no AI provider connections, no remote auth)    |
 | `applyNavigationPolicy` integration test against a live `BrowserWindow`      | Epic 12 security pass    | Requires Electron test harness beyond current unit-test scope                              |
 | Vitest dependency chain vulnerabilities                                      | Epic 12 security pass    | Dev-only exposure, breaking upgrade out of scope for baseline                              |
+
+## 10. Terminal security (Epic 6 partial)
+
+- Interactive shells use `node-pty`; no `child_process.exec` fallback exists.
+- The renderer supplies only a registered `workspaceId` and optional relative directory. `resolveTerminalCwd()` realpaths the workspace and target and rejects traversal, files, and symlink escapes.
+- The renderer cannot choose an executable or inject spawn arguments. The main process selects the platform shell.
+- PTY input is runtime-schema limited to 64 KiB per message; geometry and session counts are bounded; retained output is capped at 1 MiB per session.
+- Secret-like inherited variables (`TOKEN`, `SECRET`, `PASSWORD`, `API_KEY`, private-key and authorization names) are removed before shell creation.
+- Streaming event payloads are validated again in preload before renderer listeners receive them.
+- Direct user terminal input is allowed. AI/generated commands and privileged-command approval are not implemented in this backend slice and must route through the existing plan/policy/permission/review pipeline when ND-029 lands.

@@ -6,6 +6,7 @@ import { registerIpcHandlers } from './ipc'
 import { applyNavigationPolicy, HARDENED_WEB_PREFERENCES } from './security/windowSecurity'
 
 let mainWindow: BrowserWindow | null = null
+let disposeIpcServices: (() => void) | null = null
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -48,7 +49,7 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  registerIpcHandlers(() => mainWindow)
+  disposeIpcServices = registerIpcHandlers(() => mainWindow)
   createWindow()
 
   app.on('activate', function () {
@@ -60,6 +61,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
   }
+})
+
+app.on('before-quit', () => {
+  disposeIpcServices?.()
+  disposeIpcServices = null
 })
 
 // Defense in depth: block legacy nodeIntegration/insecure-content escalation

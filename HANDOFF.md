@@ -2,7 +2,7 @@
 
 ## Current state
 
-**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** Local Git integration now includes a dedicated partial ND-025 Git Control Center at `/git`: repository status, staged/unstaged/untracked unified diffs, stage/unstage, editable commit review, local commit, branches/checkout, and history all use real main-process Git through typed IPC. Remote Git, pull requests, recovery branches, recovery-dependent operations, AI commit assistance, and Terminal/PTTY remain incomplete.
+**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** Local Git integration includes a dedicated partial ND-025 Git Control Center. The Terminal Service foundation is now real too: `node-pty` local shells, multiple workspace-scoped sessions, resize/input/output/terminate lifecycle, exit status, bounded output snapshots, typed streaming IPC, and shutdown cleanup. ND-028/ND-029 UI and advanced terminal capabilities remain incomplete.
 
 ### What exists right now
 
@@ -66,25 +66,26 @@ Neurodeck/
 ```bash
 npm run typecheck   # 0 errors
 npm run lint         # 0 errors, 0 warnings
-npm run test         # 186/186 unit tests passing across 35 files
+npm run test         # 195/195 unit tests passing across 38 files
 npm run build        # electron-vite build succeeds (current bundle evidence in implementation ledger)
 npm run test:e2e     # 1/1 Playwright Electron smoke test passing
 ```
 
 ## What to do next
 
-1. **Continue Epic 6 with Terminal/PTTY.** Implement the real PTY/terminal service (main-process only) and ND-028/ND-029 using the established typed IPC pattern.
-2. Do not mark Git Service or ND-025 complete until fetch/pull/push/restore/stash/conflict detection/remote inspection, remotes, pull requests, and recovery branches are real and tested.
-3. Alternatively, **finish more of Epic 3/4's deferred screens** if a dependency becomes available sooner (e.g. if Epic 9's Model Router lands out of order, ND-013 AI Command Canvas and ND-005 AI Provider Setup both become buildable).
-4. Keep `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` current as each epic lands — it's not a one-time artifact.
-5. **Phase A (core, Epics 0–12) must fully land before Phase B (platform completion, Epics X1–X15) begins.** Explicit instruction from `specs/START_HERE_NeuroDeck_OS_Complete_Platform.md`.
-6. Record every story using the Story Completion Template (mega-prompt §38) or Supplemental Story Completion Contract (supplemental §56), and check it against the Acceptance Gates in `IMPLEMENTATION_CHECKLIST.md` before marking anything done.
-7. **Read the Epic 2 ledger entry's "A real, production-relevant bug found and fixed" section before building more components that register refs with external libraries** — `react-router`'s `Link` churns its ref on every render, and anything that treats ref-detach as "this really unmounted" needs the same microtask-deferral pattern `FocusRegistry.unregister()` uses.
-8. **`HapticsService` and `GamepadAdapter` both guard against `navigator.getGamepads` not existing** — apply the same `typeof navigator.getGamepads === 'function'` check to any new Gamepad API consumer.
-9. **The typed IPC layer pattern is now established** (`shared/contracts/` → `src/main/ipc/` → `src/preload/index.ts`'s `window.ndx` → `src/renderer/src/services/ipc/`) — follow it for every new main-process-needing tool/service rather than inventing a new shape. Add new methods to the `NdxBridge` interface in `shared/contracts/bridge.ts` and new channel names to `ipcChannels.ts`.
-10. **Any new fetch-on-mount effect must avoid `react-hooks/set-state-in-effect`** — don't call a function (or inline code) that sets state synchronously before its first `await` directly in an effect body; either inline the fetch so all `setState` calls are inside the `.then()`/await continuation, or seed the initial state from props/dependencies instead of imperatively flipping it back in the effect. See the Epic 5 ledger entry's "A real bug found and fixed" section for three real examples (`WorkspaceProvider`, `FileManager`, `FilePreview`).
-11. **All destructive file operations remain deferred until Epic 11's Recovery Service** — when building Epic 6's terminal (which can also mutate files via shell commands) or any future file-write feature, don't bypass this; route writes through Recovery once it exists.
-12. **Steam Input / native adapter remains an open gap** — physical Steam Deck rear grip buttons (L4/L5/R4/R5), Quick Access, and the Steam button aren't reachable via the standard Gamepad API. Revisit if/when that becomes a priority.
+1. **Continue Epic 6 with ND-028 Universal Terminal.** Build the controller-native terminal UI on the real PTY service; do not use a fake terminal transcript or `exec` fallback.
+2. Then build ND-029 Command Builder with structured proposals and the existing permission/review pipeline before any generated command can execute.
+3. Do not mark Git Service or ND-025 complete until fetch/pull/push/restore/stash/conflict detection/remote inspection, remotes, pull requests, and recovery branches are real and tested.
+4. Alternatively, **finish more of Epic 3/4's deferred screens** if a dependency becomes available sooner (e.g. if Epic 9's Model Router lands out of order, ND-013 AI Command Canvas and ND-005 AI Provider Setup both become buildable).
+5. Keep `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` current as each epic lands — it's not a one-time artifact.
+6. **Phase A (core, Epics 0–12) must fully land before Phase B (platform completion, Epics X1–X15) begins.** Explicit instruction from `specs/START_HERE_NeuroDeck_OS_Complete_Platform.md`.
+7. Record every story using the Story Completion Template (mega-prompt §38) or Supplemental Story Completion Contract (supplemental §56), and check it against the Acceptance Gates in `IMPLEMENTATION_CHECKLIST.md` before marking anything done.
+8. **Read the Epic 2 ledger entry's "A real, production-relevant bug found and fixed" section before building more components that register refs with external libraries** — `react-router`'s `Link` churns its ref on every render, and anything that treats ref-detach as "this really unmounted" needs the same microtask-deferral pattern `FocusRegistry.unregister()` uses.
+9. **`HapticsService` and `GamepadAdapter` both guard against `navigator.getGamepads` not existing** — apply the same `typeof navigator.getGamepads === 'function'` check to any new Gamepad API consumer.
+10. **The typed IPC layer pattern is now established** (`shared/contracts/` → `src/main/ipc/` → `src/preload/index.ts`'s `window.ndx` → `src/renderer/src/services/ipc/`) — follow it for every new main-process-needing tool/service rather than inventing a new shape. Add new methods to the `NdxBridge` interface in `shared/contracts/bridge.ts` and new channel names to `ipcChannels.ts`.
+11. **Any new fetch-on-mount effect must avoid `react-hooks/set-state-in-effect`** — don't call a function (or inline code) that sets state synchronously before its first `await` directly in an effect body; either inline the fetch so all `setState` calls are inside the `.then()`/await continuation, or seed the initial state from props/dependencies instead of imperatively flipping it back in the effect. See the Epic 5 ledger entry's "A real bug found and fixed" section for three real examples (`WorkspaceProvider`, `FileManager`, `FilePreview`).
+12. **All destructive file operations remain deferred until Epic 11's Recovery Service** — when building Epic 6's terminal (which can also mutate files via shell commands) or any future file-write feature, don't bypass this; route writes through Recovery once it exists.
+13. **Steam Input / native adapter remains an open gap** — physical Steam Deck rear grip buttons (L4/L5/R4/R5), Quick Access, and the Steam button aren't reachable via the standard Gamepad API. Revisit if/when that becomes a priority.
 
 ## Key open decisions (need a product/owner call before or during Epic 9 / Epic X4)
 

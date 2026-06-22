@@ -86,7 +86,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 ### Epic 6 — Terminal and Git
 
-- [ ] Terminal Service / PTY (§21)
+- [ ] Terminal Service / PTY (§21) — **partially real**: `node-pty` local shells, multiple workspace-scoped sessions, resize, streaming output, bounded snapshots, cancellation, exit status, working directory, sanitized inherited environment, and typed IPC are real; history/search/copy selection/SSH/proposals/Command Builder/intent mode remain
 - [ ] ND-028 Universal Terminal
 - [ ] ND-029 Command Builder
 - [ ] AI intent-to-command proposals (reviewed, not auto-executed)

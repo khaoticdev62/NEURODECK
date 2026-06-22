@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { IPC_CHANNELS, type NdxBridge } from '../shared/contracts'
+import {
+  IPC_CHANNELS,
+  terminalDataEventSchema,
+  terminalExitEventSchema,
+  type NdxBridge
+} from '../shared/contracts'
 
 /**
  * The real, narrow, typed bridge (mega-prompt §6, §14) replacing the
@@ -32,6 +37,30 @@ const ndx: NdxBridge = {
     branches: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitBranches, request),
     checkout: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitCheckout, request),
     log: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitLog, request)
+  },
+  terminal: {
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalCreate, request),
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalList, request),
+    snapshot: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalSnapshot, request),
+    write: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalWrite, request),
+    resize: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalResize, request),
+    terminate: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalTerminate, request),
+    onData: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = terminalDataEventSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.terminalData, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.terminalData, handler)
+    },
+    onExit: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = terminalExitEventSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.terminalExit, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.terminalExit, handler)
+    }
   }
 }
 

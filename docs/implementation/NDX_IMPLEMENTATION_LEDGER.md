@@ -479,3 +479,35 @@ Begin mega-prompt §22 with a real, workspace-scoped Git adapter and expose the 
 Updated evidence: `GitService.test.ts` now has 11 real-repository tests; `GitControlCenter.test.tsx` has 3 UI/integration tests covering workspace gating, diff selection, and exact commit review. Full validation: 35 files, 186 tests passed; typecheck and lint pass with zero errors/warnings; production build succeeds (main 23.73 kB, preload 3.63 kB, renderer CSS 28.67 kB / JS 901.12 kB).
 
 ND-025 remains partial: remotes, pull requests, recovery branches, AI commit-message assistance, push review, and recovery-backed discard are not fabricated.
+
+---
+
+## Epic 6 — Terminal Service foundation (partial)
+
+### Requirement
+
+Implement the real local PTY/service and cross-process lifecycle required by mega-prompt §21 before building ND-028 or ND-029. This slice does not claim terminal UI, SSH, proposals, intent mode, or privileged-command approval.
+
+### Implementation and integration
+
+- Added `node-pty` as the production PTY dependency. Interactive sessions never use `exec`.
+- `TerminalService` owns up to eight concurrent sessions, platform shell selection, input, resize, output streaming, cancellation, exit status, workspace identity, and a bounded 1 MiB output snapshot.
+- `TerminalPathPolicy` resolves both workspace root and requested relative cwd with `realpath`, rejects parent traversal, non-directories, and symlinks escaping the workspace.
+- Fixed Zod contracts and IPC channels cover create/list/snapshot/write/resize/terminate plus typed data/exit events. Preload validates event payloads and exposes listener-specific unsubscribe functions rather than raw `ipcRenderer` access.
+- Main-process shutdown disposes listeners and terminates active PTYs.
+- The renderer client is ready for ND-028 but no screen is presented as complete.
+
+### Security and safety
+
+- Renderer requests cannot select the shell executable, pass spawn arguments, or provide an absolute trusted cwd.
+- Secret-like inherited environment-variable names are removed before shell launch; essential non-secret platform variables remain available.
+- Session count, dimensions, input message size, and retained output are bounded.
+- AI/generated and privileged commands are not accepted by a separate shortcut path. ND-029 must integrate the existing plan/policy/permission/review pipeline.
+
+### Tests and remaining scope
+
+- `TerminalService.test.ts` uses real PTYs to prove streaming output, resize, snapshots, termination/exit state, and workspace-isolated multiple sessions.
+- `TerminalPathPolicy.test.ts` proves valid subdirectories, parent/file rejection, and real symlink escape rejection.
+- `terminalClient.test.ts` covers bridge absence, method delegation, and streaming subscription cleanup.
+- Full validation: typecheck and lint pass with zero errors/warnings; 38 files and 195 tests pass; production build succeeds (main 35.25 kB, preload 6.60 kB, renderer CSS 28.67 kB / JS 902.25 kB); Electron E2E smoke test passes with the native PTY dependency loaded; `npm audit --omit=dev` reports zero runtime vulnerabilities.
+- Deferred: ND-028, ND-029, persisted history, search, copy selection, SSH terminals, structured proposals, intent mode, privileged-command classification/review, and richer secret redaction.
