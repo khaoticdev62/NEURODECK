@@ -21,6 +21,7 @@ import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
 import { registerModelHandlers } from './registerModelHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
+import { registerSystemHandlers } from './registerSystemHandlers'
 import { registerTerminalHandlers } from './registerTerminalHandlers'
 import { registerWorkflowHandlers } from './registerWorkflowHandlers'
 import { registerWorkspaceHandlers } from './registerWorkspaceHandlers'
@@ -39,10 +40,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     electronSecretCipher
   )
   const modelProviderService = new ModelProviderService()
+  const systemMetricsService = new SystemMetricsService()
   const modelRouter = new ModelRouter(
     modelProviderStore,
     modelProviderService,
-    new SystemMetricsService()
+    systemMetricsService
   )
   const ollamaRuntime = new OllamaRuntimeService()
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
@@ -60,5 +62,6 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerWorkflowHandlers(workflowStore, workflowRunStore)
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)
   registerAgentHandlers(agentStore, agentRuntime)
+  registerSystemHandlers(systemMetricsService)
   return registerTerminalHandlers(terminalService, workspaceStore, getWindow)
 }

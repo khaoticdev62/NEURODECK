@@ -8,6 +8,7 @@ import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
 import { AgentDetail } from '../../features/agents/AgentDetail'
 import { AgentOperationsCenter } from '../../features/agents/AgentOperationsCenter'
 import { GitControlCenter } from '../../features/git/GitControlCenter'
+import { SystemDashboard } from '../../features/system/SystemDashboard'
 import { ModelControlCenter } from '../../features/models/ModelControlCenter'
 import { ModelDetail } from '../../features/models/ModelDetail'
 import { RoutingProfiles } from '../../features/models/RoutingProfiles'
@@ -316,7 +317,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'System Dashboard',
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <SystemDashboard />
   },
   {
     routeId: 'recovery',

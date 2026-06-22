@@ -141,10 +141,10 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] ND-038 Learning Hub
 - [ ] ND-039 Guided Lab (with AI coach boundaries)
 
-### Epic 11 — System integration ⚠️ System Metrics and Recovery cores complete; dashboard/settings integrations remain
+### Epic 11 — System integration ⚠️ System Metrics, Recovery, and System Dashboard real; remaining settings integrations remain
 
 - [x] System Metrics Service (real metrics, §27) — `core/system/SystemMetricsService.ts`; capability-driven CPU, memory, storage, network, process, swap, battery, thermal, fan, and GPU collection with explicit unavailable reasons and deterministic tests. Epic 9 routing is its first real consumer
-- [ ] ND-042 System Dashboard — **not built**: the metrics core exists, but shared contracts, IPC/preload exposure, refresh orchestration, and controller UI remain
+- [x] ND-042 System Dashboard — **real**: `features/system/SystemDashboard.tsx` — real `systemMetrics.collect` IPC (Zod-validated `SystemMetricsSnapshot` contract), real manual Refresh, every metric card shows the real `{available, value, source, reason}` shape — an unavailable sensor (no battery, non-Linux host) is shown honestly as "Unavailable: <reason>", never a fabricated reading. No auto-refresh polling in this slice (manual Refresh only, matching the no-background-surprises rule); live-updating charts/historical trends are not built.
 - [ ] ND-043 Controller Settings — **deferred**: needs the Input Profile Manager UI (Epic 2 left it backend-only)
 - [ ] ND-044 Display and Theme Settings — **deferred**
 - [ ] ND-045 Network and VPN — **deferred**

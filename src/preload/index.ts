@@ -121,6 +121,9 @@ const ndx: NdxBridge = {
       ipcRenderer.on(IPC_CHANNELS.agentRunUpdate, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.agentRunUpdate, handler)
     }
+  },
+  system: {
+    collectMetrics: () => ipcRenderer.invoke(IPC_CHANNELS.systemMetricsCollect)
   }
 }
 

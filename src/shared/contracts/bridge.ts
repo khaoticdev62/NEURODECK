@@ -60,6 +60,7 @@ import type {
   TerminalSnapshot,
   TerminalWriteRequest
 } from './terminal'
+import type { SystemMetricsSnapshot } from './system'
 import type {
   AgentDefinition,
   AgentIdRequest,
@@ -165,5 +166,8 @@ export interface NdxBridge {
     start: (request: StartAgentRunRequest) => Promise<NdxResult<AgentRun>>
     cancel: (request: AgentRunIdRequest) => Promise<NdxResult<AgentRun>>
     onUpdate: (listener: (run: AgentRun) => void) => () => void
+  }
+  system: {
+    collectMetrics: () => Promise<NdxResult<SystemMetricsSnapshot>>
   }
 }

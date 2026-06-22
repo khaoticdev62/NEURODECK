@@ -151,6 +151,7 @@ Matches mega-prompt §5.1:
 - NeuroDeck never installs, launches, or elevates a model runtime's privileges — Ollama (if used) must already be running and reachable; the app only calls its already-exposed local HTTP API, the same way it would call a remote one.
 - `SystemMetricsService` is strictly read-only: it reads `node:os` and (on Linux) `sysfs`/`procfs` files, and never writes to any of them. All sensor access is wrapped in `try`/`catch` with an explicit `{ available: false, reason }` fallback — a missing or permission-denied sensor cannot crash the collector or silently fabricate a value.
 - Every Model Router IPC handler (completion, routing, enable/disable, Ollama runtime status/load/unload/benchmark) is Zod-validated like every other surface in the app — no unvalidated payload reaches `core/models/`.
+- **ND-042 addendum**: `systemMetrics.collect` (the IPC channel backing the System Dashboard) takes no renderer-supplied input, so there is no payload to validate or to attack — it can only ever return the same read-only snapshot any other caller would get. The renderer never sees process names/paths beyond what `SystemMetricsService.collect()` already exposes (process list capped at 256 entries, sorted by PID, no environment variables or command-line arguments included).
 
 ## 16. Agent Runtime security (Epic 8 addendum, core lifecycle only)
 

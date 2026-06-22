@@ -625,7 +625,9 @@ Epic 11 ("System integration") is 16 items: System Metrics, Dashboard, Controlle
 
 A second slice then built the **System Metrics Service** (§27) for real — `core/system/SystemMetricsService.ts` — because Epic 9's Routing Profiles and resource-aware model selection genuinely needed it; this was Epic 9 pulling a real Epic 11 dependency forward rather than faking the resource data it needed. See the System Metrics summary under Epic 9's ledger entry above for what the service actually measures (capability-detected CPU/memory/swap/storage/network/process, plus Linux-only battery/thermal/fan/GPU sensors, with explicit unavailable reporting rather than fabrication).
 
-The other 14 of 16 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build yet: ND-042 System Dashboard needs shared contracts/IPC/UI on top of the metrics core that now exists; Controller Settings needs the Input Profile Manager UI (Epic 2 left it backend-only); Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access (full build), and Power Menu each need their own service; Error Recovery and About/Diagnostics need a dedicated screen this slice doesn't build.
+A third slice closed the gap the second slice left open: **ND-042 System Dashboard** now has real shared contracts (`shared/contracts/system.ts`, mirroring `SystemMetricsService`'s `{available, value, source, reason}` shape exactly), real IPC (`registerSystemHandlers.ts`, a single Zod-free read since `collect()` takes no input), and a real controller-focusable screen (`features/system/SystemDashboard.tsx`).
+
+The other 13 of 16 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build yet: Controller Settings needs the Input Profile Manager UI (Epic 2 left it backend-only); Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access (full build), and Power Menu each need their own service; Error Recovery and About/Diagnostics need a dedicated screen this slice doesn't build.
 
 ### What was built
 
@@ -638,6 +640,7 @@ The other 14 of 16 items remain genuinely deferred — not silently skipped. The
 - **ND-052 Recovery Timeline + ND-053 Before/After Diff** (`features/recovery/RecoveryTimeline.tsx`): combined into one screen the same way ND-025 Git Control Center wraps its diff viewer — real checkpoint list, real diff on selection, real "Restore to this point" behind its own `ConfirmationDialog` (separate review surface, same pattern as Epic 6's push review). Scoped to "File changes" only — package installation/settings/workflow/Git/agent/system-config events need recovery-event kinds and services this slice doesn't build.
 - **ND-047 Storage and Recovery** (`features/recovery/StorageAndRecovery.tsx`): real recovery-checkpoint storage summary (count + total snapshot bytes) and a link into the Recovery Timeline. Disk usage/model storage/workspace cache/browser data/logs/trash are shown as an honestly-labeled "not real yet" section rather than fabricated numbers — directly satisfies §47's "no one-click magic cleanup that hides what's being deleted" by having nothing fake to show.
 - **Dependency**: added `diff`/`@types/diff` (pure JS, MIT, no native build step — unlike `node-pty`, no toolchain risk).
+- **ND-042 System Dashboard** (`features/system/SystemDashboard.tsx`, added after the System Metrics Service slice): real `shared/contracts/system.ts` (a Zod schema mirroring `SystemMetricsSnapshot`'s `{available, value, source, reason}` shape field-for-field), real `registerSystemHandlers.ts` IPC (`systemMetrics.collect`, no input to validate since `collect()` takes none), and a real screen — every metric card renders the real `available`/`value`/`source`/`reason` fields, so a missing sensor shows "Unavailable: <reason>" instead of a zero or fabricated number. Manual Refresh only, no auto-polling, consistent with the rest of the app's "no background surprises" posture.
 
 ### A real bug found and fixed
 
@@ -664,9 +667,13 @@ npm run test:e2e     → 1 passed
 npm audit --omit=dev → 0 vulnerabilities
 ```
 
+### Addendum — ND-042 System Dashboard tests
+
+`SystemDashboard.test.tsx` (4: real collected metrics rendered, a real unavailable-sensor reason shown honestly rather than fabricated, real error state on collection failure, real Refresh round trip) — brings the cumulative total to 332 tests passing (up from 328), all clean lint/typecheck/build/e2e/audit at this state.
+
 ### Deferred items with explicit reason
 
-- **The other 15 of 16 Epic 11 items** (System Metrics, Dashboard, Controller Settings, Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access full build, Power Menu, Error Recovery, About/Diagnostics) — each needs a service this slice doesn't build.
+- **The other 13 of 16 Epic 11 items** (Controller Settings, Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access full build, Power Menu, Error Recovery, About/Diagnostics) — each needs a service this slice doesn't build. System Metrics and ND-042 System Dashboard are now real; see the addenda above.
 - **Copy/move/rename/delete/compress/extract/secure-delete** (Epic 5's File Service) — each needs its own recovery-checkpoint shape (a move/delete isn't the same kind of event as a content overwrite); only `write()` shipped this slice.
 - **Git restore/discard/force-push/branch-delete** (Epic 6) — still need either Recovery integration for Git-specific events or an explicit irreversibility warning surface; the `RecoveryService` built this slice is scoped to `file-write` events, not Git history rewrites.
 - **Recovery Timeline's Revert event/Branch from point/Export snapshot** — need recovery-event kinds beyond `file-write`.

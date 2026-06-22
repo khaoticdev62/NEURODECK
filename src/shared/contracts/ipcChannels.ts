@@ -60,5 +60,6 @@ export const IPC_CHANNELS = {
   agentRunGet: 'agentRun.get',
   agentRunStart: 'agentRun.start',
   agentRunCancel: 'agentRun.cancel',
-  agentRunUpdate: 'agentRun.update'
+  agentRunUpdate: 'agentRun.update',
+  systemMetricsCollect: 'systemMetrics.collect'
 } as const
