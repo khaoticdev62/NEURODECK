@@ -4,7 +4,7 @@ Derived directly from the Epic lists in `specs/NeuroDeck_OS_Production_Implement
 
 Do not check an epic complete until every story within it satisfies the relevant Story Completion Template/Contract and the Acceptance Gates in §5 below. See `CLAUDE.md` for the non-negotiable rules that apply throughout.
 
-**Repository reconciliation:** 2026-06-22 at commit `2f64230`. Current validation baseline: 312 unit/integration tests across 66 files, full TypeScript checks, lint, production build, and the Electron boot smoke test pass.
+**Repository reconciliation:** 2026-06-22 at commit `27238fb`. Current validation baseline: 349 unit/integration tests across 76 files, full TypeScript checks, lint, production build, and the Electron boot smoke test pass.
 
 ---
 
@@ -29,7 +29,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Rails (Standard / Focus / Split / Overlay / Theater display modes) — `src/renderer/src/state/displayMode.tsx` + `ShellLayout`; overlay modeled as a layering flag rather than a base mode (matches spec's "without destroying underlying state")
 - [x] Global modals/overlays — `Modal`, `ConfirmationDialog`, `CriticalConfirmationDialog` (hold-to-confirm), `Toast` built. `PermissionDialog`, `InputOverlay`, `AIRadialMenu`, `ItemContextMenu`, `ModelPicker`, `WorkspacePicker` deferred to Epics 4/5/9 (feature-specific content, no consumer yet)
 - [x] Error boundaries — `src/renderer/src/app/error-boundaries/RootErrorBoundary.tsx`
-- [x] Route registry — `src/renderer/src/app/routing/routes.tsx` (26 registered routes, each declaring routeId/screenId/title/owningEpic/controllerHints/restoreOnRevisit); implemented destinations render real screens and remaining destinations render an honest `EpicBoundaryPlaceholder`
+- [x] Route registry — `src/renderer/src/app/routing/routes.tsx` (32 registered routes, each declaring routeId/screenId/title/owningEpic/controllerHints/restoreOnRevisit); implemented destinations render real screens and remaining destinations render an honest `EpicBoundaryPlaceholder`
 - [x] Responsive 16:10 layout — `--breakpoint-deck/docked/docked-2k` custom breakpoints in tokens.css; safe-inset and rail sizing all token-driven
 
 ### Epic 2 — Controller runtime ✅ core complete (Steam Input/native adapter and per-feature profiles deferred)
@@ -49,7 +49,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] ND-001 Boot and Session Start — **not built**: workspace and model services now exist, but session restoration and the dedicated boot-status orchestration/UI do not
 - [ ] ND-002 Lock Screen — **deferred**: needs profile/credential system (Epic 10) and workflow-pause state (Epic 8)
 - [x] ND-003 First-Run Welcome — `features/onboarding/FirstRunWelcome.tsx`; purely informational, no backend dependency
-- [x] ND-004 Controller Calibration — `features/onboarding/ControllerCalibration.tsx`; button detection and haptics intensity are real (Epic 2 runtime); dead zone/hold duration shown as real read-only values, not fake sliders (adjustability deferred to Epic 11)
+- [x] ND-004 Controller Calibration — `features/onboarding/ControllerCalibration.tsx`; button detection and haptics testing are real. Haptics intensity is now persisted through ND-043; dead zone/hold duration remain real read-only values
 - [ ] ND-005 AI Provider Setup — **partially covered outside onboarding**: Epic 9 provides real secure provider setup, connection testing, discovery, and encrypted credentials in ND-035; the dedicated first-run ND-005 flow is not built
 - [ ] ND-006 Workspace Discovery — **partially real as of Epic 5**: the manual native folder picker (`WorkspaceHub`) is real; multi-source scanning (Git repos, Steam library, SSH hosts, removable storage) still needs those respective services (Epic 6/10)
 - [ ] ND-007 Guided Controller Tutorial — **not built**: controller, ActionQueue, model routing, workflow, and Agent Runtime core dependencies now exist, but the seven-lesson guided screen and pause/resume tutorial orchestration do not
