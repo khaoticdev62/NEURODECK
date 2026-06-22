@@ -1,11 +1,21 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import type { GitBranch, GitCommit, GitFileChange, GitStatus } from '@shared/contracts/git'
+import type {
+  GitBranch,
+  GitCommit,
+  GitFileChange,
+  GitRemote,
+  GitStashEntry,
+  GitStatus
+} from '@shared/contracts/git'
 
 const execFileAsync = promisify(execFile)
 
 const RECORD_SEPARATOR = '\x1e'
 const FIELD_SEPARATOR = '\x1f'
+
+/** Porcelain v2 XY codes for unmerged paths — both sides touched the same path during a merge/rebase. */
+const UNMERGED_CODES = new Set(['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU'])
 
 /**
  * Real Git operations via the system `git` binary (mega-prompt §22) — never
@@ -51,7 +61,14 @@ export class GitService {
 
   async status(root: string): Promise<GitStatus> {
     if (!(await this.isRepository(root))) {
-      return { isRepository: false, branch: null, ahead: 0, behind: 0, changes: [] }
+      return {
+        isRepository: false,
+        branch: null,
+        ahead: 0,
+        behind: 0,
+        changes: [],
+        hasConflicts: false
+      }
     }
 
     const raw = await this.run(root, ['status', '--porcelain=v2', '--branch', '-z'])
@@ -89,7 +106,8 @@ export class GitService {
       }
     }
 
-    return { isRepository: true, branch, ahead, behind, changes }
+    const hasConflicts = changes.some((change) => UNMERGED_CODES.has(change.status))
+    return { isRepository: true, branch, ahead, behind, changes, hasConflicts }
   }
 
   async diff(root: string, path: string, staged: boolean): Promise<string> {
@@ -158,5 +176,62 @@ export class GitService {
         const [hash, shortHash, author, date, message] = record.split(FIELD_SEPARATOR)
         return { hash, shortHash, author, date, message }
       })
+  }
+
+  async remotes(root: string): Promise<GitRemote[]> {
+    const raw = await this.run(root, ['remote', '-v'])
+    const byName = new Map<string, GitRemote>()
+    for (const line of raw.split('\n').filter(Boolean)) {
+      const match = line.match(/^(\S+)\s+(\S+)\s+\((fetch|push)\)$/)
+      if (!match) continue
+      const [, name, url, kind] = match
+      const remote = byName.get(name) ?? { name, fetchUrl: '', pushUrl: '' }
+      if (kind === 'fetch') remote.fetchUrl = url
+      else remote.pushUrl = url
+      byName.set(name, remote)
+    }
+    return [...byName.values()]
+  }
+
+  private async assertKnownRemote(root: string, remote: string): Promise<void> {
+    const exists = (await this.remotes(root)).some((candidate) => candidate.name === remote)
+    if (!exists) throw new Error(`Unknown remote: ${remote}`)
+  }
+
+  async fetch(root: string, remote: string): Promise<void> {
+    await this.assertKnownRemote(root, remote)
+    await this.run(root, ['fetch', remote])
+  }
+
+  async pull(root: string, remote: string, branch: string): Promise<void> {
+    await this.assertKnownRemote(root, remote)
+    await this.run(root, ['pull', '--no-rebase', remote, branch])
+  }
+
+  /** Never force-pushes — force push is critical risk per mega-prompt §22 and is not implemented. */
+  async push(root: string, remote: string, branch: string): Promise<void> {
+    await this.assertKnownRemote(root, remote)
+    await this.run(root, ['push', remote, branch])
+  }
+
+  async stashSave(root: string, message?: string): Promise<void> {
+    const args = message ? ['stash', 'push', '-m', message] : ['stash', 'push']
+    await this.run(root, args)
+  }
+
+  async stashList(root: string): Promise<GitStashEntry[]> {
+    const format = '%gd' + FIELD_SEPARATOR + '%gs' + RECORD_SEPARATOR
+    const raw = await this.run(root, ['stash', 'list', `--pretty=format:${format}`])
+    return raw
+      .split(RECORD_SEPARATOR)
+      .filter(Boolean)
+      .map((record, index) => {
+        const [, message] = record.replace(/^\n/, '').split(FIELD_SEPARATOR)
+        return { index, message }
+      })
+  }
+
+  async stashPop(root: string, index: number): Promise<void> {
+    await this.run(root, ['stash', 'pop', `stash@{${index}}`])
   }
 }

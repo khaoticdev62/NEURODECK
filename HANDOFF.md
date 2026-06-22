@@ -2,7 +2,7 @@
 
 ## Current state
 
-**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** Local Git and ND-028 Direct terminal mode are real partial slices. ND-029 Command Builder now provides structured shell-aware command blocks, exact preview, deterministic risk classification, local terminal selection, copy-without-running, and mandatory ActionQueue approval. AI generation, option/man-page intelligence, saved actions, remote targets, and advanced terminal modes remain incomplete.
+**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** Local Git plus remote operations (fetch/pull/push/stash/conflict detection, tested against real bare-remote repositories) and ND-028 Direct terminal mode are real partial slices. ND-029 Command Builder provides structured shell-aware command blocks, exact preview, deterministic risk classification, local terminal selection, copy-without-running, and mandatory ActionQueue approval. AI generation, option/man-page intelligence, saved actions, remote targets, restore/discard, force push, and advanced terminal modes remain incomplete.
 
 ### What exists right now
 
@@ -53,7 +53,8 @@ Neurodeck/
 │       ├── persistence/JsonStore.ts (+ __tests__ — real temp-dir tests, atomic write)
 │       ├── workspaces/WorkspaceStore.ts (+ __tests__)
 │       ├── files/FileService.ts (+ __tests__ — real symlink-escape test)
-│       ├── git/GitService.ts (+ __tests__ — real temporary-repository tests)
+│       ├── git/GitService.ts (+ __tests__ — real temporary-repository and real bare-remote tests)
+│       ├── terminal/TerminalService.ts, TerminalPathPolicy.ts (+ __tests__ — real PTY, real path-traversal/symlink rejection)
 │       └── (agents/audit/browser/models/permissions/recovery/remote/system/terminal/workflows — still empty; the AI safety pipeline lives in src/renderer/src/ai-safety/ for now, see ledger)
 ├── e2e/app.spec.ts                 (Playwright Electron boot smoke test — asserts shell roles)
 ├── electron.vite.config.ts, tsconfig*.json, vitest.config.mts, playwright.config.ts
@@ -66,16 +67,16 @@ Neurodeck/
 ```bash
 npm run typecheck   # 0 errors
 npm run lint         # 0 errors, 0 warnings
-npm run test         # 205/205 unit tests passing across 43 files
+npm run test         # 211/211 unit tests passing across 44 files
 npm run build        # electron-vite build succeeds (current bundle evidence in implementation ledger)
 npm run test:e2e     # 1/1 Playwright Electron smoke test passing
 ```
 
 ## What to do next
 
-1. **Continue Epic 6 with the remaining locally testable Git Service operations:** remote inspection, fetch, pull, push, stash, and conflict detection using local bare remotes for deterministic tests. Keep commit and push as separate reviews.
+1. **Git Service remote operations (fetch/pull/push/stash/conflict detection) landed.** Remaining Git gaps: restore/discard (needs Epic 11 Recovery or an explicit irreversibility warning), force push, branch create/delete, AI commit-message assistance, and a merge-conflict resolution UI (status reports conflicts via `hasConflicts`; there is no in-app merge tool yet — resolve via the terminal or an external tool).
 2. AI intent-to-command proposals remain blocked on Epic 9's real model router. Return to ND-028 History/Split/Remote only with real supporting services; do not fabricate them.
-3. Do not mark Git Service or ND-025 complete until fetch/pull/push/restore/stash/conflict detection/remote inspection, remotes, pull requests, and recovery branches are real and tested.
+3. Do not mark Git Service or ND-025 complete until restore/discard, force push, branch create/delete, pull requests, recovery branches, and a real conflict-resolution UI are real and tested.
 4. Alternatively, **finish more of Epic 3/4's deferred screens** if a dependency becomes available sooner (e.g. if Epic 9's Model Router lands out of order, ND-013 AI Command Canvas and ND-005 AI Provider Setup both become buildable).
 5. Keep `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` current as each epic lands — it's not a one-time artifact.
 6. **Phase A (core, Epics 0–12) must fully land before Phase B (platform completion, Epics X1–X15) begins.** Explicit instruction from `specs/START_HERE_NeuroDeck_OS_Complete_Platform.md`.

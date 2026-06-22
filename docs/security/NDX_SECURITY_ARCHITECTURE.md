@@ -110,3 +110,12 @@ Matches mega-prompt §5.1:
 - Direct user terminal input is allowed. AI-generated/intent commands are not implemented; any future model proposal must enter the same plan/policy/permission/review pipeline now used by ND-029 structured user proposals.
 - ND-029 structured commands serialize values/paths with platform-shell quoting and emit pipes, redirects, and conditionals only from enumerated operator blocks. Risk classification is deterministic and advisory; it is not treated as the sole security boundary.
 - All Command Builder submissions use fixed registered tools and revoke prior terminal grants before submission, forcing a new approval. Approval cards show the exact command and terminal target from action arguments before execution. Privileged patterns require `terminal.privileged`; other commands require `terminal.execute`.
+
+## 11. Git security (Epic 6)
+
+- `GitService` calls the system `git` binary via `execFile('git', [...argsArray], { cwd })` exclusively — no shell string is ever constructed, so commit messages, branch names, paths, and remote names can never be interpreted as shell syntax regardless of their content.
+- `checkout()` validates the requested branch against the real local branch list before invoking Git; `fetch()`/`pull()`/`push()` validate the remote name against the real configured remote list the same way. An unrecognized branch/remote throws before any process spawns — this is the same closed-set validation pattern as `FileService`'s path-traversal checks, applied to Git's argument surface instead of the filesystem.
+- `push()` has no force flag and no code path that could add one; force push (flagged "critical risk" in mega-prompt §22) is simply not implemented, not merely defaulted off.
+- Push is never bundled with commit. `WorkspaceGitTab` always opens a separate `ConfirmationDialog` for push, showing the exact branch, remote name, and push URL — a user cannot push by accident while reviewing a commit.
+- All Git IPC handlers (`registerGitHandlers.ts`) validate their payload against a Zod schema before calling `GitService`, matching the pattern from `registerFileHandlers.ts`/`registerWorkspaceHandlers.ts`.
+- Restore/discard (history-rewriting or working-tree-destroying operations) remain unimplemented — they need Epic 11's Recovery Service or an explicit irreversibility warning the UI doesn't have yet, per §22's "discard requires recovery support or explicit irreversibility warning."

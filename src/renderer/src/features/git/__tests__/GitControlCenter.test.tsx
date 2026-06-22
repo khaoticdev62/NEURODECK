@@ -73,6 +73,8 @@ describe('GitControlCenter', () => {
           data: [{ name: 'main', current: true }]
         }),
         log: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        remotes: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        stashList: vi.fn().mockResolvedValue({ ok: true, data: [] }),
         diff
       } as never
     } as Partial<NdxBridge> as NdxBridge
@@ -107,6 +109,8 @@ describe('GitControlCenter', () => {
           data: [{ name: 'main', current: true }]
         }),
         log: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        remotes: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        stashList: vi.fn().mockResolvedValue({ ok: true, data: [] }),
         commit
       } as never
     } as Partial<NdxBridge> as NdxBridge

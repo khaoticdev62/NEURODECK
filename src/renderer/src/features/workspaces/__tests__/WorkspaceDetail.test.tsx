@@ -105,7 +105,9 @@ describe('WorkspaceDetail', () => {
           ok: true,
           data: [{ name: 'main', current: true }]
         }),
-        log: vi.fn().mockResolvedValue({ ok: true, data: [] })
+        log: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        remotes: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        stashList: vi.fn().mockResolvedValue({ ok: true, data: [] })
       } as never
     })
 

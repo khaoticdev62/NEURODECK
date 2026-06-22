@@ -7,7 +7,13 @@ import type {
   GitCommitRequest,
   GitDiffRequest,
   GitDiffResult,
+  GitFetchRequest,
+  GitRemote,
+  GitRemoteOperationRequest,
   GitStagePathsRequest,
+  GitStashEntry,
+  GitStashPopRequest,
+  GitStashSaveRequest,
   GitStatus,
   WorkspaceGitRequest
 } from './git'
@@ -53,6 +59,13 @@ export interface NdxBridge {
     branches: (request: WorkspaceGitRequest) => Promise<NdxResult<GitBranch[]>>
     checkout: (request: GitCheckoutRequest) => Promise<NdxResult<null>>
     log: (request: WorkspaceGitRequest) => Promise<NdxResult<GitCommit[]>>
+    remotes: (request: WorkspaceGitRequest) => Promise<NdxResult<GitRemote[]>>
+    fetch: (request: GitFetchRequest) => Promise<NdxResult<null>>
+    pull: (request: GitRemoteOperationRequest) => Promise<NdxResult<null>>
+    push: (request: GitRemoteOperationRequest) => Promise<NdxResult<null>>
+    stashSave: (request: GitStashSaveRequest) => Promise<NdxResult<null>>
+    stashList: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStashEntry[]>>
+    stashPop: (request: GitStashPopRequest) => Promise<NdxResult<null>>
   }
   terminal: {
     create: (request: CreateTerminalRequest) => Promise<NdxResult<TerminalSession>>

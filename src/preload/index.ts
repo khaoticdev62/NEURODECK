@@ -36,7 +36,14 @@ const ndx: NdxBridge = {
     commit: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitCommit, request),
     branches: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitBranches, request),
     checkout: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitCheckout, request),
-    log: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitLog, request)
+    log: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitLog, request),
+    remotes: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitRemotes, request),
+    fetch: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitFetch, request),
+    pull: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitPull, request),
+    push: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitPush, request),
+    stashSave: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStashSave, request),
+    stashList: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStashList, request),
+    stashPop: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStashPop, request)
   },
   terminal: {
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalCreate, request),

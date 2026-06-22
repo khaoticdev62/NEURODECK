@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { GitBranch, GitCommit, GitFileChange, GitStatus } from '@shared/contracts'
+import type {
+  GitBranch,
+  GitCommit,
+  GitFileChange,
+  GitRemote,
+  GitStashEntry,
+  GitStatus
+} from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
@@ -7,11 +14,18 @@ import { GitDiffViewer } from '../git/GitDiffViewer'
 import {
   checkoutGitBranch,
   commitGit,
+  fetchGit,
   getGitDiff,
   getGitLog,
   getGitStatus,
   listGitBranches,
+  listGitRemotes,
+  listGitStashes,
+  popGitStash,
+  pullGit,
+  pushGit,
   stageGitPaths,
+  stashSaveGit,
   unstageGitPaths
 } from '../../services/ipc/gitClient'
 
@@ -20,32 +34,38 @@ export interface WorkspaceGitTabProps {
 }
 
 /**
- * Real Git tab (mega-prompt §22), scoped to status/stage/unstage/commit/
- * branch-list/checkout/log — the operations that are safe to expose without
- * an approval pipeline since they're directly user-initiated, not
- * AI-originated. Push/pull/fetch/stash/restore/conflict-resolution are
- * deferred: each needs real remote-connectivity testing this environment
- * can't exercise yet, and "commit and push are separate approvals" (§22)
- * implies push needs its own dedicated review surface, not a quick add-on.
+ * Real Git tab (mega-prompt §22): status/stage/unstage/commit/branch-list/
+ * checkout/log/fetch/pull/push/stash. Push always opens its own review
+ * dialog, separate from the commit review — "commit and push are separate
+ * approvals" (§22). Restore/discard/conflict-resolution UI and force push
+ * remain out of scope: discard needs Epic 11's Recovery Service, and force
+ * push is flagged critical risk in the spec with no real review surface
+ * built for it yet.
  */
 export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JSX.Element {
   const [status, setStatus] = useState<GitStatus | null>(null)
   const [branches, setBranches] = useState<GitBranch[]>([])
   const [log, setLog] = useState<GitCommit[]>([])
+  const [remotes, setRemotes] = useState<GitRemote[]>([])
+  const [stashes, setStashes] = useState<GitStashEntry[]>([])
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [selectedChange, setSelectedChange] = useState<GitFileChange | null>(null)
   const [diff, setDiff] = useState<string | null>(null)
   const [diffLoading, setDiffLoading] = useState(false)
   const [commitReviewOpen, setCommitReviewOpen] = useState(false)
+  const [pushReviewOpen, setPushReviewOpen] = useState(false)
   const diffRequestId = useRef(0)
 
   const refresh = useCallback(async () => {
-    const [statusResult, branchesResult, logResult] = await Promise.all([
-      getGitStatus({ workspaceId }),
-      listGitBranches({ workspaceId }),
-      getGitLog({ workspaceId })
-    ])
+    const [statusResult, branchesResult, logResult, remotesResult, stashesResult] =
+      await Promise.all([
+        getGitStatus({ workspaceId }),
+        listGitBranches({ workspaceId }),
+        getGitLog({ workspaceId }),
+        listGitRemotes({ workspaceId }),
+        listGitStashes({ workspaceId })
+      ])
     if (statusResult.ok) {
       setStatus(statusResult.data)
       setError(null)
@@ -54,6 +74,8 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
     }
     if (branchesResult.ok) setBranches(branchesResult.data)
     if (logResult.ok) setLog(logResult.data)
+    if (remotesResult.ok) setRemotes(remotesResult.data)
+    if (stashesResult.ok) setStashes(stashesResult.data)
   }, [workspaceId])
 
   useEffect(() => {
@@ -61,8 +83,10 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
     void Promise.all([
       getGitStatus({ workspaceId }),
       listGitBranches({ workspaceId }),
-      getGitLog({ workspaceId })
-    ]).then(([statusResult, branchesResult, logResult]) => {
+      getGitLog({ workspaceId }),
+      listGitRemotes({ workspaceId }),
+      listGitStashes({ workspaceId })
+    ]).then(([statusResult, branchesResult, logResult, remotesResult, stashesResult]) => {
       if (!active) return
       if (statusResult.ok) {
         setStatus(statusResult.data)
@@ -72,6 +96,8 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
       }
       if (branchesResult.ok) setBranches(branchesResult.data)
       if (logResult.ok) setLog(logResult.data)
+      if (remotesResult.ok) setRemotes(remotesResult.data)
+      if (stashesResult.ok) setStashes(stashesResult.data)
     })
     return () => {
       active = false
@@ -110,6 +136,58 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
       setError(result.error.userMessage)
       return
     }
+    await refresh()
+  }
+
+  async function handleFetch(remote: string): Promise<void> {
+    const result = await fetchGit({ workspaceId, remote })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
+    await refresh()
+  }
+
+  async function handlePull(remote: string, branch: string): Promise<void> {
+    const result = await pullGit({ workspaceId, remote, branch })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
+    await refresh()
+  }
+
+  async function performPush(remote: string, branch: string): Promise<void> {
+    const result = await pushGit({ workspaceId, remote, branch })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      setPushReviewOpen(false)
+      return
+    }
+    setError(null)
+    setPushReviewOpen(false)
+    await refresh()
+  }
+
+  async function handleStashSave(): Promise<void> {
+    const result = await stashSaveGit({ workspaceId })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
+    await refresh()
+  }
+
+  async function handleStashPop(index: number): Promise<void> {
+    const result = await popGitStash({ workspaceId, index })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
     await refresh()
   }
 
@@ -228,6 +306,36 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
 
       <div className="flex min-h-0 flex-col gap-4 overflow-auto border border-border bg-surface p-3">
         <section>
+          <p className="mb-1 text-meta font-semibold text-text-primary">Remote</p>
+          {remotes.length === 0 ? (
+            <p className="text-meta text-text-tertiary">No remote configured.</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <p className="truncate text-meta text-text-secondary">{remotes[0].name}</p>
+              <div className="flex gap-2">
+                <ControllerButton variant="ghost" onClick={() => void handleFetch(remotes[0].name)}>
+                  Fetch
+                </ControllerButton>
+                <ControllerButton
+                  variant="ghost"
+                  disabled={!status.branch}
+                  onClick={() => status.branch && void handlePull(remotes[0].name, status.branch)}
+                >
+                  Pull
+                </ControllerButton>
+                <ControllerButton
+                  variant="primary"
+                  disabled={!status.branch}
+                  onClick={() => setPushReviewOpen(true)}
+                >
+                  Push
+                </ControllerButton>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section>
           <p className="mb-1 text-meta font-semibold text-text-primary">Branches</p>
           <ul className="flex flex-col gap-1">
             {branches.map((branch) => (
@@ -266,6 +374,38 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
             </ul>
           )}
         </section>
+
+        <section>
+          <p className="mb-1 text-meta font-semibold text-text-primary">Stash</p>
+          <ControllerButton
+            variant="ghost"
+            className="mb-2"
+            disabled={status.changes.length === 0}
+            onClick={() => void handleStashSave()}
+          >
+            Stash changes
+          </ControllerButton>
+          {stashes.length === 0 ? (
+            <p className="text-meta text-text-tertiary">No stashed changes.</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {stashes.map((stash) => (
+                <li
+                  key={stash.index}
+                  className="flex items-center justify-between text-meta text-text-secondary"
+                >
+                  <span className="truncate">{stash.message}</span>
+                  <ControllerButton
+                    variant="ghost"
+                    onClick={() => void handleStashPop(stash.index)}
+                  >
+                    Pop
+                  </ControllerButton>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
       <ConfirmationDialog
         open={commitReviewOpen}
@@ -276,6 +416,18 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
         confirmLabel="Commit locally"
         onConfirm={() => void performCommit()}
         onCancel={() => setCommitReviewOpen(false)}
+      />
+      <ConfirmationDialog
+        open={pushReviewOpen}
+        title="Review push"
+        action={`Push ${status.branch ?? 'this branch'} to ${remotes[0]?.name ?? 'the remote'}`}
+        scope={remotes[0]?.pushUrl}
+        consequence="This sends local commits to the remote. It does not force-push or rewrite remote history."
+        confirmLabel="Push"
+        onConfirm={() => {
+          if (status.branch && remotes[0]) void performPush(remotes[0].name, status.branch)
+        }}
+        onCancel={() => setPushReviewOpen(false)}
       />
     </div>
   )

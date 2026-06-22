@@ -537,3 +537,22 @@ ND-028 remains partial: Command Builder, Intent, History, Split, Remote, AI sugg
 - Full validation: typecheck and lint pass with zero errors/warnings; 43 files and 205 tests pass. Production build succeeds with a 16.39 kB lazy Command Builder chunk; main 35.49 kB, preload 6.70 kB, initial renderer CSS 29.95 kB / JS 910.32 kB. Runtime audit remains zero production vulnerabilities.
 
 ND-029 remains partial: context-aware option catalogs, local man-page explanations, saved reusable actions, remote targets, and AI-generated/intent proposals are not fabricated.
+
+### Git Service remote operations (continuation)
+
+Closed the gap the Epic 6 Git Service entry flagged: "Still deferred: fetch, pull, push, restore/discard, stash, conflict detection, remote inspection." Fetch/pull/push, stash, remote inspection, and conflict detection are now real; restore/discard remain deferred (need Epic 11 Recovery).
+
+- `GitService.remotes()` parses `git remote -v` into fetch/push URLs per remote. `fetch()`/`pull()`/`push()` each validate the remote name against the real configured remote list before invoking Git — an unknown remote name throws before any process spawns, closing the same kind of argument-injection class `checkout()` already guards against for branch names.
+- `pull()` uses `--no-rebase` (always a merge, never a silent rebase that could rewrite local commit identity). `push()` has no force flag and cannot acquire one — force push stays unimplemented, matching §22's "force push is critical risk."
+- `GitStatus` gained a real `hasConflicts` field, derived from porcelain v2's unmerged (`u`) entries against the standard XY conflict-code set (`DD`, `AU`, `UD`, `UA`, `DU`, `AA`, `UU`) — not a guess, the same codes Git's own documentation defines for merge conflicts.
+- `stashSave()`/`stashList()`/`stashPop()` wrap `git stash push/list/pop`, parsed with the same field/record-separator technique already used for `log()`.
+- IPC: `git.remotes`, `git.fetch`, `git.pull`, `git.push`, `git.stashSave`, `git.stashList`, `git.stashPop` added to `shared/contracts/git.ts`, `ipcChannels.ts`, `bridge.ts`, `registerGitHandlers.ts`, the preload bridge, and `gitClient.ts` — same validated-payload, typed-`NdxResult` pattern as every other Epic 5/6 IPC surface.
+- `WorkspaceGitTab.tsx` gained a Remote section (Fetch/Pull buttons, direct — they're non-destructive merges a user can already retry) and Push (always behind its own `ConfirmationDialog`, separate from the commit review, showing the exact branch/remote/push URL being pushed to) and a Stash section (Save/list/Pop).
+
+### Tests and evidence
+
+- `GitServiceRemote.test.ts` (new, 6 tests) uses a real bare Git remote (`git init --bare`) and a second real clone to test fetch/pull/push and conflict detection end to end — not mocked Git output. Covers: real remote listing, unknown-remote rejection on fetch/pull/push, real push verified by cloning fresh and checking the pushed commit, real fetch+pull of a commit made by a second clone (status `behind` count verified before and after), real stash save/list/pop round-trip, and a real merge conflict (two clones edit the same line, push, pull) verified through `status().hasConflicts` and the conflicted path appearing in `changes`.
+- Existing `GitControlCenter.test.tsx` and `WorkspaceDetail.test.tsx` mocks updated to include `remotes`/`stashList` stubs — `WorkspaceGitTab`'s refresh now calls them on every mount, so a stub missing those methods crashes the component during the test's effect, not just at the assertion. Caught by running the full suite, not just the new test file.
+- Full validation: typecheck and lint pass with zero errors/warnings; 44 files and 211 tests pass (up from 205). Production build succeeds: main 42.36 kB, preload 8.16 kB, initial renderer CSS 29.95 kB / JS 917.39 kB, lazy terminal CSS 7.11 kB / JS 428.26 kB, lazy Command Builder JS 16.39 kB. `npm run test:e2e` passes. `npm audit --omit=dev` reports zero vulnerabilities.
+
+Remaining Git Service gaps: restore/discard (needs Epic 11 Recovery or an explicit irreversibility warning the UI doesn't have yet), force push, branch creation/deletion, AI commit-message assistance, and the diff UI's read-only-vs-interactive-conflict-resolution mode (status reports conflicts; there is no merge-tool UI to resolve them yet — the user must resolve conflicts via an external tool or the terminal already built in this epic).

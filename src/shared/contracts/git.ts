@@ -14,7 +14,8 @@ export const gitStatusSchema = z.object({
   branch: z.string().nullable(),
   ahead: z.number(),
   behind: z.number(),
-  changes: z.array(gitFileChangeSchema)
+  changes: z.array(gitFileChangeSchema),
+  hasConflicts: z.boolean()
 })
 export type GitStatus = z.infer<typeof gitStatusSchema>
 
@@ -67,3 +68,41 @@ export const gitDiffResultSchema = z.object({
   diff: z.string()
 })
 export type GitDiffResult = z.infer<typeof gitDiffResultSchema>
+
+export const gitRemoteSchema = z.object({
+  name: z.string(),
+  fetchUrl: z.string(),
+  pushUrl: z.string()
+})
+export type GitRemote = z.infer<typeof gitRemoteSchema>
+
+export const gitStashEntrySchema = z.object({
+  index: z.number().int().nonnegative(),
+  message: z.string()
+})
+export type GitStashEntry = z.infer<typeof gitStashEntrySchema>
+
+export const gitRemoteOperationRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  remote: z.string().min(1),
+  branch: z.string().min(1)
+})
+export type GitRemoteOperationRequest = z.infer<typeof gitRemoteOperationRequestSchema>
+
+export const gitFetchRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  remote: z.string().min(1)
+})
+export type GitFetchRequest = z.infer<typeof gitFetchRequestSchema>
+
+export const gitStashSaveRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  message: z.string().min(1).optional()
+})
+export type GitStashSaveRequest = z.infer<typeof gitStashSaveRequestSchema>
+
+export const gitStashPopRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  index: z.number().int().nonnegative().default(0)
+})
+export type GitStashPopRequest = z.infer<typeof gitStashPopRequestSchema>

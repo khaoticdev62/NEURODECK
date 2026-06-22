@@ -3,13 +3,19 @@ import {
   gitCheckoutRequestSchema,
   gitCommitRequestSchema,
   gitDiffRequestSchema,
+  gitFetchRequestSchema,
+  gitRemoteOperationRequestSchema,
   gitStagePathsRequestSchema,
+  gitStashPopRequestSchema,
+  gitStashSaveRequestSchema,
   IPC_CHANNELS,
   ndxError,
   workspaceGitRequestSchema,
   type GitBranch,
   type GitCommit,
   type GitDiffResult,
+  type GitRemote,
+  type GitStashEntry,
   type GitStatus,
   type NdxResult
 } from '@shared/contracts'
@@ -142,6 +148,116 @@ export function registerGitHandlers(gitService: GitService, workspaceStore: Work
       if (!root) return workspaceNotFound()
       try {
         return { ok: true, data: await gitService.log(root) }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitRemotes,
+    async (_event, payload: unknown): Promise<NdxResult<GitRemote[]>> => {
+      const parsed = workspaceGitRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        return { ok: true, data: await gitService.remotes(root) }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitFetch,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitFetchRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.fetch(root, parsed.data.remote)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitPull,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitRemoteOperationRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.pull(root, parsed.data.remote, parsed.data.branch)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitPush,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitRemoteOperationRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.push(root, parsed.data.remote, parsed.data.branch)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitStashSave,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitStashSaveRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.stashSave(root, parsed.data.message)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitStashList,
+    async (_event, payload: unknown): Promise<NdxResult<GitStashEntry[]>> => {
+      const parsed = workspaceGitRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        return { ok: true, data: await gitService.stashList(root) }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitStashPop,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitStashPopRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.stashPop(root, parsed.data.index)
+        return { ok: true, data: null }
       } catch (error) {
         return { ok: false, error: toGitError(error) }
       }
