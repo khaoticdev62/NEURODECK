@@ -626,7 +626,7 @@ The other 15 items remain genuinely deferred — not silently skipped. They each
 ### What was built
 
 - **`RecoveryService`** (`core/recovery/RecoveryService.ts`): real checkpoints stored entirely outside the user's own workspace, under `app.getPath('userData')/recovery/<workspaceId>/` — an index file (`index.json`, via the existing `JsonStore`) plus one real snapshot file per checkpoint that had previous content. Checkpoints never collide with the user's Git history or get swept up by `git clean`. Retention: the newest 50 checkpoints per workspace are kept; older ones are pruned along with their real snapshot files on disk.
-- **`FileService.write()`** (`core/files/FileService.ts`): the first real destructive file operation. Added `resolveForWrite()` — a write-safe sibling to the existing `resolveWithinRoot()` that resolves the *parent* directory via `realpath` (closing the same symlink-escape gap) while allowing the leaf file itself to not exist yet, which `resolveWithinRoot()` couldn't do (its `realpath` call requires the full target to already exist). Also added `readIfExists()` (returns `null` on `ENOENT` instead of throwing) to capture "previous content or null" before a write.
+- **`FileService.write()`** (`core/files/FileService.ts`): the first real destructive file operation. Added `resolveForWrite()` — a write-safe sibling to the existing `resolveWithinRoot()` that resolves the _parent_ directory via `realpath` (closing the same symlink-escape gap) while allowing the leaf file itself to not exist yet, which `resolveWithinRoot()` couldn't do (its `realpath` call requires the full target to already exist). Also added `readIfExists()` (returns `null` on `ENOENT` instead of throwing) to capture "previous content or null" before a write.
 - **Orchestration lives in the IPC handler, not either service**: `registerFileHandlers.ts`'s `fileWrite` handler always calls `fileService.readIfExists()` → `recoveryService.recordCheckpoint()` → `fileService.write()`, in that order, with no code path that reaches `FileService.write()` without a checkpoint being recorded first. This was a deliberate placement choice — putting the orchestration in either service would create either a circular dependency (`FileService` importing `RecoveryService` or vice versa) or a "trust the caller to call both" footgun.
 - **Restore is itself recorded as a new checkpoint** (`registerRecoveryHandlers.ts`'s `recoveryRestore` handler calls `fileService.write()` under the hood) — restoring isn't a special unchecked path; it's "write this content back," which means restoring is itself undoable. A real redo path falls out of this for free, not as a special case.
 - **`recoveryDiff` handler**: real unified diff (via the `diff` npm package's `createTwoFilesPatch`) between the checkpoint's snapshot content and the file's current content — reused by the renderer's existing `GitDiffViewer` component (no second diff-rendering component built).
@@ -641,13 +641,13 @@ The other 15 items remain genuinely deferred — not silently skipped. They each
 
 ### Tests and evidence
 
-| Suite                                                                                                    | Location                                                  | Count |
-| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----- |
-| `RecoveryService` (empty state, snapshot capture, new-file case, ordering, workspace isolation, storage summary, retention+real file cleanup) | `core/recovery/__tests__/RecoveryService.test.ts`             | 7     |
-| `FileService.readIfExists`/`write` (create, overwrite, subdirectory, traversal rejection, symlink-escape rejection, no leftover temp file) | `core/files/__tests__/FileService.test.ts` (+10 to existing) | 10    |
-| `useOpenFiles` save paths (dirty tracking, real save success updates `savedContent`, real save failure preserves it and records `saveError`) | `features/build-studio/__tests__/useOpenFiles.test.ts` (+3) | 3     |
-| `RecoveryTimeline` (active-workspace gate, empty state, real checkpoint list + diff load, reviewed restore + refresh) | `features/recovery/__tests__/RecoveryTimeline.test.tsx`       | 4     |
-| `StorageAndRecovery` (active-workspace gate, real storage summary, navigation to Recovery Timeline)      | `features/recovery/__tests__/StorageAndRecovery.test.tsx`     | 3     |
+| Suite                                                                                                                                         | Location                                                     | Count |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----- |
+| `RecoveryService` (empty state, snapshot capture, new-file case, ordering, workspace isolation, storage summary, retention+real file cleanup) | `core/recovery/__tests__/RecoveryService.test.ts`            | 7     |
+| `FileService.readIfExists`/`write` (create, overwrite, subdirectory, traversal rejection, symlink-escape rejection, no leftover temp file)    | `core/files/__tests__/FileService.test.ts` (+10 to existing) | 10    |
+| `useOpenFiles` save paths (dirty tracking, real save success updates `savedContent`, real save failure preserves it and records `saveError`)  | `features/build-studio/__tests__/useOpenFiles.test.ts` (+3)  | 3     |
+| `RecoveryTimeline` (active-workspace gate, empty state, real checkpoint list + diff load, reviewed restore + refresh)                         | `features/recovery/__tests__/RecoveryTimeline.test.tsx`      | 4     |
+| `StorageAndRecovery` (active-workspace gate, real storage summary, navigation to Recovery Timeline)                                           | `features/recovery/__tests__/StorageAndRecovery.test.tsx`    | 3     |
 
 Total: 253 tests passing (up from 246).
 
@@ -668,3 +668,61 @@ npm audit --omit=dev → 0 vulnerabilities
 - **Recovery Timeline's Revert event/Branch from point/Export snapshot** — need recovery-event kinds beyond `file-write`.
 - **Before/After Diff's Previous/next change, Accept/reject chunk, Explain change, Run validation** — need chunk-level apply infrastructure or Epic 9's model router.
 - **Build Studio's structural edits, predictive editing, voice-to-code** — structural edits need a real code-fix provider beyond this slice; predictive/voice need Epic 9.
+
+## Epic 8 — Workflow Engine (partial; Agent Runtime deferred)
+
+### Scope decision
+
+Epic 8 covers two halves with very different buildability. The Workflow Engine (§25) is mostly real without AI — Tool action, Condition, User approval, Delay, Validator, and Output node types only need the real `ActionQueue`/`ToolRegistry` pipeline already built in Epic 4, not a model. The Agent Runtime (§17) is fundamentally an AI-driven concept — an agent has a Role, a Goal, and a Model profile, and its entire job is to plan and decide. With no model router (Epic 9), a "real" agent would be an empty shell with nothing to plan with — there's no Epic-4-style "one real low-risk action" demo available the way there was for the AI safety pipeline, because the thing being demonstrated (autonomous planning) doesn't exist without a model. Confirmed this split with the user before starting; built the Workflow Engine for real and deferred all of Agent Runtime (§17, ND-016, ND-017) to Epic 9.
+
+The Workflow Engine itself is scoped to a **sequential step model**, not an arbitrary node graph. Building a full DAG executor — parallel branches, merges, cycle detection, labeled jumps — is disproportionate scope for this slice; this is the same kind of deliberate simplification Epic 2 made for focus-engine group transitions. Steps run in order; `condition`/`validator` are the only nodes that affect control flow, and they can only stop the run early, never branch or loop. AI decision (needs Epic 9), Script (needs a new headless, non-interactive execution primitive `TerminalService` doesn't provide — it's built for live, human-attended PTY sessions), Parallel branch, Merge, and Rollback are not implemented.
+
+ND-033 Workflow Forge ships as a controller-friendly ordered step list (add/reorder/remove/configure), not a free-form pan/zoom node canvas with drag-to-connect edges. Building a real 2D graph canvas with controller-native pan/zoom/connect interactions is a substantial UI undertaking on its own, disproportionate to this slice's time budget — and a linear list is arguably *more* honest for controller-first requirements than a canvas that would need extensive custom input handling to avoid being mouse-only in practice.
+
+### What was built
+
+- **`shared/contracts/workflow.ts`**: `WorkflowDefinition` (versioned, persisted), `WorkflowStep` (discriminated union over the 6 real kinds), `WorkflowRun`/`WorkflowStepRun` (real execution state), `ConditionExpression` (structured `{variable, operator, value}` — never `eval()` or arbitrary code, closing the same code-injection class avoided elsewhere in the codebase).
+- **`core/workflows/WorkflowStore.ts`**: real, versioned workflow definitions (version increments on every save), persisted per workspace via `JsonStore`, same pattern as `WorkspaceStore`/`RecoveryService`.
+- **`core/workflows/WorkflowRunStore.ts`**: real run history, 100-run-per-workspace retention, persisted per workspace.
+- **`renderer/src/workflows/WorkflowEngine.ts`**: the actual execution loop. `tool-action` steps call `queue.submit()` — the exact same `ActionQueue` from Epic 4, meaning a workflow tool call goes through registry lookup, permission evaluation, audit logging, and (if not pre-granted) the real Approval Queue UI, identical to a Command Palette action. There is no separate, weaker execution path for workflows. `awaitActionCompletion()` subscribes to the queue's real change events rather than polling. `user-approval` steps genuinely suspend the run (a pending `Promise` held in a per-run control object) until `resolveApproval()` is called from the UI.
+- **`renderer/src/workflows/evaluateCondition.ts`**: pure, five real operators (`equals`/`not-equals`/`contains`/`greater-than`/`less-than`), tested in isolation.
+- **`WorkflowRunnerProvider`**: holds one shared `WorkflowEngine` instance and live run state, mounted inside `AiSafetyProvider` in `AppProviders` (needs `queue` from AI safety context) — `WorkflowLibrary` (starts runs) and `WorkflowRunDetail` (approves/cancels them) must act on the same engine instance, so it can't be re-instantiated per screen.
+- **ND-032 Workflow Library, ND-033 Workflow Forge, ND-034 Workflow Run Detail**: real screens, described above.
+
+### A real bug found and fixed
+
+First test run of `WorkflowEngine`'s tool-action path timed out after 5 seconds on 3 of 9 tests. Root cause: the test's tool's capability was never granted, so `ActionQueue.submit()` correctly parked the action as `pending-approval` — exactly as it should, since nothing had approved it — and `awaitActionCompletion()` waited forever for a terminal status that would never arrive without a UI approval. This wasn't an engine bug; it was a missing step in the test's setup matching mega-prompt §25's real requirement ("permission requirements are calculated before execution" — a permission preflight). Fixed by granting the tool's capability in the test's `makeQueue()` helper, simulating the real-world case where a workflow's permissions were already approved before the run started, and documented why in a comment so it isn't "fixed" again by accident into a fake bypass.
+
+### Tests and evidence
+
+| Suite                                                                                                                    | Location                                                            | Count |
+| ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ----- |
+| `WorkflowStore` (empty, real versioned create/update, remove, workspace isolation)                                       | `core/workflows/__tests__/WorkflowStore.test.ts`                         | 5     |
+| `WorkflowRunStore` (empty, real create, update, ordering, workspace isolation)                                            | `core/workflows/__tests__/WorkflowRunStore.test.ts`                      | 5     |
+| `evaluateCondition` (all 5 real operators, missing-variable handling)                                                     | `renderer/src/workflows/__tests__/evaluateCondition.test.ts`             | 4     |
+| `WorkflowEngine` (real tool-action success/failure through the real `ActionQueue`, unregistered-tool failure, condition gate stop, validator failure, real user-approval pause/resume/reject, cancel, output recording) | `renderer/src/workflows/__tests__/WorkflowEngine.test.ts`                | 9     |
+| `WorkflowLibrary` (active-workspace gate, empty state, real list, real remove)                                            | `features/workflows/__tests__/WorkflowLibrary.test.tsx`                  | 4     |
+| `WorkflowForge` (real step add/save round trip, real load-for-edit, real step removal)                                   | `features/workflows/__tests__/WorkflowForge.test.tsx`                    | 3     |
+| `WorkflowRunDetail` (real live state, persisted-run fallback, real approve/reject, real cancel)                          | `features/workflows/__tests__/WorkflowRunDetail.test.tsx`                | 4     |
+
+Total: 287 tests passing (up from 253).
+
+```text
+npm run typecheck   → 0 errors
+npm run lint         → 0 errors, 0 warnings
+npm run test         → 59 files, 287 tests passed
+npm run build        → succeeded (initial renderer JS 974.93 kB, lazy Build Studio JS unchanged ~7.34 MB)
+npm run test:e2e     → 1 passed
+npm audit --omit=dev → 0 vulnerabilities
+```
+
+### Deferred items with explicit reason
+
+- **The entire Agent Runtime** (§17, ND-016 Agent Operations Center, ND-017 Agent Detail) — needs Epic 9's Model Router; an agent with no model to plan with would be an empty shell, not a real demonstration.
+- **AI decision node type** — needs Epic 9's Model Router.
+- **Script node type** — needs a new headless (non-interactive) execution primitive; `TerminalService` is built for live, human-attended PTY sessions, not one-shot scripted command execution with captured exit codes.
+- **Parallel branch, Merge, Rollback node types** — need the full arbitrary-graph model this slice intentionally doesn't build.
+- **Dry-run mode** — needs a "simulate without executing tool actions" path the engine doesn't implement.
+- **Workflow-level checkpoints/recovery linkage** — no current workflow tool-action performs a file write, so there's nothing to link to a `RecoveryCheckpoint` yet; the plumbing (`recoveryCheckpointId` field) exists on `WorkflowStepRun` for when one does.
+- **Retry failed node / Skip optional node / Re-run from checkpoint / Export report** (ND-034) — need per-step retry semantics and a report format not yet designed.
+- **Workflow Forge's free-form graph canvas** — built as a controller-friendly ordered list instead; see scope decision above.

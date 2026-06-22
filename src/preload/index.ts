@@ -75,6 +75,16 @@ const ndx: NdxBridge = {
       ipcRenderer.on(IPC_CHANNELS.terminalExit, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.terminalExit, handler)
     }
+  },
+  workflows: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowList, request),
+    save: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowSave, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowRemove, request)
+  },
+  workflowRuns: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowRunList, request),
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowRunCreate, request),
+    update: (request) => ipcRenderer.invoke(IPC_CHANNELS.workflowRunUpdate, request)
   }
 }
 

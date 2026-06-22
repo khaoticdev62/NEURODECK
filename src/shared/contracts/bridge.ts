@@ -27,6 +27,15 @@ import type {
 } from './git'
 import type { CreateWorkspaceRequest, Workspace } from './workspace'
 import type {
+  CreateWorkflowRunRequest,
+  SaveWorkflowRequest,
+  UpdateWorkflowRunRequest,
+  WorkflowDefinition,
+  WorkflowIdRequest,
+  WorkflowRun,
+  WorkspaceWorkflowRequest
+} from './workflow'
+import type {
   CreateTerminalRequest,
   ListTerminalSessionsRequest,
   TerminalDataEvent,
@@ -93,5 +102,15 @@ export interface NdxBridge {
     terminate: (request: TerminalSessionRequest) => Promise<NdxResult<null>>
     onData: (listener: (event: TerminalDataEvent) => void) => () => void
     onExit: (listener: (event: TerminalExitEvent) => void) => () => void
+  }
+  workflows: {
+    list: (request: WorkspaceWorkflowRequest) => Promise<NdxResult<WorkflowDefinition[]>>
+    save: (request: SaveWorkflowRequest) => Promise<NdxResult<WorkflowDefinition>>
+    remove: (request: WorkflowIdRequest) => Promise<NdxResult<null>>
+  }
+  workflowRuns: {
+    list: (request: WorkspaceWorkflowRequest) => Promise<NdxResult<WorkflowRun[]>>
+    create: (request: CreateWorkflowRunRequest) => Promise<NdxResult<WorkflowRun>>
+    update: (request: UpdateWorkflowRunRequest) => Promise<NdxResult<null>>
   }
 }

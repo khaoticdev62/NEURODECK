@@ -135,3 +135,10 @@ Matches mega-prompt §5.1:
 - Restoring a checkpoint reuses `FileService.write()` under the hood (via the `recovery.restore` handler), so a restore is itself checkpointed — there is no separate, less-validated "restore" code path that bypasses the write pipeline's protections.
 - The `recovery.diff` handler computes diffs with the `diff` npm package (pure JS, no native dependency, no shell invocation) — there is no risk of command injection from file content, unlike if this had shelled out to a system `diff` binary.
 - 50-checkpoint-per-workspace retention deletes pruned snapshot files for real (not just removing the index entry) — recovery storage cannot grow unbounded per workspace.
+
+## 14. Workflow Engine security (Epic 8)
+
+- `WorkflowEngine`'s `tool-action` steps call `queue.submit()` — the exact same `ActionQueue` entry point a Command Palette action uses. There is no separate, weaker execution path for workflow-originated tool calls: registry lookup, permission evaluation, audit logging, and (if not already granted) the real Approval Queue UI all apply identically. A workflow cannot invoke a tool that isn't registered, and cannot bypass an ungranted capability — `ActionQueue.submit()` parks it as `pending-approval` exactly as it would for any other caller.
+- `condition`/`validator` expressions are structured data (`{variable, operator, value}`), evaluated by `evaluateCondition()` via a fixed `switch` over five enumerated operators — never `eval()`, `new Function()`, or any form of dynamic code execution. A malicious or malformed workflow definition cannot execute arbitrary JavaScript through a condition.
+- Workflow definitions and run history are persisted via the same Zod-validated IPC pattern as every other store (`registerWorkflowHandlers.ts`) — the renderer cannot write arbitrary JSON to disk outside the validated schema.
+- `user-approval` steps require a real, explicit human decision (`resolveApproval()`, wired to a UI button) before the run continues; there is no default/auto-approve path and no timeout that silently approves.

@@ -8,6 +8,9 @@ import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
 import { GitControlCenter } from '../../features/git/GitControlCenter'
 import { RecoveryTimeline } from '../../features/recovery/RecoveryTimeline'
 import { StorageAndRecovery } from '../../features/recovery/StorageAndRecovery'
+import { WorkflowForge } from '../../features/workflows/WorkflowForge'
+import { WorkflowLibrary } from '../../features/workflows/WorkflowLibrary'
+import { WorkflowRunDetail } from '../../features/workflows/WorkflowRunDetail'
 import { FileManager } from '../../features/workspaces/FileManager'
 import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
 import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
@@ -209,7 +212,38 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'Workflow Library',
     owningEpic: 'Epic 8',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <WorkflowLibrary />
+  },
+  {
+    routeId: 'automations-forge-new',
+    screenId: 'ND-033',
+    path: '/automations/forge',
+    title: 'Workflow Forge',
+    owningEpic: 'Epic 8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <WorkflowForge />
+  },
+  {
+    routeId: 'automations-forge-edit',
+    screenId: 'ND-033',
+    path: '/automations/forge/:workflowId',
+    title: 'Workflow Forge',
+    owningEpic: 'Epic 8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <WorkflowForge />
+  },
+  {
+    routeId: 'automations-run-detail',
+    screenId: 'ND-034',
+    path: '/automations/runs/:runId',
+    title: 'Workflow Run Detail',
+    owningEpic: 'Epic 8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <WorkflowRunDetail />
   },
   {
     routeId: 'models',

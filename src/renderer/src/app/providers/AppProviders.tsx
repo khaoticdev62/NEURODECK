@@ -4,6 +4,7 @@ import { AiSafetyProvider } from '../../ai-safety/AiSafetyProvider'
 import { FocusEngineProvider } from '../../controller/focus/FocusEngineProvider'
 import { WorkspaceProvider } from '../../features/workspaces/WorkspaceProvider'
 import { DisplayModeProvider } from '../../state/displayMode'
+import { WorkflowRunnerProvider } from '../../workflows/WorkflowRunnerProvider'
 import { RouterRoot } from '../routing/RouterRoot'
 
 export function AppProviders(): React.JSX.Element {
@@ -13,9 +14,11 @@ export function AppProviders(): React.JSX.Element {
         <FocusEngineProvider>
           <AiSafetyProvider>
             <WorkspaceProvider>
-              <DisplayModeProvider>
-                <RouterRoot />
-              </DisplayModeProvider>
+              <WorkflowRunnerProvider>
+                <DisplayModeProvider>
+                  <RouterRoot />
+                </DisplayModeProvider>
+              </WorkflowRunnerProvider>
             </WorkspaceProvider>
           </AiSafetyProvider>
         </FocusEngineProvider>

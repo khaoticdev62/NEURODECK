@@ -106,17 +106,17 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] Controller-native structural edits (§12 editor requirements) — **deferred**: most structural actions need a real code-fix provider beyond what this slice builds (save now exists, so this is no longer blocked on Recovery — it's blocked on the structural-edit logic itself)
 - [x] Editor tests — `detectLanguage.test.ts` (4), `useOpenFiles.test.ts` (7, including real save success/failure paths), `ProjectTree.test.tsx` (3), `DiagnosticsPanel.test.tsx` (3), `SymbolNavigator.test.tsx` (3). Monaco's own editor surface is not re-tested (it's a trusted, established library) — tests cover the real logic this slice adds around it
 
-### Epic 8 — Agents and workflows
+### Epic 8 — Agents and workflows ⚠️ Workflow Engine real (sequential model); Agent Runtime fully deferred to Epic 9 (see ledger)
 
-- [ ] Agent Runtime (§17)
-- [ ] ND-016 Agent Operations Center
-- [ ] ND-017 Agent Detail
-- [ ] ND-032 Workflow Library
-- [ ] ND-033 Workflow Forge (graph canvas, node types)
-- [ ] Workflow Runtime / Workflow Engine (§25)
-- [ ] Dry-run support
-- [ ] Checkpoints
-- [ ] ND-034 Workflow Run Detail
+- [ ] Agent Runtime (§17) — **deferred**: an agent is fundamentally an AI-driven entity (Role/Goal/Model profile that plans and decides); with no model router, a real agent would be an empty shell. Confirmed scope with the user before starting Epic 8.
+- [ ] ND-016 Agent Operations Center — **deferred**: needs Agent Runtime
+- [ ] ND-017 Agent Detail — **deferred**: needs Agent Runtime
+- [x] ND-032 Workflow Library — **real**: lists persisted workflow definitions for the active workspace, real Run/Open/Remove actions
+- [x] ND-033 Workflow Forge — **real, scoped to a list editor, not a graph canvas**: a deliberate simplification — building a free-form pan/zoom node canvas with controller-native drag/connect interactions is disproportionate scope for this slice; an ordered step list with add/reorder/remove is the controller-friendly, honestly-scoped alternative. Cycle detection/unreachable-node flags don't apply to a linear list. AI decision and Script node types are not implemented (need Epic 9's model router and a new headless terminal-execution primitive respectively); Parallel branch/Merge/Rollback need the full graph model this slice doesn't build
+- [x] Workflow Runtime / Workflow Engine (§25) — **real, sequential rather than an arbitrary DAG** (see scope note in `shared/contracts/workflow.ts`): `tool-action` steps submit through the real Epic 4 `ActionQueue` (same registry → permission → approval → execution → audit pipeline as a Command Palette action); `condition`/`validator` are structured comparisons (no `eval()`); `user-approval` genuinely pauses the run until a human resolves it; `delay` is a real bounded wait; `output` records context. Versioned definitions, real persistence, real run history
+- [ ] Dry-run support — **deferred**: needs a "simulate without executing tool actions" mode this slice doesn't build
+- [ ] Checkpoints — **deferred from the workflow-step level**: file-write recovery checkpoints exist (Epic 11), but no current workflow tool-action performs a file write, so there's nothing to link yet
+- [x] ND-034 Workflow Run Detail — **partially real**: real Timeline (live + persisted step status/messages) and Approvals (real approve/reject wired to the engine) and Cancel. Inputs/Outputs/Logs/Recovery/Metrics tabs and Retry/Skip/Re-run-from-checkpoint/Export are deferred — each needs infrastructure (structured per-step logs, recovery-checkpoint linkage, performance instrumentation, a report format) this slice doesn't build
 
 ### Epic 9 — Models
 

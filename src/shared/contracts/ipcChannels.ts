@@ -33,5 +33,11 @@ export const IPC_CHANNELS = {
   terminalResize: 'terminal.resize',
   terminalTerminate: 'terminal.terminate',
   terminalData: 'terminal.data',
-  terminalExit: 'terminal.exit'
+  terminalExit: 'terminal.exit',
+  workflowList: 'workflow.list',
+  workflowSave: 'workflow.save',
+  workflowRemove: 'workflow.remove',
+  workflowRunList: 'workflowRun.list',
+  workflowRunCreate: 'workflowRun.create',
+  workflowRunUpdate: 'workflowRun.update'
 } as const
