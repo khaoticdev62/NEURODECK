@@ -61,6 +61,7 @@ import type {
   TerminalWriteRequest
 } from './terminal'
 import type { SystemMetricsSnapshot } from './system'
+import type { DiagnosticsInfo } from './diagnostics'
 import type {
   AgentDefinition,
   AgentIdRequest,
@@ -169,5 +170,12 @@ export interface NdxBridge {
   }
   system: {
     collectMetrics: () => Promise<NdxResult<SystemMetricsSnapshot>>
+  }
+  diagnostics: {
+    get: () => Promise<NdxResult<DiagnosticsInfo>>
+  }
+  power: {
+    restartApp: () => Promise<NdxResult<null>>
+    quitApp: () => Promise<NdxResult<null>>
   }
 }

@@ -141,7 +141,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] ND-038 Learning Hub
 - [ ] ND-039 Guided Lab (with AI coach boundaries)
 
-### Epic 11 — System integration ⚠️ System Metrics, Recovery, and System Dashboard real; remaining settings integrations remain
+### Epic 11 — System integration ⚠️ System Metrics, Recovery, System Dashboard, Power Menu (safe subset), and About/Diagnostics real; remaining settings integrations remain
 
 - [x] System Metrics Service (real metrics, §27) — `core/system/SystemMetricsService.ts`; capability-driven CPU, memory, storage, network, process, swap, battery, thermal, fan, and GPU collection with explicit unavailable reasons and deterministic tests. Epic 9 routing is its first real consumer
 - [x] ND-042 System Dashboard — **real**: `features/system/SystemDashboard.tsx` — real `systemMetrics.collect` IPC (Zod-validated `SystemMetricsSnapshot` contract), real manual Refresh, every metric card shows the real `{available, value, source, reason}` shape — an unavailable sensor (no battery, non-Linux host) is shown honestly as "Unavailable: <reason>", never a fabricated reading. No auto-refresh polling in this slice (manual Refresh only, matching the no-background-surprises rule); live-updating charts/historical trends are not built.
@@ -153,12 +153,12 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] ND-048 Integrations — **deferred**
 - [ ] ND-049 Updates — **deferred**
 - [ ] ND-050 Quick Access Overlay (full build) — **deferred**
-- [ ] ND-051 Power Menu — **deferred**
+- [x] ND-051 Power Menu — **real for the two genuinely safe actions**: `features/system/PowerMenu.tsx` — real "Restart NeuroDeck" (`app.relaunch()` + `app.exit()`) and "Quit NeuroDeck / Return to SteamOS" (`app.quit()`), both behind a real `ConfirmationDialog` reviewing the action/consequence per spec §9.1. Lock/Suspend/Restart core service/Restart device/Shut down are shown as honestly disabled options with a one-line real reason each (no Lock Screen yet, no separate core-service process in this architecture, real OS-level suspend/reboot/shutdown are irreversible against the whole host machine and need a dedicated native-integration design before being wired — not attempted in this slice)
 - [x] **Recovery Service (§29)** — `core/recovery/RecoveryService.ts`: real checkpoints with content snapshots stored outside the user's workspace (`app.getPath('userData')/recovery/`), 50-checkpoint-per-workspace retention with real snapshot-file cleanup, tested against real temp directories. `FileService.write()` — the first destructive file operation — now exists and is unconditionally checkpointed before every overwrite (orchestrated in `registerFileHandlers.ts`'s `fileWrite` handler, not skippable)
 - [x] ND-052 Recovery Timeline — **partially real**: real file-write checkpoint list, Inspect/Compare/Restore-to-point. Workflow, Git, agent, package, settings, and system-config services are not integrated as recovery event kinds; Revert event/Branch from point/Export snapshot remain
 - [x] ND-053 Before/After Diff — **partially real**: real unified diff between a checkpoint snapshot and current content, with Restore original. Previous/next change, chunk apply/reject, model explanation, and validation remain unwired
 - [ ] ND-055 Error Recovery — **deferred**: existing `ErrorState`/`ConfirmationDialog` patterns plus Recovery Timeline cover the core "what failed, how do I recover" loop, but the dedicated error-structure screen (plain-language problem/technical code/diagnostic export) isn't built
-- [ ] ND-056 About and Diagnostics — **deferred**
+- [x] ND-056 About and Diagnostics — **real, scoped to what this architecture actually has**: `features/system/AboutDiagnostics.tsx` — real app/Electron/Chromium/Node versions, platform/arch, configured model provider names, and a real "Copy diagnostics to clipboard" export (real version info + a live `SystemMetricsService` snapshot, never an API key or other secret since none of this data source holds one). "Core version"/"Database version"/build hash are not shown rather than filled with an invented value — this architecture has no separate core-service process, no database, and no build-time commit-hash injection step yet
 
 ### Epic 12 — Packaging and hardening
 

@@ -124,6 +124,13 @@ const ndx: NdxBridge = {
   },
   system: {
     collectMetrics: () => ipcRenderer.invoke(IPC_CHANNELS.systemMetricsCollect)
+  },
+  diagnostics: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.diagnosticsGet)
+  },
+  power: {
+    restartApp: () => ipcRenderer.invoke(IPC_CHANNELS.powerRestartApp),
+    quitApp: () => ipcRenderer.invoke(IPC_CHANNELS.powerQuitApp)
   }
 }
 

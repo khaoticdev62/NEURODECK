@@ -8,6 +8,8 @@ import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
 import { AgentDetail } from '../../features/agents/AgentDetail'
 import { AgentOperationsCenter } from '../../features/agents/AgentOperationsCenter'
 import { GitControlCenter } from '../../features/git/GitControlCenter'
+import { AboutDiagnostics } from '../../features/system/AboutDiagnostics'
+import { PowerMenu } from '../../features/system/PowerMenu'
 import { SystemDashboard } from '../../features/system/SystemDashboard'
 import { ModelControlCenter } from '../../features/models/ModelControlCenter'
 import { ModelDetail } from '../../features/models/ModelDetail'
@@ -319,6 +321,26 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: <SystemDashboard />
+  },
+  {
+    routeId: 'power',
+    screenId: 'ND-051',
+    path: '/power',
+    title: 'Power Menu',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <PowerMenu />
+  },
+  {
+    routeId: 'about',
+    screenId: 'ND-056',
+    path: '/about',
+    title: 'About and Diagnostics',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <AboutDiagnostics />
   },
   {
     routeId: 'recovery',

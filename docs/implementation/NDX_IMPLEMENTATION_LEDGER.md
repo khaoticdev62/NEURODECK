@@ -627,7 +627,9 @@ A second slice then built the **System Metrics Service** (§27) for real — `co
 
 A third slice closed the gap the second slice left open: **ND-042 System Dashboard** now has real shared contracts (`shared/contracts/system.ts`, mirroring `SystemMetricsService`'s `{available, value, source, reason}` shape exactly), real IPC (`registerSystemHandlers.ts`, a single Zod-free read since `collect()` takes no input), and a real controller-focusable screen (`features/system/SystemDashboard.tsx`).
 
-The other 13 of 16 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build yet: Controller Settings needs the Input Profile Manager UI (Epic 2 left it backend-only); Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access (full build), and Power Menu each need their own service; Error Recovery and About/Diagnostics need a dedicated screen this slice doesn't build.
+A fourth slice closed two more: **ND-051 Power Menu**, scoped to the two genuinely safe actions (restart/quit this app via real Electron APIs, behind a real `ConfirmationDialog`) — real OS-level suspend/reboot/shutdown are deliberately not wired, since those are irreversible against the whole host machine, not just this app, and need their own native-integration design and explicit sign-off before being attempted; and **ND-056 About and Diagnostics**, scoped to what this architecture actually has (real app/Electron/Chromium/Node versions, platform, configured providers, a real clipboard export combining that with a live `SystemMetricsService` snapshot) — "Core version"/"Database version"/build hash are omitted rather than invented, since there's no separate core-service process, no database, and no build-time commit-hash injection step.
+
+The other 8 of 16 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build yet: Controller Settings needs the Input Profile Manager UI (Epic 2 left it backend-only); Display/Theme, Network/VPN, Privacy, Integrations, Updates, and Quick Access (full build) each need their own service; Error Recovery needs a dedicated screen this slice doesn't build.
 
 ### What was built
 
@@ -671,9 +673,30 @@ npm audit --omit=dev → 0 vulnerabilities
 
 `SystemDashboard.test.tsx` (4: real collected metrics rendered, a real unavailable-sensor reason shown honestly rather than fabricated, real error state on collection failure, real Refresh round trip) — brings the cumulative total to 332 tests passing (up from 328), all clean lint/typecheck/build/e2e/audit at this state.
 
+### Addendum — ND-051 Power Menu and ND-056 About/Diagnostics
+
+Both screens needed new IPC: `registerPowerHandlers.ts` (`power.restartApp`/`power.quitApp`, real `app.relaunch()`/`app.exit()`/`app.quit()` calls — no input to validate) and `registerDiagnosticsHandlers.ts` (`diagnostics.get`, returning real `app.getVersion()`/`process.versions`/`process.platform`/`process.arch` plus the real configured provider names from `ModelProviderStore`).
+
+`PowerMenu.tsx`'s deferred options (Lock, Suspend, Restart core service, Restart device, Shut down) are rendered as visibly disabled list items with their real reason shown inline, rather than hidden or wired to a fake handler — the spec's own framing ("each option shows impact on running tasks") is satisfied honestly by saying why an option can't run yet instead of pretending it can. The two real options route through the same `ConfirmationDialog` (action/consequence/confirm) every other medium-risk action in the app uses.
+
+`AboutDiagnostics.tsx`'s clipboard export reuses the same `navigator.clipboard.writeText` path `CommandBuilder`'s copy-without-running action already established — no new clipboard-access pattern introduced. The export payload is real version info plus a live `SystemMetricsService` snapshot; it can never contain an API key, since neither data source holds one.
+
+`AboutDiagnostics.test.tsx` (3) + `PowerMenu.test.tsx` (4) — brings the cumulative total to 339 tests passing (up from 332).
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 72 files, 339 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
 ### Deferred items with explicit reason
 
-- **The other 13 of 16 Epic 11 items** (Controller Settings, Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access full build, Power Menu, Error Recovery, About/Diagnostics) — each needs a service this slice doesn't build. System Metrics and ND-042 System Dashboard are now real; see the addenda above.
+- **The other 8 of 16 Epic 11 items** (Controller Settings, Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access full build, Error Recovery) — each needs a service this slice doesn't build. System Metrics, ND-042 System Dashboard, ND-051 Power Menu, and ND-056 About/Diagnostics are now real; see the addenda above.
+- **Power Menu's Lock/Suspend/Restart core service/Restart device/Shut down** — Lock needs ND-002 (not built); this architecture has no separate core-service process to restart independently; real OS suspend/reboot/shutdown are irreversible against the whole host machine and need a dedicated native-integration design and explicit sign-off before being wired — not attempted in this slice for safety reasons, not just scope.
+- **About/Diagnostics's Core version/Database version/build hash** — no separate core-service process, no database, and no build-time commit-hash injection step exist in this architecture; omitted rather than invented.
 - **Copy/move/rename/delete/compress/extract/secure-delete** (Epic 5's File Service) — each needs its own recovery-checkpoint shape (a move/delete isn't the same kind of event as a content overwrite); only `write()` shipped this slice.
 - **Git restore/discard/force-push/branch-delete** (Epic 6) — still need either Recovery integration for Git-specific events or an explicit irreversibility warning surface; the `RecoveryService` built this slice is scoped to `file-write` events, not Git history rewrites.
 - **Recovery Timeline's Revert event/Branch from point/Export snapshot** — need recovery-event kinds beyond `file-write`.

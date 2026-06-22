@@ -17,9 +17,11 @@ import { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
 import { electronSecretCipher } from '../security/electronSecretCipher'
 import { IPC_CHANNELS } from '@shared/contracts'
 import { registerAgentHandlers } from './registerAgentHandlers'
+import { registerDiagnosticsHandlers } from './registerDiagnosticsHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
 import { registerModelHandlers } from './registerModelHandlers'
+import { registerPowerHandlers } from './registerPowerHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
 import { registerTerminalHandlers } from './registerTerminalHandlers'
@@ -63,5 +65,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)
   registerAgentHandlers(agentStore, agentRuntime)
   registerSystemHandlers(systemMetricsService)
+  registerDiagnosticsHandlers(modelProviderStore)
+  registerPowerHandlers()
   return registerTerminalHandlers(terminalService, workspaceStore, getWindow)
 }
