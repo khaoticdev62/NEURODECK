@@ -119,3 +119,10 @@ Matches mega-prompt §5.1:
 - Push is never bundled with commit. `WorkspaceGitTab` always opens a separate `ConfirmationDialog` for push, showing the exact branch, remote name, and push URL — a user cannot push by accident while reviewing a commit.
 - All Git IPC handlers (`registerGitHandlers.ts`) validate their payload against a Zod schema before calling `GitService`, matching the pattern from `registerFileHandlers.ts`/`registerWorkspaceHandlers.ts`.
 - Restore/discard (history-rewriting or working-tree-destroying operations) remain unimplemented — they need Epic 11's Recovery Service or an explicit irreversibility warning the UI doesn't have yet, per §22's "discard requires recovery support or explicit irreversibility warning."
+
+## 12. Build Studio security (Epic 7)
+
+- Monaco Editor and its language workers are bundled locally via Vite's `?worker` import (`monacoWorkers.ts`) and `loader.config({ monaco })` (`CodeEditor.tsx`) — there is no CDN fetch, satisfying the offline-first/no-cloud-dependency rule and avoiding a third-party script dependency in a renderer process.
+- The editor is hard-coded `readOnly: true`; there is no code path that writes file content back to disk. File reads go through the same `FileService`/`readFile` IPC path File Manager and File Preview already use (Epic 5) — no separate or weaker file-access surface was introduced for Build Studio.
+- `monaco-editor@0.55.1` pulls in `dompurify@3.2.7` transitively, which has multiple known XSS CVEs (DOMPurify is used by Monaco for sanitizing hover/markdown content). Pinned via `package.json`'s `overrides` to `dompurify@^3.4.11`, which patches them. `npm audit --omit=dev` confirms zero production vulnerabilities after the override.
+- Diagnostics and symbols are read from Monaco's own bundled TypeScript compiler worker (a real, sandboxed Web Worker) — no code from an opened file is ever evaluated or executed by NeuroDeck itself; Monaco's tokenizers and the TS compiler only parse and analyze text.

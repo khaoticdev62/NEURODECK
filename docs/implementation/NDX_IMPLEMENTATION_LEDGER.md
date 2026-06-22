@@ -556,3 +556,61 @@ Closed the gap the Epic 6 Git Service entry flagged: "Still deferred: fetch, pul
 - Full validation: typecheck and lint pass with zero errors/warnings; 44 files and 211 tests pass (up from 205). Production build succeeds: main 42.36 kB, preload 8.16 kB, initial renderer CSS 29.95 kB / JS 917.39 kB, lazy terminal CSS 7.11 kB / JS 428.26 kB, lazy Command Builder JS 16.39 kB. `npm run test:e2e` passes. `npm audit --omit=dev` reports zero vulnerabilities.
 
 Remaining Git Service gaps: restore/discard (needs Epic 11 Recovery or an explicit irreversibility warning the UI doesn't have yet), force push, branch creation/deletion, AI commit-message assistance, and the diff UI's read-only-vs-interactive-conflict-resolution mode (status reports conflicts; there is no merge-tool UI to resolve them yet — the user must resolve conflicts via an external tool or the terminal already built in this epic).
+
+## Epic 7 — Build Studio (partial, read-only)
+
+### Scope decision
+
+Build Studio's core feature is editing and saving code, but file writes are deferred until Epic 11's Recovery Service — the same rule that kept Epic 5's File Manager read-only. Asked the user directly how to handle this conflict before starting; the answer was to build a real read-only editor now rather than add an ad hoc, non-Recovery-backed save path. The editor, tabs, diagnostics, and symbol navigation are all genuinely real; there is no save, no Edit mode (editing without ever being able to save would be misleading, not just incomplete), and no AI coding panel (no model router yet — Epic 9).
+
+The other major scope question was LSP. Standing up real language servers (tsserver as a subprocess, JSON-RPC, etc.) per language is one of the largest items in the entire spec. Monaco Editor ships its own TypeScript/JavaScript language service as a bundled Web Worker — the actual TypeScript compiler, not a fake — giving real diagnostics, real navigation-tree symbols, and real hover/completion for TS/JS specifically, with zero extra infrastructure. Every other language gets Monaco's built-in Monarch syntax highlighting only; there is no semantic language service for them, and that's stated honestly in the UI rather than faked.
+
+### What was built
+
+- **Dependencies**: `monaco-editor` + `@monaco-editor/react`, bundled locally via Vite's `?worker` import pattern (`monacoWorkers.ts`) — no CDN load, required by the offline-first/no-cloud-dependency rule. `loader.config({ monaco })` (in `CodeEditor.tsx`) points `@monaco-editor/react` at the locally bundled package instead of its CDN default. Added an `overrides` entry pinning `dompurify` to `^3.4.11` — the version `monaco-editor@0.55.1` pulled in transitively (`3.2.7`) had a long list of known XSS CVEs; the override closes them without needing a Monaco downgrade. `npm audit --omit=dev` confirms zero production vulnerabilities after the override.
+- **`detectLanguage.ts`**: pure, tested, file-extension → Monaco language id mapping.
+- **`ProjectTree.tsx`**: real, lazily-expanded directory tree, reusing the exact same `FileService`/`listFiles` IPC path File Manager uses — no separate or weaker file-access surface for Build Studio.
+- **`useOpenFiles.ts`**: tab state — open/close/switch, real `readFile` IPC, real per-file error state (e.g. permission errors surface in the tab, not a console error).
+- **`CodeEditor.tsx`**: thin Monaco wrapper, always `readOnly: true`, one model per open path (Monaco's `path` prop keys its internal model cache).
+- **`DiagnosticsPanel.tsx`** (ND-024): grouped by severity then file, real `monaco.editor.IMarker`s, live-updated via `monaco.editor.onDidChangeMarkers` (diagnostics arrive asynchronously after the TS worker finishes semantic analysis — this is not a one-shot read).
+- **`SymbolNavigator.tsx`** (ND-023): real navigation-tree symbols via `monaco.languages.typescript.getTypeScriptWorker()`/`getJavaScriptWorker()` → `getNavigationTree()` — the same data VS Code's own outline view is built on. Honest "No symbol provider for this language" message for everything else, rather than a misleadingly empty list.
+- **`BuildStudio.tsx`** (ND-021): orchestrates the above, plus a minimal Git summary strip (branch + change count) reusing `getGitStatus` from Epic 6 — no duplicate Git state. Wired at `/build`, lazy-loaded (Monaco is large — see bundle evidence below).
+
+### A real bug found and fixed
+
+`react-hooks/set-state-in-effect`: the "jump to line" effect called `editorInstance.revealLineInCenter()`/`setPosition()` (legitimate — driving an external system from React state) followed by `setPendingReveal(null)` to "consume" the pending jump — that trailing call is exactly the synchronous-setState-in-effect pattern Epic 5 already hit three times. Fixed by giving `pendingReveal` a `nonce: Date.now()` field instead of nulling it out — every new jump request is a genuinely new object reference, so the effect re-fires on each click even for a repeated line, and there's nothing left to reset.
+
+### Tests and evidence
+
+| Suite                                                                                   | Location                                                          | Count |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----- |
+| `detectLanguage` (extension mapping, case-insensitivity, fallback, nested-dot paths)      | `features/build-studio/__tests__/detectLanguage.test.ts`             | 4     |
+| `useOpenFiles` (open/activate, no-refetch-if-already-open, real error capture, close+fallback) | `features/build-studio/__tests__/useOpenFiles.test.ts`         | 4     |
+| `ProjectTree` (real top-level listing, real subdirectory expansion, open-file callback)  | `features/build-studio/__tests__/ProjectTree.test.tsx`               | 3     |
+| `DiagnosticsPanel` (empty state, severity grouping/ordering, select callback)             | `features/build-studio/__tests__/DiagnosticsPanel.test.tsx`          | 3     |
+| `SymbolNavigator` (unsupported-language message, empty state, nested symbols + jump)      | `features/build-studio/__tests__/SymbolNavigator.test.tsx`           | 3     |
+
+Total: 228 tests passing (up from 215). Monaco's own editor internals are not re-tested — it's an established, independently-maintained library; tests cover only the real logic this slice adds around it (tabs, tree, diagnostics/symbol extraction and grouping).
+
+```text
+npm run typecheck   → 0 errors
+npm run lint         → 0 errors, 0 warnings
+npm run test         → 49 files, 228 tests passed
+npm run build        → succeeded (main 42.36 kB, preload 8.16 kB, initial renderer CSS 29.95 kB / JS 918.33 kB,
+                         lazy terminal JS 428.26 kB, lazy Build Studio JS 7,341.19 kB — Monaco ships every
+                         bundled language's tokenizer; this is the known cost of the full editor engine and
+                         is lazy-loaded only when /build is visited, never part of the initial bundle)
+npm run test:e2e     → 1 passed
+npm audit --omit=dev → 0 vulnerabilities
+```
+
+### Deferred items with explicit reason
+
+- **Save/autosave/external-change detection** — needs Epic 11's Recovery Service; this was a direct scope decision confirmed with the user before building.
+- **Edit/Review/Debug/Test modes** — no save (Edit mode without save is misleading), no AI diff target (Review), no debugger integration (Debug), no test runner integration (Test). Only Navigate (implicitly, the whole read-only experience) is real.
+- **Real LSP for non-TS/JS languages** — standing up per-language language servers is one of the largest items in the spec; Monaco's bundled TS worker covers TS/JS only.
+- **Structural edits** (extract method, wrap block, add import, rename symbol, etc.) — most need a real save path; rename specifically needs safe multi-file write coordination, which doesn't exist without Recovery.
+- **Predictive token wheel, voice-to-code, AI radial menu** — need Epic 9's model router.
+- **Task runner, AI coding panel** — task runner needs a real "run configuration" concept not yet defined; AI coding panel needs Epic 9.
+- **Split panes** — not built this slice; single active editor pane only.
+- **Peek/Rename/Find references/Pin (Symbol Navigator), Explain/Add to AI context** — need deeper language-service integration or Epic 9 respectively.

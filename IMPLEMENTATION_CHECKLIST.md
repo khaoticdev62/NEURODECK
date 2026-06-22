@@ -95,16 +95,16 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Diff views — `features/git/GitDiffViewer.tsx`; read-only unified diff for staged, unstaged, and untracked files with safe text rendering and controller-selectable file rows
 - [ ] Git recovery branches
 
-### Epic 7 — Build Studio
+### Epic 7 — Build Studio ⚠️ read-only by design; save waits for Recovery Service (see ledger)
 
-- [ ] ND-021 Build Studio shell/modes
-- [ ] ND-022 Code Editor
-- [ ] LSP integration
-- [ ] ND-023 Symbol Navigator
-- [ ] ND-024 Diagnostics and Problems
-- [ ] Predictive editing
-- [ ] Controller-native structural edits (§12 editor requirements)
-- [ ] Editor tests
+- [ ] ND-021 Build Studio shell/modes — **partially real**: `/build` route with real project tree, editor tabs, problems panel, symbol navigator, and a minimal Git summary (branch + change count). Navigate mode only — Edit/Review/Debug/Test modes are not built since there's no save, no diff-review target, no debugger, and no test runner integration. Task runner and AI coding panel regions are not built (need a run-configuration concept and Epic 9's model router respectively)
+- [ ] ND-022 Code Editor — **partially real, read-only**: real Monaco editor (locally bundled, no CDN), real file tabs, real syntax highlighting for all Monaco-supported languages. No save — file writes wait for Epic 11's Recovery Service, same rule that kept File Manager read-only in Epic 5. Edit mode, structural actions (extract method, wrap block, etc.), predictive token wheel, voice-to-code, and diff review are not built — most need either a real save path or Epic 9's model router
+- [x] LSP integration — **real for TypeScript/JavaScript only**, via Monaco's bundled TypeScript language service worker (the actual TS compiler running in a Web Worker, not a fake) — real diagnostics, real navigation-tree symbols. No real LSP server exists for any other language; those get Monarch syntax highlighting only, honestly labeled "No symbol provider for this language" rather than a fake empty outline
+- [x] ND-023 Symbol Navigator — **partially real**: real navigation-tree symbols (Classes/Functions/Methods/Variables/Types) for TS/JS with Jump. Peek/Rename/Find references/Pin need a real multi-file language service; Explain/Add to AI context need Epic 9
+- [x] ND-024 Diagnostics and Problems — **partially real**: real `monaco.editor.IMarker`s grouped by severity then file, live-updated via `onDidChangeMarkers`. By-source/by-test/by-accessibility-category groupings and bulk operations (fix all, repair plan, export report) are not built — need a real test runner or AI planner
+- [ ] Predictive editing — **deferred**: needs Epic 9's model router
+- [ ] Controller-native structural edits (§12 editor requirements) — **deferred**: most structural actions need a real save path (Epic 11) or a real code-fix provider beyond what this slice builds
+- [x] Editor tests — `detectLanguage.test.ts` (4), `useOpenFiles.test.ts` (4), `ProjectTree.test.tsx` (3), `DiagnosticsPanel.test.tsx` (3), `SymbolNavigator.test.tsx` (3). Monaco's own editor surface is not re-tested (it's a trusted, established library) — tests cover the real logic this slice adds around it
 
 ### Epic 8 — Agents and workflows
 

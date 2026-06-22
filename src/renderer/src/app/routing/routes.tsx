@@ -11,6 +11,10 @@ import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
 import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
+const BuildStudio = lazy(async () => {
+  const module = await import('../../features/build-studio/BuildStudio')
+  return { default: module.BuildStudio }
+})
 const UniversalTerminal = lazy(async () => {
   const module = await import('../../features/terminal/UniversalTerminal')
   return { default: module.UniversalTerminal }
@@ -130,7 +134,14 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'Build Studio',
     owningEpic: 'Epic 7',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: (
+      <Suspense
+        fallback={<p className="p-4 text-meta text-text-secondary">Loading Build Studio…</p>}
+      >
+        <BuildStudio />
+      </Suspense>
+    )
   },
   {
     routeId: 'files',
