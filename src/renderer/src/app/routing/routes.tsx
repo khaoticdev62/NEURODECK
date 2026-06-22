@@ -1,13 +1,16 @@
 import type { ControllerHintProps } from '../../components/navigation/ControllerHint'
 import { DEFAULT_PRIMARY_HINTS } from '../../components/navigation/defaultControllerHints'
+import { ControllerCalibration } from '../../features/onboarding/ControllerCalibration'
+import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
+import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
 /**
  * Route registry (mega-prompt §11). Every route declares the metadata fields
  * the spec requires; fields owned by epics that haven't landed yet are
- * explicitly `undefined` rather than faked. `element` renders the real
- * screen once its owning epic builds it — for now it renders an honest
- * boundary placeholder naming the screen ID and owning epic.
+ * explicitly `undefined` rather than faked. `element`, when provided, is the
+ * real screen; otherwise an honest boundary placeholder names the screen ID
+ * and owning epic until that epic builds it.
  */
 export interface RouteDefinition {
   routeId: string
@@ -22,6 +25,7 @@ export interface RouteDefinition {
   controllerHints: ControllerHintProps[]
   /** Whether to restore scroll/focus position when revisiting (spec §11 "Restoration behavior"). */
   restoreOnRevisit: boolean
+  element?: React.JSX.Element
 }
 
 export const ROUTE_DEFINITIONS: RouteDefinition[] = [
@@ -32,7 +36,28 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'Home',
     owningEpic: 'Epic 3',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <HomeCommandCenter />
+  },
+  {
+    routeId: 'onboarding-welcome',
+    screenId: 'ND-003',
+    path: '/onboarding/welcome',
+    title: 'Welcome',
+    owningEpic: 'Epic 3',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <FirstRunWelcome />
+  },
+  {
+    routeId: 'onboarding-calibration',
+    screenId: 'ND-004',
+    path: '/onboarding/calibration',
+    title: 'Controller Calibration',
+    owningEpic: 'Epic 3',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <ControllerCalibration />
   },
   {
     routeId: 'ai',
@@ -127,6 +152,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
 ]
 
 export function renderRouteElement(route: RouteDefinition): React.JSX.Element {
+  if (route.element) return route.element
   return (
     <EpicBoundaryPlaceholder
       title={route.title}

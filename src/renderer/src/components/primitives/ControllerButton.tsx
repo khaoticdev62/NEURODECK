@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
 import { cn } from './cn'
 
 export type ControllerButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
@@ -17,29 +17,27 @@ const VARIANT_CLASSES: Record<ControllerButtonVariant, string> = {
 
 /**
  * The baseline focusable action control (mega-prompt §8.2 `ControllerButton`).
- * Real spatial-focus registration (focus graph, neighbor edges, haptics) is wired
- * in Epic 2 — this component only guarantees the visual/sizing contract for now.
+ * Ref-forwarding so callers can register it with `useFocusable` (Epic 2's
+ * Spatial Focus Engine) the same way a plain DOM element would be.
  */
-export function ControllerButton({
-  variant = 'secondary',
-  className,
-  children,
-  ...rest
-}: ControllerButtonProps): React.JSX.Element {
-  return (
-    <button
-      type="button"
-      className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md px-4 text-base font-medium transition-colors',
-        'min-h-[var(--ndx-target-min)] [height:var(--ndx-button-height)]',
-        'focus-visible:shadow-focus-bloom focus-visible:ring-2 focus-visible:ring-border-focus',
-        'disabled:cursor-not-allowed disabled:opacity-40',
-        VARIANT_CLASSES[variant],
-        className
-      )}
-      {...rest}
-    >
-      {children}
-    </button>
-  )
-}
+export const ControllerButton = forwardRef<HTMLButtonElement, ControllerButtonProps>(
+  function ControllerButton({ variant = 'secondary', className, children, ...rest }, ref) {
+    return (
+      <button
+        ref={ref}
+        type="button"
+        className={cn(
+          'inline-flex items-center justify-center gap-2 rounded-md px-4 text-base font-medium transition-colors',
+          'min-h-[var(--ndx-target-min)] [height:var(--ndx-button-height)]',
+          'focus-visible:shadow-focus-bloom focus-visible:ring-2 focus-visible:ring-border-focus',
+          'disabled:cursor-not-allowed disabled:opacity-40',
+          VARIANT_CLASSES[variant],
+          className
+        )}
+        {...rest}
+      >
+        {children}
+      </button>
+    )
+  }
+)

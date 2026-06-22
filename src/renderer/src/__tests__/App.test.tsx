@@ -10,7 +10,7 @@ describe('App', () => {
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument()
-    expect(screen.getByText(/ND-008/)).toBeInTheDocument()
+    expect(screen.getByText('Create or discover a workspace')).toBeInTheDocument()
   })
 
   it('navigates between primary destinations', async () => {

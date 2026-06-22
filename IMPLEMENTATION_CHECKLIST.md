@@ -42,21 +42,21 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Focus/controller debug overlay — `FocusDebugOverlay.tsx` (dev-only), shows current focus, registered nodes, trap depth; duplicate-ID and unreachable-node detection from the full §10.3 list deferred (`Map`-backed registration makes duplicates silently overwrite rather than collide — needs separate instrumentation)
 - [x] Focus traversal tests — `FocusRegistry.test.ts` (11), `gamepadPolling.test.ts` (9), `keyboardAdapter.test.ts` (8), `hapticsService.test.ts` (7), plus live integration via `NavigationRailItem` (real focus nodes registered) and `Modal.focusEngine.test.tsx` (controller `back` closes a real modal)
 
-### Epic 3 — Onboarding and global UX
+### Epic 3 — Onboarding and global UX ⚠️ partially complete (6 of 12 screens real; 6 deferred — see ledger)
 
-- [ ] ND-001 Boot and Session Start
-- [ ] ND-002 Lock Screen
-- [ ] ND-003 First-Run Welcome
-- [ ] ND-004 Controller Calibration
-- [ ] ND-005 AI Provider Setup
-- [ ] ND-006 Workspace Discovery
-- [ ] ND-007 Guided Controller Tutorial
-- [ ] ND-008 Home Command Center
-- [ ] ND-009 Universal Command Palette
-- [ ] ND-010 Global Search
-- [ ] ND-011 Activity Center
-- [ ] ND-012 Notification Center
-- [ ] Quick overlay foundation (full ND-050 build deferred to Epic 11)
+- [ ] ND-001 Boot and Session Start — **deferred**: status items (restoring workspace, checking model runtime) need services from Epics 5/9; building it now would be 3-of-4 fake checks
+- [ ] ND-002 Lock Screen — **deferred**: needs profile/credential system (Epic 10) and workflow-pause state (Epic 8)
+- [x] ND-003 First-Run Welcome — `features/onboarding/FirstRunWelcome.tsx`; purely informational, no backend dependency
+- [x] ND-004 Controller Calibration — `features/onboarding/ControllerCalibration.tsx`; button detection and haptics intensity are real (Epic 2 runtime); dead zone/hold duration shown as real read-only values, not fake sliders (adjustability deferred to Epic 11)
+- [ ] ND-005 AI Provider Setup — **deferred**: needs Model Router (Epic 9) and secure secret storage (Epic 4/10); a form that can't actually connect to anything would be fake
+- [ ] ND-006 Workspace Discovery — **deferred**: needs typed IPC (Epic 4) and Workspace Service (Epic 5) for real filesystem scanning
+- [ ] ND-007 Guided Controller Tutorial — **deferred**: only 2 of 7 lessons (move focus, open/back) have real backing today; the rest need AI plans/approval (Epic 4) and task pause/resume (Epic 8)
+- [x] ND-008 Home Command Center — `features/home/HomeCommandCenter.tsx`; renders the spec's own defined Empty State ("Create or discover a workspace") since zero workspaces genuinely exist; Continue/Pinned/Recommendations modules wait for Epic 5/8
+- [x] ND-009 Universal Command Palette — `features/command-palette/CommandPalette.tsx`; real, modal-trapped, searches the real route registry ("Screens" domain only — files/workspaces/workflows/agents/settings domains wait for their owning epics)
+- [ ] ND-010 Global Search — **deferred**: zero real content sources exist (files/conversations/tasks/logs/browser history/learning content all need unbuilt services); would be a pure empty shell
+- [x] ND-011 Activity Center — `features/activity/ActivityCenter.tsx`; real categories, honest empty state (no action queue/agent runtime exists yet — Epic 4/8)
+- [x] ND-012 Notification Center — `features/activity/NotificationCenter.tsx`; extends the real `ToastProvider` (Epic 1) with persistent history, per-category muting, and event collapsing — all genuinely functional
+- [ ] Quick overlay foundation — still deferred to Epic 11 (full ND-050 build)
 
 ### Epic 4 — AI safety runtime
 

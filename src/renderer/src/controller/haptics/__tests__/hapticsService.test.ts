@@ -15,6 +15,15 @@ afterEach(() => {
 })
 
 describe('isHapticsSupported', () => {
+  it('returns false rather than throwing when the Gamepad API itself is unavailable (e.g. some embedders)', () => {
+    const original = navigator.getGamepads
+    // @ts-expect-error simulating an environment without the Gamepad API at all
+    delete navigator.getGamepads
+    expect(() => isHapticsSupported(0)).not.toThrow()
+    expect(isHapticsSupported(0)).toBe(false)
+    Object.defineProperty(navigator, 'getGamepads', { value: original, configurable: true })
+  })
+
   it('returns false when no gamepad is connected', () => {
     mockGamepads([null])
     expect(isHapticsSupported(0)).toBe(false)

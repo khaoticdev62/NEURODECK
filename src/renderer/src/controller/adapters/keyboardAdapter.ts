@@ -17,6 +17,14 @@ const REPEATABLE_ACTIONS = new Set<ControllerAction>([
   'pane.next'
 ])
 
+/** confirm (Enter) and back (Escape) never conflict with text editing; every other mapped key does (e.g. typing "form" would otherwise fire `pin`/`inspect`/`commands`). */
+const ALLOWED_WHILE_EDITING = new Set<ControllerAction>(['confirm', 'back'])
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable
+}
+
 /**
  * Keyboard fallback adapter for development (mega-prompt §9.1). Discrete
  * browser keydown/keyup events make per-frame polling unnecessary; the OS's
@@ -33,6 +41,7 @@ export class KeyboardAdapter implements ControllerAdapter {
   private onKeyDown = (event: KeyboardEvent): void => {
     const action = KEYBOARD_ACTION_MAP[event.code]
     if (!action || !this.emit) return
+    if (isEditableTarget(event.target) && !ALLOWED_WHILE_EDITING.has(action)) return
 
     if (event.repeat) {
       if (REPEATABLE_ACTIONS.has(action)) {
@@ -54,6 +63,7 @@ export class KeyboardAdapter implements ControllerAdapter {
   private onKeyUp = (event: KeyboardEvent): void => {
     const action = KEYBOARD_ACTION_MAP[event.code]
     if (!action || !this.emit) return
+    if (isEditableTarget(event.target) && !ALLOWED_WHILE_EDITING.has(action)) return
 
     const timer = this.holdTimers.get(event.code)
     if (timer !== undefined) {

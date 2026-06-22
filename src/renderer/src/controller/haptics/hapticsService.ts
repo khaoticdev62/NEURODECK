@@ -13,6 +13,7 @@ interface VibrationActuatorLike {
 }
 
 function getActuator(gamepadIndex: number): VibrationActuatorLike | null {
+  if (typeof navigator === 'undefined' || typeof navigator.getGamepads !== 'function') return null
   const pad = navigator.getGamepads()[gamepadIndex]
   const actuator = (pad as unknown as { vibrationActuator?: VibrationActuatorLike } | null)
     ?.vibrationActuator

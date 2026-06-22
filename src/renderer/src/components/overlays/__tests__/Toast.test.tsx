@@ -28,6 +28,24 @@ function PushButton({
   )
 }
 
+function HistoryReader(): React.JSX.Element {
+  const { history } = useToast()
+  return <p data-testid="history-count">{history.length}</p>
+}
+
+function MuteButton({
+  category = 'information' as const
+}: {
+  category?: 'information' | 'warning'
+}): React.JSX.Element {
+  const { muteCategory } = useToast()
+  return (
+    <button type="button" onClick={() => muteCategory(category)}>
+      Mute {category}
+    </button>
+  )
+}
+
 describe('Toast', () => {
   it('renders a pushed toast with its category label', async () => {
     const user = userEvent.setup()
@@ -82,5 +100,54 @@ describe('Toast', () => {
     await user.click(screen.getByRole('button', { name: 'Push toast' }))
     const host = screen.getByText('Something happened').closest('[aria-live="polite"]')
     expect(host).not.toBeNull()
+  })
+
+  it('keeps a history entry even after the ephemeral toast is dismissed (ND-012 Notification Center)', async () => {
+    const user = userEvent.setup()
+    render(
+      <ToastProvider>
+        <PushButton />
+        <HistoryReader />
+      </ToastProvider>
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Push toast' }))
+    await user.click(screen.getByRole('button', { name: 'Dismiss' }))
+
+    expect(screen.getByTestId('history-count')).toHaveTextContent('1')
+  })
+
+  it('collapses repeated identical events into one threaded card instead of stacking', async () => {
+    const user = userEvent.setup()
+    render(
+      <ToastProvider>
+        <PushButton />
+        <HistoryReader />
+      </ToastProvider>
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Push toast' }))
+    await user.click(screen.getByRole('button', { name: 'Push toast' }))
+
+    expect(screen.getByTestId('history-count')).toHaveTextContent('1')
+    expect(screen.getByText('Something happened')).toBeInTheDocument()
+    expect(screen.getByText((text) => text.includes('(2)'))).toBeInTheDocument()
+  })
+
+  it('does not show an ephemeral toast for a muted category, but still records it in history', async () => {
+    const user = userEvent.setup()
+    render(
+      <ToastProvider>
+        <MuteButton />
+        <PushButton />
+        <HistoryReader />
+      </ToastProvider>
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Mute information' }))
+    await user.click(screen.getByRole('button', { name: 'Push toast' }))
+
+    expect(screen.queryByText('Something happened')).not.toBeInTheDocument()
+    expect(screen.getByTestId('history-count')).toHaveTextContent('1')
   })
 })

@@ -2,7 +2,7 @@
 
 ## Current state
 
-**Epics 0–2 complete** (Baseline and safety, Shell and design system, Controller runtime). The app has a real Gamepad API + keyboard input layer, a working Spatial Focus Engine, haptics, and live integration (the nav rail's destinations are real focus nodes; modals close on a real controller `back` action). No actual screens exist yet (Epic 3+) — routes render an honest `EpicBoundaryPlaceholder` naming the screen ID and owning epic.
+**Epics 0–2 complete; Epic 3 partially complete** (6 of 12 onboarding/global-UX screens are real and shipped; 6 are explicitly deferred behind documented backend dependencies — see `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md`'s Epic 3 "Scope decision"). The app has a real Gamepad API + keyboard input layer, a working Spatial Focus Engine, haptics, and now real screens: First-Run Welcome, Controller Calibration, Home Command Center, Universal Command Palette, Activity Center, and Notification Center.
 
 ### What exists right now
 
@@ -12,7 +12,7 @@ Neurodeck/
 ├── specs/                          (4 spec documents — source of truth)
 ├── docs/
 │   ├── security/NDX_SECURITY_ARCHITECTURE.md
-│   └── implementation/NDX_IMPLEMENTATION_LEDGER.md  (Epic 0/1/2 findings)
+│   └── implementation/NDX_IMPLEMENTATION_LEDGER.md  (Epic 0/1/2/3 findings)
 ├── src/
 │   ├── main/                       (window lifecycle, security baseline)
 │   │   └── security/               (windowSecurity.ts, urlPolicy.ts + tests)
@@ -23,21 +23,26 @@ Neurodeck/
 │   │   │   ├── providers/AppProviders.tsx   (ErrorBoundary > Toast > FocusEngine > DisplayMode > Router)
 │   │   │   ├── error-boundaries/RootErrorBoundary.tsx
 │   │   │   ├── routing/ (routes.tsx, RouterRoot.tsx, EpicBoundaryPlaceholder.tsx)
-│   │   │   └── shell/ShellLayout.tsx (+ __tests__)
+│   │   │   └── shell/ShellLayout.tsx (+ __tests__) — mounts CommandPalette + ActivityAndNotificationsOverlay globally
 │   │   ├── components/
 │   │   │   ├── navigation/  (SystemRail, NavigationRail + NavigationRailItem [real focus nodes], ContextPanel, ControllerHint, BottomControllerRail)
-│   │   │   ├── overlays/    (Modal [closes on real `back` action], ConfirmationDialog, CriticalConfirmationDialog, Toast + __tests__)
+│   │   │   ├── overlays/    (Modal [closes on real `back` action], ConfirmationDialog, CriticalConfirmationDialog, Toast [+ history/mute] + __tests__)
 │   │   │   ├── feedback/UXState.tsx (Empty/Error/Offline/Restricted states)
-│   │   │   └── primitives/  (ControllerButton, StatusBadge, cn)
+│   │   │   └── primitives/  (ControllerButton [now ref-forwarding], StatusBadge, cn)
 │   │   ├── controller/
-│   │   │   ├── adapters/    (controllerAction.ts, gamepadAdapter.ts + gamepadPolling.ts [pure], keyboardAdapter.ts + __tests__)
-│   │   │   ├── focus/       (FocusRegistry.ts, focusGeometry.ts, focusTypes.ts, FocusEngineProvider.tsx, useFocusable.ts, useFocusEngine.ts + __tests__)
-│   │   │   ├── haptics/     (hapticsService.ts, hapticPatterns.ts + __tests__)
+│   │   │   ├── adapters/    (controllerAction.ts, gamepadAdapter.ts + gamepadPolling.ts [pure], keyboardAdapter.ts [+ editable-target guard] + __tests__)
+│   │   │   ├── focus/       (FocusRegistry.ts, focusGeometry.ts, focusTypes.ts, FocusEngineProvider.tsx [+ onAction, haptics], useFocusable.ts, useFocusEngine.ts + __tests__)
+│   │   │   ├── haptics/     (hapticsService.ts [+ capability guard], hapticPatterns.ts + __tests__)
 │   │   │   ├── mappings/    (standardGamepadMapping.ts, keyboardMapping.ts, controllerGlyphs.ts)
 │   │   │   └── testing/     (testAdapter.ts, FocusDebugOverlay.tsx [dev-only])
+│   │   ├── features/
+│   │   │   ├── onboarding/  (FirstRunWelcome.tsx, ControllerCalibration.tsx, useControllerActionLog.ts + __tests__)
+│   │   │   ├── home/        (HomeCommandCenter.tsx + __tests__)
+│   │   │   ├── command-palette/ (CommandPalette.tsx, CommandPaletteResultRow.tsx + __tests__)
+│   │   │   └── activity/    (ActivityCenter.tsx, NotificationCenter.tsx, ActivityAndNotificationsOverlay.tsx + __tests__)
 │   │   ├── state/           (displayMode.tsx, displayModeContext.ts, useDisplayMode.ts)
-│   │   ├── features/ services/   (still empty ownership dirs — Epic 3+)
-│   │   └── __tests__/App.test.tsx
+│   │   ├── services/        (still empty ownership dir — Epic 4+)
+│   │   └── __tests__/App.test.tsx, testUtils.tsx (shared renderWithProviders helper)
 │   ├── shared/                     (contracts/schemas/errors/constants/types — empty, Epic 4+)
 │   └── core/                       (actions/permissions/models/... — empty, Epic 4+)
 ├── e2e/app.spec.ts                 (Playwright Electron boot smoke test — asserts shell roles)
@@ -51,19 +56,21 @@ Neurodeck/
 ```bash
 npm run typecheck   # 0 errors
 npm run lint         # 0 errors, 0 warnings
-npm run test         # 66/66 unit tests passing (was 29 at end of Epic 1)
-npm run build        # electron-vite build succeeds (renderer: 25.52 kB CSS, 682.23 kB JS)
+npm run test         # 93/93 unit tests passing (was 66 at end of Epic 2)
+npm run build        # electron-vite build succeeds (renderer: 26.07 kB CSS, 709.80 kB JS)
 npm run test:e2e     # 1/1 Playwright Electron smoke test passing
 ```
 
 ## What to do next
 
-1. **Epic 3 — Onboarding and global UX** (ND-001 through ND-012: boot, lock screen, first-run, controller calibration, AI provider setup, workspace discovery, tutorial, home, command palette, search, activity, notifications). These are the first _real_ screens — replace `EpicBoundaryPlaceholder` for these 12 routes with actual implementations, each registering real focus nodes via `useFocusable` the way `NavigationRailItem` already does.
-2. Keep `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` current as each epic lands — it's not a one-time artifact.
-3. **Phase A (core, Epics 0–12) must fully land before Phase B (platform completion, Epics X1–X15) begins.** Explicit instruction from `specs/START_HERE_NeuroDeck_OS_Complete_Platform.md`.
-4. Record every story using the Story Completion Template (mega-prompt §38) or Supplemental Story Completion Contract (supplemental §56), and check it against the Acceptance Gates in `IMPLEMENTATION_CHECKLIST.md` before marking anything done.
-5. **Read the Epic 2 ledger entry's "A real, production-relevant bug found and fixed" section before building more components that register refs with external libraries** (e.g. any future drag-and-drop or virtualization library) — `react-router`'s `Link` churns its ref on every render, and anything that treats ref-detach as "this really unmounted" needs the same microtask-deferral pattern `FocusRegistry.unregister()` now uses.
-6. **Steam Input / native adapter remains an open gap** — physical Steam Deck rear grip buttons (L4/L5/R4/R5), Quick Access, and the Steam button aren't reachable via the standard Gamepad API. Revisit if/when that becomes a priority; until then `voice`/`keyboard`/`ai.actions`/`execute` only work from the keyboard fallback.
+1. **Finish Epic 3, or move to Epic 4 — your call.** The 6 deferred Epic 3 screens (ND-001, ND-002, ND-005, ND-006, ND-007, ND-010) are each blocked on a specific later epic's service (see the ledger). It's reasonable to either: (a) proceed to Epic 4 (AI safety runtime) now and circle back to finish these screens once their dependencies exist, or (b) explicitly pull a dependency forward if a deferred screen becomes a priority. Either way, don't build them with fake data to "complete" Epic 3 prematurely.
+2. **Epic 4 — AI safety runtime** is next in Phase A order: plan schema, typed tool registry, permission broker, approval queue, execution timeline, emergency stop, audit. This is also what unblocks ND-005 (AI Provider Setup) and most of ND-007 (Guided Controller Tutorial).
+3. Keep `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` current as each epic lands — it's not a one-time artifact.
+4. **Phase A (core, Epics 0–12) must fully land before Phase B (platform completion, Epics X1–X15) begins.** Explicit instruction from `specs/START_HERE_NeuroDeck_OS_Complete_Platform.md`.
+5. Record every story using the Story Completion Template (mega-prompt §38) or Supplemental Story Completion Contract (supplemental §56), and check it against the Acceptance Gates in `IMPLEMENTATION_CHECKLIST.md` before marking anything done.
+6. **Read the Epic 2 ledger entry's "A real, production-relevant bug found and fixed" section before building more components that register refs with external libraries** — `react-router`'s `Link` churns its ref on every render, and anything that treats ref-detach as "this really unmounted" needs the same microtask-deferral pattern `FocusRegistry.unregister()` uses.
+7. **`HapticsService` and `GamepadAdapter` both now guard against `navigator.getGamepads` not existing** — if you add a third real Gamepad API consumer, apply the same `typeof navigator.getGamepads === 'function'` check rather than assuming it exists (Epic 3 caught this gap once already).
+8. **Steam Input / native adapter remains an open gap** — physical Steam Deck rear grip buttons (L4/L5/R4/R5), Quick Access, and the Steam button aren't reachable via the standard Gamepad API. Revisit if/when that becomes a priority; until then `voice`/`keyboard`/`ai.actions`/`execute` only work from the keyboard fallback.
 
 ## Key open decisions (need a product/owner call before or during Epic 9 / Epic X4)
 
@@ -83,6 +90,7 @@ npm run test:e2e     # 1/1 Playwright Electron smoke test passing
 - **Tracked, accepted risk:** `npm audit` reports 5 vulnerabilities, all confined to Vitest's dev/UI server dependency chain (devDependency only, never packaged). Revisit at the Epic 12 security pass — see `docs/security/NDX_SECURITY_ARCHITECTURE.md` §7.
 - **Forward note for Epic 4:** the preload bridge currently exposes `@electron-toolkit/preload`'s generic IPC wrapper (unused by any feature). It must be replaced by typed, Zod-validated contracts before any IPC-using feature ships — don't let it become a back door for ad hoc channels.
 - **Steam Input gap (Epic 2):** physical controller access to `voice`/`keyboard`/`ai.actions`/`execute` and 6 of the 9 spec'd chords requires Steam Input or a native adapter that doesn't exist yet — documented, not silently missing.
+- **Epic 3's 6 deferred screens** each have a named blocking dependency (Epic 4 typed IPC, Epic 5 Workspace Service, Epic 8 task runtime, Epic 9 Model Router, Epic 10 profiles/credentials) — don't build them with fabricated data just to mark Epic 3 "done."
 
 ## Where to look for detail
 
@@ -91,5 +99,5 @@ npm run test:e2e     # 1/1 Playwright Electron smoke test passing
 - Test strategy: mega-prompt §34; supplemental §52.
 - Performance budgets: mega-prompt §33; supplemental §53.
 - Security gates: mega-prompt §6, §40; supplemental §54, §57.
-- Epic 0/1/2 evidence and decisions: `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md`.
+- Epic 0/1/2/3 evidence and decisions: `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md`.
 - Current security posture: `docs/security/NDX_SECURITY_ARCHITECTURE.md`.

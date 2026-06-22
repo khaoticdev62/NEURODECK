@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import { Outlet } from 'react-router-dom'
 import { BottomControllerRail } from '../../components/navigation/BottomControllerRail'
 import { ContextPanel, type ContextPanelItem } from '../../components/navigation/ContextPanel'
@@ -8,14 +7,14 @@ import {
   UNAVAILABLE_SYSTEM_RAIL_STATUS,
   type SystemRailStatus
 } from '../../components/navigation/systemRailStatus'
-import { useDisplayMode } from '../../state/useDisplayMode'
 import { FocusDebugOverlay } from '../../controller/testing/FocusDebugOverlay'
+import { CommandPalette } from '../../features/command-palette/CommandPalette'
+import { ActivityAndNotificationsOverlay } from '../../features/activity/ActivityAndNotificationsOverlay'
+import { useDisplayMode } from '../../state/useDisplayMode'
 
 export interface ShellLayoutProps {
   systemRailStatus?: SystemRailStatus
   contextItem?: ContextPanelItem
-  /** Plugged in by the epic that owns the active overlay (quick overlay, command palette, ...). */
-  overlayContent?: ReactNode
 }
 
 /**
@@ -23,14 +22,16 @@ export interface ShellLayoutProps {
  * active view, optional context panel, bottom controller rail. Focus and
  * split modes collapse the nav rail and context panel to maximize content
  * width (§3.3) — theater mode instead scales density via the
- * `data-display-mode` attribute consumed in tokens.css.
+ * `data-display-mode` attribute consumed in tokens.css. The Command Palette
+ * (ND-009) and Activity/Notifications overlay (ND-011/012) are global —
+ * always mounted here, each managing its own open state via the controller
+ * action stream (`commands`/`activity`), not via a prop passed down a route.
  */
 export function ShellLayout({
   systemRailStatus = UNAVAILABLE_SYSTEM_RAIL_STATUS,
-  contextItem,
-  overlayContent
+  contextItem
 }: ShellLayoutProps): React.JSX.Element {
-  const { baseMode, overlayOpen } = useDisplayMode()
+  const { baseMode } = useDisplayMode()
   const collapsesRails = baseMode === 'focus' || baseMode === 'split'
 
   return (
@@ -44,7 +45,8 @@ export function ShellLayout({
         <ContextPanel hidden={collapsesRails} item={contextItem} />
       </div>
       <BottomControllerRail />
-      {overlayOpen && overlayContent}
+      <CommandPalette />
+      <ActivityAndNotificationsOverlay />
       <FocusDebugOverlay />
     </div>
   )

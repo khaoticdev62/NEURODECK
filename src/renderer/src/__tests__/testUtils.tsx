@@ -1,0 +1,20 @@
+import { render, type RenderResult } from '@testing-library/react'
+import type { ReactElement } from 'react'
+import { MemoryRouter } from 'react-router-dom'
+import { FocusEngineProvider } from '../controller/focus/FocusEngineProvider'
+import { TestAdapter } from '../controller/testing/testAdapter'
+import { ToastProvider } from '../components/overlays/Toast'
+
+/** Shared by feature-screen tests that need a router + a real (but hardware-free) focus engine. */
+export function renderWithProviders(
+  element: ReactElement,
+  options: { initialEntries?: string[] } = {}
+): RenderResult {
+  return render(
+    <ToastProvider>
+      <FocusEngineProvider adapters={[new TestAdapter()]}>
+        <MemoryRouter initialEntries={options.initialEntries ?? ['/']}>{element}</MemoryRouter>
+      </FocusEngineProvider>
+    </ToastProvider>
+  )
+}

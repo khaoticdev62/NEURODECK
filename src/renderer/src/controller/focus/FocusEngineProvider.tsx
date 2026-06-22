@@ -39,6 +39,7 @@ export function FocusEngineProvider({
   const [controllerKind, setControllerKind] = useState<ControllerKind>('generic')
   const activeGamepadIndexRef = useRef<number | null>(null)
   const subscribersRef = useRef(new Map<ControllerAction, Array<() => void>>())
+  const actionObserversRef = useRef(new Set<(event: ControllerActionEvent) => void>())
 
   const subscribe = useMemo(
     () =>
@@ -56,8 +57,19 @@ export function FocusEngineProvider({
     []
   )
 
+  const onAction = useMemo(
+    () =>
+      (listener: (event: ControllerActionEvent) => void): (() => void) => {
+        actionObserversRef.current.add(listener)
+        return () => actionObserversRef.current.delete(listener)
+      },
+    []
+  )
+
   useEffect(() => {
     const emit = (event: ControllerActionEvent): void => {
+      actionObserversRef.current.forEach((listener) => listener(event))
+
       if (event.sourceId.startsWith('gamepad:')) {
         activeGamepadIndexRef.current = Number(event.sourceId.split(':')[1])
       }
@@ -103,8 +115,8 @@ export function FocusEngineProvider({
   }, [adapters, registry, haptics])
 
   const value: FocusEngineContextValue = useMemo(
-    () => ({ registry, controllerKind, subscribe }),
-    [registry, controllerKind, subscribe]
+    () => ({ registry, controllerKind, haptics, subscribe, onAction }),
+    [registry, controllerKind, haptics, subscribe, onAction]
   )
 
   return <FocusEngineContext.Provider value={value}>{children}</FocusEngineContext.Provider>

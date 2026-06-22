@@ -93,6 +93,33 @@ describe('KeyboardAdapter', () => {
     expect(emit).not.toHaveBeenCalled()
   })
 
+  it('suppresses navigation/letter shortcuts while typing in a text input (e.g. "form" should not fire pin/inspect/commands)', () => {
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    const emit = vi.fn()
+    adapter.start(emit)
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF', bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowLeft', bubbles: true }))
+
+    expect(emit).not.toHaveBeenCalled()
+    document.body.removeChild(input)
+  })
+
+  it('still allows confirm and back while typing in a text input', () => {
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    const emit = vi.fn()
+    adapter.start(emit)
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true }))
+    input.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape', bubbles: true }))
+
+    expect(emit).toHaveBeenCalledWith(expect.objectContaining({ action: 'confirm' }))
+    expect(emit).toHaveBeenCalledWith(expect.objectContaining({ action: 'back' }))
+    document.body.removeChild(input)
+  })
+
   it('stops emitting after stop()', () => {
     const emit = vi.fn()
     adapter.start(emit)
