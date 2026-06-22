@@ -40,7 +40,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Spatial Focus Engine — focus node contract + registry (`FocusRegistry.ts`), deterministic directional navigation (explicit neighbor → same-group geometric → broad geometric → fallback → stay-put, wireframe §5.2), modal trap stack, focus-change pub/sub, never drops to `document.body`
   - Note: spec step 4 ("group-level transition") folded into the broad geometric search rather than implemented as a separate heuristic — documented scope simplification, see ledger
 - [x] Haptics service — real `GamepadHapticActuator`/`playEffect('dual-rumble')` integration with off/low/medium/high intensity scaling and honest capability detection (`hapticsService.ts`); wired to focus-movement and selection events
-- [ ] Input profile manager — **deferred**: per-controller-type button mapping exists (`standardGamepadMapping.ts`) and controller-glyph adaptation exists (`controllerGlyphs.ts`), but no user-facing remapping/profile-switching UI yet (that's ND-043 Controller Settings, Epic 11)
+- [ ] Input profile manager — **partially real as of Epic 11**: haptics intensity is now a real, persisted, user-facing setting (`features/system/ControllerSettings.tsx`); per-controller-type button mapping (`standardGamepadMapping.ts`) and controller-glyph adaptation (`controllerGlyphs.ts`) remain read-only — full remapping/profile-switching still needs the config-threading refactor through `gamepadPolling.ts` noted in ND-043
 - [x] Focus/controller debug overlay — `FocusDebugOverlay.tsx` (dev-only), shows current focus, registered nodes, trap depth; duplicate-ID and unreachable-node detection from the full §10.3 list deferred (`Map`-backed registration makes duplicates silently overwrite rather than collide — needs separate instrumentation)
 - [x] Focus traversal tests — `FocusRegistry.test.ts` (11), `gamepadPolling.test.ts` (9), `keyboardAdapter.test.ts` (10), `hapticsService.test.ts` (8), plus live integration via `NavigationRailItem` and `Modal.focusEngine.test.tsx`
 
@@ -141,11 +141,11 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] ND-038 Learning Hub
 - [ ] ND-039 Guided Lab (with AI coach boundaries)
 
-### Epic 11 — System integration ⚠️ System Metrics, Recovery, System Dashboard, Power Menu (safe subset), and About/Diagnostics real; remaining settings integrations remain
+### Epic 11 — System integration ⚠️ System Metrics, Recovery, System Dashboard, Controller Settings, Power Menu (safe subset), and About/Diagnostics real; remaining settings integrations remain
 
 - [x] System Metrics Service (real metrics, §27) — `core/system/SystemMetricsService.ts`; capability-driven CPU, memory, storage, network, process, swap, battery, thermal, fan, and GPU collection with explicit unavailable reasons and deterministic tests. Epic 9 routing is its first real consumer
 - [x] ND-042 System Dashboard — **real**: `features/system/SystemDashboard.tsx` — real `systemMetrics.collect` IPC (Zod-validated `SystemMetricsSnapshot` contract), real manual Refresh, every metric card shows the real `{available, value, source, reason}` shape — an unavailable sensor (no battery, non-Linux host) is shown honestly as "Unavailable: <reason>", never a fabricated reading. No auto-refresh polling in this slice (manual Refresh only, matching the no-background-surprises rule); live-updating charts/historical trends are not built.
-- [ ] ND-043 Controller Settings — **deferred**: needs the Input Profile Manager UI (Epic 2 left it backend-only)
+- [x] ND-043 Controller Settings — **partially real, scoped to the one genuinely adjustable setting**: `features/system/ControllerSettings.tsx` — real, now-persisted haptics intensity (closes the session-only gap `ControllerCalibration.tsx` left), a real "Test haptics" trigger, and a real link to Calibration for live button-input testing (no duplicated detection logic). Hold duration/repeat delay/repeat rate/stick dead zone are shown as real read-only values, not fake sliders. App profiles, rear-button/gyro/trackpad-fallback mapping, and accessibility remapping are honestly disabled with a one-line real reason each — they need either Steam Input/a native adapter (documented gap) or design work not started
 - [ ] ND-044 Display and Theme Settings — **deferred**
 - [ ] ND-045 Network and VPN — **deferred**
 - [ ] ND-046 Privacy and Permissions — **deferred**

@@ -2,6 +2,7 @@ import { app, type BrowserWindow } from 'electron'
 import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
+import { ControllerSettingsStore } from '../../core/controller/ControllerSettingsStore'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
 import { ModelProviderService } from '../../core/models/ModelProviderService'
@@ -17,6 +18,7 @@ import { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
 import { electronSecretCipher } from '../security/electronSecretCipher'
 import { IPC_CHANNELS } from '@shared/contracts'
 import { registerAgentHandlers } from './registerAgentHandlers'
+import { registerControllerSettingsHandlers } from './registerControllerSettingsHandlers'
 import { registerDiagnosticsHandlers } from './registerDiagnosticsHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
@@ -67,5 +69,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerSystemHandlers(systemMetricsService)
   registerDiagnosticsHandlers(modelProviderStore)
   registerPowerHandlers()
+  registerControllerSettingsHandlers(
+    new ControllerSettingsStore(join(app.getPath('userData'), 'controller-settings.json'))
+  )
   return registerTerminalHandlers(terminalService, workspaceStore, getWindow)
 }

@@ -692,11 +692,29 @@ npm run test:e2e      → 1 passed
 npm audit --production → 0 vulnerabilities
 ```
 
+### Addendum — ND-043 Controller Settings
+
+Scoped to the one setting `HapticsService` already supports but never persisted: haptics intensity. `ControllerSettingsStore` (a new, minimal `JsonStore`-backed store, `app.getPath('userData')/controller-settings.json`) plus `registerControllerSettingsHandlers.ts` give it real cross-restart persistence; `FocusEngineProvider` loads the persisted value once on mount and applies it to the live `HapticsService` instance via a plain `useEffect` that calls `haptics.setIntensity()` directly (not React state, so it doesn't trip `react-hooks/set-state-in-effect`) — wrapped in `.catch(() => {})` since a bridge that's unavailable or only partially stubbed (common across the existing test suite) should fall back to the in-memory default, not throw an unhandled rejection.
+
+`features/system/ControllerSettings.tsx` reuses `ControllerCalibration.tsx`'s exact own framing for why hold duration/repeat delay/repeat rate/stick dead zone stay read-only (`gamepadPolling.ts` is a pure, tested module; threading runtime config through it is separate work from persisting an already-adjustable setting) — rather than inventing a different justification. "Test controller input" links to the existing Calibration screen instead of duplicating its button-detection logic. App profiles, rear-button/gyro/trackpad-fallback mapping, and accessibility remapping are shown as honestly disabled sections with their real reason inline, matching the Power Menu's deferred-option pattern from the previous addendum.
+
+`ControllerSettingsStore.test.ts` (2) + `ControllerSettings.test.tsx` (3) — brings the cumulative total to 344 tests passing (up from 339).
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 74 files, 344 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
 ### Deferred items with explicit reason
 
-- **The other 8 of 16 Epic 11 items** (Controller Settings, Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access full build, Error Recovery) — each needs a service this slice doesn't build. System Metrics, ND-042 System Dashboard, ND-051 Power Menu, and ND-056 About/Diagnostics are now real; see the addenda above.
+- **The other 7 of 16 Epic 11 items** (Display/Theme, Network/VPN, Privacy, Integrations, Updates, Quick Access full build, Error Recovery) — each needs a service this slice doesn't build. System Metrics, ND-042 System Dashboard, ND-043 Controller Settings, ND-051 Power Menu, and ND-056 About/Diagnostics are now real; see the addenda above.
 - **Power Menu's Lock/Suspend/Restart core service/Restart device/Shut down** — Lock needs ND-002 (not built); this architecture has no separate core-service process to restart independently; real OS suspend/reboot/shutdown are irreversible against the whole host machine and need a dedicated native-integration design and explicit sign-off before being wired — not attempted in this slice for safety reasons, not just scope.
 - **About/Diagnostics's Core version/Database version/build hash** — no separate core-service process, no database, and no build-time commit-hash injection step exist in this architecture; omitted rather than invented.
+- **Controller Settings' button remapping, app profiles, rear buttons, gyro, trackpad fallback, accessibility** — remapping/profiles need the `gamepadPolling.ts` config-threading refactor; rear buttons/gyro/trackpad need Steam Input or a native/SDL adapter (the same documented gap as Epic 2); accessibility needs its own design pass.
 - **Copy/move/rename/delete/compress/extract/secure-delete** (Epic 5's File Service) — each needs its own recovery-checkpoint shape (a move/delete isn't the same kind of event as a content overwrite); only `write()` shipped this slice.
 - **Git restore/discard/force-push/branch-delete** (Epic 6) — still need either Recovery integration for Git-specific events or an explicit irreversibility warning surface; the `RecoveryService` built this slice is scoped to `file-write` events, not Git history rewrites.
 - **Recovery Timeline's Revert event/Branch from point/Export snapshot** — need recovery-event kinds beyond `file-write`.

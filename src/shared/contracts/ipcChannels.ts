@@ -64,5 +64,7 @@ export const IPC_CHANNELS = {
   systemMetricsCollect: 'systemMetrics.collect',
   diagnosticsGet: 'diagnostics.get',
   powerRestartApp: 'power.restartApp',
-  powerQuitApp: 'power.quitApp'
+  powerQuitApp: 'power.quitApp',
+  controllerSettingsGet: 'controllerSettings.get',
+  controllerSettingsSet: 'controllerSettings.set'
 } as const

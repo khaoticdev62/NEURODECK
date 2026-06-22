@@ -62,6 +62,7 @@ import type {
 } from './terminal'
 import type { SystemMetricsSnapshot } from './system'
 import type { DiagnosticsInfo } from './diagnostics'
+import type { ControllerSettings, SetControllerSettingsRequest } from './controllerSettings'
 import type {
   AgentDefinition,
   AgentIdRequest,
@@ -177,5 +178,9 @@ export interface NdxBridge {
   power: {
     restartApp: () => Promise<NdxResult<null>>
     quitApp: () => Promise<NdxResult<null>>
+  }
+  controllerSettings: {
+    get: () => Promise<NdxResult<ControllerSettings>>
+    set: (request: SetControllerSettingsRequest) => Promise<NdxResult<ControllerSettings>>
   }
 }

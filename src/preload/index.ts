@@ -131,6 +131,10 @@ const ndx: NdxBridge = {
   power: {
     restartApp: () => ipcRenderer.invoke(IPC_CHANNELS.powerRestartApp),
     quitApp: () => ipcRenderer.invoke(IPC_CHANNELS.powerQuitApp)
+  },
+  controllerSettings: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.controllerSettingsGet),
+    set: (request) => ipcRenderer.invoke(IPC_CHANNELS.controllerSettingsSet, request)
   }
 }
 

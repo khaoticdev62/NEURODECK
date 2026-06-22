@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { getControllerSettings } from '../../services/ipc/controllerSettingsClient'
 import type { ControllerAction, ControllerActionEvent } from '../adapters/controllerAction'
 import { GamepadAdapter } from '../adapters/gamepadAdapter'
 import { KeyboardAdapter } from '../adapters/keyboardAdapter'
@@ -65,6 +66,23 @@ export function FocusEngineProvider({
       },
     []
   )
+
+  // Applies the real persisted haptics intensity (Epic 11 ND-043) once on
+  // mount — a plain instance-method call on `haptics`, not React state, so
+  // this doesn't trip `react-hooks/set-state-in-effect`.
+  useEffect(() => {
+    let active = true
+    getControllerSettings()
+      .then((result) => {
+        if (active && result.ok) haptics.setIntensity(result.data.hapticsIntensity)
+      })
+      .catch(() => {
+        // No persisted setting available (e.g. bridge unavailable) — keep the in-memory default.
+      })
+    return () => {
+      active = false
+    }
+  }, [haptics])
 
   useEffect(() => {
     const emit = (event: ControllerActionEvent): void => {
