@@ -3,6 +3,8 @@ import { DEFAULT_PRIMARY_HINTS } from '../../components/navigation/defaultContro
 import { ControllerCalibration } from '../../features/onboarding/ControllerCalibration'
 import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
 import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
+import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
+import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
 /**
@@ -67,6 +69,26 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 4',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true
+  },
+  {
+    routeId: 'ai-timeline',
+    screenId: 'ND-014',
+    path: '/ai/timeline',
+    title: 'AI Execution Timeline',
+    owningEpic: 'Epic 4',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <ExecutionTimeline />
+  },
+  {
+    routeId: 'ai-approvals',
+    screenId: 'ND-015',
+    path: '/ai/approvals',
+    title: 'Approval Queue',
+    owningEpic: 'Epic 4',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <ApprovalQueue />
   },
   {
     routeId: 'workspaces',

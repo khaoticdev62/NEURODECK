@@ -7,9 +7,11 @@ import {
   UNAVAILABLE_SYSTEM_RAIL_STATUS,
   type SystemRailStatus
 } from '../../components/navigation/systemRailStatus'
+import { CoreToolsBootstrap } from '../../ai-safety/CoreToolsBootstrap'
 import { FocusDebugOverlay } from '../../controller/testing/FocusDebugOverlay'
 import { CommandPalette } from '../../features/command-palette/CommandPalette'
 import { ActivityAndNotificationsOverlay } from '../../features/activity/ActivityAndNotificationsOverlay'
+import { EmergencyStopOverlay } from '../../features/ai-canvas/EmergencyStopOverlay'
 import { useDisplayMode } from '../../state/useDisplayMode'
 
 export interface ShellLayoutProps {
@@ -23,9 +25,9 @@ export interface ShellLayoutProps {
  * split modes collapse the nav rail and context panel to maximize content
  * width (§3.3) — theater mode instead scales density via the
  * `data-display-mode` attribute consumed in tokens.css. The Command Palette
- * (ND-009) and Activity/Notifications overlay (ND-011/012) are global —
- * always mounted here, each managing its own open state via the controller
- * action stream (`commands`/`activity`), not via a prop passed down a route.
+ * (ND-009), Activity/Notifications overlay (ND-011/012), and Emergency Stop
+ * (ND-054) are global — always mounted here, each managing its own open
+ * state via the controller action stream, not via a prop passed down a route.
  */
 export function ShellLayout({
   systemRailStatus = UNAVAILABLE_SYSTEM_RAIL_STATUS,
@@ -45,8 +47,10 @@ export function ShellLayout({
         <ContextPanel hidden={collapsesRails} item={contextItem} />
       </div>
       <BottomControllerRail />
+      <CoreToolsBootstrap />
       <CommandPalette />
       <ActivityAndNotificationsOverlay />
+      <EmergencyStopOverlay />
       <FocusDebugOverlay />
     </div>
   )

@@ -303,3 +303,60 @@ npm run test:e2e     → 1 passed
 - **Command Palette's 8 non-Screens search domains** (commands, files, symbols, workspaces, workflows, agents, settings, recent actions) — wait for the epics that produce that content (Epic 4/5/6/8/11).
 - **Adjustable dead zone / hold duration / focus movement speed** — shown as real values, not editable; making them editable needs a config object threaded through `gamepadPolling.ts`/`GamepadAdapter`/`KeyboardAdapter`, planned for Epic 11 (Controller Settings) rather than half-built here.
 - **Per-profile calibration persistence** — spec requires calibration "stored per controller profile"; no persistence layer exists yet (Epic 4/5), so haptics intensity changes only last for the current session.
+
+---
+
+## Epic 4 — AI safety runtime
+
+### Scope decision
+
+Mega-prompt §15's "AI Command Canvas and Action System" assumes a model that turns natural-language intent into a plan — that model doesn't exist until Epic 9 (Model Router). Building ND-013 (AI Command Canvas) now would mean fabricating "AI" plan proposals, which §2.1 explicitly forbids. So Epic 4 built the **real safety pipeline infrastructure** (plan schema, typed tool registry, permission broker, audit log, action queue) and the **three screens that manage real actions regardless of who/what submits them** (Execution Timeline, Approval Queue, Emergency Stop) — demonstrated end to end with **one genuinely real tool** (reset haptics intensity), submitted by the user through the Command Palette rather than by an AI that doesn't exist yet. ND-013 itself, and §15.4's prompt-injection resistance (nothing untrusted is ingested yet), are explicitly deferred.
+
+This also means §14's full typed, Zod-validated, cross-process IPC layer is **not yet built**. The one real tool today is renderer-only (`HapticsService.setIntensity`, no filesystem/process access), so there is no real cross-process tool yet to justify the IPC contract layer — building it now would be infrastructure without a load-bearing consumer, the same anti-pattern avoided in Epics 1–3. This was flagged as a forward risk back in the Epic 0 ledger entry ("the preload bridge ... must be replaced by typed, Zod-validated contracts before any IPC-using feature ships") — it remains accurate: no IPC-using feature has shipped yet, so the gap is still honest, not overdue.
+
+### What was built
+
+- **Contracts** (`ai-safety/contracts/`): `plan.ts` (`ActionPlan`, `ActionStep`, `HarnessAction`, `HarnessActionRecord`, `RiskLevel`, `PlanStatus`, `ResourceScope`, `ImpactSummary`) and `permission.ts` (`PermissionCapability` — the subset of mega-prompt §16's list reachable by a tool that exists today; `PermissionScope` omits "current task"/"current workflow run" since no task/workflow runtime exists yet).
+- **`ToolRegistry`**: real registration/lookup; invocation must match a registered tool (§15.3) — there is no "run an arbitrary string" path anywhere in the pipeline.
+- **`PermissionBroker`**: real `evaluate`/`grant`/`revoke`/`consumeIfOnce` — capabilities are never auto-granted; "once" grants are consumed after a single use.
+- **`AuditLog`**: real, append-only, in-memory (durable persistence needs Epic 5); notifies subscribers on every entry.
+- **`ActionQueue`**: the actual pipeline tying the three together — `submit()` evaluates the broker and either auto-runs (if already granted) or parks the action as `pending-approval`; `approve()`/`deny()` resolve it; `emergencyStop()`/`resume()` implement ND-054's pause/resume; every transition is audited.
+- **React integration** (`AiSafetyProvider.tsx`, `AiSafetyContext.ts`, `useAiSafety.ts`, `useActionQueueRecords.ts`): instantiated once via the `useState(() => new X())` lazy-init pattern (same one used for `FocusEngineProvider` in Epic 2, for the same `react-hooks/refs` lint reason).
+- **The one real tool** (`tools/resetHapticsIntensityTool.ts`): low-risk, reversible, genuinely calls `HapticsService.setIntensity('medium')`. Registered once via `CoreToolsBootstrap.tsx` (mounted in `ShellLayout`), reachable from the Command Palette's new **Tools** domain alongside the existing Screens domain.
+- **ND-014 AI Execution Timeline** (`features/ai-canvas/ExecutionTimeline.tsx`): real lifecycle list (queued/running/passed/failed/cancelled) of actually-submitted actions; cancel button for pending/queued ones.
+- **ND-015 Approval Queue** (`features/approvals/ApprovalQueue.tsx`): real pending-approval cards (REQUEST/Requested by/Reason/Scope/Risk/Reversible per spec layout), Approve once / Deny wired to the real broker.
+- **ND-054 Emergency Stop** (`features/ai-canvas/EmergencyStopOverlay.tsx`): subscribes to the real `emergency.stop` action (already wired in Epic 2 via the Menu+B chord and F1 key) and toggles pause/resume on the actual queue. Spec's "Terminate safe processes" and "Explain" buttons were omitted — there's no real safe/unsafe process classification (no terminal yet, Epic 6) or explanation feature (no AI yet, Epic 9) to back them; building them would be decorative.
+- **Command Palette gained a real "Tools" domain** (`CommandPaletteToolRow.tsx`): running a tool submits through the real `ActionQueue`; if approval is required, it pushes a real `approval-required` toast (Epic 3's Notification Center) pointing at the Approval Queue — the review step is never silently skipped.
+
+### Test inventory additions
+
+| Suite                                                                                                                                  | Location                                                     | Count |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----- |
+| `PermissionBroker` (evaluate/grant/revoke/once-consumption/listGrants)                                                                 | `ai-safety/__tests__/PermissionBroker.test.ts`               | 5     |
+| `ToolRegistry` (register/get/list)                                                                                                     | `ai-safety/__tests__/ToolRegistry.test.ts`                   | 3     |
+| `AuditLog` (record/order/notify/unsubscribe)                                                                                           | `ai-safety/__tests__/AuditLog.test.ts`                       | 4     |
+| `ActionQueue` (submit/approve/deny/cancel/emergencyStop/resume, success/failure paths, once-grant consumption, listener notifications) | `ai-safety/__tests__/ActionQueue.test.ts`                    | 12    |
+| `ApprovalQueue` (empty state, real pending card fields, approve runs the tool, deny doesn't)                                           | `features/approvals/__tests__/ApprovalQueue.test.tsx`        | 4     |
+| `ExecutionTimeline` (empty state, granted action reaches Passed with real result message, cancel)                                      | `features/ai-canvas/__tests__/ExecutionTimeline.test.tsx`    | 3     |
+| `EmergencyStopOverlay` (opens+pauses on real action, cancels pending actions, toggles resume, Keep paused doesn't resume)              | `features/ai-canvas/__tests__/EmergencyStopOverlay.test.tsx` | 4     |
+| `CommandPalette` Tools domain (real submission, approval-required toast, no agent-side skip)                                           | `features/command-palette/__tests__/CommandPalette.test.tsx` | +1    |
+
+Total: 129 tests passing — was 93 at end of Epic 3.
+
+### Validation evidence
+
+```text
+npm run typecheck   → 0 errors
+npm run lint         → 0 errors, 0 warnings
+npm run test         → 24 files, 129 tests passed
+npm run build        → succeeded (renderer bundle: 26.13 kB CSS, 728.72 kB JS)
+npm run test:e2e     → 1 passed
+```
+
+### Deferred items with explicit reason
+
+- **ND-013 AI Command Canvas** — no model/planner exists (Epic 9); deferred rather than fabricated.
+- **§15.4 Prompt injection resistance** — nothing untrusted is ingested yet (no browser/terminal/file content pipelines — Epics 5/6/10); the defenses described are moot until there's untrusted content to defend against.
+- **§14 Typed cross-process IPC contracts** — the one real tool is renderer-only; no real cross-process tool exists yet to justify building the IPC layer. Revisit the moment Epic 5/6 introduce a tool needing main-process access (filesystem, shell).
+- **Spec's "Terminate safe processes" / "Explain" buttons on Emergency Stop** — no safe/unsafe process classification or AI explanation feature exists to back them.
+- **Per-capability permission UI customization** (ND-015's "Customize: change scope, approve specific files only, read-only instead...") — only "Approve once" and "Deny" are wired; the richer customization options need real per-file/per-resource scoping that doesn't exist until Epic 5/6 tools have actual file/resource arguments to scope.

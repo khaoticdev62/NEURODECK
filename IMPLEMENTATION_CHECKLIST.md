@@ -58,17 +58,18 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] ND-012 Notification Center — `features/activity/NotificationCenter.tsx`; extends the real `ToastProvider` (Epic 1) with persistent history, per-category muting, and event collapsing — all genuinely functional
 - [ ] Quick overlay foundation — still deferred to Epic 11 (full ND-050 build)
 
-### Epic 4 — AI safety runtime
+### Epic 4 — AI safety runtime ⚠️ core pipeline complete; AI Command Canvas and typed cross-process IPC deferred (see ledger)
 
-- [ ] Plan schema (mega-prompt §15.1)
-- [ ] Typed tool call schema and registry (§15.2, §14)
-- [ ] Permission broker (§16)
-- [ ] ND-013 AI Command Canvas
-- [ ] ND-014 AI Execution Timeline
-- [ ] ND-015 Approval Queue
-- [ ] ND-054 Emergency Stop
-- [ ] Audit service
-- [ ] Prompt-injection resistance verified (§15.4)
+- [x] Plan schema (mega-prompt §15.1) — `ai-safety/contracts/plan.ts` (`ActionPlan`, `ActionStep`, `ImpactSummary`, etc.)
+- [x] Typed tool call schema and registry — `ai-safety/contracts/plan.ts` (`HarnessAction`) + `ai-safety/ToolRegistry.ts`; invocation must match a registered tool, no arbitrary-string path. §14's full cross-process typed-IPC layer is **deferred** — the one real tool today is renderer-only (no fs/exec needed), so there's no real cross-process tool yet to justify building the IPC contract layer; revisit when Epic 5/6 add tools that need main-process access.
+- [x] Permission broker (§16) — `ai-safety/PermissionBroker.ts`; real evaluate/grant/revoke/once-consumption, scoped (once/session/workspace/persistent)
+- [ ] ND-013 AI Command Canvas — **deferred**: no model/planner exists (Epic 9) to turn natural-language intent into a plan; building the screen now would mean fabricating "AI" plan proposals
+- [x] ND-014 AI Execution Timeline — `features/ai-canvas/ExecutionTimeline.tsx`; real lifecycle tracking (queued/running/passed/failed/cancelled) of actually-submitted actions, with real cancel
+- [x] ND-015 Approval Queue — `features/approvals/ApprovalQueue.tsx`; real pending `HarnessActionRecord`s, approve/deny wired to the real broker+queue
+- [x] ND-054 Emergency Stop — `features/ai-canvas/EmergencyStopOverlay.tsx`; real toggle on the `emergency.stop` action (Menu+B/F1, wired in Epic 2), pauses the queue and cancels pending actions for real. Spec's "Terminate safe processes"/"Explain" buttons omitted — no safe/unsafe process classification or explain feature exists without a terminal (Epic 6) or agent runtime (Epic 8)
+- [x] Audit service — `ai-safety/AuditLog.ts`; real append-only log, in-memory only (durable persistence needs Epic 5)
+- [ ] Prompt-injection resistance verified (§15.4) — **deferred**: nothing untrusted is ingested yet (no browser/terminal/file content pipelines exist — Epics 5/6/10); moot until there's untrusted content to defend against
+- **New real tool**: `ai-safety/tools/resetHapticsIntensityTool.ts`, registered via `CoreToolsBootstrap.tsx`, reachable from the Command Palette's new "Tools" domain — demonstrates the full registry → permission → approval → execution → audit pipeline end to end with a genuinely real, low-risk, reversible action
 
 ### Epic 5 — Workspaces and files
 

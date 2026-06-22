@@ -2,6 +2,9 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
+import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
+import { useAiSafety } from '../../../ai-safety/useAiSafety'
+import { ToastProvider } from '../../../components/overlays/Toast'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import type {
@@ -21,22 +24,26 @@ function inject(
 
 function renderPalette(adapter: TestAdapter): ReturnType<typeof render> {
   return render(
-    <FocusEngineProvider adapters={[adapter]}>
-      <MemoryRouter initialEntries={['/']}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <CommandPalette />
-                <p>Home placeholder</p>
-              </>
-            }
-          />
-          <Route path="/ai" element={<p>AI placeholder</p>} />
-        </Routes>
-      </MemoryRouter>
-    </FocusEngineProvider>
+    <ToastProvider>
+      <FocusEngineProvider adapters={[adapter]}>
+        <AiSafetyProvider>
+          <MemoryRouter initialEntries={['/']}>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <>
+                    <CommandPalette />
+                    <p>Home placeholder</p>
+                  </>
+                }
+              />
+              <Route path="/ai" element={<p>AI placeholder</p>} />
+            </Routes>
+          </MemoryRouter>
+        </AiSafetyProvider>
+      </FocusEngineProvider>
+    </ToastProvider>
   )
 }
 
@@ -98,5 +105,44 @@ describe('CommandPalette', () => {
     inject(adapter, 'back')
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('shows registered tools in a real Tools section and submits through the real safety pipeline', async () => {
+    const TOOL = {
+      id: 'demo-tool',
+      title: 'Demo Tool',
+      description: '',
+      requiredCapability: 'system.changeSettings' as const,
+      risk: 'low' as const,
+      reversible: true,
+      run: async () => ({ success: true, message: 'done' })
+    }
+    function Bootstrap(): null {
+      const { registry } = useAiSafety()
+      registry.register(TOOL)
+      return null
+    }
+    const adapter = new TestAdapter()
+    const user = userEvent.setup()
+    render(
+      <ToastProvider>
+        <FocusEngineProvider adapters={[adapter]}>
+          <AiSafetyProvider>
+            <Bootstrap />
+            <MemoryRouter initialEntries={['/']}>
+              <CommandPalette />
+            </MemoryRouter>
+          </AiSafetyProvider>
+        </FocusEngineProvider>
+      </ToastProvider>
+    )
+    inject(adapter, 'commands')
+
+    await user.click(screen.getByText('Run: Demo Tool'))
+
+    // No grant exists yet, so the submission requires approval — the real
+    // pipeline surfaces this as a notification rather than silently running.
+    expect(await screen.findByText('Demo Tool needs your approval')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog', { name: 'Command Palette' })).not.toBeInTheDocument()
   })
 })
