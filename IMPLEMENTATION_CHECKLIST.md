@@ -91,8 +91,8 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] ND-029 Command Builder
 - [ ] AI intent-to-command proposals (reviewed, not auto-executed)
 - [ ] Git Service (§22) — **partially real**: repository detection, status, diff, stage, unstage, commit, local branch list/checkout, and log are implemented through typed IPC; fetch/pull/push/restore/stash/conflict detection/remote inspection remain
-- [ ] ND-025 Git Control Center
-- [ ] Diff views
+- [ ] ND-025 Git Control Center — **partially real**: dedicated `/git` route with working tree, staged changes, exact diff preview, editable/reviewed local commit, branches, and commit history; remotes, pull requests, recovery branches, AI commit assistance, and push review remain
+- [x] Diff views — `features/git/GitDiffViewer.tsx`; read-only unified diff for staged, unstaged, and untracked files with safe text rendering and controller-selectable file rows
 - [ ] Git recovery branches
 
 ### Epic 7 — Build Studio

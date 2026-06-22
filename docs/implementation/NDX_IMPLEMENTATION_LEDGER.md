@@ -465,3 +465,17 @@ Begin mega-prompt §22 with a real, workspace-scoped Git adapter and expose the 
 - `npm run test` → 34 files, 180 tests passed.
 - `npm run build` → succeeded (main 22.68 kB, preload 3.63 kB, renderer CSS 26.43 kB / JS 892.57 kB).
 - `npm run test:e2e` → 1 Playwright Electron smoke test passed. On the managed Windows runner this must execute outside the filesystem sandbox because Chromium needs write access to its runtime GPU/cache profile.
+
+### ND-025 and diff-view continuation
+
+- Added the dedicated `/git` route and `GitControlCenter.tsx`, while reusing the same Git workstation inside Workspace Detail instead of creating a second state or service silo.
+- The controller-first three-pane layout keeps changed files and commit controls, the selected patch, and branch/history context visible together at 1280×800. Every file row, stage action, branch checkout, and commit action uses `ControllerButton`.
+- `GitDiffViewer.tsx` renders Git output as React text nodes only. Added, removed, hunk, and context lines use existing semantic design tokens; no raw HTML is accepted.
+- Local commit now opens the shared confirmation surface showing the exact editable message, staged-file count, branch, and explicit statement that no push occurs.
+- Fixed porcelain parsing for paths containing spaces and files with simultaneous index/worktree changes. A file with both patches now appears once in Staged and once in Changes so each exact diff remains selectable.
+- Untracked files now receive a real no-index unified diff instead of an empty preview.
+- Checkout is restricted to an exact local branch returned by Git before invocation, preventing option-like or arbitrary checkout targets from crossing the service boundary.
+
+Updated evidence: `GitService.test.ts` now has 11 real-repository tests; `GitControlCenter.test.tsx` has 3 UI/integration tests covering workspace gating, diff selection, and exact commit review. Full validation: 35 files, 186 tests passed; typecheck and lint pass with zero errors/warnings; production build succeeds (main 23.73 kB, preload 3.63 kB, renderer CSS 28.67 kB / JS 901.12 kB).
+
+ND-025 remains partial: remotes, pull requests, recovery branches, AI commit-message assistance, push review, and recovery-backed discard are not fabricated.

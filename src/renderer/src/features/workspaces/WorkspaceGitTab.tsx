@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { GitBranch, GitCommit, GitFileChange, GitStatus } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
+import { GitDiffViewer } from '../git/GitDiffViewer'
 import {
   checkoutGitBranch,
   commitGit,
+  getGitDiff,
   getGitLog,
   getGitStatus,
   listGitBranches,
@@ -23,9 +26,7 @@ export interface WorkspaceGitTabProps {
  * AI-originated. Push/pull/fetch/stash/restore/conflict-resolution are
  * deferred: each needs real remote-connectivity testing this environment
  * can't exercise yet, and "commit and push are separate approvals" (§22)
- * implies push needs its own dedicated review surface, not a quick add-on
- * to this tab. Diff viewing is deferred to the same "needs a dedicated
- * renderer" reasoning as File Preview's richer formats (Epic 5).
+ * implies push needs its own dedicated review surface, not a quick add-on.
  */
 export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JSX.Element {
   const [status, setStatus] = useState<GitStatus | null>(null)
@@ -33,6 +34,11 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
   const [log, setLog] = useState<GitCommit[]>([])
   const [message, setMessage] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [selectedChange, setSelectedChange] = useState<GitFileChange | null>(null)
+  const [diff, setDiff] = useState<string | null>(null)
+  const [diffLoading, setDiffLoading] = useState(false)
+  const [commitReviewOpen, setCommitReviewOpen] = useState(false)
+  const diffRequestId = useRef(0)
 
   const refresh = useCallback(async () => {
     const [statusResult, branchesResult, logResult] = await Promise.all([
@@ -80,15 +86,20 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
       setError(result.error.userMessage)
       return
     }
+    if (selectedChange?.path === change.path && selectedChange.staged === change.staged) {
+      setSelectedChange(null)
+      setDiff(null)
+    }
     await refresh()
   }
 
-  async function handleCommit(): Promise<void> {
-    const result = await commitGit({ workspaceId, message })
+  async function performCommit(): Promise<void> {
+    const result = await commitGit({ workspaceId, message: message.trim() })
     if (!result.ok) {
       setError(result.error.userMessage)
       return
     }
+    setCommitReviewOpen(false)
     setMessage('')
     await refresh()
   }
@@ -100,6 +111,23 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
       return
     }
     await refresh()
+  }
+
+  async function previewChange(change: GitFileChange): Promise<void> {
+    const requestId = diffRequestId.current + 1
+    diffRequestId.current = requestId
+    setSelectedChange(change)
+    setDiffLoading(true)
+    const result = await getGitDiff({ workspaceId, path: change.path, staged: change.staged })
+    if (requestId !== diffRequestId.current) return
+    setDiffLoading(false)
+    if (!result.ok) {
+      setDiff(null)
+      setError(result.error.userMessage)
+      return
+    }
+    setDiff(result.data.diff)
+    setError(null)
   }
 
   if (!status && error) {
@@ -123,8 +151,8 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
   const unstaged = status.changes.filter((change) => !change.staged)
 
   return (
-    <div className="flex h-full gap-4 overflow-auto">
-      <div className="flex w-1/2 flex-col gap-4">
+    <div className="grid h-full min-w-[58rem] grid-cols-[minmax(16rem,0.8fr)_minmax(22rem,1.35fr)_minmax(14rem,0.7fr)] gap-3 overflow-auto">
+      <div className="flex min-h-0 flex-col gap-4 overflow-auto border border-border bg-surface p-3">
         <div className="flex items-center justify-between text-meta text-text-secondary">
           <span>
             Branch: <span className="text-text-primary">{status.branch ?? 'detached HEAD'}</span>
@@ -146,8 +174,10 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
             <ul className="flex flex-col gap-1">
               {staged.map((change) => (
                 <ChangeRow
-                  key={change.path}
+                  key={`${change.path}:staged`}
                   change={change}
+                  selected={selectedChange?.path === change.path && selectedChange.staged}
+                  onPreview={() => void previewChange(change)}
                   onToggle={() => void toggleStage(change)}
                 />
               ))}
@@ -165,8 +195,10 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
             <ul className="flex flex-col gap-1">
               {unstaged.map((change) => (
                 <ChangeRow
-                  key={change.path}
+                  key={`${change.path}:unstaged`}
                   change={change}
+                  selected={selectedChange?.path === change.path && !selectedChange.staged}
+                  onPreview={() => void previewChange(change)}
                   onToggle={() => void toggleStage(change)}
                 />
               ))}
@@ -185,14 +217,16 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
           <ControllerButton
             variant="primary"
             disabled={staged.length === 0 || message.trim().length === 0}
-            onClick={() => void handleCommit()}
+            onClick={() => setCommitReviewOpen(true)}
           >
-            Commit
+            Review commit
           </ControllerButton>
         </section>
       </div>
 
-      <div className="flex w-1/2 flex-col gap-4">
+      <GitDiffViewer path={selectedChange?.path ?? null} diff={diff} loading={diffLoading} />
+
+      <div className="flex min-h-0 flex-col gap-4 overflow-auto border border-border bg-surface p-3">
         <section>
           <p className="mb-1 text-meta font-semibold text-text-primary">Branches</p>
           <ul className="flex flex-col gap-1">
@@ -233,22 +267,42 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
           )}
         </section>
       </div>
+      <ConfirmationDialog
+        open={commitReviewOpen}
+        title="Review local commit"
+        action={`Create a commit with message: “${message.trim()}”`}
+        scope={`${staged.length} staged ${staged.length === 1 ? 'file' : 'files'} on ${status.branch ?? 'detached HEAD'}`}
+        consequence="This records the staged patch locally. It does not push to a remote."
+        confirmLabel="Commit locally"
+        onConfirm={() => void performCommit()}
+        onCancel={() => setCommitReviewOpen(false)}
+      />
     </div>
   )
 }
 
 function ChangeRow({
   change,
+  selected,
+  onPreview,
   onToggle
 }: {
   change: GitFileChange
+  selected: boolean
+  onPreview: () => void
   onToggle: () => void
 }): React.JSX.Element {
   return (
-    <li className="flex items-center justify-between text-meta text-text-primary">
-      <span>
-        <span className="text-text-tertiary">{change.status}</span> {change.path}
-      </span>
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 text-meta text-text-primary">
+      <ControllerButton
+        variant={selected ? 'secondary' : 'ghost'}
+        className="min-w-0 justify-start px-2 font-mono text-meta"
+        aria-pressed={selected}
+        onClick={onPreview}
+      >
+        <span className="text-text-tertiary">{change.status}</span>
+        <span className="truncate">{change.path}</span>
+      </ControllerButton>
       <ControllerButton variant="ghost" onClick={onToggle}>
         {change.staged ? 'Unstage' : 'Stage'}
       </ControllerButton>

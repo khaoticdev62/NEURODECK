@@ -22,6 +22,24 @@ export class GitService {
     return stdout
   }
 
+  private async runDiff(root: string, args: string[]): Promise<string> {
+    try {
+      return await this.run(root, args)
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        error.code === 1 &&
+        'stdout' in error &&
+        typeof error.stdout === 'string'
+      ) {
+        return error.stdout
+      }
+      throw error
+    }
+  }
+
   async isRepository(root: string): Promise<boolean> {
     try {
       const output = await this.run(root, ['rev-parse', '--is-inside-work-tree'])
@@ -36,15 +54,16 @@ export class GitService {
       return { isRepository: false, branch: null, ahead: 0, behind: 0, changes: [] }
     }
 
-    const raw = await this.run(root, ['status', '--porcelain=v2', '--branch'])
-    const lines = raw.split('\n').filter(Boolean)
+    const raw = await this.run(root, ['status', '--porcelain=v2', '--branch', '-z'])
+    const records = raw.split('\0').filter(Boolean)
 
     let branch: string | null = null
     let ahead = 0
     let behind = 0
     const changes: GitFileChange[] = []
 
-    for (const line of lines) {
+    for (let index = 0; index < records.length; index += 1) {
+      const line = records[index]
       if (line.startsWith('# branch.head ')) {
         const name = line.slice('# branch.head '.length)
         branch = name === '(detached)' ? null : name
@@ -57,13 +76,16 @@ export class GitService {
       } else if (line.startsWith('1 ') || line.startsWith('2 ')) {
         const fields = line.split(' ')
         const xy = fields[1]
-        const path = fields[fields.length - 1]
-        changes.push({ path, status: xy, staged: xy[0] !== '.' })
+        const pathFieldIndex = line.startsWith('2 ') ? 9 : 8
+        const path = fields.slice(pathFieldIndex).join(' ')
+        if (xy[0] !== '.') changes.push({ path, status: xy, staged: true })
+        if (xy[1] !== '.') changes.push({ path, status: xy, staged: false })
+        if (line.startsWith('2 ')) index += 1
       } else if (line.startsWith('? ')) {
         changes.push({ path: line.slice(2), status: '??', staged: false })
       } else if (line.startsWith('u ')) {
         const fields = line.split(' ')
-        changes.push({ path: fields[fields.length - 1], status: fields[1], staged: false })
+        changes.push({ path: fields.slice(10).join(' '), status: fields[1], staged: false })
       }
     }
 
@@ -72,7 +94,15 @@ export class GitService {
 
   async diff(root: string, path: string, staged: boolean): Promise<string> {
     const args = staged ? ['diff', '--cached', '--', path] : ['diff', '--', path]
-    return this.run(root, args)
+    const diff = await this.run(root, args)
+    if (diff || staged) return diff
+
+    try {
+      await this.run(root, ['ls-files', '--error-unmatch', '--', path])
+      return diff
+    } catch {
+      return this.runDiff(root, ['diff', '--no-index', '--', '/dev/null', path])
+    }
   }
 
   async stage(root: string, paths: string[]): Promise<void> {
@@ -112,7 +142,9 @@ export class GitService {
   }
 
   async checkout(root: string, branch: string): Promise<void> {
-    await this.run(root, ['checkout', branch])
+    const exists = (await this.branches(root)).some((candidate) => candidate.name === branch)
+    if (!exists) throw new Error(`Local branch does not exist: ${branch}`)
+    await this.run(root, ['checkout', '--no-guess', branch, '--'])
   }
 
   async log(root: string, limit = 50): Promise<GitCommit[]> {

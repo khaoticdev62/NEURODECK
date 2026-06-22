@@ -2,7 +2,7 @@
 
 ## Current state
 
-**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** The first Epic 6 slice is real local Git integration: repository detection, status, diff, stage/unstage, commit, local branches/checkout, and log run in the main process through Zod-validated IPC and are wired into Workspace Detail's Git tab. Remote Git, recovery-dependent Git operations, the full ND-025 Git Control Center, and Terminal/PTTY remain incomplete.
+**Epics 0–2 complete; Epics 3, 4, and 5 partially complete by design; Epic 6 active.** Local Git integration now includes a dedicated partial ND-025 Git Control Center at `/git`: repository status, staged/unstaged/untracked unified diffs, stage/unstage, editable commit review, local commit, branches/checkout, and history all use real main-process Git through typed IPC. Remote Git, pull requests, recovery branches, recovery-dependent operations, AI commit assistance, and Terminal/PTTY remain incomplete.
 
 ### What exists right now
 
@@ -66,15 +66,15 @@ Neurodeck/
 ```bash
 npm run typecheck   # 0 errors
 npm run lint         # 0 errors, 0 warnings
-npm run test         # 180/180 unit tests passing across 34 files
-npm run build        # electron-vite build succeeds (renderer: 26.43 kB CSS, 892.57 kB JS; main: 22.68 kB)
+npm run test         # 186/186 unit tests passing across 35 files
+npm run build        # electron-vite build succeeds (current bundle evidence in implementation ledger)
 npm run test:e2e     # 1/1 Playwright Electron smoke test passing
 ```
 
 ## What to do next
 
-1. **Continue Epic 6 — Git before Terminal.** Build the dedicated ND-025 Git Control Center and diff viewer on top of the existing local Git adapter. Do not mark Git Service complete until fetch/pull/push/restore/stash/conflict detection/remote inspection are real and tested.
-2. After the local Git UI slice, implement the real PTY/terminal service (main-process only) and ND-028/ND-029 using the established typed IPC pattern.
+1. **Continue Epic 6 with Terminal/PTTY.** Implement the real PTY/terminal service (main-process only) and ND-028/ND-029 using the established typed IPC pattern.
+2. Do not mark Git Service or ND-025 complete until fetch/pull/push/restore/stash/conflict detection/remote inspection, remotes, pull requests, and recovery branches are real and tested.
 3. Alternatively, **finish more of Epic 3/4's deferred screens** if a dependency becomes available sooner (e.g. if Epic 9's Model Router lands out of order, ND-013 AI Command Canvas and ND-005 AI Provider Setup both become buildable).
 4. Keep `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` current as each epic lands — it's not a one-time artifact.
 5. **Phase A (core, Epics 0–12) must fully land before Phase B (platform completion, Epics X1–X15) begins.** Explicit instruction from `specs/START_HERE_NeuroDeck_OS_Complete_Platform.md`.

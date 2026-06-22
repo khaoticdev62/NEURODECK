@@ -5,6 +5,7 @@ import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
 import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
 import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
+import { GitControlCenter } from '../../features/git/GitControlCenter'
 import { FileManager } from '../../features/workspaces/FileManager'
 import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
 import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
@@ -131,6 +132,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: <FileManager />
+  },
+  {
+    routeId: 'git',
+    screenId: 'ND-025',
+    path: '/git',
+    title: 'Git Control Center',
+    owningEpic: 'Epic 6',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <GitControlCenter />
   },
   {
     routeId: 'terminal',

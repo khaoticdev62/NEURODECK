@@ -63,6 +63,24 @@ describe('GitService', () => {
     expect(modified).toMatchObject({ staged: false })
   })
 
+  it('preserves paths with spaces and exposes staged and working-tree patches separately', async () => {
+    const path = 'notes with spaces.txt'
+    await writeFile(join(dir, path), 'v1\n')
+    await git(['add', path])
+    await git(['commit', '-m', 'initial'])
+    await writeFile(join(dir, path), 'v2\n')
+    await git(['add', path])
+    await writeFile(join(dir, path), 'v3\n')
+
+    const status = await service.status(dir)
+    const changes = status.changes.filter((change) => change.path === path)
+
+    expect(changes).toHaveLength(2)
+    expect(changes.map((change) => change.staged).sort()).toEqual([false, true])
+    expect(await service.diff(dir, path, true)).toContain('+v2')
+    expect(await service.diff(dir, path, false)).toContain('+v3')
+  })
+
   it('stages and unstages real files', async () => {
     await writeFile(join(dir, 'a.txt'), 'content')
 
@@ -98,6 +116,15 @@ describe('GitService', () => {
     expect(diff).toContain('+line2')
   })
 
+  it('returns a real unified diff for an untracked file', async () => {
+    await writeFile(join(dir, 'new.txt'), 'first line\n')
+
+    const diff = await service.diff(dir, 'new.txt', false)
+
+    expect(diff).toContain('+first line')
+    expect(diff).toContain('new.txt')
+  })
+
   it('lists real branches and checks out a new one', async () => {
     await writeFile(join(dir, 'a.txt'), 'content')
     await git(['add', '.'])
@@ -111,6 +138,10 @@ describe('GitService', () => {
     await service.checkout(dir, 'feature/test')
     const after = await service.branches(dir)
     expect(after.find((b) => b.name === 'feature/test')?.current).toBe(true)
+  })
+
+  it('rejects checkout targets that are not exact local branch names', async () => {
+    await expect(service.checkout(dir, '--detach')).rejects.toThrow('Local branch does not exist')
   })
 
   it('returns real commit history in order', async () => {
