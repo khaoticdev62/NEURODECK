@@ -120,4 +120,40 @@ describe('UniversalTerminal', () => {
     })
     expect(screen.getByText('Exited 0')).toBeInTheDocument()
   })
+
+  it('toggles a real search bar over the active session', async () => {
+    const session = {
+      id: '00000000-0000-4000-8000-000000000002',
+      workspaceId: 'w1',
+      shell: 'bash',
+      cwd: '/workspace/project',
+      pid: 124,
+      cols: 100,
+      rows: 30,
+      createdAt: 1,
+      status: 'running' as const,
+      exitCode: null
+    }
+    window.ndx = {
+      git: {
+        status: vi.fn().mockResolvedValue({ ok: false, error: { userMessage: 'n/a' } })
+      } as never,
+      terminal: {
+        list: vi.fn().mockResolvedValue({ ok: true, data: [session] }),
+        onExit: vi.fn(() => vi.fn())
+      } as never
+    } as Partial<NdxBridge> as NdxBridge
+
+    const user = userEvent.setup()
+    renderTerminal()
+    await screen.findByText(`Terminal viewport ${session.id}`)
+
+    expect(screen.queryByPlaceholderText('Search scrollback')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Find' }))
+    expect(screen.getByPlaceholderText('Search scrollback')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Copy selection' }))
+    await user.click(screen.getByRole('button', { name: 'Find' }))
+    expect(screen.queryByPlaceholderText('Search scrollback')).not.toBeInTheDocument()
+  })
 })

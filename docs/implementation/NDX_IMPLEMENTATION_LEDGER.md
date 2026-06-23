@@ -1249,3 +1249,16 @@ Previously deferred with the one-line note "needs a simulate-without-executing-t
 | ----------------------------------------------------------------------------------------------| ------------------------------------------------- | ----- |
 | Dry run plans with a real model completion but emits zero tool requests; timeline records the would-be call and a dry-run completion message | `core/agents/__tests__/AgentRuntime.test.ts`   | +1    |
 | Dry run checkbox wiring: starts with `dryRun: true`, shows `[Dry run]` badge on the resulting run | `features/agents/__tests__/AgentDetail.test.tsx` | +1  |
+
+## Epic 6 addendum — Terminal search and copy selection
+
+Previously deferred together as "history/search/copy selection" — on inspection, history was already real (the shell's own command history plus xterm's 5000-line scrollback buffer), leaving search and copy as the two genuine gaps. Both are now real, using `@xterm/addon-search` (already in the same `@xterm` family as the `addon-fit` this codebase already depends on, so no new ecosystem) rather than hand-rolling scrollback search.
+
+`TerminalViewport.tsx` and `RemoteSessionViewport.tsx` (the SSH equivalent — both got the identical treatment, since they already mirror each other's xterm wiring exactly) were converted from plain function components to `forwardRef` components exposing a small imperative handle (`findNext`/`findPrevious`/`clearSearchHighlight`/`copySelection`) — the parent (`UniversalTerminal.tsx`/`RemoteSession.tsx`) owns the search query input and a toggleable search bar, and drives the xterm instance through the ref rather than duplicating xterm state in the parent. `copySelection()` reads the real `terminal.getSelection()` and writes it to the real OS clipboard via `navigator.clipboard.writeText()` — no fake "copied" toast without a real clipboard write behind it.
+
+### Tests and evidence
+
+| Suite                                                                                          | Location                                                       | Count |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----- |
+| Imperative handle's findNext/findPrevious/copySelection call through to the real SearchAddon/Terminal APIs and the real clipboard | `features/terminal/__tests__/TerminalViewport.test.tsx`       | +1    |
+| Find bar toggles open/closed over the active session                                          | `features/terminal/__tests__/UniversalTerminal.test.tsx`      | +1    |

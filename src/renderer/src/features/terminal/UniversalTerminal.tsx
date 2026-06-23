@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TerminalSession, Workspace } from '@shared/contracts'
 import { EmptyState } from '../../components/feedback/UXState'
@@ -14,7 +14,7 @@ import {
   terminateTerminal
 } from '../../services/ipc/terminalClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
-import { TerminalViewport } from './TerminalViewport'
+import { TerminalViewport, type TerminalViewportHandle } from './TerminalViewport'
 
 /** ND-028 Universal Terminal, local-session slice backed by the real PTY service. */
 export function UniversalTerminal(): React.JSX.Element {
@@ -44,8 +44,25 @@ function WorkspaceTerminal({
   const [loading, setLoading] = useState(true)
   const [terminateReviewSessionId, setTerminateReviewSessionId] = useState<string | null>(null)
   const [branch, setBranch] = useState<string | null>(null)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchFound, setSearchFound] = useState<boolean | null>(null)
+  const viewportRef = useRef<TerminalViewportHandle>(null)
 
   const handleViewportError = useCallback((message: string) => setError(message), [])
+
+  function handleFind(direction: 'next' | 'previous'): void {
+    if (!searchQuery.trim()) return
+    const found =
+      direction === 'next'
+        ? viewportRef.current?.findNext(searchQuery)
+        : viewportRef.current?.findPrevious(searchQuery)
+    setSearchFound(found ?? false)
+  }
+
+  function handleCopySelection(): void {
+    viewportRef.current?.copySelection()
+  }
 
   useEffect(() => {
     let active = true
@@ -146,6 +163,18 @@ function WorkspaceTerminal({
                 </p>
               </div>
               <div className="flex items-center gap-2">
+                <ControllerButton
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchOpen((current) => !current)
+                    setSearchFound(null)
+                  }}
+                >
+                  Find
+                </ControllerButton>
+                <ControllerButton variant="ghost" onClick={handleCopySelection}>
+                  Copy selection
+                </ControllerButton>
                 <StatusBadge
                   tone={activeSession.status === 'running' ? 'success' : 'neutral'}
                   label={
@@ -161,8 +190,34 @@ function WorkspaceTerminal({
                 )}
               </div>
             </header>
+            {searchOpen && (
+              <div className="flex items-center gap-2 border-b border-border bg-surface-raised/40 px-3 py-2">
+                <input
+                  value={searchQuery}
+                  onChange={(event) => {
+                    setSearchQuery(event.target.value)
+                    setSearchFound(null)
+                  }}
+                  placeholder="Search scrollback"
+                  className="min-w-0 flex-1 rounded-md border border-border bg-canvas p-1.5 text-meta text-text-primary"
+                />
+                <ControllerButton variant="ghost" onClick={() => handleFind('previous')}>
+                  Previous
+                </ControllerButton>
+                <ControllerButton variant="ghost" onClick={() => handleFind('next')}>
+                  Next
+                </ControllerButton>
+                {searchFound === false && (
+                  <span className="text-meta text-status-warning">No matches</span>
+                )}
+              </div>
+            )}
             <div className="min-h-0 flex-1">
-              <TerminalViewport session={activeSession} onError={handleViewportError} />
+              <TerminalViewport
+                ref={viewportRef}
+                session={activeSession}
+                onError={handleViewportError}
+              />
             </div>
           </>
         ) : loading ? (

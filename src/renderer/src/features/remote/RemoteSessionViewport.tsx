@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef } from 'react'
 import { FitAddon } from '@xterm/addon-fit'
+import { SearchAddon } from '@xterm/addon-search'
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import type { RemoteSession, RemoteSessionDataEvent } from '@shared/contracts'
@@ -16,13 +17,22 @@ export interface RemoteSessionViewportProps {
   onError: (message: string) => void
 }
 
+/** Mirrors `TerminalViewportHandle` — same imperative search/copy contract, just against the SSH-backed session. */
+export interface RemoteSessionViewportHandle {
+  findNext: (term: string) => boolean
+  findPrevious: (term: string) => boolean
+  clearSearchHighlight: () => void
+  copySelection: () => boolean
+}
+
 /** xterm-backed view of one real SSH shell session — mirrors `TerminalViewport`'s sequence-safe snapshot hydration exactly, against the SSH-backed session instead of a local PTY. */
-export function RemoteSessionViewport({
-  session,
-  onError
-}: RemoteSessionViewportProps): React.JSX.Element {
+export const RemoteSessionViewport = forwardRef<
+  RemoteSessionViewportHandle,
+  RemoteSessionViewportProps
+>(function RemoteSessionViewport({ session, onError }, handleRef) {
   const hostRef = useRef<HTMLDivElement | null>(null)
   const terminalRef = useRef<Terminal | null>(null)
+  const searchAddonRef = useRef<SearchAddon | null>(null)
   const { ref: focusRef, isFocused } = useFocusable<HTMLDivElement>({
     id: `remote-session-viewport-${session.id}`,
     groupId: 'remote-session',
@@ -69,9 +79,12 @@ export function RemoteSessionViewport({
       }
     })
     const fitAddon = new FitAddon()
+    const searchAddon = new SearchAddon()
     terminal.loadAddon(fitAddon)
+    terminal.loadAddon(searchAddon)
     terminal.open(host)
     terminalRef.current = terminal
+    searchAddonRef.current = searchAddon
 
     let hydrated = false
     let disposed = false
@@ -144,8 +157,26 @@ export function RemoteSessionViewport({
       inputSubscription.dispose()
       terminal.dispose()
       terminalRef.current = null
+      searchAddonRef.current = null
     }
   }, [onError, session.id, session.status])
+
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      findNext: (term) => searchAddonRef.current?.findNext(term) ?? false,
+      findPrevious: (term) => searchAddonRef.current?.findPrevious(term) ?? false,
+      clearSearchHighlight: () => searchAddonRef.current?.clearDecorations(),
+      copySelection: () => {
+        const terminal = terminalRef.current
+        const selection = terminal?.getSelection()
+        if (!terminal || !selection) return false
+        void navigator.clipboard.writeText(selection)
+        return true
+      }
+    }),
+    []
+  )
 
   return (
     <div
@@ -155,4 +186,4 @@ export function RemoteSessionViewport({
       className="h-full min-h-0 overflow-hidden bg-canvas p-3 outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-border-focus"
     />
   )
-}
+})
