@@ -1,8 +1,36 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { MetricValue, SystemMetricsSnapshot } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
+
+interface SystemLink {
+  label: string
+  path: string
+}
+
+/**
+ * The Primary Navigation Rail (wireframe §6.2) has exactly 11 destinations,
+ * and "System" is the only one of them that owns this whole area — every
+ * other real System/Settings screen (Controller Settings, Display and
+ * Theme, Privacy and Permissions, Power Menu, About and Diagnostics,
+ * Recovery, Storage) and Agent Operations Center (no primary-rail
+ * destination of its own; grouped with Workflows per the spec's staging
+ * plan) had no navigation path to them at all before this — real, built,
+ * working screens that were simply unreachable through the UI. This list
+ * is that missing entry point.
+ */
+const SYSTEM_LINKS: SystemLink[] = [
+  { label: 'Controller Settings', path: '/settings/controller' },
+  { label: 'Display and Theme Settings', path: '/settings/display' },
+  { label: 'Privacy and Permissions', path: '/settings/privacy' },
+  { label: 'Power Menu', path: '/power' },
+  { label: 'About and Diagnostics', path: '/about' },
+  { label: 'Recovery Timeline', path: '/recovery' },
+  { label: 'Storage and Recovery', path: '/storage' },
+  { label: 'Agent Operations Center', path: '/agents' }
+]
 
 /**
  * ND-042 System Dashboard. Real, capability-detected metrics from
@@ -15,6 +43,7 @@ import { collectSystemMetrics } from '../../services/ipc/systemClient'
  * requirement.
  */
 export function SystemDashboard(): React.JSX.Element {
+  const navigate = useNavigate()
   const [snapshot, setSnapshot] = useState<SystemMetricsSnapshot | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -59,6 +88,21 @@ export function SystemDashboard(): React.JSX.Element {
           {loading ? 'Refreshing…' : 'Refresh'}
         </ControllerButton>
       </div>
+
+      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+        <p className="text-body font-semibold text-text-primary">Settings and tools</p>
+        <div className="flex flex-wrap gap-2">
+          {SYSTEM_LINKS.map((link) => (
+            <ControllerButton
+              key={link.path}
+              variant="secondary"
+              onClick={() => navigate(link.path)}
+            >
+              {link.label}
+            </ControllerButton>
+          ))}
+        </div>
+      </section>
 
       {error && <ErrorState title="System metrics error" description={error} />}
 

@@ -1,11 +1,20 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge, SystemMetricsSnapshot } from '@shared/contracts'
 import { SystemDashboard } from '../SystemDashboard'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
+}
+
+function renderDashboard(): ReturnType<typeof render> {
+  return render(
+    <MemoryRouter>
+      <SystemDashboard />
+    </MemoryRouter>
+  )
 }
 
 afterEach(() => {
@@ -80,7 +89,7 @@ describe('SystemDashboard', () => {
         collectMetrics: vi.fn().mockResolvedValue({ ok: true, data: sampleSnapshot })
       } as never
     })
-    render(<SystemDashboard />)
+    renderDashboard()
 
     expect(await screen.findByText('System Dashboard')).toBeInTheDocument()
     expect(screen.getByText(/12\.5%/)).toBeInTheDocument()
@@ -93,7 +102,7 @@ describe('SystemDashboard', () => {
         collectMetrics: vi.fn().mockResolvedValue({ ok: true, data: sampleSnapshot })
       } as never
     })
-    render(<SystemDashboard />)
+    renderDashboard()
 
     await screen.findByText('System Dashboard')
     expect(screen.getByText(/No thermal sensors were exposed\./)).toBeInTheDocument()
@@ -112,7 +121,7 @@ describe('SystemDashboard', () => {
         })
       } as never
     })
-    render(<SystemDashboard />)
+    renderDashboard()
 
     expect(await screen.findByText('Metrics failed.')).toBeInTheDocument()
   })
@@ -122,7 +131,7 @@ describe('SystemDashboard', () => {
     stubBridge({ system: { collectMetrics } as never })
 
     const user = userEvent.setup()
-    render(<SystemDashboard />)
+    renderDashboard()
     await screen.findByText('System Dashboard')
 
     await user.click(screen.getByRole('button', { name: 'Refresh' }))

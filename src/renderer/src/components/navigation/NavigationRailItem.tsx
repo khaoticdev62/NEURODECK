@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { cn } from '../primitives/cn'
+import { NavigationIcon } from './navigationIcons'
 import type { NavigationDestination } from './navigationDestinations'
 
 export interface NavigationRailItemProps {
@@ -38,7 +39,7 @@ export function NavigationRailItem({
         )
       }
     >
-      <span aria-hidden className="size-2 shrink-0 rounded-full bg-current opacity-60" />
+      <NavigationIcon destinationId={destination.id} />
       <span className={expanded ? undefined : 'sr-only'}>{destination.label}</span>
     </NavLink>
   )

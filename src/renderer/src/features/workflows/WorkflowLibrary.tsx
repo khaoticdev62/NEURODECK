@@ -71,9 +71,17 @@ function WorkflowLibraryWorkspace({ workspaceId }: { workspaceId: string }): Rea
     <div className="flex h-full flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
         <p className="text-title font-semibold text-text-primary">Workflow Library</p>
-        <ControllerButton variant="primary" onClick={() => navigate('/automations/forge')}>
-          New workflow
-        </ControllerButton>
+        <div className="flex gap-2">
+          {/* Agent Operations Center has no Primary Navigation Rail destination of its
+              own (wireframe §6.2 lists exactly 11) — the spec groups Workflows and Agents
+              under the same implementation stage, so this is its real entry point. */}
+          <ControllerButton variant="secondary" onClick={() => navigate('/agents')}>
+            Agents
+          </ControllerButton>
+          <ControllerButton variant="primary" onClick={() => navigate('/automations/forge')}>
+            New workflow
+          </ControllerButton>
+        </div>
       </div>
 
       {error && <ErrorState title="Workflow error" description={error} />}

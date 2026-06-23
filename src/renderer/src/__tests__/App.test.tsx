@@ -13,6 +13,21 @@ describe('App', () => {
     expect(screen.getByText('Create or discover a workspace')).toBeInTheDocument()
   })
 
+  it('renders a real, distinguishable icon for every primary nav destination', () => {
+    // Regression guard: the nav rail previously rendered the exact same
+    // generic placeholder dot for every destination (no icon library, no
+    // per-destination glyph), making the collapsed (icon-only) rail
+    // genuinely unusable. Each destination must render its own real <svg>.
+    render(<App />)
+    const nav = screen.getByRole('navigation', { name: 'Primary' })
+    const icons = nav.querySelectorAll('svg')
+    const links = nav.querySelectorAll('a')
+    const distinctIconShapes = new Set(Array.from(icons).map((icon) => icon.innerHTML))
+    expect(icons.length).toBe(links.length)
+    expect(icons.length).toBeGreaterThan(0)
+    expect(distinctIconShapes.size).toBe(icons.length)
+  })
+
   it('navigates between primary destinations', async () => {
     const user = userEvent.setup()
     render(<App />)
