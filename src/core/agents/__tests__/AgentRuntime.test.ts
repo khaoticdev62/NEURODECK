@@ -113,6 +113,55 @@ describe('AgentRuntime', () => {
     expect(onToolRequest).not.toHaveBeenCalled()
     expect(failed.error).toContain('non-allowlisted tool')
   })
+
+  it('pauses before emitting the next tool request and resumes deterministically', async () => {
+    const store = await createStore()
+    const agent = await createAgent(store)
+    const requests: Parameters<AgentToolRequestSink>[0][] = []
+    const runtime = new AgentRuntime(
+      store,
+      {
+        complete: vi.fn().mockResolvedValue(completionWithToolCalls(['files.read', 'files.read']))
+      },
+      () => undefined,
+      (request) => {
+        requests.push(request)
+        if (requests.length === 1) {
+          void runtime.pause(request.runId).then(() =>
+            runtime.resolveToolResult({
+              requestId: request.requestId,
+              runId: request.runId,
+              toolId: request.toolId,
+              actionId: 'action-1',
+              status: 'passed',
+              message: 'First read completed.'
+            })
+          )
+          return
+        }
+        void runtime.resolveToolResult({
+          requestId: request.requestId,
+          runId: request.runId,
+          toolId: request.toolId,
+          actionId: 'action-2',
+          status: 'passed',
+          message: 'Second read completed.'
+        })
+      }
+    )
+
+    const started = await runtime.start(agent.id, 'Read two files')
+    await waitForRun(store, started.id, 'paused')
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(requests).toHaveLength(1)
+
+    await runtime.resume(started.id)
+    const finished = await waitForRun(store, started.id, 'completed')
+
+    expect(requests).toHaveLength(2)
+    expect(finished.timeline.map((event) => event.state)).toContain('paused')
+    expect(finished.timeline.map((event) => event.state)).toContain('queued')
+  })
 })
 
 async function createStore(): Promise<AgentStore> {
@@ -149,12 +198,21 @@ function completion(): ModelCompletionResult {
 }
 
 function completionWithToolCall(toolId = 'files.read'): ModelCompletionResult {
+  return completionWithToolCalls([toolId])
+}
+
+function completionWithToolCalls(toolIds: string[]): ModelCompletionResult {
   return {
     ...completion(),
     content: [
       'Plan: use the approved tool, then summarize.',
       '```json',
-      JSON.stringify({ toolCalls: [{ toolId, arguments: { path: 'README.md' } }] }),
+      JSON.stringify({
+        toolCalls: toolIds.map((toolId, index) => ({
+          toolId,
+          arguments: { path: index === 0 ? 'README.md' : 'package.json' }
+        }))
+      }),
       '```'
     ].join('\n')
   }

@@ -20,12 +20,9 @@ import type { AgentStore } from '../../core/agents/AgentStore'
 
 /**
  * Real Agent Runtime IPC (mega-prompt §17 core lifecycle). `AgentRuntime`
- * plans through the real Model Router but does not execute tools in this
- * slice — there is no path here that submits a tool call. The run loop
- * continues after `agentRunStart` returns; live updates are pushed to the
- * renderer via `agentRun.update`, wired through `AgentRuntime`'s `onUpdate`
- * constructor callback in `src/main/ipc/index.ts` (the same push pattern
- * `registerTerminalHandlers.ts` uses for PTY data/exit events).
+ * plans through the real Model Router, exposes pause/resume/cancel controls,
+ * and resolves typed tool-result acknowledgments from the renderer-owned
+ * ActionQueue bridge. Live run updates are pushed via `agentRun.update`.
  */
 export function registerAgentHandlers(store: AgentStore, runtime: AgentRuntime): void {
   ipcMain.handle(
@@ -126,6 +123,32 @@ export function registerAgentHandlers(store: AgentStore, runtime: AgentRuntime):
       if (!parsed.success) return invalidRequest()
       try {
         return { ok: true, data: await runtime.cancel(parsed.data.runId) }
+      } catch (error) {
+        return { ok: false, error: toAgentError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.agentRunPause,
+    async (_event, payload: unknown): Promise<NdxResult<AgentRun>> => {
+      const parsed = agentRunIdRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      try {
+        return { ok: true, data: await runtime.pause(parsed.data.runId) }
+      } catch (error) {
+        return { ok: false, error: toAgentError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.agentRunResume,
+    async (_event, payload: unknown): Promise<NdxResult<AgentRun>> => {
+      const parsed = agentRunIdRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      try {
+        return { ok: true, data: await runtime.resume(parsed.data.runId) }
       } catch (error) {
         return { ok: false, error: toAgentError(error) }
       }

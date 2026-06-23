@@ -159,7 +159,7 @@ Matches mega-prompt §5.1:
 - Every agent run has a real, enforced timeout (`resourceLimits.timeoutMs`, via `setTimeout` + `AbortController`) that genuinely aborts the in-flight provider request — a misbehaving or slow provider cannot keep a run alive indefinitely.
 - Cancellation (`cancel()`) aborts the same controller a timeout would, so there is one real cancellation path, not two divergent ones.
 - `AgentRuntime` enforces `toolAllowlist` and `maxToolCalls` before a tool request leaves the main process. The renderer bridge then enforces `permissionCeiling` against the registered tool capability before submitting to `ActionQueue`.
-- This remains a partial security boundary: pause/resume, child-agent budgets, and richer per-run audit tabs are not implemented yet. Do not add a separate agent-only executor; the ActionQueue bridge is the only allowed tool path.
+- This remains a partial security boundary: child-agent budgets and richer per-run audit tabs are not implemented yet. Do not add a separate agent-only executor; the ActionQueue bridge is the only allowed tool path.
 - **IPC/UI addendum**: `registerAgentHandlers.ts` validates every request with Zod like every other surface; nothing in `core/agents/` is reachable from the renderer without going through it. The `agentRun.update` push channel sends only the already-public `AgentRun` shape (objective, state, timeline, output, token counts) — no secret ever flows through it, since `AgentRuntime` never holds one (API keys stay inside `ModelProviderStore`/`ModelProviderService`, decrypted only for the duration of the model call it makes on the agent's behalf). The Agent Operations Center's tool-allowlist selector is populated from the real `ToolRegistry`, so a UI-created agent can never reference a tool ID that isn't actually registered — there's no path to configure an allowlist entry for a tool that doesn't exist.
 
 ## 17. Power Menu and Diagnostics security (Epic 11 addenda)
@@ -175,6 +175,7 @@ Matches mega-prompt §5.1:
 - Renderer-side `AgentToolExecutionBridge` checks the registered tool's `requiredCapability` against the agent `permissionCeiling` before submitting to the existing `ActionQueue`.
 - No separate agent-only executor exists. Execution still flows through the same renderer-owned `ToolRegistry` → `PermissionBroker` → Approval Queue → `AuditLog` path as Command Palette and Workflow Engine actions.
 - Pending approval remains user-mediated; the agent run waits in `waiting-for-approval` until `agentTool.result` reports approval/execution, denial, cancellation, or failure.
+- Run pause/resume is deliberately bounded: it prevents the next tool submission and never claims to interrupt an already-running tool. A regression test covers the race where resume previously could overwrite the runtime's final `completed` state.
 
 ## 18. Controller Settings security (Epic 11 addendum)
 

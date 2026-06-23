@@ -114,6 +114,8 @@ const ndx: NdxBridge = {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunList, request),
     get: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunGet, request),
     start: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunStart, request),
+    pause: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunPause, request),
+    resume: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunResume, request),
     cancel: (request) => ipcRenderer.invoke(IPC_CHANNELS.agentRunCancel, request),
     onUpdate: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {

@@ -75,6 +75,18 @@ export async function cancelAgentRun(request: AgentRunIdRequest): Promise<NdxRes
   return bridge.agentRuns.cancel(request)
 }
 
+export async function pauseAgentRun(request: AgentRunIdRequest): Promise<NdxResult<AgentRun>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.agentRuns.pause(request)
+}
+
+export async function resumeAgentRun(request: AgentRunIdRequest): Promise<NdxResult<AgentRun>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.agentRuns.resume(request)
+}
+
 export function onAgentRunUpdate(listener: (run: AgentRun) => void): () => void {
   return getNdxBridge()?.agentRuns.onUpdate(listener) ?? (() => undefined)
 }

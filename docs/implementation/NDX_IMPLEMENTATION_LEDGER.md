@@ -995,10 +995,17 @@ The security boundary is deliberately split:
 - `AgentToolExecutionBridge` (`features/agents/AgentToolExecutionBridge.tsx`) runs in the renderer, where the real `ActionQueue` already lives. It verifies that the tool is registered, checks the tool's `requiredCapability` against the agent's `permissionCeiling`, then calls `queue.submit()` so the request goes through the same `ToolRegistry` → `PermissionBroker` → Approval Queue → AuditLog path as Command Palette and Workflow Engine tool actions.
 - `registerAgentHandlers.ts` receives the typed `agentTool.result` acknowledgment and resolves the waiting persisted run. Pending approvals remain pending in the existing Approval Queue; the agent run stays in `waiting-for-approval` until the user approves, denies, cancels, or the tool completes.
 
-This is real ActionQueue-backed submission, not a separate agent-only executor. It intentionally does not yet build the full ND-017 Files/Tools/Permissions/Logs tab model, agent pause/resume controls, child-agent spawning/budget bounds, or full e2e UI coverage for a live approval flow.
+This is real ActionQueue-backed submission, not a separate agent-only executor. A follow-up slice adds real run pause/resume; this bridge slice intentionally does not yet build the full ND-017 Files/Tools/Permissions/Logs tab model, child-agent spawning/budget bounds, or full e2e UI coverage for a live approval flow.
+
+## Epic 8 addendum — Agent Runtime pause/resume controls
+
+Agent Runtime now exposes real `pause()` and `resume()` controls through typed `agentRun.pause`/`agentRun.resume` IPC and Agent Detail buttons. The behavior is intentionally precise: pause prevents the runtime from submitting the next tool call, but it does not pretend to kill or suspend a tool already running inside ActionQueue. Cancellation remains the explicit stop path.
+
+The runtime persists `paused` timeline events, wakes paused runs through an internal waiter set, and resumes queued work deterministically. A real race was found and fixed during implementation: `resume()` originally woke the runtime before saving the resumed state, which allowed the resume write to overwrite a near-simultaneous terminal `completed` state. The fix persists the resume transition before releasing waiters.
 
 ### Tests and evidence
 
 | Suite | Location | Count |
 | --- | --- | --- |
-| `AgentRuntime` lifecycle, cancellation, strict tool-call bridge submission, non-allowlisted tool rejection | `core/agents/__tests__/AgentRuntime.test.ts` | 4 |
+| `AgentRuntime` lifecycle, cancellation, strict tool-call bridge submission, non-allowlisted tool rejection, pause-before-next-tool/resume race regression | `core/agents/__tests__/AgentRuntime.test.ts` | 5 |
+| `AgentDetail` overview/runs, start, cancel, pause, resume IPC wiring | `features/agents/__tests__/AgentDetail.test.tsx` | 5 |

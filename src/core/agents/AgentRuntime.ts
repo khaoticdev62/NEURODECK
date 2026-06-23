@@ -20,6 +20,8 @@ export type AgentToolRequestSink = (request: AgentToolExecutionRequest) => void
 /** A visible, bounded agent lifecycle. Tool calls are emitted to the renderer-owned ActionQueue bridge. */
 export class AgentRuntime {
   private readonly controllers = new Map<string, AbortController>()
+  private readonly pausedRuns = new Set<string>()
+  private readonly resumeWaiters = new Map<string, Set<() => void>>()
   private readonly pendingToolResults = new Map<
     string,
     {
@@ -63,8 +65,31 @@ export class AgentRuntime {
     if (terminal(run.state)) return run
     const cancelling = this.event(run, 'cancelling', 'Cancellation requested by the user.')
     await this.persist(cancelling)
+    this.resumePausedRun(runId)
     this.controllers.get(runId)?.abort()
     return cancelling
+  }
+
+  async pause(runId: string): Promise<AgentRun> {
+    const run = await this.requireRun(runId)
+    if (terminal(run.state)) return run
+    this.pausedRuns.add(runId)
+    const paused = this.event(
+      run,
+      'paused',
+      'Pause requested; the agent will stop before the next tool submission.'
+    )
+    await this.persist(paused)
+    return paused
+  }
+
+  async resume(runId: string): Promise<AgentRun> {
+    const run = await this.requireRun(runId)
+    if (terminal(run.state)) return run
+    const resumed = this.event(run, 'queued', 'Agent run resumed.')
+    await this.persist(resumed)
+    this.resumePausedRun(runId)
+    return resumed
   }
 
   private async execute(
@@ -116,6 +141,7 @@ export class AgentRuntime {
     } finally {
       clearTimeout(timeout)
       this.controllers.delete(run.id)
+      this.resumePausedRun(run.id)
       await this.persist(run)
     }
   }
@@ -143,6 +169,7 @@ export class AgentRuntime {
 
     for (const [index, call] of toolCalls.entries()) {
       if (signal.aborted) throw new DOMException('Cancelled', 'AbortError')
+      run = await this.waitIfPaused(run, signal)
       if (!agent.toolAllowlist.includes(call.toolId)) {
         throw new Error(`Agent proposed non-allowlisted tool "${call.toolId}".`)
       }
@@ -163,7 +190,61 @@ export class AgentRuntime {
       await this.persist(run)
     }
 
+    run = await this.waitIfPaused(run, signal)
     return this.event(run, 'completed', 'Agent run completed after approved tool execution.')
+  }
+
+  private async waitIfPaused(run: AgentRun, signal: AbortSignal): Promise<AgentRun> {
+    let current = run
+    while (this.pausedRuns.has(current.id)) {
+      if (signal.aborted) throw new DOMException('Cancelled', 'AbortError')
+      if (current.state !== 'paused') {
+        current = this.event(current, 'paused', 'Agent run paused before the next tool step.')
+        await this.persist(current)
+      }
+      await this.waitForResume(current.id, signal)
+      current = (await this.store.getRun(current.id)) ?? current
+      if (!terminal(current.state)) {
+        current = this.event(current, 'queued', 'Agent run resumed; continuing queued work.')
+        await this.persist(current)
+      }
+    }
+    return current
+  }
+
+  private waitForResume(runId: string, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const cleanup = (): void => {
+        const waiters = this.resumeWaiters.get(runId)
+        waiters?.delete(done)
+        if (waiters?.size === 0) this.resumeWaiters.delete(runId)
+        signal.removeEventListener('abort', abort)
+      }
+      const done = (): void => {
+        cleanup()
+        resolve()
+      }
+      const abort = (): void => {
+        cleanup()
+        reject(new DOMException('Cancelled', 'AbortError'))
+      }
+      if (signal.aborted) {
+        abort()
+        return
+      }
+      const waiters = this.resumeWaiters.get(runId) ?? new Set<() => void>()
+      waiters.add(done)
+      this.resumeWaiters.set(runId, waiters)
+      signal.addEventListener('abort', abort, { once: true })
+    })
+  }
+
+  private resumePausedRun(runId: string): void {
+    this.pausedRuns.delete(runId)
+    const waiters = this.resumeWaiters.get(runId)
+    if (!waiters) return
+    this.resumeWaiters.delete(runId)
+    waiters.forEach((waiter) => waiter())
   }
 
   private submitToolCall(

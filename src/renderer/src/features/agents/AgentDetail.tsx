@@ -9,6 +9,8 @@ import {
   listAgentRuns,
   listAgents,
   onAgentRunUpdate,
+  pauseAgentRun,
+  resumeAgentRun,
   startAgentRun
 } from '../../services/ipc/agentClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
@@ -91,6 +93,24 @@ export function AgentDetail(): React.JSX.Element {
     }
   }
 
+  async function handlePause(runId: string): Promise<void> {
+    const result = await pauseAgentRun({ runId })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setRuns((current) => current.map((item) => (item.id === runId ? result.data : item)))
+  }
+
+  async function handleResume(runId: string): Promise<void> {
+    const result = await resumeAgentRun({ runId })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setRuns((current) => current.map((item) => (item.id === runId ? result.data : item)))
+  }
+
   if (loading) return <p className="p-4 text-meta text-text-secondary">Loading…</p>
   if (!agent) return <ErrorState title="Agent not found" description={error ?? 'Unknown agent.'} />
 
@@ -150,7 +170,13 @@ export function AgentDetail(): React.JSX.Element {
         ) : (
           <ul className="flex flex-col gap-3">
             {runs.map((run) => (
-              <RunRow key={run.id} run={run} onCancel={() => void handleCancel(run.id)} />
+              <RunRow
+                key={run.id}
+                run={run}
+                onCancel={() => void handleCancel(run.id)}
+                onPause={() => void handlePause(run.id)}
+                onResume={() => void handleResume(run.id)}
+              />
             ))}
           </ul>
         )}
@@ -159,8 +185,20 @@ export function AgentDetail(): React.JSX.Element {
   )
 }
 
-function RunRow({ run, onCancel }: { run: AgentRun; onCancel: () => void }): React.JSX.Element {
+function RunRow({
+  run,
+  onCancel,
+  onPause,
+  onResume
+}: {
+  run: AgentRun
+  onCancel: () => void
+  onPause: () => void
+  onResume: () => void
+}): React.JSX.Element {
   const cancellable = !['cancelled', 'failed', 'completed', 'rolled-back'].includes(run.state)
+  const pausable = cancellable && run.state !== 'paused' && run.state !== 'cancelling'
+  const resumable = run.state === 'paused'
 
   return (
     <li className="border-t border-border pt-3 first:border-t-0 first:pt-0">
@@ -185,9 +223,21 @@ function RunRow({ run, onCancel }: { run: AgentRun; onCancel: () => void }): Rea
         </p>
       )}
       {cancellable && (
-        <ControllerButton variant="ghost" onClick={onCancel}>
-          Cancel
-        </ControllerButton>
+        <div className="mt-2 flex gap-2">
+          {pausable && (
+            <ControllerButton variant="ghost" onClick={onPause}>
+              Pause
+            </ControllerButton>
+          )}
+          {resumable && (
+            <ControllerButton variant="secondary" onClick={onResume}>
+              Resume
+            </ControllerButton>
+          )}
+          <ControllerButton variant="ghost" onClick={onCancel}>
+            Cancel
+          </ControllerButton>
+        </div>
       )}
     </li>
   )

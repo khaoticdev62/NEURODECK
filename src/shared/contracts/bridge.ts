@@ -177,6 +177,8 @@ export interface NdxBridge {
     list: (request: ListAgentRunsRequest) => Promise<NdxResult<AgentRun[]>>
     get: (request: AgentRunIdRequest) => Promise<NdxResult<AgentRun>>
     start: (request: StartAgentRunRequest) => Promise<NdxResult<AgentRun>>
+    pause: (request: AgentRunIdRequest) => Promise<NdxResult<AgentRun>>
+    resume: (request: AgentRunIdRequest) => Promise<NdxResult<AgentRun>>
     cancel: (request: AgentRunIdRequest) => Promise<NdxResult<AgentRun>>
     onUpdate: (listener: (run: AgentRun) => void) => () => void
     onToolRequest: (listener: (request: AgentToolExecutionRequest) => void) => () => void

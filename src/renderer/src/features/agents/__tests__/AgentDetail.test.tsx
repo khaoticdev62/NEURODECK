@@ -147,4 +147,28 @@ describe('AgentDetail', () => {
     expect(cancel).toHaveBeenCalledWith({ runId: 'r1' })
     expect(await screen.findByText('cancelled')).toBeInTheDocument()
   })
+
+  it('pauses and resumes a real run via IPC', async () => {
+    const pause = vi.fn().mockResolvedValue({ ok: true, data: { ...sampleRun, state: 'paused' } })
+    const resume = vi.fn().mockResolvedValue({ ok: true, data: { ...sampleRun, state: 'queued' } })
+    bridgeWithDefaults({
+      list: vi.fn().mockResolvedValue({ ok: true, data: [{ ...sampleRun, state: 'running' }] }),
+      pause,
+      resume
+    })
+
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByText('Inspect the repository')
+
+    await user.click(screen.getByRole('button', { name: 'Pause' }))
+
+    expect(pause).toHaveBeenCalledWith({ runId: 'r1' })
+    expect(await screen.findByText('paused')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Resume' }))
+
+    expect(resume).toHaveBeenCalledWith({ runId: 'r1' })
+    expect(await screen.findByText('queued')).toBeInTheDocument()
+  })
 })
