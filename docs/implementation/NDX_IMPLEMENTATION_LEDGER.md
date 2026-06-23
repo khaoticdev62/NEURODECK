@@ -355,9 +355,20 @@ npm run build        → succeeded (renderer bundle: 26.13 kB CSS, 728.72 kB JS)
 npm run test:e2e     → 1 passed
 ```
 
+### ND-013 addendum - AI Command Canvas preview and run handoff
+
+Now that Epic 9's real Model Router and Epic 8's real Agent Runtime exist, ND-013 can be built without fabricating an AI planner. `/ai` now renders `AICommandCanvas`: it requires an active workspace, sends only the user's typed intent to `modelProviders.complete`, demands a strict JSON plan preview, validates that response with Zod in `planPreview.ts`, and shows the user the goal, steps, risk, file estimate, network flag, and reversibility before anything runs.
+
+This is intentionally a review artifact, not a deterministic execution script. The current Agent Runtime does not support externally-authored ordered step execution, per-step model assignment, per-step file/network enforcement, branch creation, or "require test success before completion." So "Approve & run" hands the raw intent to a real persisted "Quick Command" agent with zero tool access (`toolAllowlist: []`, `maxToolCalls: 0`, child agents disabled) rather than pretending the preview can safely execute arbitrary operations. Granting real tool access still happens through Agent Operations Center and the existing ActionQueue bridge.
+
+| Evidence                                                                    | File                                                    | Count |
+| --------------------------------------------------------------------------- | ------------------------------------------------------- | ----- |
+| Strict JSON plan preview parsing/fence stripping/error handling             | `features/ai-canvas/__tests__/planPreview.test.ts`      | 5     |
+| Canvas empty state, model preview, Quick Command creation/reuse/run handoff | `features/ai-canvas/__tests__/AICommandCanvas.test.tsx` | 4     |
+
 ### Deferred items with explicit reason
 
-- **ND-013 AI Command Canvas** — no model/planner exists (Epic 9); deferred rather than fabricated.
+- **ND-013 richer execution controls** — the route is real now, but the preview is not a fixed ActionPlan executor. Reorder-as-execution, per-step model assignment, hard file-count/network restriction enforcement, branch creation, test gates, timeout/compute budgets, and a deterministic step runner need new runtime semantics before they can be honestly marked complete.
 - **§15.4 Prompt injection resistance** — nothing untrusted is ingested yet (no browser/terminal/file content pipelines — Epics 5/6/10); the defenses described are moot until there's untrusted content to defend against.
 - **§14 Typed cross-process IPC contracts** — the one real tool is renderer-only; no real cross-process tool exists yet to justify building the IPC layer. Revisit the moment Epic 5/6 introduce a tool needing main-process access (filesystem, shell).
 - **Spec's "Terminate safe processes" / "Explain" buttons on Emergency Stop** — no safe/unsafe process classification or AI explanation feature exists to back them.
@@ -953,11 +964,11 @@ This slice builds the first real SSH-scoped Remote Systems path: backend, typed 
 
 The backend is reachable through typed IPC and the narrow preload bridge: `window.ndx.remoteHosts.*` and `window.ndx.remoteSessions.*`. The renderer now wires `/remote` (ND-040) to real SSH host management and `/remote/:hostId` (ND-041) to a real xterm-backed SSH session. Remote file browsing, remote command builder, non-SSH target types, Windows remote tooling, containers, network shares, metrics, logs, tunnels, and remote desktop remain deferred.
 
-| Evidence | File | Status |
-| --- | --- | --- |
-| Encrypted host storage, public metadata only | `core/remote/__tests__/RemoteHostStore.test.ts` | Passing |
-| TOFU host-key recording/rejection and session I/O | `core/remote/__tests__/RemoteConnectionService.test.ts` | Passing |
-| Typed IPC/preload bridge | `main/ipc/registerRemoteHandlers.ts`, `preload/index.ts`, `shared/contracts/bridge.ts` | Typechecked |
+| Evidence                                          | File                                                                                   | Status      |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------- |
+| Encrypted host storage, public metadata only      | `core/remote/__tests__/RemoteHostStore.test.ts`                                        | Passing     |
+| TOFU host-key recording/rejection and session I/O | `core/remote/__tests__/RemoteConnectionService.test.ts`                                | Passing     |
+| Typed IPC/preload bridge                          | `main/ipc/registerRemoteHandlers.ts`, `preload/index.ts`, `shared/contracts/bridge.ts` | Typechecked |
 
 ### A real, production-relevant bug found and fixed (preload bridge silently failed everywhere)
 
@@ -977,13 +988,13 @@ Launching the packaged app for manual verification surfaced a real bug undetecte
 
 After fixing the preload bridge, the user reported the UI still wasn't loading. Re-diagnosing with the same Playwright `_electron` + console/`pageerror`-listener technique — this time pointed at the live Vite dev server (`http://localhost:5173`) the way `npm run dev` actually runs the app, not just the packaged production build — surfaced a second, unrelated real bug: a renderer `pageerror`, `Cannot access 'lazy' before initialization`, that crashed React before it ever rendered.
 
-**Root cause**: `src/renderer/src/app/routing/routes.tsx`'s `import { lazy, Suspense } from 'react'` statement had ended up as the very last line of the file — after every route definition that calls `lazy(...)`, rather than at the top with the rest of the file's imports. ES module `import` bindings are hoisted regardless of source position, so this is not *inherently* invalid JavaScript, but Vite's dev-mode per-module transform (React Fast Refresh wraps each module separately, unlike Rollup's production bundle which reorders/hoists differently) exposed the temporal-dead-zone window during module evaluation, while the production Rollup build happened to mask it. This is why the bug was dev-mode-only — the earlier preload fix was verified against the packaged production build (`out/main/index.js` + `out/renderer/index.html`), which never hit this path, while the user was running `npm run dev`.
+**Root cause**: `src/renderer/src/app/routing/routes.tsx`'s `import { lazy, Suspense } from 'react'` statement had ended up as the very last line of the file — after every route definition that calls `lazy(...)`, rather than at the top with the rest of the file's imports. ES module `import` bindings are hoisted regardless of source position, so this is not _inherently_ invalid JavaScript, but Vite's dev-mode per-module transform (React Fast Refresh wraps each module separately, unlike Rollup's production bundle which reorders/hoists differently) exposed the temporal-dead-zone window during module evaluation, while the production Rollup build happened to mask it. This is why the bug was dev-mode-only — the earlier preload fix was verified against the packaged production build (`out/main/index.js` + `out/renderer/index.html`), which never hit this path, while the user was running `npm run dev`.
 
 **Fix**: moved `import { lazy, Suspense } from 'react'` back to the top of `routes.tsx` with the rest of the file's imports, and deleted the duplicate/misplaced copy.
 
-**Diagnosis method**: since `npm run dev` spawns its own managed Electron process that can't be directly attached to from outside, the dev server was left running standalone (`electron-vite dev`'s Vite server keeps running independently of which Electron window talks to it), then a *second* Electron instance was launched via Playwright's `_electron.launch()` with `ELECTRON_RENDERER_URL` pointed at that same running dev server and a `pageerror` listener attached — this is the only way to see a renderer crash that occurs before any UI paints, since there is nothing in the DOM yet for `window.evaluate()` or `getByRole()` assertions to find.
+**Diagnosis method**: since `npm run dev` spawns its own managed Electron process that can't be directly attached to from outside, the dev server was left running standalone (`electron-vite dev`'s Vite server keeps running independently of which Electron window talks to it), then a _second_ Electron instance was launched via Playwright's `_electron.launch()` with `ELECTRON_RENDERER_URL` pointed at that same running dev server and a `pageerror` listener attached — this is the only way to see a renderer crash that occurs before any UI paints, since there is nothing in the DOM yet for `window.evaluate()` or `getByRole()` assertions to find.
 
-**Lesson**: a production build and a dev-mode run can genuinely diverge in correctness due to bundler-level reordering/hoisting differences (Rollup vs. Vite's per-module dev transform) — verifying a fix only against `npm run build`'s output is not sufficient when the regression is import-order-sensitive. When something only reproduces in one mode, reproduce and verify the fix in *that* mode specifically, not just whichever is more convenient to launch.
+**Lesson**: a production build and a dev-mode run can genuinely diverge in correctness due to bundler-level reordering/hoisting differences (Rollup vs. Vite's per-module dev transform) — verifying a fix only against `npm run build`'s output is not sufficient when the regression is import-order-sensitive. When something only reproduces in one mode, reproduce and verify the fix in _that_ mode specifically, not just whichever is more convenient to launch.
 
 ### A third real gap found and fixed (not a crash this time — real UI/UX wiring gaps: missing icons and unreachable screens)
 
@@ -997,7 +1008,7 @@ After both runtime crashes were fixed, the user reported "icons are missing and 
 
 **Regression test added**: `App.test.tsx` now asserts the nav rail renders exactly as many real `<svg>` icons as it has links, and that each icon has a distinct SVG shape. Verified live against the running dev server (Playwright `_electron`, no crashes) that all 11 destinations render a distinct `<svg>` with real path/circle/rect content, and that `/system` now renders real working buttons to all eight previously-unreachable screens.
 
-**Lesson**: "the screen exists, is real, and passes its own tests" is not the same as "a user can reach it." Every new real screen needs an explicit, deliberate check for *how a controller-only user actually arrives there* — don't rely on the existence of a route to imply the existence of a path to that route in the rendered nav.
+**Lesson**: "the screen exists, is real, and passes its own tests" is not the same as "a user can reach it." Every new real screen needs an explicit, deliberate check for _how a controller-only user actually arrives there_ — don't rely on the existence of a route to imply the existence of a path to that route in the rendered nav.
 
 ## Epic 8 addendum — Agent Runtime ActionQueue tool submission bridge
 
@@ -1019,10 +1030,10 @@ The runtime persists `paused` timeline events, wakes paused runs through an inte
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| --- | --- | --- |
-| `AgentRuntime` lifecycle, cancellation, strict tool-call bridge submission, non-allowlisted tool rejection, pause-before-next-tool/resume race regression | `core/agents/__tests__/AgentRuntime.test.ts` | 5 |
-| `AgentDetail` overview/runs, start, cancel, pause, resume IPC wiring | `features/agents/__tests__/AgentDetail.test.tsx` | 5 |
+| Suite                                                                                                                                                     | Location                                         | Count |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----- |
+| `AgentRuntime` lifecycle, cancellation, strict tool-call bridge submission, non-allowlisted tool rejection, pause-before-next-tool/resume race regression | `core/agents/__tests__/AgentRuntime.test.ts`     | 5     |
+| `AgentDetail` overview/runs, start, cancel, pause, resume IPC wiring                                                                                      | `features/agents/__tests__/AgentDetail.test.tsx` | 5     |
 
 ## Epic 8 addendum — Agent Runtime child-agent policy bounds
 
@@ -1032,7 +1043,7 @@ The model prompt includes the child-agent policy. If a model emits strict JSON w
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| --- | --- | --- |
-| `AgentRuntime` child-agent proposal rejected before tool request | `core/agents/__tests__/AgentRuntime.test.ts` | +1 |
-| `AgentOperationsCenter` and `AgentDetail` render disabled child policy and create agents with default policy | `features/agents/__tests__` | covered |
+| Suite                                                                                                        | Location                                     | Count   |
+| ------------------------------------------------------------------------------------------------------------ | -------------------------------------------- | ------- |
+| `AgentRuntime` child-agent proposal rejected before tool request                                             | `core/agents/__tests__/AgentRuntime.test.ts` | +1      |
+| `AgentOperationsCenter` and `AgentDetail` render disabled child policy and create agents with default policy | `features/agents/__tests__`                  | covered |

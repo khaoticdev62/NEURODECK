@@ -5,6 +5,7 @@ import { ControllerCalibration } from '../../features/onboarding/ControllerCalib
 import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
 import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
+import { AICommandCanvas } from '../../features/ai-canvas/AICommandCanvas'
 import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
 import { AgentDetail } from '../../features/agents/AgentDetail'
 import { AgentOperationsCenter } from '../../features/agents/AgentOperationsCenter'
@@ -109,7 +110,8 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'AI Command Canvas',
     owningEpic: 'Epic 4',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <AICommandCanvas />
   },
   {
     routeId: 'ai-timeline',

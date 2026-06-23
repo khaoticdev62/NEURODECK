@@ -60,12 +60,12 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] ND-012 Notification Center — `features/activity/NotificationCenter.tsx`; extends the real `ToastProvider` (Epic 1) with persistent history, per-category muting, and event collapsing — all genuinely functional
 - [ ] Quick overlay foundation — still deferred to Epic 11 (full ND-050 build)
 
-### Epic 4 — AI safety runtime ⚠️ core pipeline and shared typed IPC complete; AI Command Canvas remains
+### Epic 4 — AI safety runtime ⚠️ core pipeline, shared typed IPC, and AI Command Canvas preview/run handoff real
 
 - [x] Plan schema (mega-prompt §15.1) — `ai-safety/contracts/plan.ts` (`ActionPlan`, `ActionStep`, `ImpactSummary`, etc.)
 - [x] Typed tool call schema and registry — `ai-safety/contracts/plan.ts` (`HarnessAction`) + `ai-safety/ToolRegistry.ts`; invocation must match a registered tool. The shared narrow typed IPC layer is now real across workspace, file, Git, terminal, workflow, recovery, and model domains; Agent Runtime IPC is the next integration slice
 - [x] Permission broker (§16) — `ai-safety/PermissionBroker.ts`; real evaluate/grant/revoke/once-consumption, scoped (once/session/workspace/persistent)
-- [ ] ND-013 AI Command Canvas — **not built, now unblocked**: Epic 9 provides real completion and Epic 8 provides persisted planning, but no inspectable ActionPlan conversion/review screen connects that output to ActionQueue yet
+- [x] ND-013 AI Command Canvas — **real, scoped**: `/ai` uses the real Model Router completion bridge for a strict-JSON plan preview, validates the response with Zod, lets the user remove preview steps for review clarity, and hands the raw intent to a persisted zero-tool "Quick Command" agent run. It does not execute the preview as a deterministic step script; per-step model assignment, hard file/network enforcement, test-success gates, branch creation, budgets, and real tool grants remain deferred.
 - [x] ND-014 AI Execution Timeline — `features/ai-canvas/ExecutionTimeline.tsx`; real lifecycle tracking (queued/running/passed/failed/cancelled) of actually-submitted actions, with real cancel
 - [x] ND-015 Approval Queue — `features/approvals/ApprovalQueue.tsx`; real pending `HarnessActionRecord`s, approve/deny wired to the real broker+queue
 - [x] ND-054 Emergency Stop — `features/ai-canvas/EmergencyStopOverlay.tsx`; real toggle on `emergency.stop`, pauses the queue and cancels pending actions. Terminal and Agent Runtime core now exist, but safe-process classification and cross-runtime emergency termination are not connected

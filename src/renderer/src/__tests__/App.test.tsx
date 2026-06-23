@@ -34,6 +34,9 @@ describe('App', () => {
 
     await user.click(screen.getByRole('link', { name: /AI/i }))
 
-    expect(screen.getByText('AI Command Canvas')).toBeInTheDocument()
+    // AICommandCanvas (ND-013) is real now and requires an active workspace,
+    // same as every other workspace-scoped screen — with none active here,
+    // its honest empty state is what should render, not a fabricated title.
+    expect(screen.getByText('No active workspace')).toBeInTheDocument()
   })
 })

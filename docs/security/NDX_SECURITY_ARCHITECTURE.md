@@ -88,14 +88,14 @@ Matches mega-prompt §5.1:
 
 ## 8. Outstanding items for later epics
 
-| Item                                                                         | Owning epic              | Why deferred                                                                               |
-| ---------------------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------ |
-| Permission broker, audit log, destructive-action review pipeline             | Epic 4 (done)            | Real as of Epic 4 — `ActionQueue`/`PermissionBroker`/`AuditLog`, demonstrated end to end   |
-| Typed, Zod-validated IPC contracts replacing the generic preload wrapper     | Epic 5 (done)            | Real as of Epic 5 — `shared/contracts/`, `src/main/ipc/`, `window.ndx`                     |
-| Destructive file operations (write/copy/move/rename/delete/compress/extract) | Epic 11                  | Need the Recovery Service's checkpoint/undo path before any destructive op can ship safely |
+| Item                                                                         | Owning epic              | Why deferred                                                                                                                              |
+| ---------------------------------------------------------------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Permission broker, audit log, destructive-action review pipeline             | Epic 4 (done)            | Real as of Epic 4 — `ActionQueue`/`PermissionBroker`/`AuditLog`, demonstrated end to end                                                  |
+| Typed, Zod-validated IPC contracts replacing the generic preload wrapper     | Epic 5 (done)            | Real as of Epic 5 — `shared/contracts/`, `src/main/ipc/`, `window.ndx`                                                                    |
+| Destructive file operations (write/copy/move/rename/delete/compress/extract) | Epic 11                  | Need the Recovery Service's checkpoint/undo path before any destructive op can ship safely                                                |
 | Secrets vault / encrypted storage                                            | Epic 10 (identity) / X10 | Real for model provider keys and Remote Systems SSH password/passphrase values via `safeStorage`; broader identity vault remains deferred |
-| `applyNavigationPolicy` integration test against a live `BrowserWindow`      | Epic 12 security pass    | Requires Electron test harness beyond current unit-test scope                              |
-| Vitest dependency chain vulnerabilities                                      | Epic 12 security pass    | Dev-only exposure, breaking upgrade out of scope for baseline                              |
+| `applyNavigationPolicy` integration test against a live `BrowserWindow`      | Epic 12 security pass    | Requires Electron test harness beyond current unit-test scope                                                                             |
+| Vitest dependency chain vulnerabilities                                      | Epic 12 security pass    | Dev-only exposure, breaking upgrade out of scope for baseline                                                                             |
 
 ## 10. Terminal security (Epic 6 partial)
 
@@ -178,6 +178,13 @@ Matches mega-prompt §5.1:
 - Run pause/resume is deliberately bounded: it prevents the next tool submission and never claims to interrupt an already-running tool. A regression test covers the race where resume previously could overwrite the runtime's final `completed` state.
 - Child-agent spawning is explicitly policy-bounded. Persisted agents default to `{ allowChildAgents: false, maxChildrenPerRun: 0, maxDepth: 0 }`; old records are normalized on read, the model prompt declares the policy, and model-proposed `childAgents` fail closed when policy forbids them. No child process/agent is spawned by this slice.
 
+## 17b. AI Command Canvas security (Epic 4 addendum)
+
+- `/ai` sends only the user's typed intent to the Model Router for a plan preview; it does not read workspace files, browser content, terminal output, or other untrusted context into the prompt in this slice.
+- The model response is treated as untrusted data. `planPreview.ts` strips optional markdown fences, parses JSON, and validates the shape with Zod before rendering it. Invalid JSON or wrong-shaped output becomes a user-visible error, not executable state.
+- The preview is not an executor. Removing/reviewing preview steps affects the review UI only; "Approve & run" starts a real Agent Runtime run from the original intent.
+- The auto-created "Quick Command" agent is intentionally zero-tool by default: `toolAllowlist: []`, `permissionCeiling: []`, `maxToolCalls: 0`, and child agents disabled. This makes the first ND-013 path safe and inspectable without granting destructive capability by implication. Any future tool-enabled canvas path must continue through the existing Agent Runtime + ActionQueue permission bridge, not a separate executor.
+
 ## 18. Controller Settings security (Epic 11 addendum)
 
 - `registerControllerSettingsHandlers.ts`'s `set` handler validates its payload with `controllerSettingsSchema` like every other surface — a malformed or out-of-enum `hapticsIntensity` value is rejected before it ever reaches `ControllerSettingsStore`.
@@ -204,6 +211,7 @@ Matches mega-prompt §5.1:
 - Renderer access goes through Zod-validated IPC only: `remoteHost.*` and `remoteSession.*`. No renderer can select an arbitrary SSH executable, bypass host identity verification, or read a stored secret.
 - Remote session output is bounded to 1 MiB per session, input writes are schema-limited to 64 KiB, and running sessions are capped. Session data/exit events are validated again in preload before renderer listeners receive them.
 - ND-040/ND-041 UI is not built yet. Any future host-management screen must review secret storage, host-key trust state, and destructive session actions explicitly rather than hiding them behind generic buttons.
+
 ## 22. Browser System security (Epic 10)
 
 - **URL scheme allowlisting**: `browserUrlPolicy.ts`'s `isAllowedBrowserUrl()` only permits `http`/`https`. It gates three independent enforcement points in `BrowserSessionService`: the IPC handler before a tab is ever created, the `will-navigate` listener on every navigation attempt inside an already-open tab, and the `setWindowOpenHandler` for any window-open attempt (e.g. `target="_blank"` links or `window.open()`). A page cannot navigate itself or trigger a popup to `javascript:`, `file:`, `data:`, or any other disallowed scheme.
@@ -214,7 +222,7 @@ Matches mega-prompt §5.1:
 
 ## 23. Preload bridge build hardening (real bug found and fixed)
 
-A real bug surfaced after Epic 10 (see the implementation ledger's "A real, production-relevant bug found and fixed" entry for the full diagnosis): the main shell's own preload script (`src/preload/index.ts`) failed to initialize on every build, because `electron-vite` externalizes npm dependencies by default and the preload runs **sandboxed** — sandboxed preloads cannot `require()` an npm package at runtime, only a small allowlist of Node built-ins. A bare `require("zod")` in the bundled preload threw immediately, aborting the script before `contextBridge.exposeInMainWorld('ndx', ndx)` ever ran. This is security-relevant because it's a *fail-safe* failure mode, not a fail-open one — with no bridge, the renderer has zero IPC access of any kind, so no permission/validation boundary was ever actually bypassed; every feature simply showed its real "bridge unavailable" empty state. The risk was availability, not a security hole, but it's recorded here because the fix changes a security-relevant build setting (`electron.vite.config.ts`'s preload `externalizeDeps` config) that future contributors need to preserve.
+A real bug surfaced after Epic 10 (see the implementation ledger's "A real, production-relevant bug found and fixed" entry for the full diagnosis): the main shell's own preload script (`src/preload/index.ts`) failed to initialize on every build, because `electron-vite` externalizes npm dependencies by default and the preload runs **sandboxed** — sandboxed preloads cannot `require()` an npm package at runtime, only a small allowlist of Node built-ins. A bare `require("zod")` in the bundled preload threw immediately, aborting the script before `contextBridge.exposeInMainWorld('ndx', ndx)` ever ran. This is security-relevant because it's a _fail-safe_ failure mode, not a fail-open one — with no bridge, the renderer has zero IPC access of any kind, so no permission/validation boundary was ever actually bypassed; every feature simply showed its real "bridge unavailable" empty state. The risk was availability, not a security hole, but it's recorded here because the fix changes a security-relevant build setting (`electron.vite.config.ts`'s preload `externalizeDeps` config) that future contributors need to preserve.
 
 - **Fix**: `preload.build.externalizeDeps.exclude: ['zod']` in `electron.vite.config.ts`, forcing the preload bundle to inline `zod` rather than leave it as an unresolvable `require()`.
 - **Regression guard**: `e2e/app.spec.ts` asserts `typeof window.ndx === 'object'` as its first check, before any UI assertion — verified to genuinely fail without the fix (reverted the config, re-ran the test, confirmed the failure, restored the fix).

@@ -51,5 +51,10 @@ test('boots and renders the baseline shell', async () => {
   })
   await expect(window).toHaveURL(/remote/)
   await expect(window.getByText('No remote hosts')).toBeVisible()
+  await window.evaluate(() => {
+    window.location.hash = '/ai'
+  })
+  await expect(window).toHaveURL(/\/ai/)
+  await expect(window.getByText('No active workspace')).toBeVisible()
   await app.close()
 })
