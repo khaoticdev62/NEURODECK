@@ -3,17 +3,25 @@ import {
   createWorkspaceRequestSchema,
   IPC_CHANNELS,
   ndxError,
+  workspaceDiscoveryOptionsSchema,
   workspaceIdRequestSchema,
+  type DiscoveredWorkspace,
   type NdxResult,
   type Workspace
 } from '@shared/contracts'
+import type { GitService } from '../../core/git/GitService'
+import type { RemoteHostStore } from '../../core/remote/RemoteHostStore'
+import { WorkspaceDiscoveryService } from '../../core/workspaces/WorkspaceDiscoveryService'
 import type { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
 
 /** Real handlers backed by `WorkspaceStore` — every payload is Zod-validated before it touches the store (mega-prompt §14.1). */
 export function registerWorkspaceHandlers(
   store: WorkspaceStore,
-  getWindow: () => BrowserWindow | null
+  getWindow: () => BrowserWindow | null,
+  gitService: GitService,
+  remoteHostStore: RemoteHostStore
 ): void {
+  const discoveryService = new WorkspaceDiscoveryService(gitService, remoteHostStore)
   ipcMain.handle(IPC_CHANNELS.workspaceList, async (): Promise<NdxResult<Workspace[]>> => {
     try {
       return { ok: true, data: await store.list() }
@@ -69,6 +77,25 @@ export function registerWorkspaceHandlers(
     }
     return { ok: true, data: result.filePaths[0] }
   })
+
+  ipcMain.handle(
+    IPC_CHANNELS.workspaceDiscover,
+    async (_event, payload: unknown): Promise<NdxResult<DiscoveredWorkspace[]>> => {
+      const parsed = workspaceDiscoveryOptionsSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'Discovery options are invalid.')
+        }
+      }
+      try {
+        const data = await discoveryService.discover(parsed.data)
+        return { ok: true, data }
+      } catch (error) {
+        return { ok: false, error: toSystemError(error) }
+      }
+    }
+  )
 }
 
 function toSystemError(error: unknown): ReturnType<typeof ndxError> {

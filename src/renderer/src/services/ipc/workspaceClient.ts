@@ -1,4 +1,10 @@
-import type { CreateWorkspaceRequest, NdxResult, Workspace } from '@shared/contracts'
+import type {
+  CreateWorkspaceRequest,
+  DiscoveredWorkspace,
+  NdxResult,
+  Workspace,
+  WorkspaceDiscoveryOptions
+} from '@shared/contracts'
 import { bridgeUnavailableError, getNdxBridge } from './ndxBridge'
 
 export async function listWorkspaces(): Promise<NdxResult<Workspace[]>> {
@@ -25,4 +31,12 @@ export async function pickWorkspaceFolder(): Promise<NdxResult<string | null>> {
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.workspaces.pickFolder()
+}
+
+export async function discoverWorkspaces(
+  options: WorkspaceDiscoveryOptions = {}
+): Promise<NdxResult<DiscoveredWorkspace[]>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.workspaces.discover(options)
 }

@@ -9,7 +9,7 @@ export const reversibilitySchema = z.enum([
 ])
 export type Reversibility = z.infer<typeof reversibilitySchema>
 
-export const recoveryCheckpointKindSchema = z.enum(['file-write'])
+export const recoveryCheckpointKindSchema = z.enum(['file-write', 'git-restore'])
 export type RecoveryCheckpointKind = z.infer<typeof recoveryCheckpointKindSchema>
 
 export const recoveryCheckpointSchema = z.object({

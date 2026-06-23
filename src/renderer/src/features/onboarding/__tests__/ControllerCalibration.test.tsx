@@ -4,12 +4,13 @@ import { Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { renderWithProviders } from '../../../__tests__/testUtils'
 import { ControllerCalibration } from '../ControllerCalibration'
+import { GuidedControllerTutorial } from '../GuidedControllerTutorial'
 
 function renderCalibration(): ReturnType<typeof renderWithProviders> {
   return renderWithProviders(
     <Routes>
       <Route path="/onboarding/calibration" element={<ControllerCalibration />} />
-      <Route path="/" element={<p>Home placeholder</p>} />
+      <Route path="/onboarding/tutorial" element={<GuidedControllerTutorial />} />
     </Routes>,
     { initialEntries: ['/onboarding/calibration'] }
   )
@@ -43,13 +44,13 @@ describe('ControllerCalibration', () => {
     expect(await screen.findByText('No controller with haptics detected')).toBeInTheDocument()
   })
 
-  it('navigates home when Done is activated', async () => {
+  it('navigates to the guided tutorial when Done is activated', async () => {
     const user = userEvent.setup()
     renderCalibration()
 
     await user.click(screen.getByRole('button', { name: 'Done' }))
 
-    expect(screen.getByText('Home placeholder')).toBeInTheDocument()
+    expect(screen.getByText('Controller Tutorial')).toBeInTheDocument()
   })
 
   it('resetting requires holding to confirm, not a single click', async () => {

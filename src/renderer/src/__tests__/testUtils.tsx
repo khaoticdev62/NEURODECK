@@ -1,6 +1,6 @@
 import { render, type RenderResult } from '@testing-library/react'
 import type { ReactElement } from 'react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, type InitialEntry } from 'react-router-dom'
 import { AiSafetyProvider } from '../ai-safety/AiSafetyProvider'
 import { FocusEngineProvider } from '../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../controller/testing/testAdapter'
@@ -11,7 +11,7 @@ import { WorkflowRunnerProvider } from '../workflows/WorkflowRunnerProvider'
 /** Shared by feature-screen tests that need a router + a real (but hardware-free) focus engine + the AI safety pipeline + workspace state + workflow runner. */
 export function renderWithProviders(
   element: ReactElement,
-  options: { initialEntries?: string[] } = {}
+  options: { initialEntries?: InitialEntry[] } = {}
 ): RenderResult {
   return render(
     <ToastProvider>

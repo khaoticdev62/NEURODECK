@@ -227,3 +227,11 @@ A real bug surfaced after Epic 10 (see the implementation ledger's "A real, prod
 - **Fix**: `preload.build.externalizeDeps.exclude: ['zod']` in `electron.vite.config.ts`, forcing the preload bundle to inline `zod` rather than leave it as an unresolvable `require()`.
 - **Regression guard**: `e2e/app.spec.ts` asserts `typeof window.ndx === 'object'` as its first check, before any UI assertion — verified to genuinely fail without the fix (reverted the config, re-ran the test, confirmed the failure, restored the fix).
 - **Going forward**: any new npm dependency imported into `src/preload/index.ts` or anything it transitively imports (all of `shared/contracts/`) must be added to the same `exclude` list. This is the one place in the codebase where "it built successfully" does not mean "it works" — the failure is silent at the React-rendering layer and only visible in the renderer's own console.
+
+
+## 24. Git destructive operations security (Epic 6 addendum)
+
+- **Discard never bypasses Recovery.** `registerGitHandlers.ts`'s `gitRestore` channel reads each path's current working-tree content and calls `RecoveryService.recordCheckpoint()` (kind: `git-restore`) before calling `GitService.restore()` — there is no code path from the renderer to a real discard that skips the checkpoint, mirroring `fileWrite`'s orchestration exactly.
+- **Force push fails closed, never blind.** `GitService.forcePush()` uses `git push --force-with-lease`, not raw `--force` — it refuses to overwrite the remote branch if it moved since the last fetch, rather than silently clobbering a concurrent push from someone else. Verified with a real test: two clones push to the same bare remote, and the stale clone's force push is rejected.
+- **Force branch delete requires an explicit second confirmation distinct from the safe path.** `deleteBranch()`'s safe form (`-d`) is what the UI calls first; `git` itself refuses if the branch has unmerged commits, and the UI surfaces that rejection as a separate force-delete (`-D`) confirmation naming the real consequence (losing commits that exist only on that branch) rather than silently escalating.
+- **All three destructive Git actions gate behind their own `ConfirmationDialog`**, separate from the existing commit/push review dialogs, each repeating the exact file path, branch name, or remote/branch pair affected.

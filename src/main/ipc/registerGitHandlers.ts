@@ -2,9 +2,13 @@ import { ipcMain } from 'electron'
 import {
   gitCheckoutRequestSchema,
   gitCommitRequestSchema,
+  gitCreateBranchRequestSchema,
+  gitDeleteBranchRequestSchema,
   gitDiffRequestSchema,
   gitFetchRequestSchema,
+  gitForcePushRequestSchema,
   gitRemoteOperationRequestSchema,
+  gitRestorePathsRequestSchema,
   gitStagePathsRequestSchema,
   gitStashPopRequestSchema,
   gitStashSaveRequestSchema,
@@ -19,11 +23,26 @@ import {
   type GitStatus,
   type NdxResult
 } from '@shared/contracts'
+import type { FileService } from '../../core/files/FileService'
 import type { GitService } from '../../core/git/GitService'
+import type { RecoveryService } from '../../core/recovery/RecoveryService'
 import type { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
 
-/** Real handlers backed by `GitService`, scoped to a workspace's root the same way file handlers are — never an arbitrary path from the renderer. */
-export function registerGitHandlers(gitService: GitService, workspaceStore: WorkspaceStore): void {
+/**
+ * Real handlers backed by `GitService`, scoped to a workspace's root the
+ * same way file handlers are — never an arbitrary path from the renderer.
+ * `gitRestore` orchestrates `FileService` + `RecoveryService` directly here
+ * (the same pattern `registerFileHandlers.ts`'s `fileWrite` uses) so a
+ * recovery checkpoint of each path's current content is always recorded
+ * before the discard runs — there is no code path to `GitService.restore()`
+ * that skips it.
+ */
+export function registerGitHandlers(
+  gitService: GitService,
+  workspaceStore: WorkspaceStore,
+  fileService: FileService,
+  recoveryService: RecoveryService
+): void {
   async function resolveRoot(workspaceId: string): Promise<string | null> {
     const workspace = await workspaceStore.get(workspaceId)
     return workspace?.rootPath ?? null
@@ -257,6 +276,81 @@ export function registerGitHandlers(gitService: GitService, workspaceStore: Work
       if (!root) return workspaceNotFound()
       try {
         await gitService.stashPop(root, parsed.data.index)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitRestore,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitRestorePathsRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const workspace = await workspaceStore.get(parsed.data.workspaceId)
+      if (!workspace) return workspaceNotFound()
+      try {
+        for (const relativePath of parsed.data.paths) {
+          const previousContent = await fileService.readIfExists(workspace.rootPath, relativePath)
+          await recoveryService.recordCheckpoint(
+            workspace.id,
+            relativePath,
+            previousContent,
+            'Discarded uncommitted Git changes',
+            'git-restore',
+            'manually-recoverable'
+          )
+        }
+        await gitService.restore(workspace.rootPath, parsed.data.paths)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitBranchCreate,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitCreateBranchRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.createBranch(root, parsed.data.name, parsed.data.fromRef)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitBranchDelete,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitDeleteBranchRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.deleteBranch(root, parsed.data.name, parsed.data.force)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitForcePush,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitForcePushRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.forcePush(root, parsed.data.remote, parsed.data.branch)
         return { ok: true, data: null }
       } catch (error) {
         return { ok: false, error: toGitError(error) }

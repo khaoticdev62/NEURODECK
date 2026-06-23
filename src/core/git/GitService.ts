@@ -21,10 +21,14 @@ const UNMERGED_CODES = new Set(['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU'])
  * Real Git operations via the system `git` binary (mega-prompt §22) — never
  * `exec`/shell strings; every call is `execFile('git', [...argsArray])`, so
  * arguments (commit messages, branch names, paths) can never be interpreted
- * as shell syntax. Destructive/history-rewriting operations (force push,
- * reset --hard, branch delete) are intentionally not implemented yet —
- * "discard requires recovery support or explicit irreversibility warning"
- * (§22) and Recovery Service is Epic 11.
+ * as shell syntax. Restore/discard, branch delete, and force push were
+ * previously deferred pending Recovery Service (Epic 11) and a real
+ * irreversibility-warning UI — both now exist, so this slice implements
+ * them: `restore()` itself does not checkpoint (that needs the file's
+ * pre-discard content, which only the IPC handler can read alongside
+ * `RecoveryService` — see `registerGitHandlers.ts`), and `forcePush()` uses
+ * `--force-with-lease`, never raw `--force`, so it fails closed instead of
+ * silently clobbering a concurrent push from someone else.
  */
 export class GitService {
   private async run(root: string, args: string[]): Promise<string> {
@@ -233,5 +237,36 @@ export class GitService {
 
   async stashPop(root: string, index: number): Promise<void> {
     await this.run(root, ['stash', 'pop', `stash@{${index}}`])
+  }
+
+  /**
+   * Discards real, uncommitted changes to tracked files back to their
+   * `HEAD` content. Only tracked changes — untracked ('??') files have no
+   * committed content to restore to, so `git restore` correctly rejects
+   * them; deleting an untracked file is a different, undesigned operation
+   * this method does not attempt. Callers (see `registerGitHandlers.ts`)
+   * must record a recovery checkpoint of each path's current content
+   * before calling this — `GitService` itself has no `RecoveryService`
+   * dependency, by design (mirrors `registerFileHandlers.ts`'s `fileWrite`
+   * orchestration rather than coupling the two services together).
+   */
+  async restore(root: string, paths: string[]): Promise<void> {
+    await this.run(root, ['restore', '--', ...paths])
+  }
+
+  async createBranch(root: string, name: string, fromRef?: string): Promise<void> {
+    const args = fromRef ? ['branch', name, fromRef] : ['branch', name]
+    await this.run(root, args)
+  }
+
+  /** `-d` (safe) refuses to delete a branch with unmerged commits; `-D` (force) deletes regardless — callers must surface that distinction to the user, not silently force. */
+  async deleteBranch(root: string, name: string, force: boolean): Promise<void> {
+    await this.run(root, ['branch', force ? '-D' : '-d', name])
+  }
+
+  /** `--force-with-lease` instead of `--force` — refuses to overwrite the remote branch if it moved since our last fetch, rather than blindly clobbering history someone else may have pushed in the meantime. */
+  async forcePush(root: string, remote: string, branch: string): Promise<void> {
+    await this.assertKnownRemote(root, remote)
+    await this.run(root, ['push', '--force-with-lease', remote, branch])
   }
 }

@@ -14,7 +14,10 @@ import { GitDiffViewer } from '../git/GitDiffViewer'
 import {
   checkoutGitBranch,
   commitGit,
+  createGitBranch,
+  deleteGitBranch,
   fetchGit,
+  forcePushGit,
   getGitDiff,
   getGitLog,
   getGitStatus,
@@ -24,6 +27,7 @@ import {
   popGitStash,
   pullGit,
   pushGit,
+  restoreGitPaths,
   stageGitPaths,
   stashSaveGit,
   unstageGitPaths
@@ -35,12 +39,16 @@ export interface WorkspaceGitTabProps {
 
 /**
  * Real Git tab (mega-prompt §22): status/stage/unstage/commit/branch-list/
- * checkout/log/fetch/pull/push/stash. Push always opens its own review
- * dialog, separate from the commit review — "commit and push are separate
- * approvals" (§22). Restore/discard/conflict-resolution UI and force push
- * remain out of scope: discard needs Epic 11's Recovery Service, and force
- * push is flagged critical risk in the spec with no real review surface
- * built for it yet.
+ * checkout/log/fetch/pull/push/stash/restore/branch-create/branch-delete/
+ * force-push. Push always opens its own review dialog, separate from the
+ * commit review — "commit and push are separate approvals" (§22). Discard
+ * (`restore`) goes through `registerGitHandlers.ts`'s `gitRestore` channel,
+ * which records a real Recovery checkpoint of each file's current content
+ * before discarding — the blocking condition for implementing discard at
+ * all. Force push uses `--force-with-lease` (fails closed on a moved
+ * remote ref, never blind `--force`) and requires its own separate,
+ * more severe confirmation that repeats the exact branch and remote name.
+ * Conflict-resolution UI remains out of scope.
  */
 export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JSX.Element {
   const [status, setStatus] = useState<GitStatus | null>(null)
@@ -55,6 +63,13 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
   const [diffLoading, setDiffLoading] = useState(false)
   const [commitReviewOpen, setCommitReviewOpen] = useState(false)
   const [pushReviewOpen, setPushReviewOpen] = useState(false)
+  const [forcePushReviewOpen, setForcePushReviewOpen] = useState(false)
+  const [discardReview, setDiscardReview] = useState<GitFileChange | null>(null)
+  const [deleteBranchReview, setDeleteBranchReview] = useState<{
+    name: string
+    force: boolean
+  } | null>(null)
+  const [newBranchName, setNewBranchName] = useState('')
   const diffRequestId = useRef(0)
 
   const refresh = useCallback(async () => {
@@ -171,6 +186,56 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
     await refresh()
   }
 
+  async function performForcePush(remote: string, branch: string): Promise<void> {
+    const result = await forcePushGit({ workspaceId, remote, branch })
+    setForcePushReviewOpen(false)
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
+    await refresh()
+  }
+
+  async function performDiscard(change: GitFileChange): Promise<void> {
+    const result = await restoreGitPaths({ workspaceId, paths: [change.path] })
+    setDiscardReview(null)
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    if (selectedChange?.path === change.path) {
+      setSelectedChange(null)
+      setDiff(null)
+    }
+    setError(null)
+    await refresh()
+  }
+
+  async function handleCreateBranch(): Promise<void> {
+    const name = newBranchName.trim()
+    if (!name) return
+    const result = await createGitBranch({ workspaceId, name })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
+    setNewBranchName('')
+    await refresh()
+  }
+
+  async function performDeleteBranch(name: string, force: boolean): Promise<void> {
+    const result = await deleteGitBranch({ workspaceId, name, force })
+    setDeleteBranchReview(null)
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
+    await refresh()
+  }
+
   async function handleStashSave(): Promise<void> {
     const result = await stashSaveGit({ workspaceId })
     if (!result.ok) {
@@ -278,6 +343,7 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
                   selected={selectedChange?.path === change.path && !selectedChange.staged}
                   onPreview={() => void previewChange(change)}
                   onToggle={() => void toggleStage(change)}
+                  onDiscard={change.status === '??' ? undefined : () => setDiscardReview(change)}
                 />
               ))}
             </ul>
@@ -330,6 +396,13 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
                 >
                   Push
                 </ControllerButton>
+                <ControllerButton
+                  variant="destructive"
+                  disabled={!status.branch}
+                  onClick={() => setForcePushReviewOpen(true)}
+                >
+                  Force push
+                </ControllerButton>
               </div>
             </div>
           )}
@@ -337,20 +410,43 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
 
         <section>
           <p className="mb-1 text-meta font-semibold text-text-primary">Branches</p>
+          <div className="mb-2 flex gap-2">
+            <input
+              value={newBranchName}
+              onChange={(event) => setNewBranchName(event.target.value)}
+              placeholder="New branch name"
+              className="min-w-0 flex-1 rounded-md border border-border bg-canvas p-1.5 text-meta text-text-primary"
+            />
+            <ControllerButton
+              variant="secondary"
+              disabled={!newBranchName.trim()}
+              onClick={() => void handleCreateBranch()}
+            >
+              Create
+            </ControllerButton>
+          </div>
           <ul className="flex flex-col gap-1">
             {branches.map((branch) => (
-              <li key={branch.name} className="flex items-center justify-between">
+              <li key={branch.name} className="flex items-center justify-between gap-1">
                 <span className={branch.current ? 'text-text-primary' : 'text-text-secondary'}>
                   {branch.current ? '● ' : ''}
                   {branch.name}
                 </span>
                 {!branch.current && (
-                  <ControllerButton
-                    variant="ghost"
-                    onClick={() => void handleCheckout(branch.name)}
-                  >
-                    Checkout
-                  </ControllerButton>
+                  <div className="flex gap-1">
+                    <ControllerButton
+                      variant="ghost"
+                      onClick={() => void handleCheckout(branch.name)}
+                    >
+                      Checkout
+                    </ControllerButton>
+                    <ControllerButton
+                      variant="destructive"
+                      onClick={() => setDeleteBranchReview({ name: branch.name, force: false })}
+                    >
+                      Delete
+                    </ControllerButton>
+                  </div>
                 )}
               </li>
             ))}
@@ -429,6 +525,47 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
         }}
         onCancel={() => setPushReviewOpen(false)}
       />
+      <ConfirmationDialog
+        open={forcePushReviewOpen}
+        title="Review force push"
+        action={`Force-push ${status.branch ?? 'this branch'} to ${remotes[0]?.name ?? 'the remote'}`}
+        scope={remotes[0]?.pushUrl}
+        consequence={`This can overwrite history on ${remotes[0]?.name ?? 'the remote'}'s ${status.branch ?? 'this branch'} for anyone else using it. Uses --force-with-lease, so it fails instead of overwriting if the remote moved since your last fetch — it is not a guarantee against all data loss.`}
+        confirmLabel="Force push"
+        onConfirm={() => {
+          if (status.branch && remotes[0]) void performForcePush(remotes[0].name, status.branch)
+        }}
+        onCancel={() => setForcePushReviewOpen(false)}
+      />
+      <ConfirmationDialog
+        open={discardReview !== null}
+        title="Discard changes"
+        action={`Discard uncommitted changes to ${discardReview?.path ?? 'this file'}`}
+        scope={status.branch ?? undefined}
+        consequence="This permanently loses the uncommitted edits in your working tree. A recovery checkpoint of the current content is recorded first, so it can still be restored from Recovery Timeline."
+        confirmLabel="Discard"
+        onConfirm={() => {
+          if (discardReview) void performDiscard(discardReview)
+        }}
+        onCancel={() => setDiscardReview(null)}
+      />
+      <ConfirmationDialog
+        open={deleteBranchReview !== null}
+        title="Delete branch"
+        action={`Delete local branch ${deleteBranchReview?.name ?? ''}`}
+        consequence={
+          deleteBranchReview?.force
+            ? 'This branch has unmerged commits — forcing deletion permanently loses any commits that exist only on it.'
+            : 'This only succeeds if the branch is fully merged elsewhere; otherwise it is rejected rather than silently forced.'
+        }
+        confirmLabel={deleteBranchReview?.force ? 'Force delete' : 'Delete'}
+        onConfirm={() => {
+          if (deleteBranchReview) {
+            void performDeleteBranch(deleteBranchReview.name, deleteBranchReview.force)
+          }
+        }}
+        onCancel={() => setDeleteBranchReview(null)}
+      />
     </div>
   )
 }
@@ -437,15 +574,17 @@ function ChangeRow({
   change,
   selected,
   onPreview,
-  onToggle
+  onToggle,
+  onDiscard
 }: {
   change: GitFileChange
   selected: boolean
   onPreview: () => void
   onToggle: () => void
+  onDiscard?: () => void
 }): React.JSX.Element {
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 text-meta text-text-primary">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1 text-meta text-text-primary">
       <ControllerButton
         variant={selected ? 'secondary' : 'ghost'}
         className="min-w-0 justify-start px-2 font-mono text-meta"
@@ -458,6 +597,11 @@ function ChangeRow({
       <ControllerButton variant="ghost" onClick={onToggle}>
         {change.staged ? 'Unstage' : 'Stage'}
       </ControllerButton>
+      {onDiscard && (
+        <ControllerButton variant="destructive" onClick={onDiscard}>
+          Discard
+        </ControllerButton>
+      )}
     </li>
   )
 }

@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { BottomControllerRail } from '../../components/navigation/BottomControllerRail'
 import { ContextPanel, type ContextPanelItem } from '../../components/navigation/ContextPanel'
 import { NavigationRail } from '../../components/navigation/NavigationRail'
@@ -16,6 +16,7 @@ import { AgentToolExecutionBridge } from '../../features/agents/AgentToolExecuti
 import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwitcherOverlay'
 import { useDisplayMode } from '../../state/useDisplayMode'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
+import { useEffect } from 'react'
 
 export interface ShellLayoutProps {
   systemRailStatus?: SystemRailStatus
@@ -39,9 +40,29 @@ export function ShellLayout({
   systemRailStatus = UNAVAILABLE_SYSTEM_RAIL_STATUS,
   contextItem
 }: ShellLayoutProps): React.JSX.Element {
+  const navigate = useNavigate()
   const { baseMode } = useDisplayMode()
   const { reduceMotion, highContrast, textScale } = useDisplaySettings()
   const collapsesRails = baseMode === 'focus' || baseMode === 'split'
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent): void {
+      if (event.key !== '/' || event.repeat) return
+      const target = event.target
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return
+      }
+      event.preventDefault()
+      navigate('/search')
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [navigate])
 
   return (
     <div

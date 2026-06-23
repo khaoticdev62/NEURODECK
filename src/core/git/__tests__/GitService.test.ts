@@ -159,4 +159,54 @@ describe('GitService', () => {
     expect(log[1].message).toBe('first')
     expect(log[0].shortHash).toHaveLength(7)
   })
+
+  it('restores a real tracked file back to its HEAD content, discarding the uncommitted edit', async () => {
+    await writeFile(join(dir, 'tracked.txt'), 'committed content')
+    await git(['add', '.'])
+    await git(['commit', '-m', 'initial'])
+    await writeFile(join(dir, 'tracked.txt'), 'uncommitted edit')
+
+    await service.restore(dir, ['tracked.txt'])
+
+    const status = await service.status(dir)
+    expect(status.changes).toEqual([])
+  })
+
+  it('rejects restoring an untracked file (nothing committed to restore to)', async () => {
+    await writeFile(join(dir, 'readme.md'), '# hi')
+    await git(['add', '.'])
+    await git(['commit', '-m', 'initial'])
+    await writeFile(join(dir, 'new-untracked.txt'), 'never committed')
+
+    await expect(service.restore(dir, ['new-untracked.txt'])).rejects.toThrow()
+  })
+
+  it('creates a real new branch without switching to it', async () => {
+    await writeFile(join(dir, 'readme.md'), '# hi')
+    await git(['add', '.'])
+    await git(['commit', '-m', 'initial'])
+
+    await service.createBranch(dir, 'feature/new-thing')
+
+    const branches = await service.branches(dir)
+    expect(branches.map((b) => b.name)).toContain('feature/new-thing')
+    expect(branches.find((b) => b.name === 'feature/new-thing')?.current).toBe(false)
+  })
+
+  it('safely refuses to delete a branch with unmerged commits, but force deletes it when asked', async () => {
+    await writeFile(join(dir, 'readme.md'), '# hi')
+    await git(['add', '.'])
+    await git(['commit', '-m', 'initial'])
+    await git(['checkout', '-b', 'feature/doomed'])
+    await writeFile(join(dir, 'only-on-branch.txt'), 'unmerged')
+    await git(['add', '.'])
+    await git(['commit', '-m', 'unmerged commit'])
+    await git(['checkout', 'main'])
+
+    await expect(service.deleteBranch(dir, 'feature/doomed', false)).rejects.toThrow()
+    expect((await service.branches(dir)).map((b) => b.name)).toContain('feature/doomed')
+
+    await service.deleteBranch(dir, 'feature/doomed', true)
+    expect((await service.branches(dir)).map((b) => b.name)).not.toContain('feature/doomed')
+  })
 })

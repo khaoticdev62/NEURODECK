@@ -33,7 +33,7 @@ export function ControllerCalibration(): React.JSX.Element {
     groupId: 'calibration',
     priority: 1,
     initialFocus: true,
-    onActivate: () => navigate('/')
+    onActivate: () => navigate('/onboarding/tutorial')
   })
 
   function applyIntensity(level: HapticIntensity): void {
@@ -121,7 +121,11 @@ export function ControllerCalibration(): React.JSX.Element {
         <ControllerButton variant="ghost" onClick={() => setConfirmingReset(true)}>
           Reset calibration
         </ControllerButton>
-        <ControllerButton ref={doneRef} variant="primary" onClick={() => navigate('/')}>
+        <ControllerButton
+          ref={doneRef}
+          variant="primary"
+          onClick={() => navigate('/onboarding/tutorial')}
+        >
           Done
         </ControllerButton>
       </div>

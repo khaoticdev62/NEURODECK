@@ -27,7 +27,8 @@ const ndx: NdxBridge = {
     list: () => ipcRenderer.invoke(IPC_CHANNELS.workspaceList),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.workspaceCreate, request),
     remove: (id) => ipcRenderer.invoke(IPC_CHANNELS.workspaceRemove, { id }),
-    pickFolder: () => ipcRenderer.invoke(IPC_CHANNELS.workspacePickFolder)
+    pickFolder: () => ipcRenderer.invoke(IPC_CHANNELS.workspacePickFolder),
+    discover: (options) => ipcRenderer.invoke(IPC_CHANNELS.workspaceDiscover, options)
   },
   files: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileList, request),
@@ -55,7 +56,11 @@ const ndx: NdxBridge = {
     push: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitPush, request),
     stashSave: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStashSave, request),
     stashList: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStashList, request),
-    stashPop: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStashPop, request)
+    stashPop: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStashPop, request),
+    restore: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitRestore, request),
+    createBranch: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitBranchCreate, request),
+    deleteBranch: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitBranchDelete, request),
+    forcePush: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitForcePush, request)
   },
   terminal: {
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalCreate, request),

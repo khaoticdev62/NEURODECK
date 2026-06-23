@@ -23,6 +23,7 @@ export type PermissionCapability =
   | 'external.send'
   | 'browser.download'
   | 'browser.upload'
+  | 'tutorial.acknowledge'
 
 /** Permission scope (mega-prompt §16.1). "Current task/workflow run" are omitted — no task or workflow runtime exists yet (Epic 8). */
 export type PermissionScope = 'once' | 'session' | 'workspace' | 'persistent'

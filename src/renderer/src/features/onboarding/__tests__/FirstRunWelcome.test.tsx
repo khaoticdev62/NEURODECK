@@ -4,13 +4,13 @@ import { Route, Routes } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 import { renderWithProviders } from '../../../__tests__/testUtils'
 import { FirstRunWelcome } from '../FirstRunWelcome'
-import { ControllerCalibration } from '../ControllerCalibration'
+import { AIProviderSetup } from '../AIProviderSetup'
 
 function renderWelcome(): ReturnType<typeof renderWithProviders> {
   return renderWithProviders(
     <Routes>
       <Route path="/onboarding/welcome" element={<FirstRunWelcome />} />
-      <Route path="/onboarding/calibration" element={<ControllerCalibration />} />
+      <Route path="/onboarding/providers" element={<AIProviderSetup />} />
     </Routes>,
     { initialEntries: ['/onboarding/welcome'] }
   )
@@ -25,12 +25,12 @@ describe('FirstRunWelcome', () => {
     expect(screen.getByText('Recover every major change')).toBeInTheDocument()
   })
 
-  it('navigates to controller calibration on "Begin setup"', async () => {
+  it('navigates to AI provider setup on "Begin setup"', async () => {
     const user = userEvent.setup()
     renderWelcome()
 
     await user.click(screen.getByRole('button', { name: 'Begin setup' }))
 
-    expect(screen.getByText('Controller Calibration')).toBeInTheDocument()
+    expect(screen.getByText('AI Provider Setup')).toBeInTheDocument()
   })
 })

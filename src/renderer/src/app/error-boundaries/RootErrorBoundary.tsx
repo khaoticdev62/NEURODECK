@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { ControllerButton } from '../../components/primitives/ControllerButton'
-import { ErrorState } from '../../components/feedback/UXState'
+import { ErrorRecoveryContent, type ErrorRecoveryError } from '../../features/system/ErrorRecovery'
+import { quitApp } from '../../services/ipc/powerClient'
 
 interface RootErrorBoundaryProps {
   children: ReactNode
@@ -8,6 +8,45 @@ interface RootErrorBoundaryProps {
 
 interface RootErrorBoundaryState {
   error: Error | null
+}
+
+function generateCorrelationId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return `crash-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
+}
+
+function mapErrorToRecoveryError(error: Error): ErrorRecoveryError {
+  const code = (error.name === 'Error' ? 'RENDER_CRASH' : error.name)
+    .replace(/Error$/, '')
+    .toUpperCase()
+  const retryable = true
+  const correlationId = generateCorrelationId()
+
+  return {
+    code,
+    category: 'unknown',
+    userMessage: error.message || 'An unexpected problem occurred while rendering the interface.',
+    retryable,
+    correlationId,
+    affectedFeature: 'User interface',
+    whatStillWorks:
+      'The main process is still running, diagnostics can be exported, and you can quit or return to the home screen.',
+    details: {
+      stack: error.stack,
+      name: error.name
+    },
+    recoveryActions: [
+      { kind: 'retry', label: 'Try again', run: () => undefined },
+      { kind: 'navigate', label: 'Return to home', to: '/' },
+      {
+        kind: 'export-diagnostics',
+        label: 'Export diagnostics to clipboard'
+      },
+      { kind: 'quit', label: 'Quit NeuroDeck' }
+    ]
+  }
 }
 
 /**
@@ -33,16 +72,22 @@ export class RootErrorBoundary extends Component<RootErrorBoundaryProps, RootErr
 
   render(): ReactNode {
     if (this.state.error) {
+      const recoveryError = mapErrorToRecoveryError(this.state.error)
+      // Replace the placeholder retry action with the real boundary reset.
+      const actions = recoveryError.recoveryActions.map((action) =>
+        action.kind === 'retry' ? { ...action, run: this.handleReset } : action
+      )
+      const error: ErrorRecoveryError = { ...recoveryError, recoveryActions: actions }
+
       return (
-        <div className="flex h-full items-center justify-center bg-canvas">
-          <ErrorState
-            title="NeuroDeck hit an unexpected error"
-            description={this.state.error.message}
-            action={
-              <ControllerButton variant="primary" onClick={this.handleReset}>
-                Try again
-              </ControllerButton>
-            }
+        <div className="h-full bg-canvas">
+          <ErrorRecoveryContent
+            error={error}
+            onNavigate={(to) => {
+              window.location.hash = `#${to}`
+              this.handleReset()
+            }}
+            onQuit={() => void quitApp()}
           />
         </div>
       )

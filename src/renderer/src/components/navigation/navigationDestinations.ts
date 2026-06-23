@@ -7,6 +7,7 @@ export interface NavigationDestination {
 /** Primary Navigation Rail destinations, in order (wireframe §6.2). */
 export const NAVIGATION_DESTINATIONS: NavigationDestination[] = [
   { id: 'home', label: 'Home', path: '/' },
+  { id: 'search', label: 'Search', path: '/search' },
   { id: 'ai', label: 'AI', path: '/ai' },
   { id: 'workspaces', label: 'Workspaces', path: '/workspaces' },
   { id: 'build', label: 'Build', path: '/build' },

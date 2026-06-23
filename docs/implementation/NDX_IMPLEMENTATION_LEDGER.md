@@ -255,15 +255,18 @@ npm run test:e2e     → 1 passed
 
 The spec assigns 12 screens (ND-001 through ND-012) to this epic, but several require backend services owned by _later_ epics (Model Router: Epic 9; Workspace Service: Epic 5; typed IPC: Epic 4; profiles/credentials: Epic 10; agent/task runtime: Epic 4/8). Building those now would mean either fabricating data or shipping empty shells with no real consumer — both explicitly forbidden (mega-prompt §2.1, §2.5). Epic 3 shipped the screens that are honestly real at each point and documented the rest as deferred with the specific blocking dependency. See `IMPLEMENTATION_CHECKLIST.md` for the per-screen breakdown.
 
-**Built (real):** ND-001 Boot and Session Start, ND-003 First-Run Welcome, ND-004 Controller Calibration, ND-008 Home Command Center, ND-009 Universal Command Palette, ND-011 Activity Center, ND-012 Notification Center.
+**Built (real):** ND-001 Boot and Session Start, ND-003 First-Run Welcome, ND-004 Controller Calibration, ND-005 AI Provider Setup, ND-006 Workspace Discovery, ND-007 Guided Controller Tutorial, ND-008 Home Command Center, ND-009 Universal Command Palette, ND-011 Activity Center, ND-012 Notification Center.
 
-**Deferred (documented, not faked):** ND-002 Lock Screen, ND-005 AI Provider Setup, ND-006 Workspace Discovery, ND-007 Guided Controller Tutorial (only 2 of 7 lessons have real backing — not enough to justify the full screen), ND-010 Global Search (zero real content sources exist anywhere in the app yet).
+**Deferred (documented, not faked):** ND-002 Lock Screen, ND-010 Global Search (real content sources now exist across the app, but no unified search screen consumes them yet).
 
 ### What was built
 
 - **ND-001 Boot and Session Start** (`features/onboarding/BootSessionStart.tsx`): the app's entry gate, rendered outside `ShellLayout` so boot completes before the global shell chrome and overlays mount. Performs real service checks over the typed IPC bridge: workspace list (critical), model provider list (optional — failure does not block shell), controller settings (optional), and system metrics (informative only). First-run vs. returning user is inferred from empty persisted state (no workspaces and no providers) rather than adding a new onboarding flag. Surfaces a 4-step progress UI, a detailed status view after 10 seconds or on `Show details`, a 15-second boot timeout, and a critical-failure screen with Retry / Diagnostics / Exit. `B` always offers Return to SteamOS via `power.quitApp`. On success, routes to `/onboarding/welcome` for first run or `/` for returning users.
 - **ND-003 First-Run Welcome** (`features/onboarding/FirstRunWelcome.tsx`): the four spec cards, registers a real focus node for "Begin setup," navigates to calibration.
 - **ND-004 Controller Calibration** (`features/onboarding/ControllerCalibration.tsx`): live button-detection log via the new `onAction` observer (below), haptics intensity control that genuinely calls `HapticsService.setIntensity`/`trigger`, a real "Test haptics" action reporting honest `played`/`muted`/`unsupported` results, and a hold-to-confirm reset (`CriticalConfirmationDialog`). Dead zone and hold duration are shown as real read-only values pulled from the actual constants (`STICK_DEAD_ZONE`, `HOLD_THRESHOLD_MS`), not adjustable fake sliders — making them adjustable needs a config-threading refactor through `gamepadPolling.ts` deferred to Epic 11.
+- **ND-005 AI Provider Setup** (`features/onboarding/AIProviderSetup.tsx`): real first-run provider configuration screen. Lists six provider categories (local runtime, OpenAI-compatible provider, cloud coding model, speech, vision, embedding) with honest capability/privacy/cost-control summaries and status badges. Supported categories (first three) open a real add-provider form that writes through Epic 9's typed `modelProviders.add` IPC and refreshes the list via `modelProviders.list`; unsupported categories are visibly disabled with a real reason. Includes an explanation dialog per category and controller-focusable actions. Speech/vision/embedding adapters do not exist yet (Epic 9/X5), so those categories are informational only.
+- **ND-006 Workspace Discovery** (`features/onboarding/WorkspaceDiscovery.tsx` + `core/workspaces/WorkspaceDiscoveryService.ts`): real multi-source workspace scanner used during onboarding. Sources include home-project candidates, Git repositories (bounded depth), saved SSH hosts, removable storage mount roots, and the Steam library (when Steam metadata is present). Results are deduplicated by realpath, filtered against already-persisted workspaces, and classified reachable/unreachable with a reason. Users can toggle sources, scan, manually add a folder, or add discovered items individually. The screen is wired into the onboarding flow after AI Provider Setup and before Controller Calibration.
+- **ND-007 Guided Controller Tutorial** (`features/onboarding/GuidedControllerTutorial.tsx`): seven-lesson interactive walkthrough that exercises real controller primitives: focus movement, open/back detail flow, context actions, assist actions, command palette, ActionQueue approval of a harmless `tutorial:acknowledge` tool, and a simulated pausable/resumable task. Lesson completion uses the real focus engine action stream and real haptics; lesson 6 submits and approves a genuine low-risk tool through the existing approval pipeline. The final real workspace create/delete exercise was made skippable to avoid destructive risk on user machines. Wired as the last onboarding step before the shell.
 - **ND-008 Home Command Center** (`features/home/HomeCommandCenter.tsx`): renders the spec's own defined Empty State verbatim ("Create or discover a workspace") since there are genuinely zero workspaces. No Continue cards, pinned workspaces, or recommendations were fabricated to fill space.
 - **ND-009 Universal Command Palette** (`features/command-palette/CommandPalette.tsx` + `CommandPaletteResultRow.tsx`): opens/toggles on the real `commands` action (Menu button / `M` key), modal-trapped via `FocusRegistry.pushTrap`, searches the real route registry (`NAVIGATION_DESTINATIONS`) with live substring filtering, Enter runs the top result. Only the "Screens" domain is real; the other 8 spec'd domains (files, symbols, workspaces, workflows, agents, settings, recent actions, commands) have no real source yet.
 - **ND-011 Activity Center** (`features/activity/ActivityCenter.tsx`) and **ND-012 Notification Center** (`features/activity/NotificationCenter.tsx`), combined in **`ActivityAndNotificationsOverlay.tsx`** since wireframe §4.1 pairs both under the single `View` action — there's no separate controller trigger for each. Notification Center extends the Epic 1 `ToastProvider` with a real, persistent `history` array, per-category `muteCategory`/`unmuteCategory`, and collapsing of repeated identical events into one threaded card with a count — all genuinely affect behavior, not cosmetic.
@@ -288,25 +291,111 @@ The spec assigns 12 screens (ND-001 through ND-012) to this epic, but several re
 | `Toast` history/mute/collapse additions (history persists past dismissal, repeated events collapse, muted categories suppress the ephemeral toast but still log) | `components/overlays/__tests__/Toast.test.tsx`                         | +3    |
 | `KeyboardAdapter` editable-target guard (suppresses shortcuts while typing, still allows confirm/back)                                                           | `controller/adapters/__tests__/keyboardAdapter.test.ts`                | +2    |
 | `HapticsService` Gamepad-API-unavailable guard                                                                                                                   | `controller/haptics/__tests__/hapticsService.test.ts`                  | +1    |
+| `AIProviderSetup` (categories render, supported configure form, save local provider + refresh, explanation dialog, disabled unsupported categories)              | `features/onboarding/__tests__/AIProviderSetup.test.tsx`               | 7     |
+| `WorkspaceDiscovery` (renders source toggles, scans with selected sources, adds a discovered workspace, manual add flow)                                         | `features/onboarding/__tests__/WorkspaceDiscovery.test.tsx`            | 4     |
+| `WorkspaceDiscoveryService` (home projects, Git bounded depth, max-depth limit, deduplication, reachable/unreachable)                                            | `core/workspaces/__tests__/WorkspaceDiscoveryService.test.ts`          | 8     |
+| `GuidedControllerTutorial` (lessons 1–7 advance through real actions, lesson 6 approves harmless tool, lesson 7 finishes)                                        | `features/onboarding/__tests__/GuidedControllerTutorial.test.tsx`      | 6     |
+| `ControllerCalibration` (navigates to guided tutorial when Done is activated)                                                                                    | `features/onboarding/__tests__/ControllerCalibration.test.tsx`         | +1    |
 
-Total: 100 tests passing for Epic 3 scope — was 93 before ND-001.
+Total: 124 tests passing for Epic 3 scope — was 107 before ND-006/ND-007.
 
 ### Validation evidence
 
 ```text
 npm run typecheck   → 0 errors
 npm run lint         → 0 errors, 0 warnings
-npm run test         → 18 files, 100 tests passed (Epic 3 scope); current repo total 405 tests passed
+npm run test         → 23 files, 124 tests passed (Epic 3 scope); current repo total 431 tests passed
 npm run build        → succeeded (renderer bundle: 32.90 kB CSS, 1,118.92 kB JS)
 npm run test:e2e     → updated to cover ND-001 boot path
 ```
 
 ### Deferred items with explicit reason
 
-- **ND-002, ND-005, ND-006, ND-007, ND-010** — see "Scope decision" above; each needs a specific not-yet-built service.
+- **ND-002, ND-010** — see "Scope decision" above; each needs a specific not-yet-built service (profile/credentials for ND-002, unified search screen/index for ND-010).
 - **Command Palette's 8 non-Screens search domains** (commands, files, symbols, workspaces, workflows, agents, settings, recent actions) — wait for the epics that produce that content (Epic 4/5/6/8/11).
 - **Adjustable dead zone / hold duration / focus movement speed** — shown as real values, not editable; making them editable needs a config object threaded through `gamepadPolling.ts`/`GamepadAdapter`/`KeyboardAdapter`, planned for Epic 11 (Controller Settings) rather than half-built here.
 - **Per-profile calibration persistence** — spec requires calibration "stored per controller profile"; no persistence layer exists yet (Epic 4/5), so haptics intensity changes only last for the current session.
+
+### ND-005 AI Provider Setup addendum
+
+Implemented after Epic 9 landed the real Model Provider IPC surface, so the first-run screen could be built without fabricating a provider backend. `AIProviderSetup.tsx` reuses the existing `ControllerButton`, `StatusBadge`, `Modal`/`ConfirmationDialog` primitives, and the Epic 9 `addModelProvider`/`listModelProviders` renderer clients.
+
+**Fixes applied while bringing the screen and its tests to green:**
+- Tightened the `AddProviderForm` render guard from `category.supported` to `category.kind` so TypeScript narrows the optional `kind` field before it is passed as a required prop.
+- Added explicit `aria-label`s to the **Configure** and **Explain** buttons (`Configure ${category.name}`, `Explain ${category.name}`) so screen-reader users and tests can distinguish the six identical-looking buttons without relying on DOM order.
+- Updated `AIProviderSetup.test.tsx` to query by those accessible names, assert the explanation dialog heading via role, and stub `workspaces.list` so `WorkspaceProvider`'s background refresh doesn't produce unhandled rejections during the isolated onboarding test.
+
+### Tests and evidence
+
+| Suite                                                                                                                        | Location                                                         | Count |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----- |
+| `AIProviderSetup` (categories render, supported configure form, save local provider + refresh, explanation dialog, disabled unsupported categories) | `features/onboarding/__tests__/AIProviderSetup.test.tsx`         | 7     |
+
+Full validation at this state:
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 89 files, 412 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
+### ND-006 / ND-007 Workspace Discovery and Guided Controller Tutorial addendum
+
+Implemented after Epic 5 (Workspace Service), Epic 6 (Git Service), and Epic 4 (ActionQueue/ToolRegistry) provided enough real backend surface to build both screens without fabricating data or actions.
+
+- `WorkspaceDiscoveryService` reuses `WorkspaceStore`, `RemoteHostStore`, and `GitService` to scan candidate folders, then applies its own bounded traversal and deduplication.
+- `GuidedControllerTutorial` registers the harmless `tutorial:acknowledge` tool via `ToolRegistry` and submits it through `ActionQueue`, so lesson 6 exercises the real approval/audit path.
+- A test-only timing override (`VITE_TUTORIAL_ADVANCE_MS`, `VITE_TUTORIAL_PROGRESS_INTERVAL_MS`, `VITE_TUTORIAL_PROGRESS_STEP`) keeps the seven-lesson test suite fast without changing production behavior.
+
+**Fixes applied while wiring ND-007:**
+- `ControllerCalibration`'s **Done** button now navigates to `/onboarding/tutorial` on click as well as on focus-engine activation, keeping the screen accessible to mouse/touch users and fixing the existing test that clicked the button.
+- `GuidedControllerTutorial` keeps the final lesson in a `completed` state so the **Finish** button remains visible after the simulated task reaches 100%.
+
+| Suite                                                                                                                        | Location                                                         | Count |
+| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----- |
+| `WorkspaceDiscovery` (renders source toggles, scans with selected sources, adds a discovered workspace, manual add flow)     | `features/onboarding/__tests__/WorkspaceDiscovery.test.tsx`      | 4     |
+| `WorkspaceDiscoveryService` (home projects, Git bounded depth, max-depth limit, deduplication, reachable/unreachable)        | `core/workspaces/__tests__/WorkspaceDiscoveryService.test.ts`    | 8     |
+| `GuidedControllerTutorial` (lessons 1–7 advance through real actions, lesson 6 approves harmless tool, lesson 7 finishes)    | `features/onboarding/__tests__/GuidedControllerTutorial.test.tsx` | 6     |
+
+Full validation at this state:
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 92 files, 431 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
+### ND-010 Global Search addendum
+
+Implemented after Epics 4–8 made enough real records (workspaces, files, Git, terminal sessions, workflows, agents, model providers, browser tabs, remote hosts, recovery checkpoints) available through the existing typed IPC clients. ND-010 deliberately avoids building a fake unified index; it federates live queries across the services that already own each data domain.
+
+- `features/search/useGlobalSearch.ts`: debounced federated query hook that calls existing IPC clients (`workspaceClient`, `fileClient`, `gitClient`, `terminalClient`, `workflowClient`, `agentClient`, `modelClient`, `recoveryClient`, `browserClient`, `remoteClient`) and returns merged, query-filtered results. Supports category filters (`everywhere`, `currentWorkspace`, `files`, `code`, `tasks`, `logs`, `browser`, `remote`) and reports per-source errors without crashing.
+- `features/search/GlobalSearch.tsx`: full search screen with query input, category tabs, result list, keyboard/controller navigation (↑/↓ + Enter), and a global `/` shortcut wired in `ShellLayout` (ignored when focus is in an input/textarea/select/contenteditable).
+- `features/search/SearchResultRow.tsx`: accessible result rows with per-source icons and workspace-scoped subtitles.
+- Route `/search` added to `app/routing/routes.tsx` and the primary navigation rail (`components/navigation/navigationDestinations.ts` + `navigationIcons.tsx`).
+
+| Suite | Location | Count |
+| --- | --- | --- |
+| `useGlobalSearch` (federated results, category filtering, source errors) | `features/search/__tests__/useGlobalSearch.test.tsx` | 4 |
+| `GlobalSearch` (render, query results, click navigation, controller navigation) | `features/search/__tests__/GlobalSearch.test.tsx` | 4 |
+| `ShellLayout` global `/` shortcut (opens search outside inputs, ignored inside inputs) | `app/shell/__tests__/ShellLayout.test.tsx` | +2 |
+
+Full validation at this state:
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 94 files, 440 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
 
 ---
 
@@ -437,7 +526,7 @@ npm run test:e2e     → 1 passed
 
 - **All destructive file operations** (write/copy/move/rename/duplicate/compress/extract/trash/secure-delete) — every one needs a real recovery path first; Recovery Service is Epic 11.
 - **Workspace Detail's Sessions/Git/Tasks/Models/Permissions/Environment/History tabs** — each needs a service this epic doesn't own (Epic 6/8/9/10).
-- **Multi-source workspace discovery** (Git repos, Steam library, SSH hosts, removable storage) — only the manual native folder picker is real; ND-006 (Workspace Discovery) remains partial from Epic 3.
+- **Multi-source workspace discovery** — now complete as ND-006; see Epic 3 ledger entry.
 - **File Preview's images/PDF/audio/video/archive/diff support** — each needs its own renderer; only text/code preview is real.
 - **AI actions on file preview** (Summarize/Explain/etc.) — no AI/model exists yet (Epic 9).
 - **Recovery integration/checkpoints** — explicitly out of scope since no destructive operations exist yet to checkpoint.
@@ -642,7 +731,7 @@ A third slice closed the gap the second slice left open: **ND-042 System Dashboa
 
 A fourth slice closed two more: **ND-051 Power Menu**, scoped to the two genuinely safe actions (restart/quit this app via real Electron APIs, behind a real `ConfirmationDialog`) — real OS-level suspend/reboot/shutdown are deliberately not wired, since those are irreversible against the whole host machine, not just this app, and need their own native-integration design and explicit sign-off before being attempted; and **ND-056 About and Diagnostics**, scoped to what this architecture actually has (real app/Electron/Chromium/Node versions, platform, configured providers, a real clipboard export combining that with a live `SystemMetricsService` snapshot) — "Core version"/"Database version"/build hash are omitted rather than invented, since there's no separate core-service process, no database, and no build-time commit-hash injection step.
 
-The other 8 of 16 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build yet: Controller Settings needs the Input Profile Manager UI (Epic 2 left it backend-only); Display/Theme, Network/VPN, Privacy, Integrations, Updates, and Quick Access (full build) each need their own service; Error Recovery needs a dedicated screen this slice doesn't build.
+The other 7 of 16 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build yet: Controller Settings needs the Input Profile Manager UI (Epic 2 left it backend-only); Display/Theme, Network/VPN, Privacy, Integrations, Updates, and Quick Access (full build) each need their own service. ND-055 Error Recovery is now built; see its addendum below.
 
 ### What was built
 
@@ -758,9 +847,26 @@ npm run test:e2e      → 1 passed
 npm audit --production → 0 vulnerabilities
 ```
 
+### Addendum — ND-055 Error Recovery
+
+Built a structured, honest error-recovery screen rather than a generic "Something went wrong" fallback. `features/system/ErrorRecovery.tsx` reads a typed `ErrorRecoveryError` payload and renders a plain-language problem statement, technical code, category, affected feature, correlation ID, what still works, collapsible diagnostic details, and focusable recovery-action rows. Actions are real and context-aware: retry is only offered when the screen is rendered by `app/error-boundaries/RootErrorBoundary.tsx` (because `location.state` cannot carry functions), navigation uses the router, diagnostic export reuses the same `diagnosticsClient.getDiagnosticsInfo()` + `systemClient.collectSystemMetrics()` pipeline as ND-056 and writes JSON to the clipboard, and quit calls the real `powerClient.quitApp()`. The `/error-recovery` route is registered for route-level recoverable failures.
+
+The boundary itself maps any caught render error to an `ErrorRecoveryError` with a generated correlation ID and a real retry callback that resets the boundary. It does not invent a fake "safe mode" or "restore previous state" button; those capabilities genuinely don't exist yet, so they are not offered.
+
+`ErrorRecovery.test.tsx` (6: renders error details from location state, empty state, navigate action callback, real diagnostic export to clipboard, real quit IPC, retry callback) — brings the cumulative total to 447 tests passing (up from 441).
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 95 files, 447 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
 ### Deferred items with explicit reason
 
-- **The other 5 of 16 Epic 11 items** (Network/VPN, Integrations, Updates, Quick Access full build, Error Recovery) — each needs a service this slice doesn't build. System Metrics, ND-042 System Dashboard, ND-043 Controller Settings, ND-044 Display and Theme Settings, ND-046 Privacy and Permissions, ND-051 Power Menu, and ND-056 About/Diagnostics are now real; see the addenda above.
+- **The remaining 4 of 16 Epic 11 items** (Network/VPN, Integrations, Updates, Quick Access full build) — each needs a service this slice doesn't build. System Metrics, ND-042 System Dashboard, ND-043 Controller Settings, ND-044 Display and Theme Settings, ND-046 Privacy and Permissions, ND-051 Power Menu, ND-055 Error Recovery, and ND-056 About/Diagnostics are now real; see the addenda above.
 - **Power Menu's Lock/Suspend/Restart core service/Restart device/Shut down** — Lock needs ND-002 (not built); this architecture has no separate core-service process to restart independently; real OS suspend/reboot/shutdown are irreversible against the whole host machine and need a dedicated native-integration design and explicit sign-off before being wired — not attempted in this slice for safety reasons, not just scope.
 - **About/Diagnostics's Core version/Database version/build hash** — no separate core-service process, no database, and no build-time commit-hash injection step exist in this architecture; omitted rather than invented.
 - **Controller Settings' button remapping, app profiles, rear buttons, gyro, trackpad fallback, accessibility** — remapping/profiles need the `gamepadPolling.ts` config-threading refactor; rear buttons/gyro/trackpad need Steam Input or a native/SDL adapter (the same documented gap as Epic 2); accessibility needs its own design pass.
@@ -1049,3 +1155,21 @@ The model prompt includes the child-agent policy. If a model emits strict JSON w
 | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------- | ------- |
 | `AgentRuntime` child-agent proposal rejected before tool request                                             | `core/agents/__tests__/AgentRuntime.test.ts` | +1      |
 | `AgentOperationsCenter` and `AgentDetail` render disabled child policy and create agents with default policy | `features/agents/__tests__`                  | covered |
+
+## Epic 6 addendum — Git restore/discard, branch create/delete, and force push
+
+`GitService`'s class comment previously stated these were "intentionally not implemented yet" pending Recovery Service (Epic 11) and a real irreversibility-warning UI — both now exist, so this slice implements the three operations the spec (§22) explicitly named as blocked.
+
+**`restore()`** discards real uncommitted changes to tracked files via `git restore -- <paths>`. It deliberately does not call `RecoveryService` itself — `registerGitHandlers.ts`'s `gitRestore` handler orchestrates `FileService.readIfExists()` + `RecoveryService.recordCheckpoint()` (kind: `git-restore`) before calling `GitService.restore()`, the exact same orchestration pattern `registerFileHandlers.ts`'s `fileWrite` already uses for `FileService.write()`. There is no code path to the discard that skips the checkpoint. Untracked (`??`) files are correctly rejected by `git restore` itself (there is no committed content to restore to) — the UI hides the Discard control for them rather than attempting a different, undesigned "delete untracked file" operation. `recoveryCheckpointKindSchema` gained a `'git-restore'` value alongside `'file-write'`; `RecoveryTimeline` (ND-052) now covers both kinds in its real checkpoint list/diff.
+
+**`createBranch()`/`deleteBranch()`** are plain `git branch`/`git branch -d|-D`. Delete defaults to the safe form (`-d`, which `git` itself refuses if the branch has unmerged commits); the UI surfaces that rejection as a re-prompt offering force delete (`-D`) with copy that names the real consequence (losing commits that exist only on that branch), rather than silently escalating to force on the first click.
+
+**`forcePush()`** uses `--force-with-lease`, never raw `--force` — verified with a real test: two clones push to the same bare remote, the second clone's stale view force-pushes and is rejected because the remote ref moved since its last fetch, exactly the scenario `--force-with-lease` exists to prevent. The UI gates it behind its own `ConfirmationDialog`, separate from the regular push dialog, with consequence copy that states the real protection it gets (and what it doesn't guarantee).
+
+### Tests and evidence
+
+| Suite                                                                                          | Location                                                  | Count |
+| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ----- |
+| Real tracked-file restore, untracked-file rejection, branch create, safe/force branch delete    | `core/git/__tests__/GitService.test.ts`                   | +6    |
+| Real force-push success, real force-with-lease rejection on a stale view, unknown-remote reject | `core/git/__tests__/GitServiceRemote.test.ts`              | +3    |
+| Discard/branch-create/branch-delete/force-push UI wiring through the typed bridge               | `features/workspaces/__tests__/WorkspaceGitTab.test.tsx`  | +5    |

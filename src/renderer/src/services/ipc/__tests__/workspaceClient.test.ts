@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createWorkspace,
+  discoverWorkspaces,
   listWorkspaces,
   pickWorkspaceFolder,
   removeWorkspace
@@ -57,5 +58,16 @@ describe('workspaceClient', () => {
     const result = await pickWorkspaceFolder()
 
     expect(result).toEqual({ ok: true, data: '/tmp/picked' })
+  })
+
+  it('delegates discover() with options', async () => {
+    const discover = vi.fn().mockResolvedValue({ ok: true, data: [] })
+    // @ts-expect-error assigning the test stub for the preload-injected global
+    window.ndx = { workspaces: { discover }, files: {} }
+
+    const result = await discoverWorkspaces({ sources: ['home'] })
+
+    expect(discover).toHaveBeenCalledWith({ sources: ['home'] })
+    expect(result).toEqual({ ok: true, data: [] })
   })
 })

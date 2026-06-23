@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
 import { ToastProvider } from '../../../components/overlays/Toast'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
@@ -10,6 +10,7 @@ import { DisplayModeProvider } from '../../../state/displayMode'
 import { DisplaySettingsProvider } from '../../../state/displaySettings'
 import { useDisplayMode } from '../../../state/useDisplayMode'
 import { WorkspaceProvider } from '../../../features/workspaces/WorkspaceProvider'
+import type { NdxBridge } from '@shared/contracts'
 import { ShellLayout } from '../ShellLayout'
 
 function ModeSwitcher(): React.JSX.Element {
@@ -27,6 +28,33 @@ function ModeSwitcher(): React.JSX.Element {
   )
 }
 
+function stubBridge(): void {
+  window.ndx = {
+    workspaces: {
+      list: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+      create: vi.fn(),
+      remove: vi.fn(),
+      pickFolder: vi.fn(),
+      discover: vi.fn()
+    },
+    agentRuns: {
+      list: vi.fn(),
+      get: vi.fn(),
+      start: vi.fn(),
+      cancel: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      onUpdate: vi.fn(() => () => undefined),
+      onToolRequest: vi.fn(() => () => undefined)
+    }
+  } as unknown as NdxBridge
+}
+
+afterEach(() => {
+  // @ts-expect-error test-only cleanup
+  delete window.ndx
+})
+
 function renderShell(): ReturnType<typeof render> {
   return render(
     <ToastProvider>
@@ -39,6 +67,10 @@ function renderShell(): ReturnType<typeof render> {
                   <Routes>
                     <Route element={<ShellLayout />}>
                       <Route path="/" element={<ModeSwitcher />} />
+                      <Route
+                        path="/search"
+                        element={<div data-testid="search-screen">Search</div>}
+                      />
                     </Route>
                   </Routes>
                 </MemoryRouter>
@@ -82,5 +114,25 @@ describe('ShellLayout', () => {
     expect(container.querySelector('[data-display-mode="theater"]')).not.toBeNull()
     // Theater mode keeps the rails visible — only density changes.
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
+  })
+
+  it('opens global search when / is pressed outside of an input', async () => {
+    stubBridge()
+    renderShell()
+    fireEvent.keyDown(document, { key: '/', code: 'Slash' })
+    await waitFor(() => {
+      expect(screen.getByTestId('search-screen')).toBeInTheDocument()
+    })
+  })
+
+  it('does not open global search when / is typed into an input', async () => {
+    stubBridge()
+    renderShell()
+    const input = document.createElement('input')
+    document.body.appendChild(input)
+    input.focus()
+    fireEvent.keyDown(input, { key: '/', code: 'Slash' })
+    expect(screen.queryByTestId('search-screen')).not.toBeInTheDocument()
+    document.body.removeChild(input)
   })
 })

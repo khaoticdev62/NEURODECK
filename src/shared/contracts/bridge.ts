@@ -13,11 +13,15 @@ import type {
   GitCheckoutRequest,
   GitCommit,
   GitCommitRequest,
+  GitCreateBranchRequest,
+  GitDeleteBranchRequest,
   GitDiffRequest,
   GitDiffResult,
   GitFetchRequest,
+  GitForcePushRequest,
   GitRemote,
   GitRemoteOperationRequest,
+  GitRestorePathsRequest,
   GitStagePathsRequest,
   GitStashEntry,
   GitStashPopRequest,
@@ -25,7 +29,12 @@ import type {
   GitStatus,
   WorkspaceGitRequest
 } from './git'
-import type { CreateWorkspaceRequest, Workspace } from './workspace'
+import type {
+  CreateWorkspaceRequest,
+  DiscoveredWorkspace,
+  Workspace,
+  WorkspaceDiscoveryOptions
+} from './workspace'
 import type {
   AddModelProviderRequest,
   ConnectionTestResult,
@@ -116,6 +125,7 @@ export interface NdxBridge {
     create: (request: CreateWorkspaceRequest) => Promise<NdxResult<Workspace>>
     remove: (id: string) => Promise<NdxResult<null>>
     pickFolder: () => Promise<NdxResult<string | null>>
+    discover: (options: WorkspaceDiscoveryOptions) => Promise<NdxResult<DiscoveredWorkspace[]>>
   }
   files: {
     list: (request: ListFilesRequest) => Promise<NdxResult<FileEntry[]>>
@@ -146,6 +156,10 @@ export interface NdxBridge {
     stashSave: (request: GitStashSaveRequest) => Promise<NdxResult<null>>
     stashList: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStashEntry[]>>
     stashPop: (request: GitStashPopRequest) => Promise<NdxResult<null>>
+    restore: (request: GitRestorePathsRequest) => Promise<NdxResult<null>>
+    createBranch: (request: GitCreateBranchRequest) => Promise<NdxResult<null>>
+    deleteBranch: (request: GitDeleteBranchRequest) => Promise<NdxResult<null>>
+    forcePush: (request: GitForcePushRequest) => Promise<NdxResult<null>>
   }
   terminal: {
     create: (request: CreateTerminalRequest) => Promise<NdxResult<TerminalSession>>

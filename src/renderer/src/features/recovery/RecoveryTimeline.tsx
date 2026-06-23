@@ -22,13 +22,15 @@ const REVERSIBILITY_LABEL: Record<RecoveryCheckpoint['reversibility'], string> =
 /**
  * ND-052 Recovery Timeline + ND-053 Before/After Diff, combined the same
  * way ND-025 Git Control Center wraps its diff viewer — one real
- * checkpoint list, real before/after diff on selection. Scoped to "File
- * changes" only: package installation, settings changes, workflow
- * checkpoints, Git commits, agent operations, and system configuration
- * events all need services that don't exist yet (Epic 6's Git is its own
- * history already; Epic 8/9/11's other event sources aren't built).
- * Revert event/branch from point/export snapshot are deferred — they need
- * recovery-event kinds beyond `file-write` this slice doesn't define.
+ * checkpoint list, real before/after diff on selection. Covers `file-write`
+ * (Build Studio/file edits) and `git-restore` (a discarded working-tree
+ * change recorded just before `git restore` runs — see
+ * `registerGitHandlers.ts`) checkpoint kinds. Package installation,
+ * settings changes, workflow checkpoints, Git commits themselves, agent
+ * operations, and system configuration events all need services that don't
+ * exist yet (Epic 6's Git commit history is its own; Epic 8/9/11's other
+ * event sources aren't built). Revert event/branch from point/export
+ * snapshot remain deferred.
  */
 export function RecoveryTimeline(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()

@@ -38,7 +38,7 @@ export function FirstRunWelcome(): React.JSX.Element {
     groupId: 'welcome',
     priority: 1,
     initialFocus: true,
-    onActivate: () => navigate('/onboarding/calibration')
+    onActivate: () => navigate('/onboarding/providers')
   })
 
   return (
@@ -62,7 +62,7 @@ export function FirstRunWelcome(): React.JSX.Element {
         ref={ref}
         variant="primary"
         className={isFocused ? 'ring-2 ring-border-focus' : undefined}
-        onClick={() => navigate('/onboarding/calibration')}
+        onClick={() => navigate('/onboarding/providers')}
       >
         Begin setup
       </ControllerButton>

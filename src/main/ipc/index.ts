@@ -81,9 +81,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     }
   )
 
-  registerWorkspaceHandlers(workspaceStore, getWindow)
+  registerWorkspaceHandlers(workspaceStore, getWindow, gitService, remoteHostStore)
   registerFileHandlers(fileService, recoveryService, workspaceStore)
-  registerGitHandlers(gitService, workspaceStore)
+  registerGitHandlers(gitService, workspaceStore, fileService, recoveryService)
   registerRecoveryHandlers(recoveryService, fileService, workspaceStore)
   registerWorkflowHandlers(workflowStore, workflowRunStore)
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)

@@ -4,6 +4,9 @@ import { DEFAULT_PRIMARY_HINTS } from '../../components/navigation/defaultContro
 import { ControllerCalibration } from '../../features/onboarding/ControllerCalibration'
 import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
 import { BootSessionStart } from '../../features/onboarding/BootSessionStart'
+import { AIProviderSetup } from '../../features/onboarding/AIProviderSetup'
+import { WorkspaceDiscovery } from '../../features/onboarding/WorkspaceDiscovery'
+import { GuidedControllerTutorial } from '../../features/onboarding/GuidedControllerTutorial'
 import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
 import { AICommandCanvas } from '../../features/ai-canvas/AICommandCanvas'
@@ -31,6 +34,8 @@ import { WorkflowRunDetail } from '../../features/workflows/WorkflowRunDetail'
 import { FileManager } from '../../features/workspaces/FileManager'
 import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
 import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
+import { GlobalSearch } from '../../features/search/GlobalSearch'
+import { ErrorRecovery } from '../../features/system/ErrorRecovery'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
 const BuildStudio = lazy(async () => {
@@ -85,6 +90,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     element: <HomeCommandCenter />
   },
   {
+    routeId: 'global-search',
+    screenId: 'ND-010',
+    path: '/search',
+    title: 'Global Search',
+    owningEpic: 'Epic 3',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <GlobalSearch />
+  },
+  {
     routeId: 'onboarding-welcome',
     screenId: 'ND-003',
     path: '/onboarding/welcome',
@@ -95,6 +110,26 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     element: <FirstRunWelcome />
   },
   {
+    routeId: 'onboarding-provider-setup',
+    screenId: 'ND-005',
+    path: '/onboarding/providers',
+    title: 'AI Provider Setup',
+    owningEpic: 'Epic 3',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <AIProviderSetup />
+  },
+  {
+    routeId: 'onboarding-workspace-discovery',
+    screenId: 'ND-006',
+    path: '/onboarding/workspaces',
+    title: 'Workspace Discovery',
+    owningEpic: 'Epic 3',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <WorkspaceDiscovery />
+  },
+  {
     routeId: 'onboarding-calibration',
     screenId: 'ND-004',
     path: '/onboarding/calibration',
@@ -103,6 +138,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
     element: <ControllerCalibration />
+  },
+  {
+    routeId: 'onboarding-tutorial',
+    screenId: 'ND-007',
+    path: '/onboarding/tutorial',
+    title: 'Guided Controller Tutorial',
+    owningEpic: 'Epic 3',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <GuidedControllerTutorial />
   },
   {
     routeId: 'boot',
@@ -430,6 +475,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: <AboutDiagnostics />
+  },
+  {
+    routeId: 'error-recovery',
+    screenId: 'ND-055',
+    path: '/error-recovery',
+    title: 'Error Recovery',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <ErrorRecovery />
   },
   {
     routeId: 'recovery',

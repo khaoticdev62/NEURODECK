@@ -106,3 +106,32 @@ export const gitStashPopRequestSchema = z.object({
   index: z.number().int().nonnegative().default(0)
 })
 export type GitStashPopRequest = z.infer<typeof gitStashPopRequestSchema>
+
+/** Discards real, uncommitted working-tree changes — irreversible without the recovery checkpoint the IPC handler records before running it. */
+export const gitRestorePathsRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  paths: z.array(z.string().min(1)).min(1)
+})
+export type GitRestorePathsRequest = z.infer<typeof gitRestorePathsRequestSchema>
+
+export const gitCreateBranchRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  name: z.string().min(1),
+  fromRef: z.string().min(1).optional()
+})
+export type GitCreateBranchRequest = z.infer<typeof gitCreateBranchRequestSchema>
+
+export const gitDeleteBranchRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  name: z.string().min(1),
+  force: z.boolean().default(false)
+})
+export type GitDeleteBranchRequest = z.infer<typeof gitDeleteBranchRequestSchema>
+
+/** Force push uses `--force-with-lease`, never raw `--force` — it fails closed if the remote ref moved since our last fetch, rather than silently clobbering someone else's concurrent push. */
+export const gitForcePushRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  remote: z.string().min(1),
+  branch: z.string().min(1)
+})
+export type GitForcePushRequest = z.infer<typeof gitForcePushRequestSchema>

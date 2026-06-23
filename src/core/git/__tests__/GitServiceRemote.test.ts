@@ -119,4 +119,43 @@ describe('GitService remote operations', () => {
     expect(status.hasConflicts).toBe(true)
     expect(status.changes.some((c) => c.path === 'readme.md')).toBe(true)
   })
+
+  it('force-pushes a real rewritten history to the bare remote', async () => {
+    await writeFile(join(localDir, 'second.txt'), 'content')
+    await git(localDir, ['add', '.'])
+    await git(localDir, ['commit', '-m', 'second commit'])
+    await git(localDir, ['commit', '--amend', '-m', 'rewritten second commit'])
+
+    await service.forcePush(localDir, 'origin', 'main')
+
+    await git(root, ['clone', remoteDir, otherCloneDir])
+    const log = await service.log(otherCloneDir)
+    expect(log[0].message).toBe('rewritten second commit')
+  })
+
+  it('rejects force-with-lease when the remote moved since the last fetch, instead of clobbering it', async () => {
+    await git(root, ['clone', remoteDir, otherCloneDir])
+    await git(otherCloneDir, ['config', 'user.email', 'other@example.com'])
+    await git(otherCloneDir, ['config', 'user.name', 'Other User'])
+    await writeFile(join(otherCloneDir, 'from-other.txt'), 'content')
+    await git(otherCloneDir, ['add', '.'])
+    await git(otherCloneDir, ['commit', '-m', 'from other clone'])
+    await git(otherCloneDir, ['push', 'origin', 'main'])
+
+    // localDir never fetched the other clone's push, so its view of origin/main is stale.
+    await writeFile(join(localDir, 'second.txt'), 'content')
+    await git(localDir, ['add', '.'])
+    await git(localDir, ['commit', '-m', 'second commit'])
+
+    await expect(service.forcePush(localDir, 'origin', 'main')).rejects.toThrow()
+
+    const log = await service.log(otherCloneDir)
+    expect(log[0].message).toBe('from other clone')
+  })
+
+  it('rejects force push against an unknown remote', async () => {
+    await expect(service.forcePush(localDir, 'does-not-exist', 'main')).rejects.toThrow(
+      'Unknown remote'
+    )
+  })
 })

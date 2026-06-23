@@ -3,11 +3,15 @@ import type {
   GitCheckoutRequest,
   GitCommit,
   GitCommitRequest,
+  GitCreateBranchRequest,
+  GitDeleteBranchRequest,
   GitDiffRequest,
   GitDiffResult,
   GitFetchRequest,
+  GitForcePushRequest,
   GitRemote,
   GitRemoteOperationRequest,
+  GitRestorePathsRequest,
   GitStagePathsRequest,
   GitStashEntry,
   GitStashPopRequest,
@@ -112,4 +116,28 @@ export async function popGitStash(request: GitStashPopRequest): Promise<NdxResul
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.git.stashPop(request)
+}
+
+export async function restoreGitPaths(request: GitRestorePathsRequest): Promise<NdxResult<null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.git.restore(request)
+}
+
+export async function createGitBranch(request: GitCreateBranchRequest): Promise<NdxResult<null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.git.createBranch(request)
+}
+
+export async function deleteGitBranch(request: GitDeleteBranchRequest): Promise<NdxResult<null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.git.deleteBranch(request)
+}
+
+export async function forcePushGit(request: GitForcePushRequest): Promise<NdxResult<null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.git.forcePush(request)
 }

@@ -24,3 +24,24 @@ export const workspaceIdRequestSchema = z.object({
   id: z.string().min(1)
 })
 export type WorkspaceIdRequest = z.infer<typeof workspaceIdRequestSchema>
+
+export const workspaceDiscoverySourceSchema = z.enum(['home', 'git', 'ssh', 'removable', 'steam'])
+export type WorkspaceDiscoverySource = z.infer<typeof workspaceDiscoverySourceSchema>
+
+export const workspaceDiscoveryOptionsSchema = z.object({
+  sources: z.array(workspaceDiscoverySourceSchema).optional(),
+  homeDir: z.string().optional(),
+  steamAppsRoots: z.array(z.string()).optional(),
+  mountRoots: z.array(z.string()).optional()
+})
+export type WorkspaceDiscoveryOptions = z.infer<typeof workspaceDiscoveryOptionsSchema>
+
+export const discoveredWorkspaceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  rootPath: z.string(),
+  source: workspaceDiscoverySourceSchema,
+  reachable: z.boolean(),
+  reason: z.string().optional()
+})
+export type DiscoveredWorkspace = z.infer<typeof discoveredWorkspaceSchema>
