@@ -46,5 +46,10 @@ test('boots and renders the baseline shell', async () => {
   })
   await expect(window).toHaveURL(/browser/)
   await expect(window.getByText('No active workspace')).toBeVisible()
+  await window.evaluate(() => {
+    window.location.hash = '/remote'
+  })
+  await expect(window).toHaveURL(/remote/)
+  await expect(window.getByText('No remote hosts')).toBeVisible()
   await app.close()
 })
