@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-/** Real listing/read/metadata only (mega-prompt §20) — write/copy/move/rename/delete/compress/extract wait for the Recovery Service (Epic 11) so destructive operations always have a real recovery path first. */
+/** Real listing/read/metadata (mega-prompt §20). Write and delete requests live in `recovery.ts` since both are recovery-checkpoint-orchestrated by the IPC layer. Copy/move/rename/compress/extract wait on a real multi-path checkpoint shape that doesn't exist yet. */
 export const fileEntrySchema = z.object({
   name: z.string(),
   path: z.string(),

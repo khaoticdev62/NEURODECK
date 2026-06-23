@@ -1,4 +1,5 @@
 import type {
+  DeleteFileRequest,
   FileEntry,
   ListFilesRequest,
   NdxResult,
@@ -24,4 +25,10 @@ export async function writeFile(request: WriteFileRequest): Promise<NdxResult<nu
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.files.write(request)
+}
+
+export async function deleteFile(request: DeleteFileRequest): Promise<NdxResult<null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.files.delete(request)
 }

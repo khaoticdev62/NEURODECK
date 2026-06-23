@@ -213,7 +213,8 @@ describe('GlobalSearch', () => {
           ]
         }),
         read: vi.fn(),
-        write: vi.fn()
+        write: vi.fn(),
+        delete: vi.fn()
       }
     })
 
@@ -247,7 +248,8 @@ describe('GlobalSearch', () => {
           ]
         }),
         read: vi.fn(),
-        write: vi.fn()
+        write: vi.fn(),
+        delete: vi.fn()
       }
     })
 
@@ -283,7 +285,8 @@ describe('GlobalSearch', () => {
           ]
         }),
         read: vi.fn(),
-        write: vi.fn()
+        write: vi.fn(),
+        delete: vi.fn()
       }
     })
 

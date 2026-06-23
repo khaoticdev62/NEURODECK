@@ -1,4 +1,4 @@
-import { readdir, readFile, realpath, rename, stat, writeFile } from 'node:fs/promises'
+import { readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { FileEntry } from '@shared/contracts/file'
 
@@ -11,13 +11,14 @@ export class PathOutsideWorkspaceError extends Error {
 }
 
 /**
- * Real file service (mega-prompt §20). `write()` is the first destructive
- * operation implemented — it shipped alongside the real Recovery Service
- * (Epic 11), satisfying mega-prompt §2.4's "no destructive action without
- * a real recovery path." Copy/move/rename/duplicate/compress/extract/trash
- * remain unimplemented: each needs its own recovery-checkpoint shape
- * (recording a move isn't the same as recording a content overwrite) that
- * hasn't been designed yet.
+ * Real file service (mega-prompt §20). `write()` and `delete()` are real,
+ * each satisfying mega-prompt §2.4's "no destructive action without a real
+ * recovery path" — both fit the existing single-path checkpoint shape
+ * (relativePath + previous content) exactly, since "undo" for either is
+ * just rewriting that one path's prior content. Copy/move/rename/
+ * duplicate/compress/extract remain unimplemented: each touches two paths
+ * (a source and a destination) or an archive boundary, and needs a real
+ * multi-path checkpoint shape this slice doesn't design.
  */
 export class FileService {
   /**
@@ -115,6 +116,23 @@ export class FileService {
     const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`
     await writeFile(tempPath, content, 'utf-8')
     await rename(tempPath, filePath)
+  }
+
+  /**
+   * Deletes a single file — never a directory (callers must check
+   * `FileEntry.isDirectory` first; this throws rather than recursing).
+   * Callers (see `registerFileHandlers.ts`) must record a recovery
+   * checkpoint of the file's content before calling this — `FileService`
+   * itself has no `RecoveryService` dependency, the same orchestration
+   * boundary `write()` and `GitService.restore()` already keep.
+   */
+  async delete(rootPath: string, relativePath: string): Promise<void> {
+    const filePath = await this.resolveWithinRoot(rootPath, relativePath)
+    const info = await stat(filePath)
+    if (info.isDirectory()) {
+      throw new Error(`"${relativePath}" is a directory — delete only supports single files.`)
+    }
+    await rm(filePath)
   }
 }
 

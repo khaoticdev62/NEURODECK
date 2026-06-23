@@ -33,7 +33,8 @@ const ndx: NdxBridge = {
   files: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileList, request),
     read: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileRead, request),
-    write: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileWrite, request)
+    write: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileWrite, request),
+    delete: (request) => ipcRenderer.invoke(IPC_CHANNELS.fileDelete, request)
   },
   recovery: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.recoveryList, request),

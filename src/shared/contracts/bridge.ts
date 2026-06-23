@@ -1,6 +1,7 @@
 import type { FileEntry, ListFilesRequest, ReadFileRequest, ReadFileResult } from './file'
 import type { NdxResult } from './error'
 import type {
+  DeleteFileRequest,
   RecoveryCheckpoint,
   RecoveryCheckpointRequest,
   RecoveryDiffResult,
@@ -131,6 +132,7 @@ export interface NdxBridge {
     list: (request: ListFilesRequest) => Promise<NdxResult<FileEntry[]>>
     read: (request: ReadFileRequest) => Promise<NdxResult<ReadFileResult>>
     write: (request: WriteFileRequest) => Promise<NdxResult<null>>
+    delete: (request: DeleteFileRequest) => Promise<NdxResult<null>>
   }
   recovery: {
     list: (request: WorkspaceRecoveryRequest) => Promise<NdxResult<RecoveryCheckpoint[]>>

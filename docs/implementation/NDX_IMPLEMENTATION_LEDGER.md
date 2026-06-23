@@ -1173,3 +1173,16 @@ The model prompt includes the child-agent policy. If a model emits strict JSON w
 | Real tracked-file restore, untracked-file rejection, branch create, safe/force branch delete    | `core/git/__tests__/GitService.test.ts`                   | +6    |
 | Real force-push success, real force-with-lease rejection on a stale view, unknown-remote reject | `core/git/__tests__/GitServiceRemote.test.ts`              | +3    |
 | Discard/branch-create/branch-delete/force-push UI wiring through the typed bridge               | `features/workspaces/__tests__/WorkspaceGitTab.test.tsx`  | +5    |
+
+## Epic 5 addendum — File Service real delete
+
+`FileService`'s class comment previously deferred `delete()` alongside copy/move/rename/compress/extract, all grouped under "needs its own recovery-checkpoint shape that hasn't been designed yet." On inspection, `delete()` actually fits the *existing* checkpoint shape exactly — a checkpoint is already just `{relativePath, previousContent}`, and "undo a delete" is just "rewrite that path's previous content," identical to undoing a `write()`. Only move/rename/copy/compress/extract genuinely need a new multi-path shape (a source and a destination), so this slice narrows the deferred scope to just those.
+
+`FileService.delete()` only deletes a single file, never a directory — it reuses `read()`'s existing directory check (`info.isDirectory()`) by resolving the path the same way, so a directory delete attempt fails before any checkpoint is recorded or any `rm` call happens. `registerFileHandlers.ts`'s new `fileDelete` channel orchestrates the checkpoint exactly like `fileWrite` does: read the file's current content via `readIfExists`, record a checkpoint (new `file-delete` kind), then delete. `FileManager.tsx` (ND-026) gained a real per-file Delete button (hidden for directories) behind a `ConfirmationDialog` that states the real recovery guarantee.
+
+### Tests and evidence
+
+| Suite                                                                              | Location                                                | Count |
+| ----------------------------------------------------------------------------------- | -------------------------------------------------------- | ----- |
+| Real file delete, directory-delete rejection, path-escape rejection, missing-file rejection | `core/files/__tests__/FileService.test.ts`              | +4    |
+| Delete button wiring, confirmation flow, hidden for directories                     | `features/workspaces/__tests__/FileManager.test.tsx`    | +2    |

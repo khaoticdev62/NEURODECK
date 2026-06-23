@@ -152,3 +152,32 @@ describe('FileService.write', () => {
     expect(files).toEqual(['a.txt'])
   })
 })
+
+describe('FileService.delete', () => {
+  it('deletes a real file', async () => {
+    await writeFile(join(root, 'a.txt'), 'content')
+
+    await service.delete(root, 'a.txt')
+
+    await expect(service.read(root, 'a.txt')).rejects.toThrow()
+  })
+
+  it('rejects deleting a directory', async () => {
+    await mkdir(join(root, 'src'))
+
+    await expect(service.delete(root, 'src')).rejects.toThrow(/is a directory/)
+
+    const { readdir } = await import('node:fs/promises')
+    expect(await readdir(root)).toContain('src')
+  })
+
+  it('rejects a delete that escapes the workspace root', async () => {
+    await writeFile(join(dir, 'outside.txt'), 'nope')
+
+    await expect(service.delete(root, '../outside.txt')).rejects.toThrow(PathOutsideWorkspaceError)
+  })
+
+  it('rejects deleting a file that does not exist', async () => {
+    await expect(service.delete(root, 'missing.txt')).rejects.toThrow()
+  })
+})

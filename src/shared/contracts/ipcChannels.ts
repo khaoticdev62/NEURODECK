@@ -8,6 +8,7 @@ export const IPC_CHANNELS = {
   fileList: 'file.list',
   fileRead: 'file.read',
   fileWrite: 'file.write',
+  fileDelete: 'file.delete',
   recoveryList: 'recovery.list',
   recoveryDiff: 'recovery.diff',
   recoveryRestore: 'recovery.restore',

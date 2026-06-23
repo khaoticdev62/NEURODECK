@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react'
 import type { FileEntry } from '@shared/contracts'
+import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
+import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { cn } from '../../components/primitives/cn'
-import { listFiles } from '../../services/ipc/fileClient'
+import { deleteFile, listFiles } from '../../services/ipc/fileClient'
 import { FilePreview } from './FilePreview'
 import { useWorkspaces } from './useWorkspaces'
 
 /**
  * ND-026 File Manager, scoped to "Workspace-only" mode (one of six layout
  * modes the spec lists) — real directory listing for the active workspace,
- * via the real path-traversal-protected `FileService`. Read-only: no
- * copy/move/rename/delete/compress/extract/secure-delete yet, since every
- * one of those is destructive and the spec requires a real recovery path
- * before any destructive action ships — Recovery Service is Epic 11.
+ * via the real path-traversal-protected `FileService`, plus a real Delete
+ * for single files: `FileService.delete()` is recovery-checkpointed by
+ * `registerFileHandlers.ts` before it runs, the same orchestration
+ * `fileWrite` already uses. Copy/move/rename/compress/extract remain out
+ * of scope — each touches two paths or an archive boundary and needs a
+ * real multi-path checkpoint shape this slice doesn't design. Deleting a
+ * directory is not supported (the button doesn't appear for one).
  */
 export function FileManager(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
@@ -22,6 +27,21 @@ export function FileManager(): React.JSX.Element {
   const [selectedFile, setSelectedFile] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(Boolean(activeWorkspace))
+  const [deleteReview, setDeleteReview] = useState<FileEntry | null>(null)
+
+  const refresh = (): void => {
+    if (!activeWorkspace) return
+    void listFiles({ workspaceId: activeWorkspace.id, relativePath }).then((result) => {
+      if (result.ok) {
+        setEntries(result.data)
+        setError(null)
+      } else {
+        setEntries([])
+        setError(result.error.userMessage)
+      }
+      setLoading(false)
+    })
+  }
 
   useEffect(() => {
     if (!activeWorkspace) return
@@ -60,6 +80,18 @@ export function FileManager(): React.JSX.Element {
     }
   }
 
+  const performDelete = async (entry: FileEntry): Promise<void> => {
+    const result = await deleteFile({ workspaceId: activeWorkspace.id, relativePath: entry.path })
+    setDeleteReview(null)
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    if (selectedFile === entry.path) setSelectedFile(null)
+    setError(null)
+    refresh()
+  }
+
   return (
     <div className="flex h-full gap-4">
       <div className="flex w-1/2 flex-col gap-2">
@@ -72,7 +104,12 @@ export function FileManager(): React.JSX.Element {
         ) : (
           <ul className="flex flex-col gap-1 overflow-auto">
             {entries.map((entry) => (
-              <FileRow key={entry.path} entry={entry} onOpen={() => openEntry(entry)} />
+              <FileRow
+                key={entry.path}
+                entry={entry}
+                onOpen={() => openEntry(entry)}
+                onDelete={entry.isDirectory ? undefined : () => setDeleteReview(entry)}
+              />
             ))}
           </ul>
         )}
@@ -80,6 +117,18 @@ export function FileManager(): React.JSX.Element {
       <div className="w-1/2">
         <FilePreview workspaceId={activeWorkspace.id} relativePath={selectedFile} />
       </div>
+      <ConfirmationDialog
+        open={deleteReview !== null}
+        title="Delete file"
+        action={`Delete ${deleteReview?.name ?? 'this file'}`}
+        scope={deleteReview?.path}
+        consequence="This permanently removes the file from the workspace. A recovery checkpoint of its current content is recorded first, so it can still be restored from Recovery Timeline."
+        confirmLabel="Delete"
+        onConfirm={() => {
+          if (deleteReview) void performDelete(deleteReview)
+        }}
+        onCancel={() => setDeleteReview(null)}
+      />
     </div>
   )
 }
@@ -116,7 +165,15 @@ function Breadcrumbs({
   )
 }
 
-function FileRow({ entry, onOpen }: { entry: FileEntry; onOpen: () => void }): React.JSX.Element {
+function FileRow({
+  entry,
+  onOpen,
+  onDelete
+}: {
+  entry: FileEntry
+  onOpen: () => void
+  onDelete?: () => void
+}): React.JSX.Element {
   const { ref, isFocused } = useFocusable<HTMLButtonElement>({
     id: `file:${entry.path}`,
     groupId: 'file-manager',
@@ -124,20 +181,27 @@ function FileRow({ entry, onOpen }: { entry: FileEntry; onOpen: () => void }): R
   })
 
   return (
-    <button
-      ref={ref}
-      type="button"
-      onClick={onOpen}
-      className={cn(
-        'flex min-h-[var(--ndx-target-min)] items-center justify-between rounded-md px-3 text-left text-body text-text-primary',
-        isFocused ? 'bg-surface-raised' : 'hover:bg-surface-raised/60'
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1">
+      <button
+        ref={ref}
+        type="button"
+        onClick={onOpen}
+        className={cn(
+          'flex min-h-[var(--ndx-target-min)] items-center justify-between rounded-md px-3 text-left text-body text-text-primary',
+          isFocused ? 'bg-surface-raised' : 'hover:bg-surface-raised/60'
+        )}
+      >
+        <span>{entry.isDirectory ? `📁 ${entry.name}` : entry.name}</span>
+        {!entry.isDirectory && (
+          <span className="text-meta text-text-tertiary">{formatBytes(entry.sizeBytes)}</span>
+        )}
+      </button>
+      {onDelete && (
+        <ControllerButton variant="destructive" onClick={onDelete}>
+          Delete
+        </ControllerButton>
       )}
-    >
-      <span>{entry.isDirectory ? `📁 ${entry.name}` : entry.name}</span>
-      {!entry.isDirectory && (
-        <span className="text-meta text-text-tertiary">{formatBytes(entry.sizeBytes)}</span>
-      )}
-    </button>
+    </li>
   )
 }
 

@@ -42,7 +42,8 @@ export interface ChordDefinition {
 export const STANDARD_CHORDS: ChordDefinition[] = [
   { buttons: [4, 5], action: 'home' }, // LB + RB -> NeuroDeck Home
   { buttons: [6, 7], action: 'workspace.switcher' }, // LT + RT -> Workspace switcher
-  { buttons: [9, 1], action: 'emergency.stop' } // Menu + B -> Emergency cancel
+  { buttons: [9, 1], action: 'emergency.stop' }, // Menu + B -> Emergency cancel
+  { buttons: [9, 3], action: 'quick.access' } // Menu + Y -> Quick Access fallback
 ]
 
 /** Left-stick axis index pair, used for accelerated directional navigation. */

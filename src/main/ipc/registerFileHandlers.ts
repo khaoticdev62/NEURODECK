@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import {
+  deleteFileRequestSchema,
   IPC_CHANNELS,
   listFilesRequestSchema,
   ndxError,
@@ -17,10 +18,11 @@ import type { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
 /**
  * Real handlers backed by `FileService`, scoped to a workspace's root by
  * `workspaceId` — never an arbitrary absolute path from the renderer.
- * `fileWrite` orchestrates `FileService` + `RecoveryService` directly here
- * (rather than inside either service) so a recovery checkpoint is always
- * recorded before content is overwritten — there is no code path to
- * `FileService.write()` that skips it.
+ * `fileWrite` and `fileDelete` both orchestrate `FileService` +
+ * `RecoveryService` directly here (rather than inside either service) so a
+ * recovery checkpoint is always recorded before content is overwritten or
+ * removed — there is no code path to `FileService.write()`/`delete()` that
+ * skips it.
  */
 export function registerFileHandlers(
   fileService: FileService,
@@ -118,6 +120,45 @@ export function registerFileHandlers(
           parsed.data.description
         )
         await fileService.write(workspace.rootPath, parsed.data.relativePath, parsed.data.content)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toFileError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.fileDelete,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = deleteFileRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That file delete request is invalid.')
+        }
+      }
+
+      const workspace = await workspaceStore.get(parsed.data.workspaceId)
+      if (!workspace) {
+        return {
+          ok: false,
+          error: ndxError('not-found', 'workspace-not-found', 'That workspace no longer exists.')
+        }
+      }
+
+      try {
+        const previousContent = await fileService.readIfExists(
+          workspace.rootPath,
+          parsed.data.relativePath
+        )
+        await recoveryService.recordCheckpoint(
+          workspace.id,
+          parsed.data.relativePath,
+          previousContent,
+          'Deleted file',
+          'file-delete'
+        )
+        await fileService.delete(workspace.rootPath, parsed.data.relativePath)
         return { ok: true, data: null }
       } catch (error) {
         return { ok: false, error: toFileError(error) }

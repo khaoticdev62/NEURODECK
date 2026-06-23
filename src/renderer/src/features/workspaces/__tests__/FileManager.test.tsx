@@ -152,4 +152,47 @@ describe('FileManager', () => {
     expect(await screen.findByText('Hello')).toBeInTheDocument()
     expect(read).toHaveBeenCalledWith({ workspaceId: 'w1', relativePath: 'readme.md' })
   })
+
+  it('deletes a file through the typed bridge after confirmation', async () => {
+    const list = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        data: [
+          {
+            name: 'readme.md',
+            path: 'readme.md',
+            isDirectory: false,
+            sizeBytes: 5,
+            modifiedAt: Date.now()
+          }
+        ]
+      })
+      .mockResolvedValueOnce({ ok: true, data: [] })
+    const deleteFile = vi.fn().mockResolvedValue({ ok: true, data: null })
+    stubBridge({ files: { list, read: vi.fn(), delete: deleteFile } as never })
+
+    const user = userEvent.setup()
+    renderFileManager()
+    await screen.findByText('readme.md')
+
+    await user.click(screen.getByRole('button', { name: 'Delete' }))
+    await user.click(screen.getAllByRole('button', { name: 'Delete' })[1])
+
+    expect(deleteFile).toHaveBeenCalledWith({ workspaceId: 'w1', relativePath: 'readme.md' })
+    expect(await screen.findByText('Empty folder')).toBeInTheDocument()
+  })
+
+  it('does not offer Delete for a directory', async () => {
+    const list = vi.fn().mockResolvedValue({
+      ok: true,
+      data: [{ name: 'src', path: 'src', isDirectory: true, sizeBytes: 0, modifiedAt: Date.now() }]
+    })
+    stubBridge({ files: { list, read: vi.fn() } as never })
+
+    renderFileManager()
+
+    await screen.findByText(/src/)
+    expect(screen.queryByRole('button', { name: 'Delete' })).not.toBeInTheDocument()
+  })
 })

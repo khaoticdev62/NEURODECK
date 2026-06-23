@@ -247,7 +247,8 @@ describe('useGlobalSearch', () => {
           ]
         }),
         read: vi.fn(),
-        write: vi.fn()
+        write: vi.fn(),
+        delete: vi.fn()
       }
     })
 
@@ -326,7 +327,8 @@ describe('useGlobalSearch', () => {
           error: { code: 'FILES_LIST_FAILED', userMessage: 'Could not list files' }
         }),
         read: vi.fn(),
-        write: vi.fn()
+        write: vi.fn(),
+        delete: vi.fn()
       }
     })
 

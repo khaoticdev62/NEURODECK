@@ -9,7 +9,7 @@ export const reversibilitySchema = z.enum([
 ])
 export type Reversibility = z.infer<typeof reversibilitySchema>
 
-export const recoveryCheckpointKindSchema = z.enum(['file-write', 'git-restore'])
+export const recoveryCheckpointKindSchema = z.enum(['file-write', 'git-restore', 'file-delete'])
 export type RecoveryCheckpointKind = z.infer<typeof recoveryCheckpointKindSchema>
 
 export const recoveryCheckpointSchema = z.object({
@@ -54,3 +54,10 @@ export const writeFileRequestSchema = z.object({
   description: z.string().min(1)
 })
 export type WriteFileRequest = z.infer<typeof writeFileRequestSchema>
+
+/** Deletes a single tracked file — directories and moves/renames are out of scope: a delete fits the existing single-path checkpoint model exactly (relativePath + previousContent), but a move/rename touches two paths and needs a checkpoint shape this slice doesn't design. */
+export const deleteFileRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  relativePath: z.string().min(1)
+})
+export type DeleteFileRequest = z.infer<typeof deleteFileRequestSchema>
