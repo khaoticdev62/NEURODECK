@@ -114,6 +114,24 @@ describe('AgentRuntime', () => {
     expect(failed.error).toContain('non-allowlisted tool')
   })
 
+  it('fails closed when the model proposes child agents outside persisted bounds', async () => {
+    const store = await createStore()
+    const agent = await createAgent(store)
+    const onToolRequest = vi.fn()
+    const runtime = new AgentRuntime(
+      store,
+      { complete: vi.fn().mockResolvedValue(completionWithChildAgent()) },
+      () => undefined,
+      onToolRequest
+    )
+
+    const started = await runtime.start(agent.id, 'Delegate the review')
+    const failed = await waitForRun(store, started.id, 'failed')
+
+    expect(onToolRequest).not.toHaveBeenCalled()
+    expect(failed.error).toContain('policy disables child spawning')
+  })
+
   it('pauses before emitting the next tool request and resumes deterministically', async () => {
     const store = await createStore()
     const agent = await createAgent(store)
@@ -180,6 +198,7 @@ async function createAgent(store: AgentStore): Promise<AgentDefinition> {
     toolAllowlist: ['files.read'],
     permissionCeiling: ['workspace.read'],
     resourceLimits: { maxTokens: 512, timeoutMs: 5000, maxToolCalls: 4 },
+    childAgentPolicy: { allowChildAgents: false, maxChildrenPerRun: 0, maxDepth: 0 },
     enabled: true
   })
 }
@@ -212,6 +231,21 @@ function completionWithToolCalls(toolIds: string[]): ModelCompletionResult {
           toolId,
           arguments: { path: index === 0 ? 'README.md' : 'package.json' }
         }))
+      }),
+      '```'
+    ].join('\n')
+  }
+}
+
+function completionWithChildAgent(): ModelCompletionResult {
+  return {
+    ...completion(),
+    content: [
+      'Plan: delegate this review.',
+      '```json',
+      JSON.stringify({
+        toolCalls: [],
+        childAgents: [{ name: 'Child Reviewer', role: 'Reviewer', goal: 'Review files' }]
       }),
       '```'
     ].join('\n')

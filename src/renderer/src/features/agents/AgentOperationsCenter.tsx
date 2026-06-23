@@ -169,6 +169,7 @@ function CreateAgentForm({
       toolAllowlist: allowedTool ? [allowedTool] : [],
       permissionCeiling: [],
       resourceLimits: { maxTokens: 1024, timeoutMs: 30000, maxToolCalls: 0 },
+      childAgentPolicy: { allowChildAgents: false, maxChildrenPerRun: 0, maxDepth: 0 },
       enabled: true
     })
     setSaving(false)
@@ -258,6 +259,12 @@ function AgentCard({
         {agent.role} · {agent.modelProfile} · {agent.enabled ? 'Enabled' : 'Disabled'}
       </p>
       <p className="text-meta text-text-tertiary">{agent.goal}</p>
+      <p className="text-meta text-text-tertiary">
+        Child agents:{' '}
+        {agent.childAgentPolicy.allowChildAgents
+          ? `${agent.childAgentPolicy.maxChildrenPerRun} max · depth ${agent.childAgentPolicy.maxDepth}`
+          : 'disabled'}
+      </p>
       <div className="mt-3 flex gap-2">
         <ControllerButton variant="primary" onClick={onOpen}>
           Open

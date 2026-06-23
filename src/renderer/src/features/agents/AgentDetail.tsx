@@ -142,6 +142,12 @@ export function AgentDetail(): React.JSX.Element {
           {agent.resourceLimits.timeoutMs}ms timeout · {agent.resourceLimits.maxToolCalls} max tool
           calls
         </p>
+        <p className="text-meta text-text-secondary">
+          Child agent policy:{' '}
+          {agent.childAgentPolicy.allowChildAgents
+            ? `${agent.childAgentPolicy.maxChildrenPerRun} max · depth ${agent.childAgentPolicy.maxDepth}`
+            : 'disabled'}
+        </p>
       </section>
 
       <section className="flex flex-col gap-2 border border-border bg-surface p-3">

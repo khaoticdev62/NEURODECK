@@ -4,6 +4,7 @@ import {
   type AgentDefinition,
   type AgentRun,
   type AgentState,
+  type AgentToolPlan,
   type AgentToolCall,
   type AgentToolExecutionRequest,
   type AgentToolExecutionResult
@@ -115,10 +116,11 @@ export class AgentRuntime {
       )
       if (controller.signal.aborted) throw new DOMException('Cancelled', 'AbortError')
       run = (await this.store.getRun(run.id)) ?? run
-      const toolCalls = parseToolCalls(completion.content)
+      const plan = parseAgentPlan(completion.content)
+      enforceChildAgentBounds(agent, plan)
       run = this.event(
         run,
-        toolCalls.length > 0 ? 'queued' : 'completed',
+        plan.toolCalls.length > 0 ? 'queued' : 'completed',
         'Model planning completed.',
         completion.modelId,
         completion.providerId
@@ -127,7 +129,7 @@ export class AgentRuntime {
       run.promptTokens = completion.usage.promptTokens
       run.completionTokens = completion.usage.completionTokens
       await this.persist(run)
-      run = await this.executeToolCalls(agent, run, toolCalls, controller.signal)
+      run = await this.executeToolCalls(agent, run, plan.toolCalls, controller.signal)
     } catch (error) {
       run = (await this.store.getRun(run.id)) ?? run
       const cancelled =
@@ -325,7 +327,8 @@ function systemPrompt(agent: AgentDefinition): string {
     `Workspace scope: ${agent.workspaceId}.`,
     `Allowed tools: ${agent.toolAllowlist.length ? agent.toolAllowlist.join(', ') : 'none'}.`,
     `Permission ceiling: ${agent.permissionCeiling.length ? agent.permissionCeiling.join(', ') : 'none'}.`,
-    `Propose a concise plan. If a tool is required, include exactly one JSON object in a fenced json block with this shape: {"toolCalls":[{"toolId":"registered.tool.id","arguments":{}}]}.`,
+    `Child agent policy: ${agent.childAgentPolicy.allowChildAgents ? `up to ${agent.childAgentPolicy.maxChildrenPerRun} child agents, max depth ${agent.childAgentPolicy.maxDepth}` : 'disabled'}.`,
+    `Propose a concise plan. If a tool is required, include exactly one JSON object in a fenced json block with this shape: {"toolCalls":[{"toolId":"registered.tool.id","arguments":{}}],"childAgents":[]}.`,
     `Only use allowed tools. Never claim a tool ran until the host reports it.`
   ].join('\n')
 }
@@ -334,12 +337,28 @@ function terminal(state: AgentState): boolean {
   return ['cancelled', 'failed', 'completed', 'rolled-back'].includes(state)
 }
 
-function parseToolCalls(content: string): AgentToolCall[] {
+function parseAgentPlan(content: string): AgentToolPlan {
   const fenced = content.match(/```json\s*([\s\S]*?)```/i)
   const candidate = fenced?.[1] ?? (content.trim().startsWith('{') ? content.trim() : '')
-  if (!candidate) return []
+  if (!candidate) return { toolCalls: [], childAgents: [] }
   const parsedJson: unknown = JSON.parse(candidate)
   const parsedPlan = agentToolPlanSchema.safeParse(parsedJson)
   if (!parsedPlan.success) throw new Error('Model returned an invalid agent tool plan.')
-  return parsedPlan.data.toolCalls
+  return parsedPlan.data
+}
+
+function enforceChildAgentBounds(agent: AgentDefinition, plan: AgentToolPlan): void {
+  if (plan.childAgents.length === 0) return
+  if (!agent.childAgentPolicy.allowChildAgents) {
+    throw new Error('Agent proposed child agents, but this agent policy disables child spawning.')
+  }
+  if (agent.childAgentPolicy.maxDepth === 0) {
+    throw new Error('Agent proposed child agents, but this agent policy allows no child depth.')
+  }
+  if (plan.childAgents.length > agent.childAgentPolicy.maxChildrenPerRun) {
+    throw new Error(
+      `Agent proposed ${plan.childAgents.length} child agents, exceeding the limit of ${agent.childAgentPolicy.maxChildrenPerRun}.`
+    )
+  }
+  throw new Error('Child agent spawning is bounded by policy but not implemented yet.')
 }

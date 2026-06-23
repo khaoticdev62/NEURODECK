@@ -995,7 +995,7 @@ The security boundary is deliberately split:
 - `AgentToolExecutionBridge` (`features/agents/AgentToolExecutionBridge.tsx`) runs in the renderer, where the real `ActionQueue` already lives. It verifies that the tool is registered, checks the tool's `requiredCapability` against the agent's `permissionCeiling`, then calls `queue.submit()` so the request goes through the same `ToolRegistry` → `PermissionBroker` → Approval Queue → AuditLog path as Command Palette and Workflow Engine tool actions.
 - `registerAgentHandlers.ts` receives the typed `agentTool.result` acknowledgment and resolves the waiting persisted run. Pending approvals remain pending in the existing Approval Queue; the agent run stays in `waiting-for-approval` until the user approves, denies, cancels, or the tool completes.
 
-This is real ActionQueue-backed submission, not a separate agent-only executor. A follow-up slice adds real run pause/resume; this bridge slice intentionally does not yet build the full ND-017 Files/Tools/Permissions/Logs tab model, child-agent spawning/budget bounds, or full e2e UI coverage for a live approval flow.
+This is real ActionQueue-backed submission, not a separate agent-only executor. Follow-up slices add real run pause/resume and child-agent policy bounds; this bridge slice intentionally does not yet build the full ND-017 Files/Tools/Permissions/Logs tab model or full e2e UI coverage for a live approval flow.
 
 ## Epic 8 addendum — Agent Runtime pause/resume controls
 
@@ -1009,3 +1009,16 @@ The runtime persists `paused` timeline events, wakes paused runs through an inte
 | --- | --- | --- |
 | `AgentRuntime` lifecycle, cancellation, strict tool-call bridge submission, non-allowlisted tool rejection, pause-before-next-tool/resume race regression | `core/agents/__tests__/AgentRuntime.test.ts` | 5 |
 | `AgentDetail` overview/runs, start, cancel, pause, resume IPC wiring | `features/agents/__tests__/AgentDetail.test.tsx` | 5 |
+
+## Epic 8 addendum — Agent Runtime child-agent policy bounds
+
+Agent definitions now persist a real `childAgentPolicy` with `{ allowChildAgents, maxChildrenPerRun, maxDepth }`. The default is deliberately closed: no child agents, zero per run, zero depth. `AgentStore` normalizes older persisted records on read so existing user data does not crash when this field is absent.
+
+The model prompt includes the child-agent policy. If a model emits strict JSON with `childAgents`, `AgentRuntime` validates it before any tool submission. With the default policy, child-agent proposals fail closed with a persisted run error; they are never ignored silently and no fake child-agent execution is created.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| --- | --- | --- |
+| `AgentRuntime` child-agent proposal rejected before tool request | `core/agents/__tests__/AgentRuntime.test.ts` | +1 |
+| `AgentOperationsCenter` and `AgentDetail` render disabled child policy and create agents with default policy | `features/agents/__tests__` | covered |

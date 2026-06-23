@@ -23,6 +23,19 @@ export const agentResourceLimitsSchema = z.object({
 })
 export type AgentResourceLimits = z.infer<typeof agentResourceLimitsSchema>
 
+export const agentChildPolicySchema = z.object({
+  allowChildAgents: z.boolean(),
+  maxChildrenPerRun: z.number().int().min(0).max(10),
+  maxDepth: z.number().int().min(0).max(3)
+})
+export type AgentChildPolicy = z.infer<typeof agentChildPolicySchema>
+
+export const defaultAgentChildPolicy: AgentChildPolicy = {
+  allowChildAgents: false,
+  maxChildrenPerRun: 0,
+  maxDepth: 0
+}
+
 export const agentDefinitionSchema = z.object({
   id: z.string(),
   name: z.string().min(1),
@@ -33,6 +46,7 @@ export const agentDefinitionSchema = z.object({
   toolAllowlist: z.array(z.string()),
   permissionCeiling: z.array(z.string()),
   resourceLimits: agentResourceLimitsSchema,
+  childAgentPolicy: agentChildPolicySchema.default(defaultAgentChildPolicy),
   enabled: z.boolean(),
   createdAt: z.number(),
   updatedAt: z.number()
@@ -105,8 +119,16 @@ export const agentToolCallSchema = z.object({
 })
 export type AgentToolCall = z.infer<typeof agentToolCallSchema>
 
+export const agentChildProposalSchema = z.object({
+  name: z.string().min(1),
+  role: z.string().min(1),
+  goal: z.string().min(1)
+})
+export type AgentChildProposal = z.infer<typeof agentChildProposalSchema>
+
 export const agentToolPlanSchema = z.object({
-  toolCalls: z.array(agentToolCallSchema).default([])
+  toolCalls: z.array(agentToolCallSchema).default([]),
+  childAgents: z.array(agentChildProposalSchema).default([])
 })
 export type AgentToolPlan = z.infer<typeof agentToolPlanSchema>
 

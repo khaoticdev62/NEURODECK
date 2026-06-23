@@ -59,6 +59,7 @@ const sampleAgent: AgentDefinition = {
   toolAllowlist: [],
   permissionCeiling: [],
   resourceLimits: { maxTokens: 512, timeoutMs: 5000, maxToolCalls: 0 },
+  childAgentPolicy: { allowChildAgents: false, maxChildrenPerRun: 0, maxDepth: 0 },
   enabled: true,
   createdAt: Date.now(),
   updatedAt: Date.now()
@@ -84,6 +85,7 @@ describe('AgentOperationsCenter', () => {
 
     expect(await screen.findByText('Repository Maintainer')).toBeInTheDocument()
     expect(screen.getByText(/Code reviewer/)).toBeInTheDocument()
+    expect(screen.getByText(/Child agents: disabled/)).toBeInTheDocument()
   })
 
   it('creates a real agent via IPC', async () => {
@@ -109,7 +111,8 @@ describe('AgentOperationsCenter', () => {
       expect.objectContaining({
         name: 'Repository Maintainer',
         role: 'Code reviewer',
-        workspaceId: 'w1'
+        workspaceId: 'w1',
+        childAgentPolicy: { allowChildAgents: false, maxChildrenPerRun: 0, maxDepth: 0 }
       })
     )
     expect(await screen.findByText('Repository Maintainer')).toBeInTheDocument()

@@ -1,5 +1,10 @@
 import { randomUUID } from 'node:crypto'
-import type { AgentDefinition, AgentRun, CreateAgentRequest } from '@shared/contracts/agent'
+import {
+  defaultAgentChildPolicy,
+  type AgentDefinition,
+  type AgentRun,
+  type CreateAgentRequest
+} from '@shared/contracts/agent'
 import { JsonStore } from '../persistence/JsonStore'
 
 interface AgentIndex {
@@ -16,13 +21,13 @@ export class AgentStore {
 
   async list(workspaceId?: string): Promise<AgentDefinition[]> {
     const index = await this.store.read()
-    return workspaceId
-      ? index.agents.filter((agent) => agent.workspaceId === workspaceId)
-      : index.agents
+    const agents = index.agents.map(normalizeAgent)
+    return workspaceId ? agents.filter((agent) => agent.workspaceId === workspaceId) : agents
   }
 
   async get(agentId: string): Promise<AgentDefinition | undefined> {
-    return (await this.store.read()).agents.find((agent) => agent.id === agentId)
+    const agent = (await this.store.read()).agents.find((candidate) => candidate.id === agentId)
+    return agent ? normalizeAgent(agent) : undefined
   }
 
   async create(request: CreateAgentRequest): Promise<AgentDefinition> {
@@ -37,7 +42,11 @@ export class AgentStore {
     const index = await this.store.read()
     const existing = index.agents.find((agent) => agent.id === agentId)
     if (!existing) throw new Error('Agent not found.')
-    const updated: AgentDefinition = { ...existing, ...request, updatedAt: Date.now() }
+    const updated: AgentDefinition = {
+      ...normalizeAgent(existing),
+      ...request,
+      updatedAt: Date.now()
+    }
     await this.store.write({
       ...index,
       agents: index.agents.map((agent) => (agent.id === agentId ? updated : agent))
@@ -49,7 +58,7 @@ export class AgentStore {
     const index = await this.store.read()
     const existing = index.agents.find((agent) => agent.id === agentId)
     if (!existing) throw new Error('Agent not found.')
-    const updated: AgentDefinition = { ...existing, enabled, updatedAt: Date.now() }
+    const updated: AgentDefinition = { ...normalizeAgent(existing), enabled, updatedAt: Date.now() }
     await this.store.write({
       ...index,
       agents: index.agents.map((agent) => (agent.id === agentId ? updated : agent))
@@ -82,5 +91,12 @@ export class AgentStore {
     return (agentId ? runs.filter((run) => run.agentId === agentId) : runs).sort(
       (left, right) => right.updatedAt - left.updatedAt
     )
+  }
+}
+
+function normalizeAgent(agent: AgentDefinition): AgentDefinition {
+  return {
+    ...agent,
+    childAgentPolicy: agent.childAgentPolicy ?? defaultAgentChildPolicy
   }
 }

@@ -1,4 +1,5 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 
 /**
@@ -8,6 +9,8 @@ import { dirname } from 'node:path'
  * existing file (rename is atomic on the same filesystem).
  */
 export class JsonStore<T> {
+  private writeQueue: Promise<void> = Promise.resolve()
+
   constructor(
     private filePath: string,
     private defaultValue: T
@@ -24,13 +27,37 @@ export class JsonStore<T> {
   }
 
   async write(value: T): Promise<void> {
+    const operation = this.writeQueue.then(
+      () => this.writeNow(value),
+      () => this.writeNow(value)
+    )
+    this.writeQueue = operation.catch(() => undefined)
+    return operation
+  }
+
+  private async writeNow(value: T): Promise<void> {
     await mkdir(dirname(this.filePath), { recursive: true })
-    const tempPath = `${this.filePath}.${process.pid}.${Date.now()}.tmp`
+    const tempPath = `${this.filePath}.${process.pid}.${randomUUID()}.tmp`
     await writeFile(tempPath, JSON.stringify(value, null, 2), 'utf-8')
-    await rename(tempPath, this.filePath)
+    try {
+      await rename(tempPath, this.filePath)
+    } catch (error) {
+      if (!isReplaceBlocked(error)) throw error
+      await rm(this.filePath, { force: true })
+      await rename(tempPath, this.filePath)
+    }
   }
 }
 
 function isNotFound(error: unknown): boolean {
   return typeof error === 'object' && error !== null && 'code' in error && error.code === 'ENOENT'
+}
+
+function isReplaceBlocked(error: unknown): boolean {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error.code === 'EPERM' || error.code === 'EEXIST')
+  )
 }

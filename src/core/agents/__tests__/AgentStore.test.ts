@@ -27,6 +27,7 @@ function request(overrides: Partial<CreateAgentRequest> = {}): CreateAgentReques
     toolAllowlist: ['files.read'],
     permissionCeiling: ['workspace.read'],
     resourceLimits: { maxTokens: 512, timeoutMs: 5000, maxToolCalls: 4 },
+    childAgentPolicy: { allowChildAgents: false, maxChildrenPerRun: 0, maxDepth: 0 },
     enabled: true,
     ...overrides
   }

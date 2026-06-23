@@ -57,6 +57,7 @@ const sampleAgent: AgentDefinition = {
   toolAllowlist: [],
   permissionCeiling: [],
   resourceLimits: { maxTokens: 512, timeoutMs: 5000, maxToolCalls: 0 },
+  childAgentPolicy: { allowChildAgents: false, maxChildrenPerRun: 0, maxDepth: 0 },
   enabled: true,
   createdAt: Date.now(),
   updatedAt: Date.now()
@@ -108,6 +109,7 @@ describe('AgentDetail', () => {
 
     expect(await screen.findByText('Repository Maintainer')).toBeInTheDocument()
     expect(screen.getByText(/Find actionable risks/)).toBeInTheDocument()
+    expect(screen.getByText(/Child agent policy: disabled/)).toBeInTheDocument()
     expect(screen.getByText('Inspect the repository')).toBeInTheDocument()
     expect(screen.getByText(/Inspect files/)).toBeInTheDocument()
   })
