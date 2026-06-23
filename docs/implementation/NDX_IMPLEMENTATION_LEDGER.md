@@ -253,14 +253,15 @@ npm run test:e2e     → 1 passed
 
 ### Scope decision (read this before assuming a screen is "missing")
 
-The spec assigns 12 screens (ND-001 through ND-012) to this epic, but half of them require backend services owned by _later_ epics (Model Router: Epic 9; Workspace Service: Epic 5; typed IPC: Epic 4; profiles/credentials: Epic 10; agent/task runtime: Epic 4/8). Building those now would mean either fabricating data or shipping empty shells with no real consumer — both explicitly forbidden (mega-prompt §2.1, §2.5). So Epic 3 shipped the **6 screens that are honestly real today** and documented the other **6 as deferred with the specific blocking dependency**, rather than silently skipping them or faking them to hit a number. See `IMPLEMENTATION_CHECKLIST.md` for the per-screen breakdown.
+The spec assigns 12 screens (ND-001 through ND-012) to this epic, but several require backend services owned by _later_ epics (Model Router: Epic 9; Workspace Service: Epic 5; typed IPC: Epic 4; profiles/credentials: Epic 10; agent/task runtime: Epic 4/8). Building those now would mean either fabricating data or shipping empty shells with no real consumer — both explicitly forbidden (mega-prompt §2.1, §2.5). Epic 3 shipped the screens that are honestly real at each point and documented the rest as deferred with the specific blocking dependency. See `IMPLEMENTATION_CHECKLIST.md` for the per-screen breakdown.
 
-**Built (real):** ND-003 First-Run Welcome, ND-004 Controller Calibration, ND-008 Home Command Center, ND-009 Universal Command Palette, ND-011 Activity Center, ND-012 Notification Center.
+**Built (real):** ND-001 Boot and Session Start, ND-003 First-Run Welcome, ND-004 Controller Calibration, ND-008 Home Command Center, ND-009 Universal Command Palette, ND-011 Activity Center, ND-012 Notification Center.
 
-**Deferred (documented, not faked):** ND-001 Boot and Session Start, ND-002 Lock Screen, ND-005 AI Provider Setup, ND-006 Workspace Discovery, ND-007 Guided Controller Tutorial (only 2 of 7 lessons have real backing — not enough to justify the full screen), ND-010 Global Search (zero real content sources exist anywhere in the app yet).
+**Deferred (documented, not faked):** ND-002 Lock Screen, ND-005 AI Provider Setup, ND-006 Workspace Discovery, ND-007 Guided Controller Tutorial (only 2 of 7 lessons have real backing — not enough to justify the full screen), ND-010 Global Search (zero real content sources exist anywhere in the app yet).
 
 ### What was built
 
+- **ND-001 Boot and Session Start** (`features/onboarding/BootSessionStart.tsx`): the app's entry gate, rendered outside `ShellLayout` so boot completes before the global shell chrome and overlays mount. Performs real service checks over the typed IPC bridge: workspace list (critical), model provider list (optional — failure does not block shell), controller settings (optional), and system metrics (informative only). First-run vs. returning user is inferred from empty persisted state (no workspaces and no providers) rather than adding a new onboarding flag. Surfaces a 4-step progress UI, a detailed status view after 10 seconds or on `Show details`, a 15-second boot timeout, and a critical-failure screen with Retry / Diagnostics / Exit. `B` always offers Return to SteamOS via `power.quitApp`. On success, routes to `/onboarding/welcome` for first run or `/` for returning users.
 - **ND-003 First-Run Welcome** (`features/onboarding/FirstRunWelcome.tsx`): the four spec cards, registers a real focus node for "Begin setup," navigates to calibration.
 - **ND-004 Controller Calibration** (`features/onboarding/ControllerCalibration.tsx`): live button-detection log via the new `onAction` observer (below), haptics intensity control that genuinely calls `HapticsService.setIntensity`/`trigger`, a real "Test haptics" action reporting honest `played`/`muted`/`unsupported` results, and a hold-to-confirm reset (`CriticalConfirmationDialog`). Dead zone and hold duration are shown as real read-only values pulled from the actual constants (`STICK_DEAD_ZONE`, `HOLD_THRESHOLD_MS`), not adjustable fake sliders — making them adjustable needs a config-threading refactor through `gamepadPolling.ts` deferred to Epic 11.
 - **ND-008 Home Command Center** (`features/home/HomeCommandCenter.tsx`): renders the spec's own defined Empty State verbatim ("Create or discover a workspace") since there are genuinely zero workspaces. No Continue cards, pinned workspaces, or recommendations were fabricated to fill space.
@@ -278,6 +279,7 @@ The spec assigns 12 screens (ND-001 through ND-012) to this epic, but half of th
 
 | Suite                                                                                                                                                            | Location                                                               | Count |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ----- |
+| `BootSessionStart` (brand/steps render, first-run → welcome, workspace/provider → home, failure screen, Return to SteamOS, details toggle)                       | `features/onboarding/__tests__/BootSessionStart.test.tsx`              | 7     |
 | `FirstRunWelcome` (cards render, navigates to calibration)                                                                                                       | `features/onboarding/__tests__/FirstRunWelcome.test.tsx`               | 2     |
 | `ControllerCalibration` (real hold-duration value, haptics intensity, honest unsupported result, navigation, hold-to-confirm reset)                              | `features/onboarding/__tests__/ControllerCalibration.test.tsx`         | 5     |
 | `HomeCommandCenter` (empty state, no fabricated modules, navigation)                                                                                             | `features/home/__tests__/HomeCommandCenter.test.tsx`                   | 3     |
@@ -287,21 +289,21 @@ The spec assigns 12 screens (ND-001 through ND-012) to this epic, but half of th
 | `KeyboardAdapter` editable-target guard (suppresses shortcuts while typing, still allows confirm/back)                                                           | `controller/adapters/__tests__/keyboardAdapter.test.ts`                | +2    |
 | `HapticsService` Gamepad-API-unavailable guard                                                                                                                   | `controller/haptics/__tests__/hapticsService.test.ts`                  | +1    |
 
-Total: 93 tests passing — was 66 at end of Epic 2.
+Total: 100 tests passing for Epic 3 scope — was 93 before ND-001.
 
 ### Validation evidence
 
 ```text
 npm run typecheck   → 0 errors
 npm run lint         → 0 errors, 0 warnings
-npm run test         → 17 files, 93 tests passed
-npm run build        → succeeded (renderer bundle: 26.07 kB CSS, 709.80 kB JS)
-npm run test:e2e     → 1 passed
+npm run test         → 18 files, 100 tests passed (Epic 3 scope); current repo total 405 tests passed
+npm run build        → succeeded (renderer bundle: 32.90 kB CSS, 1,118.92 kB JS)
+npm run test:e2e     → updated to cover ND-001 boot path
 ```
 
 ### Deferred items with explicit reason
 
-- **ND-001, ND-002, ND-005, ND-006, ND-007, ND-010** — see "Scope decision" above; each needs a specific not-yet-built service.
+- **ND-002, ND-005, ND-006, ND-007, ND-010** — see "Scope decision" above; each needs a specific not-yet-built service.
 - **Command Palette's 8 non-Screens search domains** (commands, files, symbols, workspaces, workflows, agents, settings, recent actions) — wait for the epics that produce that content (Epic 4/5/6/8/11).
 - **Adjustable dead zone / hold duration / focus movement speed** — shown as real values, not editable; making them editable needs a config object threaded through `gamepadPolling.ts`/`GamepadAdapter`/`KeyboardAdapter`, planned for Epic 11 (Controller Settings) rather than half-built here.
 - **Per-profile calibration persistence** — spec requires calibration "stored per controller profile"; no persistence layer exists yet (Epic 4/5), so haptics intensity changes only last for the current session.

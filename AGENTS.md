@@ -190,14 +190,14 @@ Do not start Phase B until Phase A is complete.
 
 ## 10. Quick reference
 
-| Question | Look here |
-|---|---|
-| What screen should I build next? | `IMPLEMENTATION_CHECKLIST.md` |
-| What's already real vs. mocked? | `HANDOFF.md` §2, `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` |
-| How do IPC contracts work? | `shared/contracts/`, `src/main/ipc/`, `src/preload/index.ts`, `src/renderer/src/services/ipc/` |
-| Where's the focus engine? | `src/renderer/src/controller/focus/` |
-| Where's the AI safety pipeline? | `src/renderer/src/ai-safety/` |
-| Where are system screens? | `src/renderer/src/features/system/` |
-| Where are tests? | Co-located `__tests__` folders; `e2e/app.spec.ts` |
-| Security posture | `docs/security/NDX_SECURITY_ARCHITECTURE.md` |
-| Design source of truth | `specs/NeuroDeck_OS_Controller_Wireframe_Spec.md` |
+| Question                         | Look here                                                                                      |
+| -------------------------------- | ---------------------------------------------------------------------------------------------- |
+| What screen should I build next? | `IMPLEMENTATION_CHECKLIST.md`                                                                  |
+| What's already real vs. mocked?  | `HANDOFF.md` §2, `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md`                            |
+| How do IPC contracts work?       | `shared/contracts/`, `src/main/ipc/`, `src/preload/index.ts`, `src/renderer/src/services/ipc/` |
+| Where's the focus engine?        | `src/renderer/src/controller/focus/`                                                           |
+| Where's the AI safety pipeline?  | `src/renderer/src/ai-safety/`                                                                  |
+| Where are system screens?        | `src/renderer/src/features/system/`                                                            |
+| Where are tests?                 | Co-located `__tests__` folders; `e2e/app.spec.ts`                                              |
+| Security posture                 | `docs/security/NDX_SECURITY_ARCHITECTURE.md`                                                   |
+| Design source of truth           | `specs/NeuroDeck_OS_Controller_Wireframe_Spec.md`                                              |

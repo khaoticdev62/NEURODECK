@@ -1,24 +1,62 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { NdxBridge } from '@shared/contracts'
 import App from '../App'
 
+function stubBridge(partial: Partial<NdxBridge>): void {
+  window.ndx = partial as NdxBridge
+}
+
+beforeEach(() => {
+  stubBridge({
+    workspaces: {
+      list: vi.fn().mockResolvedValue({ ok: true, data: [] })
+    } as never,
+    modelProviders: {
+      list: vi.fn().mockResolvedValue({ ok: true, data: [] })
+    } as never,
+    controllerSettings: {
+      get: vi.fn().mockResolvedValue({ ok: true, data: { hapticsIntensity: 'medium' } })
+    } as never,
+    system: {
+      collectMetrics: vi.fn().mockResolvedValue({ ok: true, data: {} })
+    } as never,
+    power: {
+      quitApp: vi.fn().mockResolvedValue({ ok: true, data: null })
+    } as never,
+    agentRuns: {
+      onToolRequest: vi.fn().mockReturnValue(() => {})
+    } as never
+  })
+})
+
+afterEach(() => {
+  // @ts-expect-error test-only cleanup of a global the real preload script injects
+  delete window.ndx
+})
+
 describe('App', () => {
-  it('renders the shell with the home route active', () => {
+  it('boots and then renders the shell', async () => {
     render(<App />)
-    expect(screen.getByRole('banner')).toBeInTheDocument()
+
+    expect(screen.getByText('NeuroDeck')).toBeInTheDocument()
+    expect(screen.getByText('Loading core services')).toBeInTheDocument()
+
+    await waitFor(() => {
+      expect(screen.getByRole('banner')).toBeInTheDocument()
+    })
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument()
-    expect(screen.getByText('Create or discover a workspace')).toBeInTheDocument()
   })
 
-  it('renders a real, distinguishable icon for every primary nav destination', () => {
-    // Regression guard: the nav rail previously rendered the exact same
-    // generic placeholder dot for every destination (no icon library, no
-    // per-destination glyph), making the collapsed (icon-only) rail
-    // genuinely unusable. Each destination must render its own real <svg>.
+  it('renders a real, distinguishable icon for every primary nav destination', async () => {
     render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
+    })
     const nav = screen.getByRole('navigation', { name: 'Primary' })
     const icons = nav.querySelectorAll('svg')
     const links = nav.querySelectorAll('a')
@@ -31,6 +69,10 @@ describe('App', () => {
   it('navigates between primary destinations', async () => {
     const user = userEvent.setup()
     render(<App />)
+
+    await waitFor(() => {
+      expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
+    })
 
     await user.click(screen.getByRole('link', { name: /AI/i }))
 

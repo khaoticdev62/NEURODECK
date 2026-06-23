@@ -46,7 +46,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 ### Epic 3 — Onboarding and global UX ⚠️ partially complete (6 of 12 screens real; 6 deferred — see ledger)
 
-- [ ] ND-001 Boot and Session Start — **not built**: workspace and model services now exist, but session restoration and the dedicated boot-status orchestration/UI do not
+- [x] ND-001 Boot and Session Start — `features/onboarding/BootSessionStart.tsx`; real boot orchestration with service checks (workspaces, model providers, controller settings, system metrics), first-run inference from empty state, 15s timeout, detailed status after 10s or on demand, failure screen with Retry/Diagnostics/Exit, and `B` Return to SteamOS; routes to `/onboarding/welcome` for first run or `/` for returning users; rendered outside `ShellLayout` so boot happens before shell chrome mounts
 - [ ] ND-002 Lock Screen — **deferred**: needs profile/credential system (Epic 10) and workflow-pause state (Epic 8)
 - [x] ND-003 First-Run Welcome — `features/onboarding/FirstRunWelcome.tsx`; purely informational, no backend dependency
 - [x] ND-004 Controller Calibration — `features/onboarding/ControllerCalibration.tsx`; button detection and haptics testing are real. Haptics intensity is now persisted through ND-043; dead zone/hold duration remain real read-only values

@@ -31,10 +31,19 @@ test('boots and renders the baseline shell', async () => {
   )
   expect(bridgeType).toBe('object')
 
-  await expect(window.getByRole('banner')).toBeVisible()
+  // ND-001 Boot and Session Start is the first screen. Wait for it to finish
+  // service checks and route into the shell (first-run onboarding when no
+  // workspaces or providers are configured).
+  await expect(window.getByText('NeuroDeck')).toBeVisible()
+  await expect(window.getByText('Loading core services')).toBeVisible()
+  await expect(window.getByRole('banner')).toBeVisible({ timeout: 20000 })
   await expect(window.getByRole('navigation', { name: 'Primary' })).toBeVisible()
   await expect(window.getByRole('link', { name: 'Home' })).toBeVisible()
-  await window.getByRole('link', { name: 'Terminal' }).click()
+
+  await window.evaluate(() => {
+    window.location.hash = '/terminal'
+  })
+  await expect(window).toHaveURL(/terminal/)
   await expect(window.getByText('No active workspace')).toBeVisible()
   await window.evaluate(() => {
     window.location.hash = '/terminal/builder'

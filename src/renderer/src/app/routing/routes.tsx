@@ -3,6 +3,7 @@ import type { ControllerHintProps } from '../../components/navigation/Controller
 import { DEFAULT_PRIMARY_HINTS } from '../../components/navigation/defaultControllerHints'
 import { ControllerCalibration } from '../../features/onboarding/ControllerCalibration'
 import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
+import { BootSessionStart } from '../../features/onboarding/BootSessionStart'
 import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
 import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
 import { AICommandCanvas } from '../../features/ai-canvas/AICommandCanvas'
@@ -102,6 +103,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
     element: <ControllerCalibration />
+  },
+  {
+    routeId: 'boot',
+    screenId: 'ND-001',
+    path: '/boot',
+    title: 'Boot and Session Start',
+    owningEpic: 'Epic 3',
+    controllerHints: [{ glyph: 'B', label: 'Return to SteamOS' }],
+    restoreOnRevisit: false,
+    element: <BootSessionStart />
   },
   {
     routeId: 'ai',
