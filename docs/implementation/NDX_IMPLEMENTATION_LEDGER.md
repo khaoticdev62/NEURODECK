@@ -1186,3 +1186,15 @@ The model prompt includes the child-agent policy. If a model emits strict JSON w
 | ----------------------------------------------------------------------------------- | -------------------------------------------------------- | ----- |
 | Real file delete, directory-delete rejection, path-escape rejection, missing-file rejection | `core/files/__tests__/FileService.test.ts`              | +4    |
 | Delete button wiring, confirmation flow, hidden for directories                     | `features/workspaces/__tests__/FileManager.test.tsx`    | +2    |
+
+## Epic 6 addendum — Git recovery branches
+
+ND-025's wireframe lists "Recovery branches" as its own section, alongside Branches/Commits/Remotes/Pull requests — distinct from Recovery Timeline's per-file content checkpoints (Epic 11), which this slice had previously been the only "recovery" mechanism Git work referenced. On inspection this needed no new backend surface at all: a recovery branch is just a real Git branch at the current commit, created through the exact same `createGitBranch` IPC every other branch already goes through. The only new piece is a `recovery/<timestamp>` naming convention (`recoveryBranchName()` in `WorkspaceGitTab.tsx`) the UI filters branches on to render them in their own "Recovery branches" section, with their own Checkout/Delete controls, separate from the regular Branches list.
+
+A "Create recovery point" button creates one at the current `HEAD` without switching to it — a real, inspectable safety net the user can return to before a risky operation, independent of whether `RecoveryService` has any checkpoints for the files involved.
+
+### Tests and evidence
+
+| Suite                                                                          | Location                                               | Count |
+| --------------------------------------------------------------------------------| --------------------------------------------------------- | ----- |
+| Recovery point creation calls createGitBranch with a `recovery/`-prefixed name, recovery branches render in their own section separate from regular Branches | `features/workspaces/__tests__/WorkspaceGitTab.test.tsx` | +2 |

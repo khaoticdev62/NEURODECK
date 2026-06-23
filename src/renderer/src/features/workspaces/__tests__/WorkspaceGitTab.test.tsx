@@ -149,4 +149,51 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
 
     expect(forcePush).toHaveBeenCalledWith({ workspaceId: 'w1', remote: 'origin', branch: 'main' })
   })
+
+  it('creates a real recovery point branch through the typed bridge', async () => {
+    const createBranch = vi.fn().mockResolvedValue({ ok: true, data: null })
+    stubGitBridge({ createBranch } as never)
+
+    const user = userEvent.setup()
+    render(<WorkspaceGitTab workspaceId="w1" />)
+
+    await user.click(await screen.findByRole('button', { name: 'Create recovery point' }))
+
+    expect(createBranch).toHaveBeenCalledTimes(1)
+    const call = createBranch.mock.calls[0][0]
+    expect(call.workspaceId).toBe('w1')
+    expect(call.name).toMatch(/^recovery\//)
+  })
+
+  it('lists recovery branches in their own section, separate from regular branches', async () => {
+    stubGitBridge()
+    stubBridge({
+      git: {
+        status: vi.fn().mockResolvedValue({ ok: true, data: baseStatus }),
+        branches: vi.fn().mockResolvedValue({
+          ok: true,
+          data: [
+            { name: 'main', current: true },
+            { name: 'recovery/2026-06-23-150000', current: false }
+          ]
+        }),
+        log: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        remotes: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        stashList: vi.fn().mockResolvedValue({ ok: true, data: [] })
+      } as never
+    })
+
+    render(<WorkspaceGitTab workspaceId="w1" />)
+
+    const recoverySection = (await screen.findByText('Recovery branches')).closest('section')
+    expect(recoverySection).not.toBeNull()
+    expect(
+      within(recoverySection as HTMLElement).getByText('recovery/2026-06-23-150000')
+    ).toBeInTheDocument()
+
+    const branchesSection = screen.getByText('Branches').closest('section')
+    expect(
+      within(branchesSection as HTMLElement).queryByText('recovery/2026-06-23-150000')
+    ).not.toBeInTheDocument()
+  })
 })

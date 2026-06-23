@@ -38,6 +38,21 @@ export interface WorkspaceGitTabProps {
 }
 
 /**
+ * Recovery branches (ND-025's own "Recovery branches" section, distinct
+ * from Recovery Timeline's per-file content checkpoints) are just real Git
+ * branches created at the current commit via the same `createGitBranch`
+ * IPC every other branch goes through — no new backend surface, just a
+ * naming convention this prefix identifies for the UI's separate section.
+ */
+const RECOVERY_BRANCH_PREFIX = 'recovery/'
+
+function recoveryBranchName(): string {
+  const now = new Date()
+  const stamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  return `${RECOVERY_BRANCH_PREFIX}${stamp}`
+}
+
+/**
  * Real Git tab (mega-prompt §22): status/stage/unstage/commit/branch-list/
  * checkout/log/fetch/pull/push/stash/restore/branch-create/branch-delete/
  * force-push. Push always opens its own review dialog, separate from the
@@ -225,6 +240,16 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
     await refresh()
   }
 
+  async function handleCreateRecoveryPoint(): Promise<void> {
+    const result = await createGitBranch({ workspaceId, name: recoveryBranchName() })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
+    await refresh()
+  }
+
   async function performDeleteBranch(name: string, force: boolean): Promise<void> {
     const result = await deleteGitBranch({ workspaceId, name, force })
     setDeleteBranchReview(null)
@@ -292,6 +317,12 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
 
   const staged = status.changes.filter((change) => change.staged)
   const unstaged = status.changes.filter((change) => !change.staged)
+  const regularBranches = branches.filter(
+    (branch) => !branch.name.startsWith(RECOVERY_BRANCH_PREFIX)
+  )
+  const recoveryBranches = branches.filter((branch) =>
+    branch.name.startsWith(RECOVERY_BRANCH_PREFIX)
+  )
 
   return (
     <div className="grid h-full min-w-[58rem] grid-cols-[minmax(16rem,0.8fr)_minmax(22rem,1.35fr)_minmax(14rem,0.7fr)] gap-3 overflow-auto">
@@ -426,7 +457,7 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
             </ControllerButton>
           </div>
           <ul className="flex flex-col gap-1">
-            {branches.map((branch) => (
+            {regularBranches.map((branch) => (
               <li key={branch.name} className="flex items-center justify-between gap-1">
                 <span className={branch.current ? 'text-text-primary' : 'text-text-secondary'}>
                   {branch.current ? '● ' : ''}
@@ -451,6 +482,47 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
               </li>
             ))}
           </ul>
+        </section>
+
+        <section>
+          <p className="mb-1 text-meta font-semibold text-text-primary">Recovery branches</p>
+          <p className="mb-2 text-meta text-text-tertiary">
+            A real branch pointing at the current commit — a safety net before a risky operation,
+            separate from Recovery Timeline&apos;s per-file checkpoints.
+          </p>
+          <ControllerButton
+            variant="secondary"
+            className="mb-2"
+            disabled={!status.branch}
+            onClick={() => void handleCreateRecoveryPoint()}
+          >
+            Create recovery point
+          </ControllerButton>
+          {recoveryBranches.length === 0 ? (
+            <p className="text-meta text-text-tertiary">No recovery branches yet.</p>
+          ) : (
+            <ul className="flex flex-col gap-1">
+              {recoveryBranches.map((branch) => (
+                <li key={branch.name} className="flex items-center justify-between gap-1">
+                  <span className="font-mono text-meta text-text-secondary">{branch.name}</span>
+                  <div className="flex gap-1">
+                    <ControllerButton
+                      variant="ghost"
+                      onClick={() => void handleCheckout(branch.name)}
+                    >
+                      Checkout
+                    </ControllerButton>
+                    <ControllerButton
+                      variant="destructive"
+                      onClick={() => setDeleteBranchReview({ name: branch.name, force: false })}
+                    >
+                      Delete
+                    </ControllerButton>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <section>
