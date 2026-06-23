@@ -896,7 +896,7 @@ npm audit --production → 0 vulnerabilities
 - **ND-036 Logs tab** — needs durable per-provider request logging, not yet built.
 - **Provider-reported capability/context-size/pricing metadata** — OpenAI-compatible discovery doesn't standardize these fields; NeuroDeck reports only what a provider's `/models` response actually contains and does not infer them from model names.
 
-## Epic 10 — Browser System (real, scoped); Remote Systems and Learning untouched
+## Epic 10 - Browser System (real, scoped); SSH Remote Systems real; Learning untouched
 
 ### Scope decision
 
@@ -942,8 +942,22 @@ No new runtime dependencies were added — `WebContentsView`/`shell.openExternal
 
 - **Reader mode, downloads, site profiles, history, "add page to workspace context," AI summarization** — each needs real infrastructure this slice doesn't build (a readability extraction step, a downloads manager and its UI, a profile-switching concept, a history index, a workspace-context attachment model, and a real model-router call with the "privacy confirmation" the spec explicitly requires for summarization).
 - **Interactive permission-prompt UI** — every permission request is currently default-denied; building a real prompt needs the same kind of review surface `ConfirmationDialog`/`PermissionDialog` provide elsewhere, not yet wired to browser permission requests.
-- **Remote Systems Service, ND-040, ND-041** — need a real SSH client integration (host-identity verification, credential storage, remote file/command execution) that doesn't exist yet; a substantial scope on the order of Epic 6's Git/Terminal work.
+- **Broader Remote Systems scope** - SSH host management and SSH terminal sessions are real; remote file browsing, remote command builder, non-SSH target types, Windows remote tooling, containers, network shares, metrics, logs, tunnels, and remote desktop remain deferred.
 - **Learning Hub, Guided Lab** — need real instructional content and progress tracking; the "AI coach" boundary Guided Lab needs is now unblocked by Epic 9's real model router, but there is no learning-content system to attach it to yet.
+
+## Epic 10 addendum - SSH Remote Systems backend, typed IPC, and scoped UI
+
+This slice builds the first real SSH-scoped Remote Systems path: backend, typed IPC, and the ND-040/ND-041 host/session screens. `RemoteHostStore` persists SSH host records in `remote-hosts.json`; password/passphrase values are encrypted through the same injected `SecretCipher` pattern used by model provider API keys, so secrets never cross back to the renderer. Public host records expose only `hasSecret`, never the secret itself.
+
+`RemoteConnectionService` uses the real `ssh2` client behind an injected factory. Host identity is trust-on-first-use: the first successful SSH connection records the SHA256 host-key fingerprint, and later connections must present the same fingerprint or fail closed as a host-key mismatch. Sessions expose bounded output snapshots plus write/resize/terminate and data/exit events.
+
+The backend is reachable through typed IPC and the narrow preload bridge: `window.ndx.remoteHosts.*` and `window.ndx.remoteSessions.*`. The renderer now wires `/remote` (ND-040) to real SSH host management and `/remote/:hostId` (ND-041) to a real xterm-backed SSH session. Remote file browsing, remote command builder, non-SSH target types, Windows remote tooling, containers, network shares, metrics, logs, tunnels, and remote desktop remain deferred.
+
+| Evidence | File | Status |
+| --- | --- | --- |
+| Encrypted host storage, public metadata only | `core/remote/__tests__/RemoteHostStore.test.ts` | Passing |
+| TOFU host-key recording/rejection and session I/O | `core/remote/__tests__/RemoteConnectionService.test.ts` | Passing |
+| Typed IPC/preload bridge | `main/ipc/registerRemoteHandlers.ts`, `preload/index.ts`, `shared/contracts/bridge.ts` | Typechecked |
 
 ### A real, production-relevant bug found and fixed (preload bridge silently failed everywhere)
 

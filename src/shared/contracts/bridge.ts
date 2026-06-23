@@ -73,6 +73,20 @@ import type {
   WorkspaceBrowserRequest
 } from './browser'
 import type {
+  AddRemoteHostRequest,
+  CreateRemoteSessionRequest,
+  RemoteConnectionTestResult,
+  RemoteHost,
+  RemoteHostRequest,
+  RemoteSession,
+  RemoteSessionDataEvent,
+  RemoteSessionExitEvent,
+  RemoteSessionRequest,
+  RemoteSessionResizeRequest,
+  RemoteSessionSnapshot,
+  RemoteSessionWriteRequest
+} from './remote'
+import type {
   AgentDefinition,
   AgentIdRequest,
   AgentRun,
@@ -214,5 +228,20 @@ export interface NdxBridge {
     remove: (request: BrowserTabIdRequest) => Promise<NdxResult<null>>
     openExternal: (url: string) => Promise<NdxResult<null>>
     onUpdate: (listener: (tab: BrowserTab) => void) => () => void
+  }
+  remoteHosts: {
+    list: () => Promise<NdxResult<RemoteHost[]>>
+    add: (request: AddRemoteHostRequest) => Promise<NdxResult<RemoteHost>>
+    remove: (request: RemoteHostRequest) => Promise<NdxResult<null>>
+    testConnection: (request: RemoteHostRequest) => Promise<NdxResult<RemoteConnectionTestResult>>
+  }
+  remoteSessions: {
+    create: (request: CreateRemoteSessionRequest) => Promise<NdxResult<RemoteSession>>
+    snapshot: (request: RemoteSessionRequest) => Promise<NdxResult<RemoteSessionSnapshot>>
+    write: (request: RemoteSessionWriteRequest) => Promise<NdxResult<null>>
+    resize: (request: RemoteSessionResizeRequest) => Promise<NdxResult<null>>
+    terminate: (request: RemoteSessionRequest) => Promise<NdxResult<null>>
+    onData: (listener: (event: RemoteSessionDataEvent) => void) => () => void
+    onExit: (listener: (event: RemoteSessionExitEvent) => void) => () => void
   }
 }

@@ -13,6 +13,8 @@ import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
 import { SystemMetricsService } from '../../core/system/SystemMetricsService'
 import { RecoveryService } from '../../core/recovery/RecoveryService'
+import { RemoteConnectionService } from '../../core/remote/RemoteConnectionService'
+import { RemoteHostStore } from '../../core/remote/RemoteHostStore'
 import { TerminalService } from '../../core/terminal/TerminalService'
 import { WorkflowRunStore } from '../../core/workflows/WorkflowRunStore'
 import { WorkflowStore } from '../../core/workflows/WorkflowStore'
@@ -29,6 +31,7 @@ import { registerGitHandlers } from './registerGitHandlers'
 import { registerModelHandlers } from './registerModelHandlers'
 import { registerPowerHandlers } from './registerPowerHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
+import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
 import { registerTerminalHandlers } from './registerTerminalHandlers'
 import { registerWorkflowHandlers } from './registerWorkflowHandlers'
@@ -40,6 +43,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const fileService = new FileService()
   const gitService = new GitService()
   const terminalService = new TerminalService()
+  const remoteHostStore = new RemoteHostStore(
+    join(app.getPath('userData'), 'remote-hosts.json'),
+    electronSecretCipher
+  )
+  const remoteConnectionService = new RemoteConnectionService(remoteHostStore)
   const recoveryService = new RecoveryService(join(app.getPath('userData'), 'recovery'))
   const workflowStore = new WorkflowStore(join(app.getPath('userData'), 'workflows'))
   const workflowRunStore = new WorkflowRunStore(join(app.getPath('userData'), 'workflows'))
@@ -93,5 +101,10 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     new BrowserTabStore(join(app.getPath('userData'), 'browser-tabs.json')),
     getWindow
   )
-  return registerTerminalHandlers(terminalService, workspaceStore, getWindow)
+  const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)
+  const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)
+  return () => {
+    disposeTerminal()
+    disposeRemote()
+  }
 }

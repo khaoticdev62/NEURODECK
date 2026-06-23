@@ -12,6 +12,7 @@ import { GitControlCenter } from '../../features/git/GitControlCenter'
 import { AboutDiagnostics } from '../../features/system/AboutDiagnostics'
 import { BrowserHub } from '../../features/browser/BrowserHub'
 import { BrowserView } from '../../features/browser/BrowserView'
+import { RemoteSystems } from '../../features/remote/RemoteSystems'
 import { ControllerSettings } from '../../features/system/ControllerSettings'
 import { DisplayThemeSettings } from '../../features/system/DisplayThemeSettings'
 import { PrivacyPermissions } from '../../features/system/PrivacyPermissions'
@@ -41,6 +42,10 @@ const UniversalTerminal = lazy(async () => {
 const CommandBuilder = lazy(async () => {
   const module = await import('../../features/terminal/CommandBuilder')
   return { default: module.CommandBuilder }
+})
+const RemoteSession = lazy(async () => {
+  const module = await import('../../features/remote/RemoteSession')
+  return { default: module.RemoteSession }
 })
 
 /**
@@ -328,6 +333,30 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true
+  },
+  {
+    routeId: 'remote-systems',
+    screenId: 'ND-040',
+    path: '/remote',
+    title: 'Remote Systems',
+    owningEpic: 'Epic 10',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <RemoteSystems />
+  },
+  {
+    routeId: 'remote-session',
+    screenId: 'ND-041',
+    path: '/remote/:hostId',
+    title: 'Remote Session',
+    owningEpic: 'Epic 10',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: (
+      <Suspense fallback={<p className="p-4 text-meta text-text-secondary">Loading remote...</p>}>
+        <RemoteSession />
+      </Suspense>
+    )
   },
   {
     routeId: 'system',

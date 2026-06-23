@@ -83,5 +83,16 @@ export const IPC_CHANNELS = {
   browserTabSetBounds: 'browserTab.setBounds',
   browserTabRemove: 'browserTab.remove',
   browserTabUpdate: 'browserTab.update',
-  browserOpenExternal: 'browser.openExternal'
+  browserOpenExternal: 'browser.openExternal',
+  remoteHostList: 'remoteHost.list',
+  remoteHostAdd: 'remoteHost.add',
+  remoteHostRemove: 'remoteHost.remove',
+  remoteHostTestConnection: 'remoteHost.testConnection',
+  remoteSessionCreate: 'remoteSession.create',
+  remoteSessionSnapshot: 'remoteSession.snapshot',
+  remoteSessionWrite: 'remoteSession.write',
+  remoteSessionResize: 'remoteSession.resize',
+  remoteSessionTerminate: 'remoteSession.terminate',
+  remoteSessionData: 'remoteSession.data',
+  remoteSessionExit: 'remoteSession.exit'
 } as const

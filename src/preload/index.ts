@@ -4,6 +4,8 @@ import {
   agentToolExecutionRequestSchema,
   browserTabSchema,
   IPC_CHANNELS,
+  remoteSessionDataEventSchema,
+  remoteSessionExitEventSchema,
   terminalDataEventSchema,
   terminalExitEventSchema,
   type NdxBridge
@@ -171,6 +173,35 @@ const ndx: NdxBridge = {
       }
       ipcRenderer.on(IPC_CHANNELS.browserTabUpdate, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.browserTabUpdate, handler)
+    }
+  },
+  remoteHosts: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.remoteHostList),
+    add: (request) => ipcRenderer.invoke(IPC_CHANNELS.remoteHostAdd, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.remoteHostRemove, request),
+    testConnection: (request) => ipcRenderer.invoke(IPC_CHANNELS.remoteHostTestConnection, request)
+  },
+  remoteSessions: {
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.remoteSessionCreate, request),
+    snapshot: (request) => ipcRenderer.invoke(IPC_CHANNELS.remoteSessionSnapshot, request),
+    write: (request) => ipcRenderer.invoke(IPC_CHANNELS.remoteSessionWrite, request),
+    resize: (request) => ipcRenderer.invoke(IPC_CHANNELS.remoteSessionResize, request),
+    terminate: (request) => ipcRenderer.invoke(IPC_CHANNELS.remoteSessionTerminate, request),
+    onData: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = remoteSessionDataEventSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.remoteSessionData, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.remoteSessionData, handler)
+    },
+    onExit: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = remoteSessionExitEventSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.remoteSessionExit, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.remoteSessionExit, handler)
     }
   }
 }

@@ -93,7 +93,7 @@ Matches mega-prompt §5.1:
 | Permission broker, audit log, destructive-action review pipeline             | Epic 4 (done)            | Real as of Epic 4 — `ActionQueue`/`PermissionBroker`/`AuditLog`, demonstrated end to end   |
 | Typed, Zod-validated IPC contracts replacing the generic preload wrapper     | Epic 5 (done)            | Real as of Epic 5 — `shared/contracts/`, `src/main/ipc/`, `window.ndx`                     |
 | Destructive file operations (write/copy/move/rename/delete/compress/extract) | Epic 11                  | Need the Recovery Service's checkpoint/undo path before any destructive op can ship safely |
-| Secrets vault / encrypted storage                                            | Epic 10 (identity) / X10 | No credential-requiring feature exists yet (no AI provider connections, no remote auth)    |
+| Secrets vault / encrypted storage                                            | Epic 10 (identity) / X10 | Real for model provider keys and Remote Systems SSH password/passphrase values via `safeStorage`; broader identity vault remains deferred |
 | `applyNavigationPolicy` integration test against a live `BrowserWindow`      | Epic 12 security pass    | Requires Electron test harness beyond current unit-test scope                              |
 | Vitest dependency chain vulnerabilities                                      | Epic 12 security pass    | Dev-only exposure, breaking upgrade out of scope for baseline                              |
 
@@ -196,7 +196,15 @@ Matches mega-prompt §5.1:
 - The only mutation this screen performs is `broker.revoke()`, gated behind the same `ConfirmationDialog` pattern every other medium-risk action in the app uses (action/consequence/confirm). There is no grant path here — this screen can only take capabilities away, never add one, so it cannot be used to escalate privilege.
 - Because `PermissionBroker` grants are broker-wide rather than per-actor, revoking a capability here affects every tool that requires it, not just one — the screen's copy says so explicitly rather than implying a narrower, per-tool revoke that isn't real.
 
-## 21. Browser System security (Epic 10)
+## 21. Remote Systems security (Epic 10 addendum)
+
+- Remote Systems currently supports SSH hosts only. Other target types from the wireframe are not stubbed or faked.
+- SSH passwords and private-key passphrases are encrypted through Electron `safeStorage` via the injected `SecretCipher` pattern. `RemoteHostStore.list()`/`get()` return only public host metadata plus `hasSecret`; secrets are decrypted only inside the main process for a connection attempt.
+- Host identity uses trust-on-first-use. The first successful connection records the real SHA256 host-key fingerprint; later connections must present the same fingerprint or fail closed as `HOST_KEY_MISMATCH`.
+- Renderer access goes through Zod-validated IPC only: `remoteHost.*` and `remoteSession.*`. No renderer can select an arbitrary SSH executable, bypass host identity verification, or read a stored secret.
+- Remote session output is bounded to 1 MiB per session, input writes are schema-limited to 64 KiB, and running sessions are capped. Session data/exit events are validated again in preload before renderer listeners receive them.
+- ND-040/ND-041 UI is not built yet. Any future host-management screen must review secret storage, host-key trust state, and destructive session actions explicitly rather than hiding them behind generic buttons.
+## 22. Browser System security (Epic 10)
 
 - **URL scheme allowlisting**: `browserUrlPolicy.ts`'s `isAllowedBrowserUrl()` only permits `http`/`https`. It gates three independent enforcement points in `BrowserSessionService`: the IPC handler before a tab is ever created, the `will-navigate` listener on every navigation attempt inside an already-open tab, and the `setWindowOpenHandler` for any window-open attempt (e.g. `target="_blank"` links or `window.open()`). A page cannot navigate itself or trigger a popup to `javascript:`, `file:`, `data:`, or any other disallowed scheme.
 - **Process/session isolation**: every browser tab's `WebContentsView` uses `contextIsolation: true`, `nodeIntegration: false`, `sandbox: true` — the same hardened baseline as the main window — plus its own session partition scoped to the owning workspace (`persist:browser-${workspaceId}`), so cookies/storage from one workspace's browsing never leak into another's.
@@ -204,7 +212,7 @@ Matches mega-prompt §5.1:
 - **External navigation**: the only way a browser tab can cause something to open outside its own view is `shell.openExternal()`, called only after the same `isAllowedBrowserUrl` check, and only from the window-open handler or the explicit "Open externally" UI action — never silently.
 - **No filesystem/IPC bridge into tab content**: a browser tab's `WebContentsView` has no preload script and no `NdxBridge` exposure — it is a plain, sandboxed, isolated web page with zero access to anything this app's own preload script exposes to the main shell.
 
-## 22. Preload bridge build hardening (real bug found and fixed)
+## 23. Preload bridge build hardening (real bug found and fixed)
 
 A real bug surfaced after Epic 10 (see the implementation ledger's "A real, production-relevant bug found and fixed" entry for the full diagnosis): the main shell's own preload script (`src/preload/index.ts`) failed to initialize on every build, because `electron-vite` externalizes npm dependencies by default and the preload runs **sandboxed** — sandboxed preloads cannot `require()` an npm package at runtime, only a small allowlist of Node built-ins. A bare `require("zod")` in the bundled preload threw immediately, aborting the script before `contextBridge.exposeInMainWorld('ndx', ndx)` ever ran. This is security-relevant because it's a *fail-safe* failure mode, not a fail-open one — with no bridge, the renderer has zero IPC access of any kind, so no permission/validation boundary was ever actually bypassed; every feature simply showed its real "bridge unavailable" empty state. The risk was availability, not a security hole, but it's recorded here because the fix changes a security-relevant build setting (`electron.vite.config.ts`'s preload `externalizeDeps` config) that future contributors need to preserve.
 
