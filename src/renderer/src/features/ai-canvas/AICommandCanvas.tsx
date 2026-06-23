@@ -109,7 +109,7 @@ function CommandCanvasWorkspace({ workspaceId }: { workspaceId: string }): React
       agent = created.data
     }
 
-    const run = await startAgentRun({ agentId: agent.id, objective: intent.trim() })
+    const run = await startAgentRun({ agentId: agent.id, objective: intent.trim(), dryRun: false })
     setStarting(false)
     if (!run.ok) {
       setError(run.error.userMessage)

@@ -38,7 +38,7 @@ export class AgentRuntime {
     private readonly onToolRequest: AgentToolRequestSink = () => {}
   ) {}
 
-  async start(agentId: string, objective: string): Promise<AgentRun> {
+  async start(agentId: string, objective: string, dryRun = false): Promise<AgentRun> {
     const agent = await this.store.get(agentId)
     if (!agent) throw new Error('Agent not found.')
     if (!agent.enabled) throw new Error('Agent is disabled.')
@@ -50,6 +50,7 @@ export class AgentRuntime {
       objective,
       state: 'planning',
       timeline: [],
+      dryRun,
       createdAt: now,
       updatedAt: now
     }
@@ -176,6 +177,16 @@ export class AgentRuntime {
         throw new Error(`Agent proposed non-allowlisted tool "${call.toolId}".`)
       }
 
+      if (run.dryRun) {
+        run = this.event(
+          run,
+          'running',
+          `Dry run: would submit tool ${index + 1}/${toolCalls.length} (${call.toolId}) with arguments ${JSON.stringify(call.arguments)} — not sent to ActionQueue.`
+        )
+        await this.persist(run)
+        continue
+      }
+
       run = this.event(
         run,
         'waiting-for-approval',
@@ -193,7 +204,13 @@ export class AgentRuntime {
     }
 
     run = await this.waitIfPaused(run, signal)
-    return this.event(run, 'completed', 'Agent run completed after approved tool execution.')
+    return this.event(
+      run,
+      'completed',
+      run.dryRun
+        ? 'Dry run completed — no tool calls were actually submitted.'
+        : 'Agent run completed after approved tool execution.'
+    )
   }
 
   private async waitIfPaused(run: AgentRun, signal: AbortSignal): Promise<AgentRun> {

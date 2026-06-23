@@ -731,7 +731,7 @@ A third slice closed the gap the second slice left open: **ND-042 System Dashboa
 
 A fourth slice closed two more: **ND-051 Power Menu**, scoped to the two genuinely safe actions (restart/quit this app via real Electron APIs, behind a real `ConfirmationDialog`) — real OS-level suspend/reboot/shutdown are deliberately not wired, since those are irreversible against the whole host machine, not just this app, and need their own native-integration design and explicit sign-off before being attempted; and **ND-056 About and Diagnostics**, scoped to what this architecture actually has (real app/Electron/Chromium/Node versions, platform, configured providers, a real clipboard export combining that with a live `SystemMetricsService` snapshot) — "Core version"/"Database version"/build hash are omitted rather than invented, since there's no separate core-service process, no database, and no build-time commit-hash injection step.
 
-The other 7 of 16 items remain genuinely deferred — not silently skipped. They each need a service this epic doesn't build yet: Controller Settings needs the Input Profile Manager UI (Epic 2 left it backend-only); Display/Theme, Network/VPN, Privacy, Integrations, Updates, and Quick Access (full build) each need their own service. ND-055 Error Recovery is now built; see its addendum below.
+The remaining scoped gaps are honest platform/management limitations rather than silently skipped screens: Network/VPN management, a full integration registry/state service, auto-update download/apply, and the Steam Deck Quick Access button each need OS-specific adapters or a signed release pipeline that do not exist yet; the screens built for them report this explicitly instead of faking the capability. ND-055 Error Recovery is now built; see its addendum below.
 
 ### What was built
 
@@ -864,9 +864,45 @@ npm run test:e2e      → 1 passed
 npm audit --production → 0 vulnerabilities
 ```
 
+### Addendum — ND-045 Network and VPN, ND-048 Integrations, ND-049 Updates, ND-050 Quick Access Overlay
+
+Completed the four remaining Epic 11 screens as honest, scoped implementations rather than wiring faked capabilities.
+
+- **ND-045 Network and VPN** — `core/network/NetworkService.ts` collects real OS-level diagnostics: `os.networkInterfaces()` summaries merged by name, `dns.getServers()`, proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY`/`ALL_PROXY`/`NO_PROXY` and lowercase variants), and on Linux an optional `nmcli -t -f DEVICE,TYPE,STATE device` call for connection state. Every diagnostic follows the same `{available, value?, source, reason?}` shape used by `SystemMetricsService`, so unavailable adapters (VPN, firewall, non-Linux connection state) report a real reason instead of a fabricated value. `features/system/NetworkAndVpn.tsx` renders the read-only diagnostics and shows Wi-Fi/Ethernet/VPN/Firewall/Remote-access management as disabled with one-line real reasons.
+- **ND-048 Integrations** — `features/system/Integrations.tsx` is a read-only catalog that aggregates the real integrations that already exist: model providers via the existing `modelProviders.list` IPC and remote SSH hosts via `remoteHosts.list`. Unsupported categories (Git providers, cloud storage, dev tools, learning platforms, notifications, Steam/Deck) are rendered as cards with an "Unsupported on current platform" badge and a real reason, not a fake "connected" state.
+- **ND-049 Updates** — `core/system/UpdateService.ts` reads the current app version from `package.json` and can check a JSON feed when `ND_UPDATE_FEED_URL` is configured. `features/system/Updates.tsx` shows current component versions, channel, and update availability; the "Download and apply" button is honestly disabled because the signed release pipeline and `electron-updater` integration are not configured.
+- **ND-050 Quick Access Overlay** — `features/system/QuickAccessOverlay.tsx` is mounted in `ShellLayout` and opens on the real `quick.access` controller action (`Menu+Y` chord + `KeyO` keyboard fallback), closes on `back`, uses a modal focus trap restricted to the `quick-access` group, and shows AI/Workspace/System quick actions. Placeholder actions are disabled with "Not implemented yet" reasons. The footer reads live counts from the ActionQueue via `useActionQueueRecords`. The Steam Deck physical Quick Access button is not exposed by the standard Gamepad API, so it remains a documented gap.
+
+New IPC domains: `network.getDiagnostics` (`registerNetworkHandlers.ts`), `update.getStatus`/`update.check` (`registerUpdateHandlers.ts`), with shared contracts in `shared/contracts/network.ts` and `shared/contracts/update.ts` and renderer clients `services/ipc/networkClient.ts`/`updateClient.ts`.
+
+New tests:
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `NetworkService` (real host diagnostics, interface merging, DNS, proxy, non-Linux connection reason, Linux `nmcli` parse, `nmcli` failure reason) | `core/network/__tests__/NetworkService.test.ts` | 7 |
+| `NetworkAndVpn` (real diagnostics render, unavailable adapter reason, disabled management reasons, error state) | `features/system/__tests__/NetworkAndVpn.test.tsx` | 4 |
+| `Integrations` (real model providers/remote hosts, unsupported categories with reasons, provider-list error) | `features/system/__tests__/Integrations.test.tsx` | 3 |
+| `UpdateService` (disabled without feed, available update detection, up-to-date, fetch failure, non-OK status) | `core/system/__tests__/UpdateService.test.ts` | 6 |
+| `Updates` (renders sections, disabled reason, keeps download disabled when update available, check button, error state) | `features/system/__tests__/Updates.test.tsx` | 5 |
+| `QuickAccessOverlay` (opens on `quick.access`, closes on `back`, close button, footer counts, placeholder labels) | `features/system/__tests__/QuickAccessOverlay.test.tsx` | 5 |
+
+Cumulative total: 497 tests passing (up from 447).
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings
+npm run test          → 102 files, 497 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 1 passed
+npm audit --production → 0 vulnerabilities
+```
+
 ### Deferred items with explicit reason
 
-- **The remaining 4 of 16 Epic 11 items** (Network/VPN, Integrations, Updates, Quick Access full build) — each needs a service this slice doesn't build. System Metrics, ND-042 System Dashboard, ND-043 Controller Settings, ND-044 Display and Theme Settings, ND-046 Privacy and Permissions, ND-051 Power Menu, ND-055 Error Recovery, and ND-056 About/Diagnostics are now real; see the addenda above.
+- **ND-045 Network/VPN management actions** (Wi-Fi/Ethernet/VPN/Firewall/Remote access) — read-only diagnostics screen is real; management needs OS-specific adapters (NetworkManager/DBus, Wi-Fi adapter, firewall status) that do not exist yet.
+- **ND-048 Integrations registry/state service** — read-only catalog aggregating existing real integrations is real; a full integration registry with account tokens, connection state, and lifecycle management does not exist yet.
+- **ND-049 Auto-update download/apply/rollback** — version display and configured-feed check are real; actual download/apply needs a signed release pipeline and `electron-updater` integration that are not configured yet.
+- **ND-050 Steam Deck Quick Access button trigger** — the in-app overlay is real and reachable via `quick.access` (Menu+Y / KeyO); the physical Steam Deck Quick Access button is not exposed by the standard Gamepad API and needs Steam Input or a native/SDL adapter.
 - **Power Menu's Lock/Suspend/Restart core service/Restart device/Shut down** — Lock needs ND-002 (not built); this architecture has no separate core-service process to restart independently; real OS suspend/reboot/shutdown are irreversible against the whole host machine and need a dedicated native-integration design and explicit sign-off before being wired — not attempted in this slice for safety reasons, not just scope.
 - **About/Diagnostics's Core version/Database version/build hash** — no separate core-service process, no database, and no build-time commit-hash injection step exist in this architecture; omitted rather than invented.
 - **Controller Settings' button remapping, app profiles, rear buttons, gyro, trackpad fallback, accessibility** — remapping/profiles need the `gamepadPolling.ts` config-threading refactor; rear buttons/gyro/trackpad need Steam Input or a native/SDL adapter (the same documented gap as Epic 2); accessibility needs its own design pass.
@@ -1198,3 +1234,18 @@ A "Create recovery point" button creates one at the current `HEAD` without switc
 | Suite                                                                          | Location                                               | Count |
 | --------------------------------------------------------------------------------| --------------------------------------------------------- | ----- |
 | Recovery point creation calls createGitBranch with a `recovery/`-prefixed name, recovery branches render in their own section separate from regular Branches | `features/workspaces/__tests__/WorkspaceGitTab.test.tsx` | +2 |
+
+## Epic 8 addendum — Agent Runtime dry-run support
+
+Previously deferred with the one-line note "needs a simulate-without-executing-tool-actions mode this slice doesn't build" — on inspection the real `AgentRuntime`/`ActionQueue` pipeline already had exactly the right seam for this: `executeToolCalls()` already loops over each model-proposed tool call individually before submitting it. Dry-run just short-circuits that one submission step.
+
+`startAgentRunRequestSchema` and `AgentRun` both gained a real, persisted `dryRun: boolean` field. When true, `AgentRuntime.start()` still performs a real model completion (the agent genuinely plans against the configured provider) — the only thing that changes is `executeToolCalls()`: instead of submitting each call through `submitToolCall()`/`AgentToolExecutionBridge`/`ActionQueue`, it records a real timeline event naming the exact tool ID and arguments that would have been submitted, then moves on. `this.onToolRequest` (the renderer-owned ActionQueue bridge) is never invoked at all during a dry run — verified with a real test asserting zero tool requests were emitted despite the model proposing one.
+
+`AgentDetail.tsx` (ND-017) gained a real "Dry run" checkbox next to objective entry, a "Start dry run" button label when checked, and a `[Dry run]` badge on any past run that was one — so dry-run status is visible both before starting and when reviewing run history, not just inferred from the absence of tool-execution timeline events.
+
+### Tests and evidence
+
+| Suite                                                                                        | Location                                       | Count |
+| ----------------------------------------------------------------------------------------------| ------------------------------------------------- | ----- |
+| Dry run plans with a real model completion but emits zero tool requests; timeline records the would-be call and a dry-run completion message | `core/agents/__tests__/AgentRuntime.test.ts`   | +1    |
+| Dry run checkbox wiring: starts with `dryRun: true`, shows `[Dry run]` badge on the resulting run | `features/agents/__tests__/AgentDetail.test.tsx` | +1  |

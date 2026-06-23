@@ -75,6 +75,7 @@ const sampleRun: AgentRun = {
   output: '1. Inspect files\n2. Report findings',
   promptTokens: 12,
   completionTokens: 8,
+  dryRun: false,
   createdAt: Date.now(),
   updatedAt: Date.now()
 }
@@ -125,8 +126,33 @@ describe('AgentDetail', () => {
     await user.type(screen.getByPlaceholderText('Objective for this run'), 'Inspect the repository')
     await user.click(screen.getByRole('button', { name: 'Start run' }))
 
-    expect(start).toHaveBeenCalledWith({ agentId: 'a1', objective: 'Inspect the repository' })
+    expect(start).toHaveBeenCalledWith({
+      agentId: 'a1',
+      objective: 'Inspect the repository',
+      dryRun: false
+    })
     expect(await screen.findByText('Inspect the repository')).toBeInTheDocument()
+  })
+
+  it('starts a real dry run when the Dry run checkbox is checked', async () => {
+    const dryRunRun = { ...sampleRun, dryRun: true }
+    const start = vi.fn().mockResolvedValue({ ok: true, data: dryRunRun })
+    bridgeWithDefaults({ start })
+
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByText('Repository Maintainer')
+
+    await user.type(screen.getByPlaceholderText('Objective for this run'), 'Inspect the repository')
+    await user.click(screen.getByRole('checkbox'))
+    await user.click(screen.getByRole('button', { name: 'Start dry run' }))
+
+    expect(start).toHaveBeenCalledWith({
+      agentId: 'a1',
+      objective: 'Inspect the repository',
+      dryRun: true
+    })
+    expect(await screen.findByText(/\[Dry run\]/)).toBeInTheDocument()
   })
 
   it('cancels a real run via IPC', async () => {

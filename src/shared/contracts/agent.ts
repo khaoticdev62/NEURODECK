@@ -81,6 +81,8 @@ export const agentRunSchema = z.object({
   error: z.string().optional(),
   promptTokens: z.number().int().nonnegative().optional(),
   completionTokens: z.number().int().nonnegative().optional(),
+  /** True if this run planned but never submitted any tool call to the real ActionQueue — see `startAgentRunRequestSchema`. */
+  dryRun: z.boolean().default(false),
   createdAt: z.number(),
   updatedAt: z.number()
 })
@@ -103,7 +105,9 @@ export const setAgentEnabledRequestSchema = agentIdRequestSchema.extend({
 export type SetAgentEnabledRequest = z.infer<typeof setAgentEnabledRequestSchema>
 
 export const startAgentRunRequestSchema = agentIdRequestSchema.extend({
-  objective: z.string().min(1)
+  objective: z.string().min(1),
+  /** When true, the run plans normally (a real model completion) but never submits a tool call to the real ActionQueue — see `AgentRuntime.executeToolCalls()`. */
+  dryRun: z.boolean().default(false)
 })
 export type StartAgentRunRequest = z.infer<typeof startAgentRunRequestSchema>
 

@@ -109,7 +109,10 @@ export function registerAgentHandlers(store: AgentStore, runtime: AgentRuntime):
       const parsed = startAgentRunRequestSchema.safeParse(payload)
       if (!parsed.success) return invalidRequest()
       try {
-        return { ok: true, data: await runtime.start(parsed.data.agentId, parsed.data.objective) }
+        return {
+          ok: true,
+          data: await runtime.start(parsed.data.agentId, parsed.data.objective, parsed.data.dryRun)
+        }
       } catch (error) {
         return { ok: false, error: toAgentError(error) }
       }

@@ -128,7 +128,11 @@ describe('AICommandCanvas', () => {
         expect.objectContaining({ name: 'Quick Command', toolAllowlist: [], workspaceId: 'w1' })
       )
     )
-    expect(startAgentRun).toHaveBeenCalledWith({ agentId: 'agent-1', objective: 'Do a thing' })
+    expect(startAgentRun).toHaveBeenCalledWith({
+      agentId: 'agent-1',
+      objective: 'Do a thing',
+      dryRun: false
+    })
   })
 
   it('reuses an existing Quick Command agent instead of creating a duplicate', async () => {
@@ -169,7 +173,8 @@ describe('AICommandCanvas', () => {
     expect(createAgent).not.toHaveBeenCalled()
     expect(startAgentRun).toHaveBeenCalledWith({
       agentId: 'agent-existing',
-      objective: 'Do a thing'
+      objective: 'Do a thing',
+      dryRun: false
     })
   })
 })

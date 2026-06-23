@@ -96,6 +96,37 @@ describe('AgentRuntime', () => {
     ])
   })
 
+  it('plans with a real model completion but never submits a tool call to ActionQueue during a dry run', async () => {
+    const store = await createStore()
+    const agent = await createAgent(store)
+    const requests: Parameters<AgentToolRequestSink>[0][] = []
+    const runtime = new AgentRuntime(
+      store,
+      { complete: vi.fn().mockResolvedValue(completionWithToolCall()) },
+      () => undefined,
+      (request) => {
+        requests.push(request)
+      }
+    )
+
+    const started = await runtime.start(agent.id, 'Read the workspace overview', true)
+    expect(started.dryRun).toBe(true)
+    const finished = await waitForRun(store, started.id, 'completed')
+
+    expect(requests).toHaveLength(0)
+    expect(finished.dryRun).toBe(true)
+    expect(finished.timeline.map((event) => event.state)).toEqual([
+      'planning',
+      'queued',
+      'running',
+      'completed'
+    ])
+    expect(finished.timeline.some((event) => event.message.includes('Dry run: would submit'))).toBe(
+      true
+    )
+    expect(finished.timeline.at(-1)?.message).toContain('Dry run completed')
+  })
+
   it('fails without emitting a tool request when the model proposes a non-allowlisted tool', async () => {
     const store = await createStore()
     const agent = await createAgent(store)

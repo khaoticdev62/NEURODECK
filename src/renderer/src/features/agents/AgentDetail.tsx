@@ -30,6 +30,7 @@ export function AgentDetail(): React.JSX.Element {
   const [agent, setAgent] = useState<AgentDefinition | null>(null)
   const [runs, setRuns] = useState<AgentRun[]>([])
   const [objective, setObjective] = useState('')
+  const [dryRun, setDryRun] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
@@ -70,7 +71,7 @@ export function AgentDetail(): React.JSX.Element {
   async function handleStart(): Promise<void> {
     if (!agentId || !objective.trim()) return
     setStarting(true)
-    const result = await startAgentRun({ agentId, objective: objective.trim() })
+    const result = await startAgentRun({ agentId, objective: objective.trim(), dryRun })
     setStarting(false)
     if (!result.ok) {
       setError(result.error.userMessage)
@@ -160,12 +161,20 @@ export function AgentDetail(): React.JSX.Element {
           className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
         />
         {!agent.enabled && <p className="text-meta text-status-warning">This agent is disabled.</p>}
+        <label className="flex items-center gap-2 text-meta text-text-secondary">
+          <input
+            type="checkbox"
+            checked={dryRun}
+            onChange={(event) => setDryRun(event.target.checked)}
+          />
+          Dry run — plan with a real model completion, but never submit any tool call to ActionQueue
+        </label>
         <ControllerButton
           variant="primary"
           disabled={starting || !agent.enabled || !objective.trim()}
           onClick={() => void handleStart()}
         >
-          {starting ? 'Starting…' : 'Start run'}
+          {starting ? 'Starting…' : dryRun ? 'Start dry run' : 'Start run'}
         </ControllerButton>
       </section>
 
@@ -209,7 +218,10 @@ function RunRow({
   return (
     <li className="border-t border-border pt-3 first:border-t-0 first:pt-0">
       <div className="flex items-center justify-between">
-        <span className="text-meta font-semibold text-text-primary">{run.objective}</span>
+        <span className="text-meta font-semibold text-text-primary">
+          {run.dryRun && <span className="text-status-warning">[Dry run] </span>}
+          {run.objective}
+        </span>
         <span className="text-meta text-text-secondary">{run.state}</span>
       </div>
       <ul className="mt-1 flex flex-col gap-1">
