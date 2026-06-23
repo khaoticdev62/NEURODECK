@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import {
   agentRunSchema,
+  agentToolExecutionRequestSchema,
   browserTabSchema,
   IPC_CHANNELS,
   terminalDataEventSchema,
@@ -121,7 +122,16 @@ const ndx: NdxBridge = {
       }
       ipcRenderer.on(IPC_CHANNELS.agentRunUpdate, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.agentRunUpdate, handler)
-    }
+    },
+    onToolRequest: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = agentToolExecutionRequestSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.agentToolRequest, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.agentToolRequest, handler)
+    },
+    reportToolResult: (result) => ipcRenderer.invoke(IPC_CHANNELS.agentToolResult, result)
   },
   system: {
     collectMetrics: () => ipcRenderer.invoke(IPC_CHANNELS.systemMetricsCollect)

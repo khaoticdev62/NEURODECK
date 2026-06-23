@@ -77,6 +77,8 @@ import type {
   AgentIdRequest,
   AgentRun,
   AgentRunIdRequest,
+  AgentToolExecutionRequest,
+  AgentToolExecutionResult,
   CreateAgentRequest,
   ListAgentRunsRequest,
   SetAgentEnabledRequest,
@@ -177,6 +179,8 @@ export interface NdxBridge {
     start: (request: StartAgentRunRequest) => Promise<NdxResult<AgentRun>>
     cancel: (request: AgentRunIdRequest) => Promise<NdxResult<AgentRun>>
     onUpdate: (listener: (run: AgentRun) => void) => () => void
+    onToolRequest: (listener: (request: AgentToolExecutionRequest) => void) => () => void
+    reportToolResult: (result: AgentToolExecutionResult) => Promise<NdxResult<null>>
   }
   system: {
     collectMetrics: () => Promise<NdxResult<SystemMetricsSnapshot>>

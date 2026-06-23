@@ -12,6 +12,7 @@ import { FocusDebugOverlay } from '../../controller/testing/FocusDebugOverlay'
 import { CommandPalette } from '../../features/command-palette/CommandPalette'
 import { ActivityAndNotificationsOverlay } from '../../features/activity/ActivityAndNotificationsOverlay'
 import { EmergencyStopOverlay } from '../../features/ai-canvas/EmergencyStopOverlay'
+import { AgentToolExecutionBridge } from '../../features/agents/AgentToolExecutionBridge'
 import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwitcherOverlay'
 import { useDisplayMode } from '../../state/useDisplayMode'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
@@ -60,6 +61,7 @@ export function ShellLayout({
       </div>
       <BottomControllerRail />
       <CoreToolsBootstrap />
+      <AgentToolExecutionBridge />
       <CommandPalette />
       <ActivityAndNotificationsOverlay />
       <EmergencyStopOverlay />

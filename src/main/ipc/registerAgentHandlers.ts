@@ -10,6 +10,7 @@ import {
   updateAgentRequestSchema,
   workspaceAgentRequestSchema,
   agentRunIdRequestSchema,
+  agentToolExecutionResultSchema,
   type AgentDefinition,
   type AgentRun,
   type NdxResult
@@ -128,6 +129,16 @@ export function registerAgentHandlers(store: AgentStore, runtime: AgentRuntime):
       } catch (error) {
         return { ok: false, error: toAgentError(error) }
       }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.agentToolResult,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = agentToolExecutionResultSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      await runtime.resolveToolResult(parsed.data)
+      return { ok: true, data: null }
     }
   )
 }

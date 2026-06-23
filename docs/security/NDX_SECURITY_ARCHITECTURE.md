@@ -153,12 +153,13 @@ Matches mega-prompt §5.1:
 - Every Model Router IPC handler (completion, routing, enable/disable, Ollama runtime status/load/unload/benchmark) is Zod-validated like every other surface in the app — no unvalidated payload reaches `core/models/`.
 - **ND-042 addendum**: `systemMetrics.collect` (the IPC channel backing the System Dashboard) takes no renderer-supplied input, so there is no payload to validate or to attack — it can only ever return the same read-only snapshot any other caller would get. The renderer never sees process names/paths beyond what `SystemMetricsService.collect()` already exposes (process list capped at 256 entries, sorted by PID, no environment variables or command-line arguments included).
 
-## 16. Agent Runtime security (Epic 8 addendum, core lifecycle only)
+## 16. Agent Runtime security (Epic 8 addendum)
 
-- `AgentRuntime` plans through the real Model Router but does not execute tools — its system prompt explicitly instructs the model not to claim tool execution or file modification, and there is no code path in this slice that turns a completion into a submitted `ActionQueue` action. An agent run today can only produce a text plan; it cannot touch a file, run a command, or call a tool.
+- `AgentRuntime` plans through the real Model Router and only treats model output as executable intent when it contains strict fenced JSON `toolCalls`. Ordinary natural-language output remains plan-only text.
 - Every agent run has a real, enforced timeout (`resourceLimits.timeoutMs`, via `setTimeout` + `AbortController`) that genuinely aborts the in-flight provider request — a misbehaving or slow provider cannot keep a run alive indefinitely.
 - Cancellation (`cancel()`) aborts the same controller a timeout would, so there is one real cancellation path, not two divergent ones.
-- This is a partial security boundary, not a complete one: once ActionQueue-backed tool execution is added (deferred — see the Epic 8 ledger addendum), it must reuse the exact same registry → permission → approval → audit pipeline every other tool caller uses in this codebase, per the Workflow Engine precedent in §14. Do not give Agent Runtime a separate, weaker execution path when that lands.
+- `AgentRuntime` enforces `toolAllowlist` and `maxToolCalls` before a tool request leaves the main process. The renderer bridge then enforces `permissionCeiling` against the registered tool capability before submitting to `ActionQueue`.
+- This remains a partial security boundary: pause/resume, child-agent budgets, and richer per-run audit tabs are not implemented yet. Do not add a separate agent-only executor; the ActionQueue bridge is the only allowed tool path.
 - **IPC/UI addendum**: `registerAgentHandlers.ts` validates every request with Zod like every other surface; nothing in `core/agents/` is reachable from the renderer without going through it. The `agentRun.update` push channel sends only the already-public `AgentRun` shape (objective, state, timeline, output, token counts) — no secret ever flows through it, since `AgentRuntime` never holds one (API keys stay inside `ModelProviderStore`/`ModelProviderService`, decrypted only for the duration of the model call it makes on the agent's behalf). The Agent Operations Center's tool-allowlist selector is populated from the real `ToolRegistry`, so a UI-created agent can never reference a tool ID that isn't actually registered — there's no path to configure an allowlist entry for a tool that doesn't exist.
 
 ## 17. Power Menu and Diagnostics security (Epic 11 addenda)
@@ -166,6 +167,14 @@ Matches mega-prompt §5.1:
 - `registerPowerHandlers.ts` exposes exactly two real actions — `app.relaunch()`+`app.exit()` and `app.quit()` — both already-built Electron app-lifecycle APIs with no renderer-supplied input, so there's no payload to validate or attack. Real OS-level suspend/reboot/shutdown are deliberately **not implemented anywhere in this codebase**, not merely hidden behind a flag — there is no IPC channel, no main-process code path, and no native binding that could trigger them, even if a compromised renderer tried to invent a request. Both real actions are gated behind a real `ConfirmationDialog` reviewing the action and its consequence before the IPC call fires.
 - `registerDiagnosticsHandlers.ts`'s `diagnostics.get` has no renderer-supplied input either. Its response is built exclusively from `app.getVersion()`, `process.versions`, `process.platform`/`process.arch`, and `ModelProviderStore.list()` (which already excludes API keys per §15) — there is no code path by which a secret could enter the diagnostics payload.
 - The About/Diagnostics clipboard export composes that same response with a live `SystemMetricsService` snapshot (§15 — read-only, no secrets) entirely in the renderer before calling `navigator.clipboard.writeText`; nothing is written to disk or sent over the network as part of the export.
+
+## 17a. Agent tool submission bridge (Epic 8 addendum)
+
+- Agent Runtime accepts only strict fenced JSON `toolCalls` from model output; malformed tool-call JSON fails closed, and ordinary text remains plan-only output.
+- Main-process `AgentRuntime` enforces the persisted agent `toolAllowlist` and `maxToolCalls` before emitting `agentTool.request`.
+- Renderer-side `AgentToolExecutionBridge` checks the registered tool's `requiredCapability` against the agent `permissionCeiling` before submitting to the existing `ActionQueue`.
+- No separate agent-only executor exists. Execution still flows through the same renderer-owned `ToolRegistry` → `PermissionBroker` → Approval Queue → `AuditLog` path as Command Palette and Workflow Engine actions.
+- Pending approval remains user-mediated; the agent run waits in `waiting-for-approval` until `agentTool.result` reports approval/execution, denial, cancellation, or failure.
 
 ## 18. Controller Settings security (Epic 11 addendum)
 

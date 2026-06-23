@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto'
-import type { AgentDefinition, AgentRun, AgentState } from '@shared/contracts/agent'
+import {
+  agentToolPlanSchema,
+  type AgentDefinition,
+  type AgentRun,
+  type AgentState,
+  type AgentToolCall,
+  type AgentToolExecutionRequest,
+  type AgentToolExecutionResult
+} from '@shared/contracts/agent'
 import type { ModelCompletionRequest, ModelCompletionResult } from '@shared/contracts/model'
 import type { AgentStore } from './AgentStore'
 
@@ -7,14 +15,24 @@ export interface AgentModelPort {
   complete(request: ModelCompletionRequest, signal?: AbortSignal): Promise<ModelCompletionResult>
 }
 
-/** A visible, bounded agent lifecycle. This slice plans through a real model but does not execute tools. */
+export type AgentToolRequestSink = (request: AgentToolExecutionRequest) => void
+
+/** A visible, bounded agent lifecycle. Tool calls are emitted to the renderer-owned ActionQueue bridge. */
 export class AgentRuntime {
   private readonly controllers = new Map<string, AbortController>()
+  private readonly pendingToolResults = new Map<
+    string,
+    {
+      resolve: (result: AgentToolExecutionResult) => void
+      reject: (error: Error) => void
+    }
+  >()
 
   constructor(
     private readonly store: AgentStore,
     private readonly model: AgentModelPort,
-    private readonly onUpdate: (run: AgentRun) => void = () => {}
+    private readonly onUpdate: (run: AgentRun) => void = () => {},
+    private readonly onToolRequest: AgentToolRequestSink = () => {}
   ) {}
 
   async start(agentId: string, objective: string): Promise<AgentRun> {
@@ -72,9 +90,10 @@ export class AgentRuntime {
       )
       if (controller.signal.aborted) throw new DOMException('Cancelled', 'AbortError')
       run = (await this.store.getRun(run.id)) ?? run
+      const toolCalls = parseToolCalls(completion.content)
       run = this.event(
         run,
-        'completed',
+        toolCalls.length > 0 ? 'queued' : 'completed',
         'Model planning completed.',
         completion.modelId,
         completion.providerId
@@ -82,6 +101,8 @@ export class AgentRuntime {
       run.output = completion.content
       run.promptTokens = completion.usage.promptTokens
       run.completionTokens = completion.usage.completionTokens
+      await this.persist(run)
+      run = await this.executeToolCalls(agent, run, toolCalls, controller.signal)
     } catch (error) {
       run = (await this.store.getRun(run.id)) ?? run
       const cancelled =
@@ -97,6 +118,96 @@ export class AgentRuntime {
       this.controllers.delete(run.id)
       await this.persist(run)
     }
+  }
+
+  async resolveToolResult(result: AgentToolExecutionResult): Promise<void> {
+    const pending = this.pendingToolResults.get(result.requestId)
+    if (!pending) return
+    this.pendingToolResults.delete(result.requestId)
+    pending.resolve(result)
+  }
+
+  private async executeToolCalls(
+    agent: AgentDefinition,
+    initial: AgentRun,
+    toolCalls: AgentToolCall[],
+    signal: AbortSignal
+  ): Promise<AgentRun> {
+    let run = initial
+    if (toolCalls.length === 0) return run
+    if (toolCalls.length > agent.resourceLimits.maxToolCalls) {
+      throw new Error(
+        `Agent proposed ${toolCalls.length} tool calls, exceeding the limit of ${agent.resourceLimits.maxToolCalls}.`
+      )
+    }
+
+    for (const [index, call] of toolCalls.entries()) {
+      if (signal.aborted) throw new DOMException('Cancelled', 'AbortError')
+      if (!agent.toolAllowlist.includes(call.toolId)) {
+        throw new Error(`Agent proposed non-allowlisted tool "${call.toolId}".`)
+      }
+
+      run = this.event(
+        run,
+        'waiting-for-approval',
+        `Submitting tool ${index + 1}/${toolCalls.length} (${call.toolId}) through ActionQueue.`
+      )
+      await this.persist(run)
+
+      const result = await this.submitToolCall(agent, run, call, signal)
+      run = (await this.store.getRun(run.id)) ?? run
+      if (result.status !== 'passed') {
+        throw new Error(`Tool "${call.toolId}" ${result.status}: ${result.message}`)
+      }
+      run = this.event(run, 'running', `Tool "${call.toolId}" completed via ActionQueue.`)
+      await this.persist(run)
+    }
+
+    return this.event(run, 'completed', 'Agent run completed after approved tool execution.')
+  }
+
+  private submitToolCall(
+    agent: AgentDefinition,
+    run: AgentRun,
+    call: AgentToolCall,
+    signal: AbortSignal
+  ): Promise<AgentToolExecutionResult> {
+    const requestId = randomUUID()
+    return new Promise((resolve, reject) => {
+      const abort = (): void => {
+        this.pendingToolResults.delete(requestId)
+        reject(new DOMException('Cancelled', 'AbortError') as unknown as Error)
+      }
+      if (signal.aborted) {
+        abort()
+        return
+      }
+      signal.addEventListener('abort', abort, { once: true })
+      this.pendingToolResults.set(requestId, {
+        resolve: (result) => {
+          signal.removeEventListener('abort', abort)
+          resolve(result)
+        },
+        reject
+      })
+      try {
+        this.onToolRequest({
+          requestId,
+          runId: run.id,
+          agentId: agent.id,
+          workspaceId: agent.workspaceId,
+          objective: run.objective,
+          toolId: call.toolId,
+          arguments: call.arguments,
+          permissionCeiling: agent.permissionCeiling,
+          goal: `Agent "${agent.name}" objective: ${run.objective}`
+        })
+      } catch (error) {
+        signal.removeEventListener('abort', abort)
+        this.pendingToolResults.delete(requestId)
+        reject(error instanceof Error ? error : new Error('Agent tool bridge failed.'))
+      }
+    })
   }
 
   private async persist(run: AgentRun): Promise<void> {
@@ -133,10 +244,21 @@ function systemPrompt(agent: AgentDefinition): string {
     `Workspace scope: ${agent.workspaceId}.`,
     `Allowed tools: ${agent.toolAllowlist.length ? agent.toolAllowlist.join(', ') : 'none'}.`,
     `Permission ceiling: ${agent.permissionCeiling.length ? agent.permissionCeiling.join(', ') : 'none'}.`,
-    `Propose a concise plan. Do not claim to execute tools or modify files.`
+    `Propose a concise plan. If a tool is required, include exactly one JSON object in a fenced json block with this shape: {"toolCalls":[{"toolId":"registered.tool.id","arguments":{}}]}.`,
+    `Only use allowed tools. Never claim a tool ran until the host reports it.`
   ].join('\n')
 }
 
 function terminal(state: AgentState): boolean {
   return ['cancelled', 'failed', 'completed', 'rolled-back'].includes(state)
+}
+
+function parseToolCalls(content: string): AgentToolCall[] {
+  const fenced = content.match(/```json\s*([\s\S]*?)```/i)
+  const candidate = fenced?.[1] ?? (content.trim().startsWith('{') ? content.trim() : '')
+  if (!candidate) return []
+  const parsedJson: unknown = JSON.parse(candidate)
+  const parsedPlan = agentToolPlanSchema.safeParse(parsedJson)
+  if (!parsedPlan.success) throw new Error('Model returned an invalid agent tool plan.')
+  return parsedPlan.data.toolCalls
 }

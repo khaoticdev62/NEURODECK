@@ -836,7 +836,7 @@ The remaining gap from the addendum above — no typed IPC, no UI — was closed
 
 **ND-017 Agent Detail** (`features/agents/AgentDetail.tsx`): real agent overview (goal, tool allowlist, resource limits), a real "start a run" control that calls `agentRun.start`, a real run list that updates live via the `agentRun.update` push subscription (not polling), real per-run timeline/output/token-usage display, and real cancel.
 
-**Still not built, same reason as before**: ActionQueue-backed tool execution. Every screen here is honest about it — the Detail screen doesn't show Files/Tools/Permissions/Logs tabs, because an agent run today never touches a file or calls a tool; there's nothing real to put in those tabs yet.
+**Still not built after this UI slice**: ActionQueue-backed tool execution. This gap is closed by the later "Agent Runtime ActionQueue tool submission bridge" addendum below; the remaining ND-017 gap is the dedicated Files/Tools/Permissions/Logs tab data model/UI.
 
 **Tests**: `AgentStore.test.ts` (6, new CRUD methods), `AgentOperationsCenter.test.tsx` (6: empty state, real list, real create round trip, real enable/disable toggle, real remove), `AgentDetail.test.tsx` (4: not-found error state, real overview + past runs, real start-run round trip, real cancel round trip). Total: 328 tests passing (up from 312).
 
@@ -984,3 +984,21 @@ After both runtime crashes were fixed, the user reported "icons are missing and 
 **Regression test added**: `App.test.tsx` now asserts the nav rail renders exactly as many real `<svg>` icons as it has links, and that each icon has a distinct SVG shape. Verified live against the running dev server (Playwright `_electron`, no crashes) that all 11 destinations render a distinct `<svg>` with real path/circle/rect content, and that `/system` now renders real working buttons to all eight previously-unreachable screens.
 
 **Lesson**: "the screen exists, is real, and passes its own tests" is not the same as "a user can reach it." Every new real screen needs an explicit, deliberate check for *how a controller-only user actually arrives there* — don't rely on the existence of a route to imply the existence of a path to that route in the rendered nav.
+
+## Epic 8 addendum — Agent Runtime ActionQueue tool submission bridge
+
+Agent Runtime no longer stops at text-only planning when the model emits a strict tool-call plan. The runtime now accepts one narrow, reviewable tool-call format: a fenced JSON object with `{"toolCalls":[{"toolId":"...","arguments":{}}]}`. Anything outside that shape is treated as normal text output; malformed tool-call JSON fails the run rather than guessing.
+
+The security boundary is deliberately split:
+
+- `AgentRuntime` (`core/agents/AgentRuntime.ts`) validates the model-proposed `toolId` against the agent's persisted `toolAllowlist`, enforces `resourceLimits.maxToolCalls`, persists every state transition, and emits a typed `agentTool.request`.
+- `AgentToolExecutionBridge` (`features/agents/AgentToolExecutionBridge.tsx`) runs in the renderer, where the real `ActionQueue` already lives. It verifies that the tool is registered, checks the tool's `requiredCapability` against the agent's `permissionCeiling`, then calls `queue.submit()` so the request goes through the same `ToolRegistry` → `PermissionBroker` → Approval Queue → AuditLog path as Command Palette and Workflow Engine tool actions.
+- `registerAgentHandlers.ts` receives the typed `agentTool.result` acknowledgment and resolves the waiting persisted run. Pending approvals remain pending in the existing Approval Queue; the agent run stays in `waiting-for-approval` until the user approves, denies, cancels, or the tool completes.
+
+This is real ActionQueue-backed submission, not a separate agent-only executor. It intentionally does not yet build the full ND-017 Files/Tools/Permissions/Logs tab model, agent pause/resume controls, child-agent spawning/budget bounds, or full e2e UI coverage for a live approval flow.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| --- | --- | --- |
+| `AgentRuntime` lifecycle, cancellation, strict tool-call bridge submission, non-allowlisted tool rejection | `core/agents/__tests__/AgentRuntime.test.ts` | 4 |

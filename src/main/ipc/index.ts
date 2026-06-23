@@ -56,12 +56,22 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   const ollamaRuntime = new OllamaRuntimeService()
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
-  const agentRuntime = new AgentRuntime(agentStore, modelRouter, (run) => {
-    const window = getWindow()
-    if (window && !window.webContents.isDestroyed()) {
-      window.webContents.send(IPC_CHANNELS.agentRunUpdate, run)
+  const agentRuntime = new AgentRuntime(
+    agentStore,
+    modelRouter,
+    (run) => {
+      const window = getWindow()
+      if (window && !window.webContents.isDestroyed()) {
+        window.webContents.send(IPC_CHANNELS.agentRunUpdate, run)
+      }
+    },
+    (request) => {
+      const window = getWindow()
+      if (window && !window.webContents.isDestroyed()) {
+        window.webContents.send(IPC_CHANNELS.agentToolRequest, request)
+      }
     }
-  })
+  )
 
   registerWorkspaceHandlers(workspaceStore, getWindow)
   registerFileHandlers(fileService, recoveryService, workspaceStore)

@@ -15,10 +15,9 @@ import { useWorkspaces } from '../workspaces/useWorkspaces'
 
 /**
  * ND-017 Agent Detail, scoped to a real Overview + Timeline + Output —
- * the tabs the spec lists for Files/Tools/Permissions/Logs need
- * ActionQueue-backed tool execution, which this slice's Agent Runtime
- * does not perform (it plans through the real Model Router but never
- * submits a tool call). Run state is pushed live from the main process
+ * Agent Runtime can now submit strict model-emitted tool calls through the
+ * renderer-owned ActionQueue bridge, but the spec's Files/Tools/Permissions/
+ * Logs tabs still need a dedicated per-run data model/UI. Run state is pushed live from the main process
  * via `agentRun.update` (the same pattern terminal data/exit events use),
  * not polled.
  */

@@ -27,7 +27,7 @@ const ROUTING_PROFILES: RoutingProfileId[] = [
 /**
  * ND-016 Agent Operations Center. Real: agents are persisted definitions
  * (Epic 8 core lifecycle), and a run plans through the real Model Router
- * (Epic 9). An agent only plans today — it does not execute tools — so
+ * (Epic 9). Tool calls now submit through the ActionQueue bridge, but
  * "Active/Idle/Paused" status here reflects the real run state machine,
  * not a simulated busy indicator. Tool allowlist options come from the
  * real `ToolRegistry`, not an invented capability list.

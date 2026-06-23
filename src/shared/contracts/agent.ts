@@ -98,3 +98,37 @@ export type AgentRunIdRequest = z.infer<typeof agentRunIdRequestSchema>
 
 export const listAgentRunsRequestSchema = z.object({ agentId: z.string().min(1).optional() })
 export type ListAgentRunsRequest = z.infer<typeof listAgentRunsRequestSchema>
+
+export const agentToolCallSchema = z.object({
+  toolId: z.string().min(1),
+  arguments: z.record(z.string(), z.unknown()).default({})
+})
+export type AgentToolCall = z.infer<typeof agentToolCallSchema>
+
+export const agentToolPlanSchema = z.object({
+  toolCalls: z.array(agentToolCallSchema).default([])
+})
+export type AgentToolPlan = z.infer<typeof agentToolPlanSchema>
+
+export const agentToolExecutionRequestSchema = z.object({
+  requestId: z.string().min(1),
+  runId: z.string().min(1),
+  agentId: z.string().min(1),
+  workspaceId: z.string().min(1),
+  objective: z.string().min(1),
+  toolId: z.string().min(1),
+  arguments: z.record(z.string(), z.unknown()).default({}),
+  permissionCeiling: z.array(z.string()),
+  goal: z.string().min(1)
+})
+export type AgentToolExecutionRequest = z.infer<typeof agentToolExecutionRequestSchema>
+
+export const agentToolExecutionResultSchema = z.object({
+  requestId: z.string().min(1),
+  runId: z.string().min(1),
+  toolId: z.string().min(1),
+  actionId: z.string().optional(),
+  status: z.enum(['pending-approval', 'passed', 'failed', 'denied', 'cancelled']),
+  message: z.string()
+})
+export type AgentToolExecutionResult = z.infer<typeof agentToolExecutionResultSchema>

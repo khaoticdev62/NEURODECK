@@ -61,6 +61,8 @@ export const IPC_CHANNELS = {
   agentRunStart: 'agentRun.start',
   agentRunCancel: 'agentRun.cancel',
   agentRunUpdate: 'agentRun.update',
+  agentToolRequest: 'agentTool.request',
+  agentToolResult: 'agentTool.result',
   systemMetricsCollect: 'systemMetrics.collect',
   diagnosticsGet: 'diagnostics.get',
   powerRestartApp: 'power.restartApp',

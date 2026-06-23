@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelCompletionResult } from '@shared/contracts/model'
 import type { AgentDefinition, AgentRun, AgentState } from '@shared/contracts/agent'
-import { AgentRuntime, type AgentModelPort } from '../AgentRuntime'
+import { AgentRuntime, type AgentModelPort, type AgentToolRequestSink } from '../AgentRuntime'
 import { AgentStore } from '../AgentStore'
 
 const directories: string[] = []
@@ -54,6 +54,65 @@ describe('AgentRuntime', () => {
       'cancelled'
     ])
   })
+
+  it('submits strict model-proposed tool calls through the external ActionQueue bridge', async () => {
+    const store = await createStore()
+    const agent = await createAgent(store)
+    const requests: Parameters<AgentToolRequestSink>[0][] = []
+    const runtime = new AgentRuntime(
+      store,
+      { complete: vi.fn().mockResolvedValue(completionWithToolCall()) },
+      () => undefined,
+      (request) => {
+        requests.push(request)
+        void runtime.resolveToolResult({
+          requestId: request.requestId,
+          runId: request.runId,
+          toolId: request.toolId,
+          actionId: 'action-1',
+          status: 'passed',
+          message: 'Read completed.'
+        })
+      }
+    )
+
+    const started = await runtime.start(agent.id, 'Read the workspace overview')
+    const finished = await waitForRun(store, started.id, 'completed')
+
+    expect(requests).toHaveLength(1)
+    expect(requests[0]).toMatchObject({
+      agentId: agent.id,
+      workspaceId: agent.workspaceId,
+      toolId: 'files.read',
+      arguments: { path: 'README.md' },
+      permissionCeiling: ['workspace.read']
+    })
+    expect(finished.timeline.map((event) => event.state)).toEqual([
+      'planning',
+      'queued',
+      'waiting-for-approval',
+      'running',
+      'completed'
+    ])
+  })
+
+  it('fails without emitting a tool request when the model proposes a non-allowlisted tool', async () => {
+    const store = await createStore()
+    const agent = await createAgent(store)
+    const onToolRequest = vi.fn()
+    const runtime = new AgentRuntime(
+      store,
+      { complete: vi.fn().mockResolvedValue(completionWithToolCall('terminal.run.low')) },
+      () => undefined,
+      onToolRequest
+    )
+
+    const started = await runtime.start(agent.id, 'Run a command')
+    const failed = await waitForRun(store, started.id, 'failed')
+
+    expect(onToolRequest).not.toHaveBeenCalled()
+    expect(failed.error).toContain('non-allowlisted tool')
+  })
 })
 
 async function createStore(): Promise<AgentStore> {
@@ -86,6 +145,18 @@ function completion(): ModelCompletionResult {
     content: '1. Inspect files\n2. Report findings',
     usage: { promptTokens: 12, completionTokens: 8, totalTokens: 20 },
     durationMs: 25
+  }
+}
+
+function completionWithToolCall(toolId = 'files.read'): ModelCompletionResult {
+  return {
+    ...completion(),
+    content: [
+      'Plan: use the approved tool, then summarize.',
+      '```json',
+      JSON.stringify({ toolCalls: [{ toolId, arguments: { path: 'README.md' } }] }),
+      '```'
+    ].join('\n')
   }
 }
 
