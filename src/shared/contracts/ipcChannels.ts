@@ -38,6 +38,7 @@ export const IPC_CHANNELS = {
   terminalWrite: 'terminal.write',
   terminalResize: 'terminal.resize',
   terminalTerminate: 'terminal.terminate',
+  terminalRunHeadless: 'terminal.runHeadless',
   terminalData: 'terminal.data',
   terminalExit: 'terminal.exit',
   workflowList: 'workflow.list',

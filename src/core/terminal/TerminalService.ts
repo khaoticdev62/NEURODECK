@@ -1,11 +1,14 @@
 import { randomUUID } from 'node:crypto'
+import { spawn as spawnChild } from 'node:child_process'
 import { basename } from 'node:path'
-import { spawn, type IDisposable, type IPty } from 'node-pty'
+import { spawn as spawnPty, type IDisposable, type IPty } from 'node-pty'
 import type {
+  HeadlessTerminalResult,
   TerminalDataEvent,
   TerminalExitEvent,
   TerminalSession,
-  TerminalSnapshot
+  TerminalSnapshot,
+  ParsedHeadlessTerminalRequest
 } from '@shared/contracts/terminal'
 
 const MAX_RUNNING_SESSIONS = 8
@@ -56,7 +59,7 @@ export class TerminalService {
     }
 
     const shell = defaultShell()
-    const pty = spawn(shell, [], {
+    const pty = spawnPty(shell, [], {
       name: 'xterm-256color',
       cwd: options.cwd,
       cols: options.cols,
@@ -135,6 +138,67 @@ export class TerminalService {
     record.pty.kill()
   }
 
+  runHeadless(
+    options: ParsedHeadlessTerminalRequest & { cwd: string }
+  ): Promise<HeadlessTerminalResult> {
+    const shell = defaultShell()
+    const startedAt = Date.now()
+    const shellArgs = shellArguments(options.command)
+    let stdout = ''
+    let stderr = ''
+    let truncated = false
+    let settled = false
+
+    return new Promise((resolve, reject) => {
+      const child = spawnChild(shell, shellArgs, {
+        cwd: options.cwd,
+        env: sanitizedEnvironment(),
+        windowsHide: true
+      })
+
+      const timeout = setTimeout(() => {
+        child.kill()
+        finish(null, true)
+      }, options.timeoutMs)
+
+      child.stdout.on('data', (chunk: Buffer) => {
+        stdout = appendBounded(stdout, chunk.toString('utf8'), options.maxOutputChars)
+        truncated = truncated || stdout.length >= options.maxOutputChars
+      })
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr = appendBounded(stderr, chunk.toString('utf8'), options.maxOutputChars)
+        truncated = truncated || stderr.length >= options.maxOutputChars
+      })
+      child.on('error', (error) => {
+        clearTimeout(timeout)
+        if (!settled) {
+          settled = true
+          reject(error)
+        }
+      })
+      child.on('exit', (exitCode) => {
+        clearTimeout(timeout)
+        finish(exitCode, false)
+      })
+
+      const finish = (exitCode: number | null, timedOut: boolean): void => {
+        if (settled) return
+        settled = true
+        resolve({
+          command: options.command,
+          cwd: options.cwd,
+          shell: basename(shell),
+          stdout,
+          stderr,
+          exitCode,
+          timedOut,
+          durationMs: Date.now() - startedAt,
+          truncated
+        })
+      }
+    })
+  }
+
   onData(listener: (event: TerminalDataEvent) => void): () => void {
     this.dataListeners.add(listener)
     return () => this.dataListeners.delete(listener)
@@ -183,4 +247,14 @@ function sanitizedEnvironment(): Record<string, string> {
         entry[1] !== undefined && !SECRET_ENV_PATTERN.test(entry[0])
     )
   )
+}
+
+function shellArguments(command: string): string[] {
+  if (process.platform === 'win32') return ['/d', '/s', '/c', command]
+  return ['-lc', command]
+}
+
+function appendBounded(current: string, next: string, maxChars: number): string {
+  const combined = current + next
+  return combined.length > maxChars ? combined.slice(-maxChars) : combined
 }

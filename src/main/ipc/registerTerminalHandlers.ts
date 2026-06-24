@@ -1,6 +1,7 @@
 import { ipcMain, type BrowserWindow } from 'electron'
 import {
   createTerminalRequestSchema,
+  headlessTerminalRequestSchema,
   IPC_CHANNELS,
   listTerminalSessionsRequestSchema,
   ndxError,
@@ -8,6 +9,7 @@ import {
   terminalSessionRequestSchema,
   terminalWriteRequestSchema,
   type NdxResult,
+  type HeadlessTerminalResult,
   type TerminalSession,
   type TerminalSnapshot
 } from '@shared/contracts'
@@ -117,6 +119,26 @@ export function registerTerminalHandlers(
       return { ok: false, error: toTerminalError(error) }
     }
   })
+
+  ipcMain.handle(
+    IPC_CHANNELS.terminalRunHeadless,
+    async (_event, payload: unknown): Promise<NdxResult<HeadlessTerminalResult>> => {
+      const parsed = headlessTerminalRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const workspace = await workspaceStore.get(parsed.data.workspaceId)
+      if (!workspace) return workspaceNotFound()
+
+      try {
+        const cwd = await resolveTerminalCwd(workspace.rootPath, parsed.data.relativeCwd)
+        return {
+          ok: true,
+          data: await terminalService.runHeadless({ ...parsed.data, cwd })
+        }
+      } catch (error) {
+        return { ok: false, error: toTerminalError(error) }
+      }
+    }
+  )
 
   return () => {
     removeDataListener()

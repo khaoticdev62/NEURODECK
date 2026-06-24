@@ -57,6 +57,35 @@ describe('TerminalService', () => {
       TerminalServiceError
     )
   })
+
+  it('runs a real bounded headless command in the workspace cwd', async () => {
+    const result = await service.runHeadless({
+      workspaceId: 'w1',
+      cwd,
+      command: process.platform === 'win32' ? 'cd' : 'pwd',
+      timeoutMs: 5000,
+      maxOutputChars: 4096
+    })
+
+    expect(result.exitCode).toBe(0)
+    expect(result.timedOut).toBe(false)
+    expect(result.stdout.trim()).toBe(cwd)
+    expect(result.stderr).toBe('')
+    expect(result.cwd).toBe(cwd)
+  })
+
+  it('terminates a headless command that exceeds its timeout', async () => {
+    const result = await service.runHeadless({
+      workspaceId: 'w1',
+      cwd,
+      command: process.platform === 'win32' ? 'ping -n 3 127.0.0.1 > nul' : 'sleep 2',
+      timeoutMs: 1000,
+      maxOutputChars: 4096
+    })
+
+    expect(result.timedOut).toBe(true)
+    expect(result.exitCode).toBeNull()
+  })
 })
 
 function waitForOutput(

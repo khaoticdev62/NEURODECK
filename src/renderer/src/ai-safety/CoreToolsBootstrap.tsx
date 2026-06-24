@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useFocusEngine } from '../controller/focus/useFocusEngine'
 import { createFileTools } from './tools/fileTools'
+import { createHeadlessTerminalTools } from './tools/headlessTerminalTools'
 import { createResetHapticsIntensityTool } from './tools/resetHapticsIntensityTool'
 import { createTerminalCommandTools } from './tools/terminalCommandTools'
 import { createTutorialAcknowledgeTool } from './tools/tutorialAcknowledgeTool'
@@ -19,6 +20,7 @@ export function CoreToolsBootstrap(): null {
     registry.register(createResetHapticsIntensityTool(haptics))
     registry.register(createTutorialAcknowledgeTool())
     createTerminalCommandTools().forEach((tool) => registry.register(tool))
+    createHeadlessTerminalTools().forEach((tool) => registry.register(tool))
     createFileTools().forEach((tool) => registry.register(tool))
   }, [registry, haptics])
 

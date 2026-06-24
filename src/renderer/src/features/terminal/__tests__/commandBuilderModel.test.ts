@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { classifyCommand, serializeCommand, toolIdForRisk } from '../commandBuilderModel'
+import {
+  classifyCommand,
+  parseCommandProposal,
+  serializeCommand,
+  toolIdForRisk
+} from '../commandBuilderModel'
 
 describe('commandBuilderModel', () => {
   it('serializes values and paths without allowing them to become shell operators', () => {
@@ -46,5 +51,25 @@ describe('commandBuilderModel', () => {
     expect(serializeCommand(block, 'bash')).toBe("NODE_ENV='test mode'")
     expect(serializeCommand(block, 'powershell.exe')).toBe("$env:NODE_ENV='test mode';")
     expect(serializeCommand(block, 'cmd.exe')).toBe('set "NODE_ENV=test mode" &&')
+  })
+
+  it('parses reviewed AI command proposals into structured blocks', () => {
+    expect(
+      parseCommandProposal(
+        '{"blocks":[{"type":"program","value":"npm"},{"type":"subcommand","value":"test"}],"explanation":"Run tests."}'
+      )
+    ).toEqual({
+      blocks: [
+        { type: 'program', value: 'npm' },
+        { type: 'subcommand', value: 'test' }
+      ],
+      explanation: 'Run tests.'
+    })
+  })
+
+  it('rejects invalid AI command proposal block shapes', () => {
+    expect(() => parseCommandProposal('{"blocks":[{"type":"program","value":""}]}')).toThrow(
+      /value/
+    )
   })
 })

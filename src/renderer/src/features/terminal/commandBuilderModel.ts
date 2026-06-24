@@ -27,6 +27,11 @@ export type CommandRisk = {
   privileged: boolean
 }
 
+export interface CommandProposal {
+  blocks: Array<Omit<CommandBlock, 'id'>>
+  explanation: string
+}
+
 const OPERATORS: Partial<Record<CommandBlockType, readonly string[]>> = {
   pipe: ['|'],
   redirect: ['>', '>>'],
@@ -83,6 +88,40 @@ export function classifyCommand(command: string): CommandRisk {
 export function toolIdForRisk(risk: CommandRisk): string {
   if (risk.privileged) return 'terminal-command-privileged'
   return `terminal-command-${risk.level}`
+}
+
+/** Headless variant of `toolIdForRisk` — runs without an attached PTY session and captures output instead of writing it to one. */
+export function headlessToolIdForRisk(risk: CommandRisk): string {
+  if (risk.privileged) return 'terminal-headless-privileged'
+  return `terminal-headless-${risk.level}`
+}
+
+export function parseCommandProposal(raw: string): CommandProposal {
+  const jsonStart = raw.indexOf('{')
+  const jsonEnd = raw.lastIndexOf('}')
+  if (jsonStart === -1 || jsonEnd <= jsonStart) {
+    throw new Error('The model did not return a JSON command proposal.')
+  }
+  const parsed = JSON.parse(raw.slice(jsonStart, jsonEnd + 1)) as Partial<CommandProposal>
+  if (!Array.isArray(parsed.blocks) || parsed.blocks.length === 0 || parsed.blocks.length > 20) {
+    throw new Error('The command proposal must include 1-20 structured blocks.')
+  }
+  const blocks = parsed.blocks.map((block) => {
+    if (!COMMAND_BLOCK_TYPES.includes(block.type)) {
+      throw new Error('The command proposal included an unsupported block type.')
+    }
+    if (typeof block.value !== 'string' || !block.value.trim()) {
+      throw new Error('Every proposed command block must include a value.')
+    }
+    return { type: block.type, value: block.value }
+  })
+  return {
+    blocks,
+    explanation:
+      typeof parsed.explanation === 'string' && parsed.explanation.trim()
+        ? parsed.explanation.trim()
+        : 'Model proposed a structured command.'
+  }
 }
 
 function serializeBlock(block: CommandBlock, shell: string): string {

@@ -8,17 +8,21 @@ import { EmptyState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
 import { useFocusable } from '../../controller/focus/useFocusable'
+import { completeModel } from '../../services/ipc/modelClient'
 import { listTerminalSessions, onTerminalExit } from '../../services/ipc/terminalClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import {
   classifyCommand,
   COMMAND_BLOCK_TYPES,
+  headlessToolIdForRisk,
+  parseCommandProposal,
   serializeCommand,
   toolIdForRisk,
   type CommandBlock,
   type CommandBlockType
 } from './commandBuilderModel'
 
+const SAVED_ACTIONS_KEY_PREFIX = 'ndx.commandBuilder.savedActions.'
 const RISK_TONES: Record<RiskLevel, StatusTone> = {
   low: 'success',
   medium: 'warning',
@@ -40,6 +44,14 @@ const BLOCK_HELP: Record<CommandBlockType, string> = {
 
 let blockSequence = 0
 
+interface SavedCommandAction {
+  id: string
+  name: string
+  command: string
+  blocks: CommandBlock[]
+  createdAt: number
+}
+
 /** ND-029 structured command proposal builder. Every execution enters ActionQueue review. */
 export function CommandBuilder(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
@@ -52,6 +64,15 @@ export function CommandBuilder(): React.JSX.Element {
   ])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [savedActions, setSavedActions] = useState<SavedCommandAction[]>([])
+  const [intent, setIntent] = useState('')
+  const [proposalBusy, setProposalBusy] = useState(false)
+  const [proposal, setProposal] = useState<{
+    blocks: Array<Omit<CommandBlock, 'id'>>
+    explanation: string
+    command: string
+    provider: string
+  } | null>(null)
 
   useEffect(() => {
     if (!activeWorkspace) return
@@ -75,6 +96,17 @@ export function CommandBuilder(): React.JSX.Element {
     return () => {
       active = false
       unsubscribeExit()
+    }
+  }, [activeWorkspace])
+
+  useEffect(() => {
+    if (!activeWorkspace) return
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) setSavedActions(loadSavedActions(activeWorkspace.id))
+    })
+    return () => {
+      active = false
     }
   }, [activeWorkspace])
 
@@ -138,6 +170,94 @@ export function CommandBuilder(): React.JSX.Element {
     }
   }
 
+  function saveCurrentAction(): void {
+    if (!activeWorkspace) return
+    if (!command) {
+      setError('Complete a command before saving it as an action.')
+      return
+    }
+    const next: SavedCommandAction = {
+      id: `saved-${Date.now()}`,
+      name: command,
+      command,
+      blocks,
+      createdAt: Date.now()
+    }
+    const updated = [next, ...savedActions].slice(0, 20)
+    setSavedActions(updated)
+    saveSavedActions(activeWorkspace.id, updated)
+    setError(null)
+  }
+
+  function loadSavedAction(action: SavedCommandAction): void {
+    setBlocks(action.blocks.map((block) => ({ ...block, id: nextBlockId() })))
+    setError(null)
+  }
+
+  function deleteSavedAction(actionId: string): void {
+    if (!activeWorkspace) return
+    const updated = savedActions.filter((action) => action.id !== actionId)
+    setSavedActions(updated)
+    saveSavedActions(activeWorkspace.id, updated)
+  }
+
+  async function requestCommandProposal(): Promise<void> {
+    if (!activeWorkspace) return
+    if (!intent.trim() || proposalBusy) return
+    setProposalBusy(true)
+    setProposal(null)
+    setError(null)
+    const shell = selectedSession?.shell ?? 'sh'
+    const result = await completeModel({
+      profileId: 'fast-coding',
+      workspacePrivate: true,
+      temperature: 0.1,
+      maxTokens: 1200,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You propose terminal commands as structured blocks. Return only JSON with fields "blocks" and "explanation". Blocks must use these types only: program, subcommand, flag, value, path, pipe, redirect, conditional, environment. Do not include markdown.'
+        },
+        {
+          role: 'user',
+          content: [
+            `Shell: ${shell}`,
+            `Workspace: ${activeWorkspace.name}`,
+            `Intent: ${intent.trim()}`,
+            'Return a safe, minimal command proposal. The host will review it before running.'
+          ].join('\n')
+        }
+      ]
+    })
+    setProposalBusy(false)
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    try {
+      const parsed = parseCommandProposal(result.data.content)
+      const command = serializeCommand(
+        parsed.blocks.map((block) => ({ ...block, id: nextBlockId() })),
+        shell
+      )
+      setProposal({
+        ...parsed,
+        command,
+        provider: `${result.data.providerName} / ${result.data.modelId}`
+      })
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Could not parse command proposal.')
+    }
+  }
+
+  function useCommandProposal(): void {
+    if (!proposal) return
+    setBlocks(proposal.blocks.map((block) => ({ ...block, id: nextBlockId() })))
+    setProposal(null)
+    setError(null)
+  }
+
   function submitForReview(): void {
     if (!selectedSession || !command) {
       setError('Choose a running session and complete the command before review.')
@@ -155,6 +275,27 @@ export function CommandBuilder(): React.JSX.Element {
         target: `${selectedSession.shell} · ${selectedSession.cwd}`
       },
       `Run exact command: ${command}`
+    )
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    navigate('/ai/approvals')
+  }
+
+  function runHeadless(): void {
+    if (!activeWorkspace || !command) {
+      setError('Complete a command before running it headlessly.')
+      return
+    }
+    const capability: PermissionCapability = risk.privileged
+      ? 'terminal.privileged'
+      : 'terminal.execute'
+    broker.revoke(capability)
+    const result = queue.submit(
+      headlessToolIdForRisk(risk),
+      { workspaceId: activeWorkspace.id, command },
+      `Run headless (no terminal): ${command}`
     )
     if (!result.ok) {
       setError(result.error)
@@ -221,6 +362,47 @@ export function CommandBuilder(): React.JSX.Element {
             <p className="text-meta font-semibold text-text-primary">Risk analysis</p>
             <p className="mt-1 text-meta text-text-secondary">{risk.reason}</p>
           </div>
+          <div className="border-t border-border pt-3">
+            <label className="text-meta font-semibold text-text-primary" htmlFor="builder-intent">
+              AI proposal
+            </label>
+            <textarea
+              id="builder-intent"
+              value={intent}
+              onChange={(event) => setIntent(event.target.value)}
+              placeholder="Describe the command to propose"
+              className="mt-2 min-h-20 w-full resize-none border border-border bg-canvas px-2 py-1 text-meta text-text-primary"
+            />
+            <FocusableButton
+              id="builder-propose"
+              variant="secondary"
+              disabled={!intent.trim() || proposalBusy}
+              onClick={() => void requestCommandProposal()}
+            >
+              {proposalBusy ? 'Proposing…' : 'Propose blocks'}
+            </FocusableButton>
+          </div>
+          {proposal && (
+            <div className="border border-border bg-canvas p-2">
+              <p className="text-meta text-text-tertiary">{proposal.provider}</p>
+              <p className="mt-1 text-meta text-text-secondary">{proposal.explanation}</p>
+              <code className="mt-2 block truncate font-mono text-meta text-text-primary">
+                {proposal.command}
+              </code>
+              <div className="mt-2 flex gap-2">
+                <FocusableButton id="builder-use-proposal" variant="primary" onClick={useCommandProposal}>
+                  Use proposal
+                </FocusableButton>
+                <FocusableButton
+                  id="builder-discard-proposal"
+                  variant="ghost"
+                  onClick={() => setProposal(null)}
+                >
+                  Discard
+                </FocusableButton>
+              </div>
+            </div>
+          )}
           <div className="mt-auto flex flex-col gap-2">
             <FocusableButton
               id="builder-copy"
@@ -229,6 +411,22 @@ export function CommandBuilder(): React.JSX.Element {
               onClick={() => void copyCommand()}
             >
               Copy without running
+            </FocusableButton>
+            <FocusableButton
+              id="builder-save-action"
+              variant="secondary"
+              disabled={!command}
+              onClick={saveCurrentAction}
+            >
+              Save action
+            </FocusableButton>
+            <FocusableButton
+              id="builder-run-headless"
+              variant="secondary"
+              disabled={!command}
+              onClick={runHeadless}
+            >
+              Run headless (capture output)
             </FocusableButton>
             <FocusableButton
               id="builder-review"
@@ -241,6 +439,43 @@ export function CommandBuilder(): React.JSX.Element {
           </div>
         </aside>
       </div>
+
+      {savedActions.length > 0 && (
+        <section className="border border-border bg-surface p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-meta uppercase tracking-[0.16em] text-text-tertiary">
+              Saved actions
+            </p>
+            <p className="text-meta text-text-tertiary">{savedActions.length}/20</p>
+          </div>
+          <ol className="grid gap-2">
+            {savedActions.map((action) => (
+              <li
+                key={action.id}
+                className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 border border-border/60 bg-canvas p-2"
+              >
+                <code className="truncate font-mono text-meta text-text-primary">
+                  {action.command}
+                </code>
+                <FocusableButton
+                  id={`builder-load-${action.id}`}
+                  variant="secondary"
+                  onClick={() => loadSavedAction(action)}
+                >
+                  Load
+                </FocusableButton>
+                <FocusableButton
+                  id={`builder-delete-${action.id}`}
+                  variant="ghost"
+                  onClick={() => deleteSavedAction(action.id)}
+                >
+                  Delete
+                </FocusableButton>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       <section aria-label="Exact command preview" className="border border-border bg-canvas p-3">
         <p className="text-meta uppercase tracking-[0.16em] text-text-tertiary">Exact command</p>
@@ -411,4 +646,36 @@ function FocusableButton({
 function nextBlockId(): string {
   blockSequence += 1
   return `command-block-${blockSequence}`
+}
+
+function savedActionsKey(workspaceId: string): string {
+  return `${SAVED_ACTIONS_KEY_PREFIX}${workspaceId}`
+}
+
+function loadSavedActions(workspaceId: string): SavedCommandAction[] {
+  try {
+    const raw = localStorage.getItem(savedActionsKey(workspaceId))
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as SavedCommandAction[]
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(isSavedCommandAction).slice(0, 20)
+  } catch {
+    return []
+  }
+}
+
+function saveSavedActions(workspaceId: string, actions: SavedCommandAction[]): void {
+  localStorage.setItem(savedActionsKey(workspaceId), JSON.stringify(actions))
+}
+
+function isSavedCommandAction(value: unknown): value is SavedCommandAction {
+  if (!value || typeof value !== 'object') return false
+  const candidate = value as Partial<SavedCommandAction>
+  return (
+    typeof candidate.id === 'string' &&
+    typeof candidate.name === 'string' &&
+    typeof candidate.command === 'string' &&
+    typeof candidate.createdAt === 'number' &&
+    Array.isArray(candidate.blocks)
+  )
 }

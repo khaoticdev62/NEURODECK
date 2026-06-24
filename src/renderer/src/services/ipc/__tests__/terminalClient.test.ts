@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
-import { createTerminal, onTerminalData, writeTerminal } from '../terminalClient'
+import {
+  createTerminal,
+  onTerminalData,
+  runHeadlessTerminal,
+  writeTerminal
+} from '../terminalClient'
 
 afterEach(() => {
   // @ts-expect-error test-only cleanup of a global the real preload script injects
@@ -49,5 +54,38 @@ describe('terminalClient', () => {
 
     expect(onData).toHaveBeenCalledWith(listener)
     expect(unsubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('delegates bounded headless execution', async () => {
+    const runHeadless = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        command: 'npm test',
+        cwd: '/workspace/project',
+        shell: 'sh',
+        stdout: 'ok',
+        stderr: '',
+        exitCode: 0,
+        timedOut: false,
+        durationMs: 10,
+        truncated: false
+      }
+    })
+    window.ndx = {
+      terminal: { runHeadless } as never
+    } as Partial<NdxBridge> as NdxBridge
+
+    const result = await runHeadlessTerminal({
+      workspaceId: 'w1',
+      command: 'npm test',
+      timeoutMs: 5000
+    })
+
+    expect(result.ok).toBe(true)
+    expect(runHeadless).toHaveBeenCalledWith({
+      workspaceId: 'w1',
+      command: 'npm test',
+      timeoutMs: 5000
+    })
   })
 })

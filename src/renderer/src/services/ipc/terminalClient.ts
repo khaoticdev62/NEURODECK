@@ -1,5 +1,7 @@
 import type {
   CreateTerminalRequest,
+  HeadlessTerminalRequest,
+  HeadlessTerminalResult,
   ListTerminalSessionsRequest,
   NdxResult,
   TerminalDataEvent,
@@ -52,6 +54,14 @@ export async function terminateTerminal(request: TerminalSessionRequest): Promis
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.terminal.terminate(request)
+}
+
+export async function runHeadlessTerminal(
+  request: HeadlessTerminalRequest
+): Promise<NdxResult<HeadlessTerminalResult>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.terminal.runHeadless(request)
 }
 
 export function onTerminalData(listener: (event: TerminalDataEvent) => void): () => void {

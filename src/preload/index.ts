@@ -71,6 +71,7 @@ const ndx: NdxBridge = {
     write: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalWrite, request),
     resize: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalResize, request),
     terminate: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalTerminate, request),
+    runHeadless: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalRunHeadless, request),
     onData: (listener) => {
       const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
         const parsed = terminalDataEventSchema.safeParse(payload)

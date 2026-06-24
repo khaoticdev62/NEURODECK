@@ -1439,3 +1439,53 @@ npm run lint                       → 0 errors, 0 warnings
 npm run typecheck                  → node + web TypeScript checks passed
 npm run build                      → typecheck + electron-vite build passed
 ```
+
+## Epic 6 follow-up — Command Builder headless execution, AI proposals, and saved actions now real
+
+The Terminal Service / Command Builder gap tracked as "headless execution, AI intent proposals, and saved actions remain" is now closed. `TerminalService.runHeadless()` (`core/terminal/TerminalService.ts`) spawns a real, timeout-bounded `node_modules`-free child process (not a PTY) inside the workspace-confined cwd resolved by the existing `TerminalPathPolicy`, captures bounded stdout/stderr, and reports exit code/timeout/truncation — wired through a typed `terminal.runHeadless` IPC channel, preload bridge method, and `runHeadlessTerminal()` client function.
+
+That backend existed in the working tree with full unit coverage but no real caller — `createHeadlessTerminalTools()` (`ai-safety/tools/headlessTerminalTools.ts`) closes that gap: four risk-tiered tools (`terminal-headless-low/medium/high/privileged`, mirroring the existing PTY-write `terminal-command-*` tiers) registered in `CoreToolsBootstrap.tsx`. Each tool validates its arguments, calls `runHeadlessTerminal`, and folds the captured exit code/duration/truncation/output into the `ToolResult.message` the existing `ActionQueue`/Execution Timeline/Audit history already surface generically — no new result-display UI was needed.
+
+`CommandBuilder.tsx` gained a second "Run headless (capture output)" action alongside the existing "Send to approval review": it submits the exact same reviewed command to `ActionQueue` under `headlessToolIdForRisk(risk)` instead of `toolIdForRisk(risk)`, so it goes through the identical mandatory-approval pipeline — the only difference is which registered tool executes it (captured-output child process vs. PTY keystrokes). This path does not require a target session to be selected (headless execution has no PTY to write to), though the screen itself still gates on at least one running session existing before rendering at all — a pre-existing scope boundary this slice did not widen.
+
+AI intent proposals and saved actions, also part of this gap, were already implemented and tested in the working tree before this pass: `requestCommandProposal()` sends the user's described intent through the real model router (`completeModel`), parses the structured JSON response into typed blocks via `parseCommandProposal` (never executes anything directly — the model only ever populates the block editor for the same review flow), and `saveCurrentAction()`/`loadSavedAction()`/`deleteSavedAction()` persist up to 20 reusable command-block sets per workspace in `localStorage`.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Headless tool argument validation, successful/failed/timed-out/truncated result formatting, and bridge-error passthrough | `ai-safety/__tests__/headlessTerminalTools.test.ts` (new file) | 5 |
+| Command Builder submits a headless run through `ActionQueue` approval and only calls `runHeadless` after explicit approval | `features/terminal/__tests__/CommandBuilder.test.tsx` | +1 |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm run test -- headlessTerminalTools  → 1 file, 5 tests passed
+npm run test -- CommandBuilder.test    → 1 file, 4 tests passed
+npm run test                           → 113 files, 561 tests passed
+npm run lint                           → 0 errors, 0 warnings
+npm run typecheck                      → node + web TypeScript checks passed
+```
+
+## Epic 12 progress — controller disconnect/reconnect notifications now covered by real tests
+
+The controller disconnect/reconnect handling described in the Epic 3 addendum above (`FocusEngineProvider` warning on the last gamepad disconnecting and confirming on reconnect, via the optional-`ToastContext` pattern) shipped without dedicated tests for the connection-tracking logic itself — every existing `FocusEngineProvider` consumer test injects a `TestAdapter`, which never exercises the real `GamepadAdapter` path the warning/confirmation logic actually lives in.
+
+**Added**: `controller/focus/__tests__/FocusEngineProvider.test.tsx` renders the provider with its real (default) adapters and dispatches real `gamepadconnected`/`gamepaddisconnected` window events (jsdom doesn't implement `GamepadEvent`, so a plain `Event` with a manually attached `.gamepad` property is used — `GamepadAdapter` only ever reads `event.gamepad.{index,id}`, so this exercises the identical code path a real browser event would). Covers: a warning toast when the only connected controller drops, a confirmation toast on reconnect (but not on the very first connect, since that isn't a recovery), and no warning while a second controller remains connected.
+
+This closes the test-coverage gap for that part of Epic 12 (`IMPLEMENTATION_CHECKLIST.md`'s "Controller disconnect/reconnect handling" item); suspend/resume behavior, SteamOS packaging, the performance/security/accessibility passes, the full E2E suite, and the release-candidate cut remain unstarted.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Warns on last-controller disconnect, confirms reconnect (not first connect), stays silent while a second controller is still connected | `controller/focus/__tests__/FocusEngineProvider.test.tsx` (new file) | 3 |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm run test -- FocusEngineProvider  → 1 file, 3 tests passed
+npm run test                         → 113 files, 561 tests passed
+npm run lint                         → 0 errors, 0 warnings
+npm run typecheck                    → node + web TypeScript checks passed
+```

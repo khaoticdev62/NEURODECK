@@ -61,6 +61,8 @@ import type {
 } from './workflow'
 import type {
   CreateTerminalRequest,
+  HeadlessTerminalRequest,
+  HeadlessTerminalResult,
   ListTerminalSessionsRequest,
   TerminalDataEvent,
   TerminalExitEvent,
@@ -184,6 +186,7 @@ export interface NdxBridge {
     write: (request: TerminalWriteRequest) => Promise<NdxResult<null>>
     resize: (request: TerminalResizeRequest) => Promise<NdxResult<null>>
     terminate: (request: TerminalSessionRequest) => Promise<NdxResult<null>>
+    runHeadless: (request: HeadlessTerminalRequest) => Promise<NdxResult<HeadlessTerminalResult>>
     onData: (listener: (event: TerminalDataEvent) => void) => () => void
     onExit: (listener: (event: TerminalExitEvent) => void) => () => void
   }

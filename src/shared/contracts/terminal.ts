@@ -42,6 +42,34 @@ export type TerminalResizeRequest = z.infer<typeof terminalResizeRequestSchema>
 export const listTerminalSessionsRequestSchema = z.object({ workspaceId: z.string().min(1) })
 export type ListTerminalSessionsRequest = z.infer<typeof listTerminalSessionsRequestSchema>
 
+export const headlessTerminalRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  command: z.string().min(1).max(8192),
+  relativeCwd: z.string().max(1024).optional(),
+  timeoutMs: z.number().int().min(1000).max(120000).default(30000),
+  maxOutputChars: z
+    .number()
+    .int()
+    .min(1024)
+    .max(1024 * 1024)
+    .default(128 * 1024)
+})
+export type HeadlessTerminalRequest = z.input<typeof headlessTerminalRequestSchema>
+export type ParsedHeadlessTerminalRequest = z.infer<typeof headlessTerminalRequestSchema>
+
+export const headlessTerminalResultSchema = z.object({
+  command: z.string(),
+  cwd: z.string(),
+  shell: z.string(),
+  stdout: z.string(),
+  stderr: z.string(),
+  exitCode: z.number().int().nullable(),
+  timedOut: z.boolean(),
+  durationMs: z.number().int().nonnegative(),
+  truncated: z.boolean()
+})
+export type HeadlessTerminalResult = z.infer<typeof headlessTerminalResultSchema>
+
 export const terminalSnapshotSchema = z.object({
   session: terminalSessionSchema,
   output: z.string(),
