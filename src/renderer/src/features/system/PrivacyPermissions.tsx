@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { useAuditEntries } from '../../ai-safety/useAuditEntries'
 import type { PermissionCapability } from '../../ai-safety/contracts/permission'
+import { listBrowserPermissions, revokeBrowserPermission } from '../../services/ipc/browserClient'
+import type { BrowserPermission } from '@shared/contracts'
 
 interface DeferredView {
   title: string
@@ -50,7 +52,25 @@ export function PrivacyPermissions(): React.JSX.Element {
   const { registry, broker } = useAiSafety()
   const entries = useAuditEntries()
   const [revokeTarget, setRevokeTarget] = useState<PermissionCapability | null>(null)
+  const [browserPermissions, setBrowserPermissions] = useState<BrowserPermission[]>([])
+  const [browserError, setBrowserError] = useState<string | null>(null)
   const tools = registry.list()
+
+  useEffect(() => {
+    let active = true
+    void listBrowserPermissions().then((result) => {
+      if (!active) return
+      if (result.ok) {
+        setBrowserPermissions(result.data)
+        setBrowserError(null)
+      } else {
+        setBrowserError(result.error.userMessage)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   function handleRevoke(): void {
     if (!revokeTarget) return
@@ -121,6 +141,56 @@ export function PrivacyPermissions(): React.JSX.Element {
                   {entry.detail ? ` — ${entry.detail}` : ''}
                 </li>
               ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+        <p className="text-body font-semibold text-text-primary">Browser permissions</p>
+        {browserError && <p className="text-meta text-status-error">{browserError}</p>}
+        {browserPermissions.length === 0 ? (
+          <p className="text-meta text-text-tertiary">
+            No browser permission decisions stored yet.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {browserPermissions.map((permission) => (
+              <li
+                key={`${permission.origin}:${permission.permission}`}
+                className="flex items-center justify-between border-t border-border pt-2 first:border-t-0 first:pt-0"
+              >
+                <div>
+                  <p className="text-meta font-semibold text-text-primary">{permission.origin}</p>
+                  <p className="text-meta text-text-tertiary">{permission.permission}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`text-meta ${permission.granted ? 'text-status-success' : 'text-status-error'}`}
+                  >
+                    {permission.granted ? 'Allowed' : 'Denied'}
+                  </span>
+                  <ControllerButton
+                    variant="ghost"
+                    onClick={() => {
+                      void revokeBrowserPermission({
+                        origin: permission.origin,
+                        permission: permission.permission
+                      }).then((result) => {
+                        if (!result.ok) {
+                          setBrowserError(result.error.userMessage)
+                          return
+                        }
+                        void listBrowserPermissions().then((next) => {
+                          if (next.ok) setBrowserPermissions(next.data)
+                        })
+                      })
+                    }}
+                  >
+                    Revoke
+                  </ControllerButton>
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </section>

@@ -1,4 +1,8 @@
 import type {
+  BrowserPermission,
+  BrowserPermissionKeyRequest,
+  BrowserPermissionRequest,
+  BrowserPermissionResponse,
   BrowserTab,
   BrowserTabIdRequest,
   CreateBrowserTabRequest,
@@ -81,4 +85,32 @@ export async function openExternalUrl(url: string): Promise<NdxResult<null>> {
 
 export function onBrowserTabUpdate(listener: (tab: BrowserTab) => void): () => void {
   return getNdxBridge()?.browserTabs.onUpdate(listener) ?? (() => undefined)
+}
+
+export function onBrowserPermissionRequest(
+  listener: (request: BrowserPermissionRequest) => void
+): () => void {
+  return getNdxBridge()?.browserTabs?.onPermissionRequest?.(listener) ?? (() => undefined)
+}
+
+export async function respondToBrowserPermissionRequest(
+  request: BrowserPermissionResponse
+): Promise<NdxResult<null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.browserTabs.respondToPermissionRequest(request)
+}
+
+export async function listBrowserPermissions(): Promise<NdxResult<BrowserPermission[]>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.browserTabs.listPermissions()
+}
+
+export async function revokeBrowserPermission(
+  request: BrowserPermissionKeyRequest
+): Promise<NdxResult<null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.browserTabs.revokePermission(request)
 }

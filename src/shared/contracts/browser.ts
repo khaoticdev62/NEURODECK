@@ -51,3 +51,32 @@ export const setBrowserTabBoundsRequestSchema = z.object({
   height: z.number().int().nonnegative()
 })
 export type SetBrowserTabBoundsRequest = z.infer<typeof setBrowserTabBoundsRequestSchema>
+
+export const browserPermissionSchema = z.object({
+  origin: z.string().min(1),
+  permission: z.string().min(1),
+  granted: z.boolean(),
+  createdAt: z.number().int().nonnegative(),
+  updatedAt: z.number().int().nonnegative()
+})
+export type BrowserPermission = z.infer<typeof browserPermissionSchema>
+
+export const browserPermissionRequestSchema = z.object({
+  requestId: z.string().min(1),
+  tabId: z.string().min(1),
+  origin: z.string().min(1),
+  permission: z.string().min(1)
+})
+export type BrowserPermissionRequest = z.infer<typeof browserPermissionRequestSchema>
+
+export const browserPermissionResponseSchema = z.object({
+  requestId: z.string().min(1),
+  granted: z.boolean()
+})
+export type BrowserPermissionResponse = z.infer<typeof browserPermissionResponseSchema>
+
+export const browserPermissionKeyRequestSchema = z.object({
+  origin: z.string().min(1),
+  permission: z.string().min(1)
+})
+export type BrowserPermissionKeyRequest = z.infer<typeof browserPermissionKeyRequestSchema>

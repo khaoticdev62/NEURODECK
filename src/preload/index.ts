@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import {
   agentRunSchema,
   agentToolExecutionRequestSchema,
+  browserPermissionRequestSchema,
   browserTabSchema,
   IPC_CHANNELS,
   remoteSessionDataEventSchema,
@@ -182,7 +183,19 @@ const ndx: NdxBridge = {
       }
       ipcRenderer.on(IPC_CHANNELS.browserTabUpdate, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.browserTabUpdate, handler)
-    }
+    },
+    onPermissionRequest: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = browserPermissionRequestSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.browserPermissionRequest, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.browserPermissionRequest, handler)
+    },
+    respondToPermissionRequest: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.browserPermissionResponse, request),
+    listPermissions: () => ipcRenderer.invoke(IPC_CHANNELS.browserPermissionList),
+    revokePermission: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserPermissionRevoke, request)
   },
   remoteHosts: {
     list: () => ipcRenderer.invoke(IPC_CHANNELS.remoteHostList),

@@ -1062,7 +1062,7 @@ Epic 10 is three real systems: Browser (§24), Remote Systems (§26), and Learni
 - **`shared/contracts/browser.ts`**: `BrowserTab` (id/workspaceId/url/title/loading/canGoBack/canGoForward/createdAt/updatedAt), request schemas for create/navigate/setBounds/remove, all Zod-validated.
 - **`main/security/browserUrlPolicy.ts`**: a pure, Electron-free `isAllowedBrowserUrl()` predicate (mirrors `urlPolicy.ts`'s shape) allowing only `http`/`https` — the embedded browser's whole purpose is navigating to arbitrary web destinations, unlike the main shell's navigation policy (which allowlists only the app's own origin). Rejects `javascript:`, `file:`, `data:`, `chrome:`, `view-source:`, and anything malformed.
 - **`core/browser/BrowserTabStore.ts`**: real, persisted tab metadata (`app.getPath('userData')/browser-tabs.json`), workspace-scoped, following the same `JsonStore`-backed pattern as every other store in this codebase. Fully unit-tested — it has no Electron dependency.
-- **`main/browser/BrowserSessionService.ts`**: the real `WebContentsView` lifecycle. Only one tab's view is ever attached to the window's `contentView` at a time — switching tabs calls `webContents.close()` (the documented disposal API for a `WebContentsView` not owned by a `BrowserWindow`) on the previous tab and creates a fresh view on reactivation, rather than keeping every open tab's renderer process resident. Every view gets: a real per-workspace session partition (`persist:browser-${workspaceId}`), a default-deny `setPermissionRequestHandler` (no interactive permission-prompt UI exists yet), a real `will-navigate` guard enforcing `isAllowedBrowserUrl`, and a real `setWindowOpenHandler` that routes window-open attempts to `shell.openExternal` (allowed URLs only) instead of opening an uncontrolled new window. Real navigation-state events (`did-navigate`, `page-title-updated`, `did-start-loading`/`did-stop-loading`) are forwarded via an injected callback.
+- **`main/browser/BrowserSessionService.ts`**: the real `WebContentsView` lifecycle. Only one tab's view is ever attached to the window's `contentView` at a time — switching tabs calls `webContents.close()` (the documented disposal API for a `WebContentsView` not owned by a `BrowserWindow`) on the previous tab and creates a fresh view on reactivation, rather than keeping every open tab's renderer process resident. Every view gets: a real per-workspace session partition (`persist:browser-${workspaceId}`), a real `will-navigate` guard enforcing `isAllowedBrowserUrl`, a real `setWindowOpenHandler` that routes window-open attempts to `shell.openExternal` (allowed URLs only) instead of opening an uncontrolled new window, and a `setPermissionRequestHandler` that was default-deny until the permission-prompt UI addendum below. Real navigation-state events (`did-navigate`, `page-title-updated`, `did-start-loading`/`did-stop-loading`) are forwarded via an injected callback.
 - **`registerBrowserHandlers.ts`**: orchestrates `BrowserTabStore` (persistence) and `BrowserSessionService` (live view) the same way `registerFileHandlers.ts` orchestrates `FileService`/`RecoveryService` — e.g. `browserTab.create` persists the tab row, then opens the real view, rolling back the persisted row if opening fails. Live navigation-state events from the service are persisted back to the store and pushed to the renderer over `browserTab.update`.
 - **ND-030 Browser Hub** (`features/browser/BrowserHub.tsx`): real workspace-scoped tab list, New Tab, Open, Close.
 - **ND-031 Browser View** (`features/browser/BrowserView.tsx`): real address bar (navigate on Enter), Back/Forward/Reload (disabled state driven by the real `canGoBack`/`canGoForward` the service reports), a `ResizeObserver`-measured placeholder `<div>` whose real `getBoundingClientRect()` is continuously reported over IPC so the native view tracks it pixel-for-pixel, and a real "Open externally" action. Unmounting collapses the view to zero bounds (hides it) rather than destroying it, since reactivating any tab already recreates its view from scratch per the one-resident-tab model above.
@@ -1096,7 +1096,8 @@ No new runtime dependencies were added — `WebContentsView`/`shell.openExternal
 ### Deferred items with explicit reason
 
 - **Reader mode, downloads, site profiles, history, "add page to workspace context," AI summarization** — each needs real infrastructure this slice doesn't build (a readability extraction step, a downloads manager and its UI, a profile-switching concept, a history index, a workspace-context attachment model, and a real model-router call with the "privacy confirmation" the spec explicitly requires for summarization).
-- **Interactive permission-prompt UI** — every permission request is currently default-denied; building a real prompt needs the same kind of review surface `ConfirmationDialog`/`PermissionDialog` provide elsewhere, not yet wired to browser permission requests.
+- **Reader mode, downloads, site profiles, history, "add page to workspace context," AI summarization** — each needs real infrastructure this slice doesn't build.
+- **Per-site granular browser settings** — the permission prompt stores a single grant/deny per origin+permission; richer per-site profiles (zoom, user-agent, per-permission exceptions) are not implemented.
 - **Broader Remote Systems scope** - SSH host management and SSH terminal sessions are real; remote file browsing, remote command builder, non-SSH target types, Windows remote tooling, containers, network shares, metrics, logs, tunnels, and remote desktop remain deferred.
 - **Full bundled course library** — only one example curriculum (`resources/curricula/quick-start.json`) ships with the app; additional courses need real content, not invented lessons.
 - **Automated lab validation** — the validation panel honestly states that automated pass/fail checking is not implemented; learners mark lessons complete manually.
@@ -1175,6 +1176,26 @@ Typed IPC channels (`learning.*`) are added to `shared/contracts/ipcChannels.ts`
 | GuidedLab instructions, objectives, manual completion, coach disabled state | `features/learning/__tests__/GuidedLab.test.tsx` | Passing |
 
 Validation after this addendum: typecheck/lint/build/e2e green; 521 tests passing across 107 files.
+
+## Epic 10 addendum — Browser permission-prompt UI
+
+This slice replaces the embedded browser's hard-coded default-deny permission handler with a real, user-facing prompt and persistent per-origin decisions.
+
+`BrowserPermissionStore` (`core/browser/BrowserPermissionStore.ts`) persists decisions in `app.getPath('userData')/browser-permissions.json` using the same `JsonStore` pattern as `BrowserTabStore`. Each decision is keyed by origin and permission string and records whether it was granted, plus creation/update timestamps.
+
+`BrowserSessionService` now accepts an injected `requestPermission` callback. When Electron's `setPermissionRequestHandler` fires, the service extracts the current origin and calls the callback. If a stored decision exists, it is returned immediately; otherwise the main process sends a `browserPermissionRequest` event to the renderer and waits (with a 30-second timeout) for a `browserPermissionResponse`. The user's choice is persisted, and the stored decision is reused for future requests from the same origin+permission.
+
+The renderer side adds `browserTabs.onPermissionRequest` and `browserTabs.respondToPermissionRequest` to the preload bridge, plus matching client methods in `services/ipc/browserClient.ts`. `BrowserPermissionDialog` renders a `ConfirmationDialog` with the origin, a human-readable permission label, and a consequence note. It is wired into `BrowserView`, so prompts appear only while the browser route is active.
+
+`PrivacyPermissions` now includes a "Browser permissions" section that lists stored decisions via `browserTabs.listPermissions` and allows revocation via `browserTabs.revokePermission`, using the same Revoke flow as tool capabilities.
+
+| Evidence | File | Status |
+| --- | --- | --- |
+| BrowserPermissionStore CRUD and persistence | `core/browser/__tests__/BrowserPermissionStore.test.ts` | Passing |
+| BrowserPermissionDialog allow/deny rendering | `features/browser/__tests__/BrowserPermissionDialog.test.tsx` | Passing |
+| PrivacyPermissions lists/revokes browser permissions | `features/system/__tests__/PrivacyPermissions.test.tsx` | Passing |
+
+Validation after this addendum: typecheck/lint/build/e2e green; 532 tests passing across 109 files.
 
 ## Epic 8 addendum — Agent Runtime ActionQueue tool submission bridge
 

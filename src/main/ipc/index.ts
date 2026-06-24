@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
 import { BrowserTabStore } from '../../core/browser/BrowserTabStore'
+import { BrowserPermissionStore } from '../../core/browser/BrowserPermissionStore'
 import { ControllerSettingsStore } from '../../core/controller/ControllerSettingsStore'
 import { DisplaySettingsStore } from '../../core/display/DisplaySettingsStore'
 import { FileService } from '../../core/files/FileService'
@@ -123,6 +124,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   registerBrowserHandlers(
     new BrowserTabStore(join(app.getPath('userData'), 'browser-tabs.json')),
+    new BrowserPermissionStore(join(app.getPath('userData'), 'browser-permissions.json')),
     getWindow
   )
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)

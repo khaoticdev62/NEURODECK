@@ -1,5 +1,8 @@
 import { ipcMain, shell, type BrowserWindow } from 'electron'
+import { randomUUID } from 'node:crypto'
 import {
+  browserPermissionKeyRequestSchema,
+  browserPermissionResponseSchema,
   browserTabIdRequestSchema,
   createBrowserTabRequestSchema,
   IPC_CHANNELS,
@@ -7,10 +10,12 @@ import {
   ndxError,
   setBrowserTabBoundsRequestSchema,
   workspaceBrowserRequestSchema,
+  type BrowserPermissionRequest,
   type BrowserTab,
   type NdxResult
 } from '@shared/contracts'
 import { isAllowedBrowserUrl } from '../security/browserUrlPolicy'
+import type { BrowserPermissionStore } from '../../core/browser/BrowserPermissionStore'
 import type { BrowserTabStore } from '../../core/browser/BrowserTabStore'
 import {
   BrowserSessionError,
@@ -19,13 +24,112 @@ import {
 } from '../browser/BrowserSessionService'
 
 /** Real Browser System IPC (mega-prompt §24): persistence (`BrowserTabStore`) and the live `WebContentsView` (`BrowserSessionService`) are orchestrated here, mirroring `registerFileHandlers.ts`'s checkpoint-then-write pattern. */
+const PERMISSION_PROMPT_TIMEOUT_MS = 30000
+
 export function registerBrowserHandlers(
   tabStore: BrowserTabStore,
+  permissionStore: BrowserPermissionStore,
   getWindow: () => BrowserWindow | null
 ): void {
-  const session = new BrowserSessionService(getWindow, (state) => {
-    void applyTabUpdate(state)
+  const pendingPermissions = new Map<
+    string,
+    {
+      resolve: (granted: boolean) => void
+      timeout: NodeJS.Timeout
+      origin: string
+      permission: string
+    }
+  >()
+
+  const session = new BrowserSessionService(
+    getWindow,
+    (state) => {
+      void applyTabUpdate(state)
+    },
+    async (request) => {
+      const stored = await permissionStore.get(request.origin, request.permission)
+      if (stored) return stored.granted
+
+      const window = getWindow()
+      if (!window || window.webContents.isDestroyed()) return false
+
+      const requestId = randomUUID()
+      return new Promise<boolean>((resolve) => {
+        const timeout = setTimeout(() => {
+          pendingPermissions.delete(requestId)
+          resolve(false)
+        }, PERMISSION_PROMPT_TIMEOUT_MS)
+        pendingPermissions.set(requestId, {
+          resolve,
+          timeout,
+          origin: request.origin,
+          permission: request.permission
+        })
+        const event: BrowserPermissionRequest = { requestId, ...request }
+        window.webContents.send(IPC_CHANNELS.browserPermissionRequest, event)
+      })
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.browserPermissionResponse,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = browserPermissionResponseSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const { requestId, granted } = parsed.data
+      const pending = pendingPermissions.get(requestId)
+      if (pending) {
+        clearTimeout(pending.timeout)
+        pendingPermissions.delete(requestId)
+        await permissionStore.set(pending.origin, pending.permission, granted)
+        pending.resolve(granted)
+      }
+      return { ok: true, data: null }
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.browserPermissionList, async (): Promise<NdxResult<unknown>> => {
+    try {
+      const permissions = await permissionStore.list()
+      return { ok: true, data: permissions }
+    } catch (error) {
+      return {
+        ok: false,
+        error: ndxError(
+          'system',
+          'browser-permission-list-failed',
+          'Could not list browser permissions.',
+          {
+            message: error instanceof Error ? error.message : 'Unknown error'
+          }
+        )
+      }
+    }
   })
+
+  ipcMain.handle(
+    IPC_CHANNELS.browserPermissionRevoke,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = browserPermissionKeyRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      try {
+        await permissionStore.remove(parsed.data.origin, parsed.data.permission)
+        return { ok: true, data: null }
+      } catch (error) {
+        return {
+          ok: false,
+          error: ndxError(
+            'system',
+            'browser-permission-revoke-failed',
+            'Could not revoke browser permission.',
+            {
+              message: error instanceof Error ? error.message : 'Unknown error'
+            }
+          )
+        }
+      }
+    }
+  )
 
   async function applyTabUpdate(state: BrowserTabState): Promise<void> {
     const { tabId, ...patch } = state

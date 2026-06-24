@@ -1,18 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { BrowserTab } from '@shared/contracts'
+import type { BrowserPermissionRequest, BrowserTab } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
 import {
   goBackBrowserTab,
   goForwardBrowserTab,
   navigateBrowserTab,
+  onBrowserPermissionRequest,
   onBrowserTabUpdate,
   openExternalUrl,
   reloadBrowserTab,
+  respondToBrowserPermissionRequest,
   setActiveBrowserTab,
   setBrowserTabBounds
 } from '../../services/ipc/browserClient'
+import { BrowserPermissionDialog } from './BrowserPermissionDialog'
 
 /**
  * ND-031 Browser View. Real: the actual page content is a native
@@ -33,6 +36,7 @@ export function BrowserView(): React.JSX.Element {
   const [addressInput, setAddressInput] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [permissionRequest, setPermissionRequest] = useState<BrowserPermissionRequest | null>(null)
 
   useEffect(() => {
     if (!tabId) return
@@ -60,6 +64,12 @@ export function BrowserView(): React.JSX.Element {
       setAddressInput(updated.url)
     })
   }, [tabId])
+
+  useEffect(() => {
+    return onBrowserPermissionRequest((request) => {
+      setPermissionRequest(request)
+    })
+  }, [])
 
   useEffect(() => {
     if (!tabId || !placeholderRef.current) return
@@ -143,6 +153,26 @@ export function BrowserView(): React.JSX.Element {
       {tab.loading && <p className="text-meta text-text-tertiary">Loading…</p>}
 
       <div ref={placeholderRef} className="min-h-0 flex-1 border border-border bg-canvas" />
+
+      <BrowserPermissionDialog
+        request={permissionRequest}
+        onAllow={() => {
+          if (!permissionRequest) return
+          void respondToBrowserPermissionRequest({
+            requestId: permissionRequest.requestId,
+            granted: true
+          })
+          setPermissionRequest(null)
+        }}
+        onDeny={() => {
+          if (!permissionRequest) return
+          void respondToBrowserPermissionRequest({
+            requestId: permissionRequest.requestId,
+            granted: false
+          })
+          setPermissionRequest(null)
+        }}
+      />
     </div>
   )
 }

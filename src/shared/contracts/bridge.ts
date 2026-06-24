@@ -85,6 +85,10 @@ import type {
 import type { ControllerSettings, SetControllerSettingsRequest } from './controllerSettings'
 import type { DisplaySettings, SetDisplaySettingsRequest } from './displaySettings'
 import type {
+  BrowserPermission,
+  BrowserPermissionKeyRequest,
+  BrowserPermissionRequest,
+  BrowserPermissionResponse,
   BrowserTab,
   BrowserTabIdRequest,
   CreateBrowserTabRequest,
@@ -257,6 +261,10 @@ export interface NdxBridge {
     remove: (request: BrowserTabIdRequest) => Promise<NdxResult<null>>
     openExternal: (url: string) => Promise<NdxResult<null>>
     onUpdate: (listener: (tab: BrowserTab) => void) => () => void
+    onPermissionRequest: (listener: (request: BrowserPermissionRequest) => void) => () => void
+    respondToPermissionRequest: (request: BrowserPermissionResponse) => Promise<NdxResult<null>>
+    listPermissions: () => Promise<NdxResult<BrowserPermission[]>>
+    revokePermission: (request: BrowserPermissionKeyRequest) => Promise<NdxResult<null>>
   }
   remoteHosts: {
     list: () => Promise<NdxResult<RemoteHost[]>>

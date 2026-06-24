@@ -1,4 +1,5 @@
 import { WebContentsView, shell, type BrowserWindow } from 'electron'
+import type { BrowserPermissionRequest } from '@shared/contracts/browser'
 import { isAllowedBrowserUrl } from '../security/browserUrlPolicy'
 
 export interface BrowserTabState {
@@ -40,7 +41,10 @@ export class BrowserSessionService {
 
   constructor(
     private readonly getWindow: () => BrowserWindow | null,
-    private readonly onUpdate: (state: BrowserTabState) => void
+    private readonly onUpdate: (state: BrowserTabState) => void,
+    private readonly requestPermission?: (
+      request: Omit<BrowserPermissionRequest, 'requestId'>
+    ) => Promise<boolean>
   ) {}
 
   open(tabId: string, workspaceId: string, url: string): void {
@@ -125,10 +129,16 @@ export class BrowserSessionService {
     })
     const contents = view.webContents
 
-    // Default-deny every permission request — no interactive permission-prompt UI exists yet (deferred, see ledger).
-    contents.session.setPermissionRequestHandler((_webContents, _permission, callback) =>
-      callback(false)
-    )
+    contents.session.setPermissionRequestHandler((_webContents, permission, callback) => {
+      if (!this.requestPermission) {
+        callback(false)
+        return
+      }
+      const origin = safeOrigin(contents.getURL())
+      this.requestPermission({ tabId, origin, permission })
+        .then((granted) => callback(granted))
+        .catch(() => callback(false))
+    })
 
     contents.on('will-navigate', (event, url) => {
       if (!isAllowedBrowserUrl(url)) event.preventDefault()
@@ -157,5 +167,13 @@ export class BrowserSessionService {
 
     this.views.set(tabId, view)
     return view
+  }
+}
+
+function safeOrigin(url: string): string {
+  try {
+    return new URL(url).origin
+  } catch {
+    return 'unknown'
   }
 }
