@@ -1580,3 +1580,36 @@ A real security audit of the codebase as it stands, covering the categories the 
 npm audit --omit=dev  → 0 vulnerabilities
 npm audit              → 5 vulnerabilities, all dev-only (esbuild/vite/vitest dev-server), accepted as out of scope
 ```
+
+## Epic 12 progress — performance pass (route-level code splitting, measured)
+
+Checked every item in the mega-prompt §33 performance budget list against the real codebase. One real, fixable gap was found and fixed; the rest were already real or already explicitly, justifiably deferred.
+
+**The gap**: `src/renderer/src/app/routing/routes.tsx` statically imported 37 of its 41 screen components — only `BuildStudio`, `UniversalTerminal`, `CommandBuilder`, and `RemoteSession` were `React.lazy()`-loaded. Every other screen (Git Control Center, all of Epic 11's system settings screens, Model Control Center, Agent Operations Center, Workflow Library/Forge, etc.) was bundled into the renderer's main entry chunk regardless of whether the user ever visited it — directly contradicting §33's "Route-level code splitting" and "Lazy editor/browser loading" requirements, and inflating every cold boot's initial JS parse/eval cost.
+
+**Fixed**: converted all 37 to the same `lazy(async () => { const module = await import(path); return { default: module.Name } })` pattern the 4 already-lazy screens used, each wrapped in `<Suspense fallback={...}>` via a small `withSuspense(label, element)` helper to avoid repeating the boilerplate 37 times. `HomeCommandCenter` and `BootSessionStart` were deliberately left eager: `BootSessionStart` is the real first route the app renders (`RouterRoot.tsx` redirects `/` → `/boot` and imports it directly itself, so lazy-loading it in `routes.tsx` would not have reduced the main bundle anyway — that import there is dead for rendering purposes, kept only for this file's route-metadata catalog), and `HomeCommandCenter` is where boot navigates returning users immediately after — lazy-loading either would add a guaranteed Suspense flash to literally every app launch with no bundle-size benefit on the path that matters most.
+
+**Measured, not estimated**: a real `npm run build` before this change produced `index-DxUKU28e.js` at 1,756.37 kB; after, `index-DR9b6eR0.js` is 991.69 kB — a 764.68 kB (43.5%) reduction in the JS the renderer must parse and evaluate before the app can render anything, on every cold boot. `BuildStudio`'s already-lazy chunk (7,354.72 kB, dominated by Monaco) was unaffected, as expected.
+
+**A real test broken by this fix, found and corrected**: `App.test.tsx`'s "navigates between primary destinations" test clicked into `/ai` and asserted `screen.getByText('No active workspace')` synchronously — that assertion now races the lazy `AICommandCanvas` chunk's `Suspense` resolution and fails intermittently/consistently depending on timing. Changed to `await screen.findByText(...)`, which waits for the async mount the same way several other tests in this suite already do for similar reasons.
+
+**Audited and already real**: browser tabs already suspend their `WebContentsView` when inactive (Epic 10 — only the active tab's view is ever resident); System Metrics has zero polling, manual Refresh only (Epic 11); `Toast`/`AuditLog` history are both bounded (`MAX_HISTORY = 100`); `OllamaRuntimeService.unload()`/`.load()` already exist as real manual controls via Ollama's `keep_alive` parameter; the Spatial Focus Engine's `useFocusable` registers a `getRect: () => element.getBoundingClientRect()` lazy getter invoked only at actual navigation time rather than cached — caching it would risk acting on a stale rect after a layout change (a correctness bug), and at today's screen-count scale there's no measured cost to justify the added complexity of a cache-invalidation scheme.
+
+**Audited and reasonably deferred, not fixed**: virtualized lists (`VirtualizedFocusList`) — no list anywhere in the app currently renders enough items to need one; this was already an explicit Epic 1 deferral ("not built without a real consumer — avoids dead/unused primitives"), not something overlooked. Worker-thread offloading for heavy tasks, leak-detection-during-tests tooling, and a formal controller-input/focus/route-transition timing harness against the exact §33 millisecond budgets (50ms input response, 100ms initial focus, 300ms route transition, 250ms warm overlay, ≤2% idle CPU, <500MB shell memory) were not built — those need real instrumentation (e.g. a Playwright-driven timing harness) that's a larger, separate effort from this pass.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Lazy-loaded `AICommandCanvas` route resolves and renders its real empty state | `__tests__/App.test.tsx` | 1 (fixed: `getByText` → `findByText`) |
+| Full suite re-run after the routing refactor (no behavior change expected outside the one async-timing fix) | `npm run test` | 114 files, 564 tests passed |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm run build (before)  → out/renderer/assets/index-DxUKU28e.js  1,756.37 kB
+npm run build (after)   → out/renderer/assets/index-DR9b6eR0.js    991.69 kB  (−43.5%)
+npm run lint             → 0 errors, 0 warnings
+npm run typecheck        → node + web TypeScript checks passed
+npm run test             → 114 files, 564 tests passed (1 unrelated flaky test confirmed passing in isolation)
+```

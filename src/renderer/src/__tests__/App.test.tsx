@@ -79,6 +79,8 @@ describe('App', () => {
     // AICommandCanvas (ND-013) is real now and requires an active workspace,
     // same as every other workspace-scoped screen — with none active here,
     // its honest empty state is what should render, not a fabricated title.
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    // The route is lazy-loaded (route-level code splitting), so the screen
+    // mounts after a Suspense boundary resolves — find rather than get.
+    expect(await screen.findByText('No active workspace')).toBeInTheDocument()
   })
 })

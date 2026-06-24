@@ -1,51 +1,77 @@
 import { lazy, Suspense } from 'react'
 import type { ControllerHintProps } from '../../components/navigation/ControllerHint'
 import { DEFAULT_PRIMARY_HINTS } from '../../components/navigation/defaultControllerHints'
-import { ControllerCalibration } from '../../features/onboarding/ControllerCalibration'
-import { FirstRunWelcome } from '../../features/onboarding/FirstRunWelcome'
 import { BootSessionStart } from '../../features/onboarding/BootSessionStart'
-import { AIProviderSetup } from '../../features/onboarding/AIProviderSetup'
-import { WorkspaceDiscovery } from '../../features/onboarding/WorkspaceDiscovery'
-import { GuidedControllerTutorial } from '../../features/onboarding/GuidedControllerTutorial'
 import { HomeCommandCenter } from '../../features/home/HomeCommandCenter'
-import { ExecutionTimeline } from '../../features/ai-canvas/ExecutionTimeline'
-import { AICommandCanvas } from '../../features/ai-canvas/AICommandCanvas'
-import { ApprovalQueue } from '../../features/approvals/ApprovalQueue'
-import { AgentDetail } from '../../features/agents/AgentDetail'
-import { AgentOperationsCenter } from '../../features/agents/AgentOperationsCenter'
-import { GitControlCenter } from '../../features/git/GitControlCenter'
-import { AboutDiagnostics } from '../../features/system/AboutDiagnostics'
-import { BrowserHub } from '../../features/browser/BrowserHub'
-import { BrowserView } from '../../features/browser/BrowserView'
-import { RemoteSystems } from '../../features/remote/RemoteSystems'
-import { ControllerSettings } from '../../features/system/ControllerSettings'
-import { DisplayThemeSettings } from '../../features/system/DisplayThemeSettings'
-import { PrivacyPermissions } from '../../features/system/PrivacyPermissions'
-import { PowerMenu } from '../../features/system/PowerMenu'
-import { SystemDashboard } from '../../features/system/SystemDashboard'
-import { ModelControlCenter } from '../../features/models/ModelControlCenter'
-import { ModelDetail } from '../../features/models/ModelDetail'
-import { RoutingProfiles } from '../../features/models/RoutingProfiles'
-import { RecoveryTimeline } from '../../features/recovery/RecoveryTimeline'
-import { StorageAndRecovery } from '../../features/recovery/StorageAndRecovery'
-import { WorkflowForge } from '../../features/workflows/WorkflowForge'
-import { WorkflowLibrary } from '../../features/workflows/WorkflowLibrary'
-import { WorkflowRunDetail } from '../../features/workflows/WorkflowRunDetail'
-import { FileManager } from '../../features/workspaces/FileManager'
-import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
-import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
-import { GlobalSearch } from '../../features/search/GlobalSearch'
-import { ErrorRecovery } from '../../features/system/ErrorRecovery'
-import { Integrations } from '../../features/system/Integrations'
-import { NetworkAndVpn } from '../../features/system/NetworkAndVpn'
-import { Updates } from '../../features/system/Updates'
-import { LearningHub } from '../../features/learning/LearningHub'
-import { GuidedLab } from '../../features/learning/GuidedLab'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
+/**
+ * Route-level code splitting (mega-prompt §33 performance budgets): every
+ * screen below is loaded on demand, not bundled into the initial entry
+ * chunk. `HomeCommandCenter` and `BootSessionStart` are the two exceptions —
+ * both are on the universal cold-boot path (boot always renders first;
+ * returning users land on Home immediately after), so lazy-loading them
+ * would only add a guaranteed Suspense flash to the most common launch path
+ * with no real benefit. `BootSessionStart` is also imported directly (and
+ * eagerly) by `RouterRoot.tsx` for the real `/boot` route — its `import`
+ * here exists only for this file's route-metadata catalog (Global Search,
+ * Command Palette).
+ */
+const GlobalSearch = lazy(async () => {
+  const module = await import('../../features/search/GlobalSearch')
+  return { default: module.GlobalSearch }
+})
+const FirstRunWelcome = lazy(async () => {
+  const module = await import('../../features/onboarding/FirstRunWelcome')
+  return { default: module.FirstRunWelcome }
+})
+const AIProviderSetup = lazy(async () => {
+  const module = await import('../../features/onboarding/AIProviderSetup')
+  return { default: module.AIProviderSetup }
+})
+const WorkspaceDiscovery = lazy(async () => {
+  const module = await import('../../features/onboarding/WorkspaceDiscovery')
+  return { default: module.WorkspaceDiscovery }
+})
+const ControllerCalibration = lazy(async () => {
+  const module = await import('../../features/onboarding/ControllerCalibration')
+  return { default: module.ControllerCalibration }
+})
+const GuidedControllerTutorial = lazy(async () => {
+  const module = await import('../../features/onboarding/GuidedControllerTutorial')
+  return { default: module.GuidedControllerTutorial }
+})
+const AICommandCanvas = lazy(async () => {
+  const module = await import('../../features/ai-canvas/AICommandCanvas')
+  return { default: module.AICommandCanvas }
+})
+const ExecutionTimeline = lazy(async () => {
+  const module = await import('../../features/ai-canvas/ExecutionTimeline')
+  return { default: module.ExecutionTimeline }
+})
+const ApprovalQueue = lazy(async () => {
+  const module = await import('../../features/approvals/ApprovalQueue')
+  return { default: module.ApprovalQueue }
+})
+const WorkspaceHub = lazy(async () => {
+  const module = await import('../../features/workspaces/WorkspaceHub')
+  return { default: module.WorkspaceHub }
+})
+const WorkspaceDetail = lazy(async () => {
+  const module = await import('../../features/workspaces/WorkspaceDetail')
+  return { default: module.WorkspaceDetail }
+})
 const BuildStudio = lazy(async () => {
   const module = await import('../../features/build-studio/BuildStudio')
   return { default: module.BuildStudio }
+})
+const FileManager = lazy(async () => {
+  const module = await import('../../features/workspaces/FileManager')
+  return { default: module.FileManager }
+})
+const GitControlCenter = lazy(async () => {
+  const module = await import('../../features/git/GitControlCenter')
+  return { default: module.GitControlCenter }
 })
 const UniversalTerminal = lazy(async () => {
   const module = await import('../../features/terminal/UniversalTerminal')
@@ -55,10 +81,118 @@ const CommandBuilder = lazy(async () => {
   const module = await import('../../features/terminal/CommandBuilder')
   return { default: module.CommandBuilder }
 })
+const BrowserHub = lazy(async () => {
+  const module = await import('../../features/browser/BrowserHub')
+  return { default: module.BrowserHub }
+})
+const BrowserView = lazy(async () => {
+  const module = await import('../../features/browser/BrowserView')
+  return { default: module.BrowserView }
+})
+const WorkflowLibrary = lazy(async () => {
+  const module = await import('../../features/workflows/WorkflowLibrary')
+  return { default: module.WorkflowLibrary }
+})
+const WorkflowForge = lazy(async () => {
+  const module = await import('../../features/workflows/WorkflowForge')
+  return { default: module.WorkflowForge }
+})
+const WorkflowRunDetail = lazy(async () => {
+  const module = await import('../../features/workflows/WorkflowRunDetail')
+  return { default: module.WorkflowRunDetail }
+})
+const ModelControlCenter = lazy(async () => {
+  const module = await import('../../features/models/ModelControlCenter')
+  return { default: module.ModelControlCenter }
+})
+const ModelDetail = lazy(async () => {
+  const module = await import('../../features/models/ModelDetail')
+  return { default: module.ModelDetail }
+})
+const RoutingProfiles = lazy(async () => {
+  const module = await import('../../features/models/RoutingProfiles')
+  return { default: module.RoutingProfiles }
+})
+const AgentOperationsCenter = lazy(async () => {
+  const module = await import('../../features/agents/AgentOperationsCenter')
+  return { default: module.AgentOperationsCenter }
+})
+const AgentDetail = lazy(async () => {
+  const module = await import('../../features/agents/AgentDetail')
+  return { default: module.AgentDetail }
+})
+const LearningHub = lazy(async () => {
+  const module = await import('../../features/learning/LearningHub')
+  return { default: module.LearningHub }
+})
+const GuidedLab = lazy(async () => {
+  const module = await import('../../features/learning/GuidedLab')
+  return { default: module.GuidedLab }
+})
+const RemoteSystems = lazy(async () => {
+  const module = await import('../../features/remote/RemoteSystems')
+  return { default: module.RemoteSystems }
+})
 const RemoteSession = lazy(async () => {
   const module = await import('../../features/remote/RemoteSession')
   return { default: module.RemoteSession }
 })
+const SystemDashboard = lazy(async () => {
+  const module = await import('../../features/system/SystemDashboard')
+  return { default: module.SystemDashboard }
+})
+const ControllerSettings = lazy(async () => {
+  const module = await import('../../features/system/ControllerSettings')
+  return { default: module.ControllerSettings }
+})
+const DisplayThemeSettings = lazy(async () => {
+  const module = await import('../../features/system/DisplayThemeSettings')
+  return { default: module.DisplayThemeSettings }
+})
+const PrivacyPermissions = lazy(async () => {
+  const module = await import('../../features/system/PrivacyPermissions')
+  return { default: module.PrivacyPermissions }
+})
+const NetworkAndVpn = lazy(async () => {
+  const module = await import('../../features/system/NetworkAndVpn')
+  return { default: module.NetworkAndVpn }
+})
+const Updates = lazy(async () => {
+  const module = await import('../../features/system/Updates')
+  return { default: module.Updates }
+})
+const PowerMenu = lazy(async () => {
+  const module = await import('../../features/system/PowerMenu')
+  return { default: module.PowerMenu }
+})
+const AboutDiagnostics = lazy(async () => {
+  const module = await import('../../features/system/AboutDiagnostics')
+  return { default: module.AboutDiagnostics }
+})
+const ErrorRecovery = lazy(async () => {
+  const module = await import('../../features/system/ErrorRecovery')
+  return { default: module.ErrorRecovery }
+})
+const Integrations = lazy(async () => {
+  const module = await import('../../features/system/Integrations')
+  return { default: module.Integrations }
+})
+const RecoveryTimeline = lazy(async () => {
+  const module = await import('../../features/recovery/RecoveryTimeline')
+  return { default: module.RecoveryTimeline }
+})
+const StorageAndRecovery = lazy(async () => {
+  const module = await import('../../features/recovery/StorageAndRecovery')
+  return { default: module.StorageAndRecovery }
+})
+
+function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
+  return (
+    <Suspense fallback={<p className="p-4 text-meta text-text-secondary">Loading {label}…</p>}>
+      {element}
+    </Suspense>
+  )
+}
 
 /**
  * Route registry (mega-prompt §11). Every route declares the metadata fields
@@ -102,7 +236,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 3',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <GlobalSearch />
+    element: withSuspense('search', <GlobalSearch />)
   },
   {
     routeId: 'onboarding-welcome',
@@ -112,7 +246,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 3',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <FirstRunWelcome />
+    element: withSuspense('welcome', <FirstRunWelcome />)
   },
   {
     routeId: 'onboarding-provider-setup',
@@ -122,7 +256,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 3',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <AIProviderSetup />
+    element: withSuspense('provider setup', <AIProviderSetup />)
   },
   {
     routeId: 'onboarding-workspace-discovery',
@@ -132,7 +266,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 3',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <WorkspaceDiscovery />
+    element: withSuspense('workspace discovery', <WorkspaceDiscovery />)
   },
   {
     routeId: 'onboarding-calibration',
@@ -142,7 +276,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 3',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <ControllerCalibration />
+    element: withSuspense('calibration', <ControllerCalibration />)
   },
   {
     routeId: 'onboarding-tutorial',
@@ -152,7 +286,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 3',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <GuidedControllerTutorial />
+    element: withSuspense('tutorial', <GuidedControllerTutorial />)
   },
   {
     routeId: 'boot',
@@ -172,7 +306,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 4',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <AICommandCanvas />
+    element: withSuspense('AI Command Canvas', <AICommandCanvas />)
   },
   {
     routeId: 'ai-timeline',
@@ -182,7 +316,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 4',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <ExecutionTimeline />
+    element: withSuspense('execution timeline', <ExecutionTimeline />)
   },
   {
     routeId: 'ai-approvals',
@@ -192,7 +326,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 4',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <ApprovalQueue />
+    element: withSuspense('approval queue', <ApprovalQueue />)
   },
   {
     routeId: 'workspaces',
@@ -202,7 +336,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 5',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <WorkspaceHub />
+    element: withSuspense('workspaces', <WorkspaceHub />)
   },
   {
     routeId: 'workspaces-detail',
@@ -212,7 +346,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 5',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <WorkspaceDetail />
+    element: withSuspense('workspace', <WorkspaceDetail />)
   },
   {
     routeId: 'build',
@@ -222,13 +356,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 7',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: (
-      <Suspense
-        fallback={<p className="p-4 text-meta text-text-secondary">Loading Build Studio…</p>}
-      >
-        <BuildStudio />
-      </Suspense>
-    )
+    element: withSuspense('Build Studio', <BuildStudio />)
   },
   {
     routeId: 'files',
@@ -238,7 +366,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 5',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <FileManager />
+    element: withSuspense('file manager', <FileManager />)
   },
   {
     routeId: 'git',
@@ -248,7 +376,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 6',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <GitControlCenter />
+    element: withSuspense('Git Control Center', <GitControlCenter />)
   },
   {
     routeId: 'terminal',
@@ -258,11 +386,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 6',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: (
-      <Suspense fallback={<p className="p-4 text-meta text-text-secondary">Loading terminal…</p>}>
-        <UniversalTerminal />
-      </Suspense>
-    )
+    element: withSuspense('terminal', <UniversalTerminal />)
   },
   {
     routeId: 'terminal-command-builder',
@@ -272,11 +396,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 6',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: (
-      <Suspense fallback={<p className="p-4 text-meta text-text-secondary">Loading builder…</p>}>
-        <CommandBuilder />
-      </Suspense>
-    )
+    element: withSuspense('builder', <CommandBuilder />)
   },
   {
     routeId: 'browser',
@@ -286,7 +406,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <BrowserHub />
+    element: withSuspense('browser', <BrowserHub />)
   },
   {
     routeId: 'browser-view',
@@ -296,7 +416,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <BrowserView />
+    element: withSuspense('browser', <BrowserView />)
   },
   {
     routeId: 'automations',
@@ -306,7 +426,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 8',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <WorkflowLibrary />
+    element: withSuspense('workflows', <WorkflowLibrary />)
   },
   {
     routeId: 'automations-forge-new',
@@ -316,7 +436,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 8',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <WorkflowForge />
+    element: withSuspense('workflow forge', <WorkflowForge />)
   },
   {
     routeId: 'automations-forge-edit',
@@ -326,7 +446,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 8',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <WorkflowForge />
+    element: withSuspense('workflow forge', <WorkflowForge />)
   },
   {
     routeId: 'automations-run-detail',
@@ -336,7 +456,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 8',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <WorkflowRunDetail />
+    element: withSuspense('workflow run', <WorkflowRunDetail />)
   },
   {
     routeId: 'models',
@@ -346,7 +466,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 9',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <ModelControlCenter />
+    element: withSuspense('models', <ModelControlCenter />)
   },
   {
     routeId: 'model-detail',
@@ -356,7 +476,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 9',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <ModelDetail />
+    element: withSuspense('model', <ModelDetail />)
   },
   {
     routeId: 'model-routing-profiles',
@@ -366,7 +486,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 9',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <RoutingProfiles />
+    element: withSuspense('routing profiles', <RoutingProfiles />)
   },
   {
     routeId: 'agents',
@@ -376,7 +496,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 8',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <AgentOperationsCenter />
+    element: withSuspense('agents', <AgentOperationsCenter />)
   },
   {
     routeId: 'agent-detail',
@@ -386,7 +506,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 8',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <AgentDetail />
+    element: withSuspense('agent', <AgentDetail />)
   },
   {
     routeId: 'learn',
@@ -396,7 +516,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <LearningHub />
+    element: withSuspense('learning hub', <LearningHub />)
   },
   {
     routeId: 'guided-lab',
@@ -406,7 +526,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <GuidedLab />
+    element: withSuspense('lab', <GuidedLab />)
   },
   {
     routeId: 'remote-systems',
@@ -416,7 +536,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <RemoteSystems />
+    element: withSuspense('remote systems', <RemoteSystems />)
   },
   {
     routeId: 'remote-session',
@@ -426,11 +546,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: (
-      <Suspense fallback={<p className="p-4 text-meta text-text-secondary">Loading remote...</p>}>
-        <RemoteSession />
-      </Suspense>
-    )
+    element: withSuspense('remote', <RemoteSession />)
   },
   {
     routeId: 'system',
@@ -440,7 +556,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <SystemDashboard />
+    element: withSuspense('system dashboard', <SystemDashboard />)
   },
   {
     routeId: 'controller-settings',
@@ -450,7 +566,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <ControllerSettings />
+    element: withSuspense('controller settings', <ControllerSettings />)
   },
   {
     routeId: 'display-theme-settings',
@@ -460,7 +576,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <DisplayThemeSettings />
+    element: withSuspense('display settings', <DisplayThemeSettings />)
   },
   {
     routeId: 'privacy-permissions',
@@ -470,7 +586,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <PrivacyPermissions />
+    element: withSuspense('privacy settings', <PrivacyPermissions />)
   },
   {
     routeId: 'network-vpn',
@@ -480,7 +596,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <NetworkAndVpn />
+    element: withSuspense('network settings', <NetworkAndVpn />)
   },
   {
     routeId: 'updates',
@@ -490,7 +606,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <Updates />
+    element: withSuspense('updates', <Updates />)
   },
   {
     routeId: 'power',
@@ -500,7 +616,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <PowerMenu />
+    element: withSuspense('power menu', <PowerMenu />)
   },
   {
     routeId: 'about',
@@ -510,7 +626,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <AboutDiagnostics />
+    element: withSuspense('about', <AboutDiagnostics />)
   },
   {
     routeId: 'error-recovery',
@@ -520,7 +636,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
-    element: <ErrorRecovery />
+    element: withSuspense('error recovery', <ErrorRecovery />)
   },
   {
     routeId: 'integrations',
@@ -530,7 +646,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <Integrations />
+    element: withSuspense('integrations', <Integrations />)
   },
   {
     routeId: 'recovery',
@@ -540,7 +656,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <RecoveryTimeline />
+    element: withSuspense('recovery timeline', <RecoveryTimeline />)
   },
   {
     routeId: 'storage',
@@ -550,7 +666,7 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     owningEpic: 'Epic 11',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
-    element: <StorageAndRecovery />
+    element: withSuspense('storage', <StorageAndRecovery />)
   }
 ]
 
