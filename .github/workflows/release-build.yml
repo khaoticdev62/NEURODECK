@@ -118,7 +118,7 @@ jobs:
           exit 1
 
       - name: Upload frontend dist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: frontend/dist/
@@ -289,7 +289,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: windows-installer-${{ env.VERSION }}
           path: |
@@ -440,7 +440,7 @@ jobs:
             > SHA256SUMS-appimage.txt
 
       - name: Upload AppImage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: appimage-${{ env.VERSION }}
           path: |
@@ -499,7 +499,7 @@ jobs:
             "dist/neurodeck_${{ env.VERSION }}_linux.flatpak" com.neurodeck.app
 
       - name: Upload Flatpak artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: flatpak-bundle-${{ env.VERSION }}
           path: dist/neurodeck_${{ env.VERSION }}_linux.flatpak
