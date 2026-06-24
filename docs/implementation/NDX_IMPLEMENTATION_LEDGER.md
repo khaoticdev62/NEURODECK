@@ -1355,3 +1355,33 @@ The exact same gap existed one feature over, in production code that runs on eve
 | ----- | -------- | ----- |
 | Boot degrades into the shell when the workspace IPC call *rejects* (not just resolves to `{ ok: false }`) | `features/onboarding/__tests__/BootSessionStart.test.tsx` | +1 |
 | Settles `loading` to `false` and surfaces a real error when the workspace IPC call rejects; settles normally on a real resolved result | `features/workspaces/__tests__/WorkspaceProvider.test.tsx` (new file) | +2 |
+
+## Epic 3 addendum — Home Command Center and Command Palette real domain wiring
+
+Two previously honest-but-partial global UX components now consume the real services that landed after their first implementation.
+
+**ND-008 Home Command Center** no longer stays locked to the first-run empty state once workspaces exist. It still renders the spec-defined "Create or discover a workspace" empty state when the real workspace registry is empty, but otherwise composes real state from `WorkspaceContext`, `workflowClient`, and `agentClient`: Continue opens the selected workspace detail route, workspace cards switch the active workspace before navigation, running workflow/agent counts are derived from persisted run state, and recommendations route only to already-real screens (`/automations/forge`, `/agents`, `/ai/approvals`, `/learn`). It does not invent pinned status, fake recents, or synthetic task urgency.
+
+**ND-009 Universal Command Palette** now has real domains beyond Screens and Tools. On open, it reads active-workspace file entries, workspace records, persisted workflows, and persisted agents through the existing typed IPC clients, while settings are a curated route-backed index of real Epic 11 screens. Workspace results set the active workspace before navigating to detail. Tools still submit through the existing ActionQueue/PermissionBroker path. Symbols and recent-action history remain deferred because there is no symbol index or action-history store to query yet.
+
+**Focus runtime follow-up:** Controller disconnect/reconnect notifications were added to `FocusEngineProvider`, but the first implementation used `useToast()` directly, which made every isolated focus-engine test require a `ToastProvider`. The provider now reads `ToastContext` optionally: production shells still display reconnect/disconnect toasts, while isolated focus tests and component harnesses safely no-op notifications when no toast host is mounted.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Command Palette opens/closes via controller, filters screens, navigates, lists real workspace/file/workflow/agent/settings domains, and still submits tools through the real safety pipeline | `features/command-palette/__tests__/CommandPalette.test.tsx` | 9 |
+| Home Command Center renders empty state when no workspaces exist, renders real workspace/service-backed sections, continues into workspace detail, and routes recommendations | `features/home/__tests__/HomeCommandCenter.test.tsx` | 5 |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm run test -- CommandPalette     → 1 file, 9 tests passed
+npm run test -- HomeCommandCenter  → 1 file, 5 tests passed
+npm run test -- BootSessionStart   → 1 file, 8 tests passed
+npm run test -- Modal.focusEngine  → 1 file, 2 tests passed
+npm run test                       → 109 files, 536 tests passed
+npm run lint                       → 0 errors, 0 warnings
+npm run typecheck                  → node + web TypeScript checks passed
+npm run build                      → typecheck + electron-vite build passed
+```

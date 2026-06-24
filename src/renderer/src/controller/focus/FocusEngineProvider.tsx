@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ToastContext, type ToastInput } from '../../components/overlays/toastContext'
 import { getControllerSettings } from '../../services/ipc/controllerSettingsClient'
 import type { ControllerAction, ControllerActionEvent } from '../adapters/controllerAction'
 import { GamepadAdapter } from '../adapters/gamepadAdapter'
@@ -41,6 +42,14 @@ export function FocusEngineProvider({
   const activeGamepadIndexRef = useRef<number | null>(null)
   const subscribersRef = useRef(new Map<ControllerAction, Array<() => void>>())
   const actionObserversRef = useRef(new Set<(event: ControllerActionEvent) => void>())
+  const toastContext = useContext(ToastContext)
+  const pushRef = useRef<(toast: ToastInput) => void>(() => undefined)
+  const connectedGamepadsRef = useRef(new Set<number>())
+  const everConnectedRef = useRef(false)
+
+  useEffect(() => {
+    pushRef.current = toastContext ? (toast) => void toastContext.push(toast) : () => undefined
+  }, [toastContext])
 
   const subscribe = useMemo(
     () =>
@@ -123,7 +132,29 @@ export function FocusEngineProvider({
 
     const activeAdapters = adapters ?? [
       new GamepadAdapter({
-        onConnect: (_index, kind) => setControllerKind(kind)
+        onConnect: (index, kind) => {
+          setControllerKind(kind)
+          const isReconnect = everConnectedRef.current && connectedGamepadsRef.current.size === 0
+          connectedGamepadsRef.current.add(index)
+          everConnectedRef.current = true
+          if (isReconnect) {
+            pushRef.current({
+              category: 'success',
+              title: 'Controller reconnected',
+              durationMs: 4000
+            })
+          }
+        },
+        onDisconnect: (index) => {
+          connectedGamepadsRef.current.delete(index)
+          if (everConnectedRef.current && connectedGamepadsRef.current.size === 0) {
+            pushRef.current({
+              category: 'warning',
+              title: 'Controller disconnected',
+              description: 'Use the keyboard to keep navigating, or reconnect your controller.'
+            })
+          }
+        }
       }),
       new KeyboardAdapter()
     ]

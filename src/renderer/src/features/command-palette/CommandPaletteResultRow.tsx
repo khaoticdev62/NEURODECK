@@ -6,12 +6,16 @@ import type { NavigationDestination } from '../../components/navigation/navigati
 export interface CommandPaletteResultRowProps {
   destination: NavigationDestination
   priority: number
+  subtitle?: string
+  onBeforeRun?: () => void
   onRun: () => void
 }
 
 export function CommandPaletteResultRow({
   destination,
   priority,
+  subtitle,
+  onBeforeRun,
   onRun
 }: CommandPaletteResultRowProps): React.JSX.Element {
   const navigate = useNavigate()
@@ -20,6 +24,7 @@ export function CommandPaletteResultRow({
     groupId: 'command-palette',
     priority,
     onActivate: () => {
+      onBeforeRun?.()
       navigate(destination.path)
       onRun()
     }
@@ -30,15 +35,17 @@ export function CommandPaletteResultRow({
       ref={ref}
       type="button"
       onClick={() => {
+        onBeforeRun?.()
         navigate(destination.path)
         onRun()
       }}
       className={cn(
-        'flex w-full min-h-[var(--ndx-target-min)] items-center rounded-md px-3 text-left text-body text-text-primary',
+        'flex w-full min-h-[var(--ndx-target-min)] flex-col justify-center rounded-md px-3 py-2 text-left text-body text-text-primary',
         isFocused ? 'bg-surface-raised' : 'hover:bg-surface-raised/60'
       )}
     >
-      Open {destination.label}
+      <span>Open {destination.label}</span>
+      {subtitle && <span className="text-meta text-text-tertiary">{subtitle}</span>}
     </button>
   )
 }

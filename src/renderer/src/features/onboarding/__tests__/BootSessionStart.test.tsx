@@ -74,6 +74,18 @@ function makeBridge(options: BridgeOptions = {}): Partial<NdxBridge> {
         ? vi.fn().mockResolvedValue({ ok: false, error: { userMessage: 'metrics error' } })
         : vi.fn().mockResolvedValue({ ok: true, data: {} })
     } as never,
+    workflows: {
+      list: vi.fn().mockResolvedValue({ ok: true, data: [] })
+    } as never,
+    workflowRuns: {
+      list: vi.fn().mockResolvedValue({ ok: true, data: [] })
+    } as never,
+    agents: {
+      list: vi.fn().mockResolvedValue({ ok: true, data: [] })
+    } as never,
+    agentRuns: {
+      list: vi.fn().mockResolvedValue({ ok: true, data: [] })
+    } as never,
     power: {
       quitApp: vi.fn().mockResolvedValue({ ok: true, data: null })
     } as never
@@ -111,7 +123,7 @@ describe('BootSessionStart', () => {
     renderBoot()
 
     await waitFor(() => {
-      expect(screen.getByText('Create or discover a workspace')).toBeInTheDocument()
+      expect(screen.getByText('Active workspace: Project')).toBeInTheDocument()
     })
   })
 

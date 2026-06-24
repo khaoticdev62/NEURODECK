@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { ToastProvider } from '../Toast'
 import { Modal } from '../Modal'
 
 describe('Modal + FocusEngine integration', () => {
@@ -10,11 +11,13 @@ describe('Modal + FocusEngine integration', () => {
     const adapter = new TestAdapter()
 
     render(
-      <FocusEngineProvider adapters={[adapter]}>
-        <Modal open onClose={onClose} title="Controller-closable">
-          content
-        </Modal>
-      </FocusEngineProvider>
+      <ToastProvider>
+        <FocusEngineProvider adapters={[adapter]}>
+          <Modal open onClose={onClose} title="Controller-closable">
+            content
+          </Modal>
+        </FocusEngineProvider>
+      </ToastProvider>
     )
     expect(screen.getByRole('dialog')).toBeInTheDocument()
 
@@ -28,11 +31,13 @@ describe('Modal + FocusEngine integration', () => {
     const adapter = new TestAdapter()
 
     render(
-      <FocusEngineProvider adapters={[adapter]}>
-        <Modal open onClose={onClose} title="Controller-closable">
-          content
-        </Modal>
-      </FocusEngineProvider>
+      <ToastProvider>
+        <FocusEngineProvider adapters={[adapter]}>
+          <Modal open onClose={onClose} title="Controller-closable">
+            content
+          </Modal>
+        </FocusEngineProvider>
+      </ToastProvider>
     )
 
     adapter.inject('confirm', 'press')

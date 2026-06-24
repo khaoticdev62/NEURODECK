@@ -1,36 +1,155 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { Modal } from '../../components/overlays/Modal'
 import {
   NAVIGATION_DESTINATIONS,
   type NavigationDestination
 } from '../../components/navigation/navigationDestinations'
-import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { useFocusEngine } from '../../controller/focus/useFocusEngine'
 import { useFocusable } from '../../controller/focus/useFocusable'
+import { listAgents } from '../../services/ipc/agentClient'
+import { listFiles } from '../../services/ipc/fileClient'
+import { listWorkflows } from '../../services/ipc/workflowClient'
+import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { CommandPaletteResultRow } from './CommandPaletteResultRow'
 import { CommandPaletteToolRow } from './CommandPaletteToolRow'
 
-/** Real screens reachable here that aren't primary nav rail destinations (sub-routes, not cluttering the rail). */
-const SECONDARY_SCREENS: NavigationDestination[] = [
-  { id: 'ai-timeline', label: 'AI Execution Timeline', path: '/ai/timeline' },
-  { id: 'ai-approvals', label: 'Approval Queue', path: '/ai/approvals' }
+interface PaletteDomainResult extends NavigationDestination {
+  subtitle: string
+}
+
+interface PaletteDomain {
+  id: string
+  label: string
+  results: PaletteDomainResult[]
+}
+
+interface LoadedDomainState {
+  files: PaletteDomainResult[]
+  workspaces: PaletteDomainResult[]
+  workflows: PaletteDomainResult[]
+  agents: PaletteDomainResult[]
+  errors: string[]
+}
+
+const EMPTY_LOADED_STATE: LoadedDomainState = {
+  files: [],
+  workspaces: [],
+  workflows: [],
+  agents: [],
+  errors: []
+}
+
+const SECONDARY_SCREENS: PaletteDomainResult[] = [
+  { id: 'global-search', label: 'Global Search', path: '/search', subtitle: 'ND-010 - Epic 3' },
+  {
+    id: 'ai-timeline',
+    label: 'AI Execution Timeline',
+    path: '/ai/timeline',
+    subtitle: 'ND-014 - Epic 4'
+  },
+  {
+    id: 'ai-approvals',
+    label: 'Approval Queue',
+    path: '/ai/approvals',
+    subtitle: 'ND-015 - Epic 4'
+  },
+  {
+    id: 'terminal-command-builder',
+    label: 'Command Builder',
+    path: '/terminal/builder',
+    subtitle: 'ND-029 - Epic 6'
+  },
+  {
+    id: 'automations-forge-new',
+    label: 'Workflow Forge',
+    path: '/automations/forge',
+    subtitle: 'ND-033 - Epic 8'
+  },
+  { id: 'agents', label: 'Agent Operations Center', path: '/agents', subtitle: 'ND-016 - Epic 8' },
+  {
+    id: 'model-routing-profiles',
+    label: 'Routing Profiles',
+    path: '/models/routing-profiles',
+    subtitle: 'ND-037 - Epic 9'
+  },
+  { id: 'remote-systems', label: 'Remote Systems', path: '/remote', subtitle: 'ND-040 - Epic 10' }
 ]
 
-const ALL_SCREENS = [...NAVIGATION_DESTINATIONS, ...SECONDARY_SCREENS]
+const SETTINGS_RESULTS: PaletteDomainResult[] = [
+  { id: 'system', label: 'System Dashboard', path: '/system', subtitle: 'ND-042 - Epic 11' },
+  {
+    id: 'controller-settings',
+    label: 'Controller Settings',
+    path: '/settings/controller',
+    subtitle: 'ND-043 - Epic 11'
+  },
+  {
+    id: 'display-theme-settings',
+    label: 'Display and Theme Settings',
+    path: '/settings/display',
+    subtitle: 'ND-044 - Epic 11'
+  },
+  {
+    id: 'network-vpn',
+    label: 'Network and VPN',
+    path: '/settings/network',
+    subtitle: 'ND-045 - Epic 11'
+  },
+  {
+    id: 'privacy-permissions',
+    label: 'Privacy and Permissions',
+    path: '/settings/privacy',
+    subtitle: 'ND-046 - Epic 11'
+  },
+  { id: 'storage', label: 'Storage and Recovery', path: '/storage', subtitle: 'ND-047 - Epic 11' },
+  {
+    id: 'integrations',
+    label: 'Integrations',
+    path: '/integrations',
+    subtitle: 'ND-048 - Epic 11'
+  },
+  { id: 'updates', label: 'Updates', path: '/settings/updates', subtitle: 'ND-049 - Epic 11' },
+  { id: 'power', label: 'Power Menu', path: '/power', subtitle: 'ND-051 - Epic 11' },
+  { id: 'recovery', label: 'Recovery Timeline', path: '/recovery', subtitle: 'ND-052 - Epic 11' },
+  {
+    id: 'error-recovery',
+    label: 'Error Recovery',
+    path: '/error-recovery',
+    subtitle: 'ND-055 - Epic 11'
+  },
+  { id: 'about', label: 'About and Diagnostics', path: '/about', subtitle: 'ND-056 - Epic 11' }
+]
+
+const ALL_SCREENS: PaletteDomainResult[] = [
+  ...NAVIGATION_DESTINATIONS.map((destination) => ({
+    ...destination,
+    subtitle: 'Primary destination'
+  })),
+  ...SECONDARY_SCREENS
+]
+
+function matches(result: PaletteDomainResult, normalized: string): boolean {
+  if (!normalized) return true
+  return (
+    result.label.toLowerCase().includes(normalized) ||
+    result.subtitle.toLowerCase().includes(normalized)
+  )
+}
 
 /**
- * ND-009 Universal Command Palette, opened with `Menu`/`commands`. Spec
- * lists nine search domains (screens, commands, files, symbols, workspaces,
- * workflows, agents, settings, recent actions) — "Screens" (route registry)
- * and now "Tools" (Epic 4's real tool registry) have real sources. The rest
- * stay out until their owning services exist (files: Epic 6, workspaces:
- * Epic 5, workflows/agents: Epic 8, settings: Epic 11).
+ * ND-009 Universal Command Palette, opened with `Menu`/`commands`.
+ * Real sources are wired for screens, files, workspaces, workflows, agents,
+ * settings, and tools. Symbols and recent actions remain separate future
+ * slices; this component does not fabricate those domains.
  */
 export function CommandPalette(): React.JSX.Element {
   const { registry: focusRegistry, subscribe } = useFocusEngine()
   const { registry: toolRegistry } = useAiSafety()
+  const { activeWorkspace, workspaces, setActive } = useWorkspaces()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [loaded, setLoaded] = useState<LoadedDomainState>(EMPTY_LOADED_STATE)
 
   useEffect(() => subscribe('commands', () => setOpen((current) => !current)), [subscribe])
 
@@ -40,15 +159,126 @@ export function CommandPalette(): React.JSX.Element {
     return () => focusRegistry.popTrap()
   }, [open, focusRegistry])
 
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+
+    const workspaceResults: PaletteDomainResult[] = workspaces.map((workspace) => ({
+      id: `workspace:${workspace.id}`,
+      label: workspace.name,
+      path: '/workspaces/detail',
+      subtitle: workspace.rootPath
+    }))
+
+    const workspaceFetches = workspaces.map(async (workspace) => {
+      const [workflowResult, agentResult] = await Promise.all([
+        listWorkflows({ workspaceId: workspace.id }),
+        listAgents({ workspaceId: workspace.id })
+      ])
+
+      const errors: string[] = []
+      const workflows: PaletteDomainResult[] = []
+      const agents: PaletteDomainResult[] = []
+
+      if (workflowResult.ok) {
+        for (const workflow of workflowResult.data) {
+          workflows.push({
+            id: `workflow:${workflow.id}`,
+            label: workflow.name,
+            path: `/automations/forge/${workflow.id}`,
+            subtitle: `Workflow - ${workspace.name} - ${workflow.steps.length} steps`
+          })
+        }
+      } else {
+        errors.push(`Workflows: ${workflowResult.error.userMessage}`)
+      }
+
+      if (agentResult.ok) {
+        for (const agent of agentResult.data) {
+          agents.push({
+            id: `agent:${agent.id}`,
+            label: agent.name,
+            path: `/agents/${agent.id}`,
+            subtitle: `Agent - ${workspace.name} - ${agent.enabled ? 'enabled' : 'disabled'}`
+          })
+        }
+      } else {
+        errors.push(`Agents: ${agentResult.error.userMessage}`)
+      }
+
+      return { workflows, agents, errors }
+    })
+
+    const fileFetch = activeWorkspace
+      ? listFiles({ workspaceId: activeWorkspace.id, relativePath: '' }).then((result) => {
+          if (!result.ok) return { files: [], errors: [`Files: ${result.error.userMessage}`] }
+          return {
+            files: result.data.map((entry) => ({
+              id: `file:${activeWorkspace.id}:${entry.path}`,
+              label: entry.name,
+              path: '/files',
+              subtitle: `${entry.isDirectory ? 'Folder' : 'File'} - ${activeWorkspace.name} - ${entry.path}`
+            })),
+            errors: []
+          }
+        })
+      : Promise.resolve({ files: [], errors: [] })
+
+    void Promise.all([fileFetch, ...workspaceFetches])
+      .then(([fileResult, ...entityResults]) => {
+        if (cancelled) return
+        setLoaded({
+          files: fileResult.files,
+          workspaces: workspaceResults,
+          workflows: entityResults.flatMap((result) => result.workflows),
+          agents: entityResults.flatMap((result) => result.agents),
+          errors: [...fileResult.errors, ...entityResults.flatMap((result) => result.errors)].slice(
+            0,
+            4
+          )
+        })
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        setLoaded({
+          ...EMPTY_LOADED_STATE,
+          workspaces: workspaceResults,
+          errors: [error instanceof Error ? error.message : 'Could not load command sources.']
+        })
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, activeWorkspace, workspaces])
+
   const normalized = query.trim().toLowerCase()
 
   const screenResults = useMemo(
-    () => ALL_SCREENS.filter((destination) => destination.label.toLowerCase().includes(normalized)),
+    () => ALL_SCREENS.filter((screen) => matches(screen, normalized)),
     [normalized]
   )
-  // Not memoized: ToolRegistry has no change notification, and the list is
-  // tiny — recomputing every render is cheap and always reflects newly
-  // registered tools, rather than risking a stale snapshot.
+  const settingsResults = useMemo(
+    () => SETTINGS_RESULTS.filter((setting) => matches(setting, normalized)),
+    [normalized]
+  )
+  const workspaceResults = useMemo(
+    () => loaded.workspaces.filter((workspace) => matches(workspace, normalized)),
+    [loaded.workspaces, normalized]
+  )
+  const fileResults = useMemo(
+    () => loaded.files.filter((file) => matches(file, normalized)),
+    [loaded.files, normalized]
+  )
+  const workflowResults = useMemo(
+    () => loaded.workflows.filter((workflow) => matches(workflow, normalized)),
+    [loaded.workflows, normalized]
+  )
+  const agentResults = useMemo(
+    () => loaded.agents.filter((agent) => matches(agent, normalized)),
+    [loaded.agents, normalized]
+  )
+
   const toolResults = toolRegistry
     .list()
     .filter((tool) => tool.title.toLowerCase().includes(normalized))
@@ -57,11 +287,18 @@ export function CommandPalette(): React.JSX.Element {
     id: 'command-palette:search',
     groupId: 'command-palette',
     role: 'field',
-    priority: 100,
+    priority: 1000,
     onActivate: () => {
-      // Enter in the search field runs the top-ranked result, same as confirm on a row.
-      const topId = screenResults[0]
-        ? `command:${screenResults[0].id}`
+      const topResult = [
+        ...screenResults,
+        ...workspaceResults,
+        ...fileResults,
+        ...workflowResults,
+        ...agentResults,
+        ...settingsResults
+      ][0]
+      const topId = topResult
+        ? `command:${topResult.id}`
         : toolResults[0]
           ? `tool:${toolResults[0].id}`
           : null
@@ -77,6 +314,19 @@ export function CommandPalette(): React.JSX.Element {
     setQuery('')
   }
 
+  const domains: PaletteDomain[] = [
+    { id: 'screens', label: 'Screens', results: screenResults },
+    { id: 'workspaces', label: 'Workspaces', results: workspaceResults },
+    {
+      id: 'files',
+      label: activeWorkspace ? `Files - ${activeWorkspace.name}` : 'Files',
+      results: fileResults
+    },
+    { id: 'workflows', label: 'Workflows', results: workflowResults },
+    { id: 'agents', label: 'Agents', results: agentResults },
+    { id: 'settings', label: 'Settings', results: settingsResults }
+  ]
+
   return (
     <Modal open={open} onClose={handleClose} title="Command Palette">
       <input
@@ -87,21 +337,38 @@ export function CommandPalette(): React.JSX.Element {
         className="rounded-sm border border-border bg-surface-raised px-3 py-2 text-body text-text-primary outline-none focus-visible:border-border-focus"
       />
       <div className="flex flex-col gap-3">
-        <div>
-          <p className="px-3 text-meta uppercase tracking-wide text-text-tertiary">Screens</p>
-          {screenResults.length === 0 ? (
-            <p className="px-3 py-2 text-meta text-text-secondary">No matching screens.</p>
-          ) : (
-            screenResults.map((destination, index) => (
-              <CommandPaletteResultRow
-                key={destination.id}
-                destination={destination}
-                priority={screenResults.length - index}
-                onRun={handleClose}
-              />
-            ))
-          )}
-        </div>
+        {loaded.errors.length > 0 && (
+          <div className="rounded-sm border border-status-warning/40 bg-status-warning/10 px-3 py-2 text-meta text-status-warning">
+            {loaded.errors.join(' - ')}
+          </div>
+        )}
+        {domains.map((domain, domainIndex) => (
+          <div key={domain.id}>
+            <p className="px-3 text-meta uppercase tracking-wide text-text-tertiary">
+              {domain.label}
+            </p>
+            {domain.results.length === 0 ? (
+              <p className="px-3 py-2 text-meta text-text-secondary">
+                No matching {domain.label.toLowerCase()}.
+              </p>
+            ) : (
+              domain.results.map((destination, index) => (
+                <CommandPaletteResultRow
+                  key={destination.id}
+                  destination={destination}
+                  priority={domain.results.length - index + (domains.length - domainIndex) * 100}
+                  subtitle={destination.subtitle}
+                  onBeforeRun={() => {
+                    if (destination.id.startsWith('workspace:')) {
+                      setActive(destination.id.replace(/^workspace:/, ''))
+                    }
+                  }}
+                  onRun={handleClose}
+                />
+              ))
+            )}
+          </div>
+        ))}
         {toolResults.length > 0 && (
           <div>
             <p className="px-3 text-meta uppercase tracking-wide text-text-tertiary">Tools</p>
