@@ -83,7 +83,7 @@ jobs:
 
       - name: Restore frontend dist cache
         id: cache-restore
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: frontend/dist
           key: ${{ steps.cache-key.outputs.key }}
@@ -220,7 +220,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Cargo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry
@@ -230,7 +230,7 @@ jobs:
           restore-keys: win-cargo-${{ runner.os }}-
 
       - name: Restore npm cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: win-npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
@@ -346,7 +346,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Restore Cargo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo/registry
@@ -356,7 +356,7 @@ jobs:
           restore-keys: linux-cargo-${{ runner.os }}-
 
       - name: Restore npm cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: linux-npm-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}
