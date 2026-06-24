@@ -1262,3 +1262,17 @@ Previously deferred together as "history/search/copy selection" — on inspectio
 | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----- |
 | Imperative handle's findNext/findPrevious/copySelection call through to the real SearchAddon/Terminal APIs and the real clipboard | `features/terminal/__tests__/TerminalViewport.test.tsx`       | +1    |
 | Find bar toggles open/closed over the active session                                          | `features/terminal/__tests__/UniversalTerminal.test.tsx`      | +1    |
+
+## Epic 8 addendum — real `files-write`/`files-delete` tools (Workflow Checkpoints unblocked)
+
+Workflow Forge's own scope comment named the exact gap: "no tool-action this slice can register writes a file directly." The checklist's "Checkpoints — deferred from the workflow-step level" item was blocked on the same thing. Both are now real with one addition: `ai-safety/tools/fileTools.ts` registers `files-write` and `files-delete`, calling the exact same `writeFile`/`deleteFile` IPC client functions `FileManager.tsx`'s own Delete button and Build Studio's Save action use. `registerFileHandlers.ts` already records a `RecoveryService` checkpoint before either runs, unconditionally — there was never a separate "tool path" to design a new checkpoint shape for; registering the tool was the only missing piece.
+
+**Trust model, explicitly considered and matched to existing precedent**: `workspaceId`/`relativePath` come from whoever submits the tool call — for a Workflow Forge step, that's the human author who typed the JSON arguments at design time (Workflow Forge has no model in the loop, by its own scope note); for an Agent Runtime tool call, that's strict model-emitted JSON, but only reachable if a human first granted that capability into the agent's `toolAllowlist`/`permissionCeiling` — the same already-accepted boundary `terminalCommandTools.ts` uses (an agent with `terminal.execute` can already run arbitrary shell commands in any session it's told about; a scoped file write within `FileService`'s existing path-traversal protection is not a new category of risk this introduces). `PermissionBroker.evaluate()` needed no changes — `files.write`/`files.delete` default to `requires-approval` automatically, the same as every other capability with no standing grant.
+
+A real file-write tool was deliberately *not* added without this analysis — an earlier pass in this same work session considered and explicitly declined a less-careful version of this same idea before reaching this scoped, precedent-matched design.
+
+### Tests and evidence
+
+| Suite                                                                                 | Location                                              | Count |
+| ---------------------------------------------------------------------------------------| -------------------------------------------------------- | ----- |
+| Real capability/risk registration, argument validation, real IPC call-through for both write and delete, real failure surfacing | `ai-safety/__tests__/fileTools.test.ts`               | +4    |
