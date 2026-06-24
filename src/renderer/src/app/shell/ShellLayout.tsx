@@ -14,6 +14,7 @@ import { ActivityAndNotificationsOverlay } from '../../features/activity/Activit
 import { EmergencyStopOverlay } from '../../features/ai-canvas/EmergencyStopOverlay'
 import { AgentToolExecutionBridge } from '../../features/agents/AgentToolExecutionBridge'
 import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwitcherOverlay'
+import { PowerStateBridge } from '../../features/system/PowerStateBridge'
 import { QuickAccessOverlay } from '../../features/system/QuickAccessOverlay'
 import { useDisplayMode } from '../../state/useDisplayMode'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
@@ -83,6 +84,7 @@ export function ShellLayout({
       </div>
       <BottomControllerRail />
       <CoreToolsBootstrap />
+      <PowerStateBridge />
       <AgentToolExecutionBridge />
       <CommandPalette />
       <ActivityAndNotificationsOverlay />

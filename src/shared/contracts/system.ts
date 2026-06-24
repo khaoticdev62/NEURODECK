@@ -75,6 +75,13 @@ export const processSummarySchema = z.object({
   residentBytes: z.number().nullable()
 })
 
+/** Real Electron `powerMonitor` lifecycle events (mega-prompt §31 "Resume after suspend"), forwarded from main to renderer so the shell can notify the user and refresh state that may have gone stale during a suspend. */
+export const powerStateEventSchema = z.object({
+  type: z.enum(['suspend', 'resume', 'lock-screen', 'unlock-screen']),
+  timestamp: z.number()
+})
+export type PowerStateEvent = z.infer<typeof powerStateEventSchema>
+
 export const systemMetricsSnapshotSchema = z.object({
   collectedAt: z.number(),
   hostPlatform: z.string(),

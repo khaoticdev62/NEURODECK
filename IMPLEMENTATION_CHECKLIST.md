@@ -163,8 +163,8 @@ Do not check an epic complete until every story within it satisfies the relevant
 ### Epic 12 — Packaging and hardening
 
 - [ ] SteamOS packaging (Game Mode + Desktop Mode)
-- [ ] Suspend/resume behavior
-- [ ] Controller disconnect/reconnect handling
+- [x] Suspend/resume behavior — **real, scoped to detection and notification**: `registerPowerHandlers.ts` listens to Electron's real `powerMonitor` `suspend`/`resume`/`lock-screen`/`unlock-screen` events and forwards each over a typed `power.stateEvent` IPC channel; `PowerStateBridge.tsx` (mounted globally in `ShellLayout`) shows a real toast on resume (including the approximate suspended duration when known) so the user knows terminal sessions/live data may be stale. Lock/unlock are forwarded for any future consumer but intentionally don't toast (too frequent to be useful). This app never attempts to veto, delay, or otherwise act on the OS's own suspend decision — there is no separate core-service process to pause/resume
+- [x] Controller disconnect/reconnect handling — **real**: `FocusEngineProvider` listens to the real `gamepadconnected`/`gamepaddisconnected` browser events and shows a warning toast when the last connected controller drops, and a confirmation toast on reconnect (not on the very first connect). Now covered by `controller/focus/__tests__/FocusEngineProvider.test.tsx`, which dispatches real gamepad connection events rather than relying on the test-only `TestAdapter` injection path every other consumer test uses
 - [ ] Performance pass (§33 budgets)
 - [ ] Security pass
 - [ ] Accessibility pass (§32)

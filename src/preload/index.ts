@@ -5,6 +5,7 @@ import {
   browserPermissionRequestSchema,
   browserTabSchema,
   IPC_CHANNELS,
+  powerStateEventSchema,
   remoteSessionDataEventSchema,
   remoteSessionExitEventSchema,
   terminalDataEventSchema,
@@ -156,7 +157,15 @@ const ndx: NdxBridge = {
   },
   power: {
     restartApp: () => ipcRenderer.invoke(IPC_CHANNELS.powerRestartApp),
-    quitApp: () => ipcRenderer.invoke(IPC_CHANNELS.powerQuitApp)
+    quitApp: () => ipcRenderer.invoke(IPC_CHANNELS.powerQuitApp),
+    onStateEvent: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = powerStateEventSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.powerStateEvent, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.powerStateEvent, handler)
+    }
   },
   controllerSettings: {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.controllerSettingsGet),

@@ -1473,7 +1473,7 @@ The controller disconnect/reconnect handling described in the Epic 3 addendum ab
 
 **Added**: `controller/focus/__tests__/FocusEngineProvider.test.tsx` renders the provider with its real (default) adapters and dispatches real `gamepadconnected`/`gamepaddisconnected` window events (jsdom doesn't implement `GamepadEvent`, so a plain `Event` with a manually attached `.gamepad` property is used — `GamepadAdapter` only ever reads `event.gamepad.{index,id}`, so this exercises the identical code path a real browser event would). Covers: a warning toast when the only connected controller drops, a confirmation toast on reconnect (but not on the very first connect, since that isn't a recovery), and no warning while a second controller remains connected.
 
-This closes the test-coverage gap for that part of Epic 12 (`IMPLEMENTATION_CHECKLIST.md`'s "Controller disconnect/reconnect handling" item); suspend/resume behavior, SteamOS packaging, the performance/security/accessibility passes, the full E2E suite, and the release-candidate cut remain unstarted.
+This closes the test-coverage gap for that part of Epic 12 (`IMPLEMENTATION_CHECKLIST.md`'s "Controller disconnect/reconnect handling" item).
 
 ### Tests and evidence
 
@@ -1488,4 +1488,31 @@ npm run test -- FocusEngineProvider  → 1 file, 3 tests passed
 npm run test                         → 113 files, 561 tests passed
 npm run lint                         → 0 errors, 0 warnings
 npm run typecheck                    → node + web TypeScript checks passed
+```
+
+## Epic 12 progress — suspend/resume detection and notification now real
+
+Electron's `powerMonitor` module — the only mechanism this architecture has for observing OS-level suspend/resume — was never imported anywhere before this pass; `registerPowerHandlers.ts` only handled the two safe ND-051 Power Menu actions (`app.relaunch()`/`app.quit()`).
+
+**Added**: `registerPowerHandlers(getWindow)` now also subscribes to `powerMonitor`'s real `suspend`, `resume`, `lock-screen`, and `unlock-screen` events and forwards each as a typed `PowerStateEvent` (`shared/contracts/system.ts`) over a new `power.stateEvent` IPC channel to the renderer, returning a dispose function (mirroring the existing `registerTerminalHandlers`/`registerRemoteHandlers` lifecycle pattern) that `main/ipc/index.ts` now calls alongside the others. `PowerStateBridge.tsx` — a global, render-nothing component mounted in `ShellLayout` next to `CoreToolsBootstrap` — subscribes via the new `onPowerStateEvent` preload bridge method and shows a real toast on `resume`, including the approximate suspended duration when a prior `suspend` event was observed (e.g. "suspended for about 5 minutes"). `lock-screen`/`unlock-screen` are intentionally silent in the UI (an idle-timeout screen lock fires far more often than a real suspend during normal use and would just be toast spam) but are still forwarded over IPC for any future consumer.
+
+This is deliberately scoped to detection and notification, matching what the architecture can actually do: there is no separate core-service process to pause/resume, and this app never attempts to veto, delay, or otherwise act on the OS's own suspend decision — only to tell the user it happened and that session/live-data state may now be stale.
+
+**A real bug found and fixed while wiring this up**: the first version of `onPowerStateEvent` called `getNdxBridge()?.power.onStateEvent(listener)` — note the single `?.` only guards the bridge lookup, not the `power.onStateEvent` method itself. Several existing tests (`App.test.tsx` among them) stub `window.ndx.power` with only `{ quitApp }`, the same partial-mock pattern already used throughout the test suite for every other bridge namespace. Calling the missing method threw inside `PowerStateBridge`'s mount effect, which `RootErrorBoundary` (sitting *above* `FocusEngineProvider` in `AppProviders`) caught by replacing the entire app tree with `ErrorRecoveryContent` — which itself calls `useFocusEngine()` and threw a second, more confusing error, since the boundary's fallback no longer has a `FocusEngineProvider` above it either. **Fixed** by changing the call to `getNdxBridge()?.power?.onStateEvent?.(listener)`, matching the same defensive double-optional-chain pattern `browserClient.ts`'s `onBrowserPermissionRequest` already established for exactly this situation (a newly-added listener method that older partial test mocks don't yet implement). No test mocks needed to change.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Resume without a prior suspend shows a generic refresh notice; resume after a tracked suspend reports the approximate duration; lock/unlock never toast | `features/system/__tests__/PowerStateBridge.test.tsx` (new file) | 3 |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm run test -- PowerStateBridge  → 1 file, 3 tests passed
+npm run test -- App.test          → 1 file, 3 tests passed (regression: failed before the onPowerStateEvent fix)
+npm run test                      → 114 files, 564 tests passed
+npm run lint                      → 0 errors, 0 warnings
+npm run typecheck                 → node + web TypeScript checks passed
+npm run build                     → typecheck + electron-vite build passed
 ```

@@ -115,7 +115,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerUpdateHandlers(updateService)
   registerLearningHandlers(learningService)
   registerDiagnosticsHandlers(modelProviderStore)
-  registerPowerHandlers()
+  const disposePower = registerPowerHandlers(getWindow)
   registerControllerSettingsHandlers(
     new ControllerSettingsStore(join(app.getPath('userData'), 'controller-settings.json'))
   )
@@ -132,5 +132,6 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   return () => {
     disposeTerminal()
     disposeRemote()
+    disposePower()
   }
 }

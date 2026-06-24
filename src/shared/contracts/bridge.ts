@@ -72,7 +72,7 @@ import type {
   TerminalSnapshot,
   TerminalWriteRequest
 } from './terminal'
-import type { SystemMetricsSnapshot } from './system'
+import type { PowerStateEvent, SystemMetricsSnapshot } from './system'
 import type { NetworkDiagnostics } from './network'
 import type { DiagnosticsInfo } from './diagnostics'
 import type { UpdateStatus } from './update'
@@ -243,6 +243,7 @@ export interface NdxBridge {
   power: {
     restartApp: () => Promise<NdxResult<null>>
     quitApp: () => Promise<NdxResult<null>>
+    onStateEvent: (listener: (event: PowerStateEvent) => void) => () => void
   }
   controllerSettings: {
     get: () => Promise<NdxResult<ControllerSettings>>
