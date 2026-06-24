@@ -5,11 +5,20 @@ import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { getGitStatus } from '../../services/ipc/gitClient'
+import { completeModel } from '../../services/ipc/modelClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { CodeEditor } from './CodeEditor'
 import { DiagnosticsPanel, type DiagnosticItem } from './DiagnosticsPanel'
 import { ProjectTree } from './ProjectTree'
 import { SymbolNavigator, type SymbolItem } from './SymbolNavigator'
+import {
+  organizeSingleLineImports,
+  parsePredictiveEditProposal,
+  summarizeRange,
+  wrapSelectionInTryCatch,
+  type PredictiveEditProposal,
+  type TextRange
+} from './editorTransforms'
 import { useOpenFiles, type UseOpenFilesResult } from './useOpenFiles'
 
 const SEVERITY_BY_MONACO_LEVEL: Record<number, DiagnosticItem['severity']> = {
@@ -64,6 +73,14 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
   } | null>(null)
   const [editorInstance, setEditorInstance] =
     useState<monacoEditor.editor.IStandaloneCodeEditor | null>(null)
+  const [selectionActive, setSelectionActive] = useState(false)
+  const [structuralMessage, setStructuralMessage] = useState<string | null>(null)
+  const [predictionPrompt, setPredictionPrompt] = useState('')
+  const [predictionBusy, setPredictionBusy] = useState(false)
+  const [predictionError, setPredictionError] = useState<string | null>(null)
+  const [predictionProposal, setPredictionProposal] = useState<
+    (PredictiveEditProposal & { range: TextRange; rangeLabel: string; provider: string }) | null
+  >(null)
 
   useEffect(() => {
     void getGitStatus({ workspaceId }).then((result) => {
@@ -105,7 +122,15 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
         void saveFileRef.current(path, `Edit ${path} in Build Studio`)
       })
 
-      editor.onDidDispose(() => subscription.dispose())
+      const selectionSubscription = editor.onDidChangeCursorSelection(() => {
+        setSelectionActive(!editor.getSelection()?.isEmpty())
+      })
+
+      editor.onDidDispose(() => {
+        subscription.dispose()
+        selectionSubscription.dispose()
+        setSelectionActive(false)
+      })
     },
     []
   )
@@ -118,6 +143,139 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
 
   const activeFile = openFiles.find((file) => file.path === activePath) ?? null
   const isTsOrJs = activePath ? /\.(ts|tsx|js|jsx|mts|cts|mjs|cjs)$/.test(activePath) : false
+
+  const replaceEditorRange = useCallback(
+    (range: TextRange, text: string, source: string) => {
+      if (!editorInstance) return
+      editorInstance.executeEdits(source, [{ range, text, forceMoveMarkers: true }])
+      editorInstance.focus()
+    },
+    [editorInstance]
+  )
+
+  const handleOrganizeImports = useCallback(() => {
+    const model = editorInstance?.getModel()
+    if (!model) return
+    const current = model.getValue()
+    const organized = organizeSingleLineImports(current)
+    if (organized === current) {
+      setStructuralMessage('No single-line imports needed sorting.')
+      return
+    }
+    const fullRange = model.getFullModelRange()
+    replaceEditorRange(fullRange, organized, 'build-studio.organizeImports')
+    setStructuralMessage('Sorted and deduplicated top-level single-line imports.')
+  }, [editorInstance, replaceEditorRange])
+
+  const handleFormatDocument = useCallback(() => {
+    const action = editorInstance?.getAction('editor.action.formatDocument')
+    if (!action) {
+      setStructuralMessage('No formatter is available for this language.')
+      return
+    }
+    void action.run().then(() => {
+      setStructuralMessage('Ran the active Monaco formatter for this file.')
+    })
+  }, [editorInstance])
+
+  const handleWrapSelection = useCallback(() => {
+    const model = editorInstance?.getModel()
+    const selection = editorInstance?.getSelection()
+    if (!model || !selection || selection.isEmpty()) {
+      setStructuralMessage('Select code before wrapping it in try/catch.')
+      return
+    }
+    const selectedText = model.getValueInRange(selection)
+    replaceEditorRange(
+      selection,
+      wrapSelectionInTryCatch(selectedText),
+      'build-studio.wrapTryCatch'
+    )
+    setStructuralMessage(`Wrapped ${summarizeRange(selection)} in a try/catch block.`)
+  }, [editorInstance, replaceEditorRange])
+
+  const handleRequestPrediction = useCallback(async () => {
+    const model = editorInstance?.getModel()
+    const selection = editorInstance?.getSelection()
+    if (!activeFile || !model || !selection || predictionBusy) return
+
+    const selectedText = selection.isEmpty() ? '' : model.getValueInRange(selection)
+    const range = selection.isEmpty()
+      ? {
+          startLineNumber: selection.startLineNumber,
+          startColumn: selection.startColumn,
+          endLineNumber: selection.startLineNumber,
+          endColumn: selection.startColumn
+        }
+      : selection
+    const windowStart = Math.max(1, selection.startLineNumber - 30)
+    const windowEnd = Math.min(model.getLineCount(), selection.endLineNumber + 30)
+    const context = model.getValueInRange({
+      startLineNumber: windowStart,
+      startColumn: 1,
+      endLineNumber: windowEnd,
+      endColumn: model.getLineMaxColumn(windowEnd)
+    })
+
+    setPredictionBusy(true)
+    setPredictionError(null)
+    setPredictionProposal(null)
+    const result = await completeModel({
+      profileId: 'fast-coding',
+      workspacePrivate: true,
+      temperature: 0.1,
+      maxTokens: 1600,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You propose small code edits. Return only JSON with string fields "replacement" and "explanation". The replacement must be the exact text to insert for the requested range. Do not include markdown.'
+        },
+        {
+          role: 'user',
+          content: [
+            `File: ${activeFile.path}`,
+            `Target: ${summarizeRange(range)}`,
+            `User request: ${predictionPrompt.trim() || 'Improve the selected code.'}`,
+            selectedText
+              ? `Selected text:\n${selectedText}`
+              : 'No text is selected; insert at cursor.',
+            `Nearby context:\n${context}`
+          ].join('\n\n')
+        }
+      ]
+    })
+    setPredictionBusy(false)
+
+    if (!result.ok) {
+      setPredictionError(result.error.userMessage)
+      return
+    }
+
+    try {
+      const proposal = parsePredictiveEditProposal(result.data.content)
+      setPredictionProposal({
+        ...proposal,
+        range,
+        rangeLabel: summarizeRange(range),
+        provider: `${result.data.providerName} / ${result.data.modelId}`
+      })
+    } catch (error) {
+      setPredictionError(error instanceof Error ? error.message : 'Could not parse model response.')
+    }
+  }, [activeFile, editorInstance, predictionBusy, predictionPrompt])
+
+  const handleApplyPrediction = useCallback(() => {
+    if (!predictionProposal) return
+    replaceEditorRange(
+      predictionProposal.range,
+      predictionProposal.replacement,
+      'build-studio.predictiveEdit'
+    )
+    setPredictionPrompt('')
+    setPredictionProposal(null)
+    setPredictionError(null)
+  }, [predictionProposal, replaceEditorRange])
 
   return (
     <div className="grid h-full min-w-[64rem] grid-cols-[14rem_minmax(28rem,1fr)_16rem] gap-3 overflow-auto">
@@ -183,6 +341,65 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
       </div>
 
       <div className="flex min-h-0 flex-col gap-3 overflow-auto border border-border bg-surface p-2">
+        <section className="flex flex-col gap-2 border-b border-border pb-3">
+          <p className="px-1 text-meta font-semibold text-text-primary">Structural edits</p>
+          <div className="grid gap-2">
+            <ControllerButton disabled={!activeFile || !isTsOrJs} onClick={handleOrganizeImports}>
+              Organize imports
+            </ControllerButton>
+            <ControllerButton disabled={!activeFile} onClick={handleFormatDocument}>
+              Format file
+            </ControllerButton>
+            <ControllerButton
+              disabled={!activeFile || !selectionActive}
+              onClick={handleWrapSelection}
+            >
+              Wrap selection
+            </ControllerButton>
+          </div>
+          {structuralMessage && (
+            <p className="px-1 text-meta text-text-tertiary">{structuralMessage}</p>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-2 border-b border-border pb-3">
+          <p className="px-1 text-meta font-semibold text-text-primary">Predictive edit</p>
+          <textarea
+            value={predictionPrompt}
+            onChange={(event) => setPredictionPrompt(event.target.value)}
+            disabled={!activeFile || predictionBusy}
+            className="min-h-20 resize-none border border-border bg-background px-2 py-1 text-body text-text-primary"
+            placeholder="Describe the edit to propose"
+          />
+          <ControllerButton
+            variant="primary"
+            disabled={!activeFile || predictionBusy}
+            onClick={() => void handleRequestPrediction()}
+          >
+            {predictionBusy ? 'Requesting…' : 'Propose edit'}
+          </ControllerButton>
+          {predictionError && <p className="text-meta text-status-error">{predictionError}</p>}
+          {predictionProposal && (
+            <div className="grid gap-2 border border-border bg-background p-2">
+              <p className="text-meta text-text-tertiary">
+                {predictionProposal.provider} · {predictionProposal.rangeLabel}
+              </p>
+              <p className="text-body text-text-primary">{predictionProposal.explanation}</p>
+              <pre className="max-h-36 overflow-auto whitespace-pre-wrap border border-border bg-surface p-2 text-meta text-text-secondary">
+                {predictionProposal.replacement}
+              </pre>
+              <div className="flex gap-2">
+                <ControllerButton variant="primary" onClick={handleApplyPrediction}>
+                  Apply
+                </ControllerButton>
+                <ControllerButton variant="secondary" onClick={() => setPredictionProposal(null)}>
+                  Discard
+                </ControllerButton>
+              </div>
+            </div>
+          )}
+        </section>
+
         <section className="min-h-0 flex-1 overflow-auto">
           <p className="mb-1 px-1 text-meta font-semibold text-text-primary">Symbols</p>
           <SymbolNavigator

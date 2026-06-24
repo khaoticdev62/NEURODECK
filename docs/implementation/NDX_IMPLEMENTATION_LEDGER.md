@@ -719,6 +719,36 @@ npm audit --omit=dev → 0 vulnerabilities
 - **Split panes** — not built this slice; single active editor pane only.
 - **Peek/Rename/Find references/Pin (Symbol Navigator), Explain/Add to AI context** — need deeper language-service integration or Epic 9 respectively.
 
+### Epic 7 completion addendum — structural edits and predictive editing
+
+**Date:** 2026-06-24
+
+Epic 7 is now complete for the Phase A Build Studio contract. The original read-only slice became editable/savable when Epic 11's Recovery Service landed; this addendum closes the two remaining Build Studio-owned gaps: controller-native structural edits and reviewed predictive editing.
+
+**What changed:**
+
+- **`BuildStudio.tsx`** now includes a controller-focusable Structural edits section in the right rail. It exposes real editor operations against the active Monaco model: deterministic top-level single-line import organization, Monaco's active document formatter, and selection wrapping in a concrete `try/catch` structure. These actions edit the open model only; persistence still flows through the existing Save button and therefore the already-checkpointed `fileWrite` IPC path.
+- **`BuildStudio.tsx`** now includes a reviewed Predictive edit section. It captures the selected range or cursor position, sends nearby editor context through the existing `modelProviders.complete` / `ModelRouter.complete()` bridge using the `fast-coding` routing profile and `workspacePrivate: true`, parses a strict JSON `{ replacement, explanation }` proposal, displays provider/model provenance, and requires explicit Apply or Discard before mutating the editor model.
+- **`editorTransforms.ts`** contains the deterministic import organizer, selection wrapper, range summaries, and predictive JSON parser. The parser rejects missing replacement text and oversized proposals rather than blindly applying untrusted model output.
+- **`BuildStudio.test.tsx`** covers the reviewed predictive flow at the page boundary with Monaco mocked as an editor dependency: open a real file row, request a proposal through the bridge-shaped model provider API, render the review, and apply it through `editor.executeEdits()`.
+
+**Current honest boundaries:**
+
+- Full multi-language LSP servers are still not claimed. TypeScript/JavaScript remain backed by Monaco's bundled TypeScript worker; other languages get syntax highlighting only.
+- Voice-to-code and a free-form predictive token wheel are not claimed. They need speech/input systems and interaction design outside this Build Studio completion slice.
+- Debug/Test/Task-runner panels remain future integrations with terminal/workflow/test-runner services; no fake panels were added to mark them complete.
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm run test -- BuildStudio     → 1 file, 1 test passed
+npm run test -- build-studio    → 7 files, 27 tests passed
+npm run test                    → 111 files, 543 tests passed
+npm run typecheck               → node + web TypeScript checks passed
+npm run lint                    → 0 errors, 0 warnings
+npm run build                   → typecheck + electron-vite build passed
+```
+
 ## Epic 11 — System integration (Recovery Service + System Metrics Service)
 
 ### Scope decision
