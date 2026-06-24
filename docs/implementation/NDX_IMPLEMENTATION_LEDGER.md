@@ -1516,3 +1516,34 @@ npm run lint                      → 0 errors, 0 warnings
 npm run typecheck                 → node + web TypeScript checks passed
 npm run build                     → typecheck + electron-vite build passed
 ```
+
+## Epic 12 progress — SteamOS/Linux packaging now real, plus a real masked dependency bug found and fixed
+
+Full detail lives in `docs/implementation/NDX_STEAMOS_PACKAGING.md`; summarized here.
+
+`electron-builder.yml` still carried unconfigured scaffold defaults — `appId: com.electron.app`, `productName: neurodeck_scaffold`, `linux.maintainer: electronjs.org`, and a `publish` block pointed at `https://example.com/auto-updates` (dead config: no `electron-updater` integration exists anywhere in this codebase). **Fixed**: real `appId`/`productName`/`maintainer`, removed the dead `publish` block, changed `linux.category` to `Development` (more accurate given the bundled terminal/Git/Build Studio), and added `package.json`'s `desktopName` + `electron-builder.yml`'s `linux.syncDesktopName: true` so electron-builder auto-derives a `StartupWMClass` that actually matches the `app_id` Electron itself reads from `desktopName` at runtime (confirmed by reading `app-builder-lib`'s actual installed source, not just its docs — a manually-specified `StartupWMClass` override was tried first and found to be wrong: it would have shadowed the correct auto-derived value with a non-matching one).
+
+**Real bug found**: Windows has no native build of the Linux packaging tools (`mksquashfs`, `fpm`/`dpkg-deb`) `electron-builder --linux` needs, so verifying any of the above required a real Linux environment. WSL2's Ubuntu distro on this machine already had `node`/`npm`/`mksquashfs` installed. Syncing the project (minus `node_modules`/`.git`/build output) into the WSL filesystem and running a **fresh** `npm install` there — as opposed to reusing the Windows machine's already-populated `node_modules` — surfaced a real, previously-invisible bug: `clsx` is imported directly in `features/search/GlobalSearch.tsx` and `SearchResultRow.tsx` but was never a declared dependency in `package.json`/`package-lock.json`. The Windows build only "worked" because of a stale `node_modules/.vite/deps/clsx.js` cache entry left over from before `clsx` was apparently dropped as a dependency without checking whether source still imported it — a genuinely fresh checkout (exactly what CI or a new contributor's machine would do) would fail to build. **Fixed**: added `"clsx": "^2.1.1"` to `package.json`'s real `dependencies`, regenerated `package-lock.json`. Also added a real `homepage` field (the project's actual GitHub remote — not a placeholder) since `fpm` refuses to build a `.deb` without one.
+
+With both fixes, a real `npm run build:linux` inside WSL produced all three configured Linux targets with no errors — `neurodeck-os-0.0.0.AppImage`, `neurodeck-os_0.0.0_amd64.snap`, `neurodeck-os_0.0.0_amd64.deb`. The AppImage was extracted (`--appimage-extract`) and its embedded `.desktop` file inspected directly — `StartupWMClass=neurodeck-os`, `Categories=Development;`, `Comment` correctly pulled from `package.json`'s description — and `dpkg-deb -I` on the `.deb` confirmed correct control metadata (package name, vendor, maintainer, homepage, real runtime `Depends`). This is the verification standard this repo holds itself to: read the actual tool's behavior from its source and a real build artifact, not just trust documentation or a config that merely "looks right."
+
+Game Mode/Desktop Mode themselves are scoped honestly: this repo cannot add itself to a user's Steam library (that's an action against the user's own Steam client), so "SteamOS packaging" means producing a correctly-identified build artifact a user can add as a non-Steam game (Game Mode) or install via the `.deb`/run the AppImage directly (Desktop Mode) — not a fake "Steam integration" feature. A Steam Input config preset, Decky Loader plugin, CI automation of this build, and a signed release pipeline remain unstarted.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Full test suite re-run after the `clsx` dependency fix (no behavior change expected, regression check only) | `npm run test` | 114 files, 564 tests passed |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm install (fresh, inside WSL2 Ubuntu)        → succeeded only after the clsx fix; failed before it
+npm run build:linux (inside WSL2 Ubuntu)       → AppImage + snap + deb all produced, no errors
+./neurodeck-os-0.0.0.AppImage --appimage-extract; cat squashfs-root/*.desktop
+                                                → StartupWMClass=neurodeck-os, Categories=Development;, correct Name/Comment
+dpkg-deb -I neurodeck-os_0.0.0_amd64.deb       → correct Package/Vendor/Maintainer/Homepage/Depends, no placeholders
+npm run lint (Windows)                          → 0 errors, 0 warnings
+npm run typecheck (Windows)                     → node + web TypeScript checks passed
+npm run test (Windows)                          → 114 files, 564 tests passed
+```

@@ -390,7 +390,11 @@ export function CommandBuilder(): React.JSX.Element {
                 {proposal.command}
               </code>
               <div className="mt-2 flex gap-2">
-                <FocusableButton id="builder-use-proposal" variant="primary" onClick={useCommandProposal}>
+                <FocusableButton
+                  id="builder-use-proposal"
+                  variant="primary"
+                  onClick={useCommandProposal}
+                >
                   Use proposal
                 </FocusableButton>
                 <FocusableButton

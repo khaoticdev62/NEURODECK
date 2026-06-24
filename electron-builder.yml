@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: neurodeck_scaffold
+appId: com.neurodeck.os
+productName: NeuroDeck OS
 directories:
   buildResources: build
 files:
@@ -12,7 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
-  executableName: neurodeck_scaffold
+  executableName: neurodeck-os
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -33,11 +33,17 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
-  category: Utility
+  maintainer: NeuroDeck
+  category: Development
+  executableName: neurodeck-os
+  # `desktopName` (package.json) + `syncDesktopName` make electron-builder
+  # auto-derive a correct, matching `StartupWMClass` ("neurodeck-os", from
+  # desktopName minus the .desktop suffix) instead of guessing from the
+  # binary name — Electron itself derives its runtime app_id/WM_CLASS from
+  # the same `desktopName`, so this is what actually makes SteamOS/desktop
+  # window managers (and a Steam non-Steam-game shortcut's "running"
+  # detection) associate the running window with this launcher entry.
+  syncDesktopName: true
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates
