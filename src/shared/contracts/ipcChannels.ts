@@ -103,5 +103,12 @@ export const IPC_CHANNELS = {
   remoteSessionExit: 'remoteSession.exit',
   networkGetDiagnostics: 'network.getDiagnostics',
   updateGetStatus: 'update.getStatus',
-  updateCheck: 'update.check'
+  updateCheck: 'update.check',
+  learningListCurricula: 'learning.listCurricula',
+  learningGetCurriculum: 'learning.getCurriculum',
+  learningCreateUserCurriculum: 'learning.createUserCurriculum',
+  learningUpdateUserCurriculum: 'learning.updateUserCurriculum',
+  learningDeleteUserCurriculum: 'learning.deleteUserCurriculum',
+  learningGetProgress: 'learning.getProgress',
+  learningUpdateProgress: 'learning.updateProgress'
 } as const

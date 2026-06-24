@@ -74,6 +74,14 @@ import type { SystemMetricsSnapshot } from './system'
 import type { NetworkDiagnostics } from './network'
 import type { DiagnosticsInfo } from './diagnostics'
 import type { UpdateStatus } from './update'
+import type {
+  CreateUserCurriculumRequest,
+  Curriculum,
+  CurriculumIdRequest,
+  CurriculumProgress,
+  UpdateProgressRequest,
+  UpdateUserCurriculumRequest
+} from './learning'
 import type { ControllerSettings, SetControllerSettingsRequest } from './controllerSettings'
 import type { DisplaySettings, SetDisplaySettingsRequest } from './displaySettings'
 import type {
@@ -268,5 +276,14 @@ export interface NdxBridge {
   update: {
     getStatus: () => Promise<NdxResult<UpdateStatus>>
     check: () => Promise<NdxResult<UpdateStatus>>
+  }
+  learning: {
+    listCurricula: () => Promise<NdxResult<Curriculum[]>>
+    getCurriculum: (request: CurriculumIdRequest) => Promise<NdxResult<Curriculum>>
+    createUserCurriculum: (request: CreateUserCurriculumRequest) => Promise<NdxResult<Curriculum>>
+    updateUserCurriculum: (request: UpdateUserCurriculumRequest) => Promise<NdxResult<Curriculum>>
+    deleteUserCurriculum: (request: CurriculumIdRequest) => Promise<NdxResult<null>>
+    getProgress: () => Promise<NdxResult<CurriculumProgress>>
+    updateProgress: (request: UpdateProgressRequest) => Promise<NdxResult<CurriculumProgress>>
   }
 }

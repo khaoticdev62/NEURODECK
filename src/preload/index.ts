@@ -216,6 +216,18 @@ const ndx: NdxBridge = {
   update: {
     getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.updateGetStatus),
     check: () => ipcRenderer.invoke(IPC_CHANNELS.updateCheck)
+  },
+  learning: {
+    listCurricula: () => ipcRenderer.invoke(IPC_CHANNELS.learningListCurricula),
+    getCurriculum: (request) => ipcRenderer.invoke(IPC_CHANNELS.learningGetCurriculum, request),
+    createUserCurriculum: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.learningCreateUserCurriculum, request),
+    updateUserCurriculum: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.learningUpdateUserCurriculum, request),
+    deleteUserCurriculum: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.learningDeleteUserCurriculum, request),
+    getProgress: () => ipcRenderer.invoke(IPC_CHANNELS.learningGetProgress),
+    updateProgress: (request) => ipcRenderer.invoke(IPC_CHANNELS.learningUpdateProgress, request)
   }
 }
 

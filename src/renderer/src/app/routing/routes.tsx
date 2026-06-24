@@ -39,6 +39,8 @@ import { ErrorRecovery } from '../../features/system/ErrorRecovery'
 import { Integrations } from '../../features/system/Integrations'
 import { NetworkAndVpn } from '../../features/system/NetworkAndVpn'
 import { Updates } from '../../features/system/Updates'
+import { LearningHub } from '../../features/learning/LearningHub'
+import { GuidedLab } from '../../features/learning/GuidedLab'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
 const BuildStudio = lazy(async () => {
@@ -393,7 +395,18 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     title: 'Learning Hub',
     owningEpic: 'Epic 10',
     controllerHints: DEFAULT_PRIMARY_HINTS,
-    restoreOnRevisit: true
+    restoreOnRevisit: true,
+    element: <LearningHub />
+  },
+  {
+    routeId: 'guided-lab',
+    screenId: 'ND-039',
+    path: '/learn/lab/:curriculumId/:moduleId/:lessonId',
+    title: 'Guided Lab',
+    owningEpic: 'Epic 10',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: <GuidedLab />
   },
   {
     routeId: 'remote-systems',

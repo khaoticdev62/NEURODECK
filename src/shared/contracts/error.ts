@@ -12,6 +12,7 @@ export interface NdxError {
     | 'timeout'
     | 'provider'
     | 'system'
+    | 'learning'
     | 'security'
     | 'unknown'
   retryable: boolean

@@ -1051,11 +1051,11 @@ npm audit --production → 0 vulnerabilities
 - **ND-036 Logs tab** — needs durable per-provider request logging, not yet built.
 - **Provider-reported capability/context-size/pricing metadata** — OpenAI-compatible discovery doesn't standardize these fields; NeuroDeck reports only what a provider's `/models` response actually contains and does not infer them from model names.
 
-## Epic 10 - Browser System (real, scoped); SSH Remote Systems real; Learning untouched
+## Epic 10 - Browser System (real, scoped); SSH Remote Systems real; Learning Hub + Guided Lab real (scoped)
 
 ### Scope decision
 
-Epic 10 is three real systems: Browser (§24), Remote Systems (§26), and Learning (no numbered spec section — wireframe-only ND-038/039). Remote Systems needs a genuine SSH client integration (host-identity verification, credential storage separate from the model-provider secret store, remote file/command execution) — a substantial new security surface on its own, comparable in scope to Epic 6's Git/Terminal integration. Learning needs real instructional content and progress tracking, neither of which this repository has any source for yet — building either screen now would mean inventing fake lesson content. Browser, by contrast, builds entirely on Electron's own `WebContentsView` API and this codebase's already-established patterns (persisted-store + IPC + real native integration, the same shape Terminal/Git/Models took) — so it was built first.
+Epic 10 is three real systems: Browser (§24), Remote Systems (§26), and Learning (no numbered spec section — wireframe-only ND-038/039). Remote Systems needs a genuine SSH client integration (host-identity verification, credential storage separate from the model-provider secret store, remote file/command execution) — a substantial new security surface on its own, comparable in scope to Epic 6's Git/Terminal integration. Browser builds entirely on Electron's own `WebContentsView` API and this codebase's already-established patterns. Learning needs real instructional content and progress tracking; this slice builds the infrastructure, persists progress, supports user-created curricula, and ships one small bundled example curriculum so the screens are genuinely populated without fabricating a full course library. The Guided Lab's "AI coach" boundary is now real through Epic 9's model router, gated on a configured provider.
 
 ### What was built
 
@@ -1098,7 +1098,9 @@ No new runtime dependencies were added — `WebContentsView`/`shell.openExternal
 - **Reader mode, downloads, site profiles, history, "add page to workspace context," AI summarization** — each needs real infrastructure this slice doesn't build (a readability extraction step, a downloads manager and its UI, a profile-switching concept, a history index, a workspace-context attachment model, and a real model-router call with the "privacy confirmation" the spec explicitly requires for summarization).
 - **Interactive permission-prompt UI** — every permission request is currently default-denied; building a real prompt needs the same kind of review surface `ConfirmationDialog`/`PermissionDialog` provide elsewhere, not yet wired to browser permission requests.
 - **Broader Remote Systems scope** - SSH host management and SSH terminal sessions are real; remote file browsing, remote command builder, non-SSH target types, Windows remote tooling, containers, network shares, metrics, logs, tunnels, and remote desktop remain deferred.
-- **Learning Hub, Guided Lab** — need real instructional content and progress tracking; the "AI coach" boundary Guided Lab needs is now unblocked by Epic 9's real model router, but there is no learning-content system to attach it to yet.
+- **Full bundled course library** — only one example curriculum (`resources/curricula/quick-start.json`) ships with the app; additional courses need real content, not invented lessons.
+- **Automated lab validation** — the validation panel honestly states that automated pass/fail checking is not implemented; learners mark lessons complete manually.
+- **Time-spent tracking** — estimated session length is metadata; actual elapsed time per lesson is not recorded in this slice.
 
 ## Epic 10 addendum - SSH Remote Systems backend, typed IPC, and scoped UI
 
@@ -1153,6 +1155,26 @@ After both runtime crashes were fixed, the user reported "icons are missing and 
 **Regression test added**: `App.test.tsx` now asserts the nav rail renders exactly as many real `<svg>` icons as it has links, and that each icon has a distinct SVG shape. Verified live against the running dev server (Playwright `_electron`, no crashes) that all 11 destinations render a distinct `<svg>` with real path/circle/rect content, and that `/system` now renders real working buttons to all eight previously-unreachable screens.
 
 **Lesson**: "the screen exists, is real, and passes its own tests" is not the same as "a user can reach it." Every new real screen needs an explicit, deliberate check for _how a controller-only user actually arrives there_ — don't rely on the existence of a route to imply the existence of a path to that route in the rendered nav.
+
+## Epic 10 addendum — Learning Hub (ND-038) and Guided Lab (ND-039)
+
+This slice builds the real learning-content infrastructure and both ND-038/039 screens. The design avoids inventing lesson content: a single bundled example curriculum (`resources/curricula/quick-start.json`) ships with the app, and user-created curricula are the real extension point.
+
+`LearningService` (`core/learning/LearningService.ts`) persists user-created curricula and per-lesson progress under `app.getPath('userData')/learning/`, using the same `JsonStore` pattern as the rest of the app. Bundled curricula are imported as a static catalog (`shared/curricula/bundledCatalog.ts`) so they are always offline and do not require runtime file-path gymnastics. User curricula override bundled IDs on collision, and bundled curricula are protected from edit/delete.
+
+Typed IPC channels (`learning.*`) are added to `shared/contracts/ipcChannels.ts`, exposed through the preload bridge, and handled by `main/ipc/registerLearningHandlers.ts`. The renderer client is `services/ipc/learningClient.ts`.
+
+`LearningHub.tsx` renders area-filter chips, curriculum cards with real progress bars, session length, lab count, required tools, and an offline badge. A simple "Create curriculum" dialog adds a real user-created curriculum with a title, area, and description.
+
+`GuidedLab.tsx` is route-driven at `/learn/lab/:curriculumId/:moduleId/:lessonId`. It shows the lesson instructions, hints, objectives checklist, and a live terminal pane via `LabTerminal.tsx` (which creates a real `TerminalSession` in the active workspace and writes an optional `setupCommand`). The AI coach panel calls the real `completeModel` IPC when a provider is enabled, with a system prompt that includes the lesson instructions, objectives, and recent terminal commands; when no provider is enabled, it shows an honest disabled reason. The validation panel explicitly states that automated lab validation is not implemented yet and does not fake pass/fail results.
+
+| Evidence | File | Status |
+| --- | --- | --- |
+| LearningService CRUD, progress, bundled/user merge, bundled protection | `core/learning/__tests__/LearningService.test.ts` | Passing |
+| LearningHub area filter, card rendering, create curriculum | `features/learning/__tests__/LearningHub.test.tsx` | Passing |
+| GuidedLab instructions, objectives, manual completion, coach disabled state | `features/learning/__tests__/GuidedLab.test.tsx` | Passing |
+
+Validation after this addendum: typecheck/lint/build/e2e green; 521 tests passing across 107 files.
 
 ## Epic 8 addendum — Agent Runtime ActionQueue tool submission bridge
 

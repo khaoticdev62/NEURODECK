@@ -130,7 +130,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] ND-035 Model Control Center — real provider setup, encrypted credentials, enable/disable/delete, live connection tests, Ollama provider type, and navigation to real Routing Profiles.
 - [x] ND-036 Model Detail — real provider/model discovery plus capability-detected Ollama running state, load, unload, and measured benchmark results. Unsupported provider data is not invented; token usage is exposed when the provider returns it.
 
-### Epic 10 — Browser, remote, learning ⚠️ Browser System real (scoped); SSH Remote Systems real; Learning remains
+### Epic 10 — Browser, remote, learning ⚠️ Browser System real (scoped); SSH Remote Systems real; Learning Hub + Guided Lab real (scoped)
 
 - [x] Browser Session Service (§24) — **partially real**: `core/browser/BrowserTabStore.ts` (persisted tab metadata, unit-tested) + `main/browser/BrowserSessionService.ts` (real `WebContentsView` lifecycle — create/navigate/back/forward/reload/bounds/close). Only one tab's view is resident at a time (switching tabs closes the previous `webContents` and recreates fresh on reactivation) — a deliberate scope simplification, not a memory-leak workaround. Reader mode, downloads, permission-prompt UI (currently default-deny), site profiles, history, "add to workspace context", and AI summarization are deferred — each needs infrastructure this slice doesn't build
 - [x] ND-030 Browser Hub — **real**: `features/browser/BrowserHub.tsx` — real workspace-scoped persisted tab list, real New Tab/Open/Close
@@ -138,8 +138,8 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Remote Systems Service (§26) — **SSH slice real**: SSH host registry, OS-encrypted password/passphrase storage, trust-on-first-use host-key fingerprint recording, injected/tested `ssh2` connection/session service, typed IPC channels, preload bridge methods, bounded output snapshots, write/resize/terminate, and data/exit event forwarding are real. Remote file browsing, remote command builder, non-SSH targets, Windows remote tooling, containers, network shares, metrics, logs, port forwarding, and remote desktop remain deferred.
 - [x] ND-040 Remote Systems — **real SSH host-management UI**: `features/remote/RemoteSystems.tsx` adds/list/removes/tests SSH hosts over `window.ndx.remoteHosts`, with explicit host-key trust copy and no fake non-SSH targets.
 - [x] ND-041 Remote Session — **real SSH terminal UI**: `features/remote/RemoteSession.tsx` + `RemoteSessionViewport.tsx` provide xterm-backed snapshot hydration, streamed data, write, resize, and disconnect over `window.ndx.remoteSessions`; file browsing, metrics, logs, tunnels, and remote desktop remain deferred.
-- [ ] ND-038 Learning Hub — **not built**: needs real learning content and progress tracking, neither of which exist
-- [ ] ND-039 Guided Lab (with AI coach boundaries) — **not built**: needs Learning Hub content plus Epic 9's model router for the "AI coach" — the model router exists now, but no learning-content system does
+- [x] ND-038 Learning Hub — **real catalog shell**: `features/learning/LearningHub.tsx` lists curricula with area filter, progress, session length, lab availability, required tools, and offline badge. Includes one bundled example curriculum and real user-created curricula with persistence. A full course library is not invented.
+- [x] ND-039 Guided Lab — **real lab shell**: `features/learning/GuidedLab.tsx` renders instructions, hints, objectives, a live terminal via `LabTerminal.tsx`, and an AI coach panel wired to the real model router. Automated lab validation is honestly manual in this slice; the AI coach is disabled when no provider is enabled.
 
 ### Epic 11 — System integration ✅ all 16 screens real, each honestly scoped — see per-item notes for what's still disabled within each
 
