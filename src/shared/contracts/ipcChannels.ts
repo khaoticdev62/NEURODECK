@@ -100,5 +100,8 @@ export const IPC_CHANNELS = {
   remoteSessionResize: 'remoteSession.resize',
   remoteSessionTerminate: 'remoteSession.terminate',
   remoteSessionData: 'remoteSession.data',
-  remoteSessionExit: 'remoteSession.exit'
+  remoteSessionExit: 'remoteSession.exit',
+  networkGetDiagnostics: 'network.getDiagnostics',
+  updateGetStatus: 'update.getStatus',
+  updateCheck: 'update.check'
 } as const

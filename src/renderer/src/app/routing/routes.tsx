@@ -36,6 +36,9 @@ import { WorkspaceDetail } from '../../features/workspaces/WorkspaceDetail'
 import { WorkspaceHub } from '../../features/workspaces/WorkspaceHub'
 import { GlobalSearch } from '../../features/search/GlobalSearch'
 import { ErrorRecovery } from '../../features/system/ErrorRecovery'
+import { Integrations } from '../../features/system/Integrations'
+import { NetworkAndVpn } from '../../features/system/NetworkAndVpn'
+import { Updates } from '../../features/system/Updates'
 import { EpicBoundaryPlaceholder } from './EpicBoundaryPlaceholder'
 
 const BuildStudio = lazy(async () => {
@@ -457,6 +460,26 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     element: <PrivacyPermissions />
   },
   {
+    routeId: 'network-vpn',
+    screenId: 'ND-045',
+    path: '/settings/network',
+    title: 'Network and VPN',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <NetworkAndVpn />
+  },
+  {
+    routeId: 'updates',
+    screenId: 'ND-049',
+    path: '/settings/updates',
+    title: 'Updates',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <Updates />
+  },
+  {
     routeId: 'power',
     screenId: 'ND-051',
     path: '/power',
@@ -485,6 +508,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
     element: <ErrorRecovery />
+  },
+  {
+    routeId: 'integrations',
+    screenId: 'ND-048',
+    path: '/integrations',
+    title: 'Integrations',
+    owningEpic: 'Epic 11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: <Integrations />
   },
   {
     routeId: 'recovery',

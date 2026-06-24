@@ -146,6 +146,9 @@ const ndx: NdxBridge = {
   system: {
     collectMetrics: () => ipcRenderer.invoke(IPC_CHANNELS.systemMetricsCollect)
   },
+  network: {
+    getDiagnostics: () => ipcRenderer.invoke(IPC_CHANNELS.networkGetDiagnostics)
+  },
   diagnostics: {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.diagnosticsGet)
   },
@@ -209,6 +212,10 @@ const ndx: NdxBridge = {
       ipcRenderer.on(IPC_CHANNELS.remoteSessionExit, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.remoteSessionExit, handler)
     }
+  },
+  update: {
+    getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.updateGetStatus),
+    check: () => ipcRenderer.invoke(IPC_CHANNELS.updateCheck)
   }
 }
 

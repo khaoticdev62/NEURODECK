@@ -24,7 +24,10 @@ interface SystemLink {
 const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Controller Settings', path: '/settings/controller' },
   { label: 'Display and Theme Settings', path: '/settings/display' },
+  { label: 'Network and VPN', path: '/settings/network' },
   { label: 'Privacy and Permissions', path: '/settings/privacy' },
+  { label: 'Integrations', path: '/integrations' },
+  { label: 'Updates', path: '/settings/updates' },
   { label: 'Power Menu', path: '/power' },
   { label: 'About and Diagnostics', path: '/about' },
   { label: 'Recovery Timeline', path: '/recovery' },

@@ -71,7 +71,9 @@ import type {
   TerminalWriteRequest
 } from './terminal'
 import type { SystemMetricsSnapshot } from './system'
+import type { NetworkDiagnostics } from './network'
 import type { DiagnosticsInfo } from './diagnostics'
+import type { UpdateStatus } from './update'
 import type { ControllerSettings, SetControllerSettingsRequest } from './controllerSettings'
 import type { DisplaySettings, SetDisplaySettingsRequest } from './displaySettings'
 import type {
@@ -217,6 +219,9 @@ export interface NdxBridge {
   system: {
     collectMetrics: () => Promise<NdxResult<SystemMetricsSnapshot>>
   }
+  network: {
+    getDiagnostics: () => Promise<NdxResult<NetworkDiagnostics>>
+  }
   diagnostics: {
     get: () => Promise<NdxResult<DiagnosticsInfo>>
   }
@@ -259,5 +264,9 @@ export interface NdxBridge {
     terminate: (request: RemoteSessionRequest) => Promise<NdxResult<null>>
     onData: (listener: (event: RemoteSessionDataEvent) => void) => () => void
     onExit: (listener: (event: RemoteSessionExitEvent) => void) => () => void
+  }
+  update: {
+    getStatus: () => Promise<NdxResult<UpdateStatus>>
+    check: () => Promise<NdxResult<UpdateStatus>>
   }
 }

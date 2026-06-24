@@ -12,6 +12,8 @@ import { ModelProviderStore } from '../../core/models/ModelProviderStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
 import { SystemMetricsService } from '../../core/system/SystemMetricsService'
+import { UpdateService } from '../../core/system/UpdateService'
+import { NetworkService } from '../../core/network/NetworkService'
 import { RecoveryService } from '../../core/recovery/RecoveryService'
 import { RemoteConnectionService } from '../../core/remote/RemoteConnectionService'
 import { RemoteHostStore } from '../../core/remote/RemoteHostStore'
@@ -29,7 +31,9 @@ import { registerDisplaySettingsHandlers } from './registerDisplaySettingsHandle
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
 import { registerModelHandlers } from './registerModelHandlers'
+import { registerNetworkHandlers } from './registerNetworkHandlers'
 import { registerPowerHandlers } from './registerPowerHandlers'
+import { registerUpdateHandlers } from './registerUpdateHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
@@ -57,6 +61,13 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   const modelProviderService = new ModelProviderService()
   const systemMetricsService = new SystemMetricsService()
+  const networkService = new NetworkService()
+  const updateService = new UpdateService({
+    currentVersion: app.getVersion(),
+    channel: (process.env.ND_UPDATE_CHANNEL as 'stable' | 'beta' | 'nightly') ?? 'stable',
+    feedUrl: process.env.ND_UPDATE_FEED_URL,
+    fetch
+  })
   const modelRouter = new ModelRouter(
     modelProviderStore,
     modelProviderService,
@@ -89,6 +100,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)
   registerAgentHandlers(agentStore, agentRuntime)
   registerSystemHandlers(systemMetricsService)
+  registerNetworkHandlers(networkService)
+  registerUpdateHandlers(updateService)
   registerDiagnosticsHandlers(modelProviderStore)
   registerPowerHandlers()
   registerControllerSettingsHandlers(
