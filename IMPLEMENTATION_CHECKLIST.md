@@ -4,7 +4,7 @@ Derived directly from the Epic lists in `specs/NeuroDeck_OS_Production_Implement
 
 Do not check an epic complete until every story within it satisfies the relevant Story Completion Template/Contract and the Acceptance Gates in §5 below. See `CLAUDE.md` for the non-negotiable rules that apply throughout.
 
-**Repository reconciliation:** 2026-06-24 — Epics 0, 1, 2 (core), 5, 7, 9, and 11 fully complete; Epics 3, 4, 6, 8, and 10 remain partially complete with only narrowly-scoped, explicitly-named gaps remaining (see each epic's heading and ledger). Current validation baseline: 543 unit/integration tests across 111 files, full TypeScript checks, lint pass, and production build pass. Electron boot smoke remains from the prior recorded baseline and should be rerun before any release claim.
+**Repository reconciliation:** 2026-06-24 — Epics 0, 1, 2 (core), 4, 5, 7, 9, and 11 fully complete; Epics 3, 6, 8, and 10 remain partially complete with only narrowly-scoped, explicitly-named gaps remaining (see each epic's heading and ledger). Current validation baseline: 545 unit/integration tests across 111 files, full TypeScript checks, lint pass, and production build pass. Electron boot smoke remains from the prior recorded baseline and should be rerun before any release claim.
 
 ---
 
@@ -60,7 +60,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] ND-012 Notification Center — `features/activity/NotificationCenter.tsx`; extends the real `ToastProvider` (Epic 1) with persistent history, per-category muting, and event collapsing — all genuinely functional
 - [x] Quick overlay foundation — ND-050 Quick Access Overlay built with real `quick.access` action, focus trap, and honest placeholder/disabled states; Steam Deck Quick Access button remains deferred (no standard Gamepad API exposure)
 
-### Epic 4 — AI safety runtime ⚠️ core pipeline, shared typed IPC, and AI Command Canvas preview/run handoff real
+### Epic 4 — AI safety runtime ✅ complete for Phase A scope
 
 - [x] Plan schema (mega-prompt §15.1) — `ai-safety/contracts/plan.ts` (`ActionPlan`, `ActionStep`, `ImpactSummary`, etc.)
 - [x] Typed tool call schema and registry — `ai-safety/contracts/plan.ts` (`HarnessAction`) + `ai-safety/ToolRegistry.ts`; invocation must match a registered tool. The shared narrow typed IPC layer is now real across workspace, file, Git, terminal, workflow, recovery, model, browser, remote, system, learning, and Agent Runtime domains
@@ -70,7 +70,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] ND-015 Approval Queue — `features/approvals/ApprovalQueue.tsx`; real pending `HarnessActionRecord`s, approve/deny wired to the real broker+queue
 - [x] ND-054 Emergency Stop — `features/ai-canvas/EmergencyStopOverlay.tsx`; real toggle on `emergency.stop`, pauses the queue and cancels pending actions. Terminal and Agent Runtime core now exist, but safe-process classification and cross-runtime emergency termination are not connected
 - [x] Audit service — `ai-safety/AuditLog.ts`; real append-only in-memory log. Durable audit persistence and export remain unimplemented
-- [ ] Prompt-injection resistance verified (§15.4) — files and terminal content now exist, but neither is automatically ingested into model prompts; a full adversarial boundary test remains required before any such context pipeline ships
+- [x] Prompt-injection resistance verified (§15.4) — adversarial tests prove injected JSON/tool-grant text in the user intent is not parsed as a host tool plan, and AI Command Canvas cannot use malicious intent text to grant the Quick Command agent tools or permission ceilings. Host tool execution remains constrained to validated model tool plans plus allowlist/permission evaluation.
 - **New real tool**: `ai-safety/tools/resetHapticsIntensityTool.ts`, registered via `CoreToolsBootstrap.tsx`, reachable from the Command Palette's new "Tools" domain — demonstrates the full registry → permission → approval → execution → audit pipeline end to end with a genuinely real, low-risk, reversible action
 
 ### Epic 5 — Workspaces and files ✅ all listed items real — read/write/delete core complete; copy/move/rename/compress/extract remain genuinely out of scope (need a multi-path checkpoint shape not yet designed)

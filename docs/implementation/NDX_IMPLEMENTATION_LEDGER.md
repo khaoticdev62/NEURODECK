@@ -457,10 +457,34 @@ This is intentionally a review artifact, not a deterministic execution script. T
 | Strict JSON plan preview parsing/fence stripping/error handling             | `features/ai-canvas/__tests__/planPreview.test.ts`      | 5     |
 | Canvas empty state, model preview, Quick Command creation/reuse/run handoff | `features/ai-canvas/__tests__/AICommandCanvas.test.tsx` | 4     |
 
+### Prompt-injection boundary verification addendum
+
+**Date:** 2026-06-24
+
+Epic 4 is now complete for the Phase A AI safety scope. The final open item was adversarial evidence for the trust boundary around model prompts and tool execution, not a missing execution primitive.
+
+**Verified boundary:**
+
+- User intent text is untrusted model input only. The host does not parse JSON, tool calls, or permission grants embedded in the user's objective as executable instructions.
+- AI Command Canvas still creates the auto-generated "Quick Command" agent with `toolAllowlist: []`, `permissionCeiling: []`, and `maxToolCalls: 0`, even when the intent explicitly asks to grant destructive tools or bypass review.
+- AgentRuntime only emits tool execution requests from validated model tool plans, and those requests still must pass the persisted agent allowlist and permission ceiling before the renderer-owned ActionQueue can run anything.
+
+**Evidence added:**
+
+- `AgentRuntime.test.ts` now includes an adversarial objective containing fenced JSON for `files-delete`; the run completes from the model's normal response and emits no tool request, proving the host did not parse user text as a plan.
+- `AICommandCanvas.test.tsx` now includes malicious intent asking for `files-delete` and `terminal.run.low`; approval still creates a zero-tool Quick Command agent and starts the run with the raw objective only.
+
+```text
+npm run test -- AgentRuntime AICommandCanvas → 2 files, 13 tests passed
+npm run test                              → 111 files, 545 tests passed
+npm run typecheck                            → node + web TypeScript checks passed
+npm run lint                                 → 0 errors, 0 warnings
+npm run build                                → typecheck + electron-vite build passed
+```
+
 ### Deferred items with explicit reason
 
 - **ND-013 richer execution controls** — the route is real now, but the preview is not a fixed ActionPlan executor. Reorder-as-execution, per-step model assignment, hard file-count/network restriction enforcement, branch creation, test gates, timeout/compute budgets, and a deterministic step runner need new runtime semantics before they can be honestly marked complete.
-- **§15.4 Prompt injection resistance** — nothing untrusted is ingested yet (no browser/terminal/file content pipelines — Epics 5/6/10); the defenses described are moot until there's untrusted content to defend against.
 - **§14 Typed cross-process IPC contracts** — the one real tool is renderer-only; no real cross-process tool exists yet to justify building the IPC layer. Revisit the moment Epic 5/6 introduce a tool needing main-process access (filesystem, shell).
 - **Spec's "Terminate safe processes" / "Explain" buttons on Emergency Stop** — no safe/unsafe process classification or AI explanation feature exists to back them.
 - **Per-capability permission UI customization** (ND-015's "Customize: change scope, approve specific files only, read-only instead...") — only "Approve once" and "Deny" are wired; the richer customization options need real per-file/per-resource scoping that doesn't exist until Epic 5/6 tools have actual file/resource arguments to scope.
