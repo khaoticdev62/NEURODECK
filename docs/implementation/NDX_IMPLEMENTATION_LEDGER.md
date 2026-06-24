@@ -1547,3 +1547,36 @@ npm run lint (Windows)                          → 0 errors, 0 warnings
 npm run typecheck (Windows)                     → node + web TypeScript checks passed
 npm run test (Windows)                          → 114 files, 564 tests passed
 ```
+
+## Epic 12 progress — security pass (audit, no code changes required)
+
+A real security audit of the codebase as it stands, covering the categories the mega-prompt's Epic 12 "Security pass" item names. No vulnerabilities or gaps were found that warranted a code change — this entry documents what was actually checked and how, rather than asserting "passed" without evidence.
+
+**Dependency audit**: `npm audit --omit=dev` reports 0 vulnerabilities in production dependencies. `npm audit` (including dev) reports 5 (3 moderate, 1 high, 1 critical) — all in `esbuild`/`vite`/`vitest`'s dev-server, specifically a known issue where esbuild's dev server can respond to arbitrary cross-origin requests. This only matters when the Vite dev server is bound to a network-reachable interface and untrusted parties can reach it; this project's `npm run dev` binds to localhost for local development only, so it's accepted as a known, scoped risk rather than fixed by force-upgrading — `npm audit fix --force` would jump `vitest` to v4, a major version with no compatibility check performed against this project's 564 existing tests, and forcing it without that check would risk a worse problem (a broken or silently-weakened test suite) than the risk being fixed.
+
+**Electron hardening baseline**: `src/main/security/windowSecurity.ts`'s `HARDENED_WEB_PREFERENCES` (`contextIsolation: true`, `nodeIntegration: false`, `sandbox: true`, `webSecurity: true`, `allowRunningInsecureContent: false`) matches the mandatory baseline exactly, and `applyNavigationPolicy()` denies in-app navigation outside the app's own origin and routes all window-open attempts through an allowlisted `shell.openExternal`. `src/renderer/index.html`'s CSP (`default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:`) is real and strict — no `unsafe-eval`, no wildcard origins.
+
+**IPC input validation**: an independent pass over every `registerXHandlers.ts` file in `src/main/ipc/` counted 82 total `ipcMain.handle` call sites. 11 take no payload (nothing to validate). All 71 that do accept a payload call a Zod schema's `.safeParse()` on it before touching the parsed data, with early-return on failure — 100% coverage, zero gaps, across every handler file (workspace, file, terminal, learning, agent, browser, git, controller settings, model, system, workflow, diagnostics, remote, network, recovery, power, update).
+
+**Secrets handling**: provider API keys (`ModelProviderStore`) and SSH host passwords/passphrases (`RemoteHostStore`) are encrypted at rest via `electronSecretCipher.ts`, a real wrapper around Electron's `safeStorage` (OS Keychain/DPAPI/libsecret) — never a homegrown cipher. Neither store's public IPC-facing type includes the encrypted or plaintext secret; both expose only a `hasApiKey`/`hasSecret` boolean. The renderer-side forms that collect these values (`ModelControlCenter.tsx`, `AIProviderSetup.tsx`, `RemoteSystems.tsx`) use `type="password"` inputs holding only local component state, never logged or persisted client-side.
+
+**Other checks**: no `eval()`, `new Function()`, or `dangerouslySetInnerHTML` anywhere in `src/` (the one match was a comment documenting their *absence* in `evaluateCondition.ts`). No `console.log`/`console.error`/`console.warn` calls exist anywhere in `src/main` or `src/core` at all — so there is no code path in the privileged process where a secret (or anything else) could leak into logs. `ModelProviderService`'s `fetch()` calls target a user-configured `baseUrl` (their own chosen local/cloud provider endpoint) — not a server-side-trust or SSRF concern, since the user explicitly owns and configures that destination themselves, the same trust model as a browser address bar.
+
+### Tests and evidence
+
+| Check | Method | Result |
+| ----- | ------ | ------ |
+| Production dependency vulnerabilities | `npm audit --omit=dev` | 0 found |
+| All dependency vulnerabilities | `npm audit` | 5, all dev-only (vitest/vite/esbuild dev-server), accepted as scoped/not applicable to this app's deployment |
+| IPC payload validation coverage | Manual audit of all `ipcMain.handle` call sites in `src/main/ipc/*.ts` | 71/71 payload-accepting handlers validate with Zod; 11/11 zero-payload handlers correctly need none |
+| Electron hardening baseline | Direct review of `windowSecurity.ts` | Matches mandatory baseline exactly |
+| CSP | Direct review of `index.html` | Strict, no `unsafe-eval` |
+| Secret storage/exposure | Direct review of `SecretCipher`/`electronSecretCipher.ts`/store types/renderer forms | Real OS-level encryption; never exposed in any IPC response type or log |
+| Dangerous JS patterns (`eval`, `new Function`, `dangerouslySetInnerHTML`) | `grep -rn` across `src/` | None found |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm audit --omit=dev  → 0 vulnerabilities
+npm audit              → 5 vulnerabilities, all dev-only (esbuild/vite/vitest dev-server), accepted as out of scope
+```
