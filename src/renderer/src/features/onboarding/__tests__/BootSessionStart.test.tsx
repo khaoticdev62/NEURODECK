@@ -116,17 +116,20 @@ describe('BootSessionStart', () => {
     })
   })
 
-  it('shows a failure screen when workspace loading fails', async () => {
+  it('degrades gracefully into the shell when workspace loading fails, rather than blocking boot', async () => {
     stubBridge(makeBridge({ workspaceFails: true }))
     renderBoot()
 
+    // A failed workspace read is treated the same as the already-optional
+    // model/controller checks — zero workspaces (real or because the read
+    // failed) is a normal first-run state, not a fatal one. The user must
+    // never be permanently walled out behind a "Boot failed" screen by a
+    // single non-fatal store read failing, since Retry would just hit the
+    // same failure again.
     await waitFor(() => {
-      expect(screen.getByText('Boot failed')).toBeInTheDocument()
+      expect(screen.getByText('Controller-native AI')).toBeInTheDocument()
     })
-    expect(screen.getByText('Could not load workspace state.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Diagnostics' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Exit' })).toBeInTheDocument()
+    expect(screen.queryByText('Boot failed')).not.toBeInTheDocument()
   })
 
   it('offers Return to SteamOS during boot', async () => {

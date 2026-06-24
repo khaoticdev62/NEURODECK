@@ -1276,3 +1276,22 @@ A real file-write tool was deliberately *not* added without this analysis — an
 | Suite                                                                                 | Location                                              | Count |
 | ---------------------------------------------------------------------------------------| -------------------------------------------------------- | ----- |
 | Real capability/risk registration, argument validation, real IPC call-through for both write and delete, real failure surfacing | `ai-safety/__tests__/fileTools.test.ts`               | +4    |
+
+## A real, production-relevant bug found and fixed — boot permanently blocked by a non-fatal workspace read failure
+
+**Reported by the user**: "currently unable to load UI due to workspace not loading at startup."
+
+**Root cause**: `BootSessionStart.tsx`'s `runBoot()` treated *any* `listWorkspaces()` failure as fatal — `if (!workspaceResult.ok) { finishBoot('failed', ...); return }` — even though a failed or empty workspace read is not actually a fatal condition: a brand-new user with zero workspaces hits the exact same code path (`workspaces.length === 0`) as a user whose workspace file failed to read, and that case is handled as the normal, expected first-run state everywhere else in the app. Worse, the boot screen's only recovery action is "Retry" (`window.location.reload()`), which re-reads the exact same on-disk state and fails identically — there was no path back into the app at all once this triggered, only Diagnostics (which itself needs the shell to be reachable) or Exit.
+
+A second, compounding root cause sits one layer down: `JsonStore.read()` (the shared persistence primitive behind `WorkspaceStore` and nine other stores — agents, browser tabs, controller/display settings, model providers, recovery, remote hosts, both workflow stores) re-threw on a `JSON.parse` failure rather than treating a corrupted file as recoverable the way a *missing* file already was (`isNotFound` returns the default value). Any real-world corruption of `workspaces.json` (a crash mid-write predating the existing atomic-rename protection, manual editing, a bad sync/restore) would permanently brick boot with no self-healing path, since every retry hits the same unreadable bytes.
+
+**Fix, two layers**:
+1. `JsonStore.read()` now catches `SyntaxError` specifically (a genuinely corrupted file, distinct from `isNotFound`'s missing-file case) and quarantines the bad file by renaming it aside to `<path>.corrupted-<timestamp>` — preserved for forensics, never silently deleted — then returns the default value instead of throwing. This self-heals *every* `JsonStore` consumer, not just workspaces.
+2. `BootSessionStart.tsx` now treats a workspace-load failure exactly like the already-optional model and controller checks: record the real failure for the Details panel, but continue into the shell with an empty workspace list rather than hard-failing. "Core services loaded" is now satisfied by the IPC bridge itself answering, not by any one store's data coming back clean — the actually-fatal case (bridge truly unreachable) still surfaces identically through the model/controller checks failing too, so nothing is hidden, but a single non-fatal store read can never again wall a user out of their own app.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Self-heals from a corrupted file (quarantines it, returns default) and writes normally again afterward | `core/persistence/__tests__/JsonStore.test.ts` | +2 |
+| Boot degrades into the shell (not a "Boot failed" screen) when workspace loading fails — replaces a prior test that asserted the buggy hard-fail behavior | `features/onboarding/__tests__/BootSessionStart.test.tsx` | rewritten |

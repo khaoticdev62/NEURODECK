@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -51,5 +51,28 @@ describe('JsonStore', () => {
     await store.write({ b: 2 })
 
     expect(await store.read()).toEqual({ b: 2 })
+  })
+
+  it('self-heals from a genuinely corrupted file instead of throwing', async () => {
+    const filePath = join(dir, 'data.json')
+    await writeFile(filePath, '{ this is not valid json', 'utf-8')
+    const store = new JsonStore<{ items: string[] }>(filePath, { items: [] })
+
+    expect(await store.read()).toEqual({ items: [] })
+
+    const files = await readdir(dir)
+    expect(files).not.toContain('data.json')
+    expect(files.some((file) => file.startsWith('data.json.corrupted-'))).toBe(true)
+  })
+
+  it('writes normally again after self-healing from corruption', async () => {
+    const filePath = join(dir, 'data.json')
+    await writeFile(filePath, 'not json at all', 'utf-8')
+    const store = new JsonStore<{ items: string[] }>(filePath, { items: [] })
+    await store.read()
+
+    await store.write({ items: ['recovered'] })
+
+    expect(await store.read()).toEqual({ items: ['recovered'] })
   })
 })

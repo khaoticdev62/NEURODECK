@@ -115,13 +115,24 @@ export function BootSessionStart(): React.JSX.Element {
     }, BOOT_TIMEOUT_MS)
 
     async function runBoot(): Promise<void> {
+      // A failed workspace read is a degraded condition, not a fatal one —
+      // zero workspaces is the normal first-run state, and even a genuinely
+      // corrupted workspace file is self-healed by `JsonStore` (see its own
+      // doc comment) rather than thrown. Treat it the same way the
+      // model/controller checks below are treated: record the real failure
+      // for Details, but continue into the shell with an empty list rather
+      // than permanently walling the user out behind a "Boot failed" screen
+      // that a Retry can never get past, since Retry just re-reads the same
+      // state.
       const workspaceResult = await runStep('workspace', 'Restoring workspace', listWorkspaces())
       if (!workspaceResult.ok) {
-        finishBoot('failed', 'Could not load workspace state.')
-        return
+        updateStep('workspace', 'failed', workspaceResult.error)
       }
+      const workspaces = workspaceResult.ok ? workspaceResult.data : []
 
-      // Core services are considered loaded once workspace persistence is reachable.
+      // Reaching this point means the core IPC bridge itself answered —
+      // that's what "core services loaded" actually verifies, independent
+      // of whether any one store's data came back clean.
       updateStep('core', 'ok')
 
       const modelResult = await runStep('model', 'Checking model runtime', listModelProviders())
@@ -149,7 +160,7 @@ export function BootSessionStart(): React.JSX.Element {
 
       if (abortRef.current) return
 
-      const hasWorkspaces = workspaceResult.data.length > 0
+      const hasWorkspaces = workspaces.length > 0
       const hasProviders = modelResult.ok && modelResult.data.length > 0
       const isFirstRun = !hasWorkspaces && !hasProviders
 

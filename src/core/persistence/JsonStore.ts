@@ -16,13 +16,39 @@ export class JsonStore<T> {
     private defaultValue: T
   ) {}
 
+  /**
+   * A genuinely corrupted file (not "missing", which `isNotFound` already
+   * handles) used to propagate as a thrown `SyntaxError` all the way up to
+   * the IPC handler, which is fine in isolation — but for `WorkspaceStore`
+   * specifically, that error reaches `BootSessionStart`'s workspace check,
+   * which used to treat *any* failure there as fatal and permanently block
+   * the whole UI behind a "Boot failed" screen with no way back in, since
+   * retrying just re-reads the same corrupted file. Move the unreadable
+   * file aside (preserved for forensics, never silently deleted) and fall
+   * back to the default value instead, so corruption in any one store
+   * self-heals rather than bricking whatever feature depends on it.
+   */
   async read(): Promise<T> {
     try {
       const raw = await readFile(this.filePath, 'utf-8')
       return JSON.parse(raw) as T
     } catch (error) {
       if (isNotFound(error)) return this.defaultValue
+      if (error instanceof SyntaxError) {
+        await this.quarantineCorruptedFile()
+        return this.defaultValue
+      }
       throw error
+    }
+  }
+
+  private async quarantineCorruptedFile(): Promise<void> {
+    const quarantinePath = `${this.filePath}.corrupted-${Date.now()}`
+    try {
+      await rename(this.filePath, quarantinePath)
+    } catch {
+      // Best-effort — if even the rename fails (e.g. permissions), falling
+      // back to the default value is still strictly better than throwing.
     }
   }
 
