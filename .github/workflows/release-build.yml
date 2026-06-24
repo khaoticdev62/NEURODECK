@@ -237,7 +237,7 @@ jobs:
           restore-keys: win-npm-${{ runner.os }}-
 
       - name: Download frontend dist artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: frontend/dist/
@@ -393,7 +393,7 @@ jobs:
             libfuse2
 
       - name: Download frontend dist artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: frontend-dist
           path: frontend/dist/
@@ -468,7 +468,7 @@ jobs:
           fetch-depth: 1
 
       - name: Download AppImage artifact (to wrap in Flatpak)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: appimage-${{ env.VERSION }}
           path: appimage-download/
@@ -529,21 +529,21 @@ jobs:
 
       - name: Download Windows artifacts
         if: needs.build-windows.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windows-installer-${{ env.VERSION }}
           path: release-upload/
 
       - name: Download AppImage artifacts
         if: needs.build-appimage.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: appimage-${{ env.VERSION }}
           path: release-upload/
 
       - name: Download Flatpak artifacts
         if: needs.build-flatpak.result == 'success'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: flatpak-bundle-${{ env.VERSION }}
           path: release-upload/
