@@ -32,6 +32,8 @@ interface BridgeOptions {
   workspaces?: { id: string; name: string; rootPath: string; createdAt: number }[]
   providers?: { id: string; name: string }[]
   workspaceFails?: boolean
+  /** When true, the workspace list call's promise rejects (e.g. a dropped IPC invoke) rather than resolving to an `{ ok: false }` result. */
+  workspaceRejects?: boolean
   providerFails?: boolean
   controllerFails?: boolean
   metricsFails?: boolean
@@ -47,9 +49,15 @@ function makeBridge(options: BridgeOptions = {}): Partial<NdxBridge> {
       list:
         options.workspaces === undefined && options.hang
           ? vi.fn(() => new Promise(() => {}))
-          : options.workspaceFails
-            ? vi.fn().mockResolvedValue({ ok: false, error: { userMessage: 'workspace error' } })
-            : vi.fn().mockResolvedValue({ ok: true, data: workspaces })
+          : options.workspaceRejects
+            ? // `mockRejectedValue` pre-creates the rejected promise at setup
+              // time rather than call time, which trips Node's unhandled-
+              // rejection detector before the test ever awaits it. A factory
+              // defers creation until the real call, the same as production.
+              vi.fn(() => Promise.reject(new Error('No handler registered for workspace:list')))
+            : options.workspaceFails
+              ? vi.fn().mockResolvedValue({ ok: false, error: { userMessage: 'workspace error' } })
+              : vi.fn().mockResolvedValue({ ok: true, data: workspaces })
     } as never,
     modelProviders: {
       list: options.providerFails
@@ -126,6 +134,22 @@ describe('BootSessionStart', () => {
     // never be permanently walled out behind a "Boot failed" screen by a
     // single non-fatal store read failing, since Retry would just hit the
     // same failure again.
+    await waitFor(() => {
+      expect(screen.getByText('Controller-native AI')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('Boot failed')).not.toBeInTheDocument()
+  })
+
+  it('degrades into the shell when the workspace IPC call rejects, instead of silently stalling boot', async () => {
+    // A rejected promise (e.g. a dropped IPC invoke) is a different failure
+    // shape than a resolved `{ ok: false }` result — `runStep` used to have
+    // no try/catch around this, so a rejection propagated out of `runBoot`'s
+    // unguarded body and silently aborted the rest of the boot sequence with
+    // no further state updates, leaving "Restoring workspace" stuck on
+    // "running" until the unrelated 15s global timeout.
+    stubBridge(makeBridge({ workspaceRejects: true }))
+    renderBoot()
+
     await waitFor(() => {
       expect(screen.getByText('Controller-native AI')).toBeInTheDocument()
     })

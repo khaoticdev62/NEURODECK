@@ -26,16 +26,30 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // `listWorkspaces()` is expected to resolve to a structured NdxResult,
+  // never reject — but the underlying `ipcRenderer.invoke` call can reject
+  // (no handler registered, a main-process crash, a non-cloneable payload).
+  // An uncaught rejection here used to leave `loading` stuck at `true`
+  // forever, since neither `refresh()`'s `await` nor the mount effect's
+  // `.then()` had a rejection handler — the workspace-scoped UI would show
+  // "loading" indefinitely with no error and no way to recover short of an
+  // app restart. Both call sites now convert a rejection into the same
+  // degraded, recoverable error state a resolved `{ ok: false }` already is.
   const refresh = useCallback(async () => {
     setLoading(true)
-    const result = await listWorkspaces()
-    if (result.ok) {
-      setWorkspaces(result.data)
-      setError(null)
-    } else {
-      setError(result.error.userMessage)
+    try {
+      const result = await listWorkspaces()
+      if (result.ok) {
+        setWorkspaces(result.data)
+        setError(null)
+      } else {
+        setError(result.error.userMessage)
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Could not load workspace state.')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   // Deliberately not `refresh()` here: that function sets state synchronously
@@ -45,16 +59,23 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
   // not synchronous work disguised by an `await`.
   useEffect(() => {
     let cancelled = false
-    void listWorkspaces().then((result) => {
-      if (cancelled) return
-      if (result.ok) {
-        setWorkspaces(result.data)
-        setError(null)
-      } else {
-        setError(result.error.userMessage)
-      }
-      setLoading(false)
-    })
+    void listWorkspaces()
+      .then((result) => {
+        if (cancelled) return
+        if (result.ok) {
+          setWorkspaces(result.data)
+          setError(null)
+        } else {
+          setError(result.error.userMessage)
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return
+        setError(error instanceof Error ? error.message : 'Could not load workspace state.')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
     return () => {
       cancelled = true
     }

@@ -1295,3 +1295,20 @@ A second, compounding root cause sits one layer down: `JsonStore.read()` (the sh
 | ----- | -------- | ----- |
 | Self-heals from a corrupted file (quarantines it, returns default) and writes normally again afterward | `core/persistence/__tests__/JsonStore.test.ts` | +2 |
 | Boot degrades into the shell (not a "Boot failed" screen) when workspace loading fails — replaces a prior test that asserted the buggy hard-fail behavior | `features/onboarding/__tests__/BootSessionStart.test.tsx` | rewritten |
+
+### Follow-up — the user reported the same symptom persisting after the fix above, because of a third, deeper layer
+
+The first fix only covered a *resolved* `{ ok: false }` failure result. It missed a different failure shape entirely: a **rejected** promise. `runStep()` in `BootSessionStart.tsx` had no `try`/`catch` around `await promise` — if the underlying IPC call rejected (a dropped `ipcRenderer.invoke`, no handler registered, a main-process crash, a non-cloneable payload) rather than resolving to a structured result, the exception propagated straight out of `runBoot()`'s unguarded async body. `void runBoot()` discarded that rejection silently, so the rest of the function — every later step, the `navigate()` call — simply never ran. The "Restoring workspace" step stayed stuck on its `running` spinner indefinitely, with nothing left to advance it except the unrelated 15-second global timeout, which then showed a generic "Boot is taking longer than expected" — not even the specific workspace error. This matches "restoring workspace still not loading during boot" exactly: not an error message, just a stall.
+
+The exact same gap existed one feature over, in production code that runs on every screen, not just boot: `WorkspaceProvider.tsx`'s mount effect called `listWorkspaces().then(...)` with no `.catch()`, and its `refresh()` function `await`ed the same call with no `try`/`catch`. A rejection there left `loading` stuck at `true` forever, with no error and no way to recover short of a full app restart — so even after boot itself stopped blocking, the workspace-scoped UI underneath it (Workspace Hub, the active-workspace badge, anything gated on `loading`) could still spin indefinitely if the same rejection happened post-boot.
+
+**Fix**: `runStep()` now wraps `await promise` in `try`/`catch`, converting a rejection into the same `'failed'` step state and `BootStepFailure` return a resolved `{ ok: false }` already produces — `collectSystemMetrics()`'s direct call got the same treatment for the same reason. `WorkspaceProvider.tsx`'s mount effect gained a `.catch()`/`.finally()` continuation, and `refresh()` gained a `try`/`catch`/`finally`, both setting a real error and clearing `loading` instead of leaving the promise chain to die silently. This is deliberately scoped to the workspace feature actually reported broken, not a sweep of all 19 IPC client modules — every other client function has the identical "trust the bridge call never rejects" shape and would benefit from the same hardening if and when something else surfaces the same failure mode there.
+
+**A real test-authoring lesson surfaced fixing this**: the first attempt at a regression test used `vi.fn().mockRejectedValue(...)`, which pre-creates the rejected `Promise` at mock-setup time rather than at call time — Vitest's unhandled-rejection detector flagged it before the test's own `await` ever ran. The fix is `vi.fn(() => Promise.reject(...))`, a factory that defers creation to the actual call, matching how a real rejected IPC call behaves.
+
+### Tests and evidence (follow-up)
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Boot degrades into the shell when the workspace IPC call *rejects* (not just resolves to `{ ok: false }`) | `features/onboarding/__tests__/BootSessionStart.test.tsx` | +1 |
+| Settles `loading` to `false` and surfaces a real error when the workspace IPC call rejects; settles normally on a real resolved result | `features/workspaces/__tests__/WorkspaceProvider.test.tsx` (new file) | +2 |

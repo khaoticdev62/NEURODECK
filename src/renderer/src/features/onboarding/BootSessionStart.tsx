@@ -93,7 +93,23 @@ export function BootSessionStart(): React.JSX.Element {
       promise: Promise<{ ok: true; data: T } | { ok: false; error: { userMessage: string } }>
     ): Promise<BootStepResult<T> | BootStepFailure> {
       updateStep(stepId, 'running', label)
-      const result = await promise
+      // `promise` is expected to resolve to a structured NdxResult, never
+      // reject — but `ipcRenderer.invoke` itself *can* reject (no handler
+      // registered, a main-process crash, a non-cloneable IPC payload), and
+      // an uncaught rejection here used to propagate straight out of
+      // `runBoot`'s unguarded body, silently aborting the whole boot
+      // sequence with no further state updates — the step just sat on
+      // "running" until the unrelated 15s global timeout finally fired.
+      // Treat a rejection exactly like a structured failure result instead.
+      let result: { ok: true; data: T } | { ok: false; error: { userMessage: string } }
+      try {
+        result = await promise
+      } catch (error) {
+        if (abortRef.current) return { ok: false, error: 'aborted' }
+        const message = error instanceof Error ? error.message : 'An unexpected error occurred.'
+        updateStep(stepId, 'failed', message)
+        return { ok: false, error: message }
+      }
       if (abortRef.current) return { ok: false, error: 'aborted' }
       if (result.ok) {
         updateStep(stepId, 'ok')
@@ -151,9 +167,12 @@ export function BootSessionStart(): React.JSX.Element {
         updateStep('controller', 'failed', controllerResult.error)
       }
 
-      // System metrics are informative only.
-      const metricsResult = await collectSystemMetrics()
-      if (!metricsResult.ok) {
+      // System metrics are informative only. Caught for the same reason
+      // `runStep` now is — an uncaught rejection here would otherwise abort
+      // the rest of `runBoot` (including the navigate() call below) silently.
+      try {
+        await collectSystemMetrics()
+      } catch {
         // Not a user-facing boot step; no-op is honest here.
         // A future boot log can record this without console noise.
       }
