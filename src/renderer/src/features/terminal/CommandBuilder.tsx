@@ -53,7 +53,17 @@ interface SavedCommandAction {
 }
 
 /** ND-029 structured command proposal builder. Every execution enters ActionQueue review. */
-export function CommandBuilder(): React.JSX.Element {
+export interface CommandBuilderProps {
+  /** True when rendered as Universal Terminal's Intent mode rather than the standalone `/terminal/builder` route — changes the "no running session" empty state's action since we're already on `/terminal`. */
+  embedded?: boolean
+  /** Only used when `embedded` — switches Universal Terminal back to Direct mode instead of navigating. */
+  onSwitchToDirect?: () => void
+}
+
+export function CommandBuilder({
+  embedded = false,
+  onSwitchToDirect
+}: CommandBuilderProps = {}): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
   const { queue, broker } = useAiSafety()
   const navigate = useNavigate()
@@ -134,10 +144,17 @@ export function CommandBuilder(): React.JSX.Element {
     return (
       <EmptyState
         title="No running terminal"
-        description="Start a Direct mode terminal session before sending a structured command."
+        description={
+          embedded
+            ? 'Switch to Direct mode and start a session before sending a structured command.'
+            : 'Start a Direct mode terminal session before sending a structured command.'
+        }
         action={
-          <FocusableButton id="builder-open-terminal" onClick={() => navigate('/terminal')}>
-            Open Universal Terminal
+          <FocusableButton
+            id="builder-open-terminal"
+            onClick={embedded ? () => onSwitchToDirect?.() : () => navigate('/terminal')}
+          >
+            {embedded ? 'Switch to Direct mode' : 'Open Universal Terminal'}
           </FocusableButton>
         }
       />

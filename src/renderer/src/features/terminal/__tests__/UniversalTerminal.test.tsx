@@ -16,6 +16,16 @@ vi.mock('../TerminalViewport', () => ({
   )
 }))
 
+vi.mock('../CommandBuilderPanel', () => ({
+  CommandBuilderPanel: () => <div>Intent mode panel</div>
+}))
+vi.mock('../SplitTerminalPanel', () => ({
+  SplitTerminalPanel: () => <div>Split mode panel</div>
+}))
+vi.mock('../RemoteModePanel', () => ({
+  RemoteModePanel: () => <div>Remote mode panel</div>
+}))
+
 const workspace = {
   id: 'w1',
   name: 'project',
@@ -155,5 +165,33 @@ describe('UniversalTerminal', () => {
     await user.click(screen.getByRole('button', { name: 'Copy selection' }))
     await user.click(screen.getByRole('button', { name: 'Find' }))
     expect(screen.queryByPlaceholderText('Search scrollback')).not.toBeInTheDocument()
+  })
+
+  it('switches between Direct/Intent/Split/Remote modes', async () => {
+    window.ndx = {
+      git: {
+        status: vi.fn().mockResolvedValue({ ok: false, error: { userMessage: 'n/a' } })
+      } as never,
+      terminal: {
+        list: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        onExit: vi.fn(() => vi.fn())
+      } as never
+    } as Partial<NdxBridge> as NdxBridge
+
+    const user = userEvent.setup()
+    renderTerminal()
+    await screen.findByText('No terminal sessions')
+
+    await user.click(screen.getByRole('button', { name: 'Intent' }))
+    expect(await screen.findByText('Intent mode panel')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Split' }))
+    expect(await screen.findByText('Split mode panel')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Remote' }))
+    expect(await screen.findByText('Remote mode panel')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Direct' }))
+    expect(await screen.findByText('No terminal sessions')).toBeInTheDocument()
   })
 })

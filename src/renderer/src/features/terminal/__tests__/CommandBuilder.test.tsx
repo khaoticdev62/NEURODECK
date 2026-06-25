@@ -323,4 +323,33 @@ describe('CommandBuilder', () => {
     expect(screen.getAllByText('npm test').length).toBeGreaterThanOrEqual(1)
     expect(write).not.toHaveBeenCalled()
   })
+
+  it('shows an embedded-mode empty state that calls onSwitchToDirect instead of navigating', async () => {
+    window.ndx = {
+      terminal: {
+        list: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        onExit: vi.fn().mockReturnValue(vi.fn())
+      } as never
+    } as Partial<NdxBridge> as NdxBridge
+
+    const onSwitchToDirect = vi.fn()
+    const user = userEvent.setup()
+    render(
+      <ToastProvider>
+        <FocusEngineProvider adapters={[new TestAdapter()]}>
+          <AiSafetyProvider>
+            <WorkspaceContext.Provider value={workspaceValue}>
+              <MemoryRouter>
+                <CommandBuilder embedded onSwitchToDirect={onSwitchToDirect} />
+              </MemoryRouter>
+            </WorkspaceContext.Provider>
+          </AiSafetyProvider>
+        </FocusEngineProvider>
+      </ToastProvider>
+    )
+
+    expect(await screen.findByText('No running terminal')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Switch to Direct mode' }))
+    expect(onSwitchToDirect).toHaveBeenCalledTimes(1)
+  })
 })
