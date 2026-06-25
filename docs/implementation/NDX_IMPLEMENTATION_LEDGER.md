@@ -1613,3 +1613,41 @@ npm run lint             → 0 errors, 0 warnings
 npm run typecheck        → node + web TypeScript checks passed
 npm run test             → 114 files, 564 tests passed (1 unrelated flaky test confirmed passing in isolation)
 ```
+
+## Epic 3 closeout — ND-002 Lock Screen, scoped to a single local PIN
+
+ND-002 was the last unbuilt Phase A screen in Epic 3, deferred on the (slightly mislabeled) grounds of needing "profile/credential system (Epic 10)" — the actual dependency is Phase B's Epic X10 ("Identity, credentials, certificates, secrets vault"), which still doesn't exist. Rather than leave the whole screen deferred indefinitely, this slice builds the part of ND-002 that's real without a multi-profile vault: a single local PIN, using infrastructure that already exists.
+
+**`core/lock/LockSettingsStore.ts`** persists only a salted `scrypt` hash (`node:crypto`, no new dependency) in the same `JsonStore`-backed pattern `ControllerSettingsStore`/`DisplaySettingsStore` already use — never the raw PIN, never anything reversible. `setPin()` (first-time set or change, requiring the current PIN once one exists), `removePin()` (also requires the current PIN), and `verifyPin()` (constant-time comparison via `timingSafeEqual`) are all real, with a dedicated `LockPinMismatchError` rather than a generic failure. Wired through `registerLockHandlers.ts` (new `lock.getStatus`/`lock.setPin`/`lock.removePin`/`lock.verifyPin` IPC channels, Zod-validated), the preload bridge, and `services/ipc/lockClient.ts`.
+
+**`state/lockContext.ts`/`lockState.tsx`/`useLockState.ts`** (mirroring the existing `displayMode`/`displaySettings` context+provider+hook pattern) hold `pinConfigured`, `isLocked`, and `lockedAt` in a `LockProvider` mounted in `AppProviders.tsx` just inside `DisplaySettingsProvider`. Engaging `lock()` calls the real, already-existing `ActionQueue.emergencyStop()` — the same mechanism ND-054 Emergency Stop uses — so pending/queued tool actions can't silently execute while the screen is locked; already-running actions still complete, matching Emergency Stop's own documented behavior. `unlock(pin)` verifies against the real main-process check and only clears `isLocked` on an actual match; it deliberately does not auto-resume the action queue, for the same reason Emergency Stop doesn't auto-resume itself.
+
+**`features/system/LockScreen.tsx`** renders the wireframe's actual ND-002 layout: time/battery (the same `SystemMetricsService` battery data ND-042 already exposes, honestly omitted if unavailable rather than fabricated), a real controller-focusable numeric keypad whose digit order is reshuffled every mount (Fisher-Yates) — the spec's literal security requirement that "Controller PIN uses randomized... selection options" to resist shoulder-surfing — Clear/Unlock, a real pending-approvals count plus an honest "N actions cancelled while locked" count scoped to cancellations that happened at or after this specific lock's `lockedAt` timestamp (not lumping in unrelated earlier cancellations), a disabled note explaining account authentication needs Phase B's vault, and reachable Restart/Quit "Power options" (reusing the existing `powerClient` functions) so a locked user isn't stranded if they need to restart or quit. `ShellLayout.tsx` swaps its entire content for `LockScreen` while `isLocked` — no nav, no Command Palette, no overlays, matching Emergency Stop's own full-takeover pattern.
+
+**Privacy and Permissions** (ND-046) gained a real "Lock Screen PIN" section — Set/Change PIN (current PIN required once one exists), Remove PIN, inline validation (mismatch confirmation, wrong current PIN) — and the **Power Menu**'s "Lock NeuroDeck" option, previously a permanently-deferred placeholder, is now a real action once a PIN exists (and an honest "set a PIN first" note when none does).
+
+**Two real, pre-existing bugs found and fixed while wiring this in**, both the same class of bug as `onPowerStateEvent`'s earlier fix: `LockProvider`'s status-refresh effect and `PrivacyPermissions`'s existing browser-permissions effect both run unconditionally on every mount, so any test stubbing `window.ndx` without the exact namespace they touch would crash. `lockClient.ts`'s four functions were written with the defensive `bridge.lock?.<method>?.()` guard from the start (learned from the earlier incident), and `browserClient.ts`'s `listBrowserPermissions()`/`revokeBrowserPermission()` — which predate that incident and were never patched — got the same fix here once a new test (PIN management, stubbing `window.ndx` with only a `lock` namespace) finally exercised the gap.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| PIN set/verify/change/remove, current-PIN enforcement, salted-hash-only persistence on disk, persistence across store instances | `core/lock/__tests__/LockSettingsStore.test.ts` (new file) | 6 |
+| Bridge-unavailable/partial-mock handling and request delegation for all four lock IPC methods | `services/ipc/__tests__/lockClient.test.ts` (new file) | 6 |
+| Full lock → wrong-PIN-stays-locked → correct-PIN-unlocks flow; all ten shuffled digits render; account-authentication note shown | `features/system/__tests__/LockScreen.test.tsx` (new file) | 2 |
+| Lock Screen PIN section sets a PIN and reflects status; rejects a mismatched confirmation | `features/system/__tests__/PrivacyPermissions.test.tsx` | +2 |
+| "Lock NeuroDeck" is a real action once a PIN is configured (previously always-deferred assertion updated) | `features/system/__tests__/PowerMenu.test.tsx` | +1 (1 modified) |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm run test -- LockSettingsStore  → 1 file, 6 tests passed
+npm run test -- lockClient         → 1 file, 6 tests passed
+npm run test -- LockScreen.test    → 1 file, 2 tests passed
+npm run test -- PrivacyPermissions → 1 file, 8 tests passed
+npm run test -- PowerMenu          → 1 file, 5 tests passed
+npm run test                       → 117 files, 581 tests passed
+npm run lint                       → 0 errors, 0 warnings
+npm run typecheck                  → node + web TypeScript checks passed
+npm run build                      → typecheck + electron-vite build passed
+```

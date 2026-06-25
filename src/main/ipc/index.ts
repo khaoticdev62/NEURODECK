@@ -9,6 +9,7 @@ import { ControllerSettingsStore } from '../../core/controller/ControllerSetting
 import { DisplaySettingsStore } from '../../core/display/DisplaySettingsStore'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
+import { LockSettingsStore } from '../../core/lock/LockSettingsStore'
 import { ModelProviderService } from '../../core/models/ModelProviderService'
 import { ModelProviderStore } from '../../core/models/ModelProviderStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
@@ -34,6 +35,7 @@ import { registerDiagnosticsHandlers } from './registerDiagnosticsHandlers'
 import { registerDisplaySettingsHandlers } from './registerDisplaySettingsHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
+import { registerLockHandlers } from './registerLockHandlers'
 import { registerModelHandlers } from './registerModelHandlers'
 import { registerNetworkHandlers } from './registerNetworkHandlers'
 import { registerPowerHandlers } from './registerPowerHandlers'
@@ -122,6 +124,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerDisplaySettingsHandlers(
     new DisplaySettingsStore(join(app.getPath('userData'), 'display-settings.json'))
   )
+  registerLockHandlers(new LockSettingsStore(join(app.getPath('userData'), 'lock-settings.json')))
   registerBrowserHandlers(
     new BrowserTabStore(join(app.getPath('userData'), 'browser-tabs.json')),
     new BrowserPermissionStore(join(app.getPath('userData'), 'browser-permissions.json')),

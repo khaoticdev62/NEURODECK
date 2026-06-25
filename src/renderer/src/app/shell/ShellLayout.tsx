@@ -14,10 +14,12 @@ import { ActivityAndNotificationsOverlay } from '../../features/activity/Activit
 import { EmergencyStopOverlay } from '../../features/ai-canvas/EmergencyStopOverlay'
 import { AgentToolExecutionBridge } from '../../features/agents/AgentToolExecutionBridge'
 import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwitcherOverlay'
+import { LockScreen } from '../../features/system/LockScreen'
 import { PowerStateBridge } from '../../features/system/PowerStateBridge'
 import { QuickAccessOverlay } from '../../features/system/QuickAccessOverlay'
 import { useDisplayMode } from '../../state/useDisplayMode'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
+import { useLockState } from '../../state/useLockState'
 import { useEffect } from 'react'
 
 export interface ShellLayoutProps {
@@ -45,6 +47,7 @@ export function ShellLayout({
   const navigate = useNavigate()
   const { baseMode } = useDisplayMode()
   const { reduceMotion, highContrast, textScale } = useDisplaySettings()
+  const { isLocked } = useLockState()
   const collapsesRails = baseMode === 'focus' || baseMode === 'split'
 
   useEffect(() => {
@@ -65,6 +68,13 @@ export function ShellLayout({
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [navigate])
+
+  // Full takeover, same as Emergency Stop's queue-pause but for the whole
+  // shell: no nav, no Command Palette, no overlays — only LockScreen itself
+  // can clear `isLocked`, by verifying the real PIN against the main process.
+  if (isLocked) {
+    return <LockScreen />
+  }
 
   return (
     <div

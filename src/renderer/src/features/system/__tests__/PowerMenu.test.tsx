@@ -2,8 +2,10 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
+import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { LockProvider } from '../../../state/lockState'
 import { PowerMenu } from '../PowerMenu'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
@@ -18,7 +20,11 @@ afterEach(() => {
 function renderMenu(): ReturnType<typeof render> {
   return render(
     <FocusEngineProvider adapters={[new TestAdapter()]}>
-      <PowerMenu />
+      <AiSafetyProvider>
+        <LockProvider>
+          <PowerMenu />
+        </LockProvider>
+      </AiSafetyProvider>
     </FocusEngineProvider>
   )
 }
@@ -29,8 +35,25 @@ describe('PowerMenu', () => {
 
     expect(screen.getByText('Restart NeuroDeck')).toBeInTheDocument()
     expect(screen.getByText('Quit NeuroDeck / Return to SteamOS')).toBeInTheDocument()
-    expect(screen.getByText(/Not available: Needs the Lock Screen/)).toBeInTheDocument()
+    expect(
+      screen.getByText(/Not available: set a PIN in Privacy and Permissions first/)
+    ).toBeInTheDocument()
     expect(screen.getByText(/Not available: A real OS reboot is irreversible/)).toBeInTheDocument()
+  })
+
+  it('shows Lock NeuroDeck as a real action once a PIN is configured', async () => {
+    stubBridge({
+      power: { restartApp: vi.fn(), quitApp: vi.fn() } as never,
+      lock: {
+        getStatus: vi.fn().mockResolvedValue({ ok: true, data: { enabled: true } })
+      } as never
+    })
+
+    renderMenu()
+
+    await screen.findByText('Lock NeuroDeck')
+    expect(screen.queryByText(/Not available: set a PIN/)).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Select' })).toHaveLength(3)
   })
 
   it('restarts the app via real IPC after confirmation', async () => {

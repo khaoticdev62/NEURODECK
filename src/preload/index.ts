@@ -175,6 +175,12 @@ const ndx: NdxBridge = {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.displaySettingsGet),
     set: (request) => ipcRenderer.invoke(IPC_CHANNELS.displaySettingsSet, request)
   },
+  lock: {
+    getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.lockGetStatus),
+    setPin: (request) => ipcRenderer.invoke(IPC_CHANNELS.lockSetPin, request),
+    removePin: (request) => ipcRenderer.invoke(IPC_CHANNELS.lockRemovePin, request),
+    verifyPin: (request) => ipcRenderer.invoke(IPC_CHANNELS.lockVerifyPin, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

@@ -3,6 +3,7 @@ import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { quitApp, restartApp } from '../../services/ipc/powerClient'
+import { useLockState } from '../../state/useLockState'
 
 type PendingAction = 'restart' | 'quit' | null
 
@@ -12,7 +13,6 @@ interface DeferredOption {
 }
 
 const DEFERRED_OPTIONS: DeferredOption[] = [
-  { label: 'Lock NeuroDeck', reason: 'Needs the Lock Screen (ND-002), not built yet.' },
   { label: 'Suspend', reason: 'Real OS suspend needs a native integration not built yet.' },
   {
     label: 'Restart core service',
@@ -42,6 +42,7 @@ const DEFERRED_OPTIONS: DeferredOption[] = [
  */
 export function PowerMenu(): React.JSX.Element {
   const [pending, setPending] = useState<PendingAction>(null)
+  const { pinConfigured, lock } = useLockState()
 
   async function handleConfirm(): Promise<void> {
     if (pending === 'restart') await restartApp()
@@ -59,6 +60,16 @@ export function PowerMenu(): React.JSX.Element {
           label="Quit NeuroDeck / Return to SteamOS"
           onActivate={() => setPending('quit')}
         />
+        {pinConfigured ? (
+          <PowerOption label="Lock NeuroDeck" onActivate={lock} />
+        ) : (
+          <li className="border border-border bg-surface p-3 opacity-60">
+            <p className="text-body font-semibold text-text-primary">Lock NeuroDeck</p>
+            <p className="text-meta text-text-tertiary">
+              Not available: set a PIN in Privacy and Permissions first.
+            </p>
+          </li>
+        )}
         {DEFERRED_OPTIONS.map((option) => (
           <li key={option.label} className="border border-border bg-surface p-3 opacity-60">
             <p className="text-body font-semibold text-text-primary">{option.label}</p>

@@ -5,6 +5,7 @@ import { FocusEngineProvider } from '../../controller/focus/FocusEngineProvider'
 import { WorkspaceProvider } from '../../features/workspaces/WorkspaceProvider'
 import { DisplayModeProvider } from '../../state/displayMode'
 import { DisplaySettingsProvider } from '../../state/displaySettings'
+import { LockProvider } from '../../state/lockState'
 import { WorkflowRunnerProvider } from '../../workflows/WorkflowRunnerProvider'
 import { RouterRoot } from '../routing/RouterRoot'
 
@@ -18,7 +19,9 @@ export function AppProviders(): React.JSX.Element {
               <WorkflowRunnerProvider>
                 <DisplayModeProvider>
                   <DisplaySettingsProvider>
-                    <RouterRoot />
+                    <LockProvider>
+                      <RouterRoot />
+                    </LockProvider>
                   </DisplaySettingsProvider>
                 </DisplayModeProvider>
               </WorkflowRunnerProvider>

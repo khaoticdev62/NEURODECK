@@ -101,9 +101,16 @@ export async function respondToBrowserPermissionRequest(
   return bridge.browserTabs.respondToPermissionRequest(request)
 }
 
+/**
+ * `bridge.browserTabs?.<method>` rather than `bridge.browserTabs.<method>`:
+ * `PrivacyPermissions` calls `listBrowserPermissions()` unconditionally on
+ * every mount (not just on the Browser screen), so any test/partial mock
+ * stubbing `window.ndx` without a `browserTabs` namespace would otherwise
+ * crash — the same failure mode `onPowerStateEvent` hit earlier.
+ */
 export async function listBrowserPermissions(): Promise<NdxResult<BrowserPermission[]>> {
   const bridge = getNdxBridge()
-  if (!bridge) return bridgeUnavailableError()
+  if (!bridge?.browserTabs) return bridgeUnavailableError()
   return bridge.browserTabs.listPermissions()
 }
 
@@ -111,6 +118,6 @@ export async function revokeBrowserPermission(
   request: BrowserPermissionKeyRequest
 ): Promise<NdxResult<null>> {
   const bridge = getNdxBridge()
-  if (!bridge) return bridgeUnavailableError()
+  if (!bridge?.browserTabs) return bridgeUnavailableError()
   return bridge.browserTabs.revokePermission(request)
 }

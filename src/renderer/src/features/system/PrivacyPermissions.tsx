@@ -5,6 +5,8 @@ import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { useAuditEntries } from '../../ai-safety/useAuditEntries'
 import type { PermissionCapability } from '../../ai-safety/contracts/permission'
 import { listBrowserPermissions, revokeBrowserPermission } from '../../services/ipc/browserClient'
+import { removeLockPin, setLockPin } from '../../services/ipc/lockClient'
+import { useLockState } from '../../state/useLockState'
 import type { BrowserPermission } from '@shared/contracts'
 
 interface DeferredView {
@@ -50,10 +52,16 @@ const DEFERRED_VIEWS: DeferredView[] = [
  */
 export function PrivacyPermissions(): React.JSX.Element {
   const { registry, broker } = useAiSafety()
+  const { pinConfigured, refreshStatus } = useLockState()
   const entries = useAuditEntries()
   const [revokeTarget, setRevokeTarget] = useState<PermissionCapability | null>(null)
   const [browserPermissions, setBrowserPermissions] = useState<BrowserPermission[]>([])
   const [browserError, setBrowserError] = useState<string | null>(null)
+  const [currentPin, setCurrentPin] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [confirmPin, setConfirmPin] = useState('')
+  const [pinError, setPinError] = useState<string | null>(null)
+  const [pinSaved, setPinSaved] = useState(false)
   const tools = registry.list()
 
   useEffect(() => {
@@ -76,6 +84,40 @@ export function PrivacyPermissions(): React.JSX.Element {
     if (!revokeTarget) return
     broker.revoke(revokeTarget)
     setRevokeTarget(null)
+  }
+
+  async function handleSavePin(): Promise<void> {
+    setPinError(null)
+    setPinSaved(false)
+    if (newPin !== confirmPin) {
+      setPinError('PIN and confirmation do not match.')
+      return
+    }
+    const result = await setLockPin({
+      newPin,
+      currentPin: pinConfigured ? currentPin : undefined
+    })
+    if (!result.ok) {
+      setPinError(result.error.userMessage)
+      return
+    }
+    setCurrentPin('')
+    setNewPin('')
+    setConfirmPin('')
+    setPinSaved(true)
+    await refreshStatus()
+  }
+
+  async function handleRemovePin(): Promise<void> {
+    setPinError(null)
+    setPinSaved(false)
+    const result = await removeLockPin({ currentPin })
+    if (!result.ok) {
+      setPinError(result.error.userMessage)
+      return
+    }
+    setCurrentPin('')
+    await refreshStatus()
   }
 
   return (
@@ -193,6 +235,70 @@ export function PrivacyPermissions(): React.JSX.Element {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+        <p className="text-body font-semibold text-text-primary">Lock Screen PIN (ND-002)</p>
+        <p className="text-meta text-text-tertiary">
+          {pinConfigured
+            ? 'A PIN is set. Locking from the Power Menu requires it to unlock again.'
+            : 'No PIN set — Lock NeuroDeck is unavailable from the Power Menu until one is configured. Single local PIN only; multi-account authentication needs the profile/credential vault (Phase B Epic X10), not built yet.'}
+        </p>
+        {pinError && (
+          <p role="alert" className="text-meta text-status-error">
+            {pinError}
+          </p>
+        )}
+        {pinSaved && <p className="text-meta text-status-success">PIN saved.</p>}
+        {pinConfigured && (
+          <label className="flex flex-col gap-1 text-meta text-text-secondary">
+            Current PIN
+            <input
+              type="password"
+              value={currentPin}
+              onChange={(event) => setCurrentPin(event.target.value)}
+              className="border border-border bg-canvas px-2 py-1 text-body text-text-primary"
+            />
+          </label>
+        )}
+        <label className="flex flex-col gap-1 text-meta text-text-secondary">
+          New PIN (4-8 digits)
+          <input
+            type="password"
+            inputMode="numeric"
+            value={newPin}
+            onChange={(event) => setNewPin(event.target.value)}
+            className="border border-border bg-canvas px-2 py-1 text-body text-text-primary"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-meta text-text-secondary">
+          Confirm new PIN
+          <input
+            type="password"
+            inputMode="numeric"
+            value={confirmPin}
+            onChange={(event) => setConfirmPin(event.target.value)}
+            className="border border-border bg-canvas px-2 py-1 text-body text-text-primary"
+          />
+        </label>
+        <div className="flex gap-2">
+          <ControllerButton
+            variant="primary"
+            disabled={!newPin || !confirmPin || (pinConfigured && !currentPin)}
+            onClick={() => void handleSavePin()}
+          >
+            {pinConfigured ? 'Change PIN' : 'Set PIN'}
+          </ControllerButton>
+          {pinConfigured && (
+            <ControllerButton
+              variant="ghost"
+              disabled={!currentPin}
+              onClick={() => void handleRemovePin()}
+            >
+              Remove PIN
+            </ControllerButton>
+          )}
+        </div>
       </section>
 
       {DEFERRED_VIEWS.map((view) => (

@@ -87,6 +87,13 @@ import type {
 import type { ControllerSettings, SetControllerSettingsRequest } from './controllerSettings'
 import type { DisplaySettings, SetDisplaySettingsRequest } from './displaySettings'
 import type {
+  LockStatus,
+  RemoveLockPinRequest,
+  SetLockPinRequest,
+  VerifyLockPinRequest,
+  VerifyLockPinResult
+} from './lock'
+import type {
   BrowserPermission,
   BrowserPermissionKeyRequest,
   BrowserPermissionRequest,
@@ -252,6 +259,12 @@ export interface NdxBridge {
   displaySettings: {
     get: () => Promise<NdxResult<DisplaySettings>>
     set: (request: SetDisplaySettingsRequest) => Promise<NdxResult<DisplaySettings>>
+  }
+  lock: {
+    getStatus: () => Promise<NdxResult<LockStatus>>
+    setPin: (request: SetLockPinRequest) => Promise<NdxResult<LockStatus>>
+    removePin: (request: RemoveLockPinRequest) => Promise<NdxResult<LockStatus>>
+    verifyPin: (request: VerifyLockPinRequest) => Promise<NdxResult<VerifyLockPinResult>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

@@ -6,6 +6,7 @@ import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
 import { useAiSafety } from '../../../ai-safety/useAiSafety'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { LockProvider } from '../../../state/lockState'
 import { PrivacyPermissions } from '../PrivacyPermissions'
 
 /** Registers a real test tool directly during render (registry has no onChange, so an effect-based registration in a sibling wouldn't re-render PrivacyPermissions before it reads the registry). */
@@ -35,8 +36,10 @@ function renderScreen(grant = false): ReturnType<typeof render> {
   return render(
     <FocusEngineProvider adapters={[new TestAdapter()]}>
       <AiSafetyProvider>
-        <RegisterTestTool grant={grant} />
-        <PrivacyPermissions />
+        <LockProvider>
+          <RegisterTestTool grant={grant} />
+          <PrivacyPermissions />
+        </LockProvider>
       </AiSafetyProvider>
     </FocusEngineProvider>
   )
@@ -132,5 +135,48 @@ describe('PrivacyPermissions', () => {
       })
       expect(screen.queryByText('https://example.com')).not.toBeInTheDocument()
     })
+  })
+
+  it('sets a real Lock Screen PIN and reflects the updated status', async () => {
+    const setPin = vi.fn().mockResolvedValue({ ok: true, data: { enabled: true } })
+    window.ndx = {
+      lock: {
+        getStatus: vi
+          .fn()
+          .mockResolvedValueOnce({ ok: true, data: { enabled: false } })
+          .mockResolvedValueOnce({ ok: true, data: { enabled: true } }),
+        setPin
+      }
+    } as unknown as NdxBridge
+
+    const user = userEvent.setup()
+    renderScreen()
+
+    await screen.findByText(/No PIN set/)
+
+    await user.type(screen.getByLabelText('New PIN (4-8 digits)'), '1234')
+    await user.type(screen.getByLabelText('Confirm new PIN'), '1234')
+    await user.click(screen.getByRole('button', { name: 'Set PIN' }))
+
+    await waitFor(() => {
+      expect(setPin).toHaveBeenCalledWith({ newPin: '1234', currentPin: undefined })
+      expect(screen.getByText('PIN saved.')).toBeInTheDocument()
+      expect(screen.getByText(/A PIN is set\./)).toBeInTheDocument()
+    })
+  })
+
+  it('rejects a PIN change when the confirmation does not match', async () => {
+    window.ndx = {
+      lock: { getStatus: vi.fn().mockResolvedValue({ ok: true, data: { enabled: false } }) }
+    } as unknown as NdxBridge
+
+    const user = userEvent.setup()
+    renderScreen()
+
+    await user.type(screen.getByLabelText('New PIN (4-8 digits)'), '1234')
+    await user.type(screen.getByLabelText('Confirm new PIN'), '9999')
+    await user.click(screen.getByRole('button', { name: 'Set PIN' }))
+
+    expect(await screen.findByText('PIN and confirmation do not match.')).toBeInTheDocument()
   })
 })
