@@ -31,5 +31,6 @@ export const KEYBOARD_ACTION_MAP: Record<string, ControllerAction> = {
   Home: 'home',
   End: 'workspace.switcher',
   F1: 'emergency.stop',
-  KeyO: 'quick.access'
+  KeyO: 'quick.access',
+  KeyN: 'narrate.screen'
 }

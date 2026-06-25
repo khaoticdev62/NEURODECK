@@ -17,6 +17,7 @@ import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwi
 import { LockScreen } from '../../features/system/LockScreen'
 import { PowerStateBridge } from '../../features/system/PowerStateBridge'
 import { QuickAccessOverlay } from '../../features/system/QuickAccessOverlay'
+import { ScreenNarrator } from '../../features/system/ScreenNarrator'
 import { useDisplayMode } from '../../state/useDisplayMode'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
 import { useLockState } from '../../state/useLockState'
@@ -95,6 +96,7 @@ export function ShellLayout({
       <BottomControllerRail />
       <CoreToolsBootstrap />
       <PowerStateBridge />
+      <ScreenNarrator />
       <AgentToolExecutionBridge />
       <CommandPalette />
       <ActivityAndNotificationsOverlay />

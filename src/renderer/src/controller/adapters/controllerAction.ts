@@ -27,6 +27,7 @@ export type ControllerAction =
   | 'workspace.switcher'
   | 'emergency.stop'
   | 'quick.access'
+  | 'narrate.screen'
 
 export type ControllerActionPhase = 'press' | 'hold' | 'release'
 

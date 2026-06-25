@@ -1651,3 +1651,29 @@ npm run lint                       → 0 errors, 0 warnings
 npm run typecheck                  → node + web TypeScript checks passed
 npm run build                      → typecheck + electron-vite build passed
 ```
+
+## Epic 12 progress — accessibility pass (§32 audit, two real gaps fixed)
+
+A research pass against every item in mega-prompt §32's accessibility checklist (semantic labels, logical accessibility tree, visible focus, high contrast, text scaling, reduced motion, haptic control, controller repeat/hold-duration control, screen narration hooks, read-current-screen command, subtitle/caption support, single-hand mappings, remappable controls, status reinforcement beyond color, accessible error messages) found most items already real: `NavigationRailItem.tsx` and `Toast.tsx`'s dismiss button carry real `aria-label`s, `ControllerButton` forwards every HTML attribute so consumers can always supply one; `ShellLayout.tsx` uses real landmarks (`<header role="banner">`, `<nav aria-label="Primary">`, `<main>`, `<aside aria-label="Context">`, `<footer role="contentinfo">`) with a consistent h1→h2→h3 heading hierarchy across screens; `StatusBadge.tsx` requires a text `label` prop and its own doc comment states status is never color-only; high contrast/text scaling/reduced motion (ND-044) and haptic intensity (ND-043) are real, persisted settings already documented in their own epics.
+
+**Gap 1 — accessible error messages were inconsistently marked.** Only 4 screens (`PrivacyPermissions.tsx`, `LockScreen.tsx`, `CommandBuilder.tsx`, `UniversalTerminal.tsx`) had hand-added `role="alert"` on their own error text; every other screen's error state — rendered through the shared `ErrorState` component (`components/feedback/UXState.tsx`) — had no live-region marking at all, so a screen reader user would never be told an operation failed unless they happened to be focused on that exact text already. **Fixed at the shared-component level**: `UXStateBase` gained an optional `role` prop, and `ErrorState` now always passes `role="alert"`. Because `ErrorState` already has many call sites across the app (every screen with a real failure path uses it per its own doc comment — "Required whenever a real operation fails"), this one change retroactively fixes accessible error announcement everywhere it's used, rather than requiring an audit-and-patch pass over every individual screen. `EmptyState`/`OfflineState`/`RestrictedState` were deliberately left without a role — those aren't error announcements and don't need to interrupt a screen reader the instant they render.
+
+**Gap 2 — "Screen narration hooks" and "Read-current-screen command" had zero implementation.** Confirmed via search: no `SpeechSynthesis`/Web Speech API usage existed anywhere in the renderer. **Added** `features/system/ScreenNarrator.tsx`, mounted globally in `ShellLayout.tsx` next to the other global bridges. It's reachable via a new semantic `narrate.screen` controller action — added to `ControllerAction` (`controllerAction.ts`), the keyboard fallback map (`N` key, `keyboardMapping.ts`), and a new Menu+X gamepad chord (`standardGamepadMapping.ts`), following the exact same pattern `emergency.stop`/`quick.access` already use. On trigger, it reads the live DOM's current `<main>` heading plus any active `role="alert"` text via `window.speechSynthesis` — a real browser API requiring no new dependency — rather than maintaining a separate per-screen narration script that could drift from what the screen actually shows once that screen changes. A repeat trigger cancels any in-progress utterance and re-reads (no queued duplicate speech); if no speech engine is available, a real toast says so rather than silently doing nothing.
+
+**Left as already-documented, justified deferrals** (not oversights): controller repeat/hold-duration control, single-hand mappings, and remappable controls all need either the `gamepadPolling.ts` config-threading refactor or Steam Input/a native adapter — already tracked under Epic 2's known gap. Subtitle/caption support is out of scope because the app has no audio/video content anywhere yet to caption.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Reads heading + alert text on the real `narrate.screen` action; falls back to document title; shows a real toast (not a silent no-op) when speech synthesis is unavailable | `features/system/__tests__/ScreenNarrator.test.tsx` (new file) | 3 |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+npm run test -- ScreenNarrator  → 1 file, 3 tests passed
+npm run test                    → 118 files, 584 tests passed (1 pre-existing flaky test under full-suite load, confirmed passing in isolation both before and after this change)
+npm run lint                    → 0 errors, 0 warnings
+npm run typecheck               → node + web TypeScript checks passed
+npm run build                   → typecheck + electron-vite build passed
+```

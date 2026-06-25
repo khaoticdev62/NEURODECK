@@ -7,6 +7,7 @@ interface UXStateProps {
   icon?: ReactNode
   action?: ReactNode
   className?: string
+  role?: 'alert' | 'status'
 }
 
 function UXStateBase({
@@ -14,10 +15,12 @@ function UXStateBase({
   description,
   icon,
   action,
-  className
+  className,
+  role
 }: UXStateProps): React.JSX.Element {
   return (
     <div
+      role={role}
       className={cn(
         'flex flex-1 flex-col items-center justify-center gap-2 px-8 py-12 text-center',
         className
@@ -36,9 +39,17 @@ export function EmptyState(props: UXStateProps): React.JSX.Element {
   return <UXStateBase {...props} />
 }
 
-/** Required whenever a real operation fails — never silently swallow the error. */
+/**
+ * Required whenever a real operation fails — never silently swallow the
+ * error. `role="alert"` (mega-prompt §32 "Accessible error messages") makes
+ * every one of this component's many call sites across the app announce
+ * itself to assistive tech the instant it mounts, without each screen
+ * needing to remember to wrap its own error text in a live region.
+ */
 export function ErrorState(props: UXStateProps): React.JSX.Element {
-  return <UXStateBase {...props} className={cn('text-status-error', props.className)} />
+  return (
+    <UXStateBase {...props} role="alert" className={cn('text-status-error', props.className)} />
+  )
 }
 
 /** Required whenever a feature depends on connectivity that is currently unavailable. */
