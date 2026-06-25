@@ -1776,3 +1776,34 @@ npm run test       → 122 files, 604 tests passed
 npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 ```
+
+### Area 3 — E2E suite expansion and release candidate cut
+
+Five new Playwright specs (`e2e/workspace.spec.ts`, `e2e/terminal.spec.ts`, `e2e/recovery.spec.ts`, `e2e/command-builder.spec.ts`, `e2e/emergency-stop.spec.ts`) join the existing `e2e/app.spec.ts`, each proving real cross-process behavior rather than "screen renders": a real `WorkspaceStore` round-trip through a stubbed native folder picker, a real shell command through the PTY, a real `RecoveryService` checkpoint on file delete, the full `ActionQueue` approval pipeline running a command end to end, and Emergency Stop enforcing at the queue level (cancelled status, plus a real rejected resubmission carrying the queue's own "Action queue is paused" message).
+
+**Real bug found and fixed while building the suite**: every spec previously launched against this machine's actual NeuroDeck userData profile — non-hermetic, and on this machine a real persisted workspace from prior manual use made boot hang past the 15s timeout (confirmed: the identical build boots in ~1s against a fresh `--user-data-dir`). A shared `e2e/helpers/launchApp.ts` now launches every spec against an isolated temp profile. A second issue surfaced once isolated: `app.close()` alone left orphaned `electron.exe` processes behind (confirmed via `tasklist`), which starved a subsequent spec's launch of PTY/window resources and intermittently hung it for the full 30s test timeout — `launchApp()`'s `close()` now force-kills the real OS process tree (`taskkill /T /F` on Windows, `SIGKILL` elsewhere) before removing the temp profile.
+
+**Release candidate cut** — ran the full validation chain fresh, in order, at this commit:
+
+```text
+npm run lint         → 0 errors, 0 warnings
+npm run typecheck    → node + web TypeScript checks passed
+npm run test         → 122 files, 604 tests passed
+npm run build        → succeeded (lazy Build Studio JS unchanged ~7.35 MB)
+npm run test:e2e     → 6 files, 6 tests passed (twice in a row, confirmed no orphaned electron.exe processes after either run)
+npm run build:linux  → ENOENT on Windows (electron-builder's cached AppImage tool resolved a darwin binary — a known, already-documented Windows limitation: no native mksquashfs/fpm). Re-ran inside WSL2 Ubuntu per this ledger's own existing documented method (fresh `npm install`, not a copy of the Windows node_modules) — succeeded: neurodeck-os-0.1.0.AppImage (140 MB), neurodeck-os_0.1.0_amd64.deb (108 MB), neurodeck-os_0.1.0_amd64.snap (119 MB), all three with no errors.
+npm audit --omit=dev → 0 vulnerabilities
+npm audit             → 5 vulnerabilities (3 moderate, 1 high, 1 critical), all inside vitest's own vendored esbuild/vite chain (dev-only test tooling, not shipped in the packaged app) — fixing requires a breaking vitest v4 upgrade, tracked as an open item rather than forced in in the middle of this closeout.
+```
+
+`package.json`/`package-lock.json` bumped `0.0.0` → `0.1.0` (minor — this closeout closes real, previously-open feature gaps across three epics, not a patch).
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Real workspace persistence through the folder picker | `e2e/workspace.spec.ts` | +1 (new file) |
+| Real shell command through the PTY | `e2e/terminal.spec.ts` | +1 (new file) |
+| Real Recovery Service checkpoint on file delete | `e2e/recovery.spec.ts` | +1 (new file) |
+| Full ActionQueue approval pipeline against a real terminal | `e2e/command-builder.spec.ts` | +1 (new file) |
+| Emergency Stop enforcement at the queue level | `e2e/emergency-stop.spec.ts` | +1 (new file) |

@@ -1,6 +1,6 @@
 {
   "name": "neurodeck-os",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "NeuroDeck OS / NDX Harness — controller-native AI operating shell for Steam Deck",
   "main": "./out/main/index.js",
   "private": true,
