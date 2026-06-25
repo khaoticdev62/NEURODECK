@@ -180,7 +180,7 @@ npm run test:e2e     → 1 passed (updated to assert banner/nav/Home-link roles 
 
 ### Deferred items with explicit reason
 
-- **`FocusList`/`FocusGrid`/`FocusTree`/`VirtualizedFocusList`/`PaneGroup`** — deferred to Epic 2 (spatial focus engine) and Epic 7 (Build Studio split panes); building them without a real consumer would be exactly the "empty feature shell" pattern the spec forbids.
+- **`FocusList`/`FocusGrid`/`FocusTree`/`VirtualizedFocusList`** — deferred to Epic 2 (spatial focus engine); building them without a real consumer would be exactly the "empty feature shell" pattern the spec forbids. `PaneGroup` is no longer deferred — see the Phase A closeout section below; it shipped with Epic 6's Universal Terminal Split mode as its real first consumer, not Build Studio (Build Studio's own doc comment explicitly declined to be one — "the Terminal region is reachable via the existing `/terminal` route instead of being duplicated inline").
 - **`PermissionDialog`/`CommandPalette`/`RadialActionMenu`/`ModelPicker`/`WorkspacePicker`** — deferred to Epics 4/5/9; each needs real data (permissions, models, workspaces) that doesn't exist yet.
 - **`PredictiveInput`/`SecureInput`/`DiffViewer`/`LogViewer`/`MetricCard`/`TaskCard`/`WorkspaceCard`/`AgentCard`/`ModelCard`/`WorkflowCard`** — deferred to the epics that own the underlying data (Epics 2, 5, 6, 7, 8, 9).
 - **Real `SystemRail` data wiring** (workspace/profile/model/connection/VPN/battery/agent activity) — deferred to Epics 5, 8, 9, 11 respectively; the rail's structure and "unavailable" states are final, only the data sources are pending.
@@ -1730,4 +1730,49 @@ npm run lint     → 0 errors, 0 warnings
 npm run typecheck → node + web TypeScript checks passed
 npm run build     → typecheck + electron-vite build passed
 npx playwright test → 1 file, 1 test passed (production build e2e)
+```
+
+## Phase A closeout — Epic 6 Universal Terminal modes, Epic 8 Agent Detail tabs (2026-06-25)
+
+Confirming Phase A complete surfaced two genuinely open gaps (Epic 6's ND-028 Universal Terminal had Command Builder and Remote Session as separate routes, not switchable in-screen modes; Epic 8's ND-017 Agent Detail had no Tools/Logs/Files/Permissions tabs) rather than silently treating Phase A as done. Both are now real. This entry covers Areas 1 and 2 of that closeout; Areas 3 (E2E suite expansion, release candidate cut) and 4 (Acceptance Gates documentation) are tracked separately below/in `IMPLEMENTATION_CHECKLIST.md` §5.
+
+### Area 1 — Epic 6: Universal Terminal integrated modes
+
+`UniversalTerminal.tsx` gained a real `direct | intent | split | remote` mode switcher (plain `useState` + a `ControllerButton` row, matching `WorkspaceDetail.tsx`'s existing pattern — no new `Tabs` primitive invented for one consumer). The standalone `/terminal/builder` and `/remote/:hostId` routes are unchanged and still reachable directly.
+
+- **`PaneGroup`** (`src/renderer/src/components/primitives/PaneGroup.tsx`) — new, real two-pane resizable primitive (CSS grid, pointer-drag and Arrow-key-nudge on a real `useFocusable` divider node, role `slider`). No nested pane tree, no layout persistence — Split mode's actual need. This is the real first consumer of the `PaneGroup` slot the ledger had open since Epic 1/2 (see the corrected deferred-items note above).
+- **Intent mode** — `CommandBuilder.tsx` gained an optional `embedded`/`onSwitchToDirect` prop pair (defaults preserve the standalone route's exact prior behavior) rather than a duplicate implementation; `CommandBuilderPanel.tsx` is a 6-line wrapper.
+- **Split mode** — `SplitTerminalPanel.tsx`, two independent session pickers each rendering the existing `TerminalViewport` inside `PaneGroup`. `TerminalViewport` already self-registers a focus node keyed by `session.id`, so two simultaneous instances needed zero special-casing in the Spatial Focus Engine.
+- **Remote mode** — `RemoteModePanel.tsx`, an inline host picker (not `RemoteSystems.tsx`'s `HostCard` — add/remove/test stays that screen's job) plus the same `RemoteSessionViewport` the standalone route uses.
+
+No new IPC channels — all three modes reuse `createTerminal`/`listTerminalSessions`/`listRemoteHosts`/`createRemoteSession`/`terminateRemoteSession`, already real.
+
+### Area 2 — Epic 8: Agent Detail richer tabs
+
+`AgentRun` gained a persisted `toolExecutions: AgentToolExecutionRecord[]` (additive Zod `.default([])`, plus a manual `normalizeRun()` in `AgentStore.ts` since `JsonStore` does raw reads with no `.parse()` call — the same reason `normalizeAgent()` already existed for `childAgentPolicy`). `AgentRuntime.submitToolCall()`/`resolveToolResult()` now persist the real `requested → passed/failed/denied/cancelled` lifecycle of every tool call a run submits, before resolving the in-memory promise — so the record survives independent of the promise map.
+
+`AuditEntry` gained optional `agentId`/`runId`, threaded through `ActionQueue.submit()`'s new optional 4th `agentContext` param onto the stored `HarnessAction` itself (confirmed all 7 `audit.record()` call sites live inside `ActionQueue.ts`, not the bridge) — every later lifecycle entry (`approve`/`deny`/`cancel`/`execute`), not just the first, carries the IDs.
+
+`AgentDetail.tsx` converted from a single stacked-sections screen into a real tabbed layout: Overview (unchanged), **Tools** (`run.toolExecutions` with `StatusBadge`), **Logs** (`useAiSafety().audit.list()` filtered by `agentId`/`runId`, live via `audit.onChange`), **Files** (filters to `files-write`/`files-delete` toolIds, reads `arguments.relativePath`; documents that file-content diffs need Recovery checkpoint data this tab doesn't reach into), **Permissions** (`permissionCeiling` plus any `denied` tool calls).
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `AgentRuntime` toolExecutions persistence across the requested→passed lifecycle | `core/agents/__tests__/AgentRuntime.test.ts` | +1 |
+| `ActionQueue` agentId/runId threading onto every later audit entry, human submissions stay unset | `ai-safety/__tests__/ActionQueue.test.ts` | +2 |
+| `AgentToolExecutionBridge` threads agentId/runId onto the real submission | `features/agents/__tests__/AgentToolExecutionBridge.test.tsx` | +1 (new file) |
+| `AgentDetail` Tools/Logs/Files/Permissions tabs | `features/agents/__tests__/AgentDetail.test.tsx` | +4 |
+| `PaneGroup` rendering, Arrow-key nudge + clamp, pointer-drag wiring (jsdom has no real `PointerEvent` — documented, not worked around) | `components/primitives/__tests__/PaneGroup.test.tsx` | +4 (new file) |
+| `UniversalTerminal` mode switcher | `features/terminal/__tests__/UniversalTerminal.test.tsx` | +1 |
+| `SplitTerminalPanel` session loading + real session creation | `features/terminal/__tests__/SplitTerminalPanel.test.tsx` | +2 (new file) |
+| `RemoteModePanel` empty state, real connect, real disconnect | `features/terminal/__tests__/RemoteModePanel.test.tsx` | +3 (new file) |
+| `CommandBuilder` embedded empty state calls `onSwitchToDirect` instead of navigating | `features/terminal/__tests__/CommandBuilder.test.tsx` | +1 |
+
+**Validation evidence (run 2026-06-25):**
+
+```text
+npm run test       → 122 files, 604 tests passed
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
 ```
