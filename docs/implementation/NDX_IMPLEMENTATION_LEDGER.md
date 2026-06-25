@@ -1677,3 +1677,32 @@ npm run lint                    → 0 errors, 0 warnings
 npm run typecheck               → node + web TypeScript checks passed
 npm run build                   → typecheck + electron-vite build passed
 ```
+
+## Real bug found and fixed — boot never progressed past "Restoring workspace" in dev mode
+
+User report: "still unable to get to the home app screen due to the boot menu not progressing." Reproduced directly using the same diagnostic technique documented earlier in this ledger (a second Playwright `_electron` instance pointed at the already-running `electron-vite dev` Vite server via `ELECTRON_RENDERER_URL`, with `console`/`pageerror` listeners attached) — confirmed the real app gets stuck showing "Restoring workspace …" forever in dev mode, never reaching either onboarding or Home, and never even hitting the 15-second boot-timeout failure screen.
+
+**Root cause**: `main.tsx` wraps the app in `<StrictMode>`, which deliberately mounts every component twice in development — mount, synthetic cleanup, mount again — specifically to surface effects whose cleanup isn't idempotent. `BootSessionStart.tsx`'s `abortRef = useRef(false)` is shared across both invocations (it's the same component instance, same ref, just the effect body re-running). The first, throwaway invocation's cleanup sets `abortRef.current = true`. The effect body never reset it back to `false` at the start of a new invocation, so the *second*, real, staying-mounted invocation inherited the stale `true` — every subsequent `updateStep()`/`finishBoot()` call (including the 15-second timeout's own callback) hit the `if (abortRef.current) return` guard and silently no-opped, forever. The real `listWorkspaces()` IPC call itself was confirmed to resolve instantly and correctly (verified directly via `window.ndx.workspaces.list()` from the Playwright harness) — this was purely a stale-ref bug in the React layer, not an IPC or main-process problem. It's dev-mode-only because production builds never double-invoke effects; that's also exactly why the existing `e2e/app.spec.ts` (which launches the production build) never caught it.
+
+**Fix**: `abortRef.current = false` is now the first line of the effect body, resetting the flag on every invocation rather than relying on `useRef`'s one-time initial value.
+
+**Verification**: re-ran the same dev-server Playwright reproduction after the fix — boot now completes and navigates to `/onboarding/welcome` as expected. Also added a real regression test that exercises the same failure mode without needing a live dev server: `renderWithProviders` (`__tests__/testUtils.tsx`) gained an optional `strict` flag that wraps the rendered tree in `<StrictMode>` (matching `main.tsx`), and `BootSessionStart.test.tsx` has a new test that renders with `strict: true` and asserts boot still completes — verified this test actually catches the bug by temporarily reverting the fix and confirming it fails (stuck showing "Return to SteamOS"/"Show details" instead of reaching onboarding), then re-applying the fix and confirming it passes.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| Boot still completes under a real `<StrictMode>` double-effect-invoke, not just a single mount | `features/onboarding/__tests__/BootSessionStart.test.tsx` | +1 |
+
+**Validation evidence (run 2026-06-24):**
+
+```text
+Dev-mode Playwright reproduction (before fix) → stuck on "Restoring workspace …" past 20s, no timeout fired
+Dev-mode Playwright reproduction (after fix)  → navigates to /onboarding/welcome correctly
+npm run test -- BootSessionStart               → 1 file, 9 tests passed
+npm run test                                   → 118 files, 585 tests passed
+npm run lint                                   → 0 errors, 0 warnings
+npm run typecheck                              → node + web TypeScript checks passed
+npm run build                                  → typecheck + electron-vite build passed
+npx playwright test                            → 1 file, 1 test passed (production build e2e)
+```

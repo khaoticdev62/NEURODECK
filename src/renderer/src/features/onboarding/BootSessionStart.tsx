@@ -74,6 +74,17 @@ export function BootSessionStart(): React.JSX.Element {
   })
 
   useEffect(() => {
+    // React's StrictMode (main.tsx) deliberately mounts every component
+    // twice in development: mount -> cleanup -> mount again, to surface
+    // effects that don't clean up correctly. That synthetic first cleanup
+    // sets `abortRef.current = true` below; without resetting it here at
+    // the start of the *next* invocation, every `updateStep`/`finishBoot`
+    // call for the real, staying-mounted run (including the 15s timeout)
+    // would see a stale `true` and silently no-op forever — boot would
+    // never progress past whatever step was running when the first,
+    // throwaway invocation's cleanup fired.
+    abortRef.current = false
+
     function updateStep(stepId: string, status: BootStepStatus, detail?: string): void {
       if (abortRef.current) return
       setSteps((previous) =>

@@ -17,14 +17,14 @@ afterEach(() => {
   delete window.ndx
 })
 
-function renderBoot(): ReturnType<typeof renderWithProviders> {
+function renderBoot(options: { strict?: boolean } = {}): ReturnType<typeof renderWithProviders> {
   return renderWithProviders(
     <Routes>
       <Route path="/boot" element={<BootSessionStart />} />
       <Route path="/onboarding/welcome" element={<FirstRunWelcome />} />
       <Route path="/" element={<HomeCommandCenter />} />
     </Routes>,
-    { initialEntries: ['/boot'] }
+    { initialEntries: ['/boot'], strict: options.strict }
   )
 }
 
@@ -186,5 +186,25 @@ describe('BootSessionStart', () => {
     await user.click(screen.getByRole('button', { name: 'Show details' }))
 
     expect(screen.getByText('Details')).toBeInTheDocument()
+  })
+
+  it("still completes boot under StrictMode's real double-effect-invoke, not just a single mount", async () => {
+    // Regression test for a real bug: React's StrictMode (main.tsx) mounts
+    // every component twice in development — mount, cleanup, mount again.
+    // `abortRef` is a single ref shared across both invocations; the first
+    // (synthetic, throwaway) invocation's cleanup sets it to `true`. If the
+    // effect body doesn't reset it to `false` at the start of the *second*
+    // (real, staying-mounted) invocation, every later `updateStep`/
+    // `finishBoot` call — including the 15s timeout — silently no-ops
+    // forever, and the user is stuck on the boot screen. This only
+    // reproduces under a real double-invoke, which is exactly what
+    // `strict: true` exercises here (a plain single render would pass even
+    // with the bug present).
+    stubBridge(makeBridge())
+    renderBoot({ strict: true })
+
+    await waitFor(() => {
+      expect(screen.getByText('NeuroDeck OS')).toBeInTheDocument()
+    })
   })
 })
