@@ -59,7 +59,10 @@ async function handleToolRequest(
     return
   }
 
-  const submitted = queue.submit(request.toolId, request.arguments, request.goal)
+  const submitted = queue.submit(request.toolId, request.arguments, request.goal, {
+    agentId: request.agentId,
+    runId: request.runId
+  })
   if (!submitted.ok) {
     await report(failed(request, submitted.error))
     return

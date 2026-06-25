@@ -51,6 +51,7 @@ export class AgentRuntime {
       state: 'planning',
       timeline: [],
       dryRun,
+      toolExecutions: [],
       createdAt: now,
       updatedAt: now
     }
@@ -153,6 +154,22 @@ export class AgentRuntime {
     const pending = this.pendingToolResults.get(result.requestId)
     if (!pending) return
     this.pendingToolResults.delete(result.requestId)
+
+    // Persist the terminal status onto the run's toolExecutions record BEFORE
+    // resolving the pending promise — executeToolCalls() refetches the run
+    // via store.getRun() the instant this promise settles, so persisting
+    // first guarantees it observes this record, not a stale one.
+    const run = await this.store.getRun(result.runId)
+    if (run) {
+      const resolvedAt = Date.now()
+      const toolExecutions = run.toolExecutions.map((entry) =>
+        entry.requestId === result.requestId
+          ? { ...entry, status: result.status, message: result.message, resolvedAt }
+          : entry
+      )
+      await this.persist({ ...run, toolExecutions })
+    }
+
     pending.resolve(result)
   }
 
@@ -266,13 +283,33 @@ export class AgentRuntime {
     waiters.forEach((waiter) => waiter())
   }
 
-  private submitToolCall(
+  private async submitToolCall(
     agent: AgentDefinition,
     run: AgentRun,
     call: AgentToolCall,
     signal: AbortSignal
   ): Promise<AgentToolExecutionResult> {
     const requestId = randomUUID()
+
+    // Persist a real `requested` record before the renderer-side bridge ever
+    // sees this request, so Agent Detail's Tools/Files/Permissions tabs have
+    // durable evidence even if the app closes before a result comes back —
+    // not just the in-memory `pendingToolResults` map, which is gone the
+    // instant resolveToolResult() settles it.
+    await this.persist({
+      ...run,
+      toolExecutions: [
+        ...run.toolExecutions,
+        {
+          requestId,
+          toolId: call.toolId,
+          arguments: call.arguments,
+          status: 'requested',
+          requestedAt: Date.now()
+        }
+      ]
+    })
+
     return new Promise((resolve, reject) => {
       const abort = (): void => {
         this.pendingToolResults.delete(requestId)

@@ -53,8 +53,20 @@ export class ActionQueue {
     return [...this.records.values()].sort((a, b) => a.submittedAt - b.submittedAt)
   }
 
-  /** Submits a real tool invocation. Must match a registered tool (spec §15.3) — there is no "run arbitrary string" path. */
-  submit(toolId: string, args: Record<string, unknown> = {}, goal?: string): SubmitResult {
+  /**
+   * Submits a real tool invocation. Must match a registered tool (spec
+   * §15.3) — there is no "run arbitrary string" path. `agentContext` is set
+   * only by `AgentToolExecutionBridge.tsx` when an Agent Runtime run is the
+   * submitter; it's threaded onto the stored `HarnessAction` (not just this
+   * call's own audit entry) so every later lifecycle audit entry for this
+   * action (approve/deny/cancel/execute) can read it back too.
+   */
+  submit(
+    toolId: string,
+    args: Record<string, unknown> = {},
+    goal?: string,
+    agentContext?: { agentId: string; runId: string }
+  ): SubmitResult {
     if (this.blocked) {
       return { ok: false, error: 'Action queue is paused (emergency stop active).' }
     }
@@ -71,7 +83,7 @@ export class ActionQueue {
     const plan: ActionPlan = {
       id: `plan-${++sequence}`,
       goal: goal ?? tool.title,
-      createdBy: 'user',
+      createdBy: agentContext ? 'agent' : 'user',
       steps: [step],
       requiredPermissions: [
         { capability: tool.requiredCapability, reason: tool.description, scope: 'once' }
@@ -92,7 +104,9 @@ export class ActionQueue {
       risk: tool.risk,
       requiresConfirmation: decision === 'requires-approval',
       reversible: tool.reversible,
-      cancellationSupported: true
+      cancellationSupported: true,
+      agentId: agentContext?.agentId,
+      runId: agentContext?.runId
     }
 
     const record: HarnessActionRecord = {
@@ -109,7 +123,9 @@ export class ActionQueue {
         actionId: action.id,
         tool: tool.id,
         capability: tool.requiredCapability,
-        outcome: 'approved'
+        outcome: 'approved',
+        agentId: action.agentId,
+        runId: action.runId
       })
       void this.execute(record)
     }
@@ -127,7 +143,9 @@ export class ActionQueue {
       actionId,
       tool: record.action.tool,
       capability: record.capability,
-      outcome: 'approved'
+      outcome: 'approved',
+      agentId: record.action.agentId,
+      runId: record.action.runId
     })
     this.setRecord({ ...record, status: 'approved' })
     void this.execute(this.records.get(actionId)!)
@@ -141,7 +159,9 @@ export class ActionQueue {
       actionId,
       tool: record.action.tool,
       capability: record.capability,
-      outcome: 'denied'
+      outcome: 'denied',
+      agentId: record.action.agentId,
+      runId: record.action.runId
     })
     this.setRecord({ ...record, status: 'denied', resolvedAt: Date.now() })
   }
@@ -155,7 +175,9 @@ export class ActionQueue {
       actionId,
       tool: record.action.tool,
       capability: record.capability,
-      outcome: 'cancelled'
+      outcome: 'cancelled',
+      agentId: record.action.agentId,
+      runId: record.action.runId
     })
     this.setRecord({ ...record, status: 'cancelled', resolvedAt: Date.now() })
   }
@@ -170,7 +192,9 @@ export class ActionQueue {
           tool: record.action.tool,
           capability: record.capability,
           outcome: 'cancelled',
-          detail: 'Emergency stop'
+          detail: 'Emergency stop',
+          agentId: record.action.agentId,
+          runId: record.action.runId
         })
         this.records.set(record.action.id, {
           ...record,
@@ -201,7 +225,9 @@ export class ActionQueue {
         tool: record.action.tool,
         capability: record.capability,
         outcome: result.success ? 'executed' : 'failed',
-        detail: result.message
+        detail: result.message,
+        agentId: record.action.agentId,
+        runId: record.action.runId
       })
       this.setRecord({
         ...this.records.get(record.action.id)!,
@@ -216,7 +242,9 @@ export class ActionQueue {
         tool: record.action.tool,
         capability: record.capability,
         outcome: 'failed',
-        detail: message
+        detail: message,
+        agentId: record.action.agentId,
+        runId: record.action.runId
       })
       this.setRecord({
         ...this.records.get(record.action.id)!,

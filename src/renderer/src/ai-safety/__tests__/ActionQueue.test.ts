@@ -168,6 +168,43 @@ describe('ActionQueue', () => {
     expect(queue.list()[0].status).toBe('passed') // unchanged — already resolved
   })
 
+  it('threads agentId/runId from submit onto every later audit entry for the action', async () => {
+    const tool = makeTool()
+    const { queue, audit } = setup(tool)
+
+    const result = queue.submit('demo-tool', {}, 'Agent goal', {
+      agentId: 'agent-1',
+      runId: 'run-1'
+    })
+    if (!result.ok) throw new Error('expected ok')
+    expect(result.record.action.agentId).toBe('agent-1')
+    expect(result.record.action.runId).toBe('run-1')
+
+    queue.approve(result.record.action.id)
+    await flush()
+
+    const entries = audit.list().filter((entry) => entry.actionId === result.record.action.id)
+    expect(entries.length).toBeGreaterThanOrEqual(2) // approved + executed
+    entries.forEach((entry) => {
+      expect(entry.agentId).toBe('agent-1')
+      expect(entry.runId).toBe('run-1')
+    })
+  })
+
+  it('leaves agentId/runId undefined for a human-submitted action', async () => {
+    const tool = makeTool()
+    const { queue, audit, broker } = setup(tool)
+    broker.grant('system.changeSettings', 'session')
+    const result = queue.submit('demo-tool')
+    if (!result.ok) throw new Error('expected ok')
+    await flush()
+
+    expect(result.record.action.agentId).toBeUndefined()
+    const entry = audit.list().find((candidate) => candidate.actionId === result.record.action.id)
+    expect(entry?.agentId).toBeUndefined()
+    expect(entry?.runId).toBeUndefined()
+  })
+
   it('notifies listeners on every state transition', async () => {
     const tool = makeTool()
     const { queue, broker } = setup(tool)

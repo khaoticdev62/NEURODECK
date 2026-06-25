@@ -70,6 +70,25 @@ export const agentTimelineEventSchema = z.object({
 })
 export type AgentTimelineEvent = z.infer<typeof agentTimelineEventSchema>
 
+/**
+ * One real tool call an agent run submitted through `AgentRuntime.submitToolCall()`
+ * (mega-prompt §17), persisted on the run itself so Agent Detail's Tools/Files/
+ * Permissions tabs (ND-017) have durable per-run evidence to read — not just the
+ * in-memory `pendingToolResults` map that's gone the instant `resolveToolResult()`
+ * settles it. `requested` is the state while waiting on the real ActionQueue;
+ * the rest mirror `AgentToolExecutionResult['status']`.
+ */
+export const agentToolExecutionRecordSchema = z.object({
+  requestId: z.string().min(1),
+  toolId: z.string().min(1),
+  arguments: z.record(z.string(), z.unknown()).default({}),
+  status: z.enum(['requested', 'pending-approval', 'passed', 'failed', 'denied', 'cancelled']),
+  message: z.string().optional(),
+  requestedAt: z.number(),
+  resolvedAt: z.number().optional()
+})
+export type AgentToolExecutionRecord = z.infer<typeof agentToolExecutionRecordSchema>
+
 export const agentRunSchema = z.object({
   id: z.string(),
   agentId: z.string(),
@@ -83,6 +102,8 @@ export const agentRunSchema = z.object({
   completionTokens: z.number().int().nonnegative().optional(),
   /** True if this run planned but never submitted any tool call to the real ActionQueue — see `startAgentRunRequestSchema`. */
   dryRun: z.boolean().default(false),
+  /** Real per-call record of every tool this run submitted — see `agentToolExecutionRecordSchema`. Additive/defaulted so existing persisted runs deserialize unchanged. */
+  toolExecutions: z.array(agentToolExecutionRecordSchema).default([]),
   createdAt: z.number(),
   updatedAt: z.number()
 })

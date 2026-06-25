@@ -66,6 +66,9 @@ export interface HarnessAction {
   requiresConfirmation: boolean
   reversible: boolean
   cancellationSupported: boolean
+  /** Set only when an Agent Runtime run submitted this action — see `ActionQueue.submit()`'s optional `agentContext` param. Threaded onto every later audit entry for this action (approve/deny/cancel/execute), not just the first one. */
+  agentId?: string
+  runId?: string
 }
 
 /** Runtime record tracking a submitted action through the queue — not part of the spec schema itself, but what the UI renders. */

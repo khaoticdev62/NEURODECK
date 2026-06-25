@@ -96,6 +96,40 @@ describe('AgentRuntime', () => {
     ])
   })
 
+  it('persists a real toolExecutions record across the requested -> passed lifecycle', async () => {
+    const store = await createStore()
+    const agent = await createAgent(store)
+    const runtime = new AgentRuntime(
+      store,
+      { complete: vi.fn().mockResolvedValue(completionWithToolCall()) },
+      () => undefined,
+      (request) => {
+        void runtime.resolveToolResult({
+          requestId: request.requestId,
+          runId: request.runId,
+          toolId: request.toolId,
+          actionId: 'action-1',
+          status: 'passed',
+          message: 'Read completed.'
+        })
+      }
+    )
+
+    const started = await runtime.start(agent.id, 'Read the workspace overview')
+    const finished = await waitForRun(store, started.id, 'completed')
+
+    expect(finished.toolExecutions).toHaveLength(1)
+    expect(finished.toolExecutions[0]).toMatchObject({
+      toolId: 'files.read',
+      arguments: { path: 'README.md' },
+      status: 'passed',
+      message: 'Read completed.'
+    })
+    expect(finished.toolExecutions[0].requestedAt).toBeLessThanOrEqual(
+      finished.toolExecutions[0].resolvedAt!
+    )
+  })
+
   it('plans with a real model completion but never submits a tool call to ActionQueue during a dry run', async () => {
     const store = await createStore()
     const agent = await createAgent(store)

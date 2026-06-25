@@ -83,11 +83,12 @@ export class AgentStore {
   }
 
   async getRun(runId: string): Promise<AgentRun | undefined> {
-    return (await this.store.read()).runs.find((run) => run.id === runId)
+    const run = (await this.store.read()).runs.find((run) => run.id === runId)
+    return run ? normalizeRun(run) : undefined
   }
 
   async listRuns(agentId?: string): Promise<AgentRun[]> {
-    const runs = (await this.store.read()).runs
+    const runs = (await this.store.read()).runs.map(normalizeRun)
     return (agentId ? runs.filter((run) => run.agentId === agentId) : runs).sort(
       (left, right) => right.updatedAt - left.updatedAt
     )
@@ -98,5 +99,13 @@ function normalizeAgent(agent: AgentDefinition): AgentDefinition {
   return {
     ...agent,
     childAgentPolicy: agent.childAgentPolicy ?? defaultAgentChildPolicy
+  }
+}
+
+/** `JsonStore` is a raw read, no Zod parse — older persisted runs predate `toolExecutions` and need a manual default, the same reason `normalizeAgent` exists for `childAgentPolicy`. */
+function normalizeRun(run: AgentRun): AgentRun {
+  return {
+    ...run,
+    toolExecutions: run.toolExecutions ?? []
   }
 }

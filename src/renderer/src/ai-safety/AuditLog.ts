@@ -10,6 +10,9 @@ export interface AuditEntry {
   capability: PermissionCapability
   outcome: AuditOutcome
   detail?: string
+  /** Set only when this action was submitted by an Agent Runtime run (`ActionQueue.submit()`'s optional `agentContext`) — lets Agent Detail's Logs tab filter to just this agent/run. Absent for human/Command-Palette/Workflow-submitted actions. */
+  agentId?: string
+  runId?: string
 }
 
 let auditSequence = 0

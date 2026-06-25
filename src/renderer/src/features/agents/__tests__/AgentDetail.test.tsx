@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AgentDefinition, AgentRun, NdxBridge } from '@shared/contracts'
+import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { AgentDetail } from '../AgentDetail'
 
@@ -37,13 +38,15 @@ function workspaceValue(): WorkspaceContextValue {
 
 function renderScreen(agentId = 'a1'): ReturnType<typeof render> {
   return render(
-    <WorkspaceContext.Provider value={workspaceValue()}>
-      <MemoryRouter initialEntries={[`/agents/${agentId}`]}>
-        <Routes>
-          <Route path="/agents/:agentId" element={<AgentDetail />} />
-        </Routes>
-      </MemoryRouter>
-    </WorkspaceContext.Provider>
+    <AiSafetyProvider>
+      <WorkspaceContext.Provider value={workspaceValue()}>
+        <MemoryRouter initialEntries={[`/agents/${agentId}`]}>
+          <Routes>
+            <Route path="/agents/:agentId" element={<AgentDetail />} />
+          </Routes>
+        </MemoryRouter>
+      </WorkspaceContext.Provider>
+    </AiSafetyProvider>
   )
 }
 
@@ -76,6 +79,7 @@ const sampleRun: AgentRun = {
   promptTokens: 12,
   completionTokens: 8,
   dryRun: false,
+  toolExecutions: [],
   createdAt: Date.now(),
   updatedAt: Date.now()
 }
@@ -198,5 +202,107 @@ describe('AgentDetail', () => {
 
     expect(resume).toHaveBeenCalledWith({ runId: 'r1' })
     expect(await screen.findByText('queued')).toBeInTheDocument()
+  })
+
+  it('shows real persisted tool executions in the Tools tab', async () => {
+    const runWithTools: AgentRun = {
+      ...sampleRun,
+      toolExecutions: [
+        {
+          requestId: 'req-1',
+          toolId: 'files-write',
+          arguments: { relativePath: 'README.md' },
+          status: 'passed',
+          message: 'Wrote README.md.',
+          requestedAt: Date.now(),
+          resolvedAt: Date.now()
+        }
+      ]
+    }
+    bridgeWithDefaults({ list: vi.fn().mockResolvedValue({ ok: true, data: [runWithTools] }) })
+
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByText('Repository Maintainer')
+
+    await user.click(screen.getByRole('button', { name: 'Tools' }))
+
+    expect(await screen.findByText('files-write')).toBeInTheDocument()
+    expect(screen.getByText('Wrote README.md.')).toBeInTheDocument()
+    expect(screen.getByText('passed')).toBeInTheDocument()
+  })
+
+  it('filters the Logs tab to this agent and the selected run', async () => {
+    bridgeWithDefaults({ list: vi.fn().mockResolvedValue({ ok: true, data: [sampleRun] }) })
+
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByText('Repository Maintainer')
+
+    await user.click(screen.getByRole('button', { name: 'Logs' }))
+
+    expect(
+      await screen.findByText(/No audited actions for this agent\/run yet/)
+    ).toBeInTheDocument()
+  })
+
+  it('derives the Files tab from files-write/files-delete tool executions', async () => {
+    const runWithFiles: AgentRun = {
+      ...sampleRun,
+      toolExecutions: [
+        {
+          requestId: 'req-1',
+          toolId: 'files-delete',
+          arguments: { relativePath: 'old-notes.md' },
+          status: 'passed',
+          requestedAt: Date.now(),
+          resolvedAt: Date.now()
+        }
+      ]
+    }
+    bridgeWithDefaults({ list: vi.fn().mockResolvedValue({ ok: true, data: [runWithFiles] }) })
+
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByText('Repository Maintainer')
+
+    await user.click(screen.getByRole('button', { name: 'Files' }))
+
+    expect(await screen.findByText('old-notes.md')).toBeInTheDocument()
+    expect(screen.getByText(/delete/)).toBeInTheDocument()
+  })
+
+  it('shows the permission ceiling and denied tool calls in the Permissions tab', async () => {
+    const agentWithCeiling: AgentDefinition = { ...sampleAgent, permissionCeiling: ['files.write'] }
+    const runWithDenial: AgentRun = {
+      ...sampleRun,
+      toolExecutions: [
+        {
+          requestId: 'req-1',
+          toolId: 'files-delete',
+          arguments: { relativePath: 'README.md' },
+          status: 'denied',
+          message: 'Outside permission ceiling.',
+          requestedAt: Date.now(),
+          resolvedAt: Date.now()
+        }
+      ]
+    }
+    stubBridge({
+      agents: { list: vi.fn().mockResolvedValue({ ok: true, data: [agentWithCeiling] }) } as never,
+      agentRuns: {
+        list: vi.fn().mockResolvedValue({ ok: true, data: [runWithDenial] }),
+        onUpdate: vi.fn().mockReturnValue(() => undefined)
+      } as never
+    })
+
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByText('Repository Maintainer')
+
+    await user.click(screen.getByRole('button', { name: 'Permissions' }))
+
+    expect(await screen.findByText('files.write')).toBeInTheDocument()
+    expect(screen.getByText(/Outside permission ceiling/)).toBeInTheDocument()
   })
 })
