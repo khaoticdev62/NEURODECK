@@ -1706,3 +1706,28 @@ npm run typecheck                              → node + web TypeScript checks 
 npm run build                                  → typecheck + electron-vite build passed
 npx playwright test                            → 1 file, 1 test passed (production build e2e)
 ```
+
+## A second real bug found while re-verifying the boot fix — unnamespaced userData directory
+
+The user reported the boot issue persisted after the `abortRef` fix above. Re-reproducing live (same Playwright-against-running-dev-server technique) showed boot now completing correctly in two separate runs, so the original bug was confirmed fixed — but investigating *why* the user might still see something wrong surfaced a second, unrelated, real bug worth fixing regardless: this app never calls `app.setName()`, so `app.getPath('userData')` falls back to Electron's literal default app name, `"Electron"`, whenever the app runs unpackaged (`electron-vite dev` never reads `package.json`'s `name`/`productName` into `app.name` the way a packaged build does).
+
+**Confirmed in practice, not just in theory**: this machine's `%APPDATA%/Electron` already contained `jpe_secure_vault.json` and `sidecar.lock.json` — files that exist nowhere in this codebase — sitting in the exact directory every one of this app's own `core/*Store` classes (`WorkspaceStore`, `ModelProviderStore`, `LockSettingsStore`, etc.) would otherwise write their own same-purpose files into. Any other unpackaged Electron app a developer runs on the same machine shares this one generic folder by default — a real, silent data-collision risk, not a hypothetical one.
+
+The fix wasn't as simple as just calling `app.setName('NeuroDeck')`: that name turned out to *already* belong to a different, unrelated real application on this same machine — `%APPDATA%/NeuroDeck` held its own `neurodeck.db` (a SQLite file; this codebase has no SQLite anywhere, only JSON-file-backed `JsonStore`s), `temp_record.wav`, and `theme-settings.json`, none of which this codebase has ever produced. **Fixed** with `app.setName('NeuroDeck OS')` instead — matching `electron-builder.yml`'s `productName` exactly, confirmed via direct directory inspection to be genuinely unused on this machine before this change, and now keeps the dev-mode and packaged-build userData directories identical. Placed as the very first statement in `main/index.ts`, before `app.whenReady()` and before any store constructor's `app.getPath('userData')` call, since Electron resolves the userData path from `app.name` at first access, not lazily re-evaluated later.
+
+This was not the root cause of the user's reported stall (no NeuroDeck-shaped files existed in the contaminated `Electron` folder, so nothing this app reads was actually corrupted by the collision) — it's a separate, real latent bug that happened to surface during the same investigation, fixed because leaving a confirmed userData collision in place would be irresponsible regardless of whether it explains today's specific report.
+
+### Tests and evidence
+
+**Validation evidence (run 2026-06-25):**
+
+```text
+Live dev-server Playwright reproduction (fresh profile)      → boots, reaches /onboarding/welcome in ~3s, no stall
+Live dev-server Playwright reproduction (returning profile)  → boots, reaches /onboarding/welcome in ~3s, no stall
+Direct inspection of %APPDATA%/NeuroDeck OS after a real run → only real Electron/Chromium runtime files, no contamination
+npm run test     → 118 files, 585 tests passed
+npm run lint     → 0 errors, 0 warnings
+npm run typecheck → node + web TypeScript checks passed
+npm run build     → typecheck + electron-vite build passed
+npx playwright test → 1 file, 1 test passed (production build e2e)
+```

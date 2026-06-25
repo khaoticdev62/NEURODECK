@@ -5,6 +5,27 @@ import icon from '../../resources/icon.png?asset'
 import { registerIpcHandlers } from './ipc'
 import { applyNavigationPolicy, HARDENED_WEB_PREFERENCES } from './security/windowSecurity'
 
+// Must run before any `app.getPath('userData')` call (including ones deep
+// inside `registerIpcHandlers`'s store constructors) and before
+// `app.whenReady()` — Electron resolves the default userData path from
+// `app.name`, which defaults to the literal string "Electron" when running
+// unpackaged (dev mode never reads `package.json`'s `name`/`productName`
+// the way a packaged build does). Without this, every `core/*Store` this
+// app persists writes into the generic, OS-wide `%APPDATA%/Electron` (or
+// `~/Library/Application Support/Electron`, `~/.config/Electron`) folder —
+// shared by *any* other unpackaged Electron app a developer runs on the
+// same machine. Confirmed in practice on this machine: `%APPDATA%/Electron`
+// already held an unrelated app's `jpe_secure_vault.json`/`sidecar.lock.json`
+// in the exact directory this app's own stores would write next to — and
+// the seemingly obvious name `NeuroDeck` (no suffix) turned out to already
+// belong to a *different*, unrelated real application on this same machine
+// too (`%APPDATA%/NeuroDeck` held its own `neurodeck.db` SQLite file,
+// `temp_record.wav`, `theme-settings.json` — none of which exist anywhere
+// in this codebase). `productName` in `electron-builder.yml` is
+// "NeuroDeck OS" specifically to be unambiguous; matching it here keeps
+// the dev-mode and packaged userData directories the same.
+app.setName('NeuroDeck OS')
+
 let mainWindow: BrowserWindow | null = null
 let disposeIpcServices: (() => void) | null = null
 
