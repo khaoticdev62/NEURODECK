@@ -2026,3 +2026,22 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
+
+A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.
+
+Per that document's own Master Directive ("Before coding... inventory every upstream source... record exact licenses... choose and document one strategy"), this phase performed the required **LAN-0** audit before any protocol code was written.
+
+**Real upstream inventory** — confirmed directly against the live GitHub repositories via the GitHub API (not from memory): `linuxmint/warpinator` (canonical upstream, GPL-3.0, `COPYING` present) and `swiszczoo/winpinator` (Windows-compatible port, also GPL-3.0), with their exact HEAD commit SHAs recorded. Three files were read (not copied) to extract real protocol facts: `src/warp.proto` (the real gRPC service/message schema — two services, `Warp` and `WarpRegistration`), `src/auth.py` (real per-device RSA+X.509 self-signed cert architecture, exchanged encrypted via NaCl `secretbox` keyed from the user's group code), and `src/remote_registration.py` (confirms the real v1 vs. v2 registration-server split). Default ports (`42000` transfer, `42001` registration) and the optional, off-by-default zlib compression were confirmed against the project's own GSettings schema.
+
+**Strategy chosen and documented**: clean-room compatible implementation. Network protocol shapes are not themselves protected expression, but literal upstream source is — so this codebase will independently author its own equivalent `.proto` schema and its own cert/encryption code (Node `node:crypto`/`node:tls` or `rustls`, not a vendored GPL dependency) rather than copying or vendoring anything from the upstream repositories. Full rules recorded in `docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md` §4, binding for every later LAN-1–LAN-11 phase.
+
+**Honest open finding, carried forward rather than silently resolved**: NeuroDeck itself has no declared project license (no `LICENSE` file, no `package.json` `license` field) at audit time. This needs resolving — with real legal review — before LAN Share, or any other GPL-adjacent feature, ships publicly. This finding is independent of LAN Share and applies to the whole project.
+
+**No protocol implementation code was written in this phase**, by design — LAN-0 is an audit-only gate. `IMPLEMENTATION_CHECKLIST.md` now tracks LAN-0 through LAN-11 as a separate section from the Epic X-series, since this feature is not part of the numbered Phase B epics.
+
+### Evidence
+
+- `docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md` — full inventory, recorded commit/blob SHAs, chosen strategy, and binding clean-room rules for future phases.
+- No code changes; no test/lint/typecheck/build re-run needed for this phase (no source touched).

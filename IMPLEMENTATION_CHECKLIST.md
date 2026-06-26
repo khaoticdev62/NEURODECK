@@ -317,6 +317,25 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 ---
 
+### LAN Share — Warpinator-compatible transfers (separate mega-prompt, distinct from Epic X6)
+
+Tracked separately from Epic X6 because it is a different, much larger feature: real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem (gRPC/protobuf, mDNS, registration v1/v2, GPL compliance), not NeuroDeck's own NDX-only peer transfer (which Epic X6 already ships in `src/core/lan/`). See `NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md` for the full spec (39 sections, phases `LAN-0`–`LAN-11`).
+
+- [x] **LAN-0** — Audit, upstream protocol study, licensing (§3, §37) — see `docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md`. Real upstream inventory (confirmed via GitHub API against `linuxmint/warpinator` and `swiszczoo/winpinator`, both GPL-3.0, with recorded commit/blob SHAs), real protocol facts extracted from `warp.proto`/`auth.py`/registration source (gRPC+protobuf, mDNS, v1/v2 registration, RSA+X.509+NaCl-secretbox group-code auth, default ports 42000/42001), a chosen strategy (clean-room compatible implementation — never copy upstream GPL source, independently author an equivalent schema), and a flagged open item (NeuroDeck itself has no declared project license yet — needs resolving before any public release of this or any GPL-adjacent feature). No protocol code written in this phase, by design.
+- [ ] **LAN-1** — Schemas, IPC/RPC, settings, data model, errors (§7, §26–28)
+- [ ] **LAN-2** — Service lifecycle, interfaces, sockets, health (§5–6)
+- [ ] **LAN-3** — mDNS, manual connect, registration v1/v2 (§10)
+- [ ] **LAN-4** — Auth, group code, trust, rate limits (§11–13)
+- [ ] **LAN-5** — Send engine, manifests, queue, compression (§14, §20–21)
+- [ ] **LAN-6** — Receive, staging, isolation, conflicts, commit (§15–19)
+- [ ] **LAN-7** — All ND-LAN-001–028 controller-native screens (§8–9)
+- [ ] **LAN-8** — Platform integrations (§25)
+- [ ] **LAN-9** — SteamOS, VPN, firewall, suspend, resource policy (§22–24, §32)
+- [ ] **LAN-10** — Interoperability testing against real Warpinator/Winpinator clients, fuzzing, security review (§33–35)
+- [ ] **LAN-11** — Packaging, SBOM, documentation, release gates (§36, §38)
+
+---
+
 ## Acceptance Gates (do not declare done without these)
 
 ### Core gates (mega-prompt §40)
