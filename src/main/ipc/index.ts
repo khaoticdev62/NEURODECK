@@ -25,6 +25,11 @@ import { ExtensionDataStore } from '../../core/extensions/ExtensionDataStore'
 import { ExtensionHost } from '../../core/extensions/ExtensionHost'
 import { ExtensionRuntime } from '../../core/extensions/ExtensionRuntime'
 import { ExtensionStore } from '../../core/extensions/ExtensionStore'
+import { KnowledgeStore } from '../../core/knowledge/KnowledgeStore'
+import { KnowledgeVaultService } from '../../core/knowledge/KnowledgeVaultService'
+import { MemoryStore } from '../../core/memory/MemoryStore'
+import { PersonaStore } from '../../core/promptLibrary/PersonaStore'
+import { PromptTemplateStore } from '../../core/promptLibrary/PromptTemplateStore'
 import { FeatureRegistry } from '../../core/feature/FeatureRegistry'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
@@ -59,6 +64,9 @@ import { registerDeviceHandlers } from './registerDeviceHandlers'
 import { registerDiagnosticsHandlers } from './registerDiagnosticsHandlers'
 import { registerDisplaySettingsHandlers } from './registerDisplaySettingsHandlers'
 import { registerExtensionHandlers } from './registerExtensionHandlers'
+import { registerKnowledgeHandlers } from './registerKnowledgeHandlers'
+import { registerMemoryHandlers } from './registerMemoryHandlers'
+import { registerPromptLibraryHandlers } from './registerPromptLibraryHandlers'
 import { registerFeatureHandlers } from './registerFeatureHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
@@ -186,6 +194,13 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
       })
     }
   })
+  const knowledgeStore = new KnowledgeStore(join(app.getPath('userData'), 'knowledge.json'))
+  const knowledgeVaultService = new KnowledgeVaultService(knowledgeStore)
+  const memoryStore = new MemoryStore(join(app.getPath('userData'), 'memory.json'))
+  const promptTemplateStore = new PromptTemplateStore(
+    join(app.getPath('userData'), 'prompt-templates.json')
+  )
+  const personaStore = new PersonaStore(join(app.getPath('userData'), 'personas.json'))
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,
@@ -247,6 +262,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     getWindow
   )
   registerExtensionHandlers(extensionStore, extensionRuntime)
+  registerKnowledgeHandlers(knowledgeStore, knowledgeVaultService)
+  registerMemoryHandlers(memoryStore)
+  registerPromptLibraryHandlers(promptTemplateStore, personaStore)
   return () => {
     disposeTerminal()
     disposeRemote()

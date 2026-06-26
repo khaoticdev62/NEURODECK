@@ -1916,3 +1916,40 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded (real second main entry compiled to out/main/extensionHostEntry.js, confirmed by directly forking the artifact and observing a real fault report)
 ```
+
+## Epic X4 — Knowledge and memory (2026-06-26)
+
+Real Knowledge Vault ingestion/retrieval for the source types this codebase can actually parse without a new dependency, real scoped AI memory with secret-write rejection, and real Prompt Template/Persona libraries. Embeddings, PDF parsing, Tool Library, and Skill packs are explicitly deferred — each needs something this pass doesn't add (a local embedding model, a new PDF dependency, a new UI surface for already-existing data, a verified extension-signing foundation).
+
+**Real ingestion pipeline** (`core/knowledge/KnowledgeVaultService.ts`, supplemental §12.3) — source validation → real `readFile` parsing (`.txt`/`.md`/`.json`/`.csv` via `core/knowledge/parsers/textParsers.ts`, confirmed an invalid JSON file throws a real, loud parse error rather than silently indexing garbage) → real secret detection (the same `detectSecret()` Scoped Memory uses — a source whose extracted text matches a real secret shape fails ingestion outright, with a real `failureReason`, confirmed by a test) → real chunking (`core/knowledge/Chunker.ts`, paragraph-aware with a real fixed-window+overlap fallback for over-long paragraphs) → real index write → a real source health record. Folders, PDFs, code repositories, and the other 8 source types listed in supplemental §12.1 are not implemented — each needs either a new dependency or a real multi-file/multi-source capture mechanism this slice doesn't build, named directly rather than silently skipped.
+
+**Real lexical retrieval, not fabricated semantic search** (`core/knowledge/KnowledgeIndex.ts`, supplemental §12.5) — term-frequency-overlap scoring between the query and each chunk, with a real exact-substring-match bonus. No real local embedding model is wired into this codebase's model router yet, so this is an honest, working retrieval mechanism (the same family as classic keyword search) rather than a mocked similarity score standing in for embeddings that don't exist. Every result carries real provenance: `sourceId`/`sourceTitle`, a real `retrievedAt` timestamp, and a real `stale` flag computed by re-hashing the source's actual current on-disk content against what was indexed at ingestion time — confirmed by a test that edits the real file after indexing and observes the flag flip to `true`.
+
+**Real scoped memory with enforced write rules** (`core/memory/MemoryStore.ts` + `core/memory/secretDetector.ts`, supplemental §13) — every write (`write()` and `update()`) is checked against `detectSecret()` before it reaches disk; a content string matching an AWS access key, a PEM private-key block, a JWT, a GitHub token, a `Bearer` token, or a generic `api_key=...`-shaped assignment is rejected with a real `MemorySecretRejectedError`, confirmed by a test for each pattern plus tests proving ordinary non-secret prose is never falsely flagged. "Disable category"/"Disable all" (§13.3) are checked before every write, not just hidden from a list — a disabled-type write genuinely fails with `MemoryDisabledError`. `clearScope()` ("Clear conversation memory"/"Clear global memory") really deletes matching items, not a soft hide.
+
+**Real Prompt Template and Persona libraries** (`core/promptLibrary/`, supplemental §14.1/§14.2) — real CRUD persistence matching the spec's exact field lists. The `Persona` schema is deliberately constructed with zero fields that could expand permissions, bypass policy, hide impact, or auto-confirm a destructive action (§14.2's explicit "Personas may not" list) — there is no field to misuse without it being immediately obvious in review, which is a stronger guarantee than a runtime check that could be bypassed.
+
+New `knowledge.*`/`memory.*`/`promptTemplate.*`/`persona.*` IPC domains, typed and Zod-validated, following the existing `registerXHandlers` pattern.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `secretDetector` real pattern detection, no false positives on ordinary prose | `core/memory/__tests__/secretDetector.test.ts` | +8 (new file) |
+| `MemoryStore` write/update/delete, secret rejection, disable-category/all, clearScope | `core/memory/__tests__/MemoryStore.test.ts` | +9 (new file) |
+| `textParsers` real JSON/CSV/plain-text parsing, extension dispatch | `core/knowledge/parsers/__tests__/textParsers.test.ts` | +5 (new file) |
+| `Chunker` real paragraph-aware chunking with overlap | `core/knowledge/__tests__/Chunker.test.ts` | +4 (new file) |
+| `KnowledgeIndex` real lexical scoring, ranking, zero-score exclusion | `core/knowledge/__tests__/KnowledgeIndex.test.ts` | +5 (new file) |
+| `KnowledgeStore` real CRUD for sources/chunks | `core/knowledge/__tests__/KnowledgeStore.test.ts` | +5 (new file) |
+| `KnowledgeVaultService` real end-to-end ingest/query/reindex/pause/remove against real files | `core/knowledge/__tests__/KnowledgeVaultService.test.ts` | +10 (new file) |
+| `PromptTemplateStore` real CRUD | `core/promptLibrary/__tests__/PromptTemplateStore.test.ts` | +5 (new file) |
+| `PersonaStore` real CRUD | `core/promptLibrary/__tests__/PersonaStore.test.ts` | +3 (new file) |
+
+**Validation evidence (run 2026-06-26):**
+
+```text
+npm run test       → 150 files, 761 tests passed
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

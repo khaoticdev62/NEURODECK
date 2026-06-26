@@ -26,6 +26,31 @@ import type {
   SetExtensionEnabledRequest
 } from './extension'
 import type {
+  AddKnowledgeSourceRequest,
+  KnowledgeQueryRequest,
+  KnowledgeQueryResult,
+  KnowledgeSource,
+  KnowledgeSourceIdRequest,
+  SetKnowledgeSourcePausedRequest
+} from './knowledge'
+import type {
+  ClearMemoryScopeRequest,
+  MemoryIdRequest,
+  MemoryItem,
+  MemoryQueryRequest,
+  SetMemoryDisabledRequest,
+  UpdateMemoryRequest,
+  WriteMemoryRequest
+} from './memory'
+import type {
+  Persona,
+  PersonaIdRequest,
+  PromptTemplate,
+  PromptTemplateIdRequest,
+  UpsertPersonaRequest,
+  UpsertPromptTemplateRequest
+} from './promptLibrary'
+import type {
   DeleteFileRequest,
   RecoveryCheckpoint,
   RecoveryCheckpointRequest,
@@ -373,5 +398,31 @@ export interface NdxBridge {
     remove: (request: ExtensionIdRequest) => Promise<NdxResult<null>>
     clearQuarantine: (request: ExtensionIdRequest) => Promise<NdxResult<ExtensionRecord>>
     onHealthEvent: (listener: (event: ExtensionHealthEvent) => void) => () => void
+  }
+  knowledge: {
+    listSources: () => Promise<NdxResult<KnowledgeSource[]>>
+    addSource: (request: AddKnowledgeSourceRequest) => Promise<NdxResult<KnowledgeSource>>
+    removeSource: (request: KnowledgeSourceIdRequest) => Promise<NdxResult<null>>
+    reindexSource: (request: KnowledgeSourceIdRequest) => Promise<NdxResult<KnowledgeSource>>
+    setSourcePaused: (
+      request: SetKnowledgeSourcePausedRequest
+    ) => Promise<NdxResult<KnowledgeSource>>
+    query: (request: KnowledgeQueryRequest) => Promise<NdxResult<KnowledgeQueryResult[]>>
+  }
+  memory: {
+    list: (request?: MemoryQueryRequest) => Promise<NdxResult<MemoryItem[]>>
+    write: (request: WriteMemoryRequest) => Promise<NdxResult<MemoryItem>>
+    update: (request: UpdateMemoryRequest) => Promise<NdxResult<MemoryItem>>
+    delete: (request: MemoryIdRequest) => Promise<NdxResult<null>>
+    setDisabled: (request: SetMemoryDisabledRequest) => Promise<NdxResult<null>>
+    clearScope: (request: ClearMemoryScopeRequest) => Promise<NdxResult<number>>
+  }
+  promptLibrary: {
+    listTemplates: () => Promise<NdxResult<PromptTemplate[]>>
+    upsertTemplate: (request: UpsertPromptTemplateRequest) => Promise<NdxResult<PromptTemplate>>
+    removeTemplate: (request: PromptTemplateIdRequest) => Promise<NdxResult<null>>
+    listPersonas: () => Promise<NdxResult<Persona[]>>
+    upsertPersona: (request: UpsertPersonaRequest) => Promise<NdxResult<Persona>>
+    removePersona: (request: PersonaIdRequest) => Promise<NdxResult<null>>
   }
 }

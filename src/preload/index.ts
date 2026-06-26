@@ -318,6 +318,31 @@ const ndx: NdxBridge = {
       ipcRenderer.on(IPC_CHANNELS.extensionHealthEvent, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.extensionHealthEvent, handler)
     }
+  },
+  knowledge: {
+    listSources: () => ipcRenderer.invoke(IPC_CHANNELS.knowledgeSourceList),
+    addSource: (request) => ipcRenderer.invoke(IPC_CHANNELS.knowledgeSourceAdd, request),
+    removeSource: (request) => ipcRenderer.invoke(IPC_CHANNELS.knowledgeSourceRemove, request),
+    reindexSource: (request) => ipcRenderer.invoke(IPC_CHANNELS.knowledgeSourceReindex, request),
+    setSourcePaused: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.knowledgeSourceSetPaused, request),
+    query: (request) => ipcRenderer.invoke(IPC_CHANNELS.knowledgeQuery, request)
+  },
+  memory: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryList, request),
+    write: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryWrite, request),
+    update: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryUpdate, request),
+    delete: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryDelete, request),
+    setDisabled: (request) => ipcRenderer.invoke(IPC_CHANNELS.memorySetDisabled, request),
+    clearScope: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryClearScope, request)
+  },
+  promptLibrary: {
+    listTemplates: () => ipcRenderer.invoke(IPC_CHANNELS.promptTemplateList),
+    upsertTemplate: (request) => ipcRenderer.invoke(IPC_CHANNELS.promptTemplateUpsert, request),
+    removeTemplate: (request) => ipcRenderer.invoke(IPC_CHANNELS.promptTemplateRemove, request),
+    listPersonas: () => ipcRenderer.invoke(IPC_CHANNELS.personaList),
+    upsertPersona: (request) => ipcRenderer.invoke(IPC_CHANNELS.personaUpsert, request),
+    removePersona: (request) => ipcRenderer.invoke(IPC_CHANNELS.personaRemove, request)
   }
 }
 
