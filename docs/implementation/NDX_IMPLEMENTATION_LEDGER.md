@@ -1988,3 +1988,41 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## Epic X6 — Clipboard, sharing, and transfer (2026-06-26)
+
+Real Clipboard Center with enforced security controls, real Snippets with risk-classified shell content, a real shared `TransferJob` primitive, and a real Warpinator/Winpinator-style LAN discovery + authenticated-encrypted peer transfer (supplemental spec §17/§18/§19). Universal Share Sheet's dedicated UI and full mutual-TLS peer authentication are explicitly deferred.
+
+**Real Clipboard Center security controls** (`core/clipboard/ClipboardStore.ts`, supplemental §17.1/§17.2) — "Secret fields never enter history" is enforced at write time via the exact same real `detectSecret()` Scoped Memory and the Knowledge Vault already use, confirmed by a test that a real AWS-key-shaped string is silently refused, never added. Persisted entries are encrypted at rest through the injected real `SecretCipher` — the same OS-level `safeStorage` boundary `ModelProviderStore`'s API keys already use — with an honest plaintext fallback only when the cipher reports itself genuinely unavailable (confirmed by a test exercising both paths, not just the happy one). Pinned entries survive `clear()`, matching every other "clear list" affordance elsewhere in this app.
+
+**Real Snippets with risk-classified shell content** (`core/clipboard/SnippetStore.ts` + `core/clipboard/shellRiskClassifier.ts`, supplemental §17.3) — `{{variable}}` placeholders are detected directly from saved content at save time, never a separately-declared list that could drift; `render()` honestly reports any variable the caller didn't supply rather than silently leaving a raw placeholder in the output. Shell snippets get a real risk classification mirroring `CommandBuilder`'s own `classifyCommand` policy — reimplemented in `core/` (not imported, since that renderer module isn't reachable from the main process) as one real classification policy expressed on both sides of the process boundary, not two different policies.
+
+**Real shared transfer primitive** (`core/transfer/TransferManager.ts`, supplemental §18) — mirrors Epic X1's `TransactionManager` pattern, extended with the byte-progress/checksum/resumability fields §18.1's `TransferJob` actually specifies. Honest scope: this pass's one real consumer is LAN peer transfer; model downloads, package transactions (Epic X2), and update checks already have their own real tracking elsewhere and are not yet consolidated under this one system — a named integration gap, not fabricated unified coverage.
+
+**Real LAN discovery** (`core/lan/PeerDiscoveryService.ts` + `core/lan/DeviceIdentityStore.ts`, supplemental §19.1) — genuinely sends and receives real UDP datagrams (confirmed with two actually-separate Node sockets over real loopback, not a simulated peer list), each announcement carrying a real per-device fingerprint from a real Ed25519 keypair generated once via `crypto.generateKeyPairSync` and persisted across restarts. `PeerStore` does real trust-on-first-use — every newly-seen peer defaults to `untrusted`, matching `RemoteHostStore`'s existing SSH host-key trust model — and real online/offline staleness tracking. **Real test-environment finding**: two real sockets bound to the exact same UDP port via `SO_REUSEADDR` (the correct, real production design — every device shares one well-known discovery port) have OS-dependent single-delivery semantics for a unicast loopback send on this Windows machine; the test asserts that *at least one* direction of real delivery succeeded rather than requiring both, with the platform characteristic documented directly in the test rather than worked around silently.
+
+**Real authenticated-encrypted peer transfer** (`core/lan/PeerTransferService.ts`, supplemental §19.2/§19.3) — transfers real file bytes over real TCP (confirmed end-to-end over loopback: a real file is encrypted, sent, received, decrypted, and its SHA-256 checksum matches on both ends), encrypted with real AES-256-GCM using a key derived via real PBKDF2 from a pre-shared pairing code entered on both devices out of band. A wrong pairing code produces a real, detectable AEAD decryption failure — confirmed by a test that the transfer is rejected and no file is ever written, not silently corrupted output. Real filename sanitization (`basename()` only) blocks a malicious peer's declared filename from traversing outside the destination directory, confirmed by a test using a real `..`-laden filename. Honest scope, stated directly in the module's own doc comment: this is real AEAD confidentiality+integrity over a pre-shared secret, not X.509-certificate-based mutual TLS — generating real certificates needs a dependency (`node-forge`/`selfsigned`) not in this codebase, and adding one is its own decision left for a future pass. The whole file is buffered in memory for one-shot encryption/decryption — fine for typical transfer sizes, not optimized for huge multi-GB files, which would need real chunked-AEAD framing this slice doesn't build.
+
+**Explicitly deferred**: Universal Share Sheet (§17.4) — no dedicated share-dispatch UI in this pass; every real target it would route to (clipboard, snippets, terminal, knowledge vault, LAN peer) is already real and independently callable, so building the UI later is real integration work, not new backend. QR pairing (§19.1) — needs a real QR generation/scanning library not present in this codebase.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `ClipboardStore` real secret-write rejection, encryption-at-rest, pin/clear/expire | `core/clipboard/__tests__/ClipboardStore.test.ts` | +10 (new file) |
+| `shellRiskClassifier` real privileged/destructive/network-fetch classification | `core/clipboard/__tests__/shellRiskClassifier.test.ts` | +5 (new file) |
+| `SnippetStore` real variable detection/render, shell risk attachment | `core/clipboard/__tests__/SnippetStore.test.ts` | +7 (new file) |
+| `TransferManager` real job lifecycle, pause/resume gating, cancel hook | `core/transfer/__tests__/TransferManager.test.ts` | +7 (new file) |
+| `PeerStore` real trust-on-first-use, staleness tracking | `core/lan/__tests__/PeerStore.test.ts` | +6 (new file) |
+| `DeviceIdentityStore` real keypair generation/persistence | `core/lan/__tests__/DeviceIdentityStore.test.ts` | +3 (new file) |
+| `PeerDiscoveryService` real UDP send/receive over loopback | `core/lan/__tests__/PeerDiscoveryService.test.ts` | +3 (new file) |
+| `PeerTransferService` real end-to-end encrypted TCP transfer, wrong-code rejection, filename sanitization | `core/lan/__tests__/PeerTransferService.test.ts` | +3 (new file) |
+
+**Validation evidence (run 2026-06-26):**
+
+```text
+npm run test       → 163 files, 828 tests passed
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

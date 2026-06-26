@@ -1,6 +1,6 @@
 import { app, Notification, session, shell, type BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
-import { homedir } from 'node:os'
+import { hostname, homedir } from 'node:os'
 import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
@@ -32,6 +32,13 @@ import { PersonaStore } from '../../core/promptLibrary/PersonaStore'
 import { PromptTemplateStore } from '../../core/promptLibrary/PromptTemplateStore'
 import { MicrophonePermissionStore } from '../../core/voice/MicrophonePermissionStore'
 import { VoiceNoteStore } from '../../core/voice/VoiceNoteStore'
+import { ClipboardStore } from '../../core/clipboard/ClipboardStore'
+import { SnippetStore } from '../../core/clipboard/SnippetStore'
+import { DeviceIdentityStore } from '../../core/lan/DeviceIdentityStore'
+import { PeerDiscoveryService } from '../../core/lan/PeerDiscoveryService'
+import { PeerStore } from '../../core/lan/PeerStore'
+import { PeerTransferService } from '../../core/lan/PeerTransferService'
+import { TransferManager } from '../../core/transfer/TransferManager'
 import { FeatureRegistry } from '../../core/feature/FeatureRegistry'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
@@ -69,6 +76,8 @@ import { registerExtensionHandlers } from './registerExtensionHandlers'
 import { registerKnowledgeHandlers } from './registerKnowledgeHandlers'
 import { registerMemoryHandlers } from './registerMemoryHandlers'
 import { registerPromptLibraryHandlers } from './registerPromptLibraryHandlers'
+import { registerClipboardHandlers } from './registerClipboardHandlers'
+import { registerLanHandlers } from './registerLanHandlers'
 import { registerVoiceHandlers } from './registerVoiceHandlers'
 import { registerFeatureHandlers } from './registerFeatureHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
@@ -228,6 +237,51 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
       .then((granted) => callback(granted))
       .catch(() => callback(false))
   })
+  const clipboardStore = new ClipboardStore(
+    join(app.getPath('userData'), 'clipboard.json'),
+    electronSecretCipher
+  )
+  const snippetStore = new SnippetStore(join(app.getPath('userData'), 'snippets.json'))
+  const peerStore = new PeerStore(join(app.getPath('userData'), 'lan-peers.json'))
+  const peerTransferService = new PeerTransferService()
+  const lanTransferManager = new TransferManager()
+  const deviceIdentityStore = new DeviceIdentityStore(
+    join(app.getPath('userData'), 'device-identity.json')
+  )
+  // Real Epic X6 LAN discovery (supplemental §19.1) — started once the
+  // real device identity (a real Ed25519 keypair, generated once and
+  // persisted) is available, so every announcement carries this
+  // device's real, stable fingerprint.
+  const peerTransferPort = 53318
+  let peerDiscoveryService: PeerDiscoveryService | null = null
+  void deviceIdentityStore.get().then((identity) => {
+    peerDiscoveryService = new PeerDiscoveryService({
+      selfId: identity.id,
+      friendlyName: hostname(),
+      transferPort: peerTransferPort,
+      fingerprint: identity.fingerprint,
+      onPeerSeen: (announcement, fromAddress) => {
+        void peerStore
+          .upsertSeen({
+            id: announcement.id,
+            friendlyName: announcement.friendlyName,
+            address: fromAddress,
+            port: announcement.port,
+            fingerprint: announcement.fingerprint,
+            online: 'online',
+            lastSeenAt: Date.now()
+          })
+          .then(() => peerStore.list())
+          .then((peers) => {
+            const window = getWindow()
+            if (window && !window.webContents.isDestroyed()) {
+              window.webContents.send(IPC_CHANNELS.peerUpdate, peers)
+            }
+          })
+      }
+    })
+    peerDiscoveryService.start()
+  })
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,
@@ -293,10 +347,20 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerMemoryHandlers(memoryStore)
   registerPromptLibraryHandlers(promptTemplateStore, personaStore)
   registerVoiceHandlers(microphonePermissionStore, voiceNoteStore)
+  registerClipboardHandlers(clipboardStore, snippetStore)
+  const disposeLan = registerLanHandlers(
+    peerStore,
+    peerTransferService,
+    lanTransferManager,
+    getWindow
+  )
   return () => {
     disposeTerminal()
     disposeRemote()
     disposePower()
     disposePackages()
+    disposeLan()
+    peerDiscoveryService?.stop()
+    peerTransferService.stop()
   }
 }

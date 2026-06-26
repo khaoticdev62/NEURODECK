@@ -60,6 +60,26 @@ import type {
   VoiceNoteIdRequest
 } from './voice'
 import type {
+  ClipboardEntry,
+  ClipboardEntryIdRequest,
+  ClipboardQueryRequest,
+  RenderedSnippet,
+  RenderSnippetRequest,
+  SetClipboardMonitoringRequest,
+  SetClipboardPinnedRequest,
+  Snippet,
+  SnippetIdRequest,
+  UpsertSnippetRequest
+} from './clipboard'
+import type {
+  AddManualPeerRequest,
+  PeerDevice,
+  PeerIdRequest,
+  SendFileToPeerRequest,
+  SetPeerTrustRequest
+} from './lan'
+import type { TransferJob, TransferJobIdRequest } from './transfer'
+import type {
   DeleteFileRequest,
   RecoveryCheckpoint,
   RecoveryCheckpointRequest,
@@ -443,5 +463,31 @@ export interface NdxBridge {
     saveVoiceNote: (request: SaveVoiceNoteRequest) => Promise<NdxResult<VoiceNote>>
     removeVoiceNote: (request: VoiceNoteIdRequest) => Promise<NdxResult<null>>
     intakeDocument: (request: DocumentIntakeRequest) => Promise<NdxResult<DocumentIntakeResult>>
+  }
+  clipboard: {
+    list: (request?: ClipboardQueryRequest) => Promise<NdxResult<ClipboardEntry[]>>
+    setPinned: (request: SetClipboardPinnedRequest) => Promise<NdxResult<ClipboardEntry>>
+    remove: (request: ClipboardEntryIdRequest) => Promise<NdxResult<null>>
+    clear: () => Promise<NdxResult<null>>
+    setMonitoring: (request: SetClipboardMonitoringRequest) => Promise<NdxResult<null>>
+  }
+  snippets: {
+    list: () => Promise<NdxResult<Snippet[]>>
+    upsert: (request: UpsertSnippetRequest) => Promise<NdxResult<Snippet>>
+    remove: (request: SnippetIdRequest) => Promise<NdxResult<null>>
+    render: (request: RenderSnippetRequest) => Promise<NdxResult<RenderedSnippet>>
+  }
+  peers: {
+    list: () => Promise<NdxResult<PeerDevice[]>>
+    addManual: (request: AddManualPeerRequest) => Promise<NdxResult<PeerDevice>>
+    remove: (request: PeerIdRequest) => Promise<NdxResult<null>>
+    setTrust: (request: SetPeerTrustRequest) => Promise<NdxResult<PeerDevice>>
+    sendFile: (request: SendFileToPeerRequest) => Promise<NdxResult<TransferJob>>
+    onUpdate: (listener: (peers: PeerDevice[]) => void) => () => void
+  }
+  transferJobs: {
+    list: () => Promise<NdxResult<TransferJob[]>>
+    cancel: (request: TransferJobIdRequest) => Promise<NdxResult<boolean>>
+    onUpdate: (listener: (jobs: TransferJob[]) => void) => () => void
   }
 }

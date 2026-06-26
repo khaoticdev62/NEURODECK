@@ -6,17 +6,21 @@ import {
   browserTabSchema,
   extensionHealthEventSchema,
   IPC_CHANNELS,
+  peerDeviceSchema,
   powerStateEventSchema,
   remoteSessionDataEventSchema,
   remoteSessionExitEventSchema,
   terminalDataEventSchema,
   terminalExitEventSchema,
   transactionRecordSchema,
+  transferJobSchema,
   type NdxBridge
 } from '../shared/contracts'
 import { z } from 'zod'
 
 const transactionRecordListSchema = z.array(transactionRecordSchema)
+const peerDeviceListSchema = z.array(peerDeviceSchema)
+const transferJobListSchema = z.array(transferJobSchema)
 
 /**
  * The real, narrow, typed bridge (mega-prompt §6, §14) replacing the
@@ -352,6 +356,46 @@ const ndx: NdxBridge = {
     saveVoiceNote: (request) => ipcRenderer.invoke(IPC_CHANNELS.voiceNoteSave, request),
     removeVoiceNote: (request) => ipcRenderer.invoke(IPC_CHANNELS.voiceNoteRemove, request),
     intakeDocument: (request) => ipcRenderer.invoke(IPC_CHANNELS.documentIntake, request)
+  },
+  clipboard: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.clipboardList, request),
+    setPinned: (request) => ipcRenderer.invoke(IPC_CHANNELS.clipboardSetPinned, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.clipboardRemove, request),
+    clear: () => ipcRenderer.invoke(IPC_CHANNELS.clipboardClear),
+    setMonitoring: (request) => ipcRenderer.invoke(IPC_CHANNELS.clipboardSetMonitoring, request)
+  },
+  snippets: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.snippetList),
+    upsert: (request) => ipcRenderer.invoke(IPC_CHANNELS.snippetUpsert, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.snippetRemove, request),
+    render: (request) => ipcRenderer.invoke(IPC_CHANNELS.snippetRender, request)
+  },
+  peers: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.peerList),
+    addManual: (request) => ipcRenderer.invoke(IPC_CHANNELS.peerAddManual, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.peerRemove, request),
+    setTrust: (request) => ipcRenderer.invoke(IPC_CHANNELS.peerSetTrust, request),
+    sendFile: (request) => ipcRenderer.invoke(IPC_CHANNELS.peerSendFile, request),
+    onUpdate: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = peerDeviceListSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.peerUpdate, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.peerUpdate, handler)
+    }
+  },
+  transferJobs: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.transferJobList),
+    cancel: (request) => ipcRenderer.invoke(IPC_CHANNELS.transferJobCancel, request),
+    onUpdate: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = transferJobListSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.transferJobUpdate, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.transferJobUpdate, handler)
+    }
   }
 }
 
