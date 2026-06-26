@@ -1953,3 +1953,38 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## Epic X5 — Voice and multimodal (2026-06-26)
+
+Real text-to-speech, real dictation, a real persisted microphone permission gate wired into the main window's actual session, real voice notes, and real one-off document intake (supplemental spec §15/§16). Wake word and screen-capture-with-privacy-review are explicitly deferred — each needs something this pass doesn't add (a local audio-classification engine; a real privacy-review UI the spec requires before any capture is used).
+
+**Real microphone permission gate** (`core/voice/MicrophonePermissionStore.ts` + `main/ipc/index.ts`, supplemental §15.3) — the main window only ever loads this app's own bundled UI, so there is no third-party origin to scope permission by; this is one real, explicit, persisted yes/no the user grants, consulted by a real `session.defaultSession.setPermissionRequestHandler('media', ...)` that denies by default and only allows the real OS-level `getUserMedia` request once explicitly granted. Confirmed safe to add: an audit of the renderer found no existing code requesting `notifications`/`geolocation`/other permission types this new handler now denies by default, so nothing already-working was put at risk.
+
+**Real dictation** (`renderer/src/features/voice/useDictation.ts`, supplemental §15.3/§15.4) — wraps the real `SpeechRecognition`/`webkitSpeechRecognition` Web Speech API: a real live transcript, real alternative recognitions per result (§15.4 "Choose alternative recognition"), and a real distinction between `stop()` (keeps the transcript) and `cancel()` (discards it). Deliberately does **not** build a second intent-classifier/execution path — supplemental §15.3's "No destructive voice command may execute without review" is satisfied by never executing anything directly from this hook at all; a dictated transcript is meant to be handed to this app's existing real review-gated paths (e.g. Command Builder's AI-intent field, already routed through the real model router and mandatory `ActionQueue` approval).
+
+**Real text-to-speech** (`renderer/src/features/voice/useTextToSpeech.ts`) — generalizes the exact `SpeechSynthesis` engine `ScreenNarrator.tsx` already proved real for screen narration, for any consumer wanting to read arbitrary text aloud.
+
+**Real voice notes** (`core/voice/VoiceNoteStore.ts`, supplemental §15.1) — the renderer's real `MediaRecorder`-captured audio is base64-encoded for the IPC round-trip (Electron can't transfer a raw `Blob`) and decoded into a real `.webm` file on disk; metadata (duration, an optional real transcript from the same dictation session) is persisted alongside. Removal deletes both the metadata and the real audio file — confirmed by a test that checks the file is actually gone, not just delisted.
+
+**Real document intake** (`core/voice/DocumentIntakeService.ts`, supplemental §16.4) — a one-off extraction for immediate conversational context, distinct from Epic X4's persistent Knowledge Vault ingestion. Reuses the exact same real parsers and the exact same real `detectSecret()` redaction check Scoped Memory and the Knowledge Vault both already use — one real redaction mechanism shared across three features, not a third copy. "Extraction confidence must be represented honestly" (§16.4) is satisfied by never reporting one: there's no probabilistic OCR step in this slice to honestly compute a confidence for.
+
+**Explicitly deferred**: wake word (§15.2) — needs a continuously-running local audio-classification engine, no such dependency exists in this codebase; screen capture (§16) — §16.2 requires a real privacy-review UI (preview, provider, data destination, redactions, cancel, local-processing alternative) before any capture is used, and capturing via Electron's real `desktopCapturer` without building that review step first would violate "privacy review gates capture" directly — Epic X1's `CapabilityRegistry` already honestly reports `screen-capture` as `unsupported` for the same reason, unchanged here.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `MicrophonePermissionStore` real persisted grant/deny, fails closed | `core/voice/__tests__/MicrophonePermissionStore.test.ts` | +4 (new file) |
+| `VoiceNoteStore` real audio file decode/write/read/delete | `core/voice/__tests__/VoiceNoteStore.test.ts` | +5 (new file) |
+| `DocumentIntakeService` real extraction, real redaction, honest unsupported-type rejection | `core/voice/__tests__/DocumentIntakeService.test.ts` | +3 (new file) |
+| `useTextToSpeech` real speak/cancel through a stubbed `SpeechSynthesis`, unavailable-engine honesty | `renderer/src/features/voice/__tests__/useTextToSpeech.test.ts` | +4 (new file) |
+| `useDictation` real transcript/alternatives/error from a stubbed `SpeechRecognition`, stop-vs-cancel semantics | `renderer/src/features/voice/__tests__/useDictation.test.ts` | +7 (new file) |
+
+**Validation evidence (run 2026-06-26):**
+
+```text
+npm run test       → 155 files, 784 tests passed
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

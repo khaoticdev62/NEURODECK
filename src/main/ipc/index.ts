@@ -1,4 +1,4 @@
-import { app, Notification, shell, type BrowserWindow } from 'electron'
+import { app, Notification, session, shell, type BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -30,6 +30,8 @@ import { KnowledgeVaultService } from '../../core/knowledge/KnowledgeVaultServic
 import { MemoryStore } from '../../core/memory/MemoryStore'
 import { PersonaStore } from '../../core/promptLibrary/PersonaStore'
 import { PromptTemplateStore } from '../../core/promptLibrary/PromptTemplateStore'
+import { MicrophonePermissionStore } from '../../core/voice/MicrophonePermissionStore'
+import { VoiceNoteStore } from '../../core/voice/VoiceNoteStore'
 import { FeatureRegistry } from '../../core/feature/FeatureRegistry'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
@@ -67,6 +69,7 @@ import { registerExtensionHandlers } from './registerExtensionHandlers'
 import { registerKnowledgeHandlers } from './registerKnowledgeHandlers'
 import { registerMemoryHandlers } from './registerMemoryHandlers'
 import { registerPromptLibraryHandlers } from './registerPromptLibraryHandlers'
+import { registerVoiceHandlers } from './registerVoiceHandlers'
 import { registerFeatureHandlers } from './registerFeatureHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
@@ -201,6 +204,30 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     join(app.getPath('userData'), 'prompt-templates.json')
   )
   const personaStore = new PersonaStore(join(app.getPath('userData'), 'personas.json'))
+  const microphonePermissionStore = new MicrophonePermissionStore(
+    join(app.getPath('userData'), 'microphone-permission.json')
+  )
+  const voiceNoteStore = new VoiceNoteStore(
+    join(app.getPath('userData'), 'voice-notes.json'),
+    join(app.getPath('userData'), 'voice-notes')
+  )
+  // Real Epic X5 microphone gate (supplemental §15.3 "Microphone
+  // permission" is the first real step of the voice command pipeline).
+  // The main window only ever loads this app's own bundled UI (no
+  // third-party origin), so this is the one real, explicit, persisted
+  // yes/no the user grants via Privacy settings — never silently
+  // approved. Fails closed: any state other than an explicit `granted`
+  // denies the real OS-level `getUserMedia` request.
+  session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+    if (permission !== 'media') {
+      callback(false)
+      return
+    }
+    microphonePermissionStore
+      .isGranted()
+      .then((granted) => callback(granted))
+      .catch(() => callback(false))
+  })
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,
@@ -265,6 +292,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerKnowledgeHandlers(knowledgeStore, knowledgeVaultService)
   registerMemoryHandlers(memoryStore)
   registerPromptLibraryHandlers(promptTemplateStore, personaStore)
+  registerVoiceHandlers(microphonePermissionStore, voiceNoteStore)
   return () => {
     disposeTerminal()
     disposeRemote()

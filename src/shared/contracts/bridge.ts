@@ -51,6 +51,15 @@ import type {
   UpsertPromptTemplateRequest
 } from './promptLibrary'
 import type {
+  DocumentIntakeRequest,
+  DocumentIntakeResult,
+  MicrophonePermissionStatus,
+  SaveVoiceNoteRequest,
+  SetMicrophonePermissionRequest,
+  VoiceNote,
+  VoiceNoteIdRequest
+} from './voice'
+import type {
   DeleteFileRequest,
   RecoveryCheckpoint,
   RecoveryCheckpointRequest,
@@ -424,5 +433,15 @@ export interface NdxBridge {
     listPersonas: () => Promise<NdxResult<Persona[]>>
     upsertPersona: (request: UpsertPersonaRequest) => Promise<NdxResult<Persona>>
     removePersona: (request: PersonaIdRequest) => Promise<NdxResult<null>>
+  }
+  voice: {
+    getMicrophoneStatus: () => Promise<NdxResult<MicrophonePermissionStatus>>
+    setMicrophoneGranted: (
+      request: SetMicrophonePermissionRequest
+    ) => Promise<NdxResult<MicrophonePermissionStatus>>
+    listVoiceNotes: () => Promise<NdxResult<VoiceNote[]>>
+    saveVoiceNote: (request: SaveVoiceNoteRequest) => Promise<NdxResult<VoiceNote>>
+    removeVoiceNote: (request: VoiceNoteIdRequest) => Promise<NdxResult<null>>
+    intakeDocument: (request: DocumentIntakeRequest) => Promise<NdxResult<DocumentIntakeResult>>
   }
 }

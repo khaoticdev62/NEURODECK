@@ -343,6 +343,15 @@ const ndx: NdxBridge = {
     listPersonas: () => ipcRenderer.invoke(IPC_CHANNELS.personaList),
     upsertPersona: (request) => ipcRenderer.invoke(IPC_CHANNELS.personaUpsert, request),
     removePersona: (request) => ipcRenderer.invoke(IPC_CHANNELS.personaRemove, request)
+  },
+  voice: {
+    getMicrophoneStatus: () => ipcRenderer.invoke(IPC_CHANNELS.microphoneGetStatus),
+    setMicrophoneGranted: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.microphoneSetGranted, request),
+    listVoiceNotes: () => ipcRenderer.invoke(IPC_CHANNELS.voiceNoteList),
+    saveVoiceNote: (request) => ipcRenderer.invoke(IPC_CHANNELS.voiceNoteSave, request),
+    removeVoiceNote: (request) => ipcRenderer.invoke(IPC_CHANNELS.voiceNoteRemove, request),
+    intakeDocument: (request) => ipcRenderer.invoke(IPC_CHANNELS.documentIntake, request)
   }
 }
 

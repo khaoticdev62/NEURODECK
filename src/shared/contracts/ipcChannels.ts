@@ -164,5 +164,11 @@ export const IPC_CHANNELS = {
   promptTemplateRemove: 'promptTemplate.remove',
   personaList: 'persona.list',
   personaUpsert: 'persona.upsert',
-  personaRemove: 'persona.remove'
+  personaRemove: 'persona.remove',
+  microphoneGetStatus: 'microphone.getStatus',
+  microphoneSetGranted: 'microphone.setGranted',
+  voiceNoteList: 'voiceNote.list',
+  voiceNoteSave: 'voiceNote.save',
+  voiceNoteRemove: 'voiceNote.remove',
+  documentIntake: 'document.intake'
 } as const
