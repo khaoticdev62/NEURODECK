@@ -153,5 +153,41 @@ const defaultDetectors: Record<CapabilityId, CapabilityDetector> = {
   'ocr-extraction': () =>
     unsupported('No OCR/document-extraction provider is integrated yet (tracked for Epic X5).'),
   'remote-desktop-launchers': () =>
-    unsupported('No real RDP/VNC launcher integration is implemented yet.')
+    unsupported('No real RDP/VNC launcher integration is implemented yet.'),
+  'lanShare.available': () =>
+    unsupported('LAN Share has no service yet — Phase LAN-2 adds the real service lifecycle.'),
+  'lanShare.discovery.mdns': () =>
+    unsupported('No real mDNS discovery client is implemented yet (tracked for Phase LAN-3).'),
+  'lanShare.discovery.manual': () =>
+    unsupported('Manual connection needs the LAN Share service from Phase LAN-2, not yet built.'),
+  'lanShare.registration.v1': () =>
+    unsupported('No Warpinator-compatible v1 registration client exists yet (Phase LAN-3).'),
+  'lanShare.registration.v2': () =>
+    unsupported('No Warpinator-compatible v2 registration client exists yet (Phase LAN-3).'),
+  'lanShare.files': () =>
+    unsupported('No real send/receive transfer engine exists yet (Phase LAN-5/LAN-6).'),
+  'lanShare.directories': () =>
+    unsupported('No real send/receive transfer engine exists yet (Phase LAN-5/LAN-6).'),
+  'lanShare.text': () =>
+    unsupported('No real send/receive transfer engine exists yet (Phase LAN-5/LAN-6).'),
+  'lanShare.parallel': () => unsupported('No real transfer queue exists yet (Phase LAN-5).'),
+  'lanShare.compression': () =>
+    unsupported('No real compression negotiation exists yet (Phase LAN-5).'),
+  'lanShare.resume.ndx': () =>
+    unsupported('NDX-enhanced resume needs the real transfer engine from Phase LAN-5/LAN-6.'),
+  'lanShare.landlock': () => linuxDependencyOrUnsupported('Landlock LSM'),
+  'lanShare.bubblewrap': () => linuxDependencyOrUnsupported('`bwrap --version`'),
+  'lanShare.ipv4': () => ({
+    status: 'available',
+    provider: 'node:net',
+    reason: 'The Node.js runtime supports IPv4 sockets on this device.'
+  }),
+  'lanShare.ipv6': () =>
+    unsupported(
+      'IPv6 is intentionally capability-gated per the LAN Share spec until real interoperability passes — not a technical absence.'
+    ),
+  'lanShare.firewall.detect': () => linuxDependencyOrUnsupported('firewall listener inspection'),
+  'lanShare.firewall.configure': () => linuxDependencyOrUnsupported('firewall rule management'),
+  'lanShare.backgroundReceive': () =>
+    unsupported('No background/suspend resource policy exists yet (Phase LAN-9).')
 }

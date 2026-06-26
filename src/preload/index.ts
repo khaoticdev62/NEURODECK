@@ -6,6 +6,7 @@ import {
   browserTabSchema,
   extensionHealthEventSchema,
   IPC_CHANNELS,
+  lanShareTransferJobSchema,
   peerDeviceSchema,
   powerStateEventSchema,
   remoteSessionDataEventSchema,
@@ -21,6 +22,7 @@ import { z } from 'zod'
 const transactionRecordListSchema = z.array(transactionRecordSchema)
 const peerDeviceListSchema = z.array(peerDeviceSchema)
 const transferJobListSchema = z.array(transferJobSchema)
+const lanShareTransferJobListSchema = z.array(lanShareTransferJobSchema)
 
 /**
  * The real, narrow, typed bridge (mega-prompt §6, §14) replacing the
@@ -395,6 +397,29 @@ const ndx: NdxBridge = {
       }
       ipcRenderer.on(IPC_CHANNELS.transferJobUpdate, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.transferJobUpdate, handler)
+    }
+  },
+  lanShare: {
+    getIdentity: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareIdentityGet),
+    getServiceStatus: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareServiceStatus),
+    getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareSettingsGet),
+    updateSettings: (request) => ipcRenderer.invoke(IPC_CHANNELS.lanShareSettingsUpdate, request),
+    setGroupCode: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.lanShareSettingsSetGroupCode, request),
+    listPeers: () => ipcRenderer.invoke(IPC_CHANNELS.lanSharePeerList),
+    addManualPeer: (request) => ipcRenderer.invoke(IPC_CHANNELS.lanSharePeerAddManual, request),
+    removePeer: (request) => ipcRenderer.invoke(IPC_CHANNELS.lanSharePeerRemove, request),
+    setPeerTrust: (request) => ipcRenderer.invoke(IPC_CHANNELS.lanSharePeerSetTrust, request),
+    listTransferJobs: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareTransferList),
+    cancelTransferJob: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.lanShareTransferCancel, request),
+    onTransferJobUpdate: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = lanShareTransferJobListSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.lanShareTransferUpdate, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.lanShareTransferUpdate, handler)
     }
   }
 }

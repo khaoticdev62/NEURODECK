@@ -80,6 +80,19 @@ import type {
 } from './lan'
 import type { TransferJob, TransferJobIdRequest } from './transfer'
 import type {
+  AddManualLanSharePeerRequest,
+  LanShareIdentity,
+  LanSharePeer,
+  LanSharePeerIdRequest,
+  LanShareServiceStatus,
+  LanShareSettings,
+  LanShareTransferJob,
+  LanShareTransferJobIdRequest,
+  SetLanShareGroupCodeRequest,
+  SetLanSharePeerTrustRequest,
+  UpdateLanShareSettingsRequest
+} from './lanShare'
+import type {
   DeleteFileRequest,
   RecoveryCheckpoint,
   RecoveryCheckpointRequest,
@@ -489,5 +502,19 @@ export interface NdxBridge {
     list: () => Promise<NdxResult<TransferJob[]>>
     cancel: (request: TransferJobIdRequest) => Promise<NdxResult<boolean>>
     onUpdate: (listener: (jobs: TransferJob[]) => void) => () => void
+  }
+  lanShare: {
+    getIdentity: () => Promise<NdxResult<LanShareIdentity>>
+    getServiceStatus: () => Promise<NdxResult<LanShareServiceStatus>>
+    getSettings: () => Promise<NdxResult<LanShareSettings>>
+    updateSettings: (request: UpdateLanShareSettingsRequest) => Promise<NdxResult<LanShareSettings>>
+    setGroupCode: (request: SetLanShareGroupCodeRequest) => Promise<NdxResult<LanShareSettings>>
+    listPeers: () => Promise<NdxResult<LanSharePeer[]>>
+    addManualPeer: (request: AddManualLanSharePeerRequest) => Promise<NdxResult<LanSharePeer>>
+    removePeer: (request: LanSharePeerIdRequest) => Promise<NdxResult<null>>
+    setPeerTrust: (request: SetLanSharePeerTrustRequest) => Promise<NdxResult<LanSharePeer>>
+    listTransferJobs: () => Promise<NdxResult<LanShareTransferJob[]>>
+    cancelTransferJob: (request: LanShareTransferJobIdRequest) => Promise<NdxResult<boolean>>
+    onTransferJobUpdate: (listener: (jobs: LanShareTransferJob[]) => void) => () => void
   }
 }

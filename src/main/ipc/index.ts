@@ -37,6 +37,10 @@ import { SnippetStore } from '../../core/clipboard/SnippetStore'
 import { DeviceIdentityStore } from '../../core/lan/DeviceIdentityStore'
 import { PeerDiscoveryService } from '../../core/lan/PeerDiscoveryService'
 import { PeerStore } from '../../core/lan/PeerStore'
+import { LanShareIdentityStore } from '../../core/lanShare/LanShareIdentityStore'
+import { LanSharePeerStore } from '../../core/lanShare/LanSharePeerStore'
+import { LanShareSettingsStore } from '../../core/lanShare/LanShareSettingsStore'
+import { LanShareTransferStore } from '../../core/lanShare/LanShareTransferStore'
 import { PeerTransferService } from '../../core/lan/PeerTransferService'
 import { TransferManager } from '../../core/transfer/TransferManager'
 import { FeatureRegistry } from '../../core/feature/FeatureRegistry'
@@ -78,6 +82,7 @@ import { registerMemoryHandlers } from './registerMemoryHandlers'
 import { registerPromptLibraryHandlers } from './registerPromptLibraryHandlers'
 import { registerClipboardHandlers } from './registerClipboardHandlers'
 import { registerLanHandlers } from './registerLanHandlers'
+import { registerLanShareHandlers } from './registerLanShareHandlers'
 import { registerVoiceHandlers } from './registerVoiceHandlers'
 import { registerFeatureHandlers } from './registerFeatureHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
@@ -282,6 +287,25 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     })
     peerDiscoveryService.start()
   })
+  // Phase LAN-1 (Warpinator-compatible LAN Share) — schemas, settings,
+  // and data-model stores only. No discovery/auth/transfer engine exists
+  // yet; see docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md and the
+  // implementation ledger for the phased rollout this is part of.
+  const lanShareIdentityStore = new LanShareIdentityStore(
+    join(app.getPath('userData'), 'lan-share-identity.json'),
+    hostname()
+  )
+  const lanShareSettingsStore = new LanShareSettingsStore(
+    join(app.getPath('userData'), 'lan-share-settings.json'),
+    hostname(),
+    join(app.getPath('downloads'), 'NeuroDeck LAN Share')
+  )
+  const lanSharePeerStore = new LanSharePeerStore(
+    join(app.getPath('userData'), 'lan-share-peers.json')
+  )
+  const lanShareTransferStore = new LanShareTransferStore(
+    join(app.getPath('userData'), 'lan-share-transfer-jobs.json')
+  )
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,
@@ -354,12 +378,20 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     lanTransferManager,
     getWindow
   )
+  const disposeLanShare = registerLanShareHandlers(
+    lanShareIdentityStore,
+    lanShareSettingsStore,
+    lanSharePeerStore,
+    lanShareTransferStore,
+    getWindow
+  )
   return () => {
     disposeTerminal()
     disposeRemote()
     disposePower()
     disposePackages()
     disposeLan()
+    disposeLanShare()
     peerDiscoveryService?.stop()
     peerTransferService.stop()
   }

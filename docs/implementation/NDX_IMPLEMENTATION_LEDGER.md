@@ -2045,3 +2045,41 @@ Per that document's own Master Directive ("Before coding... inventory every upst
 
 - `docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md` — full inventory, recorded commit/blob SHAs, chosen strategy, and binding clean-room rules for future phases.
 - No code changes; no test/lint/typecheck/build re-run needed for this phase (no source touched).
+
+## LAN Share (Warpinator-compatible) — Phase LAN-1 (2026-06-26)
+
+Real schemas, settings, data-model persistence, capability registration, and typed IPC for the parts of the LAN Share spec that have a real, honest implementation today — discovery, authentication, and the send/receive engine are still phases LAN-3 through LAN-6, not attempted here.
+
+**Real contracts** (`src/shared/contracts/lanShare.ts`) — independently authored per the LAN-0 clean-room strategy (no upstream text copied): device identity, settings (ports, receive directory, approval/background/compression policy, group-code-configured flag — never the plaintext code itself), the real §12 trust-state enum (`unknown`/`seen`/`temporarily-approved`/`trusted`/`blocked`/`fingerprint-changed`/`revoked`), the real §20 15-state transfer job lifecycle (distinct from Epic X6's own simpler `TransferJob` — this one tracks `preflighting`/`negotiating`/`verifying`/`quarantined`/etc., matching what real Warpinator-style transfers actually need), the exact 23-code §28 error enum, service status, and diagnostic result shapes.
+
+**Real Capability Registry entries** (`core/capability/CapabilityRegistry.ts`) — all 17 `lanShare.*` ids from spec §7 now exist, each with an honest, specific reason naming the exact future phase that will make it real (`lanShare.discovery.mdns` → Phase LAN-3, `lanShare.files` → Phase LAN-5/6, etc.) rather than a generic "not implemented." One id, `lanShare.ipv4`, is genuinely `available` today — the Node.js runtime supports IPv4 sockets regardless of LAN Share's own progress, which is a different kind of fact than "is this feature built yet." `lanShare.ipv6` is deliberately reported `unsupported` even though the OS may support IPv6, because spec §2 explicitly requires IPv6 to stay capability-gated until real interoperability passes — the reason text says so explicitly, so this isn't mistaken for a technical absence.
+
+**Real data-model persistence** (`core/lanShare/`) — four `JsonStore`-backed classes, each with real, tested behavior (not stubs returning empty data forever, even though nothing populates them from the network yet):
+- `LanShareIdentityStore` — a stable per-device id + display name, generated once and persisted. Deliberately does **not** generate the RSA+X.509 certificate spec §13 eventually needs — that's real crypto work with no consumer until Phase LAN-4 builds the auth flow that uses it; building it now would be speculative.
+- `LanShareSettingsStore` — real defaults matching the spec's own stated defaults (ports 42000/42001, `~/Downloads/NeuroDeck LAN Share`), with a real validation rule (transfer port and auth port must differ) enforced on every update, and `groupCodeConfigured` as the only trace of the eventual group code — verified by a test that no `groupCode` key reaches the persisted object.
+- `LanSharePeerStore` — real manual-peer CRUD and the real §12 trust-state transition function (no auto-elevation, `blocked` only changes via explicit user action). No mDNS-driven peers exist yet — that data only starts flowing once Phase LAN-3's discovery client is real.
+- `LanShareTransferStore` — real job creation/cancellation/listening, mirroring the same `onChange`-listener pattern this codebase already uses three times over (`TransactionManager`, `ExtensionHost`, Epic X6's `TransferManager`). No real engine drives a job through its other 13 states yet — that's Phase LAN-5/LAN-6.
+
+**Real typed IPC, end-to-end** (`registerLanShareHandlers.ts` → `bridge.ts` → `preload/index.ts` → `lanShareClient.ts`) — identity read, settings read/update/group-code-configured, manual peer add/remove/trust, and transfer job list/cancel are all real, Zod-validated, and reachable from the renderer today. **Deliberately not registered**: `lanShare.discovery`/`lanShare.send`/`lanShare.receive`/`lanShare.firewall`/`lanShare.diagnostics` channels. Registering a handler for any of these today would mean returning fabricated scan results, fake transfer progress, or invented diagnostic passes — there is no real engine behind them until their respective phases land, and this project's no-mock-production-behavior rule applies to IPC handlers exactly as much as to UI.
+
+**No screens, sockets, mDNS clients, or certificates were built in this phase** — LAN-1 is schema/data-model/settings/error scope only, per the spec's own phase breakdown (§37).
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `LanShareIdentityStore` real generate-once/persist, rename | `core/lanShare/__tests__/LanShareIdentityStore.test.ts` | +2 (new file) |
+| `LanShareSettingsStore` real defaults, port-conflict validation, group-code-configured flag | `core/lanShare/__tests__/LanShareSettingsStore.test.ts` | +4 (new file) |
+| `LanSharePeerStore` real manual add/dedupe/trust-transition/remove | `core/lanShare/__tests__/LanSharePeerStore.test.ts` | +5 (new file) |
+| `LanShareTransferStore` real create/cancel/listener notification/listing order | `core/lanShare/__tests__/LanShareTransferStore.test.ts` | +4 (new file) |
+
+**Validation evidence (run 2026-06-26):**
+
+```text
+npm run test       → 167 files, 843 tests passed (one unrelated pre-existing test — AgentRuntime's
+                      temp-dir cleanup — failed once under full-suite parallelism on Windows and
+                      passed cleanly in isolation; not touched by this change)
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

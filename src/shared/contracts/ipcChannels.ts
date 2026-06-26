@@ -189,5 +189,17 @@ export const IPC_CHANNELS = {
   peerRemove: 'peer.remove',
   peerSetTrust: 'peer.setTrust',
   peerSendFile: 'peer.sendFile',
-  peerUpdate: 'peer.update'
+  peerUpdate: 'peer.update',
+  lanShareIdentityGet: 'lanShare.identity.get',
+  lanShareSettingsGet: 'lanShare.settings.get',
+  lanShareSettingsUpdate: 'lanShare.settings.update',
+  lanShareSettingsSetGroupCode: 'lanShare.settings.setGroupCode',
+  lanSharePeerList: 'lanShare.peers.list',
+  lanSharePeerAddManual: 'lanShare.peers.addManual',
+  lanSharePeerRemove: 'lanShare.peers.remove',
+  lanSharePeerSetTrust: 'lanShare.peers.setTrust',
+  lanShareTransferList: 'lanShare.transfers.list',
+  lanShareTransferCancel: 'lanShare.transfers.cancel',
+  lanShareTransferUpdate: 'lanShare.transfers.update',
+  lanShareServiceStatus: 'lanShare.service.status'
 } as const

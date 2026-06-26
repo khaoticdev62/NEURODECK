@@ -41,7 +41,25 @@ export const capabilityIdSchema = z.enum([
   'notifications',
   'screen-capture',
   'ocr-extraction',
-  'remote-desktop-launchers'
+  'remote-desktop-launchers',
+  'lanShare.available',
+  'lanShare.discovery.mdns',
+  'lanShare.discovery.manual',
+  'lanShare.registration.v1',
+  'lanShare.registration.v2',
+  'lanShare.files',
+  'lanShare.directories',
+  'lanShare.text',
+  'lanShare.parallel',
+  'lanShare.compression',
+  'lanShare.resume.ndx',
+  'lanShare.landlock',
+  'lanShare.bubblewrap',
+  'lanShare.ipv4',
+  'lanShare.ipv6',
+  'lanShare.firewall.detect',
+  'lanShare.firewall.configure',
+  'lanShare.backgroundReceive'
 ])
 export type CapabilityId = z.infer<typeof capabilityIdSchema>
 
