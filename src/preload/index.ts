@@ -4,6 +4,7 @@ import {
   agentToolExecutionRequestSchema,
   browserPermissionRequestSchema,
   browserTabSchema,
+  extensionHealthEventSchema,
   IPC_CHANNELS,
   powerStateEventSchema,
   remoteSessionDataEventSchema,
@@ -300,6 +301,22 @@ const ndx: NdxBridge = {
       }
       ipcRenderer.on(IPC_CHANNELS.packageTransactionUpdate, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.packageTransactionUpdate, handler)
+    }
+  },
+  extensions: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.extensionList),
+    install: (request) => ipcRenderer.invoke(IPC_CHANNELS.extensionInstall, request),
+    setEnabled: (request) => ipcRenderer.invoke(IPC_CHANNELS.extensionSetEnabled, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.extensionRemove, request),
+    clearQuarantine: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.extensionClearQuarantine, request),
+    onHealthEvent: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = extensionHealthEventSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.extensionHealthEvent, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.extensionHealthEvent, handler)
     }
   }
 }

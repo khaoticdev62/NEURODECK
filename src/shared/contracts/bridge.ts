@@ -19,6 +19,13 @@ import type {
 import type { DeviceIdRequest, DeviceRecord, UpsertDeviceRequest } from './device'
 import type { TransactionIdRequest, TransactionRecord } from './transaction'
 import type {
+  ExtensionHealthEvent,
+  ExtensionIdRequest,
+  ExtensionRecord,
+  InstallExtensionRequest,
+  SetExtensionEnabledRequest
+} from './extension'
+import type {
   DeleteFileRequest,
   RecoveryCheckpoint,
   RecoveryCheckpointRequest,
@@ -358,5 +365,13 @@ export interface NdxBridge {
     listTransactions: () => Promise<NdxResult<TransactionRecord[]>>
     cancelTransaction: (request: TransactionIdRequest) => Promise<NdxResult<boolean>>
     onTransactionUpdate: (listener: (transactions: TransactionRecord[]) => void) => () => void
+  }
+  extensions: {
+    list: () => Promise<NdxResult<ExtensionRecord[]>>
+    install: (request: InstallExtensionRequest) => Promise<NdxResult<ExtensionRecord>>
+    setEnabled: (request: SetExtensionEnabledRequest) => Promise<NdxResult<ExtensionRecord>>
+    remove: (request: ExtensionIdRequest) => Promise<NdxResult<null>>
+    clearQuarantine: (request: ExtensionIdRequest) => Promise<NdxResult<ExtensionRecord>>
+    onHealthEvent: (listener: (event: ExtensionHealthEvent) => void) => () => void
   }
 }

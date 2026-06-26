@@ -140,5 +140,11 @@ export const IPC_CHANNELS = {
   packageFlatpakUninstall: 'package.flatpakUninstall',
   packageTransactionList: 'package.transactionList',
   packageTransactionCancel: 'package.transactionCancel',
-  packageTransactionUpdate: 'package.transactionUpdate'
+  packageTransactionUpdate: 'package.transactionUpdate',
+  extensionList: 'extension.list',
+  extensionInstall: 'extension.install',
+  extensionSetEnabled: 'extension.setEnabled',
+  extensionRemove: 'extension.remove',
+  extensionClearQuarantine: 'extension.clearQuarantine',
+  extensionHealthEvent: 'extension.healthEvent'
 } as const

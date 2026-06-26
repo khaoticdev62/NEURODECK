@@ -1,4 +1,4 @@
-import { app, shell, type BrowserWindow } from 'electron'
+import { app, Notification, shell, type BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
@@ -20,6 +20,11 @@ import { CapabilityRegistry } from '../../core/capability/CapabilityRegistry'
 import { ControllerSettingsStore } from '../../core/controller/ControllerSettingsStore'
 import { DeviceStore } from '../../core/devices/DeviceStore'
 import { DisplaySettingsStore } from '../../core/display/DisplaySettingsStore'
+import { CapabilityBroker } from '../../core/extensions/CapabilityBroker'
+import { ExtensionDataStore } from '../../core/extensions/ExtensionDataStore'
+import { ExtensionHost } from '../../core/extensions/ExtensionHost'
+import { ExtensionRuntime } from '../../core/extensions/ExtensionRuntime'
+import { ExtensionStore } from '../../core/extensions/ExtensionStore'
 import { FeatureRegistry } from '../../core/feature/FeatureRegistry'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
@@ -53,6 +58,7 @@ import { registerControllerSettingsHandlers } from './registerControllerSettings
 import { registerDeviceHandlers } from './registerDeviceHandlers'
 import { registerDiagnosticsHandlers } from './registerDiagnosticsHandlers'
 import { registerDisplaySettingsHandlers } from './registerDisplaySettingsHandlers'
+import { registerExtensionHandlers } from './registerExtensionHandlers'
 import { registerFeatureHandlers } from './registerFeatureHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
@@ -136,6 +142,50 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     transactionManager,
     applicationStore
   )
+  const extensionStore = new ExtensionStore(join(app.getPath('userData'), 'extensions.json'))
+  const extensionDataStore = new ExtensionDataStore(join(app.getPath('userData'), 'extension-data'))
+  const capabilityBroker = new CapabilityBroker()
+  capabilityBroker.register('show-notification', async ({ args }) => {
+    if (!Notification.isSupported())
+      throw new Error('Notifications are not supported on this device.')
+    new Notification({
+      title: typeof args.title === 'string' ? args.title : 'Extension notification',
+      body: typeof args.body === 'string' ? args.body : undefined
+    }).show()
+    return { shown: true }
+  })
+  capabilityBroker.register('store-extension-data', async ({ extensionId, method, args }) => {
+    if (method === 'get') return extensionDataStore.get(extensionId, String(args.key))
+    if (method === 'set') {
+      await extensionDataStore.set(extensionId, String(args.key), args.value)
+      return { stored: true }
+    }
+    if (method === 'clear') {
+      await extensionDataStore.clear(extensionId)
+      return { cleared: true }
+    }
+    throw new Error(`Unknown store-extension-data method "${method}".`)
+  })
+  const extensionHost = new ExtensionHost(
+    join(__dirname, 'extensionHostEntry.js'),
+    capabilityBroker,
+    {
+      onFault: (extensionId, message, faultCountInWindow) => {
+        void extensionRuntime.handleFault(extensionId, message, faultCountInWindow)
+      }
+    }
+  )
+  const extensionRuntime = new ExtensionRuntime(extensionStore, extensionHost, (record) => {
+    const window = getWindow()
+    if (window && !window.webContents.isDestroyed()) {
+      window.webContents.send(IPC_CHANNELS.extensionHealthEvent, {
+        id: record.manifest.id,
+        state: record.state,
+        faultCount: record.faultCount,
+        quarantineReason: record.quarantineReason
+      })
+    }
+  })
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,
@@ -196,6 +246,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     transactionManager,
     getWindow
   )
+  registerExtensionHandlers(extensionStore, extensionRuntime)
   return () => {
     disposeTerminal()
     disposeRemote()

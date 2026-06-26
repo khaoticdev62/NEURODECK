@@ -9,6 +9,18 @@ export default defineConfig({
       alias: {
         '@shared': resolve('src/shared')
       }
+    },
+    build: {
+      rollupOptions: {
+        // Epic X3's ExtensionHost forks this as a real, separate Node
+        // process per extension (supplemental spec §9.3) — it needs its
+        // own compiled entry alongside the main process's own index.js,
+        // not a dynamic `tsx`/`ts-node` runtime dependency in production.
+        input: {
+          index: resolve('src/main/index.ts'),
+          extensionHostEntry: resolve('src/main/extensions/extensionHostEntry.ts')
+        }
+      }
     }
   },
   preload: {

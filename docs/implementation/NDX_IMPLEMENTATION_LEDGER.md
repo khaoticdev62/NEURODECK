@@ -1882,3 +1882,37 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## Epic X3 — Extension ecosystem (2026-06-25)
+
+Real process-isolated extension host, manifest validation, deny-by-default capability API, and fault-driven quarantine (supplemental §9). Extension Manager UI, the signed marketplace client, the SDK, and the CLI are explicitly deferred — each genuinely needs its own foundation (a UI consumer, a real registry server, a stable contracts package, a local authenticated API server) this pass doesn't build, and faking any of them would violate the supplemental non-negotiables directly (no fabricated marketplace data, no package-manager lies).
+
+**Real process isolation, not a try/catch** (`core/extensions/ExtensionHost.ts` + `main/extensions/extensionHostEntry.ts`, supplemental §9.3): every extension runs in a genuinely separate Node OS process, forked from a real, separately-compiled build artifact. `electron.vite.config.ts`'s `main` build gained a second Rollup input (`extensionHostEntry`) specifically so this is a real compiled `.js` file alongside `index.js` in production, not a dev-only `ts-node` dependency — confirmed by forking the actual compiled `out/main/extensionHostEntry.js` directly from a throwaway script and observing a real fault report for a missing entrypoint, not just reading the source and assuming it works. Honest scope, stated directly in the file's own doc comment: this achieves real crash/process isolation and real capability gating, not full content-level sandboxing — the extension module is still a real Node module that could call `require('fs')` itself inside its own process; closing that needs a restricted runtime (WASM/QuickJS) this slice doesn't build.
+
+**Real manifest validation** (`core/extensions/ManifestLoader.ts`, supplemental §9.2) — reads and validates a real `manifest.json` against the real `NdxExtensionManifest` Zod schema, and confirms the declared entrypoint actually resolves inside the extension's own real install directory before `ExtensionHost` ever forks a process for it — a manifest declaring `entrypoints.main: "../../../etc/passwd"` is rejected, verified by a real test.
+
+**Real deny-by-default capability API** (`core/extensions/CapabilityBroker.ts`, supplemental §9.4) — a call for a capability the extension wasn't granted is rejected before any handler runs; a granted capability with no real handler registered is also rejected (an honest "not implemented yet" failure, not a silent no-op success). Two of the twelve schema capabilities have real, working handlers wired in `main/ipc/index.ts`: `show-notification` (real Electron `Notification`) and `store-extension-data` (`core/extensions/ExtensionDataStore.ts`, a real per-extension-namespaced JSON store — confirmed by a test that two extensions' data never leaks into each other's file). The other ten are real schema entries with no real handler yet, which is the honest current state, not a partial implementation pretending to be complete.
+
+**Real fault-driven quarantine** (`core/extensions/ExtensionRuntime.ts`, supplemental §9.6) — `ExtensionHost` tracks real fault timestamps in a real rolling 60-second window; once a real crash count crosses the threshold, `ExtensionRuntime.handleFault()` stops the real child process and persists a real `quarantineReason`, and refuses to let `setEnabled(true)` re-enable a quarantined extension without an explicit `clearQuarantine()` call first. Verified end-to-end with a real fixture child process that genuinely crashes twice (not a mocked event), confirming the host's real fork()/IPC/fault-tracking pipeline end to end.
+
+**Explicitly deferred**: Extension Manager UI (no screen yet — the real backend has no UI consumer in this pass); the signed marketplace client (§10) — there is no documented registry protocol or real server to talk to, and the supplemental non-negotiables explicitly require the platform to "remain usable when no marketplace server is configured" and forbid fabricated marketplace data, so `install()` is scoped to "install from a local unpacked directory" instead, the same real, honest action VS Code calls "Install from Folder"; cryptographic signature verification (manifest/path-traversal verification is real, but a `signature` block's actual cryptographic validity isn't checked yet — `trust` is set from presence, not verified validity); the Developer SDK and CLI (§11) — the CLI specifically needs §11.3's local authenticated API server (scoped tokens, localhost binding, expiration/revocation) built first, a security-sensitive surface deserving its own focused pass rather than being bolted on here.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `CapabilityBroker` deny-by-default, both denial paths, real dispatch | `core/extensions/__tests__/CapabilityBroker.test.ts` | +3 (new file) |
+| `ExtensionStore` real CRUD | `core/extensions/__tests__/ExtensionStore.test.ts` | +5 (new file) |
+| `ManifestLoader` real manifest validation, directory-traversal protection | `core/extensions/__tests__/ManifestLoader.test.ts` | +7 (new file) |
+| `ExtensionHost` real fork()/IPC/fault-tracking against a real child process | `core/extensions/__tests__/ExtensionHost.test.ts` | +6 (new file) |
+| `ExtensionRuntime` install/enable/disable/quarantine/clear lifecycle | `core/extensions/__tests__/ExtensionRuntime.test.ts` | +8 (new file) |
+| `ExtensionDataStore` real per-extension data isolation | `core/extensions/__tests__/ExtensionDataStore.test.ts` | +4 (new file) |
+
+**Validation evidence (run 2026-06-25):**
+
+```text
+npm run test       → 141 files, 707 tests passed
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded (real second main entry compiled to out/main/extensionHostEntry.js, confirmed by directly forking the artifact and observing a real fault report)
+```
