@@ -120,5 +120,14 @@ export const IPC_CHANNELS = {
   learningUpdateUserCurriculum: 'learning.updateUserCurriculum',
   learningDeleteUserCurriculum: 'learning.deleteUserCurriculum',
   learningGetProgress: 'learning.getProgress',
-  learningUpdateProgress: 'learning.updateProgress'
+  learningUpdateProgress: 'learning.updateProgress',
+  capabilityList: 'capability.list',
+  capabilityRefresh: 'capability.refresh',
+  featureList: 'feature.list',
+  applicationList: 'application.list',
+  applicationUpsert: 'application.upsert',
+  applicationRemove: 'application.remove',
+  deviceList: 'device.list',
+  deviceUpsert: 'device.upsert',
+  deviceRemove: 'device.remove'
 } as const

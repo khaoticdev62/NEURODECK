@@ -3,10 +3,14 @@ import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
+import { ApplicationStore } from '../../core/applications/ApplicationStore'
 import { BrowserTabStore } from '../../core/browser/BrowserTabStore'
 import { BrowserPermissionStore } from '../../core/browser/BrowserPermissionStore'
+import { CapabilityRegistry } from '../../core/capability/CapabilityRegistry'
 import { ControllerSettingsStore } from '../../core/controller/ControllerSettingsStore'
+import { DeviceStore } from '../../core/devices/DeviceStore'
 import { DisplaySettingsStore } from '../../core/display/DisplaySettingsStore'
+import { FeatureRegistry } from '../../core/feature/FeatureRegistry'
 import { FileService } from '../../core/files/FileService'
 import { GitService } from '../../core/git/GitService'
 import { LockSettingsStore } from '../../core/lock/LockSettingsStore'
@@ -26,13 +30,19 @@ import { TerminalService } from '../../core/terminal/TerminalService'
 import { WorkflowRunStore } from '../../core/workflows/WorkflowRunStore'
 import { WorkflowStore } from '../../core/workflows/WorkflowStore'
 import { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
+import { electronCapabilityDetectors } from '../security/electronCapabilityDetectors'
 import { electronSecretCipher } from '../security/electronSecretCipher'
+import { FEATURE_CATALOG } from '../../shared/features/featureCatalog'
 import { IPC_CHANNELS } from '@shared/contracts'
 import { registerAgentHandlers } from './registerAgentHandlers'
+import { registerApplicationHandlers } from './registerApplicationHandlers'
 import { registerBrowserHandlers } from './registerBrowserHandlers'
+import { registerCapabilityHandlers } from './registerCapabilityHandlers'
 import { registerControllerSettingsHandlers } from './registerControllerSettingsHandlers'
+import { registerDeviceHandlers } from './registerDeviceHandlers'
 import { registerDiagnosticsHandlers } from './registerDiagnosticsHandlers'
 import { registerDisplaySettingsHandlers } from './registerDisplaySettingsHandlers'
+import { registerFeatureHandlers } from './registerFeatureHandlers'
 import { registerFileHandlers } from './registerFileHandlers'
 import { registerGitHandlers } from './registerGitHandlers'
 import { registerLockHandlers } from './registerLockHandlers'
@@ -87,6 +97,10 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     systemMetricsService
   )
   const ollamaRuntime = new OllamaRuntimeService()
+  const capabilityRegistry = new CapabilityRegistry(electronCapabilityDetectors)
+  const featureRegistry = new FeatureRegistry(FEATURE_CATALOG)
+  const applicationStore = new ApplicationStore(join(app.getPath('userData'), 'applications.json'))
+  const deviceStore = new DeviceStore(join(app.getPath('userData'), 'devices.json'))
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,
@@ -132,6 +146,10 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)
   const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)
+  registerCapabilityHandlers(capabilityRegistry)
+  registerFeatureHandlers(featureRegistry, capabilityRegistry)
+  registerApplicationHandlers(applicationStore)
+  registerDeviceHandlers(deviceStore)
   return () => {
     disposeTerminal()
     disposeRemote()

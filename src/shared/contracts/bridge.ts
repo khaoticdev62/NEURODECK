@@ -1,5 +1,13 @@
 import type { FileEntry, ListFilesRequest, ReadFileRequest, ReadFileResult } from './file'
 import type { NdxResult } from './error'
+import type { CapabilityState } from './capability'
+import type { FeatureState } from './feature'
+import type {
+  ApplicationIdRequest,
+  ApplicationRecord,
+  UpsertApplicationRequest
+} from './application'
+import type { DeviceIdRequest, DeviceRecord, UpsertDeviceRequest } from './device'
 import type {
   DeleteFileRequest,
   RecoveryCheckpoint,
@@ -310,5 +318,22 @@ export interface NdxBridge {
     deleteUserCurriculum: (request: CurriculumIdRequest) => Promise<NdxResult<null>>
     getProgress: () => Promise<NdxResult<CurriculumProgress>>
     updateProgress: (request: UpdateProgressRequest) => Promise<NdxResult<CurriculumProgress>>
+  }
+  capabilities: {
+    list: () => Promise<NdxResult<CapabilityState[]>>
+    refresh: () => Promise<NdxResult<CapabilityState[]>>
+  }
+  features: {
+    list: () => Promise<NdxResult<FeatureState[]>>
+  }
+  applications: {
+    list: () => Promise<NdxResult<ApplicationRecord[]>>
+    upsert: (request: UpsertApplicationRequest) => Promise<NdxResult<ApplicationRecord>>
+    remove: (request: ApplicationIdRequest) => Promise<NdxResult<null>>
+  }
+  devices: {
+    list: () => Promise<NdxResult<DeviceRecord[]>>
+    upsert: (request: UpsertDeviceRequest) => Promise<NdxResult<DeviceRecord>>
+    remove: (request: DeviceIdRequest) => Promise<NdxResult<null>>
   }
 }

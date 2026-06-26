@@ -1807,3 +1807,39 @@ npm audit             → 5 vulnerabilities (3 moderate, 1 high, 1 critical), al
 | Real Recovery Service checkpoint on file delete | `e2e/recovery.spec.ts` | +1 (new file) |
 | Full ActionQueue approval pipeline against a real terminal | `e2e/command-builder.spec.ts` | +1 (new file) |
 | Emergency Stop enforcement at the queue level | `e2e/emergency-stop.spec.ts` | +1 (new file) |
+
+## Phase B begins — Epic X1 platform registry foundation (2026-06-25)
+
+Phase A complete; starting Phase B per `IMPLEMENTATION_CHECKLIST.md`'s own "Phase A to completion before starting Phase B" instruction. Epic X1 (supplemental spec §4's "Required Architecture Extensions") is the prerequisite every later supplemental epic builds on — four registries plus a shared transaction framework, all real for the scope this foundation epic actually owns.
+
+**Capability Registry** (`core/capability/CapabilityRegistry.ts`, supplemental §33) — every hardware/environment-dependent feature queries this instead of an ad hoc `process.platform` check. Per the supplemental non-negotiable §3.7 ("no false hardware assumptions"), every one of the 21 known capability ids returns a real, honest status with a real reason. Confirmed by direct inspection of this development machine: `secure-storage` (via Electron `safeStorage.isEncryptionAvailable()`), `notifications` (`Notification.isSupported()`), and `gpu-acceleration` (`app.getGPUFeatureStatus()`) are real, checkable signals, wired as real detector overrides in `main/security/electronCapabilityDetectors.ts`. The other 18 (Bluetooth, microphone, camera, gyro, rear buttons, haptics, thermal sensors, fan controls, Steam shortcut editing, Decky integration, etc.) have no real detection backend built yet and honestly report `unsupported`/`dependency-required` with a specific reason citing which later epic owns the real backend — not a placeholder "coming soon," a true statement about this codebase's current state. `core/` stays Electron-free (detectors are injected from `main/`, the same boundary `SecretCipher`/`electronSecretCipher` already established) so the registry itself is testable without Electron.
+
+**Feature Registry** (`core/feature/FeatureRegistry.ts`, supplemental §34) — computes real `visible`/`disabled`/`hidden` per feature from capability status, Safe Mode, guest mode, extension-enabled state, and profile visibility (the last three have no real backend yet — Epics X3/X10/X11 — so they're accepted as optional context fields that simply have nothing to read from today, not stubbed). `shared/features/featureCatalog.ts` is now the single source of truth for the primary Navigation Rail: `navigationDestinations.ts`'s `NAVIGATION_DESTINATIONS` derives from it instead of duplicating the same 12 entries in two places, and `NavigationRail.tsx` filters against live `feature.list` IPC output, failing open (showing the destination) if the round-trip hasn't resolved yet so a slow IPC call never blanks primary navigation. Every current catalog entry has zero capability/profile/extension dependencies — the honest truth today, since no Phase A screen is hardware- or profile-gated — so this has no observable behavior change yet. It is the real mechanism Phase B's actually-gated features (Bluetooth Center needing `bluetooth`, Voice Assistant needing `microphone`) will extend.
+
+**Application Registry** (`core/applications/ApplicationStore.ts`, supplemental §6.2) and **Device Registry** (`core/devices/DeviceStore.ts`, supplemental §22) are real persisted CRUD stores (mirroring `BrowserPermissionStore`'s shape) with zero discovery/detection logic by design — building fabricated Steam/Flatpak/AppImage discovery or fabricated Bluetooth/audio/display presence ahead of a real adapter would be exactly the "no package-manager lies" / "no false hardware assumptions" violations the supplemental non-negotiables forbid. These are the real shared destinations Epic X2's and Epic X8's real backends will write verified records into.
+
+**Shared transaction framework** (`core/transactions/TransactionManager.ts`, supplemental §7.5) — a real pending/running/succeeded/failed/cancelled/rolled-back lifecycle with real progress (clamped, never fabricated) and real cancellation (invokes the caller's own cancel hook before recording the terminal state — never just relabels a still-running operation). No real consumer exists yet in this slice; it's built and tested standalone, mirroring how `ActionQueue` became the one real mechanism every tool invocation goes through, so Epic X2 (package transactions) and Epic X7 (sync/backup) extend one real mechanism instead of each inventing an ad hoc progress/cancel state machine.
+
+**New IPC contracts** (§50) — `capability.*`, `feature.*`, `application.*`, `device.*`, the four domains this epic owns. Typed, Zod-validated, narrow preload bridge methods (`window.ndx.capabilities/features/applications/devices`), registered in `main/ipc/index.ts` alongside every existing service, following the exact same construction/registration pattern.
+
+**Real bug found while wiring `NavigationRail`**: `App.test.tsx`'s existing `Partial<NdxBridge>` stub (an established, deliberate convention across this test suite — stub only what a test needs) doesn't include the new `features` slice, and `NavigationRail` now needs it on every render. Rather than retrofit every shell-rendering test's stub, `useFeatureVisibility.ts`'s fetch is wrapped in `.catch(() => undefined)` — consistent with the hook's own documented "fails open" contract (a missing/slow IPC round-trip shows every destination rather than blanking navigation), so a partial test stub and a genuinely degraded IPC bridge are handled by the same one real code path instead of two.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `CapabilityRegistry` honest detection, override injection, refresh, Linux-only honesty | `core/capability/__tests__/CapabilityRegistry.test.ts` | +4 (new file) |
+| `FeatureRegistry` visibility computation (capability/Safe Mode/extension/profile) | `core/feature/__tests__/FeatureRegistry.test.ts` | +7 (new file) |
+| `ApplicationStore` real CRUD | `core/applications/__tests__/ApplicationStore.test.ts` | +6 (new file) |
+| `DeviceStore` real CRUD | `core/devices/__tests__/DeviceStore.test.ts` | +5 (new file) |
+| `TransactionManager` lifecycle, progress clamp, real cancellation | `core/transactions/__tests__/TransactionManager.test.ts` | +8 (new file) |
+| `NavigationRail` real adaptive visibility (visible/hidden/fails-open) | `renderer/src/components/navigation/__tests__/NavigationRail.test.tsx` | +3 (new file) |
+
+**Validation evidence (run 2026-06-25):**
+
+```text
+npm run test       → 128 files, 637 tests passed (1 pre-existing flaky test under full-suite load, confirmed passing in isolation both before and after this change)
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

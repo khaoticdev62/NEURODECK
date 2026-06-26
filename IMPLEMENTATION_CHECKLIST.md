@@ -4,7 +4,7 @@ Derived directly from the Epic lists in `specs/NeuroDeck_OS_Production_Implement
 
 Do not check an epic complete until every story within it satisfies the relevant Story Completion Template/Contract and the Acceptance Gates in §5 below. See `CLAUDE.md` for the non-negotiable rules that apply throughout.
 
-**Repository reconciliation:** 2026-06-25 — **Phase A is now complete**: all 13 core epics (0–12) and all 6 Acceptance Gates above are satisfied for the scope each one actually claims, with every remaining item an explicitly-named, honestly-scoped gap (see each epic's heading, the Acceptance Gates section, and the ledger's "Phase A closeout" entries) rather than a silent gap. Current validation baseline (run 2026-06-25, this commit): 604 unit/integration tests across 122 files, 6/6 Playwright e2e scenarios, full TypeScript checks, lint pass, production build pass, and a real Linux package build (AppImage/deb/snap, via WSL2). Version `0.1.0`. Phase B (Epics X1–X15) may now begin.
+**Repository reconciliation:** 2026-06-25 — **Phase A is complete**: all 13 core epics (0–12) and all 6 Acceptance Gates above are satisfied for the scope each one actually claims, with every remaining item an explicitly-named, honestly-scoped gap (see each epic's heading, the Acceptance Gates section, and the ledger's "Phase A closeout" entries) rather than a silent gap. Validation baseline at the Phase A closeout commit: 604 unit/integration tests across 122 files, 6/6 Playwright e2e scenarios, full TypeScript checks, lint pass, production build pass, and a real Linux package build (AppImage/deb/snap, via WSL2). Version `0.1.0`. **Phase B has begun**: Epic X1 (platform registry foundation) is complete — see its heading below.
 
 ---
 
@@ -176,14 +176,14 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 > Prerequisite: Phase A complete. Every Phase B epic must reuse Phase A's shared services (settings, permissions, notifications, logging, task queue, model routing, file access, controller handling, recovery, search, provider management, secret storage) — never fork them.
 
-### Epic X1 — Platform registry foundation
+### Epic X1 — Platform registry foundation ✅ all six items real for the scope this foundation epic owns; real discovery/detection backends are each later epic's job
 
-- [ ] Capability registry
-- [ ] Feature registry
-- [ ] Application registry
-- [ ] Device registry
-- [ ] Shared transaction framework
-- [ ] New IPC contracts (§50)
+- [x] Capability registry — **real, honest detection (supplemental §33)**: `core/capability/CapabilityRegistry.ts` queries an injectable detector per `CapabilityId`, returning `available`/`permission-required`/`dependency-required`/`unsupported`/`temporarily-unavailable`/`degraded` with a real, human-readable reason — never a fabricated `available`. `main/security/electronCapabilityDetectors.ts` provides the three real Electron-backed detectors (`safeStorage`, `Notification.isSupported()`, GPU feature status); the rest honestly report `unsupported`/`dependency-required` until the epic that owns the real backend (X2 Steam shortcuts, X5 voice/capture, X8 devices) builds it. `core/` stays Electron-free — detectors are injected from `main/`, mirroring the existing `SecretCipher`/`electronSecretCipher` boundary.
+- [x] Feature registry — **real (supplemental §34)**: `core/feature/FeatureRegistry.ts` computes `visible`/`disabled`/`hidden` per feature from real capability status, Safe Mode, guest mode, extension-enabled state, and profile visibility. `shared/features/featureCatalog.ts` is the real catalog — the primary Navigation Rail's `NAVIGATION_DESTINATIONS` now derives from it instead of a second hand-maintained list, and `NavigationRail.tsx` filters against live `feature.list` IPC output (fails open if the IPC round-trip hasn't resolved yet, so a slow/unavailable call never blanks navigation). Every current entry resolves `visible` today — no Phase A screen is hardware/profile-gated — so there is no observable behavior change yet; this is the real mechanism Phase B's gated features extend, not a no-op.
+- [x] Application registry — **real CRUD store (supplemental §6.2), discovery deferred to Epic X2 by design**: `core/applications/ApplicationStore.ts`, the real `ApplicationRecord` schema. Building fabricated multi-source discovery ahead of a real adapter would be exactly the "no package-manager lies" violation the supplemental non-negotiables forbid — this store is the real shared destination Epic X2's real Steam/Flatpak/AppImage/desktop-entry adapters will write into.
+- [x] Device registry — **real CRUD store (supplemental §22), detection backends deferred to Epic X8 by design**: `core/devices/DeviceStore.ts`, the real `DeviceRecord` schema. Same reasoning as Application registry — no fabricated Bluetooth/audio/display/storage presence ahead of Epic X8's real backends.
+- [x] Shared transaction framework — **real (supplemental §7.5)**: `core/transactions/TransactionManager.ts` — pending/running/succeeded/failed/cancelled/rolled-back lifecycle, real progress (clamped 0–100, never fabricated), real cancellation (invokes the caller's own cancel hook before recording the terminal state), a live `onChange` subscription mirroring `ActionQueue`/`AuditLog`'s existing pattern. No real consumer yet — built and tested standalone so Epic X2 (package transactions) and Epic X7 (sync/backup) extend one real mechanism instead of inventing their own.
+- [x] New IPC contracts (§50) — **real for the four domains this epic owns**: `capability.*`, `feature.*`, `application.*`, `device.*` — typed, Zod-validated, narrow preload bridge methods (`window.ndx.capabilities/features/applications/devices`), matching every existing domain's pattern exactly. The remaining ~40 domains listed in §50 belong to their owning epic (X2–X15) and are not claimed here.
 
 ### Epic X2 — Application ecosystem
 
