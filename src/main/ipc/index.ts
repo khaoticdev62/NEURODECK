@@ -1,9 +1,19 @@
-import { app, type BrowserWindow } from 'electron'
+import { app, shell, type BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
+import { ApplicationDiscoveryService } from '../../core/applications/ApplicationDiscoveryService'
+import { ApplicationLauncher } from '../../core/applications/ApplicationLauncher'
 import { ApplicationStore } from '../../core/applications/ApplicationStore'
+import { DesktopEntryScanner } from '../../core/applications/discovery/DesktopEntryScanner'
+import {
+  defaultLibraryFoldersVdfPath,
+  SteamLibraryScanner
+} from '../../core/applications/discovery/SteamLibraryScanner'
+import { FlatpakAdapter } from '../../core/applications/FlatpakAdapter'
+import { PackageLifecycleService } from '../../core/applications/PackageLifecycleService'
 import { BrowserTabStore } from '../../core/browser/BrowserTabStore'
 import { BrowserPermissionStore } from '../../core/browser/BrowserPermissionStore'
 import { CapabilityRegistry } from '../../core/capability/CapabilityRegistry'
@@ -27,6 +37,7 @@ import { RecoveryService } from '../../core/recovery/RecoveryService'
 import { RemoteConnectionService } from '../../core/remote/RemoteConnectionService'
 import { RemoteHostStore } from '../../core/remote/RemoteHostStore'
 import { TerminalService } from '../../core/terminal/TerminalService'
+import { TransactionManager } from '../../core/transactions/TransactionManager'
 import { WorkflowRunStore } from '../../core/workflows/WorkflowRunStore'
 import { WorkflowStore } from '../../core/workflows/WorkflowStore'
 import { WorkspaceStore } from '../../core/workspaces/WorkspaceStore'
@@ -48,6 +59,7 @@ import { registerGitHandlers } from './registerGitHandlers'
 import { registerLockHandlers } from './registerLockHandlers'
 import { registerModelHandlers } from './registerModelHandlers'
 import { registerNetworkHandlers } from './registerNetworkHandlers'
+import { registerPackageHandlers } from './registerPackageHandlers'
 import { registerPowerHandlers } from './registerPowerHandlers'
 import { registerUpdateHandlers } from './registerUpdateHandlers'
 import { registerLearningHandlers } from './registerLearningHandlers'
@@ -101,6 +113,29 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const featureRegistry = new FeatureRegistry(FEATURE_CATALOG)
   const applicationStore = new ApplicationStore(join(app.getPath('userData'), 'applications.json'))
   const deviceStore = new DeviceStore(join(app.getPath('userData'), 'devices.json'))
+  const desktopEntryScanner = new DesktopEntryScanner([
+    join(homedir(), '.local', 'share', 'applications'),
+    '/usr/share/applications',
+    '/var/lib/flatpak/exports/share/applications',
+    join(homedir(), '.local', 'share', 'flatpak', 'exports', 'share', 'applications')
+  ])
+  const steamLibraryScanner = new SteamLibraryScanner(
+    defaultLibraryFoldersVdfPath(homedir(), process.platform)
+  )
+  const flatpakAdapter = new FlatpakAdapter()
+  const applicationDiscoveryService = new ApplicationDiscoveryService(
+    applicationStore,
+    desktopEntryScanner,
+    steamLibraryScanner,
+    flatpakAdapter
+  )
+  const applicationLauncher = new ApplicationLauncher({ openUrl: (url) => shell.openExternal(url) })
+  const transactionManager = new TransactionManager()
+  const packageLifecycleService = new PackageLifecycleService(
+    flatpakAdapter,
+    transactionManager,
+    applicationStore
+  )
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,
@@ -148,11 +183,23 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)
   registerCapabilityHandlers(capabilityRegistry)
   registerFeatureHandlers(featureRegistry, capabilityRegistry)
-  registerApplicationHandlers(applicationStore)
+  registerApplicationHandlers(
+    applicationStore,
+    applicationDiscoveryService,
+    applicationLauncher,
+    getWindow
+  )
   registerDeviceHandlers(deviceStore)
+  const disposePackages = registerPackageHandlers(
+    flatpakAdapter,
+    packageLifecycleService,
+    transactionManager,
+    getWindow
+  )
   return () => {
     disposeTerminal()
     disposeRemote()
     disposePower()
+    disposePackages()
   }
 }

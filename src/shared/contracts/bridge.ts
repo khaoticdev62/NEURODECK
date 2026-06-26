@@ -7,7 +7,17 @@ import type {
   ApplicationRecord,
   UpsertApplicationRequest
 } from './application'
+import type {
+  DiscoverApplicationsRequest,
+  FlatpakPermissionPreview,
+  FlatpakRefRequest,
+  FlatpakRemoteApp,
+  FlatpakSearchRequest,
+  LaunchApplicationRequest,
+  LaunchResult
+} from './applicationLifecycle'
 import type { DeviceIdRequest, DeviceRecord, UpsertDeviceRequest } from './device'
+import type { TransactionIdRequest, TransactionRecord } from './transaction'
 import type {
   DeleteFileRequest,
   RecoveryCheckpoint,
@@ -330,10 +340,23 @@ export interface NdxBridge {
     list: () => Promise<NdxResult<ApplicationRecord[]>>
     upsert: (request: UpsertApplicationRequest) => Promise<NdxResult<ApplicationRecord>>
     remove: (request: ApplicationIdRequest) => Promise<NdxResult<null>>
+    discover: (request?: DiscoverApplicationsRequest) => Promise<NdxResult<ApplicationRecord[]>>
+    launch: (request: LaunchApplicationRequest) => Promise<NdxResult<LaunchResult>>
+    registerAppImage: () => Promise<NdxResult<ApplicationRecord | null>>
   }
   devices: {
     list: () => Promise<NdxResult<DeviceRecord[]>>
     upsert: (request: UpsertDeviceRequest) => Promise<NdxResult<DeviceRecord>>
     remove: (request: DeviceIdRequest) => Promise<NdxResult<null>>
+  }
+  packages: {
+    flatpakSearch: (request: FlatpakSearchRequest) => Promise<NdxResult<FlatpakRemoteApp[]>>
+    flatpakPermissions: (request: FlatpakRefRequest) => Promise<NdxResult<FlatpakPermissionPreview>>
+    flatpakInstall: (request: FlatpakRefRequest) => Promise<NdxResult<TransactionRecord>>
+    flatpakUpdate: (request: FlatpakRefRequest) => Promise<NdxResult<TransactionRecord>>
+    flatpakUninstall: (request: FlatpakRefRequest) => Promise<NdxResult<TransactionRecord>>
+    listTransactions: () => Promise<NdxResult<TransactionRecord[]>>
+    cancelTransaction: (request: TransactionIdRequest) => Promise<NdxResult<boolean>>
+    onTransactionUpdate: (listener: (transactions: TransactionRecord[]) => void) => () => void
   }
 }

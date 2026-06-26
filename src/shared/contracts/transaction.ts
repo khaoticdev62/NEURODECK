@@ -35,3 +35,6 @@ export const transactionRecordSchema = z.object({
   resolvedAt: z.number().int().nonnegative().optional()
 })
 export type TransactionRecord = z.infer<typeof transactionRecordSchema>
+
+export const transactionIdRequestSchema = z.object({ id: z.string().min(1) })
+export type TransactionIdRequest = z.infer<typeof transactionIdRequestSchema>

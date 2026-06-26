@@ -10,8 +10,12 @@ import {
   remoteSessionExitEventSchema,
   terminalDataEventSchema,
   terminalExitEventSchema,
+  transactionRecordSchema,
   type NdxBridge
 } from '../shared/contracts'
+import { z } from 'zod'
+
+const transactionRecordListSchema = z.array(transactionRecordSchema)
 
 /**
  * The real, narrow, typed bridge (mega-prompt §6, §14) replacing the
@@ -268,12 +272,35 @@ const ndx: NdxBridge = {
   applications: {
     list: () => ipcRenderer.invoke(IPC_CHANNELS.applicationList),
     upsert: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationUpsert, request),
-    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationRemove, request)
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationRemove, request),
+    discover: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationDiscover, request),
+    launch: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationLaunch, request),
+    registerAppImage: () => ipcRenderer.invoke(IPC_CHANNELS.applicationRegisterAppImage)
   },
   devices: {
     list: () => ipcRenderer.invoke(IPC_CHANNELS.deviceList),
     upsert: (request) => ipcRenderer.invoke(IPC_CHANNELS.deviceUpsert, request),
     remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.deviceRemove, request)
+  },
+  packages: {
+    flatpakSearch: (request) => ipcRenderer.invoke(IPC_CHANNELS.packageFlatpakSearch, request),
+    flatpakPermissions: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.packageFlatpakPermissions, request),
+    flatpakInstall: (request) => ipcRenderer.invoke(IPC_CHANNELS.packageFlatpakInstall, request),
+    flatpakUpdate: (request) => ipcRenderer.invoke(IPC_CHANNELS.packageFlatpakUpdate, request),
+    flatpakUninstall: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.packageFlatpakUninstall, request),
+    listTransactions: () => ipcRenderer.invoke(IPC_CHANNELS.packageTransactionList),
+    cancelTransaction: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.packageTransactionCancel, request),
+    onTransactionUpdate: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = transactionRecordListSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.packageTransactionUpdate, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.packageTransactionUpdate, handler)
+    }
   }
 }
 

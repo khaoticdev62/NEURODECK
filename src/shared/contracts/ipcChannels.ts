@@ -129,5 +129,16 @@ export const IPC_CHANNELS = {
   applicationRemove: 'application.remove',
   deviceList: 'device.list',
   deviceUpsert: 'device.upsert',
-  deviceRemove: 'device.remove'
+  deviceRemove: 'device.remove',
+  applicationDiscover: 'application.discover',
+  applicationLaunch: 'application.launch',
+  applicationRegisterAppImage: 'application.registerAppImage',
+  packageFlatpakSearch: 'package.flatpakSearch',
+  packageFlatpakPermissions: 'package.flatpakPermissions',
+  packageFlatpakInstall: 'package.flatpakInstall',
+  packageFlatpakUpdate: 'package.flatpakUpdate',
+  packageFlatpakUninstall: 'package.flatpakUninstall',
+  packageTransactionList: 'package.transactionList',
+  packageTransactionCancel: 'package.transactionCancel',
+  packageTransactionUpdate: 'package.transactionUpdate'
 } as const

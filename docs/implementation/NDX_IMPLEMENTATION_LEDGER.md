@@ -1843,3 +1843,42 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## Epic X2 — Application ecosystem (2026-06-25)
+
+Built on Epic X1's `ApplicationRecord`/`ApplicationStore`/`TransactionManager`. Real discovery, real launch, and a real Flatpak package lifecycle; Steam Shortcut Manager's binary VDF read/write is explicitly deferred (see below) rather than rushed.
+
+**Discovery** (`core/applications/discovery/`): `DesktopEntryScanner` parses real `.desktop` files — the actual freedesktop.org Desktop Entry `[Desktop Entry]` INI format, honoring `NoDisplay=true`/`Hidden=true`/`Type=Application` the same way a real desktop environment's app menu would, with `Exec`'s field codes and quoting parsed into a real executable + launch arguments. `SteamLibraryScanner` parses Steam's real text-VDF format used by `libraryfolders.vdf` (each library's real root path) and every `steamapps/appmanifest_*.acf` (per-game `appid`/`name`/`installdir`) — confirmed this is genuinely a different, simpler text format than `shortcuts.vdf`'s binary format before writing a single parser for both as if they were the same thing. `ApplicationDiscoveryService` orchestrates both scanners plus the Flatpak adapter and upserts real results into the Epic X1 `ApplicationStore`; one scanner failing (confirmed by a real test injecting a rejection) never aborts the others.
+
+**Flatpak adapter** (`core/applications/FlatpakAdapter.ts`, supplemental §7.2) — every operation shells out to the real `flatpak` CLI via `execFile` (never a shell string, matching `GitService`'s established safe-exec convention): search, list, install/update/uninstall (`--noninteractive` so a hidden TTY prompt can never block), and `flatpak info --show-permissions` for a real permission preview. Confirmed honest behavior on a machine without Flatpak installed (this development machine) by testing the actual failure path, not just a happy-path mock.
+
+**Package lifecycle** (`core/applications/PackageLifecycleService.ts`, supplemental §7.5) — every install/update/uninstall runs through the real Epic X1 `TransactionManager`, and per §7.5's own explicit requirement ("No success state before verification"), re-queries the real `flatpak list` after install/uninstall before reporting success — a transaction that ran the install command but can't verify the app is actually present afterward is honestly reported `failed`, not `succeeded`. Cancellation is created `cancellable: false` — an honest statement, since the `flatpak` CLI exposes no real cancel hook mid-command, not a button wired to do nothing.
+
+**AppImage** (`core/applications/AppImageVerifier.ts`, supplemental §7.3) — real file verification reads the actual first 4 bytes and checks the real ELF magic number (`\x7fELF`) every AppImage (a self-mounting ELF binary) starts with, not a `.AppImage` filename-extension guess. Registration is a real native file-picker action (`application.registerAppImage`) verifying before registering — never an unverified path written straight into the registry. Extracting the embedded `.desktop`/icon from the AppImage's internal squashfs needs a real squashfs reader this slice doesn't build; named as an explicit gap rather than faked with a placeholder icon.
+
+**Launch** (`core/applications/ApplicationLauncher.ts`, supplemental §6.3/§6.4) — `steam`-sourced records launch through the real `steam://rungameid/...` URI handler (via Electron's `shell.openExternal`, injected so this module stays Electron-free, the same boundary `CapabilityRegistry`'s detectors already established); `flatpak`-sourced records spawn a real detached `flatpak run <ref>`; everything else spawns the record's real `executableRef` detached. **Real bug caught by this module's own test for a nonexistent executable**: `child_process.spawn()` does not throw synchronously for a missing executable (ENOENT) — it returns a live `ChildProcess` and only emits an `'error'` event on a later tick, so resolving immediately on `spawn()` returning would have fabricated `launched: true` for a binary that doesn't exist. Fixed by waiting a short, bounded window (200ms) for that error before reporting success — confirmed by a test that actually exercises a real nonexistent path, not a mocked one.
+
+**Explicitly deferred**: Steam Shortcut Manager (§8) — `shortcuts.vdf` is Steam's binary VDF format, a different and more complex format than the text-VDF `libraryfolders.vdf`/`appmanifest_*.acf` files the discovery scanners above already parse safely. §8.3's own safety requirements (backup, schema-aware parsing, process-state awareness, atomic write, validation, recovery support) exist precisely because a botched write corrupts a real user's actual Steam library — a rushed implementation in the same pass as everything else above was declined rather than risked. Needs its own focused, carefully-tested follow-up.
+
+New `application.discover`/`application.launch`/`application.registerAppImage` and `package.flatpak*`/`package.transaction*` IPC channels, including a live `package.transactionUpdate` push (mirroring terminal data/agent run update's existing live-push pattern) so a future Package Center screen can show real progress without polling.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `DesktopEntryScanner` real `.desktop` parsing, NoDisplay/Hidden/Type filtering | `core/applications/discovery/__tests__/DesktopEntryScanner.test.ts` | +6 (new file) |
+| `SteamLibraryScanner` real text-VDF parsing, missing library/manifest honesty | `core/applications/discovery/__tests__/SteamLibraryScanner.test.ts` | +5 (new file) |
+| `FlatpakAdapter` real CLI invocation, honest unavailable-Flatpak path | `core/applications/__tests__/FlatpakAdapter.test.ts` | +7 (new file) |
+| `ApplicationLauncher` steam URI / detached spawn / real ENOENT honesty | `core/applications/__tests__/ApplicationLauncher.test.ts` | +5 (new file) |
+| `ApplicationDiscoveryService` orchestration, partial-source selection, one-scanner-failure isolation | `core/applications/__tests__/ApplicationDiscoveryService.test.ts` | +3 (new file) |
+| `AppImageVerifier` real ELF magic check, record building | `core/applications/__tests__/AppImageVerifier.test.ts` | +5 (new file) |
+| `PackageLifecycleService` real verify-before-success, non-cancellable honesty | `core/applications/__tests__/PackageLifecycleService.test.ts` | +6 (new file) |
+
+**Validation evidence (run 2026-06-25):**
+
+```text
+npm run test       → 135 files, 674 tests passed
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

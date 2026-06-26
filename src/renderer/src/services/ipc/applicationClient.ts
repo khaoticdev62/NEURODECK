@@ -1,6 +1,9 @@
 import type {
   ApplicationIdRequest,
   ApplicationRecord,
+  DiscoverApplicationsRequest,
+  LaunchApplicationRequest,
+  LaunchResult,
   NdxResult,
   UpsertApplicationRequest
 } from '@shared/contracts'
@@ -24,4 +27,26 @@ export async function removeApplication(request: ApplicationIdRequest): Promise<
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.applications.remove(request)
+}
+
+export async function discoverApplications(
+  request?: DiscoverApplicationsRequest
+): Promise<NdxResult<ApplicationRecord[]>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.applications.discover(request)
+}
+
+export async function launchApplication(
+  request: LaunchApplicationRequest
+): Promise<NdxResult<LaunchResult>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.applications.launch(request)
+}
+
+export async function registerAppImage(): Promise<NdxResult<ApplicationRecord | null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.applications.registerAppImage()
 }
