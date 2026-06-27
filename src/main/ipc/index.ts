@@ -38,7 +38,9 @@ import { DeviceIdentityStore } from '../../core/lan/DeviceIdentityStore'
 import { PeerDiscoveryService } from '../../core/lan/PeerDiscoveryService'
 import { PeerStore } from '../../core/lan/PeerStore'
 import { LanShareIdentityStore } from '../../core/lanShare/LanShareIdentityStore'
+import { LanShareInterfaceManager } from '../../core/lanShare/LanShareInterfaceManager'
 import { LanSharePeerStore } from '../../core/lanShare/LanSharePeerStore'
+import { LanShareService } from '../../core/lanShare/LanShareService'
 import { LanShareSettingsStore } from '../../core/lanShare/LanShareSettingsStore'
 import { LanShareTransferStore } from '../../core/lanShare/LanShareTransferStore'
 import { PeerTransferService } from '../../core/lan/PeerTransferService'
@@ -306,6 +308,12 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const lanShareTransferStore = new LanShareTransferStore(
     join(app.getPath('userData'), 'lan-share-transfer-jobs.json')
   )
+  const lanShareInterfaceManager = new LanShareInterfaceManager()
+  // Real Phase LAN-2 service lifecycle — binds real sockets once `start()`
+  // is explicitly called via IPC. Never auto-started here: spec §24 gates
+  // auto-start behind "secure mode" (a real group code), which Phase
+  // LAN-4 has not built yet.
+  const lanShareService = new LanShareService(lanShareSettingsStore, lanShareInterfaceManager)
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,
@@ -383,6 +391,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     lanShareSettingsStore,
     lanSharePeerStore,
     lanShareTransferStore,
+    lanShareService,
+    lanShareInterfaceManager,
     getWindow
   )
   return () => {
@@ -394,5 +404,6 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     disposeLanShare()
     peerDiscoveryService?.stop()
     peerTransferService.stop()
+    void lanShareService.stop()
   }
 }

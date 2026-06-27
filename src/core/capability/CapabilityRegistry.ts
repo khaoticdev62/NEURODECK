@@ -154,8 +154,11 @@ const defaultDetectors: Record<CapabilityId, CapabilityDetector> = {
     unsupported('No OCR/document-extraction provider is integrated yet (tracked for Epic X5).'),
   'remote-desktop-launchers': () =>
     unsupported('No real RDP/VNC launcher integration is implemented yet.'),
-  'lanShare.available': () =>
-    unsupported('LAN Share has no service yet — Phase LAN-2 adds the real service lifecycle.'),
+  'lanShare.available': () => ({
+    status: 'degraded',
+    reason:
+      'A real LAN Share service exists and can bind real transfer/registration sockets (Phase LAN-2), but it does not yet speak the Warpinator-compatible protocol or discover peers (Phases LAN-3 onward).'
+  }),
   'lanShare.discovery.mdns': () =>
     unsupported('No real mDNS discovery client is implemented yet (tracked for Phase LAN-3).'),
   'lanShare.discovery.manual': () =>

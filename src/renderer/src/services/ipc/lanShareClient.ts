@@ -1,6 +1,8 @@
 import type {
   AddManualLanSharePeerRequest,
+  LanShareHealth,
   LanShareIdentity,
+  LanShareNetworkInterface,
   LanSharePeer,
   LanSharePeerIdRequest,
   LanShareServiceStatus,
@@ -94,4 +96,34 @@ export function onLanShareTransferJobUpdate(
   listener: (jobs: LanShareTransferJob[]) => void
 ): () => void {
   return getNdxBridge()?.lanShare.onTransferJobUpdate(listener) ?? (() => undefined)
+}
+
+export async function startLanShareService(): Promise<NdxResult<LanShareServiceStatus>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.lanShare.startService()
+}
+
+export async function stopLanShareService(): Promise<NdxResult<LanShareServiceStatus>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.lanShare.stopService()
+}
+
+export function onLanShareServiceUpdate(
+  listener: (status: LanShareServiceStatus) => void
+): () => void {
+  return getNdxBridge()?.lanShare.onServiceUpdate(listener) ?? (() => undefined)
+}
+
+export async function listLanShareInterfaces(): Promise<NdxResult<LanShareNetworkInterface[]>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.lanShare.listInterfaces()
+}
+
+export async function getLanShareHealth(): Promise<NdxResult<LanShareHealth>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.lanShare.getHealth()
 }

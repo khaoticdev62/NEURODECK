@@ -2083,3 +2083,35 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-2 (2026-06-26)
+
+Real service lifecycle, real interface enumeration, real socket binding, and real health reporting (spec §5–6). Discovery (LAN-3), authentication (LAN-4), and the send/receive engine (LAN-5/6) still do not exist — this phase only proves the service can genuinely come up, bind real ports, and report real health.
+
+**Real socket lifecycle** (`core/lanShare/LanShareService.ts`) — `start()` calls real `net.createServer().listen()` for both the transfer port and the auth/registration port read from `LanShareSettingsStore`. A port already in use produces a real `EADDRINUSE` from the OS, surfaced as a real `error` state with the OS's own message — confirmed by a test that occupies the port with a second real server first. Status transitions (`stopped`→`starting`→`running`/`error`, and back to `stopped` on `stop()`) are pushed live to every listener via the same `onChange` pattern this codebase already uses for `TransactionManager`/`TransferManager`/Epic X6's `PeerDiscoveryService`, here wired through to the renderer over a new `lanShare.service.update` IPC push. Accepted connections are destroyed immediately — there is no protocol implementation to hand them to yet (Phase LAN-3), and queuing or echoing data would be fabricated protocol behavior this project's rules forbid.
+
+**Real interface enumeration** (`core/lanShare/LanShareInterfaceManager.ts`) — lists real non-loopback interfaces from `node:os.networkInterfaces()` with their real address and family. `inferredType` (`wifi`/`ethernet`/`unknown`) is explicitly documented as a name-based heuristic, not a true link-layer query — Node's standard library doesn't expose one. Default route, multicast capability, and VPN state (spec §22) are not attempted here; that work is explicitly the spec's own Phase LAN-9 ("SteamOS, VPN, firewall, suspend, resource policy"), so building a fake or partial version now would just be redone later.
+
+**Real health reporting** — `LanShareService.getHealth()` reports the real `listening` state of both bound sockets and real receive-directory writability (creating the directory via `mkdir -p` if it doesn't exist yet, then checking write access) — not a static or assumed answer.
+
+**Capability registry update**: `lanShare.available` changed from `unsupported` to `degraded`, with an honest reason explaining that a real service now exists and can bind sockets, but full Warpinator-compatible interoperability does not yet exist. This is a true statement about the codebase's current state, the same kind of fact every other entry in this registry already reports.
+
+**Deliberately not done**: auto-start at app boot. Spec §24 requires auto-start to be gated behind "secure mode" (a real, configured group code) — Phase LAN-4 hasn't built real group-code-backed auth yet, so wiring auto-start now would either be fake gating or no gating at all. The service only starts via an explicit `lanShare.service.start` IPC call; `main/ipc/index.ts`'s dispose path also calls `stop()` on app shutdown, so a real bound socket never outlives the app process.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `LanShareInterfaceManager` real non-loopback enumeration, shape validation | `core/lanShare/__tests__/LanShareInterfaceManager.test.ts` | +2 (new file) |
+| `LanShareService` real bind/running, real port-conflict error, real status-transition notifications | `core/lanShare/__tests__/LanShareService.test.ts` | +3 (new file) |
+
+**Validation evidence (run 2026-06-26):**
+
+```text
+npm run test       → 169 files, 848 tests passed (one unrelated pre-existing test — a controller
+                      tutorial waitFor timing assertion — failed once under full-suite parallelism
+                      and passed cleanly in isolation; not touched by this change)
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

@@ -81,7 +81,9 @@ import type {
 import type { TransferJob, TransferJobIdRequest } from './transfer'
 import type {
   AddManualLanSharePeerRequest,
+  LanShareHealth,
   LanShareIdentity,
+  LanShareNetworkInterface,
   LanSharePeer,
   LanSharePeerIdRequest,
   LanShareServiceStatus,
@@ -516,5 +518,10 @@ export interface NdxBridge {
     listTransferJobs: () => Promise<NdxResult<LanShareTransferJob[]>>
     cancelTransferJob: (request: LanShareTransferJobIdRequest) => Promise<NdxResult<boolean>>
     onTransferJobUpdate: (listener: (jobs: LanShareTransferJob[]) => void) => () => void
+    startService: () => Promise<NdxResult<LanShareServiceStatus>>
+    stopService: () => Promise<NdxResult<LanShareServiceStatus>>
+    onServiceUpdate: (listener: (status: LanShareServiceStatus) => void) => () => void
+    listInterfaces: () => Promise<NdxResult<LanShareNetworkInterface[]>>
+    getHealth: () => Promise<NdxResult<LanShareHealth>>
   }
 }

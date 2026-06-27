@@ -8,7 +8,9 @@ import {
   setLanSharePeerTrustRequestSchema,
   setLanShareGroupCodeRequestSchema,
   updateLanShareSettingsRequestSchema,
+  type LanShareHealth,
   type LanShareIdentity,
+  type LanShareNetworkInterface,
   type LanSharePeer,
   type LanShareServiceStatus,
   type LanShareSettings,
@@ -16,7 +18,9 @@ import {
   type NdxResult
 } from '@shared/contracts'
 import type { LanShareIdentityStore } from '../../core/lanShare/LanShareIdentityStore'
+import type { LanShareInterfaceManager } from '../../core/lanShare/LanShareInterfaceManager'
 import type { LanSharePeerStore } from '../../core/lanShare/LanSharePeerStore'
+import type { LanShareService } from '../../core/lanShare/LanShareService'
 import {
   InvalidLanShareSettingsError,
   type LanShareSettingsStore
@@ -37,12 +41,20 @@ export function registerLanShareHandlers(
   settingsStore: LanShareSettingsStore,
   peerStore: LanSharePeerStore,
   transferStore: LanShareTransferStore,
+  service: LanShareService,
+  interfaceManager: LanShareInterfaceManager,
   getWindow: () => BrowserWindow | null
 ): () => void {
-  const unsubscribe = transferStore.onChange((jobs) => {
+  const unsubscribeTransfers = transferStore.onChange((jobs) => {
     const window = getWindow()
     if (window && !window.webContents.isDestroyed()) {
       window.webContents.send(IPC_CHANNELS.lanShareTransferUpdate, jobs)
+    }
+  })
+  const unsubscribeService = service.onChange((status) => {
+    const window = getWindow()
+    if (window && !window.webContents.isDestroyed()) {
+      window.webContents.send(IPC_CHANNELS.lanShareServiceUpdate, status)
     }
   })
 
@@ -56,15 +68,34 @@ export function registerLanShareHandlers(
   ipcMain.handle(
     IPC_CHANNELS.lanShareServiceStatus,
     async (): Promise<NdxResult<LanShareServiceStatus>> => {
-      return {
-        ok: true,
-        data: {
-          state: 'stopped',
-          reason: 'LAN Share has no service lifecycle yet — Phase LAN-2 adds it.'
-        }
-      }
+      return { ok: true, data: service.getStatus() }
     }
   )
+
+  ipcMain.handle(
+    IPC_CHANNELS.lanShareServiceStart,
+    async (): Promise<NdxResult<LanShareServiceStatus>> => {
+      return { ok: true, data: await service.start() }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.lanShareServiceStop,
+    async (): Promise<NdxResult<LanShareServiceStatus>> => {
+      return { ok: true, data: await service.stop() }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.lanShareInterfaceList,
+    async (): Promise<NdxResult<LanShareNetworkInterface[]>> => {
+      return { ok: true, data: interfaceManager.list() }
+    }
+  )
+
+  ipcMain.handle(IPC_CHANNELS.lanShareHealthGet, async (): Promise<NdxResult<LanShareHealth>> => {
+    return { ok: true, data: await service.getHealth() }
+  })
 
   ipcMain.handle(
     IPC_CHANNELS.lanShareSettingsGet,
@@ -190,5 +221,8 @@ export function registerLanShareHandlers(
     }
   )
 
-  return unsubscribe
+  return () => {
+    unsubscribeTransfers()
+    unsubscribeService()
+  }
 }

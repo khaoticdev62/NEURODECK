@@ -6,6 +6,7 @@ import {
   browserTabSchema,
   extensionHealthEventSchema,
   IPC_CHANNELS,
+  lanShareServiceStatusSchema,
   lanShareTransferJobSchema,
   peerDeviceSchema,
   powerStateEventSchema,
@@ -420,7 +421,19 @@ const ndx: NdxBridge = {
       }
       ipcRenderer.on(IPC_CHANNELS.lanShareTransferUpdate, handler)
       return () => ipcRenderer.removeListener(IPC_CHANNELS.lanShareTransferUpdate, handler)
-    }
+    },
+    startService: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareServiceStart),
+    stopService: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareServiceStop),
+    onServiceUpdate: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = lanShareServiceStatusSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.lanShareServiceUpdate, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.lanShareServiceUpdate, handler)
+    },
+    listInterfaces: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareInterfaceList),
+    getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareHealthGet)
   }
 }
 

@@ -215,6 +215,37 @@ export const lanShareServiceStatusSchema = z.object({
 export type LanShareServiceStatus = z.infer<typeof lanShareServiceStatusSchema>
 
 // ---------------------------------------------------------------------------
+// Interfaces and health (spec §5, §22 basics, §30) — Phase LAN-2
+// ---------------------------------------------------------------------------
+
+/**
+ * `inferredType` is a best-effort guess from the OS-given interface name
+ * (e.g. `wlan0`/`Wi-Fi` vs `eth0`/`Ethernet`) — not a true link-layer
+ * query, which Node's standard library does not expose. Honestly
+ * `unknown` when the name doesn't match a recognized pattern.
+ */
+export const lanShareInterfaceTypeSchema = z.enum(['wifi', 'ethernet', 'unknown'])
+export type LanShareInterfaceType = z.infer<typeof lanShareInterfaceTypeSchema>
+
+export const lanShareNetworkInterfaceSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  address: z.string().min(1),
+  family: z.enum(['IPv4', 'IPv6']),
+  inferredType: lanShareInterfaceTypeSchema
+})
+export type LanShareNetworkInterface = z.infer<typeof lanShareNetworkInterfaceSchema>
+
+export const lanShareHealthSchema = z.object({
+  serviceState: lanShareServiceStateSchema,
+  transferPortBound: z.boolean(),
+  authPortBound: z.boolean(),
+  receiveDirectoryWritable: z.boolean(),
+  interfaceCount: z.number().int().nonnegative()
+})
+export type LanShareHealth = z.infer<typeof lanShareHealthSchema>
+
+// ---------------------------------------------------------------------------
 // Errors (spec §28) — exact code list, every error carries a real correlation id
 // ---------------------------------------------------------------------------
 
