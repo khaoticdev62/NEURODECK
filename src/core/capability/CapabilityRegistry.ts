@@ -157,7 +157,7 @@ const defaultDetectors: Record<CapabilityId, CapabilityDetector> = {
   'lanShare.available': () => ({
     status: 'degraded',
     reason:
-      'A real LAN Share service exists with real mDNS discovery and real v1 registration (Phase LAN-3), but no real send/receive transfer engine or v2 certificate auth yet (Phases LAN-4 onward).'
+      'A real LAN Share service exists with real mDNS discovery, real v1/v2 registration, and real group-code-authenticated certificate exchange (Phases LAN-3/LAN-4), but no real send/receive transfer engine yet (Phase LAN-5/LAN-6 onward).'
   }),
   'lanShare.discovery.mdns': () => ({
     status: 'available',
@@ -176,8 +176,12 @@ const defaultDetectors: Record<CapabilityId, CapabilityDetector> = {
     reason:
       'A real gRPC WarpRegistration v1 client/server pair is implemented and used by both mDNS-discovered and manually-added peers (Phase LAN-3).'
   }),
-  'lanShare.registration.v2': () =>
-    unsupported('No Warpinator-compatible v2 registration client exists yet (Phase LAN-3).'),
+  'lanShare.registration.v2': () => ({
+    status: 'available',
+    provider: 'tweetnacl + selfsigned',
+    reason:
+      'Real v2 certificate exchange is implemented: a real RSA-2048 self-signed certificate, encrypted with the real NaCl secretbox construction Warpinator itself uses, keyed by the configured group code (Phase LAN-4).'
+  }),
   'lanShare.files': () =>
     unsupported('No real send/receive transfer engine exists yet (Phase LAN-5/LAN-6).'),
   'lanShare.directories': () =>

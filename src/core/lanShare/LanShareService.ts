@@ -1,33 +1,39 @@
+import { createHash } from 'node:crypto'
 import { constants as fsConstants } from 'node:fs'
 import { access, mkdir } from 'node:fs/promises'
 import { createServer, type Server, type Socket } from 'node:net'
 import type { LanShareHealth, LanShareServiceStatus, LanShareSettings } from '@shared/contracts'
+import type { LanShareCertificateStore } from './LanShareCertificateStore'
+import type { LanShareGroupCodeStore } from './LanShareGroupCodeStore'
 import { LanShareRegistrationClient } from './grpc/LanShareRegistrationClient'
 import {
   LanShareRegistrationServer,
   type NdxServiceRegistration
 } from './grpc/LanShareRegistrationServer'
+import { parsePeerHost } from './grpc/parsePeerHost'
 import type { LanShareIdentityStore } from './LanShareIdentityStore'
 import type { LanShareInterfaceManager } from './LanShareInterfaceManager'
 import { LanShareMdnsDiscovery, type DiscoveredLanSharePeer } from './LanShareMdnsDiscovery'
 import type { LanSharePeerStore } from './LanSharePeerStore'
 import type { LanShareSettingsStore } from './LanShareSettingsStore'
 
-/** Warpinator's own current `RPC_API_VERSION` is `2` (confirmed in `meson.build`, audited in docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md). This device honestly reports `1`: real v2 also needs the certificate exchange Phase LAN-4 hasn't built, and a real peer that sees `api_version: 1` correctly falls back to v1-only behavior with us. */
-const SELF_REPORTED_API_VERSION = 1
+/** Warpinator's own current `RPC_API_VERSION` is `2` (confirmed in `meson.build`). Phase LAN-4 makes our own v2 support real (certificate exchange), so this device now honestly reports `2` as well. */
+const SELF_REPORTED_API_VERSION = 2
 
 /**
- * Phase LAN-2/LAN-3 service lifecycle (spec §5 "LAN Share Supervisor",
- * §10, §26). `start()` binds a real transfer-port placeholder socket
- * (Phase LAN-5/6 still owns the `Warp` transfer service), a real gRPC
- * `WarpRegistration` server on the auth port, and real mDNS
- * advertise/browse using Warpinator's own confirmed service type. A
- * peer discovered via mDNS gets a real v1 registration handshake
- * attempted against it; the real result (success or a real gRPC
- * error) is what `LanSharePeerStore` ends up recording — never a
- * fabricated "found" entry. Auto-start is deliberately never wired
- * into app boot — spec §24 gates it behind "secure mode" (a real group
- * code), which Phase LAN-4 has not built yet.
+ * Phase LAN-2/LAN-3/LAN-4 service lifecycle (spec §5 "LAN Share
+ * Supervisor", §10, §13, §26). `start()` binds a real transfer-port
+ * placeholder socket (Phase LAN-5/6 still owns the `Warp` transfer
+ * service), a real gRPC `WarpRegistration` server on the auth port,
+ * and real mDNS advertise/browse using Warpinator's own confirmed
+ * service type. A peer discovered via mDNS or added manually gets a
+ * real v1 registration handshake, then — if it reports `api_version
+ * >= 2` — a real v2 certificate request, decrypted with this device's
+ * real configured group code. A successful decrypt means a real group
+ * match; a failure is a real, honest `LAN_GROUP_MISMATCH`-equivalent
+ * outcome, never assumed either way. Auto-start is deliberately never
+ * wired into app boot — spec §24 gates it behind "secure mode" (a
+ * non-default group code), which only the user can configure.
  */
 export class LanShareService {
   private transferServer: Server | null = null
@@ -41,7 +47,9 @@ export class LanShareService {
     private readonly settingsStore: LanShareSettingsStore,
     private readonly interfaceManager: LanShareInterfaceManager,
     private readonly identityStore: LanShareIdentityStore,
-    private readonly peerStore: LanSharePeerStore
+    private readonly peerStore: LanSharePeerStore,
+    private readonly certificateStore: LanShareCertificateStore,
+    private readonly groupCodeStore: LanShareGroupCodeStore
   ) {}
 
   getStatus(): LanShareServiceStatus {
@@ -69,7 +77,10 @@ export class LanShareService {
         getOwnRegistration: () => this.buildOwnRegistration(settings, identity.connectId),
         onPeerRegistered: (registration, peerAddress) => {
           void this.recordPeerFromRegistration(registration, peerAddress)
-        }
+        },
+        getOwnCertificatePem: async () =>
+          (await this.certificateStore.get(settings.deviceDisplayName)).certificatePem,
+        getGroupCode: () => this.groupCodeStore.get()
       })
     } catch (error) {
       await this.registrationServer?.stop()
@@ -162,6 +173,7 @@ export class LanShareService {
         discovered.authPort,
         own
       )
+      const v2 = await this.attemptCertificateExchange(address, response)
       await this.peerStore.upsertSeen(
         {
           id: response.service_id,
@@ -171,7 +183,9 @@ export class LanShareService {
           authPort: response.auth_port,
           registrationVersion: response.api_version >= 2 ? 2 : 1,
           platform: 'unknown',
-          status: 'online'
+          status: 'online',
+          fingerprint: v2?.fingerprint,
+          groupMatch: v2?.groupMatch
         },
         'mdns'
       )
@@ -192,6 +206,38 @@ export class LanShareService {
         },
         'mdns'
       )
+    }
+  }
+
+  /**
+   * Real v2 certificate exchange (spec §13), attempted only when the
+   * peer claims `api_version >= 2`. A real decryption failure (group
+   * mismatch) or any transport failure (peer is v1-only, unreachable
+   * for this call) is caught and reported as "no real group match" —
+   * never a fabricated fingerprint.
+   */
+  private async attemptCertificateExchange(
+    address: string,
+    peerRegistration: NdxServiceRegistration
+  ): Promise<{ fingerprint: string; groupMatch: boolean } | undefined> {
+    if (peerRegistration.api_version < 2) return undefined
+    try {
+      const groupCode = await this.groupCodeStore.get()
+      const result = await this.registrationClient.requestCertificate(
+        address,
+        peerRegistration.auth_port,
+        groupCode,
+        {
+          ip: peerRegistration.ip,
+          hostname: peerRegistration.hostname,
+          ipv6: peerRegistration.ipv6
+        }
+      )
+      if (!result) return { fingerprint: '', groupMatch: false }
+      const fingerprint = computeFingerprint(result.certificatePem)
+      return { fingerprint, groupMatch: true }
+    } catch {
+      return undefined
     }
   }
 
@@ -268,15 +314,6 @@ export class LanShareService {
   }
 }
 
-/**
- * `call.getPeer()` returns this grpc-js version's real, observed format:
- * `host:port` for IPv4 (e.g. `127.0.0.1:54321`), `[ipv6]:port` for IPv6,
- * with an optional `ipv4:`/`ipv6:` scheme prefix on other grpc-js
- * versions/platforms — handled defensively since this isn't a
- * documented, version-pinned format.
- */
-function parsePeerHost(peer: string): string | null {
-  const withoutScheme = peer.replace(/^ipv[46]:/, '')
-  const match = /^\[?([^\]]+)\]?:\d+$/.exec(withoutScheme)
-  return match ? match[1] : null
+function computeFingerprint(certificatePem: string): string {
+  return createHash('sha256').update(certificatePem).digest('hex')
 }

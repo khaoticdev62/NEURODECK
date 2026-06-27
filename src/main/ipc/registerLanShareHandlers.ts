@@ -17,6 +17,7 @@ import {
   type LanShareTransferJob,
   type NdxResult
 } from '@shared/contracts'
+import type { LanShareGroupCodeStore } from '../../core/lanShare/LanShareGroupCodeStore'
 import type { LanShareIdentityStore } from '../../core/lanShare/LanShareIdentityStore'
 import type { LanShareInterfaceManager } from '../../core/lanShare/LanShareInterfaceManager'
 import type { LanSharePeerStore } from '../../core/lanShare/LanSharePeerStore'
@@ -43,6 +44,7 @@ export function registerLanShareHandlers(
   transferStore: LanShareTransferStore,
   service: LanShareService,
   interfaceManager: LanShareInterfaceManager,
+  groupCodeStore: LanShareGroupCodeStore,
   getWindow: () => BrowserWindow | null
 ): () => void {
   const unsubscribeTransfers = transferStore.onChange((jobs) => {
@@ -139,9 +141,7 @@ export function registerLanShareHandlers(
           )
         }
       }
-      // Phase LAN-1 records only that a group code was configured. Real
-      // secret storage for the code itself is built alongside real auth
-      // in Phase LAN-4 — there is no real auth flow yet to consume it.
+      await groupCodeStore.set(parsed.data.groupCode)
       return { ok: true, data: await settingsStore.markGroupCodeConfigured(true) }
     }
   )

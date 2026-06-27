@@ -1895,7 +1895,7 @@ Real process-isolated extension host, manifest validation, deny-by-default capab
 
 **Real fault-driven quarantine** (`core/extensions/ExtensionRuntime.ts`, supplemental §9.6) — `ExtensionHost` tracks real fault timestamps in a real rolling 60-second window; once a real crash count crosses the threshold, `ExtensionRuntime.handleFault()` stops the real child process and persists a real `quarantineReason`, and refuses to let `setEnabled(true)` re-enable a quarantined extension without an explicit `clearQuarantine()` call first. Verified end-to-end with a real fixture child process that genuinely crashes twice (not a mocked event), confirming the host's real fork()/IPC/fault-tracking pipeline end to end.
 
-**Explicitly deferred**: Extension Manager UI (no screen yet — the real backend has no UI consumer in this pass); the signed marketplace client (§10) — there is no documented registry protocol or real server to talk to, and the supplemental non-negotiables explicitly require the platform to "remain usable when no marketplace server is configured" and forbid fabricated marketplace data, so `install()` is scoped to "install from a local unpacked directory" instead, the same real, honest action VS Code calls "Install from Folder"; cryptographic signature verification (manifest/path-traversal verification is real, but a `signature` block's actual cryptographic validity isn't checked yet — `trust` is set from presence, not verified validity); the Developer SDK and CLI (§11) — the CLI specifically needs §11.3's local authenticated API server (scoped tokens, localhost binding, expiration/revocation) built first, a security-sensitive surface deserving its own focused pass rather than being bolted on here.
+**Explicitly deferred**: Signed marketplace client, manifest preflight review before local install, post-install capability grant/revoke UI, cryptographic signature verification, Developer SDK, and CLI remain deferred; the signed marketplace client (§10) — there is no documented registry protocol or real server to talk to, and the supplemental non-negotiables explicitly require the platform to "remain usable when no marketplace server is configured" and forbid fabricated marketplace data, so `install()` is scoped to "install from a local unpacked directory" instead, the same real, honest action VS Code calls "Install from Folder"; cryptographic signature verification (manifest/path-traversal verification is real, but a `signature` block's actual cryptographic validity isn't checked yet — `trust` is set from presence, not verified validity); the Developer SDK and CLI (§11) — the CLI specifically needs §11.3's local authenticated API server (scoped tokens, localhost binding, expiration/revocation) built first, a security-sensitive surface deserving its own focused pass rather than being bolted on here.
 
 ### Tests and evidence
 
@@ -1915,6 +1915,23 @@ npm run test       → 141 files, 707 tests passed
 npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded (real second main entry compiled to out/main/extensionHostEntry.js, confirmed by directly forking the artifact and observing a real fault report)
+```
+
+### Epic X3 addendum - Extension Manager UI (2026-06-27)
+
+`features/extensions/ExtensionManager.tsx` adds the first real UI consumer for the Epic X3 runtime. `/extensions` is now a lazy route and a real feature-catalog/Navigation Rail destination. The screen lists installed extension records from `extensions.list`, installs a local unpacked directory through `extensions.install`, enables/disables through `extensions.setEnabled`, clears quarantine through `extensions.clearQuarantine`, removes through `extensions.remove`, and subscribes to live `extension.healthEvent` updates so runtime fault/quarantine state appears without polling.
+
+Security scope is intentionally narrow: local installs pass `approvedCapabilities: []`, so no extension capability is silently granted by typing a path into the manager. The detail pane shows manifest-requested capabilities and granted capabilities separately, making denied permissions visible rather than pretending a full permission-review editor exists. Trust is displayed from the existing record (`unsigned`, `signed`, etc.) without claiming cryptographic signature validation.
+
+Still deferred: signed marketplace browsing/downloads, manifest preflight review before local install, post-install capability grant/revoke UI, cryptographic signature verification, a developer SDK package split, and CLI/local API server. Each needs a real trust, registry, or authenticated API surface; none is faked here.
+
+**Validation evidence (run 2026-06-27):**
+
+```text
+npm run typecheck   -> node + web TypeScript checks passed
+npm run lint        -> 0 errors, 0 warnings
+npm run test -- ExtensionManager ExtensionRuntime ExtensionHost ExtensionStore CapabilityBroker extensionClient
+                   -> 5 files, 27 tests passed
 ```
 
 ## Epic X4 — Knowledge and memory (2026-06-26)

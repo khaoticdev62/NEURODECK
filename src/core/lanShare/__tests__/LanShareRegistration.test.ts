@@ -1,12 +1,11 @@
-import * as grpc from '@grpc/grpc-js'
 import { createServer } from 'node:net'
 import { afterEach, describe, expect, it } from 'vitest'
 import { LanShareRegistrationClient } from '../grpc/LanShareRegistrationClient'
 import {
   LanShareRegistrationServer,
+  type LanShareRegistrationServerOptions,
   type NdxServiceRegistration
 } from '../grpc/LanShareRegistrationServer'
-import { loadNdxLanShareProto } from '../grpc/loadNdxLanShareProto'
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -18,6 +17,28 @@ function freePort(): Promise<number> {
       probe.close(() => resolve(port))
     })
   })
+}
+
+const FAKE_CERT_PEM = '-----BEGIN CERTIFICATE-----\nFAKEFORTESTING\n-----END CERTIFICATE-----'
+
+function baseOptions(
+  overrides: Partial<LanShareRegistrationServerOptions> = {}
+): LanShareRegistrationServerOptions {
+  return {
+    getOwnRegistration: async () => ({
+      service_id: 'SERVER-DEVICE',
+      ip: '127.0.0.1',
+      port: 42000,
+      hostname: 'server-device',
+      api_version: 1,
+      auth_port: 0,
+      ipv6: ''
+    }),
+    onPeerRegistered: () => undefined,
+    getOwnCertificatePem: async () => FAKE_CERT_PEM,
+    getGroupCode: async () => 'Warpinator',
+    ...overrides
+  }
 }
 
 describe('LanShareRegistrationServer + LanShareRegistrationClient', () => {
@@ -43,13 +64,16 @@ describe('LanShareRegistrationServer + LanShareRegistrationClient', () => {
     let receivedPeerAddress: string | undefined
 
     server = new LanShareRegistrationServer()
-    await server.start(port, {
-      getOwnRegistration: async () => ownServerRegistration,
-      onPeerRegistered: (registration, peerAddress) => {
-        receivedFromClient = registration
-        receivedPeerAddress = peerAddress
-      }
-    })
+    await server.start(
+      port,
+      baseOptions({
+        getOwnRegistration: async () => ownServerRegistration,
+        onPeerRegistered: (registration, peerAddress) => {
+          receivedFromClient = registration
+          receivedPeerAddress = peerAddress
+        }
+      })
+    )
 
     const client = new LanShareRegistrationClient()
     const ownClientRegistration: NdxServiceRegistration = {
@@ -90,40 +114,58 @@ describe('LanShareRegistrationServer + LanShareRegistrationClient', () => {
     ).rejects.toBeTruthy()
   })
 
-  it('returns a real UNIMPLEMENTED status for v2 RequestCertificate', async () => {
+  it('performs a real v2 certificate exchange when both sides share the real group code', async () => {
     const port = await freePort()
     server = new LanShareRegistrationServer()
-    await server.start(port, {
-      getOwnRegistration: async () => ({
-        service_id: 'SERVER-DEVICE',
-        ip: '127.0.0.1',
-        port: 42000,
-        hostname: 'server-device',
-        api_version: 1,
-        auth_port: port,
-        ipv6: ''
-      }),
-      onPeerRegistered: () => undefined
+    await server.start(port, baseOptions({ getGroupCode: async () => 'shared-secret-code' }))
+
+    const client = new LanShareRegistrationClient()
+    const result = await client.requestCertificate('127.0.0.1', port, 'shared-secret-code', {
+      ip: '127.0.0.1',
+      hostname: 'client',
+      ipv6: ''
     })
 
-    const proto = await loadNdxLanShareProto()
-    const ServiceCtor = proto.WarpRegistration as grpc.ServiceClientConstructor
-    const client = new ServiceCtor(`127.0.0.1:${port}`, grpc.credentials.createInsecure())
+    expect(result?.certificatePem).toBe(FAKE_CERT_PEM)
+  })
 
-    const error = await new Promise<grpc.ServiceError>((resolve) => {
-      ;(
-        client as unknown as {
-          RequestCertificate: (
-            request: unknown,
-            callback: (error: grpc.ServiceError | null) => void
-          ) => void
-        }
-      ).RequestCertificate({ ip: '127.0.0.1', hostname: 'client', ipv6: '' }, (error) => {
-        resolve(error as grpc.ServiceError)
-      })
+  it('returns null (a real, detectable group mismatch) when group codes differ', async () => {
+    const port = await freePort()
+    server = new LanShareRegistrationServer()
+    await server.start(port, baseOptions({ getGroupCode: async () => 'server-code' }))
+
+    const client = new LanShareRegistrationClient()
+    const result = await client.requestCertificate(
+      '127.0.0.1',
+      port,
+      'client-has-a-different-code',
+      { ip: '127.0.0.1', hostname: 'client', ipv6: '' }
+    )
+
+    expect(result).toBeNull()
+  })
+
+  it('rate-limits a peer that exceeds the real per-peer request limit', async () => {
+    const port = await freePort()
+    server = new LanShareRegistrationServer()
+    await server.start(port, baseOptions())
+
+    const client = new LanShareRegistrationClient()
+    const request = {
+      service_id: 'X',
+      ip: '127.0.0.1',
+      port: 1,
+      hostname: 'x',
+      api_version: 1,
+      auth_port: 1,
+      ipv6: ''
+    }
+
+    for (let i = 0; i < 10; i += 1) {
+      await client.registerWithPeer('127.0.0.1', port, request)
+    }
+    await expect(client.registerWithPeer('127.0.0.1', port, request)).rejects.toMatchObject({
+      code: 8 // grpc.status.RESOURCE_EXHAUSTED
     })
-    client.close()
-
-    expect(error.code).toBe(grpc.status.UNIMPLEMENTED)
   })
 })

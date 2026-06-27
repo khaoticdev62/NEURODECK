@@ -177,6 +177,10 @@ const Integrations = lazy(async () => {
   const module = await import('../../features/system/Integrations')
   return { default: module.Integrations }
 })
+const ExtensionManager = lazy(async () => {
+  const module = await import('../../features/extensions/ExtensionManager')
+  return { default: module.ExtensionManager }
+})
 const RecoveryTimeline = lazy(async () => {
   const module = await import('../../features/recovery/RecoveryTimeline')
   return { default: module.RecoveryTimeline }
@@ -647,6 +651,15 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('integrations', <Integrations />)
+  },
+  {
+    routeId: 'extensions',
+    path: '/extensions',
+    title: 'Extension Manager',
+    owningEpic: 'Epic X3',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('extensions', <ExtensionManager />)
   },
   {
     routeId: 'recovery',

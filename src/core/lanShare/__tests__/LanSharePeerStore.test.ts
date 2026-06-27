@@ -60,4 +60,62 @@ describe('LanSharePeerStore', () => {
     const store = new LanSharePeerStore(join(dir, 'peers.json'))
     expect(await store.setTrust('missing', 'trusted')).toBeUndefined()
   })
+
+  it('demotes a trusted peer to fingerprint-changed on a real fingerprint mismatch', async () => {
+    const store = new LanSharePeerStore(join(dir, 'peers.json'))
+    await store.upsertSeen({
+      id: 'peer-1',
+      displayName: 'Peer One',
+      addresses: ['192.168.1.50'],
+      transferPort: 42000,
+      authPort: 42001,
+      registrationVersion: 2,
+      platform: 'unknown',
+      status: 'online',
+      fingerprint: 'aaaa'
+    })
+    await store.setTrust('peer-1', 'trusted')
+
+    const updated = await store.upsertSeen({
+      id: 'peer-1',
+      displayName: 'Peer One',
+      addresses: ['192.168.1.50'],
+      transferPort: 42000,
+      authPort: 42001,
+      registrationVersion: 2,
+      platform: 'unknown',
+      status: 'online',
+      fingerprint: 'bbbb'
+    })
+
+    expect(updated.trustState).toBe('fingerprint-changed')
+  })
+
+  it('never silently un-blocks a peer on re-observation', async () => {
+    const store = new LanSharePeerStore(join(dir, 'peers.json'))
+    await store.upsertSeen({
+      id: 'peer-1',
+      displayName: 'Peer One',
+      addresses: ['192.168.1.50'],
+      transferPort: 42000,
+      authPort: 42001,
+      registrationVersion: 1,
+      platform: 'unknown',
+      status: 'online'
+    })
+    await store.setTrust('peer-1', 'blocked')
+
+    const updated = await store.upsertSeen({
+      id: 'peer-1',
+      displayName: 'Peer One',
+      addresses: ['192.168.1.50'],
+      transferPort: 42000,
+      authPort: 42001,
+      registrationVersion: 1,
+      platform: 'unknown',
+      status: 'online'
+    })
+
+    expect(updated.trustState).toBe('blocked')
+  })
 })

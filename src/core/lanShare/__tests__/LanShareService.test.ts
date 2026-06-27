@@ -3,6 +3,9 @@ import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { SecretCipher } from '../../models/SecretCipher'
+import { LanShareCertificateStore } from '../LanShareCertificateStore'
+import { LanShareGroupCodeStore } from '../LanShareGroupCodeStore'
 import { LanShareIdentityStore } from '../LanShareIdentityStore'
 import { LanShareInterfaceManager } from '../LanShareInterfaceManager'
 import { LanSharePeerStore } from '../LanSharePeerStore'
@@ -19,6 +22,31 @@ function freePort(): Promise<number> {
       probe.close(() => resolve(port))
     })
   })
+}
+
+function fakeCipher(): SecretCipher {
+  return {
+    isAvailable: () => true,
+    encrypt: (plaintext) => `ENC(${plaintext})`,
+    decrypt: (ciphertext) => ciphertext.replace(/^ENC\(/, '').replace(/\)$/, '')
+  }
+}
+
+function createService(
+  dir: string,
+  settingsStore: LanShareSettingsStore,
+  identityStore: LanShareIdentityStore,
+  peerStore: LanSharePeerStore
+): LanShareService {
+  const interfaceManager = new LanShareInterfaceManager()
+  return new LanShareService(
+    settingsStore,
+    interfaceManager,
+    identityStore,
+    peerStore,
+    new LanShareCertificateStore(join(dir, 'certificate.json'), fakeCipher(), interfaceManager),
+    new LanShareGroupCodeStore(join(dir, 'group-code.json'), fakeCipher())
+  )
 }
 
 describe('LanShareService', () => {
@@ -43,12 +71,7 @@ describe('LanShareService', () => {
     await settingsStore.update({ transferPort, authPort })
     const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
     const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
-    const service = new LanShareService(
-      settingsStore,
-      new LanShareInterfaceManager(),
-      identityStore,
-      peerStore
-    )
+    const service = createService(dir, settingsStore, identityStore, peerStore)
 
     const status = await service.start()
     expect(status.state).toBe('running')
@@ -77,12 +100,7 @@ describe('LanShareService', () => {
       await settingsStore.update({ transferPort, authPort })
       const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
       const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
-      const service = new LanShareService(
-        settingsStore,
-        new LanShareInterfaceManager(),
-        identityStore,
-        peerStore
-      )
+      const service = createService(dir, settingsStore, identityStore, peerStore)
 
       const status = await service.start()
       expect(status.state).toBe('error')
@@ -103,12 +121,7 @@ describe('LanShareService', () => {
     await settingsStore.update({ transferPort, authPort })
     const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
     const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
-    const service = new LanShareService(
-      settingsStore,
-      new LanShareInterfaceManager(),
-      identityStore,
-      peerStore
-    )
+    const service = createService(dir, settingsStore, identityStore, peerStore)
 
     const seenStates: string[] = []
     service.onChange((status) => seenStates.push(status.state))

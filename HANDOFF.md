@@ -2,6 +2,8 @@
 
 ## Current state
 
+**2026-06-27 Epic X3 update:** Extension Manager UI is now real for local unpacked extensions. `/extensions` is a lazy route and primary Navigation Rail destination backed by the existing `extensions.*` typed IPC surface: list, local install with zero implicit capability grants, enable/disable, clear quarantine, remove, refresh, and live `extension.healthEvent` updates. Signed marketplace, SDK, CLI, manifest preflight review, post-install capability grant editing, and cryptographic signature verification remain explicitly deferred.
+
 **2026-06-24 Epic 4 update:** AI safety runtime is complete for Phase A scope. Prompt-injection boundary tests now verify that adversarial user intent text is not parsed as a host tool plan, and AI Command Canvas cannot self-grant the Quick Command agent tools or permission ceilings; tool execution still requires validated model tool plans plus persisted allowlist/permission checks. Evidence is recorded in `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` under the Epic 4 prompt-injection boundary addendum.
 
 **2026-06-24 Epic 7 update:** Build Studio is complete for the current Phase A scope. `/build` now has controller-focusable structural edit controls (organize imports, format file, wrap selection) and a reviewed predictive edit flow wired through the real `ModelRouter.complete()` IPC path with explicit Apply/Discard before editor mutation. Evidence is recorded in `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md` under the Epic 7 completion addendum.

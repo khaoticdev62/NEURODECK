@@ -31,12 +31,11 @@ describe('LanShareSettingsStore', () => {
   it('persists updates across reads', async () => {
     const filePath = join(dir, 'settings.json')
     const store = new LanShareSettingsStore(filePath, 'Test Device', '/dest')
-    await store.update({ compressionMode: 'off', autoStartEnabled: true })
+    await store.update({ compressionMode: 'off' })
 
     const reopened = new LanShareSettingsStore(filePath, 'Test Device', '/dest')
     const settings = await reopened.get()
     expect(settings.compressionMode).toBe('off')
-    expect(settings.autoStartEnabled).toBe(true)
   })
 
   it('rejects a transfer port equal to the auth port', async () => {
@@ -51,5 +50,25 @@ describe('LanShareSettingsStore', () => {
     const settings = await store.markGroupCodeConfigured(true)
     expect(settings.groupCodeConfigured).toBe(true)
     expect(Object.keys(settings)).not.toContain('groupCode')
+  })
+
+  it('rejects enabling auto-start while the group code is still the default (spec §11 insecure-mode policy)', async () => {
+    const store = new LanShareSettingsStore(join(dir, 'settings.json'), 'Test Device', '/dest')
+    await expect(store.update({ autoStartEnabled: true })).rejects.toThrow(
+      InvalidLanShareSettingsError
+    )
+  })
+
+  it('rejects enabling auto-accept-trusted while the group code is still the default', async () => {
+    const store = new LanShareSettingsStore(join(dir, 'settings.json'), 'Test Device', '/dest')
+    await expect(store.update({ approvalPolicy: 'auto-accept-trusted' })).rejects.toThrow(
+      InvalidLanShareSettingsError
+    )
+  })
+
+  it('allows auto-start once the group code is configured, even within the same update call', async () => {
+    const store = new LanShareSettingsStore(join(dir, 'settings.json'), 'Test Device', '/dest')
+    const settings = await store.update({ groupCodeConfigured: true, autoStartEnabled: true })
+    expect(settings.autoStartEnabled).toBe(true)
   })
 })

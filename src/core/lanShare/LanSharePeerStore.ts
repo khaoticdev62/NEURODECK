@@ -18,6 +18,21 @@ export interface UpsertSeenLanSharePeerInput {
   platform: LanSharePlatform
   status: LanSharePeerStatus
   fingerprint?: string
+  /** Set only after a real, successfully-decrypted v2 certificate exchange — `true` means this peer is genuinely using the same group code, never assumed. */
+  groupMatch?: boolean
+}
+
+/** Real spec §12 trust resolution: `blocked` only ever changes via an explicit user `setTrust` call, and a real fingerprint change always demotes out of `trusted`/`temporarily-approved` rather than silently re-trusting. */
+function resolveTrustState(
+  existing: LanSharePeer | undefined,
+  newFingerprint: string | undefined
+): LanShareTrustState {
+  if (!existing) return 'unknown'
+  if (existing.trustState === 'blocked') return 'blocked'
+  if (newFingerprint && existing.fingerprint && existing.fingerprint !== newFingerprint) {
+    return 'fingerprint-changed'
+  }
+  return existing.trustState
 }
 
 /**
@@ -89,9 +104,9 @@ export class LanSharePeerStore {
       registrationVersion: input.registrationVersion,
       platform: input.platform,
       capabilities: existing?.capabilities ?? [],
-      trustState: existing?.trustState ?? 'unknown',
+      trustState: resolveTrustState(existing, input.fingerprint),
       fingerprint: input.fingerprint ?? existing?.fingerprint,
-      groupMatch: existing?.groupMatch ?? false,
+      groupMatch: input.groupMatch ?? existing?.groupMatch ?? false,
       lastSeenAt: Date.now(),
       discoverySource: existing?.discoverySource ?? discoverySource,
       status: input.status

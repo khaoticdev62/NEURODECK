@@ -94,6 +94,14 @@ export const FEATURE_CATALOG: FeatureDescriptor[] = [
     profileVisibility: []
   },
   {
+    id: 'extensions',
+    route: '/extensions',
+    name: 'Extensions',
+    capabilityDependencies: [],
+    permissionRequirements: [],
+    profileVisibility: []
+  },
+  {
     id: 'learn',
     route: '/learn',
     name: 'Learn',

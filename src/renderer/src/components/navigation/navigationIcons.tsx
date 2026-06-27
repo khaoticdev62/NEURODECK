@@ -90,6 +90,12 @@ const NAVIGATION_ICON_PATHS: Record<string, React.JSX.Element> = {
       <path d="M4 7l8 4 8-4M12 11v10" />
     </Icon>
   ),
+  extensions: (
+    <Icon>
+      <path d="M9 3h6v5h5v6h-5v5H9v-5H4V8h5z" />
+      <path d="M9 8h6M9 14h6" />
+    </Icon>
+  ),
   learn: (
     <Icon>
       <path d="M3 6.5 12 3l9 3.5-9 3.5z" />

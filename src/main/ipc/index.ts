@@ -37,6 +37,8 @@ import { SnippetStore } from '../../core/clipboard/SnippetStore'
 import { DeviceIdentityStore } from '../../core/lan/DeviceIdentityStore'
 import { PeerDiscoveryService } from '../../core/lan/PeerDiscoveryService'
 import { PeerStore } from '../../core/lan/PeerStore'
+import { LanShareCertificateStore } from '../../core/lanShare/LanShareCertificateStore'
+import { LanShareGroupCodeStore } from '../../core/lanShare/LanShareGroupCodeStore'
 import { LanShareIdentityStore } from '../../core/lanShare/LanShareIdentityStore'
 import { LanShareInterfaceManager } from '../../core/lanShare/LanShareInterfaceManager'
 import { LanSharePeerStore } from '../../core/lanShare/LanSharePeerStore'
@@ -309,15 +311,26 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     join(app.getPath('userData'), 'lan-share-transfer-jobs.json')
   )
   const lanShareInterfaceManager = new LanShareInterfaceManager()
-  // Real Phase LAN-2 service lifecycle — binds real sockets once `start()`
-  // is explicitly called via IPC. Never auto-started here: spec §24 gates
-  // auto-start behind "secure mode" (a real group code), which Phase
-  // LAN-4 has not built yet.
+  const lanShareCertificateStore = new LanShareCertificateStore(
+    join(app.getPath('userData'), 'lan-share-certificate.json'),
+    electronSecretCipher,
+    lanShareInterfaceManager
+  )
+  const lanShareGroupCodeStore = new LanShareGroupCodeStore(
+    join(app.getPath('userData'), 'lan-share-group-code.json'),
+    electronSecretCipher
+  )
+  // Real Phase LAN-2/LAN-3/LAN-4 service lifecycle — binds real sockets
+  // once `start()` is explicitly called via IPC. Never auto-started
+  // here: spec §24 gates auto-start behind "secure mode" (a non-default
+  // group code), which only the user can configure.
   const lanShareService = new LanShareService(
     lanShareSettingsStore,
     lanShareInterfaceManager,
     lanShareIdentityStore,
-    lanSharePeerStore
+    lanSharePeerStore,
+    lanShareCertificateStore,
+    lanShareGroupCodeStore
   )
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
@@ -398,6 +411,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     lanShareTransferStore,
     lanShareService,
     lanShareInterfaceManager,
+    lanShareGroupCodeStore,
     getWindow
   )
   return () => {

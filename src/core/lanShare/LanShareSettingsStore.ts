@@ -53,6 +53,23 @@ export class LanShareSettingsStore {
         'The transfer port and registration/auth port must be different.'
       )
     }
+    // Real spec §11 default/insecure-mode policy: a default (unconfigured)
+    // group code must always require incoming approval and never
+    // auto-start unattended. This is enforced on the resulting state, so
+    // a combined update that sets the group code and enables these in
+    // the same call is still correctly evaluated.
+    if (!next.groupCodeConfigured) {
+      if (next.approvalPolicy === 'auto-accept-trusted') {
+        throw new InvalidLanShareSettingsError(
+          'Auto-accept requires a real, non-default group code (secure mode) — set one first.'
+        )
+      }
+      if (next.autoStartEnabled) {
+        throw new InvalidLanShareSettingsError(
+          'Auto-start requires a real, non-default group code (secure mode) — set one first.'
+        )
+      }
+    }
     await this.store.write(next)
     return next
   }
