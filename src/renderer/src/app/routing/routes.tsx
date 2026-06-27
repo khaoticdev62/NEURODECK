@@ -189,6 +189,10 @@ const StorageAndRecovery = lazy(async () => {
   const module = await import('../../features/recovery/StorageAndRecovery')
   return { default: module.StorageAndRecovery }
 })
+const BackupAndRestore = lazy(async () => {
+  const module = await import('../../features/backup/BackupAndRestore')
+  return { default: module.BackupAndRestore }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -680,6 +684,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('storage', <StorageAndRecovery />)
+  },
+  {
+    routeId: 'backup-restore',
+    screenId: 'ND-X030',
+    path: '/backup',
+    title: 'Backup and Restore',
+    owningEpic: 'Epic X7',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('backup and restore', <BackupAndRestore />)
   }
 ]
 

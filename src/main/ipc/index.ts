@@ -4,6 +4,7 @@ import { hostname, homedir } from 'node:os'
 import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
+import { BackupService } from '../../core/backup/BackupService'
 import { ApplicationDiscoveryService } from '../../core/applications/ApplicationDiscoveryService'
 import { ApplicationLauncher } from '../../core/applications/ApplicationLauncher'
 import { ApplicationStore } from '../../core/applications/ApplicationStore'
@@ -74,6 +75,7 @@ import { FEATURE_CATALOG } from '../../shared/features/featureCatalog'
 import { IPC_CHANNELS } from '@shared/contracts'
 import { registerAgentHandlers } from './registerAgentHandlers'
 import { registerApplicationHandlers } from './registerApplicationHandlers'
+import { registerBackupHandlers } from './registerBackupHandlers'
 import { registerBrowserHandlers } from './registerBrowserHandlers'
 import { registerCapabilityHandlers } from './registerCapabilityHandlers'
 import { registerControllerSettingsHandlers } from './registerControllerSettingsHandlers'
@@ -117,6 +119,10 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   const remoteConnectionService = new RemoteConnectionService(remoteHostStore)
   const recoveryService = new RecoveryService(join(app.getPath('userData'), 'recovery'))
+  const backupService = new BackupService(
+    app.getPath('userData'),
+    join(app.getPath('userData'), 'backups')
+  )
   const workflowStore = new WorkflowStore(join(app.getPath('userData'), 'workflows'))
   const workflowRunStore = new WorkflowRunStore(join(app.getPath('userData'), 'workflows'))
   const modelProviderStore = new ModelProviderStore(
@@ -354,6 +360,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerFileHandlers(fileService, recoveryService, workspaceStore)
   registerGitHandlers(gitService, workspaceStore, fileService, recoveryService)
   registerRecoveryHandlers(recoveryService, fileService, workspaceStore)
+  registerBackupHandlers(backupService)
   registerWorkflowHandlers(workflowStore, workflowRunStore)
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)
   registerAgentHandlers(agentStore, agentRuntime)

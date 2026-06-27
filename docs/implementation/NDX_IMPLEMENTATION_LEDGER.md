@@ -2084,6 +2084,39 @@ npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
 
+## Epic X7 — Sync, backup, and migration (2026-06-27)
+
+First real slice: local app-state backup foundation for ND-X030 Backup and Restore. Sync providers, conflict resolution, restore, import/export, and migrations remain explicitly open.
+
+### Supplemental Story: Local app-state backup foundation
+
+**Platform gap closed**: NeuroDeck now has a real local backup primitive for its non-secret JSON app state instead of only per-file workspace recovery checkpoints. JPE: this is the "copy my app settings and indexes into one integrity-checked file" layer, not device-to-device sync and not full restore yet.
+
+**Existing systems reused**: Electron `userData` remains the storage root; the typed IPC pattern is the existing `shared/contracts` -> `main/ipc` -> `preload` -> renderer client bridge; ND-X030 is added through the existing lazy route registry, making it reachable from route-backed search/command surfaces without a parallel navigation system.
+
+**New contracts**: `shared/contracts/backup.ts` defines `BackupRecord`, `BackupVerification`, `CreateBackupRequest`, and `BackupIdRequest`; `ipcChannels.ts` adds `backup.list`, `backup.create`, and `backup.verify`; `NdxBridge` exposes `backups.list/create/verify`.
+
+**Real backend**: `core/backup/BackupService.ts` creates local `.ndx-backup.json` bundles under `userData/backups`. Each bundle contains a manifest, non-secret app-state file contents, per-file SHA-256 hashes, and a bundle SHA-256. Secret-bearing stores (`model-providers.json`, `remote-hosts.json`, `clipboard.json`, lock settings, device identity, LAN-share certificate/group-code stores) are excluded and recorded in the manifest instead of silently exported.
+
+**Controller path**: `/backup` (ND-X030) renders `BackupAndRestore.tsx` with controller-focusable Create Backup and Verify actions. Restore is visible but disabled with the real reason: restore needs rollback-on-restore support before it can safely overwrite app state.
+
+**Permissions and privacy**: Backup is local-only in this slice. The renderer never reads files directly; it receives only typed records over `backup.*` IPC. Secrets are excluded by filename at the core service boundary.
+
+**Offline behavior**: Fully offline; no cloud or remote storage dependency.
+
+**Failure and recovery**: Creation writes atomically via temp-file then rename. Verification reports manifest hash failures and per-file byte/hash mismatches. Corrupt backup files are not listed as valid records.
+
+**Tests**: `core/backup/__tests__/BackupService.test.ts` covers real bundle creation, secret-store exclusion, listing, and corruption detection.
+
+**Evidence (run 2026-06-27):**
+
+```text
+npm run test -- BackupService -> 1 file / 2 tests passed
+npm run typecheck             -> node + web TypeScript checks passed
+npm run lint                  -> 0 errors, 0 warnings
+npm run build                 -> succeeded
+```
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 
 A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.

@@ -56,6 +56,11 @@ const ndx: NdxBridge = {
     restore: (request) => ipcRenderer.invoke(IPC_CHANNELS.recoveryRestore, request),
     storageSummary: (request) => ipcRenderer.invoke(IPC_CHANNELS.recoveryStorageSummary, request)
   },
+  backups: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.backupList),
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.backupCreate, request),
+    verify: (request) => ipcRenderer.invoke(IPC_CHANNELS.backupVerify, request)
+  },
   git: {
     status: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, request),
     diff: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitDiff, request),

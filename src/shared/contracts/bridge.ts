@@ -19,6 +19,12 @@ import type {
 import type { DeviceIdRequest, DeviceRecord, UpsertDeviceRequest } from './device'
 import type { TransactionIdRequest, TransactionRecord } from './transaction'
 import type {
+  BackupIdRequest,
+  BackupRecord,
+  BackupVerification,
+  CreateBackupRequest
+} from './backup'
+import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
   ExtensionInstallPreview,
@@ -261,6 +267,11 @@ export interface NdxBridge {
     storageSummary: (
       request: WorkspaceRecoveryRequest
     ) => Promise<NdxResult<RecoveryStorageSummary>>
+  }
+  backups: {
+    list: () => Promise<NdxResult<BackupRecord[]>>
+    create: (request?: CreateBackupRequest) => Promise<NdxResult<BackupRecord>>
+    verify: (request: BackupIdRequest) => Promise<NdxResult<BackupVerification>>
   }
   git: {
     status: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStatus>>
