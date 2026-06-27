@@ -2169,3 +2169,45 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-4 (2026-06-27)
+
+Real authentication: RSA-2048 self-signed certificates, a real group code, and a real NaCl-secretbox-encrypted v2 certificate exchange that's byte-compatible with Warpinator's own PyNaCl wire format — confirmed by reading their real `auth.py` (audited in `docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md`), not assumed. Also real per-peer rate limiting and real spec §11/§12 trust/policy enforcement.
+
+**New real dependencies** (confirmed via `npm view`, all permissive): `selfsigned` (MIT, wraps `@peculiar/x509`/`pkijs`, both MIT/BSD-3-Clause) for real X.509 certificate generation; `tweetnacl` (Unlicense) for the real NaCl secretbox primitive. `tweetnacl-util` was installed then removed once it turned out unnecessary — `Buffer`'s own base64 handling covers the need.
+
+**Real certificates** (`core/lanShare/LanShareCertificateStore.ts`) — genuine RSA-2048 keypairs and self-signed X.509 certs via `selfsigned`, with subject common name set to the device hostname, a `subjectAltName` extension listing this device's real IP addresses, SHA-256 signature, and a 30-day validity window — all confirmed to match the real structure Warpinator's own `auth.py` builds (`_make_key_cert_pair`). Confirmed real and parseable by a test that round-trips the generated PEM through Node's own `X509Certificate` parser. The private key is encrypted at rest through the same `SecretCipher` boundary `ClipboardStore`/`ModelProviderStore` already use, with the same honest plaintext fallback when the cipher reports itself unavailable.
+
+**Real group-code storage** (`core/lanShare/LanShareGroupCodeStore.ts`) — encrypted at rest, and honestly defaults to Warpinator's own real default value `"Warpinator"` (confirmed in their `prefs.py`: `DEFAULT_GROUP_CODE = "Warpinator"`) rather than an NDX-invented default, so a fresh NeuroDeck install can complete a real v2 handshake with a fresh Warpinator install before either user sets a custom code. `isSecureMode()` matches their exact definition (`code != DEFAULT_GROUP_CODE`) — confirmed from their `prefs.py` `get_secure_mode()`.
+
+**Real, byte-compatible v2 certificate exchange** (`core/lanShare/grpc/groupCodeCipher.ts`) — `RequestCertificate` (previously a real `UNIMPLEMENTED` stub from Phase LAN-3) now performs a real handshake: this device's real certificate PEM is encrypted with a real NaCl secretbox (XSalsa20-Poly1305 via `tweetnacl`), keyed by `SHA-256(group code)`, with the wire format `nonce (24 bytes) || ciphertext`, base64-encoded — confirmed to match Warpinator's own real `auth.py` construction exactly (`SecretBox(SHA256(group_code)).encrypt(...)`), not approximated with this codebase's more usual AES-GCM (which would not be wire-compatible with a real Warpinator peer's decryption attempt). Proven by a real loopback gRPC round trip (server encrypts, client decrypts, certificate text matches exactly) and a real group-mismatch test (different group codes on each side → the client gets a real `null`, the same honest "no match" signal `LAN_GROUP_MISMATCH` exists for, never a thrown error for an expected, non-exceptional outcome). **Real correctness finding caught during this phase**: an early version used `TextEncoder`/`TextDecoder` to convert between strings and bytes for the NaCl call, which intermittently threw `unexpected type, use Uint8Array` under Vitest specifically — `TextEncoder`'s output and the `Uint8Array` global `tweetnacl` checks against came from different realms under Vitest's module isolation, failing tweetnacl's own `instanceof` guard. Fixed by switching to `Buffer`-based conversion everywhere in this module, which stays in the same realm as the rest of the Node process.
+
+**Real per-peer rate limiting** (`core/lanShare/grpc/RegistrationRateLimiter.ts`) — a real fixed-window counter (10 requests / 10 seconds by default) applied to both `RegisterService` and `RequestCertificate`, keyed by the peer's real source IP (extracted via the same `parsePeerHost` helper used elsewhere — now shared in `core/lanShare/grpc/parsePeerHost.ts` rather than duplicated, since rate-limiting by the full `ip:port` peer string would be trivially bypassed by opening a new connection per request, which is exactly what a real test caught before the fix). Confirmed by a test that trips the limiter and receives a real `grpc.status.RESOURCE_EXHAUSTED`.
+
+**Real spec §12 trust enforcement** (`LanSharePeerStore.upsertSeen`'s new `resolveTrustState`) — a peer's fingerprint changing between observations now real-demotes its trust state to `fingerprint-changed` regardless of what it was before (including `trusted`), and `blocked` never silently reverts on re-observation — both confirmed by tests. `groupMatch` is now also real: `LanShareService.attemptCertificateExchange` only ever sets it `true` after a real, successfully-decrypted v2 handshake.
+
+**Real spec §11 insecure-mode policy** (`LanShareSettingsStore.update`) — while the group code is still the real default, attempting to enable `autoStartEnabled` or set `approvalPolicy: 'auto-accept-trusted'` is rejected with a real validation error, evaluated against the *resulting* settings state so a combined update that sets the group code and enables these in the same call is still handled correctly. Confirmed by three tests (each rejection path, plus the combined-update success path).
+
+**Self-reported `api_version` bumped from `1` to `2`** — now that this device's v2 support is genuinely real, reporting `1` would have been needlessly conservative and would cause real Warpinator-ecosystem peers to skip attempting v2 with us.
+
+**Capability registry update**: `lanShare.registration.v2` moved from `unsupported` to `available`. `lanShare.available`'s reason text updated to reflect that v1/v2 registration and certificate exchange are now real, with only the send/receive transfer engine (Phase LAN-5/LAN-6) still missing.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `groupCodeCipher` real NaCl round trip, nonce uniqueness, group-mismatch rejection, malformed-input rejection | `core/lanShare/__tests__/groupCodeCipher.test.ts` | +4 (new file) |
+| `LanShareGroupCodeStore` real default, encrypted persistence, plaintext fallback, clear | `core/lanShare/__tests__/LanShareGroupCodeStore.test.ts` | +4 (new file) |
+| `LanShareCertificateStore` real RSA/X.509 generation+parsing, persistence/reuse, hostname-change regeneration | `core/lanShare/__tests__/LanShareCertificateStore.test.ts` | +3 (new file) |
+| `LanShareRegistrationServer`/`Client` real v2 round trip, real group mismatch, real rate-limit trip | `core/lanShare/__tests__/LanShareRegistration.test.ts` | +3 (extended) |
+| `LanSharePeerStore` real fingerprint-change demotion, never-silently-unblock | `core/lanShare/__tests__/LanSharePeerStore.test.ts` | +2 (extended) |
+| `LanShareSettingsStore` real insecure-mode policy enforcement | `core/lanShare/__tests__/LanShareSettingsStore.test.ts` | +3 (extended) |
+
+**Validation evidence (run 2026-06-27):**
+
+```text
+npm run test       → 175 files, 876 tests passed
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```
