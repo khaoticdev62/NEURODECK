@@ -157,14 +157,25 @@ const defaultDetectors: Record<CapabilityId, CapabilityDetector> = {
   'lanShare.available': () => ({
     status: 'degraded',
     reason:
-      'A real LAN Share service exists and can bind real transfer/registration sockets (Phase LAN-2), but it does not yet speak the Warpinator-compatible protocol or discover peers (Phases LAN-3 onward).'
+      'A real LAN Share service exists with real mDNS discovery and real v1 registration (Phase LAN-3), but no real send/receive transfer engine or v2 certificate auth yet (Phases LAN-4 onward).'
   }),
-  'lanShare.discovery.mdns': () =>
-    unsupported('No real mDNS discovery client is implemented yet (tracked for Phase LAN-3).'),
-  'lanShare.discovery.manual': () =>
-    unsupported('Manual connection needs the LAN Share service from Phase LAN-2, not yet built.'),
-  'lanShare.registration.v1': () =>
-    unsupported('No Warpinator-compatible v1 registration client exists yet (Phase LAN-3).'),
+  'lanShare.discovery.mdns': () => ({
+    status: 'available',
+    provider: 'bonjour-service',
+    reason:
+      'Real mDNS advertise/browse against the confirmed Warpinator service type (_warpinator._tcp.local.) is implemented (Phase LAN-3).'
+  }),
+  'lanShare.discovery.manual': () => ({
+    status: 'available',
+    provider: 'core/lanShare/LanSharePeerStore',
+    reason: 'Manual peer entry is real, backed by the real LAN Share service from Phase LAN-2.'
+  }),
+  'lanShare.registration.v1': () => ({
+    status: 'available',
+    provider: '@grpc/grpc-js',
+    reason:
+      'A real gRPC WarpRegistration v1 client/server pair is implemented and used by both mDNS-discovered and manually-added peers (Phase LAN-3).'
+  }),
   'lanShare.registration.v2': () =>
     unsupported('No Warpinator-compatible v2 registration client exists yet (Phase LAN-3).'),
   'lanShare.files': () =>

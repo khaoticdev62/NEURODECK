@@ -160,7 +160,13 @@ export function registerLanShareHandlers(
           error: ndxError('validation', 'invalid-request', 'That address is invalid.')
         }
       }
-      return { ok: true, data: await peerStore.addManual(parsed.data) }
+      const peer = await peerStore.addManual(parsed.data)
+      await service.probeManualPeer(
+        parsed.data.address,
+        parsed.data.transferPort,
+        parsed.data.authPort
+      )
+      return { ok: true, data: (await peerStore.get(peer.id)) ?? peer }
     }
   )
 

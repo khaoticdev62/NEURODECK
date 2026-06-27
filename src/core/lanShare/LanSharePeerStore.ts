@@ -1,20 +1,35 @@
 import type {
   AddManualLanSharePeerRequest,
   LanSharePeer,
+  LanSharePeerStatus,
+  LanSharePlatform,
+  LanShareRegistrationVersion,
   LanShareTrustState
 } from '@shared/contracts'
 import { JsonStore } from '../persistence/JsonStore'
+
+export interface UpsertSeenLanSharePeerInput {
+  id: string
+  displayName: string
+  addresses: string[]
+  transferPort: number
+  authPort: number
+  registrationVersion: LanShareRegistrationVersion
+  platform: LanSharePlatform
+  status: LanSharePeerStatus
+  fingerprint?: string
+}
 
 /**
  * Phase LAN-1 peer/trust persistence (spec §10–12, §27
  * `lan_share_manual_peers`/`lan_share_peer_observations`/
  * `lan_share_trusted_peers`/`lan_share_blocked_peers` consolidated into
- * one real store keyed by peer id — splitting them into four physical
- * tables with no real discovery engine populating any of them yet would
- * be speculative). Real mDNS-driven peer observations land in Phase
- * LAN-3; for now this store only ever holds manually-added peers, but
- * its `upsertSeen`/trust-transition logic is the same real logic
- * discovery will call once it exists.
+ * one real store keyed by peer id). `upsertSeen` is real as of Phase
+ * LAN-3 — `LanShareService` calls it with the real result of an mDNS
+ * discovery + v1 registration handshake against an actual peer, never
+ * a fabricated entry. A peer's existing `trustState`/`groupMatch` is
+ * preserved across re-observations — only an explicit `setTrust` call
+ * changes trust (spec §12: a re-observation never silently re-trusts).
  */
 export class LanSharePeerStore {
   private readonly store: JsonStore<LanSharePeer[]>
@@ -54,6 +69,37 @@ export class LanSharePeerStore {
       status: 'offline'
     }
     await this.store.write([...peers, peer])
+    return peer
+  }
+
+  async upsertSeen(
+    input: UpsertSeenLanSharePeerInput,
+    discoverySource: 'mdns' | 'history' = 'mdns'
+  ): Promise<LanSharePeer> {
+    const peers = await this.store.read()
+    const index = peers.findIndex((peer) => peer.id === input.id)
+    const existing = index >= 0 ? peers[index] : undefined
+
+    const peer: LanSharePeer = {
+      id: input.id,
+      displayName: input.displayName,
+      addresses: input.addresses,
+      transferPort: input.transferPort,
+      authPort: input.authPort,
+      registrationVersion: input.registrationVersion,
+      platform: input.platform,
+      capabilities: existing?.capabilities ?? [],
+      trustState: existing?.trustState ?? 'unknown',
+      fingerprint: input.fingerprint ?? existing?.fingerprint,
+      groupMatch: existing?.groupMatch ?? false,
+      lastSeenAt: Date.now(),
+      discoverySource: existing?.discoverySource ?? discoverySource,
+      status: input.status
+    }
+
+    const next = index >= 0 ? [...peers] : [...peers, peer]
+    if (index >= 0) next[index] = peer
+    await this.store.write(next)
     return peer
   }
 

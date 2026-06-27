@@ -3,7 +3,9 @@ import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { LanShareIdentityStore } from '../LanShareIdentityStore'
 import { LanShareInterfaceManager } from '../LanShareInterfaceManager'
+import { LanSharePeerStore } from '../LanSharePeerStore'
 import { LanShareService } from '../LanShareService'
 import { LanShareSettingsStore } from '../LanShareSettingsStore'
 
@@ -39,7 +41,14 @@ describe('LanShareService', () => {
       join(dir, 'receive')
     )
     await settingsStore.update({ transferPort, authPort })
-    const service = new LanShareService(settingsStore, new LanShareInterfaceManager())
+    const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
+    const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
+    const service = new LanShareService(
+      settingsStore,
+      new LanShareInterfaceManager(),
+      identityStore,
+      peerStore
+    )
 
     const status = await service.start()
     expect(status.state).toBe('running')
@@ -66,7 +75,14 @@ describe('LanShareService', () => {
         join(dir, 'receive')
       )
       await settingsStore.update({ transferPort, authPort })
-      const service = new LanShareService(settingsStore, new LanShareInterfaceManager())
+      const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
+      const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
+      const service = new LanShareService(
+        settingsStore,
+        new LanShareInterfaceManager(),
+        identityStore,
+        peerStore
+      )
 
       const status = await service.start()
       expect(status.state).toBe('error')
@@ -85,7 +101,14 @@ describe('LanShareService', () => {
       join(dir, 'receive')
     )
     await settingsStore.update({ transferPort, authPort })
-    const service = new LanShareService(settingsStore, new LanShareInterfaceManager())
+    const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
+    const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
+    const service = new LanShareService(
+      settingsStore,
+      new LanShareInterfaceManager(),
+      identityStore,
+      peerStore
+    )
 
     const seenStates: string[] = []
     service.onChange((status) => seenStates.push(status.state))

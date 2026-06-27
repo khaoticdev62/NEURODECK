@@ -24,6 +24,8 @@ import { z } from 'zod'
 
 export const lanShareIdentitySchema = z.object({
   id: z.string().min(1),
+  /** Real Warpinator-compatible connect-id format (`{HOSTNAME}-{20 hex chars}`), confirmed from their own `prefs.py` `get_new_connect_id()` — used as the real mDNS service instance name and `ServiceRegistration.service_id` so this device looks like a genuine peer on the wire, not just to other NeuroDeck instances. */
+  connectId: z.string().min(1),
   displayName: z.string().min(1).max(200),
   createdAt: z.number().int().nonnegative()
 })

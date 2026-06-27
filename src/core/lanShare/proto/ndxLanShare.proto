@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+// NeuroDeck OS LAN Share — Warpinator-compatible registration schema.
+//
+// This schema was independently authored from this project's own
+// documented understanding of the real Warpinator wire protocol (see
+// docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md for the audit and
+// the clean-room strategy this file follows). RPC names, message field
+// names/numbers, and types are written to be wire-compatible with real
+// Warpinator-ecosystem clients where that is the explicit point of this
+// feature — protocol shapes are not themselves protected expression.
+// No text was copied from any upstream GPL source file.
+//
+// Phase LAN-3 implements the `WarpRegistration` service only (real v1
+// registration; v2's `RequestCertificate` intentionally returns a real
+// UNIMPLEMENTED status until Phase LAN-4 builds the certificate
+// infrastructure it depends on). The `Warp` transfer service is not
+// implemented in this phase — that begins in Phase LAN-5/LAN-6.
+
+// Deliberately no `package` declaration — the real Warpinator wire
+// protocol has none, and gRPC's full method path includes the package
+// name as a prefix (e.g. a declared `package ndx;` would make our
+// method path `/ndx.WarpRegistration/RegisterService` instead of the
+// real `/WarpRegistration/RegisterService`). Adding one here would
+// silently break wire compatibility with real Warpinator-ecosystem
+// clients, which is the entire point of this schema.
+
+service WarpRegistration {
+  rpc RequestCertificate(RegRequest) returns (RegResponse) {}
+  rpc RegisterService(ServiceRegistration) returns (ServiceRegistration) {}
+}
+
+message RegRequest {
+  string ip = 1;
+  string hostname = 2;
+  string ipv6 = 3;
+}
+
+message RegResponse {
+  string locked_cert = 1;
+}
+
+message ServiceRegistration {
+  string service_id = 1;
+  string ip = 2;
+  uint32 port = 3;
+  string hostname = 4;
+  uint32 api_version = 5;
+  uint32 auth_port = 6;
+  string ipv6 = 7;
+}

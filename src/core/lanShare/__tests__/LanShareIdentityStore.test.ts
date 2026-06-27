@@ -34,4 +34,14 @@ describe('LanShareIdentityStore', () => {
     expect(updated.id).toBe(original.id)
     expect(updated.displayName).toBe('Renamed Device')
   })
+
+  it('generates a connect id matching the real Warpinator format and keeps it stable across reads', async () => {
+    const filePath = join(dir, 'identity.json')
+    const store = new LanShareIdentityStore(filePath, 'Test Device')
+    const identity = await store.get()
+    expect(identity.connectId).toMatch(/^.+-[0-9A-F]{20}$/)
+
+    const reopened = new LanShareIdentityStore(filePath, 'Test Device')
+    expect((await reopened.get()).connectId).toBe(identity.connectId)
+  })
 })

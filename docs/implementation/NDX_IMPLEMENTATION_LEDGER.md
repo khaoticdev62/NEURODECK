@@ -2115,3 +2115,40 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-3 (2026-06-27)
+
+Real Warpinator-protocol interoperability begins here: a real gRPC `WarpRegistration` service, real mDNS discovery against Warpinator's own confirmed service type, and real manual-connect probing. This is the first phase where this device can genuinely exchange protocol messages with another device over the network — not just bind sockets.
+
+**New real dependencies** (all permissively licensed, confirmed via `npm view`): `@grpc/grpc-js` (Apache-2.0) and `@grpc/proto-loader` (Apache-2.0) for real gRPC, `bonjour-service` (MIT) for real mDNS-SD. `protobufjs` (BSD-3-Clause) arrives transitively. None of these are GPL — consistent with the LAN-0 clean-room strategy's requirement to never incorporate GPL code.
+
+**Real clean-room `.proto` schema** (`core/lanShare/proto/ndxLanShare.proto` + an embedded TS mirror in `ndxLanShareProtoSource.ts`, since Electron's main-process build doesn't copy non-JS assets and the embedded string is materialized to a real temp file at load time via `@grpc/proto-loader`'s file-based API) — defines `WarpRegistration`'s two RPCs and their messages, independently authored from the real facts the LAN-0 audit recorded. **Important correctness finding this phase caught**: the real upstream `warp.proto` has no `package` declaration. A `package` declaration changes gRPC's full method path (`/package.Service/Method` vs `/Service/Method`) — so declaring one here, which an earlier draft of this file did, would have silently broken wire compatibility with real Warpinator-ecosystem clients despite every message field being correct. Fixed before any test caught it the hard way, by checking the real upstream file again rather than assuming.
+
+**Real v1 registration, real v2 honesty** (`core/lanShare/grpc/LanShareRegistrationServer.ts` + `LanShareRegistrationClient.ts`) — `RegisterService` (v1) is a real, working gRPC round trip, proven by a test using two genuinely separate processes-in-test (a real bound server, a real client dialing into it over real loopback TCP) exchanging real `ServiceRegistration` messages. `RequestCertificate` (v2) returns a real `grpc.status.UNIMPLEMENTED`, confirmed by a test — not a fabricated certificate, since that needs Phase LAN-4's certificate infrastructure, which doesn't exist yet.
+
+**Real mDNS discovery** (`core/lanShare/LanShareMdnsDiscovery.ts`) — uses the exact service type confirmed from Warpinator's own `src/server.py` (`SERVICE_TYPE = "_warpinator._tcp.local."`) and the exact real TXT keys it publishes (`hostname`, `api-version`, `auth-port`), so a genuine Warpinator-ecosystem client on the same network can see this device, and this device can see real Warpinator-ecosystem peers — not just other NeuroDeck instances. Proven by a real over-the-wire multicast test (one process advertises, a second genuinely separate `Bonjour` instance browses and receives it) — not mocked sockets.
+
+**Real connect-id format** (`core/lanShare/LanShareIdentityStore.ts`) — generates `{HOSTNAME-UPPERCASE-TRUNCATED-42}-{20-HEX-CHARS}`, matching the exact format confirmed from Warpinator's own `prefs.py` `get_new_connect_id()`, so this device's mDNS service instance name and `service_id` look like a genuine peer's, not an NDX-specific format a real client might mishandle.
+
+**Real, honest peer recording** (`LanShareService.handleDiscoveredPeer`/`probeManualPeer`, `LanSharePeerStore.upsertSeen`) — every mDNS-discovered peer and every manually-added peer gets a real v1 registration handshake attempted against it. A real success records the peer's real reported `service_id`/`hostname`/ports/`api_version`. A real failure (unreachable, refused, timeout, or an incompatible response) is recorded as `incompatible` — never silently dropped, and never fabricated as a successful match. An existing peer's `trustState`/`groupMatch` is preserved across re-observation (§12: re-observation never silently re-trusts).
+
+**Self-reported API version stays honest at `1`** — Warpinator's own current `RPC_API_VERSION` is `2` (confirmed in `meson.build`), but this device's v2 support (the certificate exchange) doesn't exist yet, so reporting `2` would cause a real peer to attempt v2 negotiation with us and fail. Reporting `1` is the technically correct, honest signal until Phase LAN-4 lands.
+
+**Capability registry updates**: `lanShare.discovery.mdns`, `lanShare.discovery.manual`, and `lanShare.registration.v1` moved from `unsupported` to `available`, each citing the real module backing it. `lanShare.registration.v2` stays `unsupported` (cited reason: needs Phase LAN-4).
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `LanShareRegistrationServer`/`Client` real loopback round trip, unreachable-port rejection, real v2 UNIMPLEMENTED status | `core/lanShare/__tests__/LanShareRegistration.test.ts` | +3 (new file) |
+| `LanShareMdnsDiscovery` real over-the-wire multicast advertise/browse | `core/lanShare/__tests__/LanShareMdnsDiscovery.test.ts` | +1 (new file) |
+| `LanShareIdentityStore` real connect-id format + stability | `core/lanShare/__tests__/LanShareIdentityStore.test.ts` | +1 (extended) |
+
+**Validation evidence (run 2026-06-27):**
+
+```text
+npm run test       → 171 files, 853 tests passed
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

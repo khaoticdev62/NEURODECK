@@ -313,7 +313,12 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   // is explicitly called via IPC. Never auto-started here: spec §24 gates
   // auto-start behind "secure mode" (a real group code), which Phase
   // LAN-4 has not built yet.
-  const lanShareService = new LanShareService(lanShareSettingsStore, lanShareInterfaceManager)
+  const lanShareService = new LanShareService(
+    lanShareSettingsStore,
+    lanShareInterfaceManager,
+    lanShareIdentityStore,
+    lanSharePeerStore
+  )
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(
     agentStore,

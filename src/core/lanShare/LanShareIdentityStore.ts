@@ -1,6 +1,13 @@
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import type { LanShareIdentity } from '@shared/contracts'
 import { JsonStore } from '../persistence/JsonStore'
+
+/** Mirrors the real format from Warpinator's own `prefs.py` `get_new_connect_id()`: uppercase hostname truncated to 42 chars, a hyphen, then 20 uppercase hex characters (10 random bytes). */
+function generateConnectId(hostname: string): string {
+  const truncatedHostname = hostname.toUpperCase().slice(0, 42)
+  const randomSuffix = randomBytes(10).toString('hex').toUpperCase()
+  return `${truncatedHostname}-${randomSuffix}`
+}
 
 /**
  * Phase LAN-1 identity record — a stable per-device id and display name
@@ -25,6 +32,7 @@ export class LanShareIdentityStore {
     if (existing) return existing
     const identity: LanShareIdentity = {
       id: randomUUID(),
+      connectId: generateConnectId(this.defaultDisplayName),
       displayName: this.defaultDisplayName,
       createdAt: Date.now()
     }
