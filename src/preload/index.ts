@@ -312,6 +312,7 @@ const ndx: NdxBridge = {
   },
   extensions: {
     list: () => ipcRenderer.invoke(IPC_CHANNELS.extensionList),
+    previewInstall: (request) => ipcRenderer.invoke(IPC_CHANNELS.extensionPreviewInstall, request),
     install: (request) => ipcRenderer.invoke(IPC_CHANNELS.extensionInstall, request),
     setEnabled: (request) => ipcRenderer.invoke(IPC_CHANNELS.extensionSetEnabled, request),
     remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.extensionRemove, request),

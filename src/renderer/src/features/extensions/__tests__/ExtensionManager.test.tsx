@@ -1,7 +1,12 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ExtensionHealthEvent, ExtensionRecord, NdxBridge } from '@shared/contracts'
+import type {
+  ExtensionHealthEvent,
+  ExtensionInstallPreview,
+  ExtensionRecord,
+  NdxBridge
+} from '@shared/contracts'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { ExtensionManager } from '../ExtensionManager'
@@ -34,6 +39,16 @@ function sampleExtension(overrides: Partial<ExtensionRecord> = {}): ExtensionRec
     installedAt: 1,
     updatedAt: 1,
     ...overrides
+  }
+}
+
+function samplePreview(): ExtensionInstallPreview {
+  const record = sampleExtension()
+  return {
+    directoryPath: 'C:\\extensions\\demo',
+    manifest: record.manifest,
+    trust: record.trust,
+    requestedCapabilities: record.manifest.capabilities
   }
 }
 
@@ -73,12 +88,14 @@ describe('ExtensionManager', () => {
     expect(screen.getByText(/Local unpacked extensions only/)).toBeInTheDocument()
   })
 
-  it('installs a local unpacked folder with no implicit capability grants', async () => {
-    const installed = sampleExtension({ grantedCapabilities: [] })
+  it('reviews a local unpacked folder before installing selected capability grants', async () => {
+    const installed = sampleExtension({ grantedCapabilities: ['show-notification'] })
+    const previewInstall = vi.fn().mockResolvedValue({ ok: true, data: samplePreview() })
     const install = vi.fn().mockResolvedValue({ ok: true, data: installed })
     stubBridge({
       extensions: {
         list: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        previewInstall,
         install,
         onHealthEvent: vi.fn(() => () => undefined)
       } as never
@@ -92,14 +109,54 @@ describe('ExtensionManager', () => {
       screen.getByPlaceholderText('Absolute unpacked extension folder'),
       'C:\\extensions\\demo'
     )
-    await user.click(screen.getByRole('button', { name: 'Install local folder' }))
+    await user.click(screen.getByRole('button', { name: 'Review local folder' }))
+    expect(previewInstall).toHaveBeenCalledWith({ directoryPath: 'C:\\extensions\\demo' })
+    expect(await screen.findByText('Capability review')).toBeInTheDocument()
+    expect(screen.getByText(/denied by default/)).toBeInTheDocument()
+
+    await user.click(screen.getAllByRole('button', { name: 'Grant' })[0])
+    await user.click(screen.getByRole('button', { name: 'Install reviewed extension' }))
 
     expect(install).toHaveBeenCalledWith({
       directoryPath: 'C:\\extensions\\demo',
-      approvedCapabilities: []
+      approvedCapabilities: ['show-notification']
     })
     expect(await screen.findAllByText('Demo Extension')).toHaveLength(2)
-    expect(screen.getAllByText('Denied')).toHaveLength(2)
+    expect(screen.getAllByText('Granted')).toHaveLength(1)
+    expect(screen.getAllByText('Denied')).toHaveLength(1)
+  })
+
+  it('surfaces preview failures without installing the extension', async () => {
+    const previewInstall = vi.fn().mockResolvedValue({
+      ok: false,
+      error: {
+        kind: 'validation',
+        code: 'extension-preview-failed',
+        userMessage: 'Missing ndx.extension.json.'
+      }
+    })
+    const install = vi.fn()
+    stubBridge({
+      extensions: {
+        list: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        previewInstall,
+        install,
+        onHealthEvent: vi.fn(() => () => undefined)
+      } as never
+    })
+
+    const user = userEvent.setup()
+    renderScreen()
+    await screen.findByText('No extensions installed')
+
+    await user.type(
+      screen.getByPlaceholderText('Absolute unpacked extension folder'),
+      'C:\\extensions\\broken'
+    )
+    await user.click(screen.getByRole('button', { name: 'Review local folder' }))
+
+    expect(await screen.findByText('Missing ndx.extension.json.')).toBeInTheDocument()
+    expect(install).not.toHaveBeenCalled()
   })
 
   it('toggles an installed extension through the real IPC client', async () => {

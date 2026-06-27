@@ -118,6 +118,19 @@ export const installExtensionRequestSchema = z.object({
 })
 export type InstallExtensionRequest = z.infer<typeof installExtensionRequestSchema>
 
+export const previewExtensionInstallRequestSchema = z.object({
+  directoryPath: z.string().min(1)
+})
+export type PreviewExtensionInstallRequest = z.infer<typeof previewExtensionInstallRequestSchema>
+
+export const extensionInstallPreviewSchema = z.object({
+  directoryPath: z.string().min(1),
+  manifest: extensionManifestSchema,
+  trust: extensionTrustSchema,
+  requestedCapabilities: z.array(extensionCapabilityRequestSchema)
+})
+export type ExtensionInstallPreview = z.infer<typeof extensionInstallPreviewSchema>
+
 export const extensionIdRequestSchema = z.object({ id: z.string().min(1) })
 export type ExtensionIdRequest = z.infer<typeof extensionIdRequestSchema>
 

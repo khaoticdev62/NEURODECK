@@ -321,15 +321,16 @@ npm run test:e2e     → updated to cover ND-001 boot path
 Implemented after Epic 9 landed the real Model Provider IPC surface, so the first-run screen could be built without fabricating a provider backend. `AIProviderSetup.tsx` reuses the existing `ControllerButton`, `StatusBadge`, `Modal`/`ConfirmationDialog` primitives, and the Epic 9 `addModelProvider`/`listModelProviders` renderer clients.
 
 **Fixes applied while bringing the screen and its tests to green:**
+
 - Tightened the `AddProviderForm` render guard from `category.supported` to `category.kind` so TypeScript narrows the optional `kind` field before it is passed as a required prop.
 - Added explicit `aria-label`s to the **Configure** and **Explain** buttons (`Configure ${category.name}`, `Explain ${category.name}`) so screen-reader users and tests can distinguish the six identical-looking buttons without relying on DOM order.
 - Updated `AIProviderSetup.test.tsx` to query by those accessible names, assert the explanation dialog heading via role, and stub `workspaces.list` so `WorkspaceProvider`'s background refresh doesn't produce unhandled rejections during the isolated onboarding test.
 
 ### Tests and evidence
 
-| Suite                                                                                                                        | Location                                                         | Count |
-| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----- |
-| `AIProviderSetup` (categories render, supported configure form, save local provider + refresh, explanation dialog, disabled unsupported categories) | `features/onboarding/__tests__/AIProviderSetup.test.tsx`         | 7     |
+| Suite                                                                                                                                               | Location                                                 | Count |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----- |
+| `AIProviderSetup` (categories render, supported configure form, save local provider + refresh, explanation dialog, disabled unsupported categories) | `features/onboarding/__tests__/AIProviderSetup.test.tsx` | 7     |
 
 Full validation at this state:
 
@@ -351,14 +352,15 @@ Implemented after Epic 5 (Workspace Service), Epic 6 (Git Service), and Epic 4 (
 - A test-only timing override (`VITE_TUTORIAL_ADVANCE_MS`, `VITE_TUTORIAL_PROGRESS_INTERVAL_MS`, `VITE_TUTORIAL_PROGRESS_STEP`) keeps the seven-lesson test suite fast without changing production behavior.
 
 **Fixes applied while wiring ND-007:**
+
 - `ControllerCalibration`'s **Done** button now navigates to `/onboarding/tutorial` on click as well as on focus-engine activation, keeping the screen accessible to mouse/touch users and fixing the existing test that clicked the button.
 - `GuidedControllerTutorial` keeps the final lesson in a `completed` state so the **Finish** button remains visible after the simulated task reaches 100%.
 
-| Suite                                                                                                                        | Location                                                         | Count |
-| ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----- |
-| `WorkspaceDiscovery` (renders source toggles, scans with selected sources, adds a discovered workspace, manual add flow)     | `features/onboarding/__tests__/WorkspaceDiscovery.test.tsx`      | 4     |
-| `WorkspaceDiscoveryService` (home projects, Git bounded depth, max-depth limit, deduplication, reachable/unreachable)        | `core/workspaces/__tests__/WorkspaceDiscoveryService.test.ts`    | 8     |
-| `GuidedControllerTutorial` (lessons 1–7 advance through real actions, lesson 6 approves harmless tool, lesson 7 finishes)    | `features/onboarding/__tests__/GuidedControllerTutorial.test.tsx` | 6     |
+| Suite                                                                                                                     | Location                                                          | Count |
+| ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----- |
+| `WorkspaceDiscovery` (renders source toggles, scans with selected sources, adds a discovered workspace, manual add flow)  | `features/onboarding/__tests__/WorkspaceDiscovery.test.tsx`       | 4     |
+| `WorkspaceDiscoveryService` (home projects, Git bounded depth, max-depth limit, deduplication, reachable/unreachable)     | `core/workspaces/__tests__/WorkspaceDiscoveryService.test.ts`     | 8     |
+| `GuidedControllerTutorial` (lessons 1–7 advance through real actions, lesson 6 approves harmless tool, lesson 7 finishes) | `features/onboarding/__tests__/GuidedControllerTutorial.test.tsx` | 6     |
 
 Full validation at this state:
 
@@ -380,11 +382,11 @@ Implemented after Epics 4–8 made enough real records (workspaces, files, Git, 
 - `features/search/SearchResultRow.tsx`: accessible result rows with per-source icons and workspace-scoped subtitles.
 - Route `/search` added to `app/routing/routes.tsx` and the primary navigation rail (`components/navigation/navigationDestinations.ts` + `navigationIcons.tsx`).
 
-| Suite | Location | Count |
-| --- | --- | --- |
-| `useGlobalSearch` (federated results, category filtering, source errors) | `features/search/__tests__/useGlobalSearch.test.tsx` | 4 |
-| `GlobalSearch` (render, query results, click navigation, controller navigation) | `features/search/__tests__/GlobalSearch.test.tsx` | 4 |
-| `ShellLayout` global `/` shortcut (opens search outside inputs, ignored inside inputs) | `app/shell/__tests__/ShellLayout.test.tsx` | +2 |
+| Suite                                                                                  | Location                                             | Count |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------- | ----- |
+| `useGlobalSearch` (federated results, category filtering, source errors)               | `features/search/__tests__/useGlobalSearch.test.tsx` | 4     |
+| `GlobalSearch` (render, query results, click navigation, controller navigation)        | `features/search/__tests__/GlobalSearch.test.tsx`    | 4     |
+| `ShellLayout` global `/` shortcut (opens search outside inputs, ignored inside inputs) | `app/shell/__tests__/ShellLayout.test.tsx`           | +2    |
 
 Full validation at this state:
 
@@ -931,14 +933,14 @@ New IPC domains: `network.getDiagnostics` (`registerNetworkHandlers.ts`), `updat
 
 New tests:
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `NetworkService` (real host diagnostics, interface merging, DNS, proxy, non-Linux connection reason, Linux `nmcli` parse, `nmcli` failure reason) | `core/network/__tests__/NetworkService.test.ts` | 7 |
-| `NetworkAndVpn` (real diagnostics render, unavailable adapter reason, disabled management reasons, error state) | `features/system/__tests__/NetworkAndVpn.test.tsx` | 4 |
-| `Integrations` (real model providers/remote hosts, unsupported categories with reasons, provider-list error) | `features/system/__tests__/Integrations.test.tsx` | 3 |
-| `UpdateService` (disabled without feed, available update detection, up-to-date, fetch failure, non-OK status) | `core/system/__tests__/UpdateService.test.ts` | 6 |
-| `Updates` (renders sections, disabled reason, keeps download disabled when update available, check button, error state) | `features/system/__tests__/Updates.test.tsx` | 5 |
-| `QuickAccessOverlay` (opens on `quick.access`, closes on `back`, close button, footer counts, placeholder labels) | `features/system/__tests__/QuickAccessOverlay.test.tsx` | 5 |
+| Suite                                                                                                                                             | Location                                                | Count |
+| ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ----- |
+| `NetworkService` (real host diagnostics, interface merging, DNS, proxy, non-Linux connection reason, Linux `nmcli` parse, `nmcli` failure reason) | `core/network/__tests__/NetworkService.test.ts`         | 7     |
+| `NetworkAndVpn` (real diagnostics render, unavailable adapter reason, disabled management reasons, error state)                                   | `features/system/__tests__/NetworkAndVpn.test.tsx`      | 4     |
+| `Integrations` (real model providers/remote hosts, unsupported categories with reasons, provider-list error)                                      | `features/system/__tests__/Integrations.test.tsx`       | 3     |
+| `UpdateService` (disabled without feed, available update detection, up-to-date, fetch failure, non-OK status)                                     | `core/system/__tests__/UpdateService.test.ts`           | 6     |
+| `Updates` (renders sections, disabled reason, keeps download disabled when update available, check button, error state)                           | `features/system/__tests__/Updates.test.tsx`            | 5     |
+| `QuickAccessOverlay` (opens on `quick.access`, closes on `back`, close button, footer counts, placeholder labels)                                 | `features/system/__tests__/QuickAccessOverlay.test.tsx` | 5     |
 
 Cumulative total: 497 tests passing (up from 447).
 
@@ -1223,11 +1225,11 @@ Typed IPC channels (`learning.*`) are added to `shared/contracts/ipcChannels.ts`
 
 `GuidedLab.tsx` is route-driven at `/learn/lab/:curriculumId/:moduleId/:lessonId`. It shows the lesson instructions, hints, objectives checklist, and a live terminal pane via `LabTerminal.tsx` (which creates a real `TerminalSession` in the active workspace and writes an optional `setupCommand`). The AI coach panel calls the real `completeModel` IPC when a provider is enabled, with a system prompt that includes the lesson instructions, objectives, and recent terminal commands; when no provider is enabled, it shows an honest disabled reason. The validation panel explicitly states that automated lab validation is not implemented yet and does not fake pass/fail results.
 
-| Evidence | File | Status |
-| --- | --- | --- |
-| LearningService CRUD, progress, bundled/user merge, bundled protection | `core/learning/__tests__/LearningService.test.ts` | Passing |
-| LearningHub area filter, card rendering, create curriculum | `features/learning/__tests__/LearningHub.test.tsx` | Passing |
-| GuidedLab instructions, objectives, manual completion, coach disabled state | `features/learning/__tests__/GuidedLab.test.tsx` | Passing |
+| Evidence                                                                    | File                                               | Status  |
+| --------------------------------------------------------------------------- | -------------------------------------------------- | ------- |
+| LearningService CRUD, progress, bundled/user merge, bundled protection      | `core/learning/__tests__/LearningService.test.ts`  | Passing |
+| LearningHub area filter, card rendering, create curriculum                  | `features/learning/__tests__/LearningHub.test.tsx` | Passing |
+| GuidedLab instructions, objectives, manual completion, coach disabled state | `features/learning/__tests__/GuidedLab.test.tsx`   | Passing |
 
 Validation after this addendum: typecheck/lint/build/e2e green; 521 tests passing across 107 files.
 
@@ -1243,11 +1245,11 @@ The renderer side adds `browserTabs.onPermissionRequest` and `browserTabs.respon
 
 `PrivacyPermissions` now includes a "Browser permissions" section that lists stored decisions via `browserTabs.listPermissions` and allows revocation via `browserTabs.revokePermission`, using the same Revoke flow as tool capabilities.
 
-| Evidence | File | Status |
-| --- | --- | --- |
-| BrowserPermissionStore CRUD and persistence | `core/browser/__tests__/BrowserPermissionStore.test.ts` | Passing |
-| BrowserPermissionDialog allow/deny rendering | `features/browser/__tests__/BrowserPermissionDialog.test.tsx` | Passing |
-| PrivacyPermissions lists/revokes browser permissions | `features/system/__tests__/PrivacyPermissions.test.tsx` | Passing |
+| Evidence                                             | File                                                          | Status  |
+| ---------------------------------------------------- | ------------------------------------------------------------- | ------- |
+| BrowserPermissionStore CRUD and persistence          | `core/browser/__tests__/BrowserPermissionStore.test.ts`       | Passing |
+| BrowserPermissionDialog allow/deny rendering         | `features/browser/__tests__/BrowserPermissionDialog.test.tsx` | Passing |
+| PrivacyPermissions lists/revokes browser permissions | `features/system/__tests__/PrivacyPermissions.test.tsx`       | Passing |
 
 Validation after this addendum: typecheck/lint/build/e2e green; 532 tests passing across 109 files.
 
@@ -1301,24 +1303,24 @@ The model prompt includes the child-agent policy. If a model emits strict JSON w
 
 ### Tests and evidence
 
-| Suite                                                                                          | Location                                                  | Count |
-| ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- | ----- |
-| Real tracked-file restore, untracked-file rejection, branch create, safe/force branch delete    | `core/git/__tests__/GitService.test.ts`                   | +6    |
-| Real force-push success, real force-with-lease rejection on a stale view, unknown-remote reject | `core/git/__tests__/GitServiceRemote.test.ts`              | +3    |
-| Discard/branch-create/branch-delete/force-push UI wiring through the typed bridge               | `features/workspaces/__tests__/WorkspaceGitTab.test.tsx`  | +5    |
+| Suite                                                                                           | Location                                                 | Count |
+| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----- |
+| Real tracked-file restore, untracked-file rejection, branch create, safe/force branch delete    | `core/git/__tests__/GitService.test.ts`                  | +6    |
+| Real force-push success, real force-with-lease rejection on a stale view, unknown-remote reject | `core/git/__tests__/GitServiceRemote.test.ts`            | +3    |
+| Discard/branch-create/branch-delete/force-push UI wiring through the typed bridge               | `features/workspaces/__tests__/WorkspaceGitTab.test.tsx` | +5    |
 
 ## Epic 5 addendum — File Service real delete
 
-`FileService`'s class comment previously deferred `delete()` alongside copy/move/rename/compress/extract, all grouped under "needs its own recovery-checkpoint shape that hasn't been designed yet." On inspection, `delete()` actually fits the *existing* checkpoint shape exactly — a checkpoint is already just `{relativePath, previousContent}`, and "undo a delete" is just "rewrite that path's previous content," identical to undoing a `write()`. Only move/rename/copy/compress/extract genuinely need a new multi-path shape (a source and a destination), so this slice narrows the deferred scope to just those.
+`FileService`'s class comment previously deferred `delete()` alongside copy/move/rename/compress/extract, all grouped under "needs its own recovery-checkpoint shape that hasn't been designed yet." On inspection, `delete()` actually fits the _existing_ checkpoint shape exactly — a checkpoint is already just `{relativePath, previousContent}`, and "undo a delete" is just "rewrite that path's previous content," identical to undoing a `write()`. Only move/rename/copy/compress/extract genuinely need a new multi-path shape (a source and a destination), so this slice narrows the deferred scope to just those.
 
 `FileService.delete()` only deletes a single file, never a directory — it reuses `read()`'s existing directory check (`info.isDirectory()`) by resolving the path the same way, so a directory delete attempt fails before any checkpoint is recorded or any `rm` call happens. `registerFileHandlers.ts`'s new `fileDelete` channel orchestrates the checkpoint exactly like `fileWrite` does: read the file's current content via `readIfExists`, record a checkpoint (new `file-delete` kind), then delete. `FileManager.tsx` (ND-026) gained a real per-file Delete button (hidden for directories) behind a `ConfirmationDialog` that states the real recovery guarantee.
 
 ### Tests and evidence
 
-| Suite                                                                              | Location                                                | Count |
-| ----------------------------------------------------------------------------------- | -------------------------------------------------------- | ----- |
-| Real file delete, directory-delete rejection, path-escape rejection, missing-file rejection | `core/files/__tests__/FileService.test.ts`              | +4    |
-| Delete button wiring, confirmation flow, hidden for directories                     | `features/workspaces/__tests__/FileManager.test.tsx`    | +2    |
+| Suite                                                                                       | Location                                             | Count |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------- | ----- |
+| Real file delete, directory-delete rejection, path-escape rejection, missing-file rejection | `core/files/__tests__/FileService.test.ts`           | +4    |
+| Delete button wiring, confirmation flow, hidden for directories                             | `features/workspaces/__tests__/FileManager.test.tsx` | +2    |
 
 ## Epic 6 addendum — Git recovery branches
 
@@ -1328,9 +1330,9 @@ A "Create recovery point" button creates one at the current `HEAD` without switc
 
 ### Tests and evidence
 
-| Suite                                                                          | Location                                               | Count |
-| --------------------------------------------------------------------------------| --------------------------------------------------------- | ----- |
-| Recovery point creation calls createGitBranch with a `recovery/`-prefixed name, recovery branches render in their own section separate from regular Branches | `features/workspaces/__tests__/WorkspaceGitTab.test.tsx` | +2 |
+| Suite                                                                                                                                                        | Location                                                 | Count |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------- | ----- |
+| Recovery point creation calls createGitBranch with a `recovery/`-prefixed name, recovery branches render in their own section separate from regular Branches | `features/workspaces/__tests__/WorkspaceGitTab.test.tsx` | +2    |
 
 ## Epic 8 addendum — Agent Runtime dry-run support
 
@@ -1342,10 +1344,10 @@ Previously deferred with the one-line note "needs a simulate-without-executing-t
 
 ### Tests and evidence
 
-| Suite                                                                                        | Location                                       | Count |
-| ----------------------------------------------------------------------------------------------| ------------------------------------------------- | ----- |
-| Dry run plans with a real model completion but emits zero tool requests; timeline records the would-be call and a dry-run completion message | `core/agents/__tests__/AgentRuntime.test.ts`   | +1    |
-| Dry run checkbox wiring: starts with `dryRun: true`, shows `[Dry run]` badge on the resulting run | `features/agents/__tests__/AgentDetail.test.tsx` | +1  |
+| Suite                                                                                                                                        | Location                                         | Count |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----- |
+| Dry run plans with a real model completion but emits zero tool requests; timeline records the would-be call and a dry-run completion message | `core/agents/__tests__/AgentRuntime.test.ts`     | +1    |
+| Dry run checkbox wiring: starts with `dryRun: true`, shows `[Dry run]` badge on the resulting run                                            | `features/agents/__tests__/AgentDetail.test.tsx` | +1    |
 
 ## Epic 6 addendum — Terminal search and copy selection
 
@@ -1355,10 +1357,10 @@ Previously deferred together as "history/search/copy selection" — on inspectio
 
 ### Tests and evidence
 
-| Suite                                                                                          | Location                                                       | Count |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----- |
-| Imperative handle's findNext/findPrevious/copySelection call through to the real SearchAddon/Terminal APIs and the real clipboard | `features/terminal/__tests__/TerminalViewport.test.tsx`       | +1    |
-| Find bar toggles open/closed over the active session                                          | `features/terminal/__tests__/UniversalTerminal.test.tsx`      | +1    |
+| Suite                                                                                                                             | Location                                                 | Count |
+| --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | ----- |
+| Imperative handle's findNext/findPrevious/copySelection call through to the real SearchAddon/Terminal APIs and the real clipboard | `features/terminal/__tests__/TerminalViewport.test.tsx`  | +1    |
+| Find bar toggles open/closed over the active session                                                                              | `features/terminal/__tests__/UniversalTerminal.test.tsx` | +1    |
 
 ## Epic 8 addendum — real `files-write`/`files-delete` tools (Workflow Checkpoints unblocked)
 
@@ -1366,36 +1368,37 @@ Workflow Forge's own scope comment named the exact gap: "no tool-action this sli
 
 **Trust model, explicitly considered and matched to existing precedent**: `workspaceId`/`relativePath` come from whoever submits the tool call — for a Workflow Forge step, that's the human author who typed the JSON arguments at design time (Workflow Forge has no model in the loop, by its own scope note); for an Agent Runtime tool call, that's strict model-emitted JSON, but only reachable if a human first granted that capability into the agent's `toolAllowlist`/`permissionCeiling` — the same already-accepted boundary `terminalCommandTools.ts` uses (an agent with `terminal.execute` can already run arbitrary shell commands in any session it's told about; a scoped file write within `FileService`'s existing path-traversal protection is not a new category of risk this introduces). `PermissionBroker.evaluate()` needed no changes — `files.write`/`files.delete` default to `requires-approval` automatically, the same as every other capability with no standing grant.
 
-A real file-write tool was deliberately *not* added without this analysis — an earlier pass in this same work session considered and explicitly declined a less-careful version of this same idea before reaching this scoped, precedent-matched design.
+A real file-write tool was deliberately _not_ added without this analysis — an earlier pass in this same work session considered and explicitly declined a less-careful version of this same idea before reaching this scoped, precedent-matched design.
 
 ### Tests and evidence
 
-| Suite                                                                                 | Location                                              | Count |
-| ---------------------------------------------------------------------------------------| -------------------------------------------------------- | ----- |
-| Real capability/risk registration, argument validation, real IPC call-through for both write and delete, real failure surfacing | `ai-safety/__tests__/fileTools.test.ts`               | +4    |
+| Suite                                                                                                                           | Location                                | Count |
+| ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | ----- |
+| Real capability/risk registration, argument validation, real IPC call-through for both write and delete, real failure surfacing | `ai-safety/__tests__/fileTools.test.ts` | +4    |
 
 ## A real, production-relevant bug found and fixed — boot permanently blocked by a non-fatal workspace read failure
 
 **Reported by the user**: "currently unable to load UI due to workspace not loading at startup."
 
-**Root cause**: `BootSessionStart.tsx`'s `runBoot()` treated *any* `listWorkspaces()` failure as fatal — `if (!workspaceResult.ok) { finishBoot('failed', ...); return }` — even though a failed or empty workspace read is not actually a fatal condition: a brand-new user with zero workspaces hits the exact same code path (`workspaces.length === 0`) as a user whose workspace file failed to read, and that case is handled as the normal, expected first-run state everywhere else in the app. Worse, the boot screen's only recovery action is "Retry" (`window.location.reload()`), which re-reads the exact same on-disk state and fails identically — there was no path back into the app at all once this triggered, only Diagnostics (which itself needs the shell to be reachable) or Exit.
+**Root cause**: `BootSessionStart.tsx`'s `runBoot()` treated _any_ `listWorkspaces()` failure as fatal — `if (!workspaceResult.ok) { finishBoot('failed', ...); return }` — even though a failed or empty workspace read is not actually a fatal condition: a brand-new user with zero workspaces hits the exact same code path (`workspaces.length === 0`) as a user whose workspace file failed to read, and that case is handled as the normal, expected first-run state everywhere else in the app. Worse, the boot screen's only recovery action is "Retry" (`window.location.reload()`), which re-reads the exact same on-disk state and fails identically — there was no path back into the app at all once this triggered, only Diagnostics (which itself needs the shell to be reachable) or Exit.
 
-A second, compounding root cause sits one layer down: `JsonStore.read()` (the shared persistence primitive behind `WorkspaceStore` and nine other stores — agents, browser tabs, controller/display settings, model providers, recovery, remote hosts, both workflow stores) re-threw on a `JSON.parse` failure rather than treating a corrupted file as recoverable the way a *missing* file already was (`isNotFound` returns the default value). Any real-world corruption of `workspaces.json` (a crash mid-write predating the existing atomic-rename protection, manual editing, a bad sync/restore) would permanently brick boot with no self-healing path, since every retry hits the same unreadable bytes.
+A second, compounding root cause sits one layer down: `JsonStore.read()` (the shared persistence primitive behind `WorkspaceStore` and nine other stores — agents, browser tabs, controller/display settings, model providers, recovery, remote hosts, both workflow stores) re-threw on a `JSON.parse` failure rather than treating a corrupted file as recoverable the way a _missing_ file already was (`isNotFound` returns the default value). Any real-world corruption of `workspaces.json` (a crash mid-write predating the existing atomic-rename protection, manual editing, a bad sync/restore) would permanently brick boot with no self-healing path, since every retry hits the same unreadable bytes.
 
 **Fix, two layers**:
-1. `JsonStore.read()` now catches `SyntaxError` specifically (a genuinely corrupted file, distinct from `isNotFound`'s missing-file case) and quarantines the bad file by renaming it aside to `<path>.corrupted-<timestamp>` — preserved for forensics, never silently deleted — then returns the default value instead of throwing. This self-heals *every* `JsonStore` consumer, not just workspaces.
+
+1. `JsonStore.read()` now catches `SyntaxError` specifically (a genuinely corrupted file, distinct from `isNotFound`'s missing-file case) and quarantines the bad file by renaming it aside to `<path>.corrupted-<timestamp>` — preserved for forensics, never silently deleted — then returns the default value instead of throwing. This self-heals _every_ `JsonStore` consumer, not just workspaces.
 2. `BootSessionStart.tsx` now treats a workspace-load failure exactly like the already-optional model and controller checks: record the real failure for the Details panel, but continue into the shell with an empty workspace list rather than hard-failing. "Core services loaded" is now satisfied by the IPC bridge itself answering, not by any one store's data coming back clean — the actually-fatal case (bridge truly unreachable) still surfaces identically through the model/controller checks failing too, so nothing is hidden, but a single non-fatal store read can never again wall a user out of their own app.
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Self-heals from a corrupted file (quarantines it, returns default) and writes normally again afterward | `core/persistence/__tests__/JsonStore.test.ts` | +2 |
+| Suite                                                                                                                                                     | Location                                                  | Count     |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | --------- |
+| Self-heals from a corrupted file (quarantines it, returns default) and writes normally again afterward                                                    | `core/persistence/__tests__/JsonStore.test.ts`            | +2        |
 | Boot degrades into the shell (not a "Boot failed" screen) when workspace loading fails — replaces a prior test that asserted the buggy hard-fail behavior | `features/onboarding/__tests__/BootSessionStart.test.tsx` | rewritten |
 
 ### Follow-up — the user reported the same symptom persisting after the fix above, because of a third, deeper layer
 
-The first fix only covered a *resolved* `{ ok: false }` failure result. It missed a different failure shape entirely: a **rejected** promise. `runStep()` in `BootSessionStart.tsx` had no `try`/`catch` around `await promise` — if the underlying IPC call rejected (a dropped `ipcRenderer.invoke`, no handler registered, a main-process crash, a non-cloneable payload) rather than resolving to a structured result, the exception propagated straight out of `runBoot()`'s unguarded async body. `void runBoot()` discarded that rejection silently, so the rest of the function — every later step, the `navigate()` call — simply never ran. The "Restoring workspace" step stayed stuck on its `running` spinner indefinitely, with nothing left to advance it except the unrelated 15-second global timeout, which then showed a generic "Boot is taking longer than expected" — not even the specific workspace error. This matches "restoring workspace still not loading during boot" exactly: not an error message, just a stall.
+The first fix only covered a _resolved_ `{ ok: false }` failure result. It missed a different failure shape entirely: a **rejected** promise. `runStep()` in `BootSessionStart.tsx` had no `try`/`catch` around `await promise` — if the underlying IPC call rejected (a dropped `ipcRenderer.invoke`, no handler registered, a main-process crash, a non-cloneable payload) rather than resolving to a structured result, the exception propagated straight out of `runBoot()`'s unguarded async body. `void runBoot()` discarded that rejection silently, so the rest of the function — every later step, the `navigate()` call — simply never ran. The "Restoring workspace" step stayed stuck on its `running` spinner indefinitely, with nothing left to advance it except the unrelated 15-second global timeout, which then showed a generic "Boot is taking longer than expected" — not even the specific workspace error. This matches "restoring workspace still not loading during boot" exactly: not an error message, just a stall.
 
 The exact same gap existed one feature over, in production code that runs on every screen, not just boot: `WorkspaceProvider.tsx`'s mount effect called `listWorkspaces().then(...)` with no `.catch()`, and its `refresh()` function `await`ed the same call with no `try`/`catch`. A rejection there left `loading` stuck at `true` forever, with no error and no way to recover short of a full app restart — so even after boot itself stopped blocking, the workspace-scoped UI underneath it (Workspace Hub, the active-workspace badge, anything gated on `loading`) could still spin indefinitely if the same rejection happened post-boot.
 
@@ -1405,10 +1408,10 @@ The exact same gap existed one feature over, in production code that runs on eve
 
 ### Tests and evidence (follow-up)
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Boot degrades into the shell when the workspace IPC call *rejects* (not just resolves to `{ ok: false }`) | `features/onboarding/__tests__/BootSessionStart.test.tsx` | +1 |
-| Settles `loading` to `false` and surfaces a real error when the workspace IPC call rejects; settles normally on a real resolved result | `features/workspaces/__tests__/WorkspaceProvider.test.tsx` (new file) | +2 |
+| Suite                                                                                                                                  | Location                                                              | Count |
+| -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----- |
+| Boot degrades into the shell when the workspace IPC call _rejects_ (not just resolves to `{ ok: false }`)                              | `features/onboarding/__tests__/BootSessionStart.test.tsx`             | +1    |
+| Settles `loading` to `false` and surfaces a real error when the workspace IPC call rejects; settles normally on a real resolved result | `features/workspaces/__tests__/WorkspaceProvider.test.tsx` (new file) | +2    |
 
 ## Epic 3 addendum — Home Command Center and Command Palette real domain wiring
 
@@ -1422,10 +1425,10 @@ Two previously honest-but-partial global UX components now consume the real serv
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Command Palette opens/closes via controller, filters screens, navigates, lists real workspace/file/workflow/agent/settings domains, and still submits tools through the real safety pipeline | `features/command-palette/__tests__/CommandPalette.test.tsx` | 9 |
-| Home Command Center renders empty state when no workspaces exist, renders real workspace/service-backed sections, continues into workspace detail, and routes recommendations | `features/home/__tests__/HomeCommandCenter.test.tsx` | 5 |
+| Suite                                                                                                                                                                                        | Location                                                     | Count |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ----- |
+| Command Palette opens/closes via controller, filters screens, navigates, lists real workspace/file/workflow/agent/settings domains, and still submits tools through the real safety pipeline | `features/command-palette/__tests__/CommandPalette.test.tsx` | 9     |
+| Home Command Center renders empty state when no workspaces exist, renders real workspace/service-backed sections, continues into workspace detail, and routes recommendations                | `features/home/__tests__/HomeCommandCenter.test.tsx`         | 5     |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1452,10 +1455,10 @@ AI intent proposals and saved actions, also part of this gap, were already imple
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Headless tool argument validation, successful/failed/timed-out/truncated result formatting, and bridge-error passthrough | `ai-safety/__tests__/headlessTerminalTools.test.ts` (new file) | 5 |
-| Command Builder submits a headless run through `ActionQueue` approval and only calls `runHeadless` after explicit approval | `features/terminal/__tests__/CommandBuilder.test.tsx` | +1 |
+| Suite                                                                                                                      | Location                                                       | Count |
+| -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----- |
+| Headless tool argument validation, successful/failed/timed-out/truncated result formatting, and bridge-error passthrough   | `ai-safety/__tests__/headlessTerminalTools.test.ts` (new file) | 5     |
+| Command Builder submits a headless run through `ActionQueue` approval and only calls `runHeadless` after explicit approval | `features/terminal/__tests__/CommandBuilder.test.tsx`          | +1    |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1477,9 +1480,9 @@ This closes the test-coverage gap for that part of Epic 12 (`IMPLEMENTATION_CHEC
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Warns on last-controller disconnect, confirms reconnect (not first connect), stays silent while a second controller is still connected | `controller/focus/__tests__/FocusEngineProvider.test.tsx` (new file) | 3 |
+| Suite                                                                                                                                  | Location                                                             | Count |
+| -------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----- |
+| Warns on last-controller disconnect, confirms reconnect (not first connect), stays silent while a second controller is still connected | `controller/focus/__tests__/FocusEngineProvider.test.tsx` (new file) | 3     |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1498,13 +1501,13 @@ Electron's `powerMonitor` module — the only mechanism this architecture has fo
 
 This is deliberately scoped to detection and notification, matching what the architecture can actually do: there is no separate core-service process to pause/resume, and this app never attempts to veto, delay, or otherwise act on the OS's own suspend decision — only to tell the user it happened and that session/live-data state may now be stale.
 
-**A real bug found and fixed while wiring this up**: the first version of `onPowerStateEvent` called `getNdxBridge()?.power.onStateEvent(listener)` — note the single `?.` only guards the bridge lookup, not the `power.onStateEvent` method itself. Several existing tests (`App.test.tsx` among them) stub `window.ndx.power` with only `{ quitApp }`, the same partial-mock pattern already used throughout the test suite for every other bridge namespace. Calling the missing method threw inside `PowerStateBridge`'s mount effect, which `RootErrorBoundary` (sitting *above* `FocusEngineProvider` in `AppProviders`) caught by replacing the entire app tree with `ErrorRecoveryContent` — which itself calls `useFocusEngine()` and threw a second, more confusing error, since the boundary's fallback no longer has a `FocusEngineProvider` above it either. **Fixed** by changing the call to `getNdxBridge()?.power?.onStateEvent?.(listener)`, matching the same defensive double-optional-chain pattern `browserClient.ts`'s `onBrowserPermissionRequest` already established for exactly this situation (a newly-added listener method that older partial test mocks don't yet implement). No test mocks needed to change.
+**A real bug found and fixed while wiring this up**: the first version of `onPowerStateEvent` called `getNdxBridge()?.power.onStateEvent(listener)` — note the single `?.` only guards the bridge lookup, not the `power.onStateEvent` method itself. Several existing tests (`App.test.tsx` among them) stub `window.ndx.power` with only `{ quitApp }`, the same partial-mock pattern already used throughout the test suite for every other bridge namespace. Calling the missing method threw inside `PowerStateBridge`'s mount effect, which `RootErrorBoundary` (sitting _above_ `FocusEngineProvider` in `AppProviders`) caught by replacing the entire app tree with `ErrorRecoveryContent` — which itself calls `useFocusEngine()` and threw a second, more confusing error, since the boundary's fallback no longer has a `FocusEngineProvider` above it either. **Fixed** by changing the call to `getNdxBridge()?.power?.onStateEvent?.(listener)`, matching the same defensive double-optional-chain pattern `browserClient.ts`'s `onBrowserPermissionRequest` already established for exactly this situation (a newly-added listener method that older partial test mocks don't yet implement). No test mocks needed to change.
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Resume without a prior suspend shows a generic refresh notice; resume after a tracked suspend reports the approximate duration; lock/unlock never toast | `features/system/__tests__/PowerStateBridge.test.tsx` (new file) | 3 |
+| Suite                                                                                                                                                   | Location                                                         | Count |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----- |
+| Resume without a prior suspend shows a generic refresh notice; resume after a tracked suspend reports the approximate duration; lock/unlock never toast | `features/system/__tests__/PowerStateBridge.test.tsx` (new file) | 3     |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1531,8 +1534,8 @@ Game Mode/Desktop Mode themselves are scoped honestly: this repo cannot add itse
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
+| Suite                                                                                                       | Location       | Count                       |
+| ----------------------------------------------------------------------------------------------------------- | -------------- | --------------------------- |
 | Full test suite re-run after the `clsx` dependency fix (no behavior change expected, regression check only) | `npm run test` | 114 files, 564 tests passed |
 
 **Validation evidence (run 2026-06-24):**
@@ -1560,19 +1563,19 @@ A real security audit of the codebase as it stands, covering the categories the 
 
 **Secrets handling**: provider API keys (`ModelProviderStore`) and SSH host passwords/passphrases (`RemoteHostStore`) are encrypted at rest via `electronSecretCipher.ts`, a real wrapper around Electron's `safeStorage` (OS Keychain/DPAPI/libsecret) — never a homegrown cipher. Neither store's public IPC-facing type includes the encrypted or plaintext secret; both expose only a `hasApiKey`/`hasSecret` boolean. The renderer-side forms that collect these values (`ModelControlCenter.tsx`, `AIProviderSetup.tsx`, `RemoteSystems.tsx`) use `type="password"` inputs holding only local component state, never logged or persisted client-side.
 
-**Other checks**: no `eval()`, `new Function()`, or `dangerouslySetInnerHTML` anywhere in `src/` (the one match was a comment documenting their *absence* in `evaluateCondition.ts`). No `console.log`/`console.error`/`console.warn` calls exist anywhere in `src/main` or `src/core` at all — so there is no code path in the privileged process where a secret (or anything else) could leak into logs. `ModelProviderService`'s `fetch()` calls target a user-configured `baseUrl` (their own chosen local/cloud provider endpoint) — not a server-side-trust or SSRF concern, since the user explicitly owns and configures that destination themselves, the same trust model as a browser address bar.
+**Other checks**: no `eval()`, `new Function()`, or `dangerouslySetInnerHTML` anywhere in `src/` (the one match was a comment documenting their _absence_ in `evaluateCondition.ts`). No `console.log`/`console.error`/`console.warn` calls exist anywhere in `src/main` or `src/core` at all — so there is no code path in the privileged process where a secret (or anything else) could leak into logs. `ModelProviderService`'s `fetch()` calls target a user-configured `baseUrl` (their own chosen local/cloud provider endpoint) — not a server-side-trust or SSRF concern, since the user explicitly owns and configures that destination themselves, the same trust model as a browser address bar.
 
 ### Tests and evidence
 
-| Check | Method | Result |
-| ----- | ------ | ------ |
-| Production dependency vulnerabilities | `npm audit --omit=dev` | 0 found |
-| All dependency vulnerabilities | `npm audit` | 5, all dev-only (vitest/vite/esbuild dev-server), accepted as scoped/not applicable to this app's deployment |
-| IPC payload validation coverage | Manual audit of all `ipcMain.handle` call sites in `src/main/ipc/*.ts` | 71/71 payload-accepting handlers validate with Zod; 11/11 zero-payload handlers correctly need none |
-| Electron hardening baseline | Direct review of `windowSecurity.ts` | Matches mandatory baseline exactly |
-| CSP | Direct review of `index.html` | Strict, no `unsafe-eval` |
-| Secret storage/exposure | Direct review of `SecretCipher`/`electronSecretCipher.ts`/store types/renderer forms | Real OS-level encryption; never exposed in any IPC response type or log |
-| Dangerous JS patterns (`eval`, `new Function`, `dangerouslySetInnerHTML`) | `grep -rn` across `src/` | None found |
+| Check                                                                     | Method                                                                               | Result                                                                                                       |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Production dependency vulnerabilities                                     | `npm audit --omit=dev`                                                               | 0 found                                                                                                      |
+| All dependency vulnerabilities                                            | `npm audit`                                                                          | 5, all dev-only (vitest/vite/esbuild dev-server), accepted as scoped/not applicable to this app's deployment |
+| IPC payload validation coverage                                           | Manual audit of all `ipcMain.handle` call sites in `src/main/ipc/*.ts`               | 71/71 payload-accepting handlers validate with Zod; 11/11 zero-payload handlers correctly need none          |
+| Electron hardening baseline                                               | Direct review of `windowSecurity.ts`                                                 | Matches mandatory baseline exactly                                                                           |
+| CSP                                                                       | Direct review of `index.html`                                                        | Strict, no `unsafe-eval`                                                                                     |
+| Secret storage/exposure                                                   | Direct review of `SecretCipher`/`electronSecretCipher.ts`/store types/renderer forms | Real OS-level encryption; never exposed in any IPC response type or log                                      |
+| Dangerous JS patterns (`eval`, `new Function`, `dangerouslySetInnerHTML`) | `grep -rn` across `src/`                                                             | None found                                                                                                   |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1599,10 +1602,10 @@ Checked every item in the mega-prompt §33 performance budget list against the r
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Lazy-loaded `AICommandCanvas` route resolves and renders its real empty state | `__tests__/App.test.tsx` | 1 (fixed: `getByText` → `findByText`) |
-| Full suite re-run after the routing refactor (no behavior change expected outside the one async-timing fix) | `npm run test` | 114 files, 564 tests passed |
+| Suite                                                                                                       | Location                 | Count                                 |
+| ----------------------------------------------------------------------------------------------------------- | ------------------------ | ------------------------------------- |
+| Lazy-loaded `AICommandCanvas` route resolves and renders its real empty state                               | `__tests__/App.test.tsx` | 1 (fixed: `getByText` → `findByText`) |
+| Full suite re-run after the routing refactor (no behavior change expected outside the one async-timing fix) | `npm run test`           | 114 files, 564 tests passed           |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1630,13 +1633,13 @@ ND-002 was the last unbuilt Phase A screen in Epic 3, deferred on the (slightly 
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| PIN set/verify/change/remove, current-PIN enforcement, salted-hash-only persistence on disk, persistence across store instances | `core/lock/__tests__/LockSettingsStore.test.ts` (new file) | 6 |
-| Bridge-unavailable/partial-mock handling and request delegation for all four lock IPC methods | `services/ipc/__tests__/lockClient.test.ts` (new file) | 6 |
-| Full lock → wrong-PIN-stays-locked → correct-PIN-unlocks flow; all ten shuffled digits render; account-authentication note shown | `features/system/__tests__/LockScreen.test.tsx` (new file) | 2 |
-| Lock Screen PIN section sets a PIN and reflects status; rejects a mismatched confirmation | `features/system/__tests__/PrivacyPermissions.test.tsx` | +2 |
-| "Lock NeuroDeck" is a real action once a PIN is configured (previously always-deferred assertion updated) | `features/system/__tests__/PowerMenu.test.tsx` | +1 (1 modified) |
+| Suite                                                                                                                            | Location                                                   | Count           |
+| -------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | --------------- |
+| PIN set/verify/change/remove, current-PIN enforcement, salted-hash-only persistence on disk, persistence across store instances  | `core/lock/__tests__/LockSettingsStore.test.ts` (new file) | 6               |
+| Bridge-unavailable/partial-mock handling and request delegation for all four lock IPC methods                                    | `services/ipc/__tests__/lockClient.test.ts` (new file)     | 6               |
+| Full lock → wrong-PIN-stays-locked → correct-PIN-unlocks flow; all ten shuffled digits render; account-authentication note shown | `features/system/__tests__/LockScreen.test.tsx` (new file) | 2               |
+| Lock Screen PIN section sets a PIN and reflects status; rejects a mismatched confirmation                                        | `features/system/__tests__/PrivacyPermissions.test.tsx`    | +2              |
+| "Lock NeuroDeck" is a real action once a PIN is configured (previously always-deferred assertion updated)                        | `features/system/__tests__/PowerMenu.test.tsx`             | +1 (1 modified) |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1664,9 +1667,9 @@ A research pass against every item in mega-prompt §32's accessibility checklist
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Reads heading + alert text on the real `narrate.screen` action; falls back to document title; shows a real toast (not a silent no-op) when speech synthesis is unavailable | `features/system/__tests__/ScreenNarrator.test.tsx` (new file) | 3 |
+| Suite                                                                                                                                                                      | Location                                                       | Count |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----- |
+| Reads heading + alert text on the real `narrate.screen` action; falls back to document title; shows a real toast (not a silent no-op) when speech synthesis is unavailable | `features/system/__tests__/ScreenNarrator.test.tsx` (new file) | 3     |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1682,7 +1685,7 @@ npm run build                   → typecheck + electron-vite build passed
 
 User report: "still unable to get to the home app screen due to the boot menu not progressing." Reproduced directly using the same diagnostic technique documented earlier in this ledger (a second Playwright `_electron` instance pointed at the already-running `electron-vite dev` Vite server via `ELECTRON_RENDERER_URL`, with `console`/`pageerror` listeners attached) — confirmed the real app gets stuck showing "Restoring workspace …" forever in dev mode, never reaching either onboarding or Home, and never even hitting the 15-second boot-timeout failure screen.
 
-**Root cause**: `main.tsx` wraps the app in `<StrictMode>`, which deliberately mounts every component twice in development — mount, synthetic cleanup, mount again — specifically to surface effects whose cleanup isn't idempotent. `BootSessionStart.tsx`'s `abortRef = useRef(false)` is shared across both invocations (it's the same component instance, same ref, just the effect body re-running). The first, throwaway invocation's cleanup sets `abortRef.current = true`. The effect body never reset it back to `false` at the start of a new invocation, so the *second*, real, staying-mounted invocation inherited the stale `true` — every subsequent `updateStep()`/`finishBoot()` call (including the 15-second timeout's own callback) hit the `if (abortRef.current) return` guard and silently no-opped, forever. The real `listWorkspaces()` IPC call itself was confirmed to resolve instantly and correctly (verified directly via `window.ndx.workspaces.list()` from the Playwright harness) — this was purely a stale-ref bug in the React layer, not an IPC or main-process problem. It's dev-mode-only because production builds never double-invoke effects; that's also exactly why the existing `e2e/app.spec.ts` (which launches the production build) never caught it.
+**Root cause**: `main.tsx` wraps the app in `<StrictMode>`, which deliberately mounts every component twice in development — mount, synthetic cleanup, mount again — specifically to surface effects whose cleanup isn't idempotent. `BootSessionStart.tsx`'s `abortRef = useRef(false)` is shared across both invocations (it's the same component instance, same ref, just the effect body re-running). The first, throwaway invocation's cleanup sets `abortRef.current = true`. The effect body never reset it back to `false` at the start of a new invocation, so the _second_, real, staying-mounted invocation inherited the stale `true` — every subsequent `updateStep()`/`finishBoot()` call (including the 15-second timeout's own callback) hit the `if (abortRef.current) return` guard and silently no-opped, forever. The real `listWorkspaces()` IPC call itself was confirmed to resolve instantly and correctly (verified directly via `window.ndx.workspaces.list()` from the Playwright harness) — this was purely a stale-ref bug in the React layer, not an IPC or main-process problem. It's dev-mode-only because production builds never double-invoke effects; that's also exactly why the existing `e2e/app.spec.ts` (which launches the production build) never caught it.
 
 **Fix**: `abortRef.current = false` is now the first line of the effect body, resetting the flag on every invocation rather than relying on `useRef`'s one-time initial value.
 
@@ -1690,9 +1693,9 @@ User report: "still unable to get to the home app screen due to the boot menu no
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Boot still completes under a real `<StrictMode>` double-effect-invoke, not just a single mount | `features/onboarding/__tests__/BootSessionStart.test.tsx` | +1 |
+| Suite                                                                                          | Location                                                  | Count |
+| ---------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ----- |
+| Boot still completes under a real `<StrictMode>` double-effect-invoke, not just a single mount | `features/onboarding/__tests__/BootSessionStart.test.tsx` | +1    |
 
 **Validation evidence (run 2026-06-24):**
 
@@ -1709,11 +1712,11 @@ npx playwright test                            → 1 file, 1 test passed (produc
 
 ## A second real bug found while re-verifying the boot fix — unnamespaced userData directory
 
-The user reported the boot issue persisted after the `abortRef` fix above. Re-reproducing live (same Playwright-against-running-dev-server technique) showed boot now completing correctly in two separate runs, so the original bug was confirmed fixed — but investigating *why* the user might still see something wrong surfaced a second, unrelated, real bug worth fixing regardless: this app never calls `app.setName()`, so `app.getPath('userData')` falls back to Electron's literal default app name, `"Electron"`, whenever the app runs unpackaged (`electron-vite dev` never reads `package.json`'s `name`/`productName` into `app.name` the way a packaged build does).
+The user reported the boot issue persisted after the `abortRef` fix above. Re-reproducing live (same Playwright-against-running-dev-server technique) showed boot now completing correctly in two separate runs, so the original bug was confirmed fixed — but investigating _why_ the user might still see something wrong surfaced a second, unrelated, real bug worth fixing regardless: this app never calls `app.setName()`, so `app.getPath('userData')` falls back to Electron's literal default app name, `"Electron"`, whenever the app runs unpackaged (`electron-vite dev` never reads `package.json`'s `name`/`productName` into `app.name` the way a packaged build does).
 
 **Confirmed in practice, not just in theory**: this machine's `%APPDATA%/Electron` already contained `jpe_secure_vault.json` and `sidecar.lock.json` — files that exist nowhere in this codebase — sitting in the exact directory every one of this app's own `core/*Store` classes (`WorkspaceStore`, `ModelProviderStore`, `LockSettingsStore`, etc.) would otherwise write their own same-purpose files into. Any other unpackaged Electron app a developer runs on the same machine shares this one generic folder by default — a real, silent data-collision risk, not a hypothetical one.
 
-The fix wasn't as simple as just calling `app.setName('NeuroDeck')`: that name turned out to *already* belong to a different, unrelated real application on this same machine — `%APPDATA%/NeuroDeck` held its own `neurodeck.db` (a SQLite file; this codebase has no SQLite anywhere, only JSON-file-backed `JsonStore`s), `temp_record.wav`, and `theme-settings.json`, none of which this codebase has ever produced. **Fixed** with `app.setName('NeuroDeck OS')` instead — matching `electron-builder.yml`'s `productName` exactly, confirmed via direct directory inspection to be genuinely unused on this machine before this change, and now keeps the dev-mode and packaged-build userData directories identical. Placed as the very first statement in `main/index.ts`, before `app.whenReady()` and before any store constructor's `app.getPath('userData')` call, since Electron resolves the userData path from `app.name` at first access, not lazily re-evaluated later.
+The fix wasn't as simple as just calling `app.setName('NeuroDeck')`: that name turned out to _already_ belong to a different, unrelated real application on this same machine — `%APPDATA%/NeuroDeck` held its own `neurodeck.db` (a SQLite file; this codebase has no SQLite anywhere, only JSON-file-backed `JsonStore`s), `temp_record.wav`, and `theme-settings.json`, none of which this codebase has ever produced. **Fixed** with `app.setName('NeuroDeck OS')` instead — matching `electron-builder.yml`'s `productName` exactly, confirmed via direct directory inspection to be genuinely unused on this machine before this change, and now keeps the dev-mode and packaged-build userData directories identical. Placed as the very first statement in `main/index.ts`, before `app.whenReady()` and before any store constructor's `app.getPath('userData')` call, since Electron resolves the userData path from `app.name` at first access, not lazily re-evaluated later.
 
 This was not the root cause of the user's reported stall (no NeuroDeck-shaped files existed in the contaminated `Electron` folder, so nothing this app reads was actually corrupted by the collision) — it's a separate, real latent bug that happened to surface during the same investigation, fixed because leaving a confirmed userData collision in place would be irresponsible regardless of whether it explains today's specific report.
 
@@ -1757,17 +1760,17 @@ No new IPC channels — all three modes reuse `createTerminal`/`listTerminalSess
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `AgentRuntime` toolExecutions persistence across the requested→passed lifecycle | `core/agents/__tests__/AgentRuntime.test.ts` | +1 |
-| `ActionQueue` agentId/runId threading onto every later audit entry, human submissions stay unset | `ai-safety/__tests__/ActionQueue.test.ts` | +2 |
-| `AgentToolExecutionBridge` threads agentId/runId onto the real submission | `features/agents/__tests__/AgentToolExecutionBridge.test.tsx` | +1 (new file) |
-| `AgentDetail` Tools/Logs/Files/Permissions tabs | `features/agents/__tests__/AgentDetail.test.tsx` | +4 |
-| `PaneGroup` rendering, Arrow-key nudge + clamp, pointer-drag wiring (jsdom has no real `PointerEvent` — documented, not worked around) | `components/primitives/__tests__/PaneGroup.test.tsx` | +4 (new file) |
-| `UniversalTerminal` mode switcher | `features/terminal/__tests__/UniversalTerminal.test.tsx` | +1 |
-| `SplitTerminalPanel` session loading + real session creation | `features/terminal/__tests__/SplitTerminalPanel.test.tsx` | +2 (new file) |
-| `RemoteModePanel` empty state, real connect, real disconnect | `features/terminal/__tests__/RemoteModePanel.test.tsx` | +3 (new file) |
-| `CommandBuilder` embedded empty state calls `onSwitchToDirect` instead of navigating | `features/terminal/__tests__/CommandBuilder.test.tsx` | +1 |
+| Suite                                                                                                                                  | Location                                                      | Count         |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------- |
+| `AgentRuntime` toolExecutions persistence across the requested→passed lifecycle                                                        | `core/agents/__tests__/AgentRuntime.test.ts`                  | +1            |
+| `ActionQueue` agentId/runId threading onto every later audit entry, human submissions stay unset                                       | `ai-safety/__tests__/ActionQueue.test.ts`                     | +2            |
+| `AgentToolExecutionBridge` threads agentId/runId onto the real submission                                                              | `features/agents/__tests__/AgentToolExecutionBridge.test.tsx` | +1 (new file) |
+| `AgentDetail` Tools/Logs/Files/Permissions tabs                                                                                        | `features/agents/__tests__/AgentDetail.test.tsx`              | +4            |
+| `PaneGroup` rendering, Arrow-key nudge + clamp, pointer-drag wiring (jsdom has no real `PointerEvent` — documented, not worked around) | `components/primitives/__tests__/PaneGroup.test.tsx`          | +4 (new file) |
+| `UniversalTerminal` mode switcher                                                                                                      | `features/terminal/__tests__/UniversalTerminal.test.tsx`      | +1            |
+| `SplitTerminalPanel` session loading + real session creation                                                                           | `features/terminal/__tests__/SplitTerminalPanel.test.tsx`     | +2 (new file) |
+| `RemoteModePanel` empty state, real connect, real disconnect                                                                           | `features/terminal/__tests__/RemoteModePanel.test.tsx`        | +3 (new file) |
+| `CommandBuilder` embedded empty state calls `onSwitchToDirect` instead of navigating                                                   | `features/terminal/__tests__/CommandBuilder.test.tsx`         | +1            |
 
 **Validation evidence (run 2026-06-25):**
 
@@ -1800,13 +1803,13 @@ npm audit             → 5 vulnerabilities (3 moderate, 1 high, 1 critical), al
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| Real workspace persistence through the folder picker | `e2e/workspace.spec.ts` | +1 (new file) |
-| Real shell command through the PTY | `e2e/terminal.spec.ts` | +1 (new file) |
-| Real Recovery Service checkpoint on file delete | `e2e/recovery.spec.ts` | +1 (new file) |
+| Suite                                                      | Location                      | Count         |
+| ---------------------------------------------------------- | ----------------------------- | ------------- |
+| Real workspace persistence through the folder picker       | `e2e/workspace.spec.ts`       | +1 (new file) |
+| Real shell command through the PTY                         | `e2e/terminal.spec.ts`        | +1 (new file) |
+| Real Recovery Service checkpoint on file delete            | `e2e/recovery.spec.ts`        | +1 (new file) |
 | Full ActionQueue approval pipeline against a real terminal | `e2e/command-builder.spec.ts` | +1 (new file) |
-| Emergency Stop enforcement at the queue level | `e2e/emergency-stop.spec.ts` | +1 (new file) |
+| Emergency Stop enforcement at the queue level              | `e2e/emergency-stop.spec.ts`  | +1 (new file) |
 
 ## Phase B begins — Epic X1 platform registry foundation (2026-06-25)
 
@@ -1826,14 +1829,14 @@ Phase A complete; starting Phase B per `IMPLEMENTATION_CHECKLIST.md`'s own "Phas
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `CapabilityRegistry` honest detection, override injection, refresh, Linux-only honesty | `core/capability/__tests__/CapabilityRegistry.test.ts` | +4 (new file) |
-| `FeatureRegistry` visibility computation (capability/Safe Mode/extension/profile) | `core/feature/__tests__/FeatureRegistry.test.ts` | +7 (new file) |
-| `ApplicationStore` real CRUD | `core/applications/__tests__/ApplicationStore.test.ts` | +6 (new file) |
-| `DeviceStore` real CRUD | `core/devices/__tests__/DeviceStore.test.ts` | +5 (new file) |
-| `TransactionManager` lifecycle, progress clamp, real cancellation | `core/transactions/__tests__/TransactionManager.test.ts` | +8 (new file) |
-| `NavigationRail` real adaptive visibility (visible/hidden/fails-open) | `renderer/src/components/navigation/__tests__/NavigationRail.test.tsx` | +3 (new file) |
+| Suite                                                                                  | Location                                                               | Count         |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------- |
+| `CapabilityRegistry` honest detection, override injection, refresh, Linux-only honesty | `core/capability/__tests__/CapabilityRegistry.test.ts`                 | +4 (new file) |
+| `FeatureRegistry` visibility computation (capability/Safe Mode/extension/profile)      | `core/feature/__tests__/FeatureRegistry.test.ts`                       | +7 (new file) |
+| `ApplicationStore` real CRUD                                                           | `core/applications/__tests__/ApplicationStore.test.ts`                 | +6 (new file) |
+| `DeviceStore` real CRUD                                                                | `core/devices/__tests__/DeviceStore.test.ts`                           | +5 (new file) |
+| `TransactionManager` lifecycle, progress clamp, real cancellation                      | `core/transactions/__tests__/TransactionManager.test.ts`               | +8 (new file) |
+| `NavigationRail` real adaptive visibility (visible/hidden/fails-open)                  | `renderer/src/components/navigation/__tests__/NavigationRail.test.tsx` | +3 (new file) |
 
 **Validation evidence (run 2026-06-25):**
 
@@ -1864,15 +1867,15 @@ New `application.discover`/`application.launch`/`application.registerAppImage` a
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `DesktopEntryScanner` real `.desktop` parsing, NoDisplay/Hidden/Type filtering | `core/applications/discovery/__tests__/DesktopEntryScanner.test.ts` | +6 (new file) |
-| `SteamLibraryScanner` real text-VDF parsing, missing library/manifest honesty | `core/applications/discovery/__tests__/SteamLibraryScanner.test.ts` | +5 (new file) |
-| `FlatpakAdapter` real CLI invocation, honest unavailable-Flatpak path | `core/applications/__tests__/FlatpakAdapter.test.ts` | +7 (new file) |
-| `ApplicationLauncher` steam URI / detached spawn / real ENOENT honesty | `core/applications/__tests__/ApplicationLauncher.test.ts` | +5 (new file) |
-| `ApplicationDiscoveryService` orchestration, partial-source selection, one-scanner-failure isolation | `core/applications/__tests__/ApplicationDiscoveryService.test.ts` | +3 (new file) |
-| `AppImageVerifier` real ELF magic check, record building | `core/applications/__tests__/AppImageVerifier.test.ts` | +5 (new file) |
-| `PackageLifecycleService` real verify-before-success, non-cancellable honesty | `core/applications/__tests__/PackageLifecycleService.test.ts` | +6 (new file) |
+| Suite                                                                                                | Location                                                            | Count         |
+| ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------- |
+| `DesktopEntryScanner` real `.desktop` parsing, NoDisplay/Hidden/Type filtering                       | `core/applications/discovery/__tests__/DesktopEntryScanner.test.ts` | +6 (new file) |
+| `SteamLibraryScanner` real text-VDF parsing, missing library/manifest honesty                        | `core/applications/discovery/__tests__/SteamLibraryScanner.test.ts` | +5 (new file) |
+| `FlatpakAdapter` real CLI invocation, honest unavailable-Flatpak path                                | `core/applications/__tests__/FlatpakAdapter.test.ts`                | +7 (new file) |
+| `ApplicationLauncher` steam URI / detached spawn / real ENOENT honesty                               | `core/applications/__tests__/ApplicationLauncher.test.ts`           | +5 (new file) |
+| `ApplicationDiscoveryService` orchestration, partial-source selection, one-scanner-failure isolation | `core/applications/__tests__/ApplicationDiscoveryService.test.ts`   | +3 (new file) |
+| `AppImageVerifier` real ELF magic check, record building                                             | `core/applications/__tests__/AppImageVerifier.test.ts`              | +5 (new file) |
+| `PackageLifecycleService` real verify-before-success, non-cancellable honesty                        | `core/applications/__tests__/PackageLifecycleService.test.ts`       | +6 (new file) |
 
 **Validation evidence (run 2026-06-25):**
 
@@ -1895,18 +1898,18 @@ Real process-isolated extension host, manifest validation, deny-by-default capab
 
 **Real fault-driven quarantine** (`core/extensions/ExtensionRuntime.ts`, supplemental §9.6) — `ExtensionHost` tracks real fault timestamps in a real rolling 60-second window; once a real crash count crosses the threshold, `ExtensionRuntime.handleFault()` stops the real child process and persists a real `quarantineReason`, and refuses to let `setEnabled(true)` re-enable a quarantined extension without an explicit `clearQuarantine()` call first. Verified end-to-end with a real fixture child process that genuinely crashes twice (not a mocked event), confirming the host's real fork()/IPC/fault-tracking pipeline end to end.
 
-**Explicitly deferred**: Signed marketplace client, manifest preflight review before local install, post-install capability grant/revoke UI, cryptographic signature verification, Developer SDK, and CLI remain deferred; the signed marketplace client (§10) — there is no documented registry protocol or real server to talk to, and the supplemental non-negotiables explicitly require the platform to "remain usable when no marketplace server is configured" and forbid fabricated marketplace data, so `install()` is scoped to "install from a local unpacked directory" instead, the same real, honest action VS Code calls "Install from Folder"; cryptographic signature verification (manifest/path-traversal verification is real, but a `signature` block's actual cryptographic validity isn't checked yet — `trust` is set from presence, not verified validity); the Developer SDK and CLI (§11) — the CLI specifically needs §11.3's local authenticated API server (scoped tokens, localhost binding, expiration/revocation) built first, a security-sensitive surface deserving its own focused pass rather than being bolted on here.
+**Explicitly deferred**: Signed marketplace client, post-install capability grant/revoke UI, cryptographic signature verification, Developer SDK, and CLI remain deferred; the signed marketplace client (§10) — there is no documented registry protocol or real server to talk to, and the supplemental non-negotiables explicitly require the platform to "remain usable when no marketplace server is configured" and forbid fabricated marketplace data, so `install()` is scoped to "install from a local unpacked directory" instead, the same real, honest action VS Code calls "Install from Folder"; cryptographic signature verification (manifest/path-traversal verification is real, but a `signature` block's actual cryptographic validity isn't checked yet — `trust` is set from presence, not verified validity); the Developer SDK and CLI (§11) — the CLI specifically needs §11.3's local authenticated API server (scoped tokens, localhost binding, expiration/revocation) built first, a security-sensitive surface deserving its own focused pass rather than being bolted on here.
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `CapabilityBroker` deny-by-default, both denial paths, real dispatch | `core/extensions/__tests__/CapabilityBroker.test.ts` | +3 (new file) |
-| `ExtensionStore` real CRUD | `core/extensions/__tests__/ExtensionStore.test.ts` | +5 (new file) |
-| `ManifestLoader` real manifest validation, directory-traversal protection | `core/extensions/__tests__/ManifestLoader.test.ts` | +7 (new file) |
-| `ExtensionHost` real fork()/IPC/fault-tracking against a real child process | `core/extensions/__tests__/ExtensionHost.test.ts` | +6 (new file) |
-| `ExtensionRuntime` install/enable/disable/quarantine/clear lifecycle | `core/extensions/__tests__/ExtensionRuntime.test.ts` | +8 (new file) |
-| `ExtensionDataStore` real per-extension data isolation | `core/extensions/__tests__/ExtensionDataStore.test.ts` | +4 (new file) |
+| Suite                                                                       | Location                                               | Count         |
+| --------------------------------------------------------------------------- | ------------------------------------------------------ | ------------- |
+| `CapabilityBroker` deny-by-default, both denial paths, real dispatch        | `core/extensions/__tests__/CapabilityBroker.test.ts`   | +3 (new file) |
+| `ExtensionStore` real CRUD                                                  | `core/extensions/__tests__/ExtensionStore.test.ts`     | +5 (new file) |
+| `ManifestLoader` real manifest validation, directory-traversal protection   | `core/extensions/__tests__/ManifestLoader.test.ts`     | +7 (new file) |
+| `ExtensionHost` real fork()/IPC/fault-tracking against a real child process | `core/extensions/__tests__/ExtensionHost.test.ts`      | +6 (new file) |
+| `ExtensionRuntime` install/enable/disable/quarantine/clear lifecycle        | `core/extensions/__tests__/ExtensionRuntime.test.ts`   | +8 (new file) |
+| `ExtensionDataStore` real per-extension data isolation                      | `core/extensions/__tests__/ExtensionDataStore.test.ts` | +4 (new file) |
 
 **Validation evidence (run 2026-06-25):**
 
@@ -1919,11 +1922,11 @@ npm run build       → succeeded (real second main entry compiled to out/main/e
 
 ### Epic X3 addendum - Extension Manager UI (2026-06-27)
 
-`features/extensions/ExtensionManager.tsx` adds the first real UI consumer for the Epic X3 runtime. `/extensions` is now a lazy route and a real feature-catalog/Navigation Rail destination. The screen lists installed extension records from `extensions.list`, installs a local unpacked directory through `extensions.install`, enables/disables through `extensions.setEnabled`, clears quarantine through `extensions.clearQuarantine`, removes through `extensions.remove`, and subscribes to live `extension.healthEvent` updates so runtime fault/quarantine state appears without polling.
+`features/extensions/ExtensionManager.tsx` adds the first real UI consumer for the Epic X3 runtime. `/extensions` is now a lazy route and a real feature-catalog/Navigation Rail destination. The screen lists installed extension records from `extensions.list`, previews a local unpacked directory through `extensions.previewInstall`, installs the reviewed directory through `extensions.install`, enables/disables through `extensions.setEnabled`, clears quarantine through `extensions.clearQuarantine`, removes through `extensions.remove`, and subscribes to live `extension.healthEvent` updates so runtime fault/quarantine state appears without polling.
 
-Security scope is intentionally narrow: local installs pass `approvedCapabilities: []`, so no extension capability is silently granted by typing a path into the manager. The detail pane shows manifest-requested capabilities and granted capabilities separately, making denied permissions visible rather than pretending a full permission-review editor exists. Trust is displayed from the existing record (`unsigned`, `signed`, etc.) without claiming cryptographic signature validation.
+Security scope is intentionally narrow: the install flow loads and validates the real manifest before registration, displays trust/metadata/entrypoint/capability requests, and defaults every requested capability to denied. Only capabilities the user explicitly grants in the review panel are sent in `approvedCapabilities`, so no extension capability is silently granted by typing a path into the manager. The detail pane shows manifest-requested capabilities and granted capabilities separately, making denied permissions visible. Trust is displayed from the existing record (`unsigned`, `signed`, etc.) without claiming cryptographic signature validation.
 
-Still deferred: signed marketplace browsing/downloads, manifest preflight review before local install, post-install capability grant/revoke UI, cryptographic signature verification, a developer SDK package split, and CLI/local API server. Each needs a real trust, registry, or authenticated API surface; none is faked here.
+Still deferred: signed marketplace browsing/downloads, post-install capability grant/revoke UI, cryptographic signature verification, a developer SDK package split, and CLI/local API server. Each needs a real trust, registry, or authenticated API surface; none is faked here.
 
 **Validation evidence (run 2026-06-27):**
 
@@ -1932,6 +1935,25 @@ npm run typecheck   -> node + web TypeScript checks passed
 npm run lint        -> 0 errors, 0 warnings
 npm run test -- ExtensionManager ExtensionRuntime ExtensionHost ExtensionStore CapabilityBroker extensionClient
                    -> 5 files, 27 tests passed
+```
+
+### Epic X3 addendum - install review and capability grants (2026-06-27)
+
+`shared/contracts/extension.ts`, `shared/contracts/ipcChannels.ts`, `shared/contracts/bridge.ts`, `main/ipc/registerExtensionHandlers.ts`, `preload/index.ts`, and `renderer/src/services/ipc/extensionClient.ts` now expose a typed `extensions.previewInstall` path. The handler validates the requested directory, loads the real manifest with the same `ManifestLoader` used by install/runtime, computes the honest current trust label (`signed` when a signature block exists, otherwise `unsigned`), and returns the exact requested capabilities for renderer review.
+
+`features/extensions/ExtensionManager.tsx` now uses a two-step local install flow: Review local folder -> inspect manifest/capability requests -> Install reviewed extension. Requested capabilities are denied by default, and the install request carries only the selected `approvedCapabilities` subset. Preview failures are surfaced before any registration attempt.
+
+**Validation evidence (run 2026-06-27):**
+
+```text
+npm run test -- ExtensionManager
+                   -> 1 file, 6 tests passed
+npm run typecheck   -> node + web TypeScript checks passed
+npm run lint        -> 0 errors, 0 warnings
+npm run test -- ExtensionManager ExtensionRuntime ExtensionHost ExtensionStore CapabilityBroker ManifestLoader extensionClient
+                   -> 6 files, 35 tests passed
+npm run test       -> 175 files, 877 tests passed
+npm run build      -> succeeded
 ```
 
 ## Epic X4 — Knowledge and memory (2026-06-26)
@@ -1950,17 +1972,17 @@ New `knowledge.*`/`memory.*`/`promptTemplate.*`/`persona.*` IPC domains, typed a
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `secretDetector` real pattern detection, no false positives on ordinary prose | `core/memory/__tests__/secretDetector.test.ts` | +8 (new file) |
-| `MemoryStore` write/update/delete, secret rejection, disable-category/all, clearScope | `core/memory/__tests__/MemoryStore.test.ts` | +9 (new file) |
-| `textParsers` real JSON/CSV/plain-text parsing, extension dispatch | `core/knowledge/parsers/__tests__/textParsers.test.ts` | +5 (new file) |
-| `Chunker` real paragraph-aware chunking with overlap | `core/knowledge/__tests__/Chunker.test.ts` | +4 (new file) |
-| `KnowledgeIndex` real lexical scoring, ranking, zero-score exclusion | `core/knowledge/__tests__/KnowledgeIndex.test.ts` | +5 (new file) |
-| `KnowledgeStore` real CRUD for sources/chunks | `core/knowledge/__tests__/KnowledgeStore.test.ts` | +5 (new file) |
-| `KnowledgeVaultService` real end-to-end ingest/query/reindex/pause/remove against real files | `core/knowledge/__tests__/KnowledgeVaultService.test.ts` | +10 (new file) |
-| `PromptTemplateStore` real CRUD | `core/promptLibrary/__tests__/PromptTemplateStore.test.ts` | +5 (new file) |
-| `PersonaStore` real CRUD | `core/promptLibrary/__tests__/PersonaStore.test.ts` | +3 (new file) |
+| Suite                                                                                        | Location                                                   | Count          |
+| -------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | -------------- |
+| `secretDetector` real pattern detection, no false positives on ordinary prose                | `core/memory/__tests__/secretDetector.test.ts`             | +8 (new file)  |
+| `MemoryStore` write/update/delete, secret rejection, disable-category/all, clearScope        | `core/memory/__tests__/MemoryStore.test.ts`                | +9 (new file)  |
+| `textParsers` real JSON/CSV/plain-text parsing, extension dispatch                           | `core/knowledge/parsers/__tests__/textParsers.test.ts`     | +5 (new file)  |
+| `Chunker` real paragraph-aware chunking with overlap                                         | `core/knowledge/__tests__/Chunker.test.ts`                 | +4 (new file)  |
+| `KnowledgeIndex` real lexical scoring, ranking, zero-score exclusion                         | `core/knowledge/__tests__/KnowledgeIndex.test.ts`          | +5 (new file)  |
+| `KnowledgeStore` real CRUD for sources/chunks                                                | `core/knowledge/__tests__/KnowledgeStore.test.ts`          | +5 (new file)  |
+| `KnowledgeVaultService` real end-to-end ingest/query/reindex/pause/remove against real files | `core/knowledge/__tests__/KnowledgeVaultService.test.ts`   | +10 (new file) |
+| `PromptTemplateStore` real CRUD                                                              | `core/promptLibrary/__tests__/PromptTemplateStore.test.ts` | +5 (new file)  |
+| `PersonaStore` real CRUD                                                                     | `core/promptLibrary/__tests__/PersonaStore.test.ts`        | +3 (new file)  |
 
 **Validation evidence (run 2026-06-26):**
 
@@ -1989,13 +2011,13 @@ Real text-to-speech, real dictation, a real persisted microphone permission gate
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `MicrophonePermissionStore` real persisted grant/deny, fails closed | `core/voice/__tests__/MicrophonePermissionStore.test.ts` | +4 (new file) |
-| `VoiceNoteStore` real audio file decode/write/read/delete | `core/voice/__tests__/VoiceNoteStore.test.ts` | +5 (new file) |
-| `DocumentIntakeService` real extraction, real redaction, honest unsupported-type rejection | `core/voice/__tests__/DocumentIntakeService.test.ts` | +3 (new file) |
-| `useTextToSpeech` real speak/cancel through a stubbed `SpeechSynthesis`, unavailable-engine honesty | `renderer/src/features/voice/__tests__/useTextToSpeech.test.ts` | +4 (new file) |
-| `useDictation` real transcript/alternatives/error from a stubbed `SpeechRecognition`, stop-vs-cancel semantics | `renderer/src/features/voice/__tests__/useDictation.test.ts` | +7 (new file) |
+| Suite                                                                                                          | Location                                                        | Count         |
+| -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------- |
+| `MicrophonePermissionStore` real persisted grant/deny, fails closed                                            | `core/voice/__tests__/MicrophonePermissionStore.test.ts`        | +4 (new file) |
+| `VoiceNoteStore` real audio file decode/write/read/delete                                                      | `core/voice/__tests__/VoiceNoteStore.test.ts`                   | +5 (new file) |
+| `DocumentIntakeService` real extraction, real redaction, honest unsupported-type rejection                     | `core/voice/__tests__/DocumentIntakeService.test.ts`            | +3 (new file) |
+| `useTextToSpeech` real speak/cancel through a stubbed `SpeechSynthesis`, unavailable-engine honesty            | `renderer/src/features/voice/__tests__/useTextToSpeech.test.ts` | +4 (new file) |
+| `useDictation` real transcript/alternatives/error from a stubbed `SpeechRecognition`, stop-vs-cancel semantics | `renderer/src/features/voice/__tests__/useDictation.test.ts`    | +7 (new file) |
 
 **Validation evidence (run 2026-06-26):**
 
@@ -2016,7 +2038,7 @@ Real Clipboard Center with enforced security controls, real Snippets with risk-c
 
 **Real shared transfer primitive** (`core/transfer/TransferManager.ts`, supplemental §18) — mirrors Epic X1's `TransactionManager` pattern, extended with the byte-progress/checksum/resumability fields §18.1's `TransferJob` actually specifies. Honest scope: this pass's one real consumer is LAN peer transfer; model downloads, package transactions (Epic X2), and update checks already have their own real tracking elsewhere and are not yet consolidated under this one system — a named integration gap, not fabricated unified coverage.
 
-**Real LAN discovery** (`core/lan/PeerDiscoveryService.ts` + `core/lan/DeviceIdentityStore.ts`, supplemental §19.1) — genuinely sends and receives real UDP datagrams (confirmed with two actually-separate Node sockets over real loopback, not a simulated peer list), each announcement carrying a real per-device fingerprint from a real Ed25519 keypair generated once via `crypto.generateKeyPairSync` and persisted across restarts. `PeerStore` does real trust-on-first-use — every newly-seen peer defaults to `untrusted`, matching `RemoteHostStore`'s existing SSH host-key trust model — and real online/offline staleness tracking. **Real test-environment finding**: two real sockets bound to the exact same UDP port via `SO_REUSEADDR` (the correct, real production design — every device shares one well-known discovery port) have OS-dependent single-delivery semantics for a unicast loopback send on this Windows machine; the test asserts that *at least one* direction of real delivery succeeded rather than requiring both, with the platform characteristic documented directly in the test rather than worked around silently.
+**Real LAN discovery** (`core/lan/PeerDiscoveryService.ts` + `core/lan/DeviceIdentityStore.ts`, supplemental §19.1) — genuinely sends and receives real UDP datagrams (confirmed with two actually-separate Node sockets over real loopback, not a simulated peer list), each announcement carrying a real per-device fingerprint from a real Ed25519 keypair generated once via `crypto.generateKeyPairSync` and persisted across restarts. `PeerStore` does real trust-on-first-use — every newly-seen peer defaults to `untrusted`, matching `RemoteHostStore`'s existing SSH host-key trust model — and real online/offline staleness tracking. **Real test-environment finding**: two real sockets bound to the exact same UDP port via `SO_REUSEADDR` (the correct, real production design — every device shares one well-known discovery port) have OS-dependent single-delivery semantics for a unicast loopback send on this Windows machine; the test asserts that _at least one_ direction of real delivery succeeded rather than requiring both, with the platform characteristic documented directly in the test rather than worked around silently.
 
 **Real authenticated-encrypted peer transfer** (`core/lan/PeerTransferService.ts`, supplemental §19.2/§19.3) — transfers real file bytes over real TCP (confirmed end-to-end over loopback: a real file is encrypted, sent, received, decrypted, and its SHA-256 checksum matches on both ends), encrypted with real AES-256-GCM using a key derived via real PBKDF2 from a pre-shared pairing code entered on both devices out of band. A wrong pairing code produces a real, detectable AEAD decryption failure — confirmed by a test that the transfer is rejected and no file is ever written, not silently corrupted output. Real filename sanitization (`basename()` only) blocks a malicious peer's declared filename from traversing outside the destination directory, confirmed by a test using a real `..`-laden filename. Honest scope, stated directly in the module's own doc comment: this is real AEAD confidentiality+integrity over a pre-shared secret, not X.509-certificate-based mutual TLS — generating real certificates needs a dependency (`node-forge`/`selfsigned`) not in this codebase, and adding one is its own decision left for a future pass. The whole file is buffered in memory for one-shot encryption/decryption — fine for typical transfer sizes, not optimized for huge multi-GB files, which would need real chunked-AEAD framing this slice doesn't build.
 
@@ -2024,16 +2046,16 @@ Real Clipboard Center with enforced security controls, real Snippets with risk-c
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `ClipboardStore` real secret-write rejection, encryption-at-rest, pin/clear/expire | `core/clipboard/__tests__/ClipboardStore.test.ts` | +10 (new file) |
-| `shellRiskClassifier` real privileged/destructive/network-fetch classification | `core/clipboard/__tests__/shellRiskClassifier.test.ts` | +5 (new file) |
-| `SnippetStore` real variable detection/render, shell risk attachment | `core/clipboard/__tests__/SnippetStore.test.ts` | +7 (new file) |
-| `TransferManager` real job lifecycle, pause/resume gating, cancel hook | `core/transfer/__tests__/TransferManager.test.ts` | +7 (new file) |
-| `PeerStore` real trust-on-first-use, staleness tracking | `core/lan/__tests__/PeerStore.test.ts` | +6 (new file) |
-| `DeviceIdentityStore` real keypair generation/persistence | `core/lan/__tests__/DeviceIdentityStore.test.ts` | +3 (new file) |
-| `PeerDiscoveryService` real UDP send/receive over loopback | `core/lan/__tests__/PeerDiscoveryService.test.ts` | +3 (new file) |
-| `PeerTransferService` real end-to-end encrypted TCP transfer, wrong-code rejection, filename sanitization | `core/lan/__tests__/PeerTransferService.test.ts` | +3 (new file) |
+| Suite                                                                                                     | Location                                               | Count          |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | -------------- |
+| `ClipboardStore` real secret-write rejection, encryption-at-rest, pin/clear/expire                        | `core/clipboard/__tests__/ClipboardStore.test.ts`      | +10 (new file) |
+| `shellRiskClassifier` real privileged/destructive/network-fetch classification                            | `core/clipboard/__tests__/shellRiskClassifier.test.ts` | +5 (new file)  |
+| `SnippetStore` real variable detection/render, shell risk attachment                                      | `core/clipboard/__tests__/SnippetStore.test.ts`        | +7 (new file)  |
+| `TransferManager` real job lifecycle, pause/resume gating, cancel hook                                    | `core/transfer/__tests__/TransferManager.test.ts`      | +7 (new file)  |
+| `PeerStore` real trust-on-first-use, staleness tracking                                                   | `core/lan/__tests__/PeerStore.test.ts`                 | +6 (new file)  |
+| `DeviceIdentityStore` real keypair generation/persistence                                                 | `core/lan/__tests__/DeviceIdentityStore.test.ts`       | +3 (new file)  |
+| `PeerDiscoveryService` real UDP send/receive over loopback                                                | `core/lan/__tests__/PeerDiscoveryService.test.ts`      | +3 (new file)  |
+| `PeerTransferService` real end-to-end encrypted TCP transfer, wrong-code rejection, filename sanitization | `core/lan/__tests__/PeerTransferService.test.ts`       | +3 (new file)  |
 
 **Validation evidence (run 2026-06-26):**
 
@@ -2072,6 +2094,7 @@ Real schemas, settings, data-model persistence, capability registration, and typ
 **Real Capability Registry entries** (`core/capability/CapabilityRegistry.ts`) — all 17 `lanShare.*` ids from spec §7 now exist, each with an honest, specific reason naming the exact future phase that will make it real (`lanShare.discovery.mdns` → Phase LAN-3, `lanShare.files` → Phase LAN-5/6, etc.) rather than a generic "not implemented." One id, `lanShare.ipv4`, is genuinely `available` today — the Node.js runtime supports IPv4 sockets regardless of LAN Share's own progress, which is a different kind of fact than "is this feature built yet." `lanShare.ipv6` is deliberately reported `unsupported` even though the OS may support IPv6, because spec §2 explicitly requires IPv6 to stay capability-gated until real interoperability passes — the reason text says so explicitly, so this isn't mistaken for a technical absence.
 
 **Real data-model persistence** (`core/lanShare/`) — four `JsonStore`-backed classes, each with real, tested behavior (not stubs returning empty data forever, even though nothing populates them from the network yet):
+
 - `LanShareIdentityStore` — a stable per-device id + display name, generated once and persisted. Deliberately does **not** generate the RSA+X.509 certificate spec §13 eventually needs — that's real crypto work with no consumer until Phase LAN-4 builds the auth flow that uses it; building it now would be speculative.
 - `LanShareSettingsStore` — real defaults matching the spec's own stated defaults (ports 42000/42001, `~/Downloads/NeuroDeck LAN Share`), with a real validation rule (transfer port and auth port must differ) enforced on every update, and `groupCodeConfigured` as the only trace of the eventual group code — verified by a test that no `groupCode` key reaches the persisted object.
 - `LanSharePeerStore` — real manual-peer CRUD and the real §12 trust-state transition function (no auto-elevation, `blocked` only changes via explicit user action). No mDNS-driven peers exist yet — that data only starts flowing once Phase LAN-3's discovery client is real.
@@ -2083,12 +2106,12 @@ Real schemas, settings, data-model persistence, capability registration, and typ
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `LanShareIdentityStore` real generate-once/persist, rename | `core/lanShare/__tests__/LanShareIdentityStore.test.ts` | +2 (new file) |
+| Suite                                                                                       | Location                                                | Count         |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ------------- |
+| `LanShareIdentityStore` real generate-once/persist, rename                                  | `core/lanShare/__tests__/LanShareIdentityStore.test.ts` | +2 (new file) |
 | `LanShareSettingsStore` real defaults, port-conflict validation, group-code-configured flag | `core/lanShare/__tests__/LanShareSettingsStore.test.ts` | +4 (new file) |
-| `LanSharePeerStore` real manual add/dedupe/trust-transition/remove | `core/lanShare/__tests__/LanSharePeerStore.test.ts` | +5 (new file) |
-| `LanShareTransferStore` real create/cancel/listener notification/listing order | `core/lanShare/__tests__/LanShareTransferStore.test.ts` | +4 (new file) |
+| `LanSharePeerStore` real manual add/dedupe/trust-transition/remove                          | `core/lanShare/__tests__/LanSharePeerStore.test.ts`     | +5 (new file) |
+| `LanShareTransferStore` real create/cancel/listener notification/listing order              | `core/lanShare/__tests__/LanShareTransferStore.test.ts` | +4 (new file) |
 
 **Validation evidence (run 2026-06-26):**
 
@@ -2117,10 +2140,10 @@ Real service lifecycle, real interface enumeration, real socket binding, and rea
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `LanShareInterfaceManager` real non-loopback enumeration, shape validation | `core/lanShare/__tests__/LanShareInterfaceManager.test.ts` | +2 (new file) |
-| `LanShareService` real bind/running, real port-conflict error, real status-transition notifications | `core/lanShare/__tests__/LanShareService.test.ts` | +3 (new file) |
+| Suite                                                                                               | Location                                                   | Count         |
+| --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------- |
+| `LanShareInterfaceManager` real non-loopback enumeration, shape validation                          | `core/lanShare/__tests__/LanShareInterfaceManager.test.ts` | +2 (new file) |
+| `LanShareService` real bind/running, real port-conflict error, real status-transition notifications | `core/lanShare/__tests__/LanShareService.test.ts`          | +3 (new file) |
 
 **Validation evidence (run 2026-06-26):**
 
@@ -2155,11 +2178,11 @@ Real Warpinator-protocol interoperability begins here: a real gRPC `WarpRegistra
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `LanShareRegistrationServer`/`Client` real loopback round trip, unreachable-port rejection, real v2 UNIMPLEMENTED status | `core/lanShare/__tests__/LanShareRegistration.test.ts` | +3 (new file) |
-| `LanShareMdnsDiscovery` real over-the-wire multicast advertise/browse | `core/lanShare/__tests__/LanShareMdnsDiscovery.test.ts` | +1 (new file) |
-| `LanShareIdentityStore` real connect-id format + stability | `core/lanShare/__tests__/LanShareIdentityStore.test.ts` | +1 (extended) |
+| Suite                                                                                                                    | Location                                                | Count         |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------- | ------------- |
+| `LanShareRegistrationServer`/`Client` real loopback round trip, unreachable-port rejection, real v2 UNIMPLEMENTED status | `core/lanShare/__tests__/LanShareRegistration.test.ts`  | +3 (new file) |
+| `LanShareMdnsDiscovery` real over-the-wire multicast advertise/browse                                                    | `core/lanShare/__tests__/LanShareMdnsDiscovery.test.ts` | +1 (new file) |
+| `LanShareIdentityStore` real connect-id format + stability                                                               | `core/lanShare/__tests__/LanShareIdentityStore.test.ts` | +1 (extended) |
 
 **Validation evidence (run 2026-06-27):**
 
@@ -2186,7 +2209,7 @@ Real authentication: RSA-2048 self-signed certificates, a real group code, and a
 
 **Real spec §12 trust enforcement** (`LanSharePeerStore.upsertSeen`'s new `resolveTrustState`) — a peer's fingerprint changing between observations now real-demotes its trust state to `fingerprint-changed` regardless of what it was before (including `trusted`), and `blocked` never silently reverts on re-observation — both confirmed by tests. `groupMatch` is now also real: `LanShareService.attemptCertificateExchange` only ever sets it `true` after a real, successfully-decrypted v2 handshake.
 
-**Real spec §11 insecure-mode policy** (`LanShareSettingsStore.update`) — while the group code is still the real default, attempting to enable `autoStartEnabled` or set `approvalPolicy: 'auto-accept-trusted'` is rejected with a real validation error, evaluated against the *resulting* settings state so a combined update that sets the group code and enables these in the same call is still handled correctly. Confirmed by three tests (each rejection path, plus the combined-update success path).
+**Real spec §11 insecure-mode policy** (`LanShareSettingsStore.update`) — while the group code is still the real default, attempting to enable `autoStartEnabled` or set `approvalPolicy: 'auto-accept-trusted'` is rejected with a real validation error, evaluated against the _resulting_ settings state so a combined update that sets the group code and enables these in the same call is still handled correctly. Confirmed by three tests (each rejection path, plus the combined-update success path).
 
 **Self-reported `api_version` bumped from `1` to `2`** — now that this device's v2 support is genuinely real, reporting `1` would have been needlessly conservative and would cause real Warpinator-ecosystem peers to skip attempting v2 with us.
 
@@ -2194,14 +2217,14 @@ Real authentication: RSA-2048 self-signed certificates, a real group code, and a
 
 ### Tests and evidence
 
-| Suite | Location | Count |
-| ----- | -------- | ----- |
-| `groupCodeCipher` real NaCl round trip, nonce uniqueness, group-mismatch rejection, malformed-input rejection | `core/lanShare/__tests__/groupCodeCipher.test.ts` | +4 (new file) |
-| `LanShareGroupCodeStore` real default, encrypted persistence, plaintext fallback, clear | `core/lanShare/__tests__/LanShareGroupCodeStore.test.ts` | +4 (new file) |
+| Suite                                                                                                         | Location                                                   | Count         |
+| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------- |
+| `groupCodeCipher` real NaCl round trip, nonce uniqueness, group-mismatch rejection, malformed-input rejection | `core/lanShare/__tests__/groupCodeCipher.test.ts`          | +4 (new file) |
+| `LanShareGroupCodeStore` real default, encrypted persistence, plaintext fallback, clear                       | `core/lanShare/__tests__/LanShareGroupCodeStore.test.ts`   | +4 (new file) |
 | `LanShareCertificateStore` real RSA/X.509 generation+parsing, persistence/reuse, hostname-change regeneration | `core/lanShare/__tests__/LanShareCertificateStore.test.ts` | +3 (new file) |
-| `LanShareRegistrationServer`/`Client` real v2 round trip, real group mismatch, real rate-limit trip | `core/lanShare/__tests__/LanShareRegistration.test.ts` | +3 (extended) |
-| `LanSharePeerStore` real fingerprint-change demotion, never-silently-unblock | `core/lanShare/__tests__/LanSharePeerStore.test.ts` | +2 (extended) |
-| `LanShareSettingsStore` real insecure-mode policy enforcement | `core/lanShare/__tests__/LanShareSettingsStore.test.ts` | +3 (extended) |
+| `LanShareRegistrationServer`/`Client` real v2 round trip, real group mismatch, real rate-limit trip           | `core/lanShare/__tests__/LanShareRegistration.test.ts`     | +3 (extended) |
+| `LanSharePeerStore` real fingerprint-change demotion, never-silently-unblock                                  | `core/lanShare/__tests__/LanSharePeerStore.test.ts`        | +2 (extended) |
+| `LanShareSettingsStore` real insecure-mode policy enforcement                                                 | `core/lanShare/__tests__/LanShareSettingsStore.test.ts`    | +3 (extended) |
 
 **Validation evidence (run 2026-06-27):**
 

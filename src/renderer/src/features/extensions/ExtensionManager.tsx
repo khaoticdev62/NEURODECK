@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import type { ExtensionHealthEvent, ExtensionRecord, ExtensionState } from '@shared/contracts'
+import type {
+  ExtensionCapability,
+  ExtensionHealthEvent,
+  ExtensionInstallPreview,
+  ExtensionRecord,
+  ExtensionState
+} from '@shared/contracts'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
@@ -9,6 +15,7 @@ import {
   installExtension,
   listExtensions,
   onExtensionHealthEvent,
+  previewExtensionInstall,
   removeExtension,
   setExtensionEnabled
 } from '../../services/ipc/extensionClient'
@@ -111,6 +118,100 @@ function CapabilityList({ record }: { record: ExtensionRecord }): React.JSX.Elem
         )
       })}
     </ul>
+  )
+}
+
+function InstallPreviewPanel({
+  preview,
+  approvedCapabilities,
+  busy,
+  onToggleCapability,
+  onInstall,
+  onCancel
+}: {
+  preview: ExtensionInstallPreview
+  approvedCapabilities: ExtensionCapability[]
+  busy: boolean
+  onToggleCapability: (capability: ExtensionCapability) => void
+  onInstall: () => void
+  onCancel: () => void
+}): React.JSX.Element {
+  const requested = preview.requestedCapabilities
+
+  return (
+    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-3">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-body font-semibold text-text-primary">{preview.manifest.name}</p>
+          <p className="text-meta text-text-secondary">
+            {preview.manifest.publisher} / {preview.manifest.version} / {preview.manifest.type}
+          </p>
+        </div>
+        <StatusBadge tone={trustTone(preview.trust)} label={preview.trust} />
+      </header>
+
+      <dl className="grid gap-2 text-meta text-text-secondary md:grid-cols-2">
+        <div>
+          <dt className="font-semibold text-text-primary">Extension id</dt>
+          <dd className="break-all">{preview.manifest.id}</dd>
+        </div>
+        <div>
+          <dt className="font-semibold text-text-primary">Entrypoint</dt>
+          <dd>{preview.manifest.entrypoints.main}</dd>
+        </div>
+      </dl>
+
+      <section>
+        <p className="mb-2 text-body font-semibold text-text-primary">Capability review</p>
+        {requested.length === 0 ? (
+          <p className="text-meta text-text-secondary">
+            This extension requests no capabilities. Install can continue without grants.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {requested.map((request) => {
+              const granted = approvedCapabilities.includes(request.capability)
+              return (
+                <li
+                  key={request.capability}
+                  className="rounded-md border border-border bg-surface-raised p-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <p className="text-body font-medium text-text-primary">
+                        {request.capability}
+                      </p>
+                      <p className="text-meta text-text-secondary">{request.reason}</p>
+                    </div>
+                    <ControllerButton
+                      variant={granted ? 'secondary' : 'primary'}
+                      disabled={busy}
+                      onClick={() => onToggleCapability(request.capability)}
+                    >
+                      {granted ? 'Deny' : 'Grant'}
+                    </ControllerButton>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
+
+      <p className="text-meta text-text-secondary">
+        Requested capabilities are denied by default. Only selected grants are approved for this
+        local install.
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        <ControllerButton variant="primary" disabled={busy} onClick={onInstall}>
+          Install reviewed extension
+        </ControllerButton>
+        <ControllerButton variant="secondary" disabled={busy} onClick={onCancel}>
+          Cancel review
+        </ControllerButton>
+      </div>
+    </section>
   )
 }
 
@@ -223,6 +324,8 @@ export function ExtensionManager(): React.JSX.Element {
   const [records, setRecords] = useState<ExtensionRecord[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [directoryPath, setDirectoryPath] = useState('')
+  const [preview, setPreview] = useState<ExtensionInstallPreview | null>(null)
+  const [approvedCapabilities, setApprovedCapabilities] = useState<ExtensionCapability[]>([])
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -276,17 +379,38 @@ export function ExtensionManager(): React.JSX.Element {
     setError(null)
   }
 
-  async function handleInstall(): Promise<void> {
+  async function handlePreviewInstall(): Promise<void> {
     const trimmed = directoryPath.trim()
     if (!trimmed) return
     setBusy(true)
-    const result = await installExtension({ directoryPath: trimmed, approvedCapabilities: [] })
+    const result = await previewExtensionInstall({ directoryPath: trimmed })
+    setBusy(false)
+    if (!result.ok) {
+      setPreview(null)
+      setApprovedCapabilities([])
+      setError(result.error.userMessage)
+      return
+    }
+    setPreview(result.data)
+    setApprovedCapabilities([])
+    setError(null)
+  }
+
+  async function handleInstallReviewed(): Promise<void> {
+    if (!preview) return
+    setBusy(true)
+    const result = await installExtension({
+      directoryPath: preview.directoryPath,
+      approvedCapabilities
+    })
     setBusy(false)
     if (!result.ok) {
       setError(result.error.userMessage)
       return
     }
     setDirectoryPath('')
+    setPreview(null)
+    setApprovedCapabilities([])
     setRecords((current) => {
       const withoutExisting = current.filter(
         (record) => record.manifest.id !== result.data.manifest.id
@@ -295,6 +419,22 @@ export function ExtensionManager(): React.JSX.Element {
     })
     setSelectedId(result.data.manifest.id)
     setError(null)
+  }
+
+  function handleDirectoryChange(value: string): void {
+    setDirectoryPath(value)
+    if (preview && value.trim() !== preview.directoryPath) {
+      setPreview(null)
+      setApprovedCapabilities([])
+    }
+  }
+
+  function handleToggleApprovedCapability(capability: ExtensionCapability): void {
+    setApprovedCapabilities((current) =>
+      current.includes(capability)
+        ? current.filter((candidate) => candidate !== capability)
+        : [...current, capability]
+    )
   }
 
   async function handleToggle(record: ExtensionRecord): Promise<void> {
@@ -377,18 +517,32 @@ export function ExtensionManager(): React.JSX.Element {
       <section className="flex flex-wrap gap-2 rounded-md border border-border bg-surface p-3">
         <input
           value={directoryPath}
-          onChange={(event) => setDirectoryPath(event.target.value)}
+          onChange={(event) => handleDirectoryChange(event.target.value)}
           placeholder="Absolute unpacked extension folder"
           className="min-w-64 flex-1 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
         />
         <ControllerButton
           variant="primary"
           disabled={busy || !directoryPath.trim()}
-          onClick={() => void handleInstall()}
+          onClick={() => void handlePreviewInstall()}
         >
-          Install local folder
+          Review local folder
         </ControllerButton>
       </section>
+
+      {preview && (
+        <InstallPreviewPanel
+          preview={preview}
+          approvedCapabilities={approvedCapabilities}
+          busy={busy}
+          onToggleCapability={handleToggleApprovedCapability}
+          onInstall={() => void handleInstallReviewed()}
+          onCancel={() => {
+            setPreview(null)
+            setApprovedCapabilities([])
+          }}
+        />
+      )}
 
       <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.6fr)]">
         <section className="flex min-h-0 flex-col gap-2 overflow-auto">

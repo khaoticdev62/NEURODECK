@@ -142,6 +142,7 @@ export const IPC_CHANNELS = {
   packageTransactionCancel: 'package.transactionCancel',
   packageTransactionUpdate: 'package.transactionUpdate',
   extensionList: 'extension.list',
+  extensionPreviewInstall: 'extension.previewInstall',
   extensionInstall: 'extension.install',
   extensionSetEnabled: 'extension.setEnabled',
   extensionRemove: 'extension.remove',

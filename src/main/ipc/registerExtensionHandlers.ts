@@ -1,13 +1,17 @@
 import { ipcMain } from 'electron'
 import {
+  extensionInstallPreviewSchema,
   extensionIdRequestSchema,
   installExtensionRequestSchema,
   IPC_CHANNELS,
   ndxError,
+  previewExtensionInstallRequestSchema,
   setExtensionEnabledRequestSchema,
+  type ExtensionInstallPreview,
   type ExtensionRecord,
   type NdxResult
 } from '@shared/contracts'
+import { loadManifest } from '../../core/extensions/ManifestLoader'
 import type { ExtensionRuntime } from '../../core/extensions/ExtensionRuntime'
 import type { ExtensionStore } from '../../core/extensions/ExtensionStore'
 
@@ -23,6 +27,38 @@ export function registerExtensionHandlers(store: ExtensionStore, runtime: Extens
   ipcMain.handle(IPC_CHANNELS.extensionList, async (): Promise<NdxResult<ExtensionRecord[]>> => {
     return { ok: true, data: await store.list() }
   })
+
+  ipcMain.handle(
+    IPC_CHANNELS.extensionPreviewInstall,
+    async (_event, payload: unknown): Promise<NdxResult<ExtensionInstallPreview>> => {
+      const parsed = previewExtensionInstallRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That preview request is invalid.')
+        }
+      }
+      const result = await loadManifest(parsed.data.directoryPath)
+      if (!result.valid || !result.manifest) {
+        return {
+          ok: false,
+          error: ndxError(
+            'validation',
+            'extension-preview-failed',
+            result.reason ?? 'Invalid extension manifest.'
+          )
+        }
+      }
+      const preview: ExtensionInstallPreview = {
+        directoryPath: parsed.data.directoryPath,
+        manifest: result.manifest,
+        trust: result.manifest.signature ? 'signed' : 'unsigned',
+        requestedCapabilities: result.manifest.capabilities
+      }
+      const checked = extensionInstallPreviewSchema.parse(preview)
+      return { ok: true, data: checked }
+    }
+  )
 
   ipcMain.handle(
     IPC_CHANNELS.extensionInstall,

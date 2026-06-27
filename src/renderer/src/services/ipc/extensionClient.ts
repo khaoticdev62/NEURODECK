@@ -1,9 +1,11 @@
 import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
+  ExtensionInstallPreview,
   ExtensionRecord,
   InstallExtensionRequest,
   NdxResult,
+  PreviewExtensionInstallRequest,
   SetExtensionEnabledRequest
 } from '@shared/contracts'
 import { bridgeUnavailableError, getNdxBridge } from './ndxBridge'
@@ -12,6 +14,14 @@ export async function listExtensions(): Promise<NdxResult<ExtensionRecord[]>> {
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.extensions.list()
+}
+
+export async function previewExtensionInstall(
+  request: PreviewExtensionInstallRequest
+): Promise<NdxResult<ExtensionInstallPreview>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.extensions.previewInstall(request)
 }
 
 export async function installExtension(

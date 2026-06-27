@@ -21,8 +21,10 @@ import type { TransactionIdRequest, TransactionRecord } from './transaction'
 import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
+  ExtensionInstallPreview,
   ExtensionRecord,
   InstallExtensionRequest,
+  PreviewExtensionInstallRequest,
   SetExtensionEnabledRequest
 } from './extension'
 import type {
@@ -437,6 +439,9 @@ export interface NdxBridge {
   }
   extensions: {
     list: () => Promise<NdxResult<ExtensionRecord[]>>
+    previewInstall: (
+      request: PreviewExtensionInstallRequest
+    ) => Promise<NdxResult<ExtensionInstallPreview>>
     install: (request: InstallExtensionRequest) => Promise<NdxResult<ExtensionRecord>>
     setEnabled: (request: SetExtensionEnabledRequest) => Promise<NdxResult<ExtensionRecord>>
     remove: (request: ExtensionIdRequest) => Promise<NdxResult<null>>
