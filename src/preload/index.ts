@@ -342,7 +342,8 @@ const ndx: NdxBridge = {
     update: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryUpdate, request),
     delete: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryDelete, request),
     setDisabled: (request) => ipcRenderer.invoke(IPC_CHANNELS.memorySetDisabled, request),
-    clearScope: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryClearScope, request)
+    clearScope: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryClearScope, request),
+    export: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryExport, request)
   },
   promptLibrary: {
     listTemplates: () => ipcRenderer.invoke(IPC_CHANNELS.promptTemplateList),

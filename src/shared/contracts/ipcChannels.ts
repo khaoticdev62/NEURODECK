@@ -160,6 +160,7 @@ export const IPC_CHANNELS = {
   memoryDelete: 'memory.delete',
   memorySetDisabled: 'memory.setDisabled',
   memoryClearScope: 'memory.clearScope',
+  memoryExport: 'memory.export',
   promptTemplateList: 'promptTemplate.list',
   promptTemplateUpsert: 'promptTemplate.upsert',
   promptTemplateRemove: 'promptTemplate.remove',

@@ -66,6 +66,15 @@ export const memoryQueryRequestSchema = z.object({
 })
 export type MemoryQueryRequest = z.infer<typeof memoryQueryRequestSchema>
 
+export const memoryExportSchema = z.object({
+  schemaVersion: z.literal('1.0.0'),
+  exportedAt: z.number().int().nonnegative(),
+  query: memoryQueryRequestSchema,
+  itemCount: z.number().int().nonnegative(),
+  items: z.array(memoryItemSchema)
+})
+export type MemoryExport = z.infer<typeof memoryExportSchema>
+
 export const setMemoryDisabledRequestSchema = z.object({
   /** `undefined` category means "disable all" (supplemental §13.3). */
   type: memoryTypeSchema.optional(),

@@ -2,12 +2,14 @@ import { ipcMain } from 'electron'
 import {
   clearMemoryScopeRequestSchema,
   IPC_CHANNELS,
+  memoryExportSchema,
   memoryIdRequestSchema,
   memoryQueryRequestSchema,
   ndxError,
   setMemoryDisabledRequestSchema,
   updateMemoryRequestSchema,
   writeMemoryRequestSchema,
+  type MemoryExport,
   type MemoryItem,
   type NdxResult
 } from '@shared/contracts'
@@ -128,6 +130,21 @@ export function registerMemoryHandlers(store: MemoryStore): void {
       }
       const removed = await store.clearScope(parsed.data.scope, parsed.data.workspaceId)
       return { ok: true, data: removed }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.memoryExport,
+    async (_event, payload: unknown): Promise<NdxResult<MemoryExport>> => {
+      const parsed = memoryQueryRequestSchema.safeParse(payload ?? {})
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That export query is invalid.')
+        }
+      }
+      const exported = await store.export(parsed.data)
+      return { ok: true, data: memoryExportSchema.parse(exported) }
     }
   )
 }

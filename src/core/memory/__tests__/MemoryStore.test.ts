@@ -58,6 +58,24 @@ describe('MemoryStore', () => {
     expect(await store.list({ search: 'dark' })).toHaveLength(1)
   })
 
+  it('exports a versioned filtered snapshot with real items', async () => {
+    await store.write(sample)
+    await store.write({
+      ...sample,
+      scope: 'global',
+      workspaceId: undefined,
+      content: 'Use concise release notes.'
+    })
+
+    const exported = await store.export({ scope: 'workspace', workspaceId: 'w1' })
+
+    expect(exported.schemaVersion).toBe('1.0.0')
+    expect(exported.exportedAt).toBeGreaterThan(0)
+    expect(exported.query).toEqual({ scope: 'workspace', workspaceId: 'w1' })
+    expect(exported.itemCount).toBe(1)
+    expect(exported.items[0].content).toBe(sample.content)
+  })
+
   it('update() changes content/scope/pin without touching other fields, and still rejects secrets', async () => {
     const item = await store.write(sample)
     const updated = await store.update({ id: item.id, pinned: true })

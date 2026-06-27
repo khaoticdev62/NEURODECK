@@ -1993,6 +1993,24 @@ npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
 
+### Epic X4 addendum - scoped memory export (2026-06-27)
+
+`shared/contracts/memory.ts`, `shared/contracts/ipcChannels.ts`, `shared/contracts/bridge.ts`, `main/ipc/registerMemoryHandlers.ts`, `preload/index.ts`, and `renderer/src/services/ipc/memoryClient.ts` now expose a typed `memory.export` path. The export returns a versioned JSON-compatible snapshot (`schemaVersion`, `exportedAt`, `query`, `itemCount`, `items`) using the same real filters as `memory.list`, so users and future UI surfaces can export only conversation, workspace, profile, or global memory without a renderer-side data scrape.
+
+`core/memory/MemoryStore.ts` owns export generation, preserving real attribution/provenance on every item. This closes X4's prior scoped-memory export gap without broadening permissions, bypassing the existing secret-write rejection, or fabricating semantic memory behavior.
+
+**Validation evidence (run 2026-06-27):**
+
+```text
+npm run test -- MemoryStore memoryClient
+                   -> 2 files / 12 tests passed
+npm run typecheck  -> passed
+npm run lint       -> passed
+npm run build      -> passed
+```
+
+Full `npm run test` is not used as completion evidence for this X4 slice because the current worktree also contains unrelated LAN-share test files and the pre-existing Guided Controller Tutorial flake. The targeted X4 coverage, static checks, lint, and production build are green.
+
 ## Epic X5 — Voice and multimodal (2026-06-26)
 
 Real text-to-speech, real dictation, a real persisted microphone permission gate wired into the main window's actual session, real voice notes, and real one-off document intake (supplemental spec §15/§16). Wake word and screen-capture-with-privacy-review are explicitly deferred — each needs something this pass doesn't add (a local audio-classification engine; a real privacy-review UI the spec requires before any capture is used).

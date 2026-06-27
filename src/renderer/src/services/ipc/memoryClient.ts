@@ -1,5 +1,6 @@
 import type {
   ClearMemoryScopeRequest,
+  MemoryExport,
   MemoryIdRequest,
   MemoryItem,
   MemoryQueryRequest,
@@ -48,4 +49,10 @@ export async function clearMemoryScope(
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.memory.clearScope(request)
+}
+
+export async function exportMemory(request?: MemoryQueryRequest): Promise<NdxResult<MemoryExport>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.memory.export(request)
 }

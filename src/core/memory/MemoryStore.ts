@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type {
+  MemoryExport,
   MemoryItem,
   MemoryQueryRequest,
   MemoryType,
@@ -57,6 +58,17 @@ export class MemoryStore {
       }
       return true
     })
+  }
+
+  async export(query: MemoryQueryRequest = {}): Promise<MemoryExport> {
+    const items = await this.list(query)
+    return {
+      schemaVersion: '1.0.0',
+      exportedAt: Date.now(),
+      query,
+      itemCount: items.length,
+      items
+    }
   }
 
   async write(request: WriteMemoryRequest): Promise<MemoryItem> {

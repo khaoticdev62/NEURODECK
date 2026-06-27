@@ -38,6 +38,7 @@ import type {
 import type {
   ClearMemoryScopeRequest,
   MemoryIdRequest,
+  MemoryExport,
   MemoryItem,
   MemoryQueryRequest,
   SetMemoryDisabledRequest,
@@ -465,6 +466,7 @@ export interface NdxBridge {
     delete: (request: MemoryIdRequest) => Promise<NdxResult<null>>
     setDisabled: (request: SetMemoryDisabledRequest) => Promise<NdxResult<null>>
     clearScope: (request: ClearMemoryScopeRequest) => Promise<NdxResult<number>>
+    export: (request?: MemoryQueryRequest) => Promise<NdxResult<MemoryExport>>
   }
   promptLibrary: {
     listTemplates: () => Promise<NdxResult<PromptTemplate[]>>
