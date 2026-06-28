@@ -73,7 +73,26 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     path: '/models/routing-profiles',
     subtitle: 'ND-037 - Epic 9'
   },
-  { id: 'remote-systems', label: 'Remote Systems', path: '/remote', subtitle: 'ND-040 - Epic 10' }
+  { id: 'remote-systems', label: 'Remote Systems', path: '/remote', subtitle: 'ND-040 - Epic 10' },
+  { id: 'lan-share', label: 'LAN Share', path: '/lan-share', subtitle: 'ND-LAN-001 - LAN-8' },
+  {
+    id: 'lan-share-peers',
+    label: 'LAN Share Nearby Devices',
+    path: '/lan-share/peers',
+    subtitle: 'ND-LAN-002 - LAN-8'
+  },
+  {
+    id: 'lan-share-send',
+    label: 'Send Files with LAN Share',
+    path: '/lan-share/send',
+    subtitle: 'ND-LAN-004 - LAN-8'
+  },
+  {
+    id: 'lan-share-transfers',
+    label: 'LAN Share Transfers',
+    path: '/lan-share/transfers',
+    subtitle: 'ND-LAN-007 - LAN-8'
+  }
 ]
 
 const SETTINGS_RESULTS: PaletteDomainResult[] = [

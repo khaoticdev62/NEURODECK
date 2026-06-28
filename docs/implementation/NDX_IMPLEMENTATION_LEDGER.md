@@ -2512,6 +2512,8 @@ Real file bytes move now. This phase makes `StartTransfer` — the one real RPC 
 | `LanShareTransferServer`/`Client` real regular-file streaming, real compressed streaming, real directory/symlink chunks, real NOT_FOUND for an unknown ident | `core/lanShare/__tests__/LanShareTransfer.test.ts` | +4 (extended) |
 | `LanShareService` real two-service end-to-end file transfer integration test | `core/lanShare/__tests__/LanShareService.test.ts` | +1 (extended) |
 
+**LAN-8 addendum (2026-06-28):** File Manager now exposes a controller-focusable Send action for files and hands workspace-resolved source paths into the real LAN Share Send Composer. About/Diagnostics reports real LAN Share service status, socket health, receive-directory writability, and interface count in the existing diagnostics export. The AI Tool Registry also registers `lan-share-send-files` as a high-risk, irreversible tool behind the existing `external.send` capability, so agent/workflow sends use the shared permission path instead of a LAN-specific bypass. Richer Workflow Forge LAN nodes remain deferred.
+
 **Validation evidence (run 2026-06-28):**
 
 ```text
@@ -2556,4 +2558,27 @@ npm run test       → 193 files, 948 tests passed (no failures this run)
 npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
+```
+## LAN Share (Warpinator-compatible) — Phase LAN-8 (2026-06-28)
+
+Real platform integrations for the existing LAN Share transfer and peer surfaces. This phase deliberately reuses existing NeuroDeck shell services instead of creating LAN-specific duplicates.
+
+**Shared notification integration** (`src/renderer/src/features/lanShare/LanSharePlatformBridge.tsx`) — mounted globally in `ShellLayout`, listens to the real `lanShare.transferJob.update` IPC stream, seeds persisted transfer state silently on launch, and pushes only new status changes through the existing toast provider/Notification Center history. Incoming transfers produce `approval-required`; completed transfers produce `background-task-complete`; failed/quarantined/cancelled/rejected transfers produce the matching shared notification categories. No LAN-only notification store was added.
+
+**Activity Center integration** (`src/renderer/src/features/activity/ActivityCenter.tsx`) — shows real LAN Share active/completed/failed-or-quarantined counts and the latest transfer rows from the existing transfer-job list/push APIs. Other task sources remain honest zeroes until their owners expose a shared activity model.
+
+**Quick Access integration** (`src/renderer/src/features/system/QuickAccessOverlay.tsx`) — adds controller-reachable launchers for LAN Share Home, Send with LAN Share, and LAN Share Transfers without inventing a separate quick-send overlay.
+
+**Command Palette and Universal Search integration** (`CommandPalette.tsx`, `useGlobalSearch.ts`) — Command Palette lists LAN Share routes, and Universal Search indexes real LAN Share peers and transfer jobs via `lanShareClient`. Search result actions navigate to the real peer/detail/transfer screens; no fabricated recent actions or symbolic LAN commands were added.
+
+**Still deferred**: Share Sheet, Clipboard Center text-message sharing over `Warp.SendTextMessage`, Screenshot Center, Voice Notes, Workspace exports, Workflow Forge LAN nodes, Help Hub content, and Platform Health. Each needs either a missing shared platform surface or a missing LAN-specific backend. Building placeholder hooks would violate the no-mock-production-behavior rule.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 195 files / 955 tests passed
+npm run test -- lanShareTools LanSharePlatformBridge -> 2 files / 6 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
 ```

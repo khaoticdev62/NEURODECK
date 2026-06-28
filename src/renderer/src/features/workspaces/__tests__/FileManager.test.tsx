@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
 import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
@@ -42,9 +43,11 @@ function renderFileManager(): ReturnType<typeof render> {
     <ToastProvider>
       <FocusEngineProvider adapters={[new TestAdapter()]}>
         <AiSafetyProvider>
-          <WorkspaceContext.Provider value={activeWorkspaceValue}>
-            <FileManager />
-          </WorkspaceContext.Provider>
+          <MemoryRouter>
+            <WorkspaceContext.Provider value={activeWorkspaceValue}>
+              <FileManager />
+            </WorkspaceContext.Provider>
+          </MemoryRouter>
         </AiSafetyProvider>
       </FocusEngineProvider>
     </ToastProvider>
@@ -58,9 +61,11 @@ describe('FileManager', () => {
       <ToastProvider>
         <FocusEngineProvider adapters={[new TestAdapter()]}>
           <AiSafetyProvider>
-            <WorkspaceContext.Provider value={{ ...activeWorkspaceValue, activeWorkspace: null }}>
-              <FileManager />
-            </WorkspaceContext.Provider>
+            <MemoryRouter>
+              <WorkspaceContext.Provider value={{ ...activeWorkspaceValue, activeWorkspace: null }}>
+                <FileManager />
+              </WorkspaceContext.Provider>
+            </MemoryRouter>
           </AiSafetyProvider>
         </FocusEngineProvider>
       </ToastProvider>
@@ -181,6 +186,54 @@ describe('FileManager', () => {
 
     expect(deleteFile).toHaveBeenCalledWith({ workspaceId: 'w1', relativePath: 'readme.md' })
     expect(await screen.findByText('Empty folder')).toBeInTheDocument()
+  })
+
+  it('navigates to the Send Composer with the real resolved absolute path', async () => {
+    const list = vi.fn().mockResolvedValue({
+      ok: true,
+      data: [
+        {
+          name: 'readme.md',
+          path: 'readme.md',
+          isDirectory: false,
+          sizeBytes: 5,
+          modifiedAt: Date.now()
+        }
+      ]
+    })
+    stubBridge({ files: { list, read: vi.fn() } as never })
+
+    function LocationProbe(): React.JSX.Element {
+      const location = useLocation()
+      return (
+        <p data-testid="location">
+          {location.pathname} {JSON.stringify(location.state)}
+        </p>
+      )
+    }
+
+    const user = userEvent.setup()
+    render(
+      <ToastProvider>
+        <FocusEngineProvider adapters={[new TestAdapter()]}>
+          <AiSafetyProvider>
+            <MemoryRouter>
+              <WorkspaceContext.Provider value={activeWorkspaceValue}>
+                <FileManager />
+              </WorkspaceContext.Provider>
+              <LocationProbe />
+            </MemoryRouter>
+          </AiSafetyProvider>
+        </FocusEngineProvider>
+      </ToastProvider>
+    )
+    await screen.findByText('readme.md')
+
+    await user.click(screen.getByRole('button', { name: 'Send via LAN Share' }))
+
+    const probe = await screen.findByTestId('location')
+    expect(probe.textContent).toContain('/lan-share/send')
+    expect(probe.textContent).toContain('/home/deck/my-project/readme.md')
   })
 
   it('does not offer Delete for a directory', async () => {

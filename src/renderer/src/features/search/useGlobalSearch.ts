@@ -11,6 +11,7 @@ import { listAgents, listAgentRuns } from '../../services/ipc/agentClient'
 import { listTerminalSessions } from '../../services/ipc/terminalClient'
 import { listWorkflows, listWorkflowRuns } from '../../services/ipc/workflowClient'
 import { listWorkspaces } from '../../services/ipc/workspaceClient'
+import { listLanSharePeers, listLanShareTransferJobs } from '../../services/ipc/lanShareClient'
 
 export type SearchCategory =
   | 'everywhere'
@@ -37,6 +38,8 @@ export type SearchResultSource =
   | 'recovery'
   | 'browser-tab'
   | 'remote-host'
+  | 'lan-share-peer'
+  | 'lan-share-transfer'
 
 export interface SearchResult {
   id: string
@@ -101,14 +104,20 @@ function sourceEnabled(source: SearchResultSource, category: SearchCategory): bo
         source === 'workflow' ||
         source === 'workflow-run' ||
         source === 'agent' ||
-        source === 'agent-run'
+        source === 'agent-run' ||
+        source === 'lan-share-transfer'
       )
     case 'logs':
-      return source === 'terminal' || source === 'recovery' || source === 'agent-run'
+      return (
+        source === 'terminal' ||
+        source === 'recovery' ||
+        source === 'agent-run' ||
+        source === 'lan-share-transfer'
+      )
     case 'browser':
       return source === 'browser-tab'
     case 'remote':
-      return source === 'remote-host'
+      return source === 'remote-host' || source === 'lan-share-peer'
     default:
       return true
   }
@@ -204,6 +213,45 @@ export function useGlobalSearch(activeWorkspace: Workspace | null): UseGlobalSea
         }
       } else {
         nextErrors.push({ source: 'remote-host', message: result.error.userMessage })
+      }
+    }
+
+    if (sourceEnabled('lan-share-peer', category)) {
+      const result = await listLanSharePeers()
+      if (result.ok) {
+        for (const peer of result.data) {
+          nextResults.push({
+            id: resultId('lan-share-peer', undefined, peer.id),
+            source: 'lan-share-peer',
+            title: peer.displayName,
+            subtitle: `LAN Share peer - ${peer.status} - ${peer.trustState}`,
+            action: { kind: 'navigate', to: `/lan-share/peers/${peer.id}` }
+          })
+        }
+      } else {
+        nextErrors.push({ source: 'lan-share-peer', message: result.error.userMessage })
+      }
+    }
+
+    if (sourceEnabled('lan-share-transfer', category)) {
+      const result = await listLanShareTransferJobs()
+      if (result.ok) {
+        for (const job of result.data) {
+          nextResults.push({
+            id: resultId('lan-share-transfer', undefined, job.id),
+            source: 'lan-share-transfer',
+            title: job.displayName,
+            subtitle: `LAN Share transfer - ${job.direction} - ${job.status}`,
+            modifiedAt: job.completedAt
+              ? new Date(job.completedAt)
+              : job.startedAt
+                ? new Date(job.startedAt)
+                : new Date(job.createdAt),
+            action: { kind: 'navigate', to: `/lan-share/transfers/${job.id}` }
+          })
+        }
+      } else {
+        nextErrors.push({ source: 'lan-share-transfer', message: result.error.userMessage })
       }
     }
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import type { LanSharePeer } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
@@ -25,10 +25,17 @@ function basename(path: string): string {
  */
 export function LanShareSendComposer(): React.JSX.Element {
   const navigate = useNavigate()
+  const location = useLocation()
   const [searchParams] = useSearchParams()
+  const state = location.state as { sourcePaths?: unknown } | null
+  const initialSourcePaths = Array.isArray(state?.sourcePaths)
+    ? state.sourcePaths.filter(
+        (path): path is string => typeof path === 'string' && path.length > 0
+      )
+    : []
   const [peers, setPeers] = useState<LanSharePeer[]>([])
   const [peerId, setPeerId] = useState(searchParams.get('peerId') ?? '')
-  const [sourcePaths, setSourcePaths] = useState<string[]>([])
+  const [sourcePaths, setSourcePaths] = useState<string[]>(initialSourcePaths)
   const [error, setError] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
 

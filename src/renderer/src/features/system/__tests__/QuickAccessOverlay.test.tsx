@@ -45,6 +45,8 @@ describe('QuickAccessOverlay', () => {
     expect(screen.getByText('AI')).toBeInTheDocument()
     expect(screen.getByText('Workspace')).toBeInTheDocument()
     expect(screen.getByText('System')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^LAN Share Open service/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Send with LAN Share/i })).toBeInTheDocument()
   })
 
   it('closes on the "back" controller action', () => {

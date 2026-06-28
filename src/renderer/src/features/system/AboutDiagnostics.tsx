@@ -1,26 +1,25 @@
 import { useEffect, useState } from 'react'
-import type { DiagnosticsInfo } from '@shared/contracts'
+import type { DiagnosticsInfo, LanShareHealth, LanShareServiceStatus } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
 import { getDiagnosticsInfo } from '../../services/ipc/diagnosticsClient'
+import { getLanShareHealth, getLanShareServiceStatus } from '../../services/ipc/lanShareClient'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
 
 /**
  * ND-056 About and Diagnostics. Every field is a real runtime value
  * (`app.getVersion()`, `process.versions`, `process.platform`/`arch`,
- * configured providers) — there is no separate core-service process or
- * database in this architecture, so "Core version"/"Database version"
- * aren't shown rather than being filled with an invented value. Diagnostic
- * export copies real version info plus a real system metrics snapshot to
- * the clipboard (the same `navigator.clipboard.writeText` path
- * `CommandBuilder`'s copy action already uses) — nothing here ever
- * includes an API key or other secret, since none of this data source
- * holds one.
+ * configured providers). Diagnostic export copies real version info, LAN
+ * Share status, and a real system metrics snapshot to the clipboard. It
+ * never includes API keys or other secrets, since none of these data sources
+ * hold one.
  */
 export function AboutDiagnostics(): React.JSX.Element {
   const [info, setInfo] = useState<DiagnosticsInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copyStatus, setCopyStatus] = useState<string | null>(null)
+  const [lanShareStatus, setLanShareStatus] = useState<LanShareServiceStatus | null>(null)
+  const [lanShareHealth, setLanShareHealth] = useState<LanShareHealth | null>(null)
 
   useEffect(() => {
     let active = true
@@ -33,6 +32,13 @@ export function AboutDiagnostics(): React.JSX.Element {
         setError(result.error.userMessage)
       }
     })
+    void Promise.all([getLanShareServiceStatus(), getLanShareHealth()]).then(
+      ([statusResult, healthResult]) => {
+        if (!active) return
+        if (statusResult.ok) setLanShareStatus(statusResult.data)
+        if (healthResult.ok) setLanShareHealth(healthResult.data)
+      }
+    )
     return () => {
       active = false
     }
@@ -43,6 +49,10 @@ export function AboutDiagnostics(): React.JSX.Element {
     const metricsResult = await collectSystemMetrics()
     const payload = {
       diagnostics: info,
+      lanShare: {
+        status: lanShareStatus,
+        health: lanShareHealth
+      },
       systemMetrics: metricsResult.ok ? metricsResult.data : null,
       exportedAt: new Date().toISOString()
     }
@@ -51,7 +61,7 @@ export function AboutDiagnostics(): React.JSX.Element {
   }
 
   if (error) return <ErrorState title="Diagnostics error" description={error} />
-  if (!info) return <p className="p-4 text-meta text-text-secondary">Loading…</p>
+  if (!info) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
 
   return (
     <div className="flex h-full flex-col gap-4 overflow-auto p-4">
@@ -71,6 +81,24 @@ export function AboutDiagnostics(): React.JSX.Element {
           }
         />
       </section>
+
+      {lanShareStatus && lanShareHealth && (
+        <section className="flex flex-col gap-1 border border-border bg-surface p-3">
+          <p className="text-body font-semibold text-text-primary">LAN Share</p>
+          <Field label="Service" value={`${lanShareStatus.state}: ${lanShareStatus.reason}`} />
+          <Field
+            label="Sockets"
+            value={`Transfer ${lanShareHealth.transferPortBound ? 'bound' : 'not bound'}; registration ${
+              lanShareHealth.authPortBound ? 'bound' : 'not bound'
+            }`}
+          />
+          <Field
+            label="Receive directory"
+            value={lanShareHealth.receiveDirectoryWritable ? 'Writable' : 'Not writable'}
+          />
+          <Field label="Network interfaces" value={String(lanShareHealth.interfaceCount)} />
+        </section>
+      )}
 
       <section className="flex flex-col gap-2 border border-border bg-surface p-3">
         <p className="text-body font-semibold text-text-primary">Diagnostic export</p>

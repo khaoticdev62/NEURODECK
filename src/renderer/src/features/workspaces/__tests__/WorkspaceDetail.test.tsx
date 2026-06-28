@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
 import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
@@ -38,9 +39,11 @@ function renderDetail(value: WorkspaceContextValue): ReturnType<typeof render> {
     <ToastProvider>
       <FocusEngineProvider adapters={[new TestAdapter()]}>
         <AiSafetyProvider>
-          <WorkspaceContext.Provider value={value}>
-            <WorkspaceDetail />
-          </WorkspaceContext.Provider>
+          <MemoryRouter>
+            <WorkspaceContext.Provider value={value}>
+              <WorkspaceDetail />
+            </WorkspaceContext.Provider>
+          </MemoryRouter>
         </AiSafetyProvider>
       </FocusEngineProvider>
     </ToastProvider>

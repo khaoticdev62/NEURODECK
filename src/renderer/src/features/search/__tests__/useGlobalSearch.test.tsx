@@ -136,6 +136,29 @@ function stubBridge(
       terminate: vi.fn(),
       onData: vi.fn(() => () => undefined),
       onExit: vi.fn(() => () => undefined)
+    },
+    lanShare: {
+      getIdentity: vi.fn(),
+      getServiceStatus: vi.fn(),
+      startService: vi.fn(),
+      stopService: vi.fn(),
+      onServiceUpdate: vi.fn(() => () => undefined),
+      getSettings: vi.fn(),
+      updateSettings: vi.fn(),
+      setGroupCode: vi.fn(),
+      listInterfaces: vi.fn(),
+      getHealth: vi.fn(),
+      listPeers: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+      addManualPeer: vi.fn(),
+      removePeer: vi.fn(),
+      setPeerTrust: vi.fn(),
+      listTransferJobs: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+      cancelTransferJob: vi.fn(),
+      onTransferJobUpdate: vi.fn(() => () => undefined),
+      sendFiles: vi.fn(),
+      acceptTransfer: vi.fn(),
+      rejectTransfer: vi.fn(),
+      pickFiles: vi.fn()
     }
   } as unknown as NdxBridge
   const overrides = typeof partial === 'function' ? partial(base) : partial
@@ -154,7 +177,8 @@ function stubBridge(
     recovery: { ...base.recovery, ...overrides.recovery },
     browserTabs: { ...base.browserTabs, ...overrides.browserTabs },
     remoteHosts: { ...base.remoteHosts, ...overrides.remoteHosts },
-    remoteSessions: { ...base.remoteSessions, ...overrides.remoteSessions }
+    remoteSessions: { ...base.remoteSessions, ...overrides.remoteSessions },
+    lanShare: { ...base.lanShare, ...overrides.lanShare }
   } as unknown as NdxBridge
 }
 
@@ -338,5 +362,68 @@ describe('useGlobalSearch', () => {
     await waitFor(() => {
       expect(screen.getByTestId('loading')).toHaveTextContent('idle')
     })
+  })
+
+  it('returns LAN Share peers and transfers through the shared search surface', async () => {
+    stubBridge((base) => ({
+      lanShare: {
+        ...base.lanShare,
+        listPeers: vi.fn().mockResolvedValue({
+          ok: true,
+          data: [
+            {
+              id: 'peer-1',
+              displayName: 'Deck Laptop',
+              addresses: ['192.168.1.20'],
+              transferPort: 42000,
+              authPort: 42001,
+              registrationVersion: 2,
+              platform: 'linux',
+              capabilities: [],
+              trustState: 'trusted',
+              fingerprint: 'abc',
+              groupMatch: true,
+              lastSeenAt: Date.now(),
+              discoverySource: 'mdns',
+              status: 'online'
+            }
+          ]
+        }),
+        listTransferJobs: vi.fn().mockResolvedValue({
+          ok: true,
+          data: [
+            {
+              id: 'transfer-1',
+              direction: 'receive',
+              peerId: 'peer-1',
+              displayName: 'photo.png',
+              itemCount: 1,
+              totalBytes: 100,
+              transferredBytes: 100,
+              status: 'completed',
+              useCompression: false,
+              createdAt: Date.now()
+            }
+          ]
+        })
+      }
+    }))
+
+    renderHarness(makeValue())
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'deck' } })
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Deck Laptop')).toBeInTheDocument()
+      },
+      { timeout: 1500 }
+    )
+    expect(screen.getByTestId('result-lan-share-peer')).toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('Search'), { target: { value: 'photo' } })
+    await waitFor(() => {
+      expect(screen.getByText('photo.png')).toBeInTheDocument()
+    })
+    expect(screen.getByTestId('result-lan-share-transfer')).toBeInTheDocument()
   })
 })

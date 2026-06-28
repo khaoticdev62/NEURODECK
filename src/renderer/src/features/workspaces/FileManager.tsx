@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { FileEntry } from '@shared/contracts'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
@@ -8,6 +9,14 @@ import { cn } from '../../components/primitives/cn'
 import { deleteFile, listFiles } from '../../services/ipc/fileClient'
 import { FilePreview } from './FilePreview'
 import { useWorkspaces } from './useWorkspaces'
+
+/** `rootPath` is a real absolute path the renderer already displays as plaintext elsewhere (`WorkspaceDetail.tsx`) — not a privileged secret. Joins it with a workspace-relative `FileEntry.path` for the one real cross-feature handoff to LAN Share's Send Composer, which still does its own real `fs.lstat` server-side; nothing here is granted any special trust by being constructed this way. */
+function resolveAbsolutePath(rootPath: string, relativePath: string): string {
+  const separator = rootPath.includes('\\') && !rootPath.includes('/') ? '\\' : '/'
+  const trimmedRoot = rootPath.endsWith(separator) ? rootPath.slice(0, -1) : rootPath
+  const normalizedRelative = relativePath.replace(/\\/g, separator).replace(/\//g, separator)
+  return `${trimmedRoot}${separator}${normalizedRelative}`
+}
 
 /**
  * ND-026 File Manager, scoped to "Workspace-only" mode (one of six layout
@@ -21,6 +30,7 @@ import { useWorkspaces } from './useWorkspaces'
  * directory is not supported (the button doesn't appear for one).
  */
 export function FileManager(): React.JSX.Element {
+  const navigate = useNavigate()
   const { activeWorkspace } = useWorkspaces()
   const [relativePath, setRelativePath] = useState('')
   const [entries, setEntries] = useState<FileEntry[]>([])
@@ -109,6 +119,16 @@ export function FileManager(): React.JSX.Element {
                 entry={entry}
                 onOpen={() => openEntry(entry)}
                 onDelete={entry.isDirectory ? undefined : () => setDeleteReview(entry)}
+                onSendViaLanShare={
+                  entry.isDirectory
+                    ? undefined
+                    : () =>
+                        navigate('/lan-share/send', {
+                          state: {
+                            sourcePaths: [resolveAbsolutePath(activeWorkspace.rootPath, entry.path)]
+                          }
+                        })
+                }
               />
             ))}
           </ul>
@@ -168,11 +188,13 @@ function Breadcrumbs({
 function FileRow({
   entry,
   onOpen,
-  onDelete
+  onDelete,
+  onSendViaLanShare
 }: {
   entry: FileEntry
   onOpen: () => void
   onDelete?: () => void
+  onSendViaLanShare?: () => void
 }): React.JSX.Element {
   const { ref, isFocused } = useFocusable<HTMLButtonElement>({
     id: `file:${entry.path}`,
@@ -196,10 +218,19 @@ function FileRow({
           <span className="text-meta text-text-tertiary">{formatBytes(entry.sizeBytes)}</span>
         )}
       </button>
-      {onDelete && (
-        <ControllerButton variant="destructive" onClick={onDelete}>
-          Delete
-        </ControllerButton>
+      {(onSendViaLanShare || onDelete) && (
+        <div className="flex gap-1">
+          {onSendViaLanShare && (
+            <ControllerButton variant="secondary" onClick={onSendViaLanShare}>
+              Send via LAN Share
+            </ControllerButton>
+          )}
+          {onDelete && (
+            <ControllerButton variant="destructive" onClick={onDelete}>
+              Delete
+            </ControllerButton>
+          )}
+        </div>
       )}
     </li>
   )

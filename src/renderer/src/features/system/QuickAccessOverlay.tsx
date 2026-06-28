@@ -131,6 +131,24 @@ export function QuickAccessOverlay(): React.JSX.Element {
       title: 'System',
       actions: [
         {
+          id: 'lan-share',
+          label: 'LAN Share',
+          note: 'Open service, devices, and transfer status',
+          onActivate: () => closeAnd(() => navigate('/lan-share'))
+        },
+        {
+          id: 'lan-share-send',
+          label: 'Send with LAN Share',
+          note: 'Pick files and a trusted peer',
+          onActivate: () => closeAnd(() => navigate('/lan-share/send'))
+        },
+        {
+          id: 'lan-share-transfers',
+          label: 'LAN Share transfers',
+          note: 'Review incoming approvals and progress',
+          onActivate: () => closeAnd(() => navigate('/lan-share/transfers'))
+        },
+        {
           id: 'system-performance',
           label: 'Performance profile',
           note: 'Performance profiles are not implemented yet',

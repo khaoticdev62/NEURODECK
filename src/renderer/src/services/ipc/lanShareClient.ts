@@ -9,6 +9,7 @@ import type {
   LanShareSettings,
   LanShareTransferJob,
   LanShareTransferJobIdRequest,
+  NdxBridge,
   NdxResult,
   SendLanShareFilesRequest,
   SetLanShareGroupCodeRequest,
@@ -17,144 +18,148 @@ import type {
 } from '@shared/contracts'
 import { bridgeUnavailableError, getNdxBridge } from './ndxBridge'
 
+function getLanShareBridge(): NdxBridge['lanShare'] | null {
+  return getNdxBridge()?.lanShare ?? null
+}
+
 export async function getLanShareIdentity(): Promise<NdxResult<LanShareIdentity>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.getIdentity()
+  return bridge.getIdentity()
 }
 
 export async function getLanShareServiceStatus(): Promise<NdxResult<LanShareServiceStatus>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.getServiceStatus()
+  return bridge.getServiceStatus()
 }
 
 export async function getLanShareSettings(): Promise<NdxResult<LanShareSettings>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.getSettings()
+  return bridge.getSettings()
 }
 
 export async function updateLanShareSettings(
   request: UpdateLanShareSettingsRequest
 ): Promise<NdxResult<LanShareSettings>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.updateSettings(request)
+  return bridge.updateSettings(request)
 }
 
 export async function setLanShareGroupCode(
   request: SetLanShareGroupCodeRequest
 ): Promise<NdxResult<LanShareSettings>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.setGroupCode(request)
+  return bridge.setGroupCode(request)
 }
 
 export async function listLanSharePeers(): Promise<NdxResult<LanSharePeer[]>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.listPeers()
+  return bridge.listPeers()
 }
 
 export async function addManualLanSharePeer(
   request: AddManualLanSharePeerRequest
 ): Promise<NdxResult<LanSharePeer>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.addManualPeer(request)
+  return bridge.addManualPeer(request)
 }
 
 export async function removeLanSharePeer(request: LanSharePeerIdRequest): Promise<NdxResult<null>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.removePeer(request)
+  return bridge.removePeer(request)
 }
 
 export async function setLanSharePeerTrust(
   request: SetLanSharePeerTrustRequest
 ): Promise<NdxResult<LanSharePeer>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.setPeerTrust(request)
+  return bridge.setPeerTrust(request)
 }
 
 export async function listLanShareTransferJobs(): Promise<NdxResult<LanShareTransferJob[]>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.listTransferJobs()
+  return bridge.listTransferJobs()
 }
 
 export async function cancelLanShareTransferJob(
   request: LanShareTransferJobIdRequest
 ): Promise<NdxResult<boolean>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.cancelTransferJob(request)
+  return bridge.cancelTransferJob(request)
 }
 
 export function onLanShareTransferJobUpdate(
   listener: (jobs: LanShareTransferJob[]) => void
 ): () => void {
-  return getNdxBridge()?.lanShare.onTransferJobUpdate(listener) ?? (() => undefined)
+  return getLanShareBridge()?.onTransferJobUpdate(listener) ?? (() => undefined)
 }
 
 export async function startLanShareService(): Promise<NdxResult<LanShareServiceStatus>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.startService()
+  return bridge.startService()
 }
 
 export async function stopLanShareService(): Promise<NdxResult<LanShareServiceStatus>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.stopService()
+  return bridge.stopService()
 }
 
 export function onLanShareServiceUpdate(
   listener: (status: LanShareServiceStatus) => void
 ): () => void {
-  return getNdxBridge()?.lanShare.onServiceUpdate(listener) ?? (() => undefined)
+  return getLanShareBridge()?.onServiceUpdate(listener) ?? (() => undefined)
 }
 
 export async function listLanShareInterfaces(): Promise<NdxResult<LanShareNetworkInterface[]>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.listInterfaces()
+  return bridge.listInterfaces()
 }
 
 export async function getLanShareHealth(): Promise<NdxResult<LanShareHealth>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.getHealth()
+  return bridge.getHealth()
 }
 
 export async function sendLanShareFiles(
   request: SendLanShareFilesRequest
 ): Promise<NdxResult<LanShareTransferJob>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.sendFiles(request)
+  return bridge.sendFiles(request)
 }
 
 export async function acceptLanShareTransfer(
   request: LanShareTransferJobIdRequest
 ): Promise<NdxResult<LanShareTransferJob>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.acceptTransfer(request)
+  return bridge.acceptTransfer(request)
 }
 
 export async function rejectLanShareTransfer(
   request: LanShareTransferJobIdRequest
 ): Promise<NdxResult<LanShareTransferJob>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.rejectTransfer(request)
+  return bridge.rejectTransfer(request)
 }
 
 export async function pickLanShareFiles(): Promise<NdxResult<string[]>> {
-  const bridge = getNdxBridge()
+  const bridge = getLanShareBridge()
   if (!bridge) return bridgeUnavailableError()
-  return bridge.lanShare.pickFiles()
+  return bridge.pickFiles()
 }
