@@ -19,6 +19,7 @@ import { PowerStateBridge } from '../../features/system/PowerStateBridge'
 import { QuickAccessOverlay } from '../../features/system/QuickAccessOverlay'
 import { ScreenNarrator } from '../../features/system/ScreenNarrator'
 import { LanSharePlatformBridge } from '../../features/lanShare/LanSharePlatformBridge'
+import { ContextHelpOverlay } from '../../features/help/ContextHelpOverlay'
 import { saveSessionSnapshot } from '../../services/ipc/continuityClient'
 import { getProfileState } from '../../services/ipc/profileClient'
 import { useDisplayMode } from '../../state/useDisplayMode'
@@ -131,6 +132,7 @@ export function ShellLayout({
       <LanSharePlatformBridge />
       <ScreenNarrator />
       <AgentToolExecutionBridge />
+      <ContextHelpOverlay />
       <CommandPalette />
       <ActivityAndNotificationsOverlay />
       <EmergencyStopOverlay />

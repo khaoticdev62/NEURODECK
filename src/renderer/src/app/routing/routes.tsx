@@ -265,6 +265,10 @@ const SchedulerTriggers = lazy(async () => {
   const module = await import('../../features/resource/SchedulerTriggers')
   return { default: module.SchedulerTriggers }
 })
+const HelpHub = lazy(async () => {
+  const module = await import('../../features/help/HelpHub')
+  return { default: module.HelpHub }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -946,6 +950,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('scheduler', <SchedulerTriggers />)
+  },
+  {
+    routeId: 'help',
+    screenId: 'ND-X046',
+    path: '/help',
+    title: 'Help Hub',
+    owningEpic: 'Epic X13',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('help', <HelpHub />)
   }
 ]
 

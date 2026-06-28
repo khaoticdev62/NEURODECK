@@ -2585,6 +2585,26 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+## Epic X13 — Help Hub and Context Help (2026-06-28)
+
+Real route-derived guidance foundation for supplemental spec §41.1–§41.2. This closes Help Hub and Context Help for the scoped behavior now implemented; localization (§40.1), input methods (§40.2), guided troubleshooter (§41.3), authored/tutorial help content, and per-component inline help annotations remain separate X13 work.
+
+**Help catalog** (`src/renderer/src/features/help/helpContent.ts`, new) — builds help topics from the real `ROUTE_DEFINITIONS` registry rather than a parallel hand-maintained list. Each topic includes route id, title, path, screen ID, owning epic, controller hints, and restoration behavior. `findHelpTopicForPath()` uses React Router's matcher so parameterized routes such as `/agents/:agentId` resolve correctly for context help.
+
+**`/help` Help Hub** (`src/renderer/src/features/help/HelpHub.tsx`, new) — searchable, controller-friendly catalog of the current real screen registry. It is reachable from System Dashboard and Command Palette. Parameterized routes deliberately send the user back to Help Hub from "Open screen" rather than fabricating IDs.
+
+**Context Help overlay** (`src/renderer/src/features/help/ContextHelpOverlay.tsx`, new) — mounted globally in `ShellLayout`, opens from the real `assist` controller action plus `?` keyboard fallback, traps focus while open, closes on Back, and shows route-specific help for the current screen.
+
+**New/changed files**: `src/renderer/src/features/help/helpContent.ts`, `src/renderer/src/features/help/HelpHub.tsx`, `src/renderer/src/features/help/ContextHelpOverlay.tsx`, `src/renderer/src/features/help/__tests__/helpContent.test.ts`, `src/renderer/src/features/help/__tests__/HelpHub.test.tsx`, `src/renderer/src/app/routing/routes.tsx`, `src/renderer/src/app/shell/ShellLayout.tsx`, `src/renderer/src/features/command-palette/CommandPalette.tsx`, `src/renderer/src/features/system/SystemDashboard.tsx`, `IMPLEMENTATION_CHECKLIST.md`.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -- helpContent HelpHub -> 2 files / 4 tests passed
+npm run typecheck -> passed
+npm run lint -> blocked by unrelated untracked src/shared/contracts/privacy.ts Prettier warning
+```
+
 ## Epic X12 — Support Bundle (2026-06-28)
 
 Real local support bundle export for supplemental spec §38.4. This closes the bounded support-bundle slice only; data lifecycle/privacy map, deletion verification, telemetry consent, and crash reporting remain separate X12 items.

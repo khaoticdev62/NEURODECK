@@ -104,6 +104,12 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     label: 'LAN Share Transfers',
     path: '/lan-share/transfers',
     subtitle: 'ND-LAN-007 - LAN-8'
+  },
+  {
+    id: 'help',
+    label: 'Help Hub',
+    path: '/help',
+    subtitle: 'ND-X046 - Epic X13'
   }
 ]
 

@@ -289,8 +289,8 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 - [ ] Localization (§40.1)
 - [ ] Input methods (§40.2)
-- [ ] Help Hub (§41.1)
-- [ ] Context help (§41.2)
+- [x] Help Hub (§41.1) — **real route-derived help hub**: `/help` renders a controller-friendly catalog generated from the real `ROUTE_DEFINITIONS` registry, including title, route, screen ID, owning epic, controller hints, and restoration behavior. It is reachable from System Dashboard and Command Palette. It does not claim authored tutorials, localized docs, or feature-specific troubleshooting flows yet.
+- [x] Context help (§41.2) — **real route-aware overlay**: `ContextHelpOverlay` is mounted in the global shell and opens from the real `assist` controller action plus the `?` keyboard fallback. It matches the current route, including parameterized routes, to the same help catalog and traps focus while open. Per-component inline help annotations remain deferred.
 - [ ] Guided troubleshooter (§41.3)
 
 ### Epic X14 — Media, notifications, and special modes
