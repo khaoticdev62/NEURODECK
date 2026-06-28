@@ -26,6 +26,8 @@ const sampleInfo: DiagnosticsInfo = {
 
 const diagnosticsBridge = {
   get: vi.fn().mockResolvedValue({ ok: true, data: sampleInfo }),
+  listCrashReports: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+  recordRendererCrashReport: vi.fn(),
   createSupportBundle: vi.fn().mockResolvedValue({
     ok: true,
     data: {
@@ -57,7 +59,8 @@ describe('AboutDiagnostics', () => {
         get: vi.fn().mockResolvedValue({
           ok: false,
           error: { category: 'system', code: 'x', userMessage: 'Failed.' }
-        })
+        }),
+        listCrashReports: vi.fn().mockResolvedValue({ ok: true, data: [] })
       } as never
     })
     render(<AboutDiagnostics />)
@@ -105,6 +108,7 @@ describe('AboutDiagnostics', () => {
     stubBridge({
       diagnostics: {
         get: vi.fn().mockResolvedValue({ ok: true, data: sampleInfo }),
+        listCrashReports: vi.fn().mockResolvedValue({ ok: true, data: [] }),
         createSupportBundle
       } as never
     })
@@ -119,5 +123,34 @@ describe('AboutDiagnostics', () => {
     expect(await screen.findByText(/Support bundle saved to/)).toHaveTextContent(
       '/tmp/ndx-support-bundle.json'
     )
+  })
+
+  it('shows recent local crash reports', async () => {
+    stubBridge({
+      diagnostics: {
+        get: vi.fn().mockResolvedValue({ ok: true, data: sampleInfo }),
+        createSupportBundle: vi.fn(),
+        recordRendererCrashReport: vi.fn(),
+        listCrashReports: vi.fn().mockResolvedValue({
+          ok: true,
+          data: [
+            {
+              id: 'crash-1',
+              kind: 'renderer-error-boundary',
+              createdAt: '2026-06-28T12:00:00.000Z',
+              message: 'Render failed',
+              code: 'TypeError',
+              correlationId: 'corr-1',
+              storedLocallyOnly: true
+            }
+          ]
+        })
+      } as never
+    })
+
+    render(<AboutDiagnostics />)
+
+    expect(await screen.findByText('Render failed')).toBeInTheDocument()
+    expect(screen.getByText('Correlation: corr-1')).toBeInTheDocument()
   })
 })

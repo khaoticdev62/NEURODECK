@@ -1,4 +1,12 @@
-import { app, Notification, powerMonitor, session, shell, type BrowserWindow } from 'electron'
+import {
+  app,
+  Notification,
+  powerMonitor,
+  session,
+  shell,
+  type BrowserWindow,
+  type Event as ElectronEvent
+} from 'electron'
 import { randomUUID } from 'node:crypto'
 import { hostname, homedir } from 'node:os'
 import { join } from 'node:path'
@@ -62,6 +70,7 @@ import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
 import { SystemMetricsService } from '../../core/system/SystemMetricsService'
+import { CrashReportStore } from '../../core/support/CrashReportStore'
 import { SupportBundleService } from '../../core/support/SupportBundleService'
 import { UpdateService } from '../../core/system/UpdateService'
 import { NetworkService } from '../../core/network/NetworkService'
@@ -142,6 +151,13 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const modelProviderService = new ModelProviderService()
   const systemMetricsService = new SystemMetricsService()
   const networkService = new NetworkService()
+  const crashReportStore = new CrashReportStore(join(app.getPath('userData'), 'crash-reports.json'))
+  const onBrowserWindowCreated = (_event: ElectronEvent, window: BrowserWindow): void => {
+    window.webContents.on('render-process-gone', (_goneEvent, details) => {
+      void crashReportStore.recordRendererProcessGone(details).catch(() => undefined)
+    })
+  }
+  app.on('browser-window-created', onBrowserWindowCreated)
   const supportBundleService = new SupportBundleService({
     outputDirectory: join(app.getPath('userData'), 'support-bundles'),
     collectors: {
@@ -406,7 +422,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerNetworkHandlers(networkService)
   registerUpdateHandlers(updateService)
   registerLearningHandlers(learningService)
-  registerDiagnosticsHandlers(modelProviderStore, supportBundleService)
+  registerDiagnosticsHandlers(modelProviderStore, supportBundleService, crashReportStore)
+  const onMainUncaughtException = (error: Error): void => {
+    void crashReportStore.recordMainUncaughtException(error).catch(() => undefined)
+  }
+  process.on('uncaughtExceptionMonitor', onMainUncaughtException)
   const disposePower = registerPowerHandlers(getWindow)
   // Real spec §24 suspend/resume: LAN Share's own real sockets/mDNS
   // advertisement must not stay bound across a suspend, and must rebind
@@ -503,6 +523,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     disposePackages()
     disposeLan()
     disposeLanShare()
+    process.removeListener('uncaughtExceptionMonitor', onMainUncaughtException)
+    app.removeListener('browser-window-created', onBrowserWindowCreated)
     peerDiscoveryService?.stop()
     peerTransferService.stop()
     void lanShareService.stop()

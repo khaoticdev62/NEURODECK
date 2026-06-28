@@ -210,7 +210,12 @@ import type {
 } from './terminal'
 import type { PowerStateEvent, SystemMetricsSnapshot } from './system'
 import type { NetworkDiagnostics } from './network'
-import type { DiagnosticsInfo, SupportBundleRecord } from './diagnostics'
+import type {
+  CrashReport,
+  CreateRendererCrashReportRequest,
+  DiagnosticsInfo,
+  SupportBundleRecord
+} from './diagnostics'
 import type { UpdateStatus } from './update'
 import type {
   CreateUserCurriculumRequest,
@@ -391,6 +396,10 @@ export interface NdxBridge {
   diagnostics: {
     get: () => Promise<NdxResult<DiagnosticsInfo>>
     createSupportBundle: () => Promise<NdxResult<SupportBundleRecord>>
+    listCrashReports: () => Promise<NdxResult<CrashReport[]>>
+    recordRendererCrashReport: (
+      request: CreateRendererCrashReportRequest
+    ) => Promise<NdxResult<CrashReport>>
   }
   power: {
     restartApp: () => Promise<NdxResult<null>>

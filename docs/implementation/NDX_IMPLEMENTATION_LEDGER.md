@@ -2585,6 +2585,27 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+## Epic X12 — Local Crash Reporting (2026-06-28)
+
+Real local-only crash reporting for supplemental spec §38.3. This closes crash reporting for the bounded behavior now implemented; telemetry consent remains deferred until there is a real telemetry collector or upload path to govern.
+
+**`CrashReportStore`** (`src/core/support/CrashReportStore.ts`, new) — persists bounded crash reports under `userData/crash-reports.json` through `JsonStore`, capped at the 100 newest reports with long messages/stacks truncated before storage. Each report is explicitly marked `storedLocallyOnly: true`.
+
+**Capture points** — `RootErrorBoundary` records renderer render failures through typed diagnostics IPC, using the same correlation ID shown in the recovery UI. Electron `render-process-gone` records renderer process termination for each app window. Main-process `uncaughtExceptionMonitor` records uncaught exceptions without replacing Node's default uncaught-exception behavior.
+
+**IPC/UI** — `diagnostics.crashReports.list` and `diagnostics.crashReports.recordRenderer` were added to the shared channels, `NdxBridge`, preload bridge, renderer diagnostics client, and diagnostics IPC handler. `/about` now shows the 5 most recent local crash reports and states that nothing is uploaded or sent to telemetry.
+
+**New/changed files**: `src/core/support/CrashReportStore.ts`, `src/core/support/__tests__/CrashReportStore.test.ts`, `src/shared/contracts/diagnostics.ts`, `src/shared/contracts/ipcChannels.ts`, `src/shared/contracts/bridge.ts`, `src/preload/index.ts`, `src/main/ipc/registerDiagnosticsHandlers.ts`, `src/main/ipc/index.ts`, `src/renderer/src/services/ipc/diagnosticsClient.ts`, `src/renderer/src/app/error-boundaries/RootErrorBoundary.tsx`, `src/renderer/src/features/system/AboutDiagnostics.tsx`, `src/renderer/src/features/system/__tests__/AboutDiagnostics.test.tsx`, `IMPLEMENTATION_CHECKLIST.md`, `HANDOFF.md`.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -- CrashReportStore AboutDiagnostics -> 2 files / 8 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed (known ErrorRecovery.tsx static/dynamic import chunking warning)
+```
+
 ## Epic X13 — Help Hub and Context Help (2026-06-28)
 
 Real route-derived guidance foundation for supplemental spec §41.1–§41.2. This closes Help Hub and Context Help for the scoped behavior now implemented; localization (§40.1), input methods (§40.2), guided troubleshooter (§41.3), authored/tutorial help content, and per-component inline help annotations remain separate X13 work.

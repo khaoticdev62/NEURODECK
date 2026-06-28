@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react'
-import type { DiagnosticsInfo, LanShareHealth, LanShareServiceStatus } from '@shared/contracts'
+import type {
+  CrashReport,
+  DiagnosticsInfo,
+  LanShareHealth,
+  LanShareServiceStatus
+} from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
-import { createSupportBundle, getDiagnosticsInfo } from '../../services/ipc/diagnosticsClient'
+import {
+  createSupportBundle,
+  getDiagnosticsInfo,
+  listCrashReports
+} from '../../services/ipc/diagnosticsClient'
 import { getLanShareHealth, getLanShareServiceStatus } from '../../services/ipc/lanShareClient'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
 
@@ -23,6 +32,8 @@ export function AboutDiagnostics(): React.JSX.Element {
   const [creatingBundle, setCreatingBundle] = useState(false)
   const [lanShareStatus, setLanShareStatus] = useState<LanShareServiceStatus | null>(null)
   const [lanShareHealth, setLanShareHealth] = useState<LanShareHealth | null>(null)
+  const [crashReports, setCrashReports] = useState<CrashReport[]>([])
+  const [crashReportError, setCrashReportError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -42,6 +53,15 @@ export function AboutDiagnostics(): React.JSX.Element {
         if (healthResult.ok) setLanShareHealth(healthResult.data)
       }
     )
+    void listCrashReports().then((result) => {
+      if (!active) return
+      if (result.ok) {
+        setCrashReports(result.data)
+        setCrashReportError(null)
+      } else {
+        setCrashReportError(result.error.userMessage)
+      }
+    })
     return () => {
       active = false
     }
@@ -144,6 +164,31 @@ export function AboutDiagnostics(): React.JSX.Element {
         </ControllerButton>
         {bundleStatus && <p className="text-meta text-status-success">{bundleStatus}</p>}
         {bundleError && <p className="text-meta text-status-error">{bundleError}</p>}
+      </section>
+
+      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+        <p className="text-body font-semibold text-text-primary">Crash reports</p>
+        <p className="text-meta text-text-tertiary">
+          Local-only renderer and process crash reports. Nothing is uploaded or sent to telemetry.
+        </p>
+        {crashReportError && <p className="text-meta text-status-error">{crashReportError}</p>}
+        {!crashReportError && crashReports.length === 0 && (
+          <p className="text-meta text-text-secondary">No crash reports recorded.</p>
+        )}
+        {!crashReportError &&
+          crashReports.slice(0, 5).map((report) => (
+            <article key={report.id} className="border border-border-muted bg-canvas p-2">
+              <p className="text-meta font-semibold text-text-primary">
+                {report.kind} - {new Date(report.createdAt).toLocaleString()}
+              </p>
+              <p className="text-meta text-text-secondary">{report.message}</p>
+              {report.correlationId && (
+                <p className="text-caption text-text-tertiary">
+                  Correlation: {report.correlationId}
+                </p>
+              )}
+            </article>
+          ))}
       </section>
     </div>
   )

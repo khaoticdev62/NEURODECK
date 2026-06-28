@@ -81,6 +81,8 @@ export const IPC_CHANNELS = {
   systemMetricsCollect: 'systemMetrics.collect',
   diagnosticsGet: 'diagnostics.get',
   diagnosticsCreateSupportBundle: 'diagnostics.createSupportBundle',
+  diagnosticsListCrashReports: 'diagnostics.crashReports.list',
+  diagnosticsRecordRendererCrashReport: 'diagnostics.crashReports.recordRenderer',
   powerRestartApp: 'power.restartApp',
   powerQuitApp: 'power.quitApp',
   powerStateEvent: 'power.stateEvent',

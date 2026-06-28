@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { ErrorRecoveryContent, type ErrorRecoveryError } from '../../features/system/ErrorRecovery'
+import { recordRendererCrashReport } from '../../services/ipc/diagnosticsClient'
 import { quitApp } from '../../services/ipc/powerClient'
 
 interface RootErrorBoundaryProps {
@@ -8,6 +9,7 @@ interface RootErrorBoundaryProps {
 
 interface RootErrorBoundaryState {
   error: Error | null
+  correlationId: string | null
 }
 
 function generateCorrelationId(): string {
@@ -17,12 +19,11 @@ function generateCorrelationId(): string {
   return `crash-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
 }
 
-function mapErrorToRecoveryError(error: Error): ErrorRecoveryError {
+function mapErrorToRecoveryError(error: Error, correlationId: string): ErrorRecoveryError {
   const code = (error.name === 'Error' ? 'RENDER_CRASH' : error.name)
     .replace(/Error$/, '')
     .toUpperCase()
   const retryable = true
-  const correlationId = generateCorrelationId()
 
   return {
     code,
@@ -56,23 +57,33 @@ function mapErrorToRecoveryError(error: Error): ErrorRecoveryError {
  * Epic 12's crash reporting will route this to durable storage.
  */
 export class RootErrorBoundary extends Component<RootErrorBoundaryProps, RootErrorBoundaryState> {
-  state: RootErrorBoundaryState = { error: null }
+  state: RootErrorBoundaryState = { error: null, correlationId: null }
 
   static getDerivedStateFromError(error: Error): RootErrorBoundaryState {
-    return { error }
+    return { error, correlationId: generateCorrelationId() }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('[RootErrorBoundary]', error, info.componentStack)
+    const correlationId = this.state.correlationId ?? generateCorrelationId()
+    void recordRendererCrashReport({
+      message: error.message || 'An unexpected renderer error occurred.',
+      stack: error.stack,
+      componentStack: info.componentStack ?? undefined,
+      route: `${window.location.pathname}${window.location.hash}`,
+      code: error.name,
+      correlationId
+    }).catch(() => undefined)
   }
 
   private handleReset = (): void => {
-    this.setState({ error: null })
+    this.setState({ error: null, correlationId: null })
   }
 
   render(): ReactNode {
     if (this.state.error) {
-      const recoveryError = mapErrorToRecoveryError(this.state.error)
+      const correlationId = this.state.correlationId ?? generateCorrelationId()
+      const recoveryError = mapErrorToRecoveryError(this.state.error, correlationId)
       // Replace the placeholder retry action with the real boundary reset.
       const actions = recoveryError.recoveryActions.map((action) =>
         action.kind === 'retry' ? { ...action, run: this.handleReset } : action

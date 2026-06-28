@@ -30,3 +30,39 @@ export const supportBundleRecordSchema = z.object({
   redactions: z.array(z.string())
 })
 export type SupportBundleRecord = z.infer<typeof supportBundleRecordSchema>
+
+export const crashReportKindSchema = z.enum([
+  'renderer-error-boundary',
+  'renderer-process-gone',
+  'main-uncaught-exception'
+])
+export type CrashReportKind = z.infer<typeof crashReportKindSchema>
+
+export const crashReportSchema = z.object({
+  id: z.string(),
+  kind: crashReportKindSchema,
+  createdAt: z.string(),
+  message: z.string(),
+  stack: z.string().optional(),
+  componentStack: z.string().optional(),
+  route: z.string().optional(),
+  code: z.string().optional(),
+  reason: z.string().optional(),
+  exitCode: z.number().optional(),
+  processType: z.string().optional(),
+  correlationId: z.string().optional(),
+  storedLocallyOnly: z.literal(true)
+})
+export type CrashReport = z.infer<typeof crashReportSchema>
+
+export const createRendererCrashReportRequestSchema = z.object({
+  message: z.string().min(1),
+  stack: z.string().optional(),
+  componentStack: z.string().optional(),
+  route: z.string().optional(),
+  code: z.string().optional(),
+  correlationId: z.string().optional()
+})
+export type CreateRendererCrashReportRequest = z.infer<
+  typeof createRendererCrashReportRequestSchema
+>
