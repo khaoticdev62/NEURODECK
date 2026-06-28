@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { DeviceInventoryHealth, DeviceInventoryReport } from '@shared/contracts'
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
@@ -14,6 +15,7 @@ const HEALTH_TONE: Record<DeviceInventoryHealth, StatusTone> = {
 }
 
 export function DevicePeripheralCenter(): React.JSX.Element {
+  const navigate = useNavigate()
   const [report, setReport] = useState<DeviceInventoryReport | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -59,9 +61,18 @@ export function DevicePeripheralCenter(): React.JSX.Element {
             Live inventory from persisted devices, system metrics, and capability detection.
           </p>
         </div>
-        <ControllerButton variant="primary" disabled={loading} onClick={() => void handleRefresh()}>
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </ControllerButton>
+        <div className="flex flex-wrap gap-2">
+          <ControllerButton variant="secondary" onClick={() => navigate('/devices/bluetooth')}>
+            Bluetooth
+          </ControllerButton>
+          <ControllerButton
+            variant="primary"
+            disabled={loading}
+            onClick={() => void handleRefresh()}
+          >
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </ControllerButton>
+        </div>
       </div>
 
       {error && <ErrorState title="Device inventory error" description={error} />}

@@ -1,11 +1,20 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DeviceInventoryReport, NdxBridge } from '@shared/contracts'
 import { DevicePeripheralCenter } from '../DevicePeripheralCenter'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
+}
+
+function renderCenter(): ReturnType<typeof render> {
+  return render(
+    <MemoryRouter>
+      <DevicePeripheralCenter />
+    </MemoryRouter>
+  )
 }
 
 afterEach(() => {
@@ -21,7 +30,7 @@ describe('DevicePeripheralCenter', () => {
       } as never
     })
 
-    render(<DevicePeripheralCenter />)
+    renderCenter()
 
     expect(await screen.findByText('Device and Peripheral Center')).toBeInTheDocument()
     expect(screen.getByText('wlan0')).toBeInTheDocument()
@@ -40,7 +49,7 @@ describe('DevicePeripheralCenter', () => {
       } as never
     })
 
-    render(<DevicePeripheralCenter />)
+    renderCenter()
 
     expect(await screen.findByText('No devices detected')).toBeInTheDocument()
   })
@@ -50,7 +59,7 @@ describe('DevicePeripheralCenter', () => {
     stubBridge({ devices: { inventory } as never })
     const user = userEvent.setup()
 
-    render(<DevicePeripheralCenter />)
+    renderCenter()
     await screen.findByText('Device and Peripheral Center')
     await user.click(screen.getByRole('button', { name: 'Refresh' }))
 

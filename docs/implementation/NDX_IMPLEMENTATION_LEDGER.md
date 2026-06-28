@@ -2197,6 +2197,24 @@ npm run typecheck -> blocked by unrelated in-progress LAN Share API mismatch:
   LanShareTransferServerOptions now requires getPendingSendOperation at existing LAN Share call sites.
 ```
 
+### Epic X8 addendum - Bluetooth status center (2026-06-28)
+
+ND-X033 Bluetooth Devices is now a real route at `/devices/bluetooth`, linked from System Dashboard and the Device and Peripheral Center. It intentionally reuses the shared `device.inventory` report instead of creating a second Bluetooth-specific backend: adapter status comes from the real `CapabilityRegistry` Bluetooth entry, and device rows come only from persisted Bluetooth records in `DeviceStore`.
+
+JPE: this screen can tell the user whether NeuroDeck currently has a Bluetooth backend and whether any Bluetooth records are known. It cannot scan, pair, trust, connect, disconnect, or forget devices yet because no real BlueZ/SteamOS adapter service exists in this codebase. Those controls are shown as disabled status rows with the exact missing backend called out.
+
+**Still deferred**: real BlueZ/SteamOS adapter probing, scan, pair, pairing confirmation, trust, connect/disconnect, forget, battery reporting, audio profile switching, controller profile selection, and connection diagnostics.
+
+**Evidence (run 2026-06-28):**
+
+```text
+npm run test -- DevicePeripheralCenter BluetoothDevices -> 2 files / 6 tests passed
+npm run typecheck:web -> passed
+npx eslint <X8 Bluetooth/device route files> -> 0 errors, 0 warnings
+npm run typecheck -> still blocked by unrelated in-progress LAN Share API mismatch:
+  LanShareTransferServerOptions now requires getPendingSendOperation at existing LAN Share call sites.
+```
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 
 A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.

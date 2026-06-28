@@ -197,6 +197,10 @@ const DevicePeripheralCenter = lazy(async () => {
   const module = await import('../../features/devices/DevicePeripheralCenter')
   return { default: module.DevicePeripheralCenter }
 })
+const BluetoothDevices = lazy(async () => {
+  const module = await import('../../features/devices/BluetoothDevices')
+  return { default: module.BluetoothDevices }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -708,6 +712,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('devices', <DevicePeripheralCenter />)
+  },
+  {
+    routeId: 'bluetooth-devices',
+    screenId: 'ND-X033',
+    path: '/devices/bluetooth',
+    title: 'Bluetooth Devices',
+    owningEpic: 'Epic X8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('bluetooth devices', <BluetoothDevices />)
   }
 ]
 
