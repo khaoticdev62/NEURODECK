@@ -134,8 +134,8 @@ export function LockScreen(): React.JSX.Element {
             : ''}
         </p>
         <p className="text-meta text-text-tertiary opacity-60">
-          Account authentication: not available — needs the profile/credential vault (Phase B Epic
-          X10), not built yet
+          Account authentication: not available — needs named user profiles (Phase B Epic X10), not
+          built yet. The Secrets Vault itself is real; see System Dashboard → Secrets Vault.
         </p>
         <ControllerButton variant="ghost" onClick={() => setPendingPower('quit')}>
           Power options

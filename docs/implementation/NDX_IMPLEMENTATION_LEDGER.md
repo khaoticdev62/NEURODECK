@@ -2662,3 +2662,29 @@ npm run lint -> passed
 npm run build -> passed
 npm run build:linux -> not run (no Linux host in this dev environment)
 ```
+
+## Epic X10 — Secrets Vault (2026-06-28)
+
+Real, encrypted-at-rest reference vault (supplemental spec §31), the bounded, achievable slice of Epic X10. User profiles/operating modes (§30) and guest/private sessions (§30.3) are deliberately not attempted in this pass — see the checklist entry for why a cross-cutting, every-settings-store change is a separate, larger effort.
+
+**`VaultStore`** (`src/core/vault/VaultStore.ts`, new) — persists all 9 spec item types (`api-credential`, `ssh-key-reference`, `certificate`, `passphrase`, `oauth-token`, `provider-secret`, `remote-host-credential`, `signing-key-reference`, `encryption-key`). Every secret is routed through the same injected `SecretCipher` boundary every other secret store in this codebase already uses (`LanShareGroupCodeStore`, `LanShareCertificateStore`) — real `safeStorage` encryption in production via `electronSecretCipher`, with the same honest plaintext fallback only when the cipher is genuinely unavailable. `list()` returns metadata only — `reveal()` is the one distinct call that returns the raw secret, and it is always recorded in a real, persisted, bounded (500-entry) access-audit log alongside create/update/rotate/delete. `isExpired`/`needsRotation` are computed at read time from `expiresAt`/`rotationReminderDays`, never stored as a flag that could go stale.
+
+**IPC** (`registerVaultHandlers.ts`, `bridge.ts`, `preload/index.ts`, `vaultClient.ts`) — `vault.list`/`create`/`update`/`rotate`/`reveal`/`delete`/`accessLog`, all Zod-validated, following the exact pattern `registerLockHandlers.ts` already established (including a typed `VaultItemNotFoundError` → `not-found` `NdxError` mapping).
+
+**`/vault` screen** (`src/renderer/src/features/vault/Vault.tsx`, ND-X043) — add/list/reveal/copy/rotate/delete, all wired to real IPC. Reveal is a distinct, explicit action from listing (spec §31.2 "Copy requires explicit reveal/copy action") — the secret never appears until a user presses Reveal, and copying schedules a real clipboard auto-clear after 20 seconds (only if the clipboard still holds that exact value, so it never clobbers something the user copied in the meantime). An access log section shows the 10 most recent audit entries. Reachable from System Dashboard → "Secrets Vault".
+
+**Lock policy** (spec §31.2 "Lock with NeuroDeck") — satisfied structurally rather than with new plumbing: `/vault` sits behind `ShellLayout`'s existing full-screen Lock Screen gate exactly like every other route. There is no IPC-level lock enforcement anywhere in this codebase to extend (`LockProvider`'s `isLocked` is a renderer-only gate), so this phase does not invent a vault-specific one — consistent application of the existing security model, not a new gap. `LockScreen.tsx`'s own doc comment (previously: "needs the profile/credential vault... not built yet") has been corrected to distinguish the now-real vault from the still-unbuilt profile/account-authentication system.
+
+**SSH key references / certificates / signing keys** — all three are vault item types storing a reference string the user provides (fingerprint, path, passphrase) rather than raw private-key file bytes, matching the spec's own "reference-based" framing for this vault.
+
+**New/changed files**: `src/shared/contracts/vault.ts` (new), `src/core/vault/VaultStore.ts` (new), `src/core/vault/__tests__/VaultStore.test.ts` (new, 8 tests), `src/main/ipc/registerVaultHandlers.ts` (new), `src/main/ipc/index.ts` (wiring), `src/shared/contracts/bridge.ts` (new `vault` bridge member), `src/preload/index.ts` (new `vault` bridge implementation), `src/renderer/src/services/ipc/vaultClient.ts` (new), `src/renderer/src/features/vault/Vault.tsx` (new), `src/renderer/src/features/vault/__tests__/Vault.test.tsx` (new, 5 tests), `src/renderer/src/app/routing/routes.tsx` (new `/vault` route), `src/renderer/src/features/system/SystemDashboard.tsx` (new link), `src/renderer/src/features/system/LockScreen.tsx` (corrected doc/UI comment).
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 198 files / 984 tests passed, 1 failed (pre-existing Windows temp-dir rename race in AgentRuntime.test.ts, confirmed unrelated by re-running it in isolation — passed cleanly)
+npm run test -- src/core/vault src/renderer/src/features/vault -> 2 files / 13 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

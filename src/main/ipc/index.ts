@@ -55,6 +55,7 @@ import { GitService } from '../../core/git/GitService'
 import { LockSettingsStore } from '../../core/lock/LockSettingsStore'
 import { ModelProviderService } from '../../core/models/ModelProviderService'
 import { ModelProviderStore } from '../../core/models/ModelProviderStore'
+import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
 import { SystemMetricsService } from '../../core/system/SystemMetricsService'
@@ -101,6 +102,7 @@ import { registerPackageHandlers } from './registerPackageHandlers'
 import { registerPowerHandlers } from './registerPowerHandlers'
 import { registerUpdateHandlers } from './registerUpdateHandlers'
 import { registerLearningHandlers } from './registerLearningHandlers'
+import { registerVaultHandlers } from './registerVaultHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
@@ -393,6 +395,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     new DisplaySettingsStore(join(app.getPath('userData'), 'display-settings.json'))
   )
   registerLockHandlers(new LockSettingsStore(join(app.getPath('userData'), 'lock-settings.json')))
+  registerVaultHandlers(
+    new VaultStore(join(app.getPath('userData'), 'vault.json'), electronSecretCipher)
+  )
   registerBrowserHandlers(
     new BrowserTabStore(join(app.getPath('userData'), 'browser-tabs.json')),
     new BrowserPermissionStore(join(app.getPath('userData'), 'browser-permissions.json')),

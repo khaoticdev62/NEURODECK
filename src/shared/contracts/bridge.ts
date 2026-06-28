@@ -32,6 +32,15 @@ import type {
   CreateBackupRequest
 } from './backup'
 import type {
+  CreateVaultItemRequest,
+  RevealVaultItemResult,
+  RotateVaultItemRequest,
+  UpdateVaultItemRequest,
+  VaultAccessLogEntry,
+  VaultItem,
+  VaultItemIdRequest
+} from './vault'
+import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
   ExtensionInstallPreview,
@@ -384,6 +393,15 @@ export interface NdxBridge {
     setPin: (request: SetLockPinRequest) => Promise<NdxResult<LockStatus>>
     removePin: (request: RemoveLockPinRequest) => Promise<NdxResult<LockStatus>>
     verifyPin: (request: VerifyLockPinRequest) => Promise<NdxResult<VerifyLockPinResult>>
+  }
+  vault: {
+    list: () => Promise<NdxResult<VaultItem[]>>
+    create: (request: CreateVaultItemRequest) => Promise<NdxResult<VaultItem>>
+    update: (request: UpdateVaultItemRequest) => Promise<NdxResult<VaultItem>>
+    rotate: (request: RotateVaultItemRequest) => Promise<NdxResult<VaultItem>>
+    reveal: (request: VaultItemIdRequest) => Promise<NdxResult<RevealVaultItemResult>>
+    remove: (request: VaultItemIdRequest) => Promise<NdxResult<null>>
+    listAccessLog: () => Promise<NdxResult<VaultAccessLogEntry[]>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

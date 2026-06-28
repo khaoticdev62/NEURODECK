@@ -201,6 +201,15 @@ const ndx: NdxBridge = {
     removePin: (request) => ipcRenderer.invoke(IPC_CHANNELS.lockRemovePin, request),
     verifyPin: (request) => ipcRenderer.invoke(IPC_CHANNELS.lockVerifyPin, request)
   },
+  vault: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.vaultList),
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.vaultCreate, request),
+    update: (request) => ipcRenderer.invoke(IPC_CHANNELS.vaultUpdate, request),
+    rotate: (request) => ipcRenderer.invoke(IPC_CHANNELS.vaultRotate, request),
+    reveal: (request) => ipcRenderer.invoke(IPC_CHANNELS.vaultReveal, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.vaultDelete, request),
+    listAccessLog: () => ipcRenderer.invoke(IPC_CHANNELS.vaultAccessLog)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

@@ -42,7 +42,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Storage and Recovery', path: '/storage' },
   { label: 'Agent Operations Center', path: '/agents' },
   { label: 'Remote Systems', path: '/remote' },
-  { label: 'LAN Share', path: '/lan-share' }
+  { label: 'LAN Share', path: '/lan-share' },
+  { label: 'Secrets Vault', path: '/vault' }
 ]
 
 /**

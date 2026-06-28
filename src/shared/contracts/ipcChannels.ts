@@ -219,5 +219,12 @@ export const IPC_CHANNELS = {
   lanShareSendFiles: 'lanShare.send.sendFiles',
   lanShareAcceptTransfer: 'lanShare.receive.accept',
   lanShareRejectTransfer: 'lanShare.receive.reject',
-  lanSharePickFiles: 'lanShare.send.pickFiles'
+  lanSharePickFiles: 'lanShare.send.pickFiles',
+  vaultList: 'vault.list',
+  vaultCreate: 'vault.create',
+  vaultUpdate: 'vault.update',
+  vaultRotate: 'vault.rotate',
+  vaultReveal: 'vault.reveal',
+  vaultDelete: 'vault.delete',
+  vaultAccessLog: 'vault.accessLog'
 } as const

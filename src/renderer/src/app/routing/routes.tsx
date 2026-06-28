@@ -225,6 +225,10 @@ const DevicePeripheralCenter = lazy(async () => {
   const module = await import('../../features/devices/DevicePeripheralCenter')
   return { default: module.DevicePeripheralCenter }
 })
+const Vault = lazy(async () => {
+  const module = await import('../../features/vault/Vault')
+  return { default: module.Vault }
+})
 const BluetoothDevices = lazy(async () => {
   const module = await import('../../features/devices/BluetoothDevices')
   return { default: module.BluetoothDevices }
@@ -824,6 +828,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('backup and restore', <BackupAndRestore />)
+  },
+  {
+    routeId: 'vault',
+    screenId: 'ND-X043',
+    path: '/vault',
+    title: 'Secrets Vault',
+    owningEpic: 'Epic X10',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('vault', <Vault />)
   },
   {
     routeId: 'devices',
