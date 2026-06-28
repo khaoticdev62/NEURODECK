@@ -273,6 +273,10 @@ const HelpHub = lazy(async () => {
   const module = await import('../../features/help/HelpHub')
   return { default: module.HelpHub }
 })
+const GuidedTroubleshooter = lazy(async () => {
+  const module = await import('../../features/troubleshooter/GuidedTroubleshooter')
+  return { default: module.GuidedTroubleshooter }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -974,6 +978,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('help', <HelpHub />)
+  },
+  {
+    routeId: 'guided-troubleshooter',
+    screenId: 'ND-X057',
+    path: '/troubleshooter',
+    title: 'Guided Troubleshooter',
+    owningEpic: 'Epic X13',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('guided troubleshooter', <GuidedTroubleshooter />)
   }
 ]
 

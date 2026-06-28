@@ -56,6 +56,7 @@ import type {
   SetSafeModeRequest
 } from './continuity'
 import type { ClearDataCategoryRequest, ClearDataCategoryResult, DataMapEntry } from './privacy'
+import type { RunTroubleshooterCheckRequest, TroubleshooterResult } from './troubleshooter'
 import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
@@ -450,6 +451,9 @@ export interface NdxBridge {
     clearDataCategory: (
       request: ClearDataCategoryRequest
     ) => Promise<NdxResult<ClearDataCategoryResult>>
+  }
+  troubleshooter: {
+    runCheck: (request: RunTroubleshooterCheckRequest) => Promise<NdxResult<TroubleshooterResult>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

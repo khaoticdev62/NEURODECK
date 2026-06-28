@@ -235,6 +235,9 @@ const ndx: NdxBridge = {
     clearDataCategory: (request) =>
       ipcRenderer.invoke(IPC_CHANNELS.privacyDataCategoryClear, request)
   },
+  troubleshooter: {
+    runCheck: (request) => ipcRenderer.invoke(IPC_CHANNELS.troubleshooterRunCheck, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

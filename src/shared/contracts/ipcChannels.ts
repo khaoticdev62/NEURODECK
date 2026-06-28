@@ -241,5 +241,6 @@ export const IPC_CHANNELS = {
   continuityPowerEventRecord: 'continuity.power.record',
   continuitySessionSnapshotSave: 'continuity.session.save',
   privacyDataMapGet: 'privacy.dataMap.get',
-  privacyDataCategoryClear: 'privacy.dataCategory.clear'
+  privacyDataCategoryClear: 'privacy.dataCategory.clear',
+  troubleshooterRunCheck: 'troubleshooter.runCheck'
 } as const

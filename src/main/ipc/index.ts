@@ -66,6 +66,7 @@ import { LockSettingsStore } from '../../core/lock/LockSettingsStore'
 import { ModelProviderService } from '../../core/models/ModelProviderService'
 import { ModelProviderStore } from '../../core/models/ModelProviderStore'
 import { PrivacyDataMapService } from '../../core/privacy/PrivacyDataMapService'
+import { GuidedTroubleshooterService } from '../../core/troubleshooter/GuidedTroubleshooterService'
 import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
@@ -119,6 +120,7 @@ import { registerUpdateHandlers } from './registerUpdateHandlers'
 import { registerLearningHandlers } from './registerLearningHandlers'
 import { registerVaultHandlers } from './registerVaultHandlers'
 import { registerPrivacyHandlers } from './registerPrivacyHandlers'
+import { registerTroubleshooterHandlers } from './registerTroubleshooterHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
@@ -471,6 +473,17 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
       knowledgeStore,
       backupService,
       vaultStore
+    )
+  )
+  registerTroubleshooterHandlers(
+    new GuidedTroubleshooterService(
+      networkService,
+      modelProviderStore,
+      modelProviderService,
+      capabilityRegistry,
+      systemMetricsService,
+      extensionStore,
+      updateService
     )
   )
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)

@@ -2848,3 +2848,27 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X13 — Guided Troubleshooter (2026-06-28)
+
+Real Guided Troubleshooter (supplemental spec §41.3) added alongside the already-real Help Hub and Context Help (landed earlier this session by a concurrent process). "The troubleshooter must run real diagnostics and never pretend an issue is fixed" — every issue below is backed by an existing real service, not a fabricated decision tree.
+
+**`GuidedTroubleshooterService`** (`src/core/troubleshooter/GuidedTroubleshooterService.ts`, new) — `runCheck(issueId)` runs one of 6 real backend checks: No network (`NetworkService.getDiagnostics()` — real interface/connection-state/DNS-server checks), Model/provider unavailable (calls `ModelProviderService.testConnection()` against every real configured, enabled provider, surfacing each one's actual connection result), No microphone (real `CapabilityRegistry` microphone capability status), Storage low (real `SystemMetricsService.collect()` storage usage, thresholds at 85%/95%), Extension crash (lists actually-quarantined extensions from `ExtensionStore`, never a synthetic list), Update failure (real `UpdateService.getStatus()`). `combineStatus()` only reports `pass` if every real step actually passed — a step that returns `unknown` (e.g. a metric genuinely unavailable on this platform) never gets silently counted as a pass. Issues from the spec's own §41.3 list deliberately not implemented, each for a named structural reason (documented in the service's own doc comment): Focus stuck (no automated focus-graph health check exists), Steam shortcut broken (Steam Shortcut Manager itself is deferred, Epic X2), Terminal failure beyond capability status (spawning a PTY as a side-effecting diagnostic is a different kind of action than the read-only checks here), VPN failure (no VPN adapter exists), Display unusable (no display-health adapter exists), Database recovery (already covered by Backup's real verify flow on `/backup`, not duplicated).
+
+**Controller not detected** — checked entirely client-side via the real browser Gamepad API (`navigator.getGamepads()`), never through IPC and never a fabricated "detected" state; a fresh page load reports no controller until the user actually presses a button, which is genuine browser Gamepad API behavior (gamepads aren't visible to a page until they send input), surfaced honestly rather than hidden.
+
+**`/troubleshooter` screen** (`src/renderer/src/features/troubleshooter/GuidedTroubleshooter.tsx`, ND-X057) — one card per issue with a real "Run diagnostic" action, showing every real step's status/detail and an honest overall status; remediation text only appears for issues with at least one real failed step. Reachable from System Dashboard.
+
+**Localization and Input methods (§40.1–40.2)** — deliberately not attempted in this pass: both require retrofitting every existing UI string and input-handling path across dozens of already-shipped screens, a cross-cutting effort on a different scale than a single guided-troubleshooter slice, and input methods specifically need a real i18n foundation to exist first.
+
+**New/changed files**: `src/shared/contracts/troubleshooter.ts` (new), `src/core/troubleshooter/GuidedTroubleshooterService.ts` (new), `src/core/troubleshooter/__tests__/GuidedTroubleshooterService.test.ts` (new, 8 tests), `src/main/ipc/registerTroubleshooterHandlers.ts` (new), `src/main/ipc/index.ts` (wiring), `src/shared/contracts/bridge.ts`/`src/preload/index.ts` (new `troubleshooter` bridge member), `src/renderer/src/services/ipc/troubleshooterClient.ts` (new), `src/renderer/src/features/troubleshooter/GuidedTroubleshooter.tsx` (new), `src/renderer/src/features/troubleshooter/__tests__/GuidedTroubleshooter.test.tsx` (new, 3 tests), `src/renderer/src/app/routing/routes.tsx` (new `/troubleshooter` route), `src/renderer/src/features/system/SystemDashboard.tsx` (new link).
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 210 files / 1031 tests passed
+npm run test -- src/core/troubleshooter src/renderer/src/features/troubleshooter -> 2 files / 11 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
