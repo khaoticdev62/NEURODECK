@@ -238,7 +238,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] Sync engine (syncable data classes, §20.1; exclusions §20.2)
 - [ ] Conflict resolver (§20.4)
 - [x] Backup (scopes/destinations, §21.1–21.2) — **real local app-state backup foundation**: `BackupService` creates/list/verifies local `.ndx-backup.json` bundles under `userData/backups`, includes only non-secret JSON app state, records excluded secret-bearing stores explicitly, computes a manifest SHA-256 plus per-file SHA-256 hashes, exposes typed `backup.*` IPC/preload/renderer-client methods, and routes ND-X030 `/backup` to a controller-focusable Backup and Restore screen. Scope is intentionally local-only and app-state-only; remote destinations, streaming archives, workspace content backup, encrypted portable vault backup, and scheduled backup remain deferred.
-- [ ] Restore (§21.3)
+- [x] Restore (§21.3) — **real local app-state restore with rollback**: `BackupService.restore()` verifies the selected backup before writing, creates a rollback backup of the current app state first, restores files atomically, removes stale files inside the app-state backup scope, and automatically reapplies the rollback bundle if restore fails mid-flight. `/backup` now requires an explicit confirmation before restore and surfaces the rollback backup id/path after success. Scope remains local app-state only; workspace-content restore, remote/cloud restore, vault/secret restore, and migration-aware restore remain deferred.
 - [ ] Import/export formats (§21.4)
 - [ ] Legacy/version migration (§21.5)
 

@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
-import { createBackup, listBackups, verifyBackup } from '../../services/ipc/backupClient'
-import type { BackupRecord, BackupVerification } from '@shared/contracts'
+import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
+import {
+  createBackup,
+  listBackups,
+  restoreBackup,
+  verifyBackup
+} from '../../services/ipc/backupClient'
+import type { BackupRecord, BackupRestoreResult, BackupVerification } from '@shared/contracts'
 
 export function BackupAndRestore(): React.JSX.Element {
   const [backups, setBackups] = useState<BackupRecord[]>([])
@@ -10,6 +16,8 @@ export function BackupAndRestore(): React.JSX.Element {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [verification, setVerification] = useState<BackupVerification | null>(null)
+  const [restoreReview, setRestoreReview] = useState<BackupRecord | null>(null)
+  const [restoreResult, setRestoreResult] = useState<BackupRestoreResult | null>(null)
 
   useEffect(() => {
     let active = true
@@ -33,6 +41,23 @@ export function BackupAndRestore(): React.JSX.Element {
     const result = await createBackup({ label: 'Manual app-state backup' })
     if (result.ok) {
       setBackups((current) => [result.data, ...current])
+      setVerification(null)
+      setRestoreResult(null)
+      setError(null)
+    } else {
+      setError(result.error.userMessage)
+    }
+    setBusy(false)
+  }
+
+  async function handleRestore(record: BackupRecord): Promise<void> {
+    setRestoreReview(null)
+    setBusy(true)
+    const result = await restoreBackup({ id: record.id })
+    if (result.ok) {
+      const refreshed = await listBackups()
+      if (refreshed.ok) setBackups(refreshed.data)
+      setRestoreResult(result.data)
       setVerification(null)
       setError(null)
     } else {
@@ -87,6 +112,22 @@ export function BackupAndRestore(): React.JSX.Element {
         </section>
       )}
 
+      {restoreResult && (
+        <section className="border border-status-success/40 bg-status-success/10 p-3">
+          <p className="text-meta font-semibold text-status-success">Restore complete</p>
+          <p className="text-meta text-text-secondary">
+            Restored {restoreResult.restoredFileCount} file
+            {restoreResult.restoredFileCount === 1 ? '' : 's'} and removed{' '}
+            {restoreResult.removedFileCount} stale file
+            {restoreResult.removedFileCount === 1 ? '' : 's'}. Rollback backup:{' '}
+            {restoreResult.rollbackBackupId}
+          </p>
+          <p className="mt-1 break-all text-caption text-text-tertiary">
+            {restoreResult.rollbackBackupPath}
+          </p>
+        </section>
+      )}
+
       <section className="grid gap-3 overflow-auto">
         {loading ? (
           <p className="text-meta text-text-secondary">Loading backups...</p>
@@ -117,7 +158,11 @@ export function BackupAndRestore(): React.JSX.Element {
                 <ControllerButton onClick={() => void handleVerify(record)} disabled={busy}>
                   Verify
                 </ControllerButton>
-                <ControllerButton disabled title="Restore needs rollback-on-restore support first.">
+                <ControllerButton
+                  variant="destructive"
+                  onClick={() => setRestoreReview(record)}
+                  disabled={busy || !record.verified}
+                >
                   Restore
                 </ControllerButton>
               </div>
@@ -128,6 +173,20 @@ export function BackupAndRestore(): React.JSX.Element {
           ))
         )}
       </section>
+
+      <ConfirmationDialog
+        open={restoreReview !== null}
+        title="Restore backup"
+        action={`Restore "${restoreReview?.label ?? 'App-state backup'}"`}
+        scope="Non-secret NeuroDeck app-state JSON files"
+        consequence="Current app state files in this backup scope will be overwritten or removed to match the selected backup."
+        recovery="A rollback backup of the current app state is created before restore, and a failed restore automatically re-applies it."
+        confirmLabel="Restore"
+        onConfirm={() => {
+          if (restoreReview) void handleRestore(restoreReview)
+        }}
+        onCancel={() => setRestoreReview(null)}
+      />
     </div>
   )
 }

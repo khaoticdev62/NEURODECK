@@ -21,6 +21,7 @@ import type { TransactionIdRequest, TransactionRecord } from './transaction'
 import type {
   BackupIdRequest,
   BackupRecord,
+  BackupRestoreResult,
   BackupVerification,
   CreateBackupRequest
 } from './backup'
@@ -272,6 +273,7 @@ export interface NdxBridge {
     list: () => Promise<NdxResult<BackupRecord[]>>
     create: (request?: CreateBackupRequest) => Promise<NdxResult<BackupRecord>>
     verify: (request: BackupIdRequest) => Promise<NdxResult<BackupVerification>>
+    restore: (request: BackupIdRequest) => Promise<NdxResult<BackupRestoreResult>>
   }
   git: {
     status: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStatus>>

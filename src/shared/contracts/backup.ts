@@ -36,3 +36,12 @@ export const backupVerificationSchema = z.object({
   failures: z.array(z.string())
 })
 export type BackupVerification = z.infer<typeof backupVerificationSchema>
+
+export const backupRestoreResultSchema = z.object({
+  restoredBackupId: z.string().uuid(),
+  restoredFileCount: z.number().int().nonnegative(),
+  removedFileCount: z.number().int().nonnegative(),
+  rollbackBackupId: z.string().uuid(),
+  rollbackBackupPath: z.string()
+})
+export type BackupRestoreResult = z.infer<typeof backupRestoreResultSchema>

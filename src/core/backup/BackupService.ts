@@ -1,7 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { mkdir, readFile, readdir, rename, stat, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
-import type { BackupRecord, BackupVerification, CreateBackupRequest } from '@shared/contracts'
+import type {
+  BackupRecord,
+  BackupRestoreResult,
+  BackupVerification,
+  CreateBackupRequest
+} from '@shared/contracts'
 
 const SCHEMA_VERSION = '1.0.0'
 const BACKUP_EXTENSION = '.ndx-backup.json'
@@ -140,21 +145,7 @@ export class BackupService {
     try {
       const path = this.pathFor(id)
       const bundle = parseBundle(await readFile(path, 'utf-8'))
-      const failures: string[] = []
-
-      if (bundle.id !== id) failures.push('The backup id does not match its filename.')
-      if (bundle.sha256 !== bundleSha(stripSha(bundle))) {
-        failures.push('The backup manifest hash does not match its content.')
-      }
-
-      for (const file of bundle.files) {
-        if (file.bytes !== Buffer.byteLength(file.content, 'utf-8')) {
-          failures.push(`${file.relativePath} has a byte-count mismatch.`)
-        }
-        if (file.sha256 !== sha256(file.content)) {
-          failures.push(`${file.relativePath} has a SHA-256 mismatch.`)
-        }
-      }
+      const failures = verifyBundle(bundle, id)
 
       return {
         id,
@@ -173,9 +164,81 @@ export class BackupService {
     }
   }
 
+  async restore(id: string): Promise<BackupRestoreResult> {
+    const bundle = await this.readVerifiedBundle(id)
+    const rollback = await this.create({ label: `Rollback before restoring ${bundle.label ?? id}` })
+
+    try {
+      const result = await this.restoreBundle(bundle)
+      return {
+        restoredBackupId: id,
+        restoredFileCount: result.restoredFileCount,
+        removedFileCount: result.removedFileCount,
+        rollbackBackupId: rollback.id,
+        rollbackBackupPath: rollback.path
+      }
+    } catch (error) {
+      const rollbackBundle = await this.readVerifiedBundle(rollback.id)
+      await this.restoreBundle(rollbackBundle)
+      throw error
+    }
+  }
+
   private pathFor(id: string): string {
     return join(this.backupDir, `${basename(id)}${BACKUP_EXTENSION}`)
   }
+
+  private async readVerifiedBundle(id: string): Promise<BackupBundle> {
+    const bundle = parseBundle(await readFile(this.pathFor(id), 'utf-8'))
+    const failures = verifyBundle(bundle, id)
+    if (failures.length > 0) {
+      throw new Error(`Backup failed verification: ${failures.join(' ')}`)
+    }
+    return bundle
+  }
+
+  private async restoreBundle(
+    bundle: BackupBundle
+  ): Promise<{ restoredFileCount: number; removedFileCount: number }> {
+    const restoredPaths = new Set(bundle.files.map((file) => file.relativePath))
+    let restoredFileCount = 0
+    let removedFileCount = 0
+
+    for (const file of bundle.files) {
+      await writeAtomic(join(this.userDataPath, file.relativePath), file.content)
+      restoredFileCount += 1
+    }
+
+    for (const relativePath of INCLUDED_APP_STATE_FILES) {
+      if (restoredPaths.has(relativePath)) continue
+      const fullPath = join(this.userDataPath, relativePath)
+      if (!(await isFile(fullPath))) continue
+      await rm(fullPath, { force: true })
+      removedFileCount += 1
+    }
+
+    return { restoredFileCount, removedFileCount }
+  }
+}
+
+function verifyBundle(bundle: BackupBundle, id: string): string[] {
+  const failures: string[] = []
+
+  if (bundle.id !== id) failures.push('The backup id does not match its filename.')
+  if (bundle.sha256 !== bundleSha(stripSha(bundle))) {
+    failures.push('The backup manifest hash does not match its content.')
+  }
+
+  for (const file of bundle.files) {
+    if (file.bytes !== Buffer.byteLength(file.content, 'utf-8')) {
+      failures.push(`${file.relativePath} has a byte-count mismatch.`)
+    }
+    if (file.sha256 !== sha256(file.content)) {
+      failures.push(`${file.relativePath} has a SHA-256 mismatch.`)
+    }
+  }
+
+  return failures
 }
 
 function parseBundle(raw: string): BackupBundle {

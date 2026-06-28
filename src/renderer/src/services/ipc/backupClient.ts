@@ -1,6 +1,7 @@
 import type {
   BackupIdRequest,
   BackupRecord,
+  BackupRestoreResult,
   BackupVerification,
   CreateBackupRequest,
   NdxResult
@@ -27,4 +28,12 @@ export async function verifyBackup(
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.backups.verify(request)
+}
+
+export async function restoreBackup(
+  request: BackupIdRequest
+): Promise<NdxResult<BackupRestoreResult>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.backups.restore(request)
 }

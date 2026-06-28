@@ -2,11 +2,13 @@ import { ipcMain } from 'electron'
 import {
   backupIdRequestSchema,
   backupRecordSchema,
+  backupRestoreResultSchema,
   backupVerificationSchema,
   createBackupRequestSchema,
   IPC_CHANNELS,
   ndxError,
   type BackupRecord,
+  type BackupRestoreResult,
   type BackupVerification,
   type NdxResult
 } from '@shared/contracts'
@@ -35,6 +37,27 @@ export function registerBackupHandlers(backupService: BackupService): void {
       if (!parsed.success) return invalidRequest()
       const verification = await backupService.verify(parsed.data.id)
       return { ok: true, data: backupVerificationSchema.parse(verification) }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.backupRestore,
+    async (_event, payload: unknown): Promise<NdxResult<BackupRestoreResult>> => {
+      const parsed = backupIdRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      try {
+        const result = await backupService.restore(parsed.data.id)
+        return { ok: true, data: backupRestoreResultSchema.parse(result) }
+      } catch (error) {
+        return {
+          ok: false,
+          error: ndxError(
+            'system',
+            'backup-restore-failed',
+            error instanceof Error ? error.message : 'Backup restore failed.'
+          )
+        }
+      }
     }
   )
 }

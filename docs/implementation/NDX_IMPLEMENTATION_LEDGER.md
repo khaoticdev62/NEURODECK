@@ -2117,6 +2117,23 @@ npm run lint                  -> 0 errors, 0 warnings
 npm run build                 -> succeeded
 ```
 
+### Epic X7 addendum - rollback-backed restore (2026-06-27)
+
+`BackupService.restore()` now closes the local restore half of ND-X030 for the same local app-state scope as backup creation. The restore path verifies the selected `.ndx-backup.json` bundle before any write, creates a new rollback backup of the current app state first, restores every file with the existing temp-file/rename atomic write helper, removes stale files inside the known app-state scope when they are absent from the selected backup, and automatically reapplies the rollback bundle if restore fails mid-flight.
+
+The renderer no longer shows Restore as a disabled future action. `/backup` now opens a real `ConfirmationDialog` before restore, names the destructive scope, explains the rollback guarantee in JPE, calls typed `backup.restore` IPC, refreshes the backup list, and surfaces the rollback backup id/path after success.
+
+**Still deferred**: sync providers, conflict resolution, import/export formats, migration runners, remote/cloud backup destinations, scheduled backups, workspace-content restore, vault/secret restore, and migration-aware restore. Secret-bearing stores remain deliberately excluded; restoring them belongs to Epic X10's vault/identity model, not this local app-state slice.
+
+**Evidence (run 2026-06-27):**
+
+```text
+npm run test -- BackupService -> 1 file / 4 tests passed
+npx eslint <X7 restore files> -> 0 errors, 0 warnings
+```
+
+Full `npm run typecheck` is currently blocked by unrelated in-flight LAN-share worktree changes in `src/core/lanShare/LanShareService.ts` (unused LAN-5 imports plus missing `createServer`/`Socket` imports). That failure is outside the X7 restore files and existed in the dirty LAN-share worktree during this slice.
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 
 A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.
