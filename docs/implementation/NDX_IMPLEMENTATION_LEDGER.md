@@ -2571,13 +2571,39 @@ Real platform integrations for the existing LAN Share transfer and peer surfaces
 
 **Command Palette and Universal Search integration** (`CommandPalette.tsx`, `useGlobalSearch.ts`) — Command Palette lists LAN Share routes, and Universal Search indexes real LAN Share peers and transfer jobs via `lanShareClient`. Search result actions navigate to the real peer/detail/transfer screens; no fabricated recent actions or symbolic LAN commands were added.
 
-**Still deferred**: Share Sheet, Clipboard Center text-message sharing over `Warp.SendTextMessage`, Screenshot Center, Voice Notes, Workspace exports, Workflow Forge LAN nodes, Help Hub content, and Platform Health. Each needs either a missing shared platform surface or a missing LAN-specific backend. Building placeholder hooks would violate the no-mock-production-behavior rule.
+**Platform Health integration** (`src/renderer/src/features/system/AboutDiagnostics.tsx`) — About/Diagnostics now reports real LAN Share service state/reason, transfer- and registration-socket bind state, receive-directory writability, and interface count, sourced from the existing `getLanShareServiceStatus()`/`getLanShareHealth()` IPC calls; the same data is folded into the existing clipboard diagnostic export payload.
+
+**Still deferred**: Share Sheet, Clipboard Center text-message sharing over `Warp.SendTextMessage`, Screenshot Center, Voice Notes, Workspace exports, Workflow Forge LAN nodes, and Help Hub content. Each needs either a missing shared platform surface or a missing LAN-specific backend. Building placeholder hooks would violate the no-mock-production-behavior rule.
 
 **Validation evidence (run 2026-06-28):**
 
 ```text
 npm run test -> 195 files / 955 tests passed
 npm run test -- lanShareTools LanSharePlatformBridge -> 2 files / 6 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-9 (2026-06-28)
+
+Real network-boundary, interface-binding, and suspend/resume policy, scoped to what is cross-platform and verifiable from this dev environment without root, real firewall-rule access, or a release-signing pipeline.
+
+**Default local boundary, no WAN exposure** (`src/core/lanShare/lanBoundary.ts`, new) — `isPrivateOrLinkLocalAddress()`/`assertWithinLanBoundary()` classify an address against the real RFC 1918 IPv4 private ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), IPv4 link-local (`169.254.0.0/16`) and loopback (`127.0.0.0/8`), and the IPv6 equivalents (`fe80::/10` link-local, `fc00::/7` unique-local, `::1` loopback). `LanSharePeerStore.addManual()` now calls `assertWithinLanBoundary()` before persisting a manual peer, throwing `UnsafeLanAddressError` for anything outside those ranges; `registerLanShareHandlers.ts`'s `lanSharePeerAddManual` handler catches it and returns a real `security`-category `NdxError` rather than letting it surface as a raw IPC rejection. This is the one real place spec §22's "no WAN exposure" default boundary needed active enforcement — mDNS-discovered peers are already same-subnet by construction.
+
+**Preferred-interface-aware binding** (`LanShareService.start()`) — `settings.preferredInterfaceId` (stored since Phase LAN-1/7 but never read) is now resolved against `LanShareInterfaceManager.list()` on every `start()`; if it still resolves to a real interface, both `LanShareTransferServer` and `LanShareRegistrationServer` bind to that interface's specific address instead of `0.0.0.0`. A stale or unset preference falls back to binding all interfaces rather than failing the service. `formatBindHost()` (also in `lanBoundary.ts`) brackets a literal IPv6 host for grpc-js's `host:port` bind-target syntax. mDNS advertise/browse interface scoping is not changed — `LanShareMdnsDiscovery`'s underlying multicast library does not expose a single-interface bind option through its current wrapper, and changing that is a deeper change than this phase scopes to.
+
+**Suspend/resume** (`LanShareService.handleSystemSuspend()`/`handleSystemResume()`, wired in `main/ipc/index.ts` via real Electron `powerMonitor.on('suspend'/'resume', ...)`) — on a real OS suspend signal, if the service was running, it is genuinely stopped (sockets unbound, mDNS advertisement torn down) rather than left bound across a sleep where the network state goes stale; on resume, if it was running before suspend, `start()` runs again, genuinely rebinding sockets and re-advertising/re-browsing via mDNS. A user's own manual stop before a suspend is never silently overridden on resume — `wasRunningBeforeSuspend` is only set when the service was actually in the `running` state at the moment of suspend.
+
+**Honestly deferred, each for a named structural reason**: real VPN-route detection / "allow hotspot" / advanced multi-interface modes (§22) need a real Linux routing-table read (`ip route show`) that cannot be exercised or verified from this Windows dev environment; the Firewall Assistant (§23) needs a real listener/firewall-rule inspector against SteamOS's actual (immutable) firewall — a different host than this one, and the spec itself says automatic rule changes may be unavailable there; a systemd user-service unit and Resource Governor battery/thermal-aware throttling (§24) are real future work once a System Metrics-driven policy layer exists with at least one real consumer (none exists yet for any feature in this codebase, not just LAN Share); SteamOS packaging, code signing, and immutable-filesystem-compatible install (§32) are release-process/build-pipeline concerns needing the project's actual signing keys and a real SteamOS target machine, not application code.
+
+**New/changed files**: `src/core/lanShare/lanBoundary.ts` (new), `src/core/lanShare/__tests__/lanBoundary.test.ts` (new, 7 tests), `LanSharePeerStore.ts` (real boundary check in `addManual`), `LanShareService.ts` (suspend/resume methods, preferred-interface resolution), `grpc/LanShareTransferServer.ts`/`grpc/LanShareRegistrationServer.ts` (real `bindAddress` parameter), `main/ipc/registerLanShareHandlers.ts` (catches `UnsafeLanAddressError`), `main/ipc/index.ts` (real `powerMonitor` wiring + disposal).
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 196 files / 967 tests passed
+npm run test -- src/core/lanShare -> 19 files / 90 tests passed
 npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed

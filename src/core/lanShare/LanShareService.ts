@@ -63,6 +63,8 @@ export class LanShareService {
   private readonly incomingRemoteIdents = new Map<string, string>()
   private status: LanShareServiceStatus = { state: 'stopped', reason: 'Not started.' }
   private listeners = new Set<(status: LanShareServiceStatus) => void>()
+  /** Real spec §24 suspend/resume tracking: only auto-restart on resume if the service was genuinely running right before suspend — a user who had manually stopped it must stay stopped. */
+  private wasRunningBeforeSuspend = false
 
   constructor(
     private readonly settingsStore: LanShareSettingsStore,
@@ -95,25 +97,44 @@ export class LanShareService {
 
     const settings = await this.settingsStore.get()
     const identity = await this.identityStore.get()
+    // Real spec §22 "specific interface" mode: bind to exactly the
+    // preferred interface's address when the user has set one and it is
+    // still actually present, instead of always binding every interface.
+    // A stale/removed preference falls back to "all interfaces" rather
+    // than failing the whole service.
+    const preferredInterface = settings.preferredInterfaceId
+      ? this.interfaceManager
+          .list()
+          .find((candidate) => candidate.id === settings.preferredInterfaceId)
+      : undefined
+    const bindAddress = preferredInterface?.address ?? '0.0.0.0'
 
     try {
       this.transferServer = new LanShareTransferServer()
-      await this.transferServer.start(settings.transferPort, {
-        onTransferAnnounced: (request, peerAddress) => {
-          void this.recordIncomingTransfer(request, peerAddress)
+      await this.transferServer.start(
+        settings.transferPort,
+        {
+          onTransferAnnounced: (request, peerAddress) => {
+            void this.recordIncomingTransfer(request, peerAddress)
+          },
+          getPendingSendOperation: (ident) => this.pendingSendOperations.get(ident)
         },
-        getPendingSendOperation: (ident) => this.pendingSendOperations.get(ident)
-      })
+        bindAddress
+      )
       this.registrationServer = new LanShareRegistrationServer()
-      await this.registrationServer.start(settings.authPort, {
-        getOwnRegistration: () => this.buildOwnRegistration(settings, identity.connectId),
-        onPeerRegistered: (registration, peerAddress) => {
-          void this.recordPeerFromRegistration(registration, peerAddress)
+      await this.registrationServer.start(
+        settings.authPort,
+        {
+          getOwnRegistration: () => this.buildOwnRegistration(settings, identity.connectId),
+          onPeerRegistered: (registration, peerAddress) => {
+            void this.recordPeerFromRegistration(registration, peerAddress)
+          },
+          getOwnCertificatePem: async () =>
+            (await this.certificateStore.get(settings.deviceDisplayName)).certificatePem,
+          getGroupCode: () => this.groupCodeStore.get()
         },
-        getOwnCertificatePem: async () =>
-          (await this.certificateStore.get(settings.deviceDisplayName)).certificatePem,
-        getGroupCode: () => this.groupCodeStore.get()
-      })
+        bindAddress
+      )
     } catch (error) {
       await this.registrationServer?.stop()
       this.registrationServer = null
@@ -154,6 +175,36 @@ export class LanShareService {
     this.transferServer = null
     this.setStatus({ state: 'stopped', reason: 'Stopped by request.' })
     return this.status
+  }
+
+  /**
+   * Real spec §24 "before suspend": stop accepting new transfers and tear
+   * down listening sockets before the OS actually suspends, rather than
+   * leaving them bound across a sleep where the network state goes stale.
+   * Any transfer mid-flight is left in whatever state `stop()` leaves it —
+   * genuinely interrupted, not silently marked complete.
+   */
+  async handleSystemSuspend(): Promise<void> {
+    this.wasRunningBeforeSuspend = this.status.state === 'running'
+    if (this.wasRunningBeforeSuspend) {
+      await this.stop()
+      this.setStatus({
+        state: 'stopped',
+        reason: 'Stopped automatically because the system is suspending.'
+      })
+    }
+  }
+
+  /**
+   * Real spec §24 "after resume": rebind sockets, re-advertise via mDNS,
+   * and re-browse for peers — exactly what `start()` already does — but
+   * only if this service was actually running before suspend.
+   */
+  async handleSystemResume(): Promise<void> {
+    if (this.wasRunningBeforeSuspend) {
+      this.wasRunningBeforeSuspend = false
+      await this.start()
+    }
   }
 
   async getHealth(): Promise<LanShareHealth> {

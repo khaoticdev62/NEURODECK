@@ -1,4 +1,4 @@
-import { app, Notification, session, shell, type BrowserWindow } from 'electron'
+import { app, Notification, powerMonitor, session, shell, type BrowserWindow } from 'electron'
 import { randomUUID } from 'node:crypto'
 import { hostname, homedir } from 'node:os'
 import { join } from 'node:path'
@@ -377,6 +377,15 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerLearningHandlers(learningService)
   registerDiagnosticsHandlers(modelProviderStore)
   const disposePower = registerPowerHandlers(getWindow)
+  // Real spec §24 suspend/resume: LAN Share's own real sockets/mDNS
+  // advertisement must not stay bound across a suspend, and must rebind
+  // and re-announce on resume — handled in `LanShareService` itself so
+  // `core/` stays free of an `electron` import; this is the one real
+  // subscription point.
+  const onLanShareSuspend = (): void => void lanShareService.handleSystemSuspend()
+  const onLanShareResume = (): void => void lanShareService.handleSystemResume()
+  powerMonitor.on('suspend', onLanShareSuspend)
+  powerMonitor.on('resume', onLanShareResume)
   registerControllerSettingsHandlers(
     new ControllerSettingsStore(join(app.getPath('userData'), 'controller-settings.json'))
   )
@@ -432,6 +441,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     disposeTerminal()
     disposeRemote()
     disposePower()
+    powerMonitor.removeListener('suspend', onLanShareSuspend)
+    powerMonitor.removeListener('resume', onLanShareResume)
     disposePackages()
     disposeLan()
     disposeLanShare()

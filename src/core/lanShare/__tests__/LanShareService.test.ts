@@ -89,6 +89,58 @@ describe('LanShareService', () => {
     expect(service.getStatus().state).toBe('stopped')
   })
 
+  it('stops on a real suspend signal and rebinds real sockets again on resume', async () => {
+    const transferPort = await freePort()
+    const authPort = await freePort()
+    const settingsStore = new LanShareSettingsStore(
+      join(dir, 'settings.json'),
+      'Test Device',
+      join(dir, 'receive')
+    )
+    await settingsStore.update({ transferPort, authPort })
+    const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
+    const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
+    const { service } = createService(dir, settingsStore, identityStore, peerStore)
+
+    await service.start()
+    expect(service.getStatus().state).toBe('running')
+
+    await service.handleSystemSuspend()
+    expect(service.getStatus().state).toBe('stopped')
+    let health = await service.getHealth()
+    expect(health.transferPortBound).toBe(false)
+
+    await service.handleSystemResume()
+    expect(service.getStatus().state).toBe('running')
+    health = await service.getHealth()
+    expect(health.transferPortBound).toBe(true)
+
+    await service.stop()
+  })
+
+  it('stays stopped on resume if it was already manually stopped before suspend', async () => {
+    const transferPort = await freePort()
+    const authPort = await freePort()
+    const settingsStore = new LanShareSettingsStore(
+      join(dir, 'settings.json'),
+      'Test Device',
+      join(dir, 'receive')
+    )
+    await settingsStore.update({ transferPort, authPort })
+    const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
+    const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
+    const { service } = createService(dir, settingsStore, identityStore, peerStore)
+
+    await service.start()
+    await service.stop()
+    expect(service.getStatus().state).toBe('stopped')
+
+    await service.handleSystemSuspend()
+    await service.handleSystemResume()
+
+    expect(service.getStatus().state).toBe('stopped')
+  })
+
   it('reports a real error when the transfer port cannot be bound', async () => {
     const authPort = await freePort()
     const settingsStore = new LanShareSettingsStore(

@@ -6,6 +6,7 @@ import type {
   LanShareRegistrationVersion,
   LanShareTrustState
 } from '@shared/contracts'
+import { assertWithinLanBoundary } from './lanBoundary'
 import { JsonStore } from '../persistence/JsonStore'
 
 export interface UpsertSeenLanSharePeerInput {
@@ -63,6 +64,7 @@ export class LanSharePeerStore {
   }
 
   async addManual(request: AddManualLanSharePeerRequest): Promise<LanSharePeer> {
+    assertWithinLanBoundary(request.address)
     const id = `${request.address}:${request.transferPort}`
     const peers = await this.store.read()
     const existing = peers.find((peer) => peer.id === id)

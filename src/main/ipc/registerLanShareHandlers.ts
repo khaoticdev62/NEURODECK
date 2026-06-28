@@ -18,6 +18,7 @@ import {
   type LanShareTransferJob,
   type NdxResult
 } from '@shared/contracts'
+import { UnsafeLanAddressError } from '../../core/lanShare/lanBoundary'
 import type { LanShareGroupCodeStore } from '../../core/lanShare/LanShareGroupCodeStore'
 import type { LanShareIdentityStore } from '../../core/lanShare/LanShareIdentityStore'
 import type { LanShareInterfaceManager } from '../../core/lanShare/LanShareInterfaceManager'
@@ -245,13 +246,20 @@ export function registerLanShareHandlers(
           error: ndxError('validation', 'invalid-request', 'That address is invalid.')
         }
       }
-      const peer = await peerStore.addManual(parsed.data)
-      await service.probeManualPeer(
-        parsed.data.address,
-        parsed.data.transferPort,
-        parsed.data.authPort
-      )
-      return { ok: true, data: (await peerStore.get(peer.id)) ?? peer }
+      try {
+        const peer = await peerStore.addManual(parsed.data)
+        await service.probeManualPeer(
+          parsed.data.address,
+          parsed.data.transferPort,
+          parsed.data.authPort
+        )
+        return { ok: true, data: (await peerStore.get(peer.id)) ?? peer }
+      } catch (error) {
+        if (error instanceof UnsafeLanAddressError) {
+          return { ok: false, error: ndxError('security', 'address-not-local', error.message) }
+        }
+        throw error
+      }
     }
   )
 

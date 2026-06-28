@@ -3,6 +3,7 @@ import { encryptWithGroupCode } from './groupCodeCipher'
 import { loadNdxLanShareProto } from './loadNdxLanShareProto'
 import { parsePeerHost } from './parsePeerHost'
 import { RegistrationRateLimiter } from './RegistrationRateLimiter'
+import { formatBindHost } from '../lanBoundary'
 
 /** Real wire shape of `ServiceRegistration` — field names match the proto's `keepCase: true` output exactly. */
 export interface NdxServiceRegistration {
@@ -50,7 +51,11 @@ export class LanShareRegistrationServer {
   private server: grpc.Server | null = null
   private readonly rateLimiter = new RegistrationRateLimiter()
 
-  async start(port: number, options: LanShareRegistrationServerOptions): Promise<void> {
+  async start(
+    port: number,
+    options: LanShareRegistrationServerOptions,
+    bindAddress = '0.0.0.0'
+  ): Promise<void> {
     const proto = await loadNdxLanShareProto()
     const serviceCtor = proto.WarpRegistration as grpc.ServiceClientConstructor
 
@@ -92,13 +97,17 @@ export class LanShareRegistrationServer {
     })
 
     await new Promise<void>((resolve, reject) => {
-      server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), (error) => {
-        if (error) {
-          reject(error)
-          return
+      server.bindAsync(
+        `${formatBindHost(bindAddress)}:${port}`,
+        grpc.ServerCredentials.createInsecure(),
+        (error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          resolve()
         }
-        resolve()
-      })
+      )
     })
 
     this.server = server

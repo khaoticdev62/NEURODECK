@@ -50,6 +50,19 @@ describe('LanShareTransferServer + LanShareTransferClient', () => {
     await expect(client.ping('127.0.0.1', port)).resolves.toBeUndefined()
   })
 
+  it('binds to a specific real interface address when one is given instead of all interfaces', async () => {
+    const port = await freePort()
+    server = new LanShareTransferServer()
+    await server.start(
+      port,
+      { onTransferAnnounced: () => undefined, getPendingSendOperation: () => undefined },
+      '127.0.0.1'
+    )
+
+    const client = new LanShareTransferClient()
+    await expect(client.ping('127.0.0.1', port)).resolves.toBeUndefined()
+  })
+
   it('delivers a real ProcessTransferOpRequest announcement to the receiving peer', async () => {
     const port = await freePort()
     let received: NdxTransferOpRequest | undefined

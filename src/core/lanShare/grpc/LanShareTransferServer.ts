@@ -3,6 +3,7 @@ import { open } from 'node:fs/promises'
 import { compressChunk } from './fileChunkCompression'
 import { loadNdxLanShareProto } from './loadNdxLanShareProto'
 import { parsePeerHost } from './parsePeerHost'
+import { formatBindHost } from '../lanBoundary'
 import { NDX_FILE_TYPE_DIRECTORY, NDX_FILE_TYPE_SYMBOLIC_LINK } from '../LanShareManifestBuilder'
 
 /** Real wire shape of `VoidType` — `dummy` is the proto's literal field name, never meaningfully read. */
@@ -88,7 +89,11 @@ const UNIMPLEMENTED_TRANSFER_MESSAGE = 'This RPC is not implemented yet (Phase L
 export class LanShareTransferServer {
   private server: grpc.Server | null = null
 
-  async start(port: number, options: LanShareTransferServerOptions): Promise<void> {
+  async start(
+    port: number,
+    options: LanShareTransferServerOptions,
+    bindAddress = '0.0.0.0'
+  ): Promise<void> {
     const proto = await loadNdxLanShareProto()
     const serviceCtor = proto.Warp as grpc.ServiceClientConstructor
 
@@ -134,13 +139,17 @@ export class LanShareTransferServer {
     })
 
     await new Promise<void>((resolve, reject) => {
-      server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), (error) => {
-        if (error) {
-          reject(error)
-          return
+      server.bindAsync(
+        `${formatBindHost(bindAddress)}:${port}`,
+        grpc.ServerCredentials.createInsecure(),
+        (error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          resolve()
         }
-        resolve()
-      })
+      )
     })
 
     this.server = server

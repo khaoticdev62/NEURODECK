@@ -2,6 +2,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { UnsafeLanAddressError } from '../lanBoundary'
 import { LanSharePeerStore } from '../LanSharePeerStore'
 
 describe('LanSharePeerStore', () => {
@@ -117,5 +118,13 @@ describe('LanSharePeerStore', () => {
     })
 
     expect(updated.trustState).toBe('blocked')
+  })
+
+  it('rejects a manual peer address outside the real private/link-local LAN boundary', async () => {
+    const store = new LanSharePeerStore(join(dir, 'peers.json'))
+    await expect(
+      store.addManual({ address: '8.8.8.8', transferPort: 42000, authPort: 42001 })
+    ).rejects.toThrow(UnsafeLanAddressError)
+    expect(await store.list()).toHaveLength(0)
   })
 })
