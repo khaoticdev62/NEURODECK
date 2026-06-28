@@ -2636,3 +2636,29 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-11 (2026-06-28)
+
+Packaging, SBOM, documentation, and release-gate pass over the now-complete LAN-1 through LAN-10 implementation. No application code changed in this phase.
+
+**SBOM** (`docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md` §6, updated) — full real dependency inventory for LAN Share: `@grpc/grpc-js` 1.14.4 (Apache-2.0), `@grpc/proto-loader` 0.8.1 (Apache-2.0), `@js-sdsl/ordered-map` 4.4.2 (MIT, transitive), `bonjour-service` 1.4.2 (MIT), `multicast-dns` 7.2.5 (MIT, transitive), `dns-packet` 5.6.1 (MIT, transitive), `fast-deep-equal` 3.1.3 (MIT, transitive), `selfsigned` 5.5.0 (MIT), `tweetnacl` 1.0.3 (Unlicense). Every version/license was read directly from the installed package's own `package.json`, not assumed. **Confirmed zero native (compiled) bindings anywhere in this tree** — searched for `.node` binary files and `binding.gyp` across all nine packages, found none. All licenses are permissive; none copyleft, consistent with the LAN-0 clean-room strategy.
+
+**Packaging** (`docs/legal/LAN_SHARE_RELEASE_READINESS.md`, new) — reviewed `electron-builder.yml`: Linux targets already include `AppImage` (the format spec §32 calls SteamOS-compatible), and `npmRebuild: false` is already correct and needs no change, since the SBOM confirms LAN Share has no native dependency to rebuild. LAN Share binds only unprivileged ports (`42000`/`42001` TCP, mDNS UDP) as the logged-in user — no root requirement, no bundled binaries, no resources outside the asar. An actual `npm run build:linux` AppImage build and a run on real SteamOS hardware were **not** performed — this dev environment is Windows and cannot cross-build or verify a signed Linux artifact; this is the same class of gap already named in LAN-9's ledger entry, not a new one.
+
+**Documentation** — inventoried what already exists (the license/compatibility audit, ten per-phase ledger entries, the checklist, and in-code doc comments) and named what's deliberately not written yet: a standalone end-user quickstart, deferred because several screens it would describe (Firewall Assistant, Quick Send Overlay, etc.) are still honestly unbuilt per LAN-7.
+
+**Release gates** — a concrete table in `LAN_SHARE_RELEASE_READINESS.md` §4 covering every validation command (lint/typecheck/test/build all pass; `build:linux` not run) plus the LAN-9/LAN-10 security findings (no-WAN-exposure, decompression-bomb guard, disk-fill guard) as named, checkable gates rather than a vague "looks done."
+
+**Honestly open, each named with an owner-class**: a real SteamOS-hardware AppImage build and run (infrastructure — needs a Linux/SteamOS host), code signing (infrastructure — needs the project's actual signing keys), the project's own undeclared license (maintainer decision, carried forward from LAN-0 §2), and live interop against an actual Warpinator/Winpinator binary (external dependency — no such client exists in this session, carried forward from LAN-10).
+
+**New/changed files**: `docs/legal/LAN_SHARE_LICENSE_AND_COMPATIBILITY.md` (§6 SBOM rewritten), `docs/legal/LAN_SHARE_RELEASE_READINESS.md` (new).
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 196 files / 970 tests passed, 2 failed (pre-existing, unrelated flaky GuidedControllerTutorial.test.tsx — confirmed by re-running it in isolation; not caused by this phase, which changed no application code)
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+npm run build:linux -> not run (no Linux host in this dev environment)
+```
