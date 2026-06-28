@@ -137,6 +137,34 @@ const RemoteSession = lazy(async () => {
   const module = await import('../../features/remote/RemoteSession')
   return { default: module.RemoteSession }
 })
+const LanShareHome = lazy(async () => {
+  const module = await import('../../features/lanShare/LanShareHome')
+  return { default: module.LanShareHome }
+})
+const LanShareNearbyDevices = lazy(async () => {
+  const module = await import('../../features/lanShare/LanShareNearbyDevices')
+  return { default: module.LanShareNearbyDevices }
+})
+const LanShareDeviceDetail = lazy(async () => {
+  const module = await import('../../features/lanShare/LanShareDeviceDetail')
+  return { default: module.LanShareDeviceDetail }
+})
+const LanShareSendComposer = lazy(async () => {
+  const module = await import('../../features/lanShare/LanShareSendComposer')
+  return { default: module.LanShareSendComposer }
+})
+const LanShareTransfers = lazy(async () => {
+  const module = await import('../../features/lanShare/LanShareTransfers')
+  return { default: module.LanShareTransfers }
+})
+const LanShareTransferDetail = lazy(async () => {
+  const module = await import('../../features/lanShare/LanShareTransferDetail')
+  return { default: module.LanShareTransferDetail }
+})
+const LanShareSettings = lazy(async () => {
+  const module = await import('../../features/lanShare/LanShareSettings')
+  return { default: module.LanShareSettings }
+})
 const SystemDashboard = lazy(async () => {
   const module = await import('../../features/system/SystemDashboard')
   return { default: module.SystemDashboard }
@@ -587,6 +615,76 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: false,
     element: withSuspense('remote', <RemoteSession />)
+  },
+  {
+    routeId: 'lan-share-home',
+    screenId: 'ND-LAN-001',
+    path: '/lan-share',
+    title: 'LAN Share',
+    owningEpic: 'LAN Share Phase LAN-7',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('lan share', <LanShareHome />)
+  },
+  {
+    routeId: 'lan-share-peers',
+    screenId: 'ND-LAN-002',
+    path: '/lan-share/peers',
+    title: 'Nearby Devices',
+    owningEpic: 'LAN Share Phase LAN-7',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('lan share nearby devices', <LanShareNearbyDevices />)
+  },
+  {
+    routeId: 'lan-share-device-detail',
+    screenId: 'ND-LAN-003',
+    path: '/lan-share/peers/:peerId',
+    title: 'Device Detail',
+    owningEpic: 'LAN Share Phase LAN-7',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: withSuspense('lan share device detail', <LanShareDeviceDetail />)
+  },
+  {
+    routeId: 'lan-share-send',
+    screenId: 'ND-LAN-004',
+    path: '/lan-share/send',
+    title: 'Send Files',
+    owningEpic: 'LAN Share Phase LAN-7',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: withSuspense('lan share send composer', <LanShareSendComposer />)
+  },
+  {
+    routeId: 'lan-share-transfers',
+    screenId: 'ND-LAN-007',
+    path: '/lan-share/transfers',
+    title: 'Transfers',
+    owningEpic: 'LAN Share Phase LAN-7',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('lan share transfers', <LanShareTransfers />)
+  },
+  {
+    routeId: 'lan-share-transfer-detail',
+    screenId: 'ND-LAN-008',
+    path: '/lan-share/transfers/:jobId',
+    title: 'Transfer Detail',
+    owningEpic: 'LAN Share Phase LAN-7',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: withSuspense('lan share transfer detail', <LanShareTransferDetail />)
+  },
+  {
+    routeId: 'lan-share-settings',
+    screenId: 'ND-LAN-017',
+    path: '/lan-share/settings',
+    title: 'LAN Share Settings',
+    owningEpic: 'LAN Share Phase LAN-7',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: false,
+    element: withSuspense('lan share settings', <LanShareSettings />)
   },
   {
     routeId: 'system',

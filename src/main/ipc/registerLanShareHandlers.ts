@@ -1,4 +1,4 @@
-import { ipcMain, type BrowserWindow } from 'electron'
+import { dialog, ipcMain, type BrowserWindow } from 'electron'
 import {
   addManualLanSharePeerRequestSchema,
   IPC_CHANNELS,
@@ -98,6 +98,17 @@ export function registerLanShareHandlers(
 
   ipcMain.handle(IPC_CHANNELS.lanShareHealthGet, async (): Promise<NdxResult<LanShareHealth>> => {
     return { ok: true, data: await service.getHealth() }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.lanSharePickFiles, async (): Promise<NdxResult<string[]>> => {
+    const window = getWindow()
+    const result = window
+      ? await dialog.showOpenDialog(window, { properties: ['openFile', 'multiSelections'] })
+      : await dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] })
+    if (result.canceled) {
+      return { ok: true, data: [] }
+    }
+    return { ok: true, data: result.filePaths }
   })
 
   ipcMain.handle(

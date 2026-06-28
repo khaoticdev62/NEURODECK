@@ -218,5 +218,6 @@ export const IPC_CHANNELS = {
   lanShareHealthGet: 'lanShare.health.get',
   lanShareSendFiles: 'lanShare.send.sendFiles',
   lanShareAcceptTransfer: 'lanShare.receive.accept',
-  lanShareRejectTransfer: 'lanShare.receive.reject'
+  lanShareRejectTransfer: 'lanShare.receive.reject',
+  lanSharePickFiles: 'lanShare.send.pickFiles'
 } as const

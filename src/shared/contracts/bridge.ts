@@ -560,5 +560,6 @@ export interface NdxBridge {
     rejectTransfer: (
       request: LanShareTransferJobIdRequest
     ) => Promise<NdxResult<LanShareTransferJob>>
+    pickFiles: () => Promise<NdxResult<string[]>>
   }
 }

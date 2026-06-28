@@ -152,3 +152,9 @@ export async function rejectLanShareTransfer(
   if (!bridge) return bridgeUnavailableError()
   return bridge.lanShare.rejectTransfer(request)
 }
+
+export async function pickLanShareFiles(): Promise<NdxResult<string[]>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.lanShare.pickFiles()
+}

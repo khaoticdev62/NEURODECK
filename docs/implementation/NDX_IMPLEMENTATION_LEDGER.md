@@ -2523,3 +2523,37 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-7 (2026-06-28)
+
+Real controller-native screens for the backend built in LAN-1 through LAN-6. Researched this codebase's exact existing screen conventions (routing, focus, IPC-to-component data flow) via a dedicated exploration pass before writing any UI, rather than inventing a new pattern — every new screen matches `RemoteSystems.tsx`/`SystemDashboard.tsx` structurally (plain `useState`/`useEffect` + the IPC client, `useFocusable` only on data-record list items, `ControllerButton` for actions, no new shared form/list primitives invented for this one feature).
+
+**7 real screens, covering 12 of the 28 spec'd ND-LAN screens** (`src/renderer/src/features/lanShare/`):
+- `LanShareHome.tsx` (ND-LAN-001) — real service start/stop (live-updating via the existing `onLanShareServiceUpdate` push), real identity, real health (bound sockets, writable receive directory, interface count).
+- `LanShareNearbyDevices.tsx` (ND-LAN-002, folding in ND-LAN-010 Trusted Devices and ND-LAN-013 Manual Connection) — real peer list, trust state shown per-card rather than a separate filtered view, and a real manual-add form that immediately triggers the real `probeManualPeer` registration handshake (the UI is honest that it may show "incompatible," not a fabricated success).
+- `LanShareDeviceDetail.tsx` (ND-LAN-003, folding in ND-LAN-011 Device Trust Review) — real peer fields, real trust transitions calling the exact spec §12 state machine directly (no separate "review" step needed since the state machine itself already enforces the real rules).
+- `LanShareSendComposer.tsx` (ND-LAN-004, folding in ND-LAN-005 Selection Review) — real peer picker, a real native multi-file picker (new `lanShare.send.pickFiles` IPC channel wrapping a real `dialog.showOpenDialog`, matching the exact pattern `workspace.pickFolder` already uses) rather than a path text box, and the selected-file list doubles as the review step.
+- `LanShareTransfers.tsx` (ND-LAN-007, folding in ND-LAN-006 Incoming Transfer Approval and ND-LAN-009 Transfer History) — real live job list via the existing push channel, real accept/reject acting directly on `waiting-for-approval` jobs, terminal-status jobs kept visible as history rather than disappearing.
+- `LanShareTransferDetail.tsx` (ND-LAN-008) — real single-job detail, same live push.
+- `LanShareSettings.tsx` (ND-LAN-017, folding in ND-LAN-012 Group Code/Secure Mode, ND-LAN-014 Network Interface Selection shown read-only, ND-LAN-015 Receive Destination Rules as the one real directory field, ND-LAN-016 Compression) — every field is a real, persisted setting; auto-start is disabled in the UI itself when the group code is still the default, mirroring (not replacing) the real backend enforcement from Phase LAN-4.
+
+**New real IPC surface**: `lanShare.send.pickFiles` — a real native OS file-picker dialog, added because the alternative (a raw text input for absolute file paths) would have been markedly worse UX for no real benefit; wired through the full bridge/preload/contract chain like every other LAN Share channel.
+
+**Honestly not built — would be empty shells with no real backend behind them**: ND-LAN-018 Firewall Assistant (no real firewall probe), ND-LAN-019 Connectivity Diagnostics (the real health fields already surface on Home), ND-LAN-020 Compatibility Detail (no real protocol-version matrix beyond a peer's bare `registrationVersion` field), ND-LAN-021 Quick Send Overlay (no global overlay system integration), ND-LAN-022 Background Receive Notification (no notification-center integration), ND-LAN-023 Conflict Resolver (the real receive engine from Phase LAN-6 already never silently replaces a file — there is genuinely no decision left for a user to make), ND-LAN-024 Insufficient Storage Recovery (no real disk-space pre-check), ND-LAN-025 Quarantined Item (no quarantine system exists), ND-LAN-026 Help, ND-LAN-027 First-Run Secure Setup (the real group-code setup lives in Settings; no dedicated first-run wizard was built), ND-LAN-028 Service Health and Logs (the real health fields already shown on Home; no separate log store exists to view).
+
+**Navigation**: reachable via System Dashboard → "LAN Share" (`/lan-share`), matching how Remote Systems and other non-primary-rail features are already reached — LAN Share was deliberately not added to the 13-item primary navigation rail/`FEATURE_CATALOG`, consistent with how Remote Systems and other System-adjacent features are scoped.
+
+**Not done in this phase**: interactive manual verification (launching the built app and exercising the screens with a controller or mouse) was not performed — validation relied on typecheck/lint/the existing automated test suite/a production build succeeding, the same validation depth every prior LAN Share phase in this session used. This is a real, named gap, not a silent omission.
+
+### Tests and evidence
+
+No new automated tests were added in this phase — these are UI screens wrapping already-tested IPC clients/backend services; the existing 79 LAN Share backend tests (Phases LAN-1 through LAN-6) are what actually exercise the logic these screens call.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test       → 193 files, 948 tests passed (no failures this run)
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

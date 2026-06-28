@@ -41,7 +41,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Recovery Timeline', path: '/recovery' },
   { label: 'Storage and Recovery', path: '/storage' },
   { label: 'Agent Operations Center', path: '/agents' },
-  { label: 'Remote Systems', path: '/remote' }
+  { label: 'Remote Systems', path: '/remote' },
+  { label: 'LAN Share', path: '/lan-share' }
 ]
 
 /**
