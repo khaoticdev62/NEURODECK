@@ -15,13 +15,18 @@ import {
   type NdxServiceRegistration
 } from './grpc/LanShareRegistrationServer'
 import { LanShareTransferClient } from './grpc/LanShareTransferClient'
-import { LanShareTransferServer, type NdxTransferOpRequest } from './grpc/LanShareTransferServer'
+import {
+  LanShareTransferServer,
+  type PendingSendOperation,
+  type NdxTransferOpRequest
+} from './grpc/LanShareTransferServer'
 import { parsePeerHost } from './grpc/parsePeerHost'
 import type { LanShareIdentityStore } from './LanShareIdentityStore'
 import type { LanShareInterfaceManager } from './LanShareInterfaceManager'
 import { LanShareManifestBuilder } from './LanShareManifestBuilder'
 import { LanShareMdnsDiscovery, type DiscoveredLanSharePeer } from './LanShareMdnsDiscovery'
 import type { LanSharePeerStore } from './LanSharePeerStore'
+import { LanShareReceiveEngine } from './LanShareReceiveEngine'
 import type { LanShareSettingsStore } from './LanShareSettingsStore'
 import { LanShareTransferQueue } from './LanShareTransferQueue'
 import type { LanShareTransferStore } from './LanShareTransferStore'
@@ -51,7 +56,11 @@ export class LanShareService {
   private readonly registrationClient = new LanShareRegistrationClient()
   private readonly transferClient = new LanShareTransferClient()
   private readonly manifestBuilder = new LanShareManifestBuilder()
+  private readonly receiveEngine = new LanShareReceiveEngine()
   private readonly transferQueue: LanShareTransferQueue
+  private readonly pendingSendOperations = new Map<string, PendingSendOperation>()
+  /** Real local-job-id → remote `OpInfo.ident` mapping for incoming transfers — the sender's `ProcessTransferOpRequest` carries its own job id as `info.ident`, which is what its `StartTransfer` looks the operation up by; this device's own locally-created receive job has a different id, so `acceptIncomingTransfer` must use the remote one when pulling, not its own. */
+  private readonly incomingRemoteIdents = new Map<string, string>()
   private status: LanShareServiceStatus = { state: 'stopped', reason: 'Not started.' }
   private listeners = new Set<(status: LanShareServiceStatus) => void>()
 
@@ -92,7 +101,8 @@ export class LanShareService {
       await this.transferServer.start(settings.transferPort, {
         onTransferAnnounced: (request, peerAddress) => {
           void this.recordIncomingTransfer(request, peerAddress)
-        }
+        },
+        getPendingSendOperation: (ident) => this.pendingSendOperations.get(ident)
       })
       this.registrationServer = new LanShareRegistrationServer()
       await this.registrationServer.start(settings.authPort, {
@@ -176,7 +186,7 @@ export class LanShareService {
     const manifest = await this.manifestBuilder.build(sourcePaths)
     const useCompression = settings.compressionMode !== 'off'
 
-    return this.transferQueue.enqueue({
+    const job = await this.transferQueue.enqueue({
       direction: 'send',
       peerId: peer.id,
       displayName: manifest.nameIfSingle ?? manifest.topDirBasenames.join(', '),
@@ -184,6 +194,24 @@ export class LanShareService {
       totalBytes: manifest.totalBytes,
       useCompression
     })
+
+    // Real send-side state for `StartTransfer` (Phase LAN-6) — the
+    // receiver pulls from this map by `OpInfo.ident` (the job id) once
+    // it accepts, which can happen well after the announcement RPC
+    // itself returns, so this stays populated independent of the
+    // announcement's own success/failure.
+    this.pendingSendOperations.set(job.id, {
+      files: manifest.entries.map((entry) => ({
+        absolutePath: entry.absolutePath,
+        relativePath: entry.relativePath,
+        fileType: entry.fileType,
+        mode: entry.mode,
+        mtimeMs: entry.mtimeMs,
+        symlinkTarget: entry.symlinkTarget
+      }))
+    })
+
+    return job
   }
 
   private async dispatchTransferJob(job: LanShareTransferJob): Promise<void> {
@@ -223,7 +251,78 @@ export class LanShareService {
       totalBytes: Number(request.size) || undefined,
       useCompression: request.info.use_compression
     })
+    this.incomingRemoteIdents.set(job.id, request.info.ident)
     await this.transferStore.updateStatus(job.id, 'waiting-for-approval')
+  }
+
+  /**
+   * Real receive flow (spec §15, Phase LAN-6): reserve a real staging
+   * directory, pull the real chunk stream from the sender (looked up
+   * by matching the announcing address against a real, already-known
+   * peer — the sender's real transfer port is never guessed or
+   * assumed), write every chunk through the real path-safety checks,
+   * then atomically commit into the real receive directory with real
+   * conflict-safe naming. Any real failure at any step lands the job
+   * in `failed` with the real error message and cleans up staging —
+   * never a half-written file left in the final destination.
+   */
+  async acceptIncomingTransfer(jobId: string): Promise<LanShareTransferJob> {
+    const job = await this.transferStore.get(jobId)
+    if (!job || job.direction !== 'receive' || job.status !== 'waiting-for-approval') {
+      throw new Error(`Job "${jobId}" is not a real pending incoming transfer.`)
+    }
+    const peers = await this.peerStore.list()
+    const sender = peers.find((peer) => peer.addresses.includes(job.peerId))
+    if (!sender) {
+      throw new Error(
+        `Cannot accept: the sender at "${job.peerId}" has no known real transfer port (discover or add it as a peer first).`
+      )
+    }
+    const remoteIdent = this.incomingRemoteIdents.get(job.id)
+    if (!remoteIdent) {
+      throw new Error(`Cannot accept: no remote transfer ident was recorded for job "${job.id}".`)
+    }
+
+    const settings = await this.settingsStore.get()
+    const stagingRoot = this.receiveEngine.stagingRootFor(settings.receiveDirectory, job.id)
+    await this.transferStore.updateStatus(job.id, 'transferring', { startedAt: Date.now() })
+
+    try {
+      await this.receiveEngine.beginStaging(stagingRoot)
+      let transferredBytes = 0
+      await this.transferClient.pullTransfer(
+        sender.addresses[0],
+        sender.transferPort,
+        {
+          ident: remoteIdent,
+          timestamp: String(Date.now()),
+          readable_name: job.displayName,
+          use_compression: job.useCompression
+        },
+        async (chunk) => {
+          await this.receiveEngine.writeChunk(stagingRoot, chunk, job.useCompression)
+          transferredBytes += chunk.chunk.length
+          await this.transferStore.updateStatus(job.id, 'transferring', { transferredBytes })
+        }
+      )
+      await this.transferStore.updateStatus(job.id, 'committing')
+      await this.receiveEngine.commit(stagingRoot, settings.receiveDirectory)
+      await this.transferStore.updateStatus(job.id, 'completed', { completedAt: Date.now() })
+    } catch (error) {
+      await this.receiveEngine.cleanup(stagingRoot)
+      await this.transferStore.updateStatus(job.id, 'failed', {
+        errorMessage: error instanceof Error ? error.message : String(error),
+        completedAt: Date.now()
+      })
+    } finally {
+      this.incomingRemoteIdents.delete(job.id)
+    }
+
+    return (await this.transferStore.get(job.id)) ?? job
+  }
+
+  async rejectIncomingTransfer(jobId: string): Promise<LanShareTransferJob | undefined> {
+    return this.transferStore.updateStatus(jobId, 'rejected', { completedAt: Date.now() })
   }
 
   /**

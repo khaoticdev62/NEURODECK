@@ -155,9 +155,10 @@ const defaultDetectors: Record<CapabilityId, CapabilityDetector> = {
   'remote-desktop-launchers': () =>
     unsupported('No real RDP/VNC launcher integration is implemented yet.'),
   'lanShare.available': () => ({
-    status: 'degraded',
+    status: 'available',
+    provider: 'core/lanShare/LanShareService',
     reason:
-      'A real LAN Share service exists with real mDNS discovery, real v1/v2 registration, and real group-code-authenticated certificate exchange (Phases LAN-3/LAN-4), but no real send/receive transfer engine yet (Phase LAN-5/LAN-6 onward).'
+      'Real end-to-end LAN Share is implemented: mDNS discovery, v1/v2 registration with group-code-authenticated certificates, and real file/directory transfer with staging and atomic commit (Phases LAN-2 through LAN-6). No controller-native screens exist yet (Phase LAN-7), and NDX-enhanced resume/text messages/OS-level sandboxing remain honestly deferred.'
   }),
   'lanShare.discovery.mdns': () => ({
     status: 'available',
@@ -182,16 +183,22 @@ const defaultDetectors: Record<CapabilityId, CapabilityDetector> = {
     reason:
       'Real v2 certificate exchange is implemented: a real RSA-2048 self-signed certificate, encrypted with the real NaCl secretbox construction Warpinator itself uses, keyed by the configured group code (Phase LAN-4).'
   }),
-  'lanShare.files': () =>
-    unsupported(
-      'Real preflight/manifest building and transfer announcement exist (Phase LAN-5), but StartTransfer — the real chunk-streaming RPC that would actually move file bytes — is still honestly UNIMPLEMENTED until Phase LAN-6 builds the receiving/staging engine.'
-    ),
-  'lanShare.directories': () =>
-    unsupported(
-      'The real manifest builder already walks directory trees and records real directory entries (Phase LAN-5), but no real bytes flow yet — Phase LAN-6.'
-    ),
+  'lanShare.files': () => ({
+    status: 'available',
+    provider: 'core/lanShare/LanShareReceiveEngine',
+    reason:
+      'Real end-to-end file transfer is implemented: real chunk streaming (StartTransfer), real path-safe staging, and real atomic commit with conflict-safe naming, confirmed by a real two-service integration test (Phase LAN-6).'
+  }),
+  'lanShare.directories': () => ({
+    status: 'available',
+    provider: 'core/lanShare/LanShareReceiveEngine',
+    reason:
+      'Real directory trees are streamed, staged, and committed end-to-end, confirmed by tests covering real directory/symlink marker chunks (Phase LAN-6).'
+  }),
   'lanShare.text': () =>
-    unsupported('No real send/receive transfer engine exists yet (Phase LAN-6).'),
+    unsupported(
+      'The real Warp.SendTextMessage RPC (clipboard-text sharing) is not implemented yet — file/directory transfer uses StartTransfer instead, which is real.'
+    ),
   'lanShare.parallel': () => ({
     status: 'available',
     provider: 'core/lanShare/LanShareTransferQueue',

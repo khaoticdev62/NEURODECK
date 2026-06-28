@@ -136,3 +136,19 @@ export async function sendLanShareFiles(
   if (!bridge) return bridgeUnavailableError()
   return bridge.lanShare.sendFiles(request)
 }
+
+export async function acceptLanShareTransfer(
+  request: LanShareTransferJobIdRequest
+): Promise<NdxResult<LanShareTransferJob>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.lanShare.acceptTransfer(request)
+}
+
+export async function rejectLanShareTransfer(
+  request: LanShareTransferJobIdRequest
+): Promise<NdxResult<LanShareTransferJob>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.lanShare.rejectTransfer(request)
+}

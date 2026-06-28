@@ -127,6 +127,53 @@ export function registerLanShareHandlers(
   )
 
   ipcMain.handle(
+    IPC_CHANNELS.lanShareAcceptTransfer,
+    async (_event, payload: unknown): Promise<NdxResult<LanShareTransferJob>> => {
+      const parsed = lanShareTransferJobIdRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That job id is invalid.')
+        }
+      }
+      try {
+        const job = await service.acceptIncomingTransfer(parsed.data.id)
+        return { ok: true, data: job }
+      } catch (error) {
+        return {
+          ok: false,
+          error: ndxError(
+            'system',
+            'accept-failed',
+            error instanceof Error ? error.message : 'Failed to accept the transfer.'
+          )
+        }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.lanShareRejectTransfer,
+    async (_event, payload: unknown): Promise<NdxResult<LanShareTransferJob>> => {
+      const parsed = lanShareTransferJobIdRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That job id is invalid.')
+        }
+      }
+      const job = await service.rejectIncomingTransfer(parsed.data.id)
+      if (!job) {
+        return {
+          ok: false,
+          error: ndxError('not-found', 'job-not-found', 'That transfer job no longer exists.')
+        }
+      }
+      return { ok: true, data: job }
+    }
+  )
+
+  ipcMain.handle(
     IPC_CHANNELS.lanShareSettingsGet,
     async (): Promise<NdxResult<LanShareSettings>> => {
       return { ok: true, data: await settingsStore.get() }

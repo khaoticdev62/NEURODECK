@@ -16,6 +16,8 @@ export const NDX_FILE_TYPE_DIRECTORY = 2
 export const NDX_FILE_TYPE_SYMBOLIC_LINK = 3
 
 export interface ManifestEntry {
+  /** Real absolute path on this device's filesystem — the sender's own `Warp` `StartTransfer` implementation reads from this; never sent over the wire itself. */
+  absolutePath: string
   relativePath: string
   fileType:
     | typeof NDX_FILE_TYPE_REGULAR
@@ -95,6 +97,7 @@ export class LanShareManifestBuilder {
     throwIfAborted(signal)
     const dirStat = await lstat(absoluteDir)
     entries.push({
+      absolutePath: absoluteDir,
       relativePath: relativeDir,
       fileType: NDX_FILE_TYPE_DIRECTORY,
       sizeBytes: 0,
@@ -125,6 +128,7 @@ export class LanShareManifestBuilder {
     if (stat.isSymbolicLink()) {
       const target = await readlink(absolutePath)
       return {
+        absolutePath,
         relativePath: toPosixPath(relativePath),
         fileType: NDX_FILE_TYPE_SYMBOLIC_LINK,
         sizeBytes: 0,
@@ -135,6 +139,7 @@ export class LanShareManifestBuilder {
     }
     if (stat.isFile()) {
       return {
+        absolutePath,
         relativePath: toPosixPath(relativePath),
         fileType: NDX_FILE_TYPE_REGULAR,
         sizeBytes: stat.size,

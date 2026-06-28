@@ -445,7 +445,9 @@ const ndx: NdxBridge = {
     },
     listInterfaces: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareInterfaceList),
     getHealth: () => ipcRenderer.invoke(IPC_CHANNELS.lanShareHealthGet),
-    sendFiles: (request) => ipcRenderer.invoke(IPC_CHANNELS.lanShareSendFiles, request)
+    sendFiles: (request) => ipcRenderer.invoke(IPC_CHANNELS.lanShareSendFiles, request),
+    acceptTransfer: (request) => ipcRenderer.invoke(IPC_CHANNELS.lanShareAcceptTransfer, request),
+    rejectTransfer: (request) => ipcRenderer.invoke(IPC_CHANNELS.lanShareRejectTransfer, request)
   }
 }
 

@@ -554,5 +554,11 @@ export interface NdxBridge {
     listInterfaces: () => Promise<NdxResult<LanShareNetworkInterface[]>>
     getHealth: () => Promise<NdxResult<LanShareHealth>>
     sendFiles: (request: SendLanShareFilesRequest) => Promise<NdxResult<LanShareTransferJob>>
+    acceptTransfer: (
+      request: LanShareTransferJobIdRequest
+    ) => Promise<NdxResult<LanShareTransferJob>>
+    rejectTransfer: (
+      request: LanShareTransferJobIdRequest
+    ) => Promise<NdxResult<LanShareTransferJob>>
   }
 }

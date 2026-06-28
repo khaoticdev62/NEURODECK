@@ -1,8 +1,8 @@
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SecretCipher } from '../../models/SecretCipher'
 import { LanShareCertificateStore } from '../LanShareCertificateStore'
 import { LanShareGroupCodeStore } from '../LanShareGroupCodeStore'
@@ -38,17 +38,19 @@ function createService(
   settingsStore: LanShareSettingsStore,
   identityStore: LanShareIdentityStore,
   peerStore: LanSharePeerStore
-): LanShareService {
+): { service: LanShareService; transferStore: LanShareTransferStore } {
   const interfaceManager = new LanShareInterfaceManager()
-  return new LanShareService(
+  const transferStore = new LanShareTransferStore(join(dir, 'transfer-jobs.json'))
+  const service = new LanShareService(
     settingsStore,
     interfaceManager,
     identityStore,
     peerStore,
     new LanShareCertificateStore(join(dir, 'certificate.json'), fakeCipher(), interfaceManager),
     new LanShareGroupCodeStore(join(dir, 'group-code.json'), fakeCipher()),
-    new LanShareTransferStore(join(dir, 'transfer-jobs.json'))
+    transferStore
   )
+  return { service, transferStore }
 }
 
 describe('LanShareService', () => {
@@ -73,7 +75,7 @@ describe('LanShareService', () => {
     await settingsStore.update({ transferPort, authPort })
     const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
     const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
-    const service = createService(dir, settingsStore, identityStore, peerStore)
+    const { service } = createService(dir, settingsStore, identityStore, peerStore)
 
     const status = await service.start()
     expect(status.state).toBe('running')
@@ -104,7 +106,7 @@ describe('LanShareService', () => {
     await settingsStore.update({ transferPort: 99999, authPort })
     const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
     const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
-    const service = createService(dir, settingsStore, identityStore, peerStore)
+    const { service } = createService(dir, settingsStore, identityStore, peerStore)
 
     const status = await service.start()
     expect(status.state).toBe('error')
@@ -122,7 +124,7 @@ describe('LanShareService', () => {
     await settingsStore.update({ transferPort, authPort })
     const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
     const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
-    const service = createService(dir, settingsStore, identityStore, peerStore)
+    const { service } = createService(dir, settingsStore, identityStore, peerStore)
 
     const seenStates: string[] = []
     service.onChange((status) => seenStates.push(status.state))
@@ -132,4 +134,99 @@ describe('LanShareService', () => {
 
     expect(seenStates).toEqual(['starting', 'running', 'stopped'])
   })
+
+  it('sends a real file end-to-end between two real services and commits it at the receiver', async () => {
+    const senderDir = join(dir, 'sender')
+    const receiverDir = join(dir, 'receiver')
+
+    const senderTransferPort = await freePort()
+    const senderAuthPort = await freePort()
+    const senderSettings = new LanShareSettingsStore(
+      join(senderDir, 'settings.json'),
+      'Sender Device',
+      join(senderDir, 'receive')
+    )
+    await senderSettings.update({ transferPort: senderTransferPort, authPort: senderAuthPort })
+    const senderIdentity = new LanShareIdentityStore(
+      join(senderDir, 'identity.json'),
+      'Sender Device'
+    )
+    const senderPeers = new LanSharePeerStore(join(senderDir, 'peers.json'))
+    const { service: senderService } = createService(
+      senderDir,
+      senderSettings,
+      senderIdentity,
+      senderPeers
+    )
+
+    const receiverTransferPort = await freePort()
+    const receiverAuthPort = await freePort()
+    const receiveDirectory = join(receiverDir, 'received')
+    const receiverSettings = new LanShareSettingsStore(
+      join(receiverDir, 'settings.json'),
+      'Receiver Device',
+      receiveDirectory
+    )
+    await receiverSettings.update({
+      transferPort: receiverTransferPort,
+      authPort: receiverAuthPort
+    })
+    const receiverIdentity = new LanShareIdentityStore(
+      join(receiverDir, 'identity.json'),
+      'Receiver Device'
+    )
+    const receiverPeers = new LanSharePeerStore(join(receiverDir, 'peers.json'))
+    const { service: receiverService, transferStore: receiverTransferStore } = createService(
+      receiverDir,
+      receiverSettings,
+      receiverIdentity,
+      receiverPeers
+    )
+
+    await senderService.start()
+    await receiverService.start()
+
+    try {
+      const receiverPeer = await senderPeers.addManual({
+        address: '127.0.0.1',
+        transferPort: receiverTransferPort,
+        authPort: receiverAuthPort
+      })
+      await receiverPeers.addManual({
+        address: '127.0.0.1',
+        transferPort: senderTransferPort,
+        authPort: senderAuthPort
+      })
+
+      const sourceFile = join(senderDir, 'source.txt')
+      const content = 'a real file sent end-to-end through two real LanShareService instances\n'
+      await writeFile(sourceFile, content, 'utf-8')
+
+      const sentJob = await senderService.sendFiles(receiverPeer.id, [sourceFile])
+      expect(sentJob.status).toBe('queued')
+
+      let receivedJobId: string | undefined
+      await vi.waitFor(
+        async () => {
+          const jobs = await receiverTransferStore.list()
+          const pending = jobs.find((job) => job.status === 'waiting-for-approval')
+          expect(pending).toBeDefined()
+          receivedJobId = pending?.id
+        },
+        { timeout: 10000 }
+      )
+
+      const completedJob = await receiverService.acceptIncomingTransfer(receivedJobId as string)
+      if (completedJob.status !== 'completed') {
+        throw new Error(`Job failed: ${completedJob.errorMessage}`)
+      }
+      expect(completedJob.status).toBe('completed')
+
+      const finalContent = await readFile(join(receiveDirectory, 'source.txt'), 'utf-8')
+      expect(finalContent).toBe(content)
+    } finally {
+      await senderService.stop()
+      await receiverService.stop()
+    }
+  }, 20000)
 })
