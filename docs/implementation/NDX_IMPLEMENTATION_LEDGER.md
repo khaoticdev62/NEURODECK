@@ -2585,6 +2585,84 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+## Epic X10 — Profiles and Identity Foundation (2026-06-28)
+
+Real persisted profile metadata and session state for supplemental spec §30.
+This completes the bounded profile foundation that the earlier vault slice
+deliberately deferred, without pretending every existing owner store is
+already profile-scoped.
+
+**Profile store** (`src/core/profiles/ProfileStore.ts`) — JSON-backed,
+atomic persisted profile metadata with an owner profile, create/update/delete,
+active session switching, guest-mode marker, and private-session marker. The
+owner profile cannot be removed. Existing workspaces, model routing,
+controller mapping, theme, notifications, memory, knowledge, extensions,
+favorites, resource policy, and voice settings remain shared until each
+owning store is explicitly migrated.
+
+**Typed IPC and renderer bridge** (`profile.ts`, `registerProfileHandlers.ts`,
+`profileClient.ts`, preload/bridge wiring) — `profiles.state.get`,
+`profiles.create`, `profiles.update`, `profiles.delete`,
+`profiles.session.start`, and `profiles.session.endPrivate`, all
+schema-validated and returning typed `NdxResult` values.
+
+**UI integration** (`/profiles`, System Dashboard, Command Palette, System
+Rail) — the Profiles and Identity screen is controller-reachable, can create
+profiles, switch active profile, start/end private sessions, and delete
+non-owner profiles. The System Rail displays the real active profile when the
+bridge is available. The shared Feature Registry now receives real
+active-profile and guest-mode context.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 202 files / 998 tests passed
+npm run test -- ProfileStore Profiles ContinuityStore ContinuityCenter -> 4 files / 13 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
+## Epic X11 — Continuity and Offline Foundation (2026-06-28)
+
+Real persisted continuity metadata for supplemental spec §35, §36, and §45.
+This is a foundation slice: it exposes truthful state and shared control points
+without fabricating offline jobs or replay behavior for feature owners that do
+not yet enqueue work.
+
+**Continuity store** (`src/core/continuity/ContinuityStore.ts`) — JSON-backed,
+atomic persisted state for Safe Mode, offline queue inventory, bounded power
+event history, and last route/session snapshot. The offline queue starts empty
+and remains honest until feature owners enqueue real retryable operations.
+
+**Typed IPC and renderer bridge** (`continuity.ts`,
+`registerContinuityHandlers.ts`, `continuityClient.ts`, preload/bridge wiring)
+— `continuity.state.get`, `continuity.safeMode.set`,
+`continuity.power.record`, and `continuity.session.save`.
+
+**Suspend/resume and session metadata** (`src/main/ipc/index.ts`,
+`ShellLayout.tsx`) — main process records real Electron `powerMonitor`
+suspend/resume events into the continuity store while preserving LAN Share's
+existing suspend/resume socket handling. The shell records the current route as
+a session snapshot on navigation. It does not auto-restore sensitive routes yet.
+
+**Continuity UI and Safe Mode** (`/continuity`, Feature Registry) — the
+Continuity and Offline screen reports renderer `navigator.onLine` state,
+offline queue count, last route, Safe Mode state, and recent power events. Safe
+Mode is persisted and now feeds the shared Feature Registry. Existing open
+views are not force-closed; navigation visibility updates when feature state
+refreshes.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 202 files / 998 tests passed
+npm run test -- ProfileStore Profiles ContinuityStore ContinuityCenter -> 4 files / 13 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-9 (2026-06-28)
 
 Real network-boundary, interface-binding, and suspend/resume policy, scoped to what is cross-platform and verifiable from this dev environment without root, real firewall-rule access, or a release-signing pipeline.

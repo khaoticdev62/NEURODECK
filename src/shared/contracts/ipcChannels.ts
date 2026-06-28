@@ -226,5 +226,15 @@ export const IPC_CHANNELS = {
   vaultRotate: 'vault.rotate',
   vaultReveal: 'vault.reveal',
   vaultDelete: 'vault.delete',
-  vaultAccessLog: 'vault.accessLog'
+  vaultAccessLog: 'vault.accessLog',
+  profileStateGet: 'profiles.state.get',
+  profileCreate: 'profiles.create',
+  profileUpdate: 'profiles.update',
+  profileDelete: 'profiles.delete',
+  profileStartSession: 'profiles.session.start',
+  profileEndPrivateSession: 'profiles.session.endPrivate',
+  continuityStateGet: 'continuity.state.get',
+  continuitySafeModeSet: 'continuity.safeMode.set',
+  continuityPowerEventRecord: 'continuity.power.record',
+  continuitySessionSnapshotSave: 'continuity.session.save'
 } as const

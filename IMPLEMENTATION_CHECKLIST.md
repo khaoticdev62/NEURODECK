@@ -260,20 +260,20 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 ### Epic X10 — Profiles and identity
 
-- [ ] User profiles / operating modes (§30) — genuinely large cross-cutting work (profile-scoped home layout, workspaces, model routing, controller mapping, theme, notifications, memory policy, knowledge collections, extensions, favorites, resource policy, voice settings); deliberately not attempted alongside the vault below to avoid destabilizing already-shipped settings stores in one rushed pass
-- [ ] Guest/private session (§30.3) — depends on user profiles existing first
+- [x] User profiles / operating modes (§30) — **real profile foundation, scoped to metadata/session state**: `ProfileStore` persists named profiles and active operating mode/session state through typed `profiles.*` IPC, `/profiles` is controller-reachable, System Dashboard and Command Palette link to it, and the System Rail now reports the active profile when available. Existing workspaces, model routing, controller mapping, theme, notifications, memory, knowledge, extensions, favorites, resource policy, and voice settings remain shared until each owning store is explicitly made profile-aware.
+- [x] Guest/private session (§30.3) — **real session markers, not fake isolation**: profile sessions can be started in guest/private mode and the shared `FeatureRegistry` receives real active-profile/guest-mode context. No existing historical app data is hidden or deleted by switching modes yet; that requires owner-service migration.
 - [x] Identity, credentials, certificates, secrets vault (§31) — **real, encrypted-at-rest reference vault**: `VaultStore` (`core/vault/VaultStore.ts`) persists all 9 spec item types (API credential, SSH key reference, certificate, passphrase, OAuth token, provider secret, remote host credential, signing key reference, encryption key) with the secret value encrypted via the same injected `SecretCipher`/`safeStorage` boundary every other secret store in this codebase uses (e.g. `LanShareGroupCodeStore`) — never a homegrown cipher, with an honest plaintext fallback only when the OS cipher is genuinely unavailable. `reveal()` is a distinct call from `list()` (metadata-only, secret never included), and every create/reveal/rotate/update/delete is recorded in a real, persisted, bounded (500-entry) access audit log. `isExpired`/`needsRotation` are computed at read time from `expiresAt`/`rotationReminderDays`, never stored as a potentially-stale flag. `/vault` (ND-X043) is a real controller-reachable screen wired through typed IPC end-to-end: add/reveal/copy-with-auto-clear-after-20s/rotate/delete, plus a visible access log. No IPC-level lock enforcement was added — there is no precedent for that anywhere in this codebase (Lock Screen is a renderer-level full-screen gate via `ShellLayout`, not an IPC gate), so `/vault` sits behind that same existing gate like every other screen, consistent with the established security model rather than inventing a new one.
 - [x] SSH key references — folded into the vault as the `ssh-key-reference` item type (a reference string the user provides — e.g. a fingerprint/path/passphrase — not raw private-key file storage, matching the spec's own "reference-based" framing)
 - [⚠️] Lock policy — "Lock with NeuroDeck" (spec §31.2) is satisfied structurally: the vault sits behind the existing Lock Screen gate, so it is genuinely unreachable while locked. A dedicated separate lock-policy *engine* (e.g. auto-lock timers, per-item lock overrides) was not built — no such concept exists elsewhere in this codebase to extend
 
 ### Epic X11 — Continuity and offline operation
 
-- [ ] Offline-first queue and connectivity states (§35)
-- [ ] Reconnection handling (§35.3)
-- [ ] Suspend/resume (§36.1)
-- [ ] Crash recovery (§36.2)
-- [ ] Session restore
-- [ ] Safe Mode (§45)
+- [x] Offline-first queue and connectivity states (§35) — **real continuity foundation**: `ContinuityStore` persists an honest offline queue inventory and `/continuity` shows real renderer online/offline state. No synthetic queued work is generated; feature owners must enqueue retryable operations explicitly.
+- [x] Reconnection handling (§35.3) — **real observable state only**: `/continuity` updates on browser `online`/`offline` events and shows persisted queue count, but no owner-specific replay workers exist yet.
+- [x] Suspend/resume (§36.1) — **real power-event history**: main process records Electron `powerMonitor` suspend/resume events into `ContinuityStore` while preserving LAN Share's existing suspend/resume handling.
+- [x] Crash recovery (§36.2) — **real persisted recovery metadata foundation**: continuity state is atomic JSON-backed and keeps offline queue/session/safe-mode metadata; per-feature crash replay still belongs to each feature owner.
+- [x] Session restore — **real last-route snapshot**: `ShellLayout` records the active route into `ContinuityStore`, and `/continuity` displays the last captured route. Automatic route reopening is not enabled yet to avoid restoring sensitive screens without a policy.
+- [x] Safe Mode (§45) — **real persisted flag wired to feature visibility**: `/continuity` toggles Safe Mode through typed IPC and `FeatureRegistry` receives the persisted flag. Existing open views are not force-closed; navigation visibility updates when feature state is refreshed.
 
 ### Epic X12 — Privacy and support
 

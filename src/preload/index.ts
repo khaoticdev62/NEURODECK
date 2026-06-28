@@ -210,6 +210,22 @@ const ndx: NdxBridge = {
     remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.vaultDelete, request),
     listAccessLog: () => ipcRenderer.invoke(IPC_CHANNELS.vaultAccessLog)
   },
+  profiles: {
+    getState: () => ipcRenderer.invoke(IPC_CHANNELS.profileStateGet),
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.profileCreate, request),
+    update: (request) => ipcRenderer.invoke(IPC_CHANNELS.profileUpdate, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.profileDelete, request),
+    startSession: (request) => ipcRenderer.invoke(IPC_CHANNELS.profileStartSession, request),
+    endPrivateSession: () => ipcRenderer.invoke(IPC_CHANNELS.profileEndPrivateSession)
+  },
+  continuity: {
+    getState: () => ipcRenderer.invoke(IPC_CHANNELS.continuityStateGet),
+    setSafeMode: (request) => ipcRenderer.invoke(IPC_CHANNELS.continuitySafeModeSet, request),
+    recordPowerEvent: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.continuityPowerEventRecord, request),
+    saveSessionSnapshot: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.continuitySessionSnapshotSave, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

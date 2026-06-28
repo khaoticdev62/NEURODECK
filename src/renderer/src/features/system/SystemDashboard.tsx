@@ -43,6 +43,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Agent Operations Center', path: '/agents' },
   { label: 'Remote Systems', path: '/remote' },
   { label: 'LAN Share', path: '/lan-share' },
+  { label: 'Profiles and Identity', path: '/profiles' },
+  { label: 'Continuity and Offline', path: '/continuity' },
   { label: 'Secrets Vault', path: '/vault' }
 ]
 

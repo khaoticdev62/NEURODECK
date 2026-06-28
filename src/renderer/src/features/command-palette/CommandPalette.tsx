@@ -73,6 +73,18 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     path: '/models/routing-profiles',
     subtitle: 'ND-037 - Epic 9'
   },
+  {
+    id: 'profiles-identity',
+    label: 'Profiles and Identity',
+    path: '/profiles',
+    subtitle: 'ND-X042 - Epic X10'
+  },
+  {
+    id: 'continuity-offline',
+    label: 'Continuity and Offline',
+    path: '/continuity',
+    subtitle: 'ND-X044 - Epic X11'
+  },
   { id: 'remote-systems', label: 'Remote Systems', path: '/remote', subtitle: 'ND-040 - Epic 10' },
   { id: 'lan-share', label: 'LAN Share', path: '/lan-share', subtitle: 'ND-LAN-001 - LAN-8' },
   {

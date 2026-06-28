@@ -41,6 +41,21 @@ import type {
   VaultItemIdRequest
 } from './vault'
 import type {
+  CreateProfileRequest,
+  ProfileIdRequest,
+  ProfileState,
+  StartProfileSessionRequest,
+  UpdateProfileRequest,
+  UserProfile
+} from './profile'
+import type {
+  ContinuityPowerEvent,
+  ContinuityState,
+  RecordPowerEventRequest,
+  SaveSessionSnapshotRequest,
+  SetSafeModeRequest
+} from './continuity'
+import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
   ExtensionInstallPreview,
@@ -402,6 +417,22 @@ export interface NdxBridge {
     reveal: (request: VaultItemIdRequest) => Promise<NdxResult<RevealVaultItemResult>>
     remove: (request: VaultItemIdRequest) => Promise<NdxResult<null>>
     listAccessLog: () => Promise<NdxResult<VaultAccessLogEntry[]>>
+  }
+  profiles: {
+    getState: () => Promise<NdxResult<ProfileState>>
+    create: (request: CreateProfileRequest) => Promise<NdxResult<UserProfile>>
+    update: (request: UpdateProfileRequest) => Promise<NdxResult<UserProfile>>
+    remove: (request: ProfileIdRequest) => Promise<NdxResult<ProfileState>>
+    startSession: (request: StartProfileSessionRequest) => Promise<NdxResult<ProfileState>>
+    endPrivateSession: () => Promise<NdxResult<ProfileState>>
+  }
+  continuity: {
+    getState: () => Promise<NdxResult<ContinuityState>>
+    setSafeMode: (request: SetSafeModeRequest) => Promise<NdxResult<ContinuityState>>
+    recordPowerEvent: (request: RecordPowerEventRequest) => Promise<NdxResult<ContinuityPowerEvent>>
+    saveSessionSnapshot: (
+      request: SaveSessionSnapshotRequest
+    ) => Promise<NdxResult<ContinuityState>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

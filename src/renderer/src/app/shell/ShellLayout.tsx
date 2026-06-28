@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BottomControllerRail } from '../../components/navigation/BottomControllerRail'
 import { ContextPanel, type ContextPanelItem } from '../../components/navigation/ContextPanel'
 import { NavigationRail } from '../../components/navigation/NavigationRail'
@@ -19,10 +19,12 @@ import { PowerStateBridge } from '../../features/system/PowerStateBridge'
 import { QuickAccessOverlay } from '../../features/system/QuickAccessOverlay'
 import { ScreenNarrator } from '../../features/system/ScreenNarrator'
 import { LanSharePlatformBridge } from '../../features/lanShare/LanSharePlatformBridge'
+import { saveSessionSnapshot } from '../../services/ipc/continuityClient'
+import { getProfileState } from '../../services/ipc/profileClient'
 import { useDisplayMode } from '../../state/useDisplayMode'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
 import { useLockState } from '../../state/useLockState'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 export interface ShellLayoutProps {
   systemRailStatus?: SystemRailStatus
@@ -47,10 +49,26 @@ export function ShellLayout({
   contextItem
 }: ShellLayoutProps): React.JSX.Element {
   const navigate = useNavigate()
+  const location = useLocation()
   const { baseMode } = useDisplayMode()
   const { reduceMotion, highContrast, textScale } = useDisplaySettings()
   const { isLocked } = useLockState()
+  const [activeProfileName, setActiveProfileName] = useState<string | null>(null)
   const collapsesRails = baseMode === 'focus' || baseMode === 'split'
+
+  useEffect(() => {
+    let active = true
+    void getProfileState().then((result) => {
+      if (!active || !result.ok) return
+      const profile = result.data.profiles.find(
+        (candidate) => candidate.id === result.data.session.activeProfileId
+      )
+      if (profile) setActiveProfileName(profile.name)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent): void {
@@ -71,6 +89,11 @@ export function ShellLayout({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [navigate])
 
+  useEffect(() => {
+    const route = `${location.pathname}${location.search}${location.hash}`
+    void saveSessionSnapshot({ route })
+  }, [location.hash, location.pathname, location.search])
+
   // Full takeover, same as Emergency Stop's queue-pause but for the whole
   // shell: no nav, no Command Palette, no overlays — only LockScreen itself
   // can clear `isLocked`, by verifying the real PIN against the main process.
@@ -86,7 +109,15 @@ export function ShellLayout({
       data-text-size={textScale}
       className="flex h-full flex-col bg-canvas"
     >
-      <SystemRail status={systemRailStatus} />
+      <SystemRail
+        status={{
+          ...systemRailStatus,
+          profile:
+            systemRailStatus.profile.available || !activeProfileName
+              ? systemRailStatus.profile
+              : { available: true, value: activeProfileName }
+        }}
+      />
       <div className="flex min-h-0 flex-1">
         <NavigationRail hidden={collapsesRails} />
         <main className="min-w-0 flex-1 overflow-auto" style={{ padding: 'var(--ndx-safe-inset)' }}>

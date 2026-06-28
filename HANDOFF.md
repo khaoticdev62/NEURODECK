@@ -2,6 +2,8 @@
 
 ## Current state
 
+**2026-06-28 Epic X10/X11 update:** Profiles now have a real persisted foundation (`ProfileStore`, typed `profiles.*` IPC, `/profiles`, System Dashboard/Command Palette reachability, and System Rail active-profile display). Guest/private sessions are real session markers and feed the shared Feature Registry, but existing owner stores remain shared until each is migrated. Continuity now has a real persisted foundation (`ContinuityStore`, typed `continuity.*` IPC, `/continuity`, renderer online/offline signal, suspend/resume power-event history, last-route session snapshot, and Safe Mode flag wired into Feature Registry). Offline replay workers, automatic sensitive-route restore, and per-feature crash replay remain owner-service work rather than faked.
+
 **2026-06-27 Epic X3 update:** Extension Manager UI is now real for local unpacked extensions. `/extensions` is a lazy route and primary Navigation Rail destination backed by the existing `extensions.*` typed IPC surface: list, manifest preview before local install, explicit capability grant selection with zero implicit grants, enable/disable, clear quarantine, remove, refresh, and live `extension.healthEvent` updates. Signed marketplace, SDK, CLI, post-install capability grant editing, and cryptographic signature verification remain explicitly deferred.
 
 **2026-06-27 Epic X4 update:** Scoped AI memory export is now real. `memory.export` is a typed IPC/preload/renderer-client path returning a versioned, filtered JSON-compatible snapshot with real memory item attribution/provenance. This closes X4's prior memory export gap; embeddings, PDF parsing, Tool Library UI, and skill packs remain deferred for the reasons already recorded in the checklist and ledger.

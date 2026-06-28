@@ -18,6 +18,7 @@ import { PackageLifecycleService } from '../../core/applications/PackageLifecycl
 import { BrowserTabStore } from '../../core/browser/BrowserTabStore'
 import { BrowserPermissionStore } from '../../core/browser/BrowserPermissionStore'
 import { CapabilityRegistry } from '../../core/capability/CapabilityRegistry'
+import { ContinuityStore } from '../../core/continuity/ContinuityStore'
 import { ControllerSettingsStore } from '../../core/controller/ControllerSettingsStore'
 import { DeviceInventoryService } from '../../core/devices/DeviceInventoryService'
 import { DeviceStore } from '../../core/devices/DeviceStore'
@@ -30,6 +31,7 @@ import { ExtensionStore } from '../../core/extensions/ExtensionStore'
 import { KnowledgeStore } from '../../core/knowledge/KnowledgeStore'
 import { KnowledgeVaultService } from '../../core/knowledge/KnowledgeVaultService'
 import { MemoryStore } from '../../core/memory/MemoryStore'
+import { ProfileStore } from '../../core/profiles/ProfileStore'
 import { PersonaStore } from '../../core/promptLibrary/PersonaStore'
 import { PromptTemplateStore } from '../../core/promptLibrary/PromptTemplateStore'
 import { MicrophonePermissionStore } from '../../core/voice/MicrophonePermissionStore'
@@ -80,6 +82,7 @@ import { registerApplicationHandlers } from './registerApplicationHandlers'
 import { registerBackupHandlers } from './registerBackupHandlers'
 import { registerBrowserHandlers } from './registerBrowserHandlers'
 import { registerCapabilityHandlers } from './registerCapabilityHandlers'
+import { registerContinuityHandlers } from './registerContinuityHandlers'
 import { registerControllerSettingsHandlers } from './registerControllerSettingsHandlers'
 import { registerDeviceHandlers } from './registerDeviceHandlers'
 import { registerDiagnosticsHandlers } from './registerDiagnosticsHandlers'
@@ -100,6 +103,7 @@ import { registerModelHandlers } from './registerModelHandlers'
 import { registerNetworkHandlers } from './registerNetworkHandlers'
 import { registerPackageHandlers } from './registerPackageHandlers'
 import { registerPowerHandlers } from './registerPowerHandlers'
+import { registerProfileHandlers } from './registerProfileHandlers'
 import { registerUpdateHandlers } from './registerUpdateHandlers'
 import { registerLearningHandlers } from './registerLearningHandlers'
 import { registerVaultHandlers } from './registerVaultHandlers'
@@ -154,6 +158,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   const ollamaRuntime = new OllamaRuntimeService()
   const capabilityRegistry = new CapabilityRegistry(electronCapabilityDetectors)
+  const continuityStore = new ContinuityStore(join(app.getPath('userData'), 'continuity.json'))
   const featureRegistry = new FeatureRegistry(FEATURE_CATALOG)
   const applicationStore = new ApplicationStore(join(app.getPath('userData'), 'applications.json'))
   const deviceStore = new DeviceStore(join(app.getPath('userData'), 'devices.json'))
@@ -232,6 +237,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const knowledgeStore = new KnowledgeStore(join(app.getPath('userData'), 'knowledge.json'))
   const knowledgeVaultService = new KnowledgeVaultService(knowledgeStore)
   const memoryStore = new MemoryStore(join(app.getPath('userData'), 'memory.json'))
+  const profileStore = new ProfileStore(join(app.getPath('userData'), 'profiles.json'))
   const promptTemplateStore = new PromptTemplateStore(
     join(app.getPath('userData'), 'prompt-templates.json')
   )
@@ -386,8 +392,12 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   // subscription point.
   const onLanShareSuspend = (): void => void lanShareService.handleSystemSuspend()
   const onLanShareResume = (): void => void lanShareService.handleSystemResume()
+  const onContinuitySuspend = (): void => void continuityStore.recordPowerEvent({ kind: 'suspend' })
+  const onContinuityResume = (): void => void continuityStore.recordPowerEvent({ kind: 'resume' })
   powerMonitor.on('suspend', onLanShareSuspend)
   powerMonitor.on('resume', onLanShareResume)
+  powerMonitor.on('suspend', onContinuitySuspend)
+  powerMonitor.on('resume', onContinuityResume)
   registerControllerSettingsHandlers(
     new ControllerSettingsStore(join(app.getPath('userData'), 'controller-settings.json'))
   )
@@ -398,6 +408,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerVaultHandlers(
     new VaultStore(join(app.getPath('userData'), 'vault.json'), electronSecretCipher)
   )
+  registerProfileHandlers(profileStore)
+  registerContinuityHandlers(continuityStore)
   registerBrowserHandlers(
     new BrowserTabStore(join(app.getPath('userData'), 'browser-tabs.json')),
     new BrowserPermissionStore(join(app.getPath('userData'), 'browser-permissions.json')),
@@ -406,7 +418,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)
   const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)
   registerCapabilityHandlers(capabilityRegistry)
-  registerFeatureHandlers(featureRegistry, capabilityRegistry)
+  registerFeatureHandlers(featureRegistry, capabilityRegistry, profileStore, continuityStore)
   registerApplicationHandlers(
     applicationStore,
     applicationDiscoveryService,
@@ -448,6 +460,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     disposePower()
     powerMonitor.removeListener('suspend', onLanShareSuspend)
     powerMonitor.removeListener('resume', onLanShareResume)
+    powerMonitor.removeListener('suspend', onContinuitySuspend)
+    powerMonitor.removeListener('resume', onContinuityResume)
     disposePackages()
     disposeLan()
     disposeLanShare()

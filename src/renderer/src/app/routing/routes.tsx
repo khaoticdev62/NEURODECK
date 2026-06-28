@@ -229,6 +229,14 @@ const Vault = lazy(async () => {
   const module = await import('../../features/vault/Vault')
   return { default: module.Vault }
 })
+const Profiles = lazy(async () => {
+  const module = await import('../../features/profiles/Profiles')
+  return { default: module.Profiles }
+})
+const ContinuityCenter = lazy(async () => {
+  const module = await import('../../features/continuity/ContinuityCenter')
+  return { default: module.ContinuityCenter }
+})
 const BluetoothDevices = lazy(async () => {
   const module = await import('../../features/devices/BluetoothDevices')
   return { default: module.BluetoothDevices }
@@ -838,6 +846,26 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('vault', <Vault />)
+  },
+  {
+    routeId: 'profiles',
+    screenId: 'ND-X042',
+    path: '/profiles',
+    title: 'Profiles and Identity',
+    owningEpic: 'Epic X10',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('profiles', <Profiles />)
+  },
+  {
+    routeId: 'continuity',
+    screenId: 'ND-X044',
+    path: '/continuity',
+    title: 'Continuity and Offline',
+    owningEpic: 'Epic X11',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('continuity', <ContinuityCenter />)
   },
   {
     routeId: 'devices',
