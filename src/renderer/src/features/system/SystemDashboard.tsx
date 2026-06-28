@@ -25,6 +25,7 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Controller Settings', path: '/settings/controller' },
   { label: 'Display and Theme Settings', path: '/settings/display' },
   { label: 'Network and VPN', path: '/settings/network' },
+  { label: 'Device and Peripheral Center', path: '/devices' },
   { label: 'Privacy and Permissions', path: '/settings/privacy' },
   { label: 'Integrations', path: '/integrations' },
   { label: 'Updates', path: '/settings/updates' },

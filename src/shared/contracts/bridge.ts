@@ -16,7 +16,12 @@ import type {
   LaunchApplicationRequest,
   LaunchResult
 } from './applicationLifecycle'
-import type { DeviceIdRequest, DeviceRecord, UpsertDeviceRequest } from './device'
+import type {
+  DeviceIdRequest,
+  DeviceInventoryReport,
+  DeviceRecord,
+  UpsertDeviceRequest
+} from './device'
 import type { TransactionIdRequest, TransactionRecord } from './transaction'
 import type {
   BackupIdRequest,
@@ -442,6 +447,7 @@ export interface NdxBridge {
   }
   devices: {
     list: () => Promise<NdxResult<DeviceRecord[]>>
+    inventory: () => Promise<NdxResult<DeviceInventoryReport>>
     upsert: (request: UpsertDeviceRequest) => Promise<NdxResult<DeviceRecord>>
     remove: (request: DeviceIdRequest) => Promise<NdxResult<null>>
   }

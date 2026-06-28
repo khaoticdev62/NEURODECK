@@ -295,6 +295,7 @@ const ndx: NdxBridge = {
   },
   devices: {
     list: () => ipcRenderer.invoke(IPC_CHANNELS.deviceList),
+    inventory: () => ipcRenderer.invoke(IPC_CHANNELS.deviceInventory),
     upsert: (request) => ipcRenderer.invoke(IPC_CHANNELS.deviceUpsert, request),
     remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.deviceRemove, request)
   },

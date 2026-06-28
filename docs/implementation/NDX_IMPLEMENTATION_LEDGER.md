@@ -2173,6 +2173,30 @@ npm run typecheck -> blocked by unrelated in-progress LAN Share API mismatch:
 npm run lint -> exited 0; warnings are limited to unrelated LAN Share formatting in dirty files.
 ```
 
+## Epic X8 — Device services (2026-06-28)
+
+First real slice: ND-X032 Device and Peripheral Center. `DeviceInventoryService` now produces a real, typed `DeviceInventoryReport` by combining three existing shared services instead of creating a duplicate hardware silo:
+
+- `DeviceStore` for persisted device records already known to NeuroDeck.
+- `SystemMetricsService` for currently observable network interfaces and mounted storage root facts.
+- `CapabilityRegistry.refresh()` for backend availability across controller, Bluetooth, audio, camera, display, network, GPU, haptics, and gyro capabilities.
+
+JPE: this center tells the user what NeuroDeck can actually see right now. It does not pretend to pair Bluetooth devices, switch microphones, manage docks, or listen for hot-plug events until those real OS adapters exist.
+
+Typed surface added: `DeviceInventoryReport`, `DeviceInventoryRecord`, `device.inventory`, preload `window.ndx.devices.inventory()`, and renderer `collectDeviceInventory()`. `/devices` is registered as ND-X032 and linked from System Dashboard.
+
+**Still deferred**: Bluetooth Center, Audio and Microphone Center, Display and Dock Center, Removable Storage Center, OS hot-plug watchers, hot-plug notifications, automatic capability recalculation on device events, device-profile application, Bluetooth pairing/trust/connect/forget, audio routing, display arrangement, dock detection, and removable-storage mount/eject/safety checks.
+
+**Evidence (run 2026-06-28):**
+
+```text
+npm run test -- DeviceInventoryService DevicePeripheralCenter -> 2 files / 5 tests passed
+npm run typecheck:web -> passed
+npx eslint <X8 device inventory files> -> 0 errors, 0 warnings
+npm run typecheck -> blocked by unrelated in-progress LAN Share API mismatch:
+  LanShareTransferServerOptions now requires getPendingSendOperation at existing LAN Share call sites.
+```
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 
 A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.

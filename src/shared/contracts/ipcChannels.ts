@@ -134,6 +134,7 @@ export const IPC_CHANNELS = {
   applicationUpsert: 'application.upsert',
   applicationRemove: 'application.remove',
   deviceList: 'device.list',
+  deviceInventory: 'device.inventory',
   deviceUpsert: 'device.upsert',
   deviceRemove: 'device.remove',
   applicationDiscover: 'application.discover',

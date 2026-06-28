@@ -19,6 +19,7 @@ import { BrowserTabStore } from '../../core/browser/BrowserTabStore'
 import { BrowserPermissionStore } from '../../core/browser/BrowserPermissionStore'
 import { CapabilityRegistry } from '../../core/capability/CapabilityRegistry'
 import { ControllerSettingsStore } from '../../core/controller/ControllerSettingsStore'
+import { DeviceInventoryService } from '../../core/devices/DeviceInventoryService'
 import { DeviceStore } from '../../core/devices/DeviceStore'
 import { DisplaySettingsStore } from '../../core/display/DisplaySettingsStore'
 import { CapabilityBroker } from '../../core/extensions/CapabilityBroker'
@@ -154,6 +155,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const featureRegistry = new FeatureRegistry(FEATURE_CATALOG)
   const applicationStore = new ApplicationStore(join(app.getPath('userData'), 'applications.json'))
   const deviceStore = new DeviceStore(join(app.getPath('userData'), 'devices.json'))
+  const deviceInventoryService = new DeviceInventoryService(
+    deviceStore,
+    capabilityRegistry,
+    systemMetricsService
+  )
   const desktopEntryScanner = new DesktopEntryScanner([
     join(homedir(), '.local', 'share', 'applications'),
     '/usr/share/applications',
@@ -393,7 +399,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     applicationLauncher,
     getWindow
   )
-  registerDeviceHandlers(deviceStore)
+  registerDeviceHandlers(deviceStore, deviceInventoryService)
   const disposePackages = registerPackageHandlers(
     flatpakAdapter,
     packageLifecycleService,

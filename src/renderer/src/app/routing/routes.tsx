@@ -193,6 +193,10 @@ const BackupAndRestore = lazy(async () => {
   const module = await import('../../features/backup/BackupAndRestore')
   return { default: module.BackupAndRestore }
 })
+const DevicePeripheralCenter = lazy(async () => {
+  const module = await import('../../features/devices/DevicePeripheralCenter')
+  return { default: module.DevicePeripheralCenter }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -694,6 +698,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('backup and restore', <BackupAndRestore />)
+  },
+  {
+    routeId: 'devices',
+    screenId: 'ND-X032',
+    path: '/devices',
+    title: 'Device and Peripheral Center',
+    owningEpic: 'Epic X8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('devices', <DevicePeripheralCenter />)
   }
 ]
 

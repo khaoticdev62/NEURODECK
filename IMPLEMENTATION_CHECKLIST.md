@@ -244,7 +244,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 ### Epic X8 — Device services
 
-- [ ] Device and Peripheral Center (§22)
+- [x] Device and Peripheral Center (§22) — **real read-only inventory center**: `DeviceInventoryService` combines the existing persisted `DeviceStore`, live `SystemMetricsService` network/storage observations, and `CapabilityRegistry.refresh()` into a typed `DeviceInventoryReport`; `device.inventory` is wired through IPC/preload/renderer client; `/devices` (ND-X032) is reachable from System Dashboard and shows real device cards, capability states, and an honest hot-plug limitation. Scope is inventory/status only; OS hot-plug watchers, Bluetooth pairing, audio routing, display/dock management, removable-storage actions, profile application, and notifications remain deferred.
 - [ ] Bluetooth Center (§23)
 - [ ] Audio and Microphone Center (§24)
 - [ ] Display and Dock Center (§25)
