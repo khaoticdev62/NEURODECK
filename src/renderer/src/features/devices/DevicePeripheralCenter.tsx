@@ -65,6 +65,9 @@ export function DevicePeripheralCenter(): React.JSX.Element {
           <ControllerButton variant="secondary" onClick={() => navigate('/devices/bluetooth')}>
             Bluetooth
           </ControllerButton>
+          <ControllerButton variant="secondary" onClick={() => navigate('/devices/audio')}>
+            Audio
+          </ControllerButton>
           <ControllerButton
             variant="primary"
             disabled={loading}

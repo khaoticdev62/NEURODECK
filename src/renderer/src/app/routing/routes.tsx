@@ -201,6 +201,10 @@ const BluetoothDevices = lazy(async () => {
   const module = await import('../../features/devices/BluetoothDevices')
   return { default: module.BluetoothDevices }
 })
+const AudioMicrophoneCenter = lazy(async () => {
+  const module = await import('../../features/devices/AudioMicrophoneCenter')
+  return { default: module.AudioMicrophoneCenter }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -722,6 +726,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('bluetooth devices', <BluetoothDevices />)
+  },
+  {
+    routeId: 'audio-microphone',
+    screenId: 'ND-X034',
+    path: '/devices/audio',
+    title: 'Audio and Microphone Center',
+    owningEpic: 'Epic X8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('audio devices', <AudioMicrophoneCenter />)
   }
 ]
 

@@ -2215,6 +2215,24 @@ npm run typecheck -> still blocked by unrelated in-progress LAN Share API mismat
   LanShareTransferServerOptions now requires getPendingSendOperation at existing LAN Share call sites.
 ```
 
+### Epic X8 addendum - audio and microphone status center (2026-06-28)
+
+ND-X034 Audio and Microphone Center is now a real route at `/devices/audio`, linked from System Dashboard and the Device and Peripheral Center. Like ND-X033, it reuses `device.inventory`: microphone backend status comes from the real `CapabilityRegistry` microphone entry, and audio rows come only from persisted `audio-output`, `microphone`, or `headset` records in `DeviceStore`.
+
+JPE: this screen can show whether NeuroDeck currently has a microphone backend and any audio devices it already knows about. It does not pretend to route audio, switch outputs, test microphones, or change gain because no PipeWire/PulseAudio adapter or capture diagnostic exists yet.
+
+**Still deferred**: real PipeWire/PulseAudio enumeration, output-device selection, microphone selection, microphone test/capture meter, input gain control, headset profile switching, permission-aware mic diagnostics, default-device persistence, and OS-level audio routing.
+
+**Evidence (run 2026-06-28):**
+
+```text
+npm run test -- DevicePeripheralCenter AudioMicrophoneCenter -> 2 files / 6 tests passed
+npm run typecheck:web -> passed
+npx eslint <X8 audio/device route files> -> 0 errors, 0 warnings
+npm run typecheck -> still blocked by unrelated in-progress LAN Share API mismatch:
+  LanShareTransferServerOptions now requires getPendingSendOperation at existing LAN Share call sites.
+```
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 
 A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.

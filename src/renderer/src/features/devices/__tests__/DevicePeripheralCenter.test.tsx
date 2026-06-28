@@ -33,6 +33,7 @@ describe('DevicePeripheralCenter', () => {
     renderCenter()
 
     expect(await screen.findByText('Device and Peripheral Center')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Audio' })).toBeInTheDocument()
     expect(screen.getByText('wlan0')).toBeInTheDocument()
     expect(screen.getByText(/Storage/)).toBeInTheDocument()
     expect(screen.getByText('bluetooth')).toBeInTheDocument()

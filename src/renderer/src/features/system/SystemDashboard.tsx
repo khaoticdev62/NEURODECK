@@ -27,6 +27,7 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Network and VPN', path: '/settings/network' },
   { label: 'Device and Peripheral Center', path: '/devices' },
   { label: 'Bluetooth Devices', path: '/devices/bluetooth' },
+  { label: 'Audio and Microphone Center', path: '/devices/audio' },
   { label: 'Privacy and Permissions', path: '/settings/privacy' },
   { label: 'Integrations', path: '/integrations' },
   { label: 'Updates', path: '/settings/updates' },
