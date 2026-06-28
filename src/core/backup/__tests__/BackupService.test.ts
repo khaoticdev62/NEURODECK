@@ -94,4 +94,32 @@ describe('BackupService', () => {
     await expect(service.restore(backup.id)).rejects.toThrow('Backup failed verification')
     expect(await readFile(join(dir, 'workspaces.json'), 'utf-8')).toContain('safe')
   })
+
+  it('imports a verified backup file into the managed backup directory', async () => {
+    await writeFile(join(dir, 'workspaces.json'), JSON.stringify({ workspaces: [] }), 'utf-8')
+    const exported = await service.create({ label: 'Portable' })
+
+    const importedDir = await mkdtemp(join(tmpdir(), 'ndx-backup-import-'))
+    const importedService = new BackupService(importedDir, join(importedDir, 'backups'))
+    try {
+      const imported = await importedService.importFromPath(exported.path)
+
+      expect(imported.id).toBe(exported.id)
+      expect(imported.path).not.toBe(exported.path)
+      expect(imported.verified).toBe(true)
+      expect(await importedService.list()).toEqual([imported])
+    } finally {
+      await rm(importedDir, { recursive: true, force: true })
+    }
+  })
+
+  it('rejects importing a corrupted backup file', async () => {
+    await writeFile(join(dir, 'workspaces.json'), JSON.stringify({ workspaces: [] }), 'utf-8')
+    const exported = await service.create()
+    const raw = await readFile(exported.path, 'utf-8')
+    const corruptPath = join(dir, 'corrupt.ndx-backup.json')
+    await writeFile(corruptPath, raw.replace('workspaces.json', 'tampered.json'), 'utf-8')
+
+    await expect(service.importFromPath(corruptPath)).rejects.toThrow('Backup failed verification')
+  })
 })

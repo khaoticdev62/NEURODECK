@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { dialog, ipcMain, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import {
   backupIdRequestSchema,
   backupRecordSchema,
@@ -14,7 +14,10 @@ import {
 } from '@shared/contracts'
 import type { BackupService } from '../../core/backup/BackupService'
 
-export function registerBackupHandlers(backupService: BackupService): void {
+export function registerBackupHandlers(
+  backupService: BackupService,
+  getWindow: () => BrowserWindow | null
+): void {
   ipcMain.handle(IPC_CHANNELS.backupList, async (): Promise<NdxResult<BackupRecord[]>> => {
     const records = await backupService.list()
     return { ok: true, data: backupRecordSchema.array().parse(records) }
@@ -55,6 +58,36 @@ export function registerBackupHandlers(backupService: BackupService): void {
             'system',
             'backup-restore-failed',
             error instanceof Error ? error.message : 'Backup restore failed.'
+          )
+        }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.backupImportLocal,
+    async (): Promise<NdxResult<BackupRecord | null>> => {
+      const window = getWindow()
+      const options: OpenDialogOptions = {
+        title: 'Import NeuroDeck backup',
+        properties: ['openFile'],
+        filters: [{ name: 'NeuroDeck backups', extensions: ['json'] }]
+      }
+      const result = window
+        ? await dialog.showOpenDialog(window, options)
+        : await dialog.showOpenDialog(options)
+      if (result.canceled || result.filePaths.length === 0) return { ok: true, data: null }
+
+      try {
+        const record = await backupService.importFromPath(result.filePaths[0])
+        return { ok: true, data: backupRecordSchema.parse(record) }
+      } catch (error) {
+        return {
+          ok: false,
+          error: ndxError(
+            'validation',
+            'backup-import-failed',
+            error instanceof Error ? error.message : 'Backup import failed.'
           )
         }
       }

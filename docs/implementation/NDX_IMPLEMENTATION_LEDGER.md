@@ -2132,7 +2132,26 @@ npm run test -- BackupService -> 1 file / 4 tests passed
 npx eslint <X7 restore files> -> 0 errors, 0 warnings
 ```
 
-Full `npm run typecheck` is currently blocked by unrelated in-flight LAN-share worktree changes in `src/core/lanShare/LanShareService.ts` (unused LAN-5 imports plus missing `createServer`/`Socket` imports). That failure is outside the X7 restore files and existed in the dirty LAN-share worktree during this slice.
+Full `npm run typecheck` was rerun during the following import/export slice and is green again; the transient LAN-share dirty-worktree blocker noted during the restore slice was not part of X7.
+
+### Epic X7 addendum - local backup import/export format (2026-06-27)
+
+The local app-state backup format is now a real import/export path, not just an internal storage detail. Export is the existing versioned `.ndx-backup.json` bundle containing a schema version, manifest hash, per-file hashes, file counts/sizes, and explicit secret-store exclusions. Import is now wired through `backup.importLocal`: main process opens a native file picker, `BackupService.importFromPath()` parses and verifies the selected file, then copies only a valid bundle into `userData/backups`.
+
+JPE: users can now bring a NeuroDeck backup file back into the managed backup list, but the renderer never gets to hand the main process an arbitrary path string. The user chooses a file through the OS dialog, and the core service refuses it unless the manifest and per-file hashes line up.
+
+`/backup` now has a real Import Backup button next to Create Backup. A successful import deduplicates the visible list by backup id and keeps the same verify/restore flow as locally-created backups.
+
+**Still deferred**: sync providers, conflict resolution, migration runners, remote/cloud backup destinations, scheduled backups, workspace-content import/export, archive formats, cross-product importers, vault/secret portability, and encrypted portable vault backup.
+
+**Evidence (run 2026-06-27):**
+
+```text
+npm run test -- BackupService -> 1 file / 6 tests passed
+npm run typecheck             -> node + web TypeScript checks passed
+npm run lint                  -> 0 errors, 0 warnings
+npm run build                 -> succeeded
+```
 
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 

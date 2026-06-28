@@ -360,7 +360,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerFileHandlers(fileService, recoveryService, workspaceStore)
   registerGitHandlers(gitService, workspaceStore, fileService, recoveryService)
   registerRecoveryHandlers(recoveryService, fileService, workspaceStore)
-  registerBackupHandlers(backupService)
+  registerBackupHandlers(backupService, getWindow)
   registerWorkflowHandlers(workflowStore, workflowRunStore)
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)
   registerAgentHandlers(agentStore, agentRuntime)

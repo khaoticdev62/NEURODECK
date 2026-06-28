@@ -274,6 +274,7 @@ export interface NdxBridge {
     create: (request?: CreateBackupRequest) => Promise<NdxResult<BackupRecord>>
     verify: (request: BackupIdRequest) => Promise<NdxResult<BackupVerification>>
     restore: (request: BackupIdRequest) => Promise<NdxResult<BackupRestoreResult>>
+    importLocal: () => Promise<NdxResult<BackupRecord | null>>
   }
   git: {
     status: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStatus>>

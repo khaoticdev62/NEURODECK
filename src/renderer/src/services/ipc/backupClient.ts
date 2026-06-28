@@ -37,3 +37,9 @@ export async function restoreBackup(
   if (!bridge) return bridgeUnavailableError()
   return bridge.backups.restore(request)
 }
+
+export async function importLocalBackup(): Promise<NdxResult<BackupRecord | null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.backups.importLocal()
+}

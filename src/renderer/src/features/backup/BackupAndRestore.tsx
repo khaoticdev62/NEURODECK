@@ -4,6 +4,7 @@ import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import {
   createBackup,
+  importLocalBackup,
   listBackups,
   restoreBackup,
   verifyBackup
@@ -50,6 +51,26 @@ export function BackupAndRestore(): React.JSX.Element {
     setBusy(false)
   }
 
+  async function handleImport(): Promise<void> {
+    setBusy(true)
+    const result = await importLocalBackup()
+    if (result.ok) {
+      const imported = result.data
+      if (imported) {
+        setBackups((current) => [
+          imported,
+          ...current.filter((record) => record.id !== imported.id)
+        ])
+        setVerification(null)
+        setRestoreResult(null)
+      }
+      setError(null)
+    } else {
+      setError(result.error.userMessage)
+    }
+    setBusy(false)
+  }
+
   async function handleRestore(record: BackupRecord): Promise<void> {
     setRestoreReview(null)
     setBusy(true)
@@ -87,9 +108,14 @@ export function BackupAndRestore(): React.JSX.Element {
             Local app-state backups with manifest verification and secret-store exclusion.
           </p>
         </div>
-        <ControllerButton variant="primary" onClick={handleCreate} disabled={busy}>
-          Create Backup
-        </ControllerButton>
+        <div className="flex flex-wrap gap-2">
+          <ControllerButton onClick={handleImport} disabled={busy}>
+            Import Backup
+          </ControllerButton>
+          <ControllerButton variant="primary" onClick={handleCreate} disabled={busy}>
+            Create Backup
+          </ControllerButton>
+        </div>
       </header>
 
       {error && <ErrorState title="Backup request failed" description={error} />}

@@ -184,6 +184,17 @@ export class BackupService {
     }
   }
 
+  async importFromPath(path: string): Promise<BackupRecord> {
+    const bundle = parseBundle(await readFile(path, 'utf-8'))
+    const failures = verifyBundle(bundle, bundle.id)
+    if (failures.length > 0) {
+      throw new Error(`Backup failed verification: ${failures.join(' ')}`)
+    }
+    const destination = this.pathFor(bundle.id)
+    await writeAtomic(destination, JSON.stringify(bundle, null, 2))
+    return toRecord(bundle, destination, true)
+  }
+
   private pathFor(id: string): string {
     return join(this.backupDir, `${basename(id)}${BACKUP_EXTENSION}`)
   }
