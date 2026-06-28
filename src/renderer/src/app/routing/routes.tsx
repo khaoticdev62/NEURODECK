@@ -205,6 +205,14 @@ const AudioMicrophoneCenter = lazy(async () => {
   const module = await import('../../features/devices/AudioMicrophoneCenter')
   return { default: module.AudioMicrophoneCenter }
 })
+const DisplayDockCenter = lazy(async () => {
+  const module = await import('../../features/devices/DisplayDockCenter')
+  return { default: module.DisplayDockCenter }
+})
+const RemovableStorageCenter = lazy(async () => {
+  const module = await import('../../features/devices/RemovableStorageCenter')
+  return { default: module.RemovableStorageCenter }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -736,6 +744,26 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('audio devices', <AudioMicrophoneCenter />)
+  },
+  {
+    routeId: 'display-dock',
+    screenId: 'ND-X035',
+    path: '/devices/display',
+    title: 'Display and Dock Center',
+    owningEpic: 'Epic X8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('display devices', <DisplayDockCenter />)
+  },
+  {
+    routeId: 'removable-storage',
+    screenId: 'ND-X036',
+    path: '/devices/storage',
+    title: 'Removable Storage Center',
+    owningEpic: 'Epic X8',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('storage devices', <RemovableStorageCenter />)
   }
 ]
 

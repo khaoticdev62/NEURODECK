@@ -68,6 +68,12 @@ export function DevicePeripheralCenter(): React.JSX.Element {
           <ControllerButton variant="secondary" onClick={() => navigate('/devices/audio')}>
             Audio
           </ControllerButton>
+          <ControllerButton variant="secondary" onClick={() => navigate('/devices/display')}>
+            Display
+          </ControllerButton>
+          <ControllerButton variant="secondary" onClick={() => navigate('/devices/storage')}>
+            Storage
+          </ControllerButton>
           <ControllerButton
             variant="primary"
             disabled={loading}

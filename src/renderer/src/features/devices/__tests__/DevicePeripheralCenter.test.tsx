@@ -34,8 +34,10 @@ describe('DevicePeripheralCenter', () => {
 
     expect(await screen.findByText('Device and Peripheral Center')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Audio' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Display' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Storage' })).toBeInTheDocument()
     expect(screen.getByText('wlan0')).toBeInTheDocument()
-    expect(screen.getByText(/Storage/)).toBeInTheDocument()
+    expect(screen.getByText('40.0% used')).toBeInTheDocument()
     expect(screen.getByText('bluetooth')).toBeInTheDocument()
     expect(screen.getByText('No real Bluetooth adapter probe exists.')).toBeInTheDocument()
   })

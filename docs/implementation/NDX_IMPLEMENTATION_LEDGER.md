@@ -2233,6 +2233,27 @@ npm run typecheck -> still blocked by unrelated in-progress LAN Share API mismat
   LanShareTransferServerOptions now requires getPendingSendOperation at existing LAN Share call sites.
 ```
 
+### Epic X8 addendum - display/dock and removable-storage status centers (2026-06-28)
+
+ND-X035 Display and Dock Center is now a real route at `/devices/display`; ND-X036 Removable Storage Center is now a real route at `/devices/storage`. Both are linked from System Dashboard and Device and Peripheral Center, and both reuse `device.inventory` rather than creating duplicate hardware state.
+
+Display/dock shows the real `external-displays` capability state plus persisted `display`/`dock` records only. Removable storage shows persisted `storage` records plus the current metrics-derived storage root exposed by `SystemMetricsService`. Controls that would mutate the OS are rendered as disabled status rows with exact missing-backend or destructive-review reasons.
+
+JPE: these screens are status centers, not hardware control panels yet. They show what NeuroDeck can see and why control actions are blocked. They do not pretend to rearrange displays, eject drives, format media, or repair filesystems until real OS adapters and rollback/recovery flows exist.
+
+**Still deferred**: real Wayland/KScreen/SteamOS display enumeration, display arrangement, resolution/refresh-rate transactions, rollback timers, dock detection, per-dock profiles, display recovery safe mode, udisks2/SteamOS removable-media discovery, mount/eject transactions, safe flush verification, workspace-boundary opening, destructive format review, and filesystem repair.
+
+**Evidence (run 2026-06-28):**
+
+```text
+npm run test -- DevicePeripheralCenter DisplayDockCenter RemovableStorageCenter -> 3 files / 9 tests passed
+npm run lint -> 0 errors, 0 warnings
+npm run typecheck:web -> passed
+npx eslint <X8 display/storage route files> -> 0 errors, 0 warnings
+Full npm run typecheck passes in the current dirty tree, but is not used as commit evidence
+because unrelated unstaged LAN Share changes are present and affect node-side typechecking.
+```
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 
 A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.

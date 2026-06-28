@@ -28,6 +28,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Device and Peripheral Center', path: '/devices' },
   { label: 'Bluetooth Devices', path: '/devices/bluetooth' },
   { label: 'Audio and Microphone Center', path: '/devices/audio' },
+  { label: 'Display and Dock Center', path: '/devices/display' },
+  { label: 'Removable Storage Center', path: '/devices/storage' },
   { label: 'Privacy and Permissions', path: '/settings/privacy' },
   { label: 'Integrations', path: '/integrations' },
   { label: 'Updates', path: '/settings/updates' },
