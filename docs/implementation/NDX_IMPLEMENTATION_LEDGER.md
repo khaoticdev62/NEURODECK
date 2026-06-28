@@ -2608,3 +2608,31 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-10 (2026-06-28)
+
+Real fuzzing and security review of the receive-path and crypto boundaries — the surfaces that consume bytes from an untrusted network peer. Live interop testing against an actual upstream Warpinator/Winpinator binary is honestly deferred: no such client exists in this dev environment to test against. Interop confidence rests on the structural wire-format audits already completed in Phases LAN-0/4/5 (independently-verified proto schema, byte-compatible NaCl secretbox construction, byte-compatible zlib chunk compression, matching `file_type` enum values and default ports) — real-binary interop testing is the one genuinely open item this phase could not close from here.
+
+**Real bug found and fixed: unbounded zlib decompression (`fileChunkCompression.ts`)** — `decompressChunk()` called `zlib.inflateSync()` with no output-size bound. A malicious or buggy peer could send a tiny compressed chunk that decompresses to gigabytes (a classic decompression bomb), exhausting the receiver's memory. Fixed with `inflateSync(chunk, { maxOutputLength: MAX_DECOMPRESSED_CHUNK_BYTES })`, capped to the real protocol block size (1 MiB, `LanShareTransferServer.BLOCK_SIZE_BYTES`) since a genuine Warpinator-compatible sender's chunk never legitimately decompresses past one block. Confirmed by a new test that compresses 50 MB of zeros into under 1 KB and asserts the resulting bomb is rejected rather than allocated.
+
+**Real bug found and fixed: unbounded receive-side disk writes** — nothing checked that an already-approved sender's streamed bytes stayed within its own declared `TransferOpRequest.size`. A misbehaving or compromised (but already-trusted/approved) peer could stream indefinitely and fill the receiver's disk. `LanShareService.acceptIncomingTransfer()`'s per-chunk callback now aborts the job (via the same real `failed`-status + staging-cleanup path already used for any other transfer error) the instant real written bytes exceed the sender's own declared total.
+
+**A second real bug, found by the first fix's own test run**: the disk-fill guard initially compared `chunk.chunk.length` (the wire/compressed byte count) against the uncompressed declared total — wrong, since deflating a very small payload can legitimately *expand* it (zlib framing overhead). This was caught immediately, not theoretically: the existing real two-service end-to-end test (`LanShareService.test.ts`) started failing with "Sender streamed 72 bytes, past its own declared total of 71" for a genuine 71-byte file. Root cause: comparing compressed-wire length against decompressed-declared length. Fixed by changing `LanShareReceiveEngine.writeChunk()` to return the real number of decompressed/on-disk bytes it wrote, and having the caller accumulate and compare *that* instead.
+
+**Reviewed and confirmed already-safe, with new regression tests added so they stay that way**:
+- `decryptWithGroupCode()` (`groupCodeCipher.ts`) never throws on adversarial input — confirmed with a new test feeding it random byte garbage at lengths `0, 1, 5, 23, 24, 25, 100, 1000` (spanning the real 24-byte nonce boundary) plus non-base64 strings, unicode noise, and an all-`=` string; every case returns a clean `null`, never an exception.
+- `receivePathSafety.ts`'s traversal guard already correctly handles the classic "sibling directory sharing the root as a string prefix" bypass (e.g. a naive `startsWith(root)` check would wrongly let `../job-10/evil.txt` through against a root of `.../job-1`, since `"job-10".startsWith("job-1")` is true) — the existing `root + sep` check was already correct; now locked in by an explicit regression test rather than relying on the deeper traversal/absolute-path cases to incidentally cover it. Also added: deeply-nested mixed traversal (`a/b/c/../../../../../../etc/passwd`) and a UNC-style path (`\\attacker-host\share\file.txt`), both already correctly rejected.
+- `RegistrationRateLimiter` is keyed by host only (`parsePeerHost` strips the ephemeral source port before the key is built), so a single abusive peer cannot trivially defeat or explode it by opening many short-lived connections from different source ports.
+- `computeFingerprint()` only ever SHA-256-hashes a peer's raw certificate PEM bytes — it never structurally parses the certificate (no `X509Certificate` construction), so a malformed/adversarial PEM cannot crash the fingerprinting path.
+
+**New/changed files**: `grpc/fileChunkCompression.ts` (decompression bomb cap), `LanShareReceiveEngine.ts` (`writeChunk` now returns real written bytes), `LanShareService.ts` (declared-size enforcement in `acceptIncomingTransfer`), `__tests__/fileChunkCompression.test.ts` (+1), `__tests__/groupCodeCipher.test.ts` (+1), `__tests__/receivePathSafety.test.ts` (+3).
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 196 files / 972 tests passed
+npm run test -- src/core/lanShare -> 19 files / 91 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

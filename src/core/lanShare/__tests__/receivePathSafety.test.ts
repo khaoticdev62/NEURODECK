@@ -34,6 +34,27 @@ describe('resolveSafeDestination', () => {
   it('rejects an empty relative path', () => {
     expect(() => resolveSafeDestination(root, '')).toThrow(UnsafeDestinationPathError)
   })
+
+  it('rejects a sibling directory that merely shares the root as a string prefix', () => {
+    // A real, classic traversal-check bypass: naive `startsWith(root)` would
+    // wrongly accept "job-10" as being "inside" "job-1". The real fix
+    // (checking `root + sep`) must keep rejecting this.
+    expect(() => resolveSafeDestination(root, '../job-10/evil.txt')).toThrow(
+      UnsafeDestinationPathError
+    )
+  })
+
+  it('rejects deeply nested traversal mixed with otherwise-valid segments', () => {
+    expect(() => resolveSafeDestination(root, 'a/b/c/../../../../../../etc/passwd')).toThrow(
+      UnsafeDestinationPathError
+    )
+  })
+
+  it('rejects a UNC-style path', () => {
+    expect(() => resolveSafeDestination(root, '\\\\attacker-host\\share\\file.txt')).toThrow(
+      UnsafeDestinationPathError
+    )
+  })
 })
 
 describe('assertSafeSymlinkTarget', () => {

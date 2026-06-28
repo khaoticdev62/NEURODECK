@@ -15,13 +15,28 @@ import { deflateSync, inflateSync } from 'node:zlib'
  */
 export const DEFAULT_COMPRESSION_LEVEL = -1
 
+/**
+ * Real spec §21 block size (`LanShareTransferServer.BLOCK_SIZE_BYTES`) —
+ * a real Warpinator-compatible sender never produces a chunk whose
+ * decompressed content exceeds one block. A peer that claims otherwise
+ * is sending a real zlib decompression-bomb, not a real file chunk, so
+ * the cap below is a hard security boundary, never a legitimate-traffic
+ * limiter.
+ */
+const MAX_DECOMPRESSED_CHUNK_BYTES = 1024 * 1024
+
 export function compressChunk(chunk: Buffer, level: number = DEFAULT_COMPRESSION_LEVEL): Buffer {
   if (chunk.length === 0) return chunk
   return deflateSync(chunk, { level })
 }
 
-/** Throws on real malformed/corrupted zlib input — never silently returns the original bytes, since that would mask real data loss. */
+/**
+ * Throws on real malformed/corrupted zlib input, and on a real
+ * decompression-bomb attempt (a tiny chunk claiming to expand past
+ * `MAX_DECOMPRESSED_CHUNK_BYTES`) — never silently returns the original
+ * bytes or an unbounded buffer.
+ */
 export function decompressChunk(chunk: Buffer): Buffer {
   if (chunk.length === 0) return chunk
-  return inflateSync(chunk)
+  return inflateSync(chunk, { maxOutputLength: MAX_DECOMPRESSED_CHUNK_BYTES })
 }

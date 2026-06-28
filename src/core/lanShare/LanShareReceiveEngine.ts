@@ -32,34 +32,38 @@ export class LanShareReceiveEngine {
     await mkdir(stagingRoot, { recursive: true })
   }
 
+  /** Returns the real number of decompressed/on-disk bytes written for this chunk — never the wire/compressed length, since deflating a tiny payload can legitimately make it *larger* on the wire than its real decompressed size. */
   async writeChunk(
     stagingRoot: string,
     chunk: NdxFileChunk,
     useCompression: boolean
-  ): Promise<void> {
+  ): Promise<number> {
     const destination = resolveSafeDestination(stagingRoot, chunk.relative_path)
 
     if (chunk.file_type === NDX_FILE_TYPE_DIRECTORY) {
       await mkdir(destination, { recursive: true })
-      return
+      return 0
     }
     if (chunk.file_type === NDX_FILE_TYPE_SYMBOLIC_LINK) {
       assertSafeSymlinkTarget(stagingRoot, chunk.relative_path, chunk.symlink_target)
       await mkdir(dirname(destination), { recursive: true })
       await symlink(chunk.symlink_target, destination)
-      return
+      return 0
     }
 
     await mkdir(dirname(destination), { recursive: true })
+    let writtenBytes = 0
     if (chunk.chunk.length > 0) {
       const bytes = useCompression ? decompressChunk(chunk.chunk) : chunk.chunk
       await appendFile(destination, bytes)
+      writtenBytes = bytes.length
     }
     if (chunk.time) {
       const mtimeMs = Number(chunk.time.mtime) * 1000 + Math.floor(chunk.time.mtime_usec / 1000)
       const mtime = new Date(mtimeMs)
       await utimes(destination, mtime, mtime).catch(() => undefined)
     }
+    return writtenBytes
   }
 
   /** Real conflict-safe naming (spec §18 "Default must not silently replace") — appends " (1)", " (2)", etc. until a genuinely free name is found via real `fs.stat` checks. */

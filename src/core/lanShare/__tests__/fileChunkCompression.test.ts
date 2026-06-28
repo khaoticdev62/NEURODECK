@@ -19,4 +19,10 @@ describe('fileChunkCompression', () => {
     const corrupted = Buffer.from([1, 2, 3, 4, 5])
     expect(() => decompressChunk(corrupted)).toThrow()
   })
+
+  it('rejects a real zlib decompression bomb instead of allocating unbounded memory', () => {
+    const bomb = compressChunk(Buffer.alloc(50 * 1024 * 1024, 0))
+    expect(bomb.length).toBeLessThan(1024 * 1024)
+    expect(() => decompressChunk(bomb)).toThrow()
+  })
 })

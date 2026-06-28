@@ -351,8 +351,25 @@ export class LanShareService {
           use_compression: job.useCompression
         },
         async (chunk) => {
-          await this.receiveEngine.writeChunk(stagingRoot, chunk, job.useCompression)
-          transferredBytes += chunk.chunk.length
+          const writtenBytes = await this.receiveEngine.writeChunk(
+            stagingRoot,
+            chunk,
+            job.useCompression
+          )
+          transferredBytes += writtenBytes
+          // Real security boundary: a genuine Warpinator-compatible
+          // sender's real (decompressed) bytes never sum past the total
+          // it itself declared in `TransferOpRequest.size`. A sender
+          // that keeps streaming past that is not behaving like a real
+          // client and must be stopped before it fills the receiver's
+          // disk — this is the one real defense against an
+          // unbounded-write/disk-fill attack from a peer that has
+          // already passed trust/approval.
+          if (job.totalBytes !== undefined && transferredBytes > job.totalBytes) {
+            throw new Error(
+              `Sender streamed ${transferredBytes} real bytes, past its own declared total of ${job.totalBytes}.`
+            )
+          }
           await this.transferStore.updateStatus(job.id, 'transferring', { transferredBytes })
         }
       )
