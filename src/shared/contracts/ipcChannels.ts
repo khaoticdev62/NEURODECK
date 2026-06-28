@@ -18,6 +18,7 @@ export const IPC_CHANNELS = {
   backupVerify: 'backup.verify',
   backupRestore: 'backup.restore',
   backupImportLocal: 'backup.importLocal',
+  backupMigrate: 'backup.migrate',
   gitStatus: 'git.status',
   gitDiff: 'git.diff',
   gitStage: 'git.stage',

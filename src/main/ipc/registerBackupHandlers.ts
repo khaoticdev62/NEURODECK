@@ -1,12 +1,14 @@
 import { dialog, ipcMain, type BrowserWindow, type OpenDialogOptions } from 'electron'
 import {
   backupIdRequestSchema,
+  backupMigrationReportSchema,
   backupRecordSchema,
   backupRestoreResultSchema,
   backupVerificationSchema,
   createBackupRequestSchema,
   IPC_CHANNELS,
   ndxError,
+  type BackupMigrationReport,
   type BackupRecord,
   type BackupRestoreResult,
   type BackupVerification,
@@ -91,6 +93,14 @@ export function registerBackupHandlers(
           )
         }
       }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.backupMigrate,
+    async (): Promise<NdxResult<BackupMigrationReport>> => {
+      const report = await backupService.migrateManagedBackups()
+      return { ok: true, data: backupMigrationReportSchema.parse(report) }
     }
   )
 }

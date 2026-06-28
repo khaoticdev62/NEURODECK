@@ -2153,6 +2153,26 @@ npm run lint                  -> 0 errors, 0 warnings
 npm run build                 -> succeeded
 ```
 
+### Epic X7 addendum - backup schema migration runner (2026-06-28)
+
+Managed local backup migration is now real for the backup bundle format owned by X7. `BackupService.migrateManagedBackups()` scans `userData/backups` for `.ndx-backup.json` files, verifies current `1.0.0` bundles without rewriting them, migrates legacy `0.9.0` app-state bundles into the current manifest/per-file SHA-256 format, and writes migrated bundles atomically. Invalid JSON and unsupported/future schema versions are recorded as `invalid` or `blocked` in a structured report instead of aborting the whole migration run.
+
+JPE: this is a cleanup pass for old NeuroDeck backup files. If a backup is already current, it is checked and left alone. If it is an older supported shape, NeuroDeck upgrades it into the current hash-verified format. If it is broken or from an unknown future version, NeuroDeck reports that clearly and does not guess.
+
+Typed surface added: `BackupMigrationReport` / `BackupMigrationRecord`, `backup.migrate`, preload `window.ndx.backups.migrate()`, and renderer `migrateBackups()`. `/backup` now exposes a controller-focusable Run Migrations action and renders migration totals plus the first records for review.
+
+**Still deferred**: sync providers, conflict resolution, remote/cloud backup destinations, scheduled backups, workspace-content import/export/restore, archive formats, cross-product importers, vault/secret portability, encrypted portable vault backup, broader JsonStore/app-state migration runners, Tauri-era config imports, renamed settings migrations, and deprecated extension/API migrations.
+
+**Evidence (run 2026-06-28):**
+
+```text
+npm run test -- BackupService -> 1 file / 9 tests passed
+npx eslint <X7 backup migration files> -> 0 errors, 0 warnings
+npm run typecheck -> blocked by unrelated in-progress LAN Share API mismatch:
+  LanShareTransferServerOptions now requires getPendingSendOperation at existing LAN Share call sites.
+npm run lint -> exited 0; warnings are limited to unrelated LAN Share formatting in dirty files.
+```
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 
 A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.

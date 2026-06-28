@@ -20,6 +20,7 @@ import type { DeviceIdRequest, DeviceRecord, UpsertDeviceRequest } from './devic
 import type { TransactionIdRequest, TransactionRecord } from './transaction'
 import type {
   BackupIdRequest,
+  BackupMigrationReport,
   BackupRecord,
   BackupRestoreResult,
   BackupVerification,
@@ -276,6 +277,7 @@ export interface NdxBridge {
     verify: (request: BackupIdRequest) => Promise<NdxResult<BackupVerification>>
     restore: (request: BackupIdRequest) => Promise<NdxResult<BackupRestoreResult>>
     importLocal: () => Promise<NdxResult<BackupRecord | null>>
+    migrate: () => Promise<NdxResult<BackupMigrationReport>>
   }
   git: {
     status: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStatus>>

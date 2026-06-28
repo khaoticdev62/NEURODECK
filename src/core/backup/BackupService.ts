@@ -2,6 +2,8 @@ import { createHash, randomUUID } from 'node:crypto'
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type {
+  BackupMigrationRecord,
+  BackupMigrationReport,
   BackupRecord,
   BackupRestoreResult,
   BackupVerification,
@@ -61,6 +63,19 @@ interface BackupBundlePayload {
 
 interface BackupBundle extends BackupBundlePayload {
   sha256: string
+}
+
+interface LegacyBackup09Bundle {
+  schemaVersion: '0.9.0'
+  id: string
+  createdAt: number
+  label?: string
+  scope: 'app-state'
+  files: Array<{
+    relativePath: string
+    content: string
+  }>
+  excludedSecretPaths?: string[]
 }
 
 /**
@@ -195,6 +210,26 @@ export class BackupService {
     return toRecord(bundle, destination, true)
   }
 
+  async migrateManagedBackups(): Promise<BackupMigrationReport> {
+    const checkedAt = Date.now()
+    let entries: string[]
+    try {
+      entries = await readdir(this.backupDir)
+    } catch (error) {
+      if (isNotFound(error)) {
+        return summarizeMigrationRecords(checkedAt, [])
+      }
+      throw error
+    }
+
+    const records: BackupMigrationRecord[] = []
+    for (const entry of entries.filter((name) => name.endsWith(BACKUP_EXTENSION))) {
+      const path = join(this.backupDir, entry)
+      records.push(await this.migrateBackupFile(path, checkedAt))
+    }
+    return summarizeMigrationRecords(checkedAt, records)
+  }
+
   private pathFor(id: string): string {
     return join(this.backupDir, `${basename(id)}${BACKUP_EXTENSION}`)
   }
@@ -230,6 +265,170 @@ export class BackupService {
 
     return { restoredFileCount, removedFileCount }
   }
+
+  private async migrateBackupFile(
+    path: string,
+    migratedAt: number
+  ): Promise<BackupMigrationRecord> {
+    let raw: string
+    try {
+      raw = await readFile(path, 'utf-8')
+    } catch (error) {
+      return migrationRecord(path, 'invalid', readErrorMessage(error), migratedAt)
+    }
+
+    let value: unknown
+    try {
+      value = JSON.parse(raw)
+    } catch {
+      return migrationRecord(path, 'invalid', 'The backup file is not valid JSON.', migratedAt)
+    }
+
+    if (isCurrentBackupBundle(value)) {
+      const failures = verifyBundle(value, value.id)
+      if (failures.length > 0) {
+        return migrationRecord(path, 'invalid', failures.join(' '), migratedAt, value)
+      }
+      return migrationRecord(
+        path,
+        'current',
+        'Backup schema is already current.',
+        migratedAt,
+        value
+      )
+    }
+
+    if (isLegacyBackup09Bundle(value)) {
+      const migrated = migrateLegacy09Bundle(value)
+      await writeAtomic(path, JSON.stringify(migrated, null, 2))
+      return migrationRecord(
+        path,
+        'migrated',
+        'Migrated backup bundle from schema 0.9.0 to 1.0.0.',
+        migratedAt,
+        migrated,
+        '0.9.0'
+      )
+    }
+
+    const version =
+      typeof value === 'object' &&
+      value !== null &&
+      'schemaVersion' in value &&
+      typeof value.schemaVersion === 'string'
+        ? value.schemaVersion
+        : undefined
+    return {
+      path,
+      fromSchemaVersion: version,
+      toSchemaVersion: SCHEMA_VERSION,
+      status: 'blocked',
+      message: version
+        ? `No migration is registered for backup schema ${version}.`
+        : 'The backup file does not declare a schema version.',
+      migratedAt
+    }
+  }
+}
+
+function isCurrentBackupBundle(value: unknown): value is BackupBundle {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'schemaVersion' in value &&
+    value.schemaVersion === SCHEMA_VERSION &&
+    'id' in value &&
+    typeof value.id === 'string' &&
+    'sha256' in value &&
+    typeof value.sha256 === 'string' &&
+    'files' in value &&
+    Array.isArray(value.files)
+  )
+}
+
+function isLegacyBackup09Bundle(value: unknown): value is LegacyBackup09Bundle {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'schemaVersion' in value &&
+    value.schemaVersion === '0.9.0' &&
+    'id' in value &&
+    typeof value.id === 'string' &&
+    'createdAt' in value &&
+    typeof value.createdAt === 'number' &&
+    'scope' in value &&
+    value.scope === 'app-state' &&
+    'files' in value &&
+    Array.isArray(value.files) &&
+    value.files.every(
+      (file) =>
+        typeof file === 'object' &&
+        file !== null &&
+        'relativePath' in file &&
+        typeof file.relativePath === 'string' &&
+        'content' in file &&
+        typeof file.content === 'string'
+    )
+  )
+}
+
+function migrateLegacy09Bundle(bundle: LegacyBackup09Bundle): BackupBundle {
+  const payload: BackupBundlePayload = {
+    schemaVersion: SCHEMA_VERSION,
+    id: bundle.id,
+    createdAt: bundle.createdAt,
+    label: bundle.label,
+    scope: bundle.scope,
+    files: bundle.files.map((file) => ({
+      relativePath: file.relativePath,
+      content: file.content,
+      bytes: Buffer.byteLength(file.content, 'utf-8'),
+      sha256: sha256(file.content)
+    })),
+    excludedSecretPaths: bundle.excludedSecretPaths ?? [...SECRET_EXCLUDED_FILES]
+  }
+  return {
+    ...payload,
+    sha256: bundleSha(payload)
+  }
+}
+
+function summarizeMigrationRecords(
+  checkedAt: number,
+  records: BackupMigrationRecord[]
+): BackupMigrationReport {
+  return {
+    checkedAt,
+    total: records.length,
+    current: records.filter((record) => record.status === 'current').length,
+    migrated: records.filter((record) => record.status === 'migrated').length,
+    invalid: records.filter((record) => record.status === 'invalid').length,
+    blocked: records.filter((record) => record.status === 'blocked').length,
+    records
+  }
+}
+
+function migrationRecord(
+  path: string,
+  status: BackupMigrationRecord['status'],
+  message: string,
+  migratedAt: number,
+  bundle?: BackupBundle,
+  fromSchemaVersion: string | undefined = bundle?.schemaVersion
+): BackupMigrationRecord {
+  return {
+    path,
+    backupId: bundle?.id,
+    fromSchemaVersion,
+    toSchemaVersion: SCHEMA_VERSION,
+    status,
+    message,
+    migratedAt
+  }
+}
+
+function readErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Could not read backup file.'
 }
 
 function verifyBundle(bundle: BackupBundle, id: string): string[] {

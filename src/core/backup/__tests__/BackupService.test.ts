@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -121,5 +121,79 @@ describe('BackupService', () => {
     await writeFile(corruptPath, raw.replace('workspaces.json', 'tampered.json'), 'utf-8')
 
     await expect(service.importFromPath(corruptPath)).rejects.toThrow('Backup failed verification')
+  })
+
+  it('reports current backups during migration without rewriting them', async () => {
+    await writeFile(join(dir, 'workspaces.json'), JSON.stringify({ workspaces: [] }), 'utf-8')
+    const backup = await service.create()
+
+    const report = await service.migrateManagedBackups()
+
+    expect(report.total).toBe(1)
+    expect(report.current).toBe(1)
+    expect(report.migrated).toBe(0)
+    expect(report.records[0]).toMatchObject({
+      backupId: backup.id,
+      status: 'current',
+      fromSchemaVersion: '1.0.0',
+      toSchemaVersion: '1.0.0'
+    })
+  })
+
+  it('migrates a legacy 0.9.0 backup bundle to the current hashed format', async () => {
+    await mkdir(join(dir, 'backups'), { recursive: true })
+    const backupPath = join(dir, 'backups', '11111111-1111-4111-8111-111111111111.ndx-backup.json')
+    await writeFile(
+      backupPath,
+      JSON.stringify(
+        {
+          schemaVersion: '0.9.0',
+          id: '11111111-1111-4111-8111-111111111111',
+          createdAt: 123,
+          label: 'Legacy',
+          scope: 'app-state',
+          files: [{ relativePath: 'workspaces.json', content: '{"workspaces":[]}' }]
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    )
+
+    const report = await service.migrateManagedBackups()
+    const migrated = JSON.parse(await readFile(backupPath, 'utf-8')) as {
+      schemaVersion: string
+      sha256: string
+      files: Array<{ bytes: number; sha256: string }>
+      excludedSecretPaths: string[]
+    }
+
+    expect(report.migrated).toBe(1)
+    expect(report.records[0]).toMatchObject({
+      status: 'migrated',
+      fromSchemaVersion: '0.9.0',
+      toSchemaVersion: '1.0.0'
+    })
+    expect(migrated.schemaVersion).toBe('1.0.0')
+    expect(migrated.sha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(migrated.files[0].bytes).toBeGreaterThan(0)
+    expect(migrated.files[0].sha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(migrated.excludedSecretPaths).toContain('model-providers.json')
+  })
+
+  it('records invalid and blocked backup migration entries without throwing', async () => {
+    await mkdir(join(dir, 'backups'), { recursive: true })
+    await writeFile(join(dir, 'backups', 'invalid.ndx-backup.json'), 'not json', 'utf-8')
+    await writeFile(
+      join(dir, 'backups', 'future.ndx-backup.json'),
+      JSON.stringify({ schemaVersion: '2.0.0', id: 'future' }),
+      'utf-8'
+    )
+
+    const report = await service.migrateManagedBackups()
+
+    expect(report.invalid).toBe(1)
+    expect(report.blocked).toBe(1)
+    expect(report.records.map((record) => record.status).sort()).toEqual(['blocked', 'invalid'])
   })
 })

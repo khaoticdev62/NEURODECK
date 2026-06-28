@@ -45,3 +45,28 @@ export const backupRestoreResultSchema = z.object({
   rollbackBackupPath: z.string()
 })
 export type BackupRestoreResult = z.infer<typeof backupRestoreResultSchema>
+
+export const backupMigrationStatusSchema = z.enum(['current', 'migrated', 'invalid', 'blocked'])
+export type BackupMigrationStatus = z.infer<typeof backupMigrationStatusSchema>
+
+export const backupMigrationRecordSchema = z.object({
+  path: z.string(),
+  backupId: z.string().optional(),
+  fromSchemaVersion: z.string().optional(),
+  toSchemaVersion: z.literal('1.0.0').optional(),
+  status: backupMigrationStatusSchema,
+  message: z.string(),
+  migratedAt: z.number().int().nonnegative().optional()
+})
+export type BackupMigrationRecord = z.infer<typeof backupMigrationRecordSchema>
+
+export const backupMigrationReportSchema = z.object({
+  checkedAt: z.number().int().nonnegative(),
+  total: z.number().int().nonnegative(),
+  current: z.number().int().nonnegative(),
+  migrated: z.number().int().nonnegative(),
+  invalid: z.number().int().nonnegative(),
+  blocked: z.number().int().nonnegative(),
+  records: z.array(backupMigrationRecordSchema)
+})
+export type BackupMigrationReport = z.infer<typeof backupMigrationReportSchema>

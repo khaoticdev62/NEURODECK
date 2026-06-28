@@ -1,5 +1,6 @@
 import type {
   BackupIdRequest,
+  BackupMigrationReport,
   BackupRecord,
   BackupRestoreResult,
   BackupVerification,
@@ -42,4 +43,10 @@ export async function importLocalBackup(): Promise<NdxResult<BackupRecord | null
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.backups.importLocal()
+}
+
+export async function migrateBackups(): Promise<NdxResult<BackupMigrationReport>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.backups.migrate()
 }

@@ -6,10 +6,16 @@ import {
   createBackup,
   importLocalBackup,
   listBackups,
+  migrateBackups,
   restoreBackup,
   verifyBackup
 } from '../../services/ipc/backupClient'
-import type { BackupRecord, BackupRestoreResult, BackupVerification } from '@shared/contracts'
+import type {
+  BackupMigrationReport,
+  BackupRecord,
+  BackupRestoreResult,
+  BackupVerification
+} from '@shared/contracts'
 
 export function BackupAndRestore(): React.JSX.Element {
   const [backups, setBackups] = useState<BackupRecord[]>([])
@@ -19,6 +25,7 @@ export function BackupAndRestore(): React.JSX.Element {
   const [verification, setVerification] = useState<BackupVerification | null>(null)
   const [restoreReview, setRestoreReview] = useState<BackupRecord | null>(null)
   const [restoreResult, setRestoreResult] = useState<BackupRestoreResult | null>(null)
+  const [migrationReport, setMigrationReport] = useState<BackupMigrationReport | null>(null)
 
   useEffect(() => {
     let active = true
@@ -63,7 +70,24 @@ export function BackupAndRestore(): React.JSX.Element {
         ])
         setVerification(null)
         setRestoreResult(null)
+        setMigrationReport(null)
       }
+      setError(null)
+    } else {
+      setError(result.error.userMessage)
+    }
+    setBusy(false)
+  }
+
+  async function handleMigrate(): Promise<void> {
+    setBusy(true)
+    const result = await migrateBackups()
+    if (result.ok) {
+      const refreshed = await listBackups()
+      if (refreshed.ok) setBackups(refreshed.data)
+      setMigrationReport(result.data)
+      setVerification(null)
+      setRestoreResult(null)
       setError(null)
     } else {
       setError(result.error.userMessage)
@@ -109,6 +133,9 @@ export function BackupAndRestore(): React.JSX.Element {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <ControllerButton onClick={handleMigrate} disabled={busy}>
+            Run Migrations
+          </ControllerButton>
           <ControllerButton onClick={handleImport} disabled={busy}>
             Import Backup
           </ControllerButton>
@@ -151,6 +178,26 @@ export function BackupAndRestore(): React.JSX.Element {
           <p className="mt-1 break-all text-caption text-text-tertiary">
             {restoreResult.rollbackBackupPath}
           </p>
+        </section>
+      )}
+
+      {migrationReport && (
+        <section className="border border-border bg-surface p-3">
+          <p className="text-meta font-semibold text-text-primary">Migration report</p>
+          <p className="text-meta text-text-secondary">
+            Checked {migrationReport.total} backup{migrationReport.total === 1 ? '' : 's'}:{' '}
+            {migrationReport.current} current, {migrationReport.migrated} migrated,{' '}
+            {migrationReport.invalid} invalid, {migrationReport.blocked} blocked.
+          </p>
+          {migrationReport.records.length > 0 && (
+            <ul className="mt-2 grid gap-1 text-caption text-text-tertiary">
+              {migrationReport.records.slice(0, 5).map((record) => (
+                <li key={`${record.path}:${record.status}`} className="break-all">
+                  {record.status}: {record.message} ({record.path})
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
