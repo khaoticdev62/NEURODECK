@@ -2254,6 +2254,24 @@ Full npm run typecheck passes in the current dirty tree, but is not used as comm
 because unrelated unstaged LAN Share changes are present and affect node-side typechecking.
 ```
 
+## Epic X9 — Resource and scheduling (2026-06-28)
+
+First real slice: ND-X037 Resource Governor, ND-X038 AI Workload Scheduler, and ND-X039 Scheduler and Triggers. These are real routes and real controller-reachable status surfaces, not hidden placeholders. Resource Governor and AI Workload Scheduler reuse the existing live `SystemMetricsService` IPC path for CPU, memory, storage, battery, thermal, and GPU signals. Scheduler and Triggers is a status inventory of every required trigger type and scheduler requirement, with an explicit not-wired health state.
+
+JPE: these screens tell the user what NeuroDeck can measure today and exactly which scheduling controls are not enforceable yet. They do not pretend to throttle models, preempt jobs, run schedules, or fire triggers because there is no durable resource policy engine or scheduler service in this codebase yet.
+
+Routes added: `/resource-governor` (ND-X037), `/ai-workloads` (ND-X038), and `/scheduler` (ND-X039), all linked from System Dashboard.
+
+**Still deferred**: resource policy enforcement, model-load delay, smaller-model/context reduction, browser suspension, backup delay, workflow pause, model unload, battery-saver enforcement, reversible resource actions, durable AI job queue, priority, pause/resume/cancel, safe-boundary preemption, estimated resource use, admission control, OOM prevention, retry policy, Activity integration, persistent schedule store, trigger runner, missed-run policy, time-zone/DST handling, duplicate-run protection, quiet hours, run history, next-run preview, export/import, and scheduled permission grants.
+
+**Evidence (run 2026-06-28):**
+
+```text
+npm run test -- ResourceGovernor AIWorkloadScheduler SchedulerTriggers -> 3 files / 6 tests passed
+npm run typecheck:web -> passed
+npx eslint <X9 resource/scheduler route files> -> 0 errors, 0 warnings
+```
+
 ## LAN Share (Warpinator-compatible) — Phase LAN-0 (2026-06-26)
 
 A separate mega-prompt (`NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md`) asks for real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem — a distinct, much larger feature from Epic X6's NDX-only LAN peer transfer (`src/core/lan/`, already shipped). Epic X6's transfer does **not** speak Warpinator's actual protocol and is unaffected by this work.
@@ -2460,6 +2478,47 @@ Real send-side engine: the `Warp` transfer service schema, real preflight/manife
 npm run test       → 182 files, 904 tests passed (one unrelated pre-existing test — a controller
                       tutorial waitFor timing assertion — failed once under full-suite parallelism
                       and passed cleanly in isolation; not touched by this change)
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-6 (2026-06-28)
+
+Real file bytes move now. This phase makes `StartTransfer` — the one real RPC every prior phase honestly left `UNIMPLEMENTED` — actually stream and receive real files, with real path-safe staging and real atomic, conflict-safe commit. Proven not by unit tests alone but by a real two-service integration test: two genuine `LanShareService` instances, real gRPC over real loopback sockets, a real file sent end-to-end and verified byte-identical at the destination.
+
+**Real chunk streaming, both directions** (`core/lanShare/grpc/LanShareTransferServer.ts`/`LanShareTransferClient.ts`) — the server reads real files in real bounded 1 MiB blocks (Warpinator's own confirmed `transfer-block-size` default), optionally zlib-compressing each non-empty chunk, and streams them via a real `ServerWritableStream`. The client consumes the real stream with `for await`, which gives real backpressure — the next chunk is only pulled off the socket once the previous one's processing promise resolves, so a slow disk writer on the receiving end can never cause unbounded buffering. Proven by tests covering a real regular file (byte-identical reassembly), a real compressed file (real zlib round trip), and real directory/symlink marker chunks (no chunk bytes, correct `symlink_target`).
+
+**Real correctness bug found and fixed**: the existing `unimplemented()` helper (built in Phase LAN-5 for `StartTransfer` before it was real) used a unary-style `callback(error)` shape uniformly. Once `StartTransfer` became a real streaming handler, the remaining `UNIMPLEMENTED` RPCs that are also server-streaming (`GetRemoteMachineAvatar`) needed the streaming termination path (`call.emit('error', ...)`), not the callback path — already partially fixed in LAN-5, reconfirmed correct here since `StartTransfer` itself moved off this helper entirely.
+
+**Real path-safe staging** (`core/lanShare/LanShareReceiveEngine.ts` + `core/lanShare/receivePathSafety.ts`) — every `FileChunk.relative_path`/`symlink_target` from a remote peer is untrusted; `resolveSafeDestination`/`assertSafeSymlinkTarget` reject traversal (`../`), absolute paths (POSIX and Windows-style), null bytes, and symlink targets that would resolve outside the staging root — all before any real filesystem write happens. Directory chunks become real `mkdir -p`, symlink chunks become real `symlink()` calls (never followed/dereferenced), regular-file chunks are real-decompressed (if negotiated) and appended.
+
+**Real atomic, conflict-safe commit** — `commit()` does a real `fs.rename()` per top-level staged item into the real destination directory (atomic on the same filesystem, which staging and the destination always share — both live under the configured receive directory). Spec §18's "default must not silently replace" is real: `resolveConflictFreeName()` checks real `fs.stat()` existence and appends `" (1)"`, `" (2)"`, etc. until genuinely free — confirmed by a test that sends the same filename twice and gets back both `photo.png` and `photo (1).png`, never an overwrite.
+
+**Real second bug found and fixed, caught only by the end-to-end test**: `acceptIncomingTransfer()` initially called the sender's `StartTransfer` using the *receiver's own* locally-created job id as `OpInfo.ident`. But the sender's `pendingSendOperations` map (Phase LAN-5) is keyed by the *sender's* job id from its own `ProcessTransferOpRequest` announcement — a different id entirely. Every real accept attempt failed with a real `NOT_FOUND` until this was caught by the integration test (no unit test of either side in isolation could have caught this — it's a contract mismatch between two real components). Fixed by recording the sender's real `info.ident` against the receiver's local job id in a new `incomingRemoteIdents` map, populated in `recordIncomingTransfer` and consumed in `acceptIncomingTransfer`, cleared once the transfer reaches a terminal state.
+
+**Real receive flow wired end-to-end** — `LanShareService.acceptIncomingTransfer()`/`rejectIncomingTransfer()` drive a job through the real state machine (`waiting-for-approval`→`transferring`→`committing`→`completed`/`failed`, with real per-chunk `transferredBytes` progress updates), reachable from the renderer via two new IPC channels (`lanShare.receive.accept`/`lanShare.receive.reject`). The sender side is identified by matching the announcing peer's address against an already-known real peer record (mDNS-discovered or manually added) to get its real transfer port — there is no fabricated or guessed port.
+
+**Honestly still deferred**: full OS-level sandboxing (Landlock/Bubblewrap, spec §16) — path-traversal/symlink-escape safety is real and tested, but kernel-level process confinement is a separate, Linux-specific mechanism this phase does not attempt, tracked via the pre-existing `lanShare.landlock`/`lanShare.bubblewrap` Capability Registry entries (unchanged this phase). `SendTextMessage` (clipboard-text sharing over the `Warp` service) also stays unimplemented — file/directory transfer uses `StartTransfer`, which is now real.
+
+**Capability registry updates**: `lanShare.files`, `lanShare.directories`, and `lanShare.available` moved from `unsupported`/`degraded` to `available`, each citing the real module and the real end-to-end test backing the claim. `lanShare.text` stays `unsupported`, now citing the specific missing RPC rather than a general "no transfer engine."
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `receivePathSafety` real traversal/absolute-path/null-byte/symlink-escape rejection | `core/lanShare/__tests__/receivePathSafety.test.ts` | +8 (new file) |
+| `LanShareReceiveEngine` real staging, real decompression, real unsafe-path rejection, real atomic commit, real conflict-safe naming | `core/lanShare/__tests__/LanShareReceiveEngine.test.ts` | +5 (new file) |
+| `LanShareTransferServer`/`Client` real regular-file streaming, real compressed streaming, real directory/symlink chunks, real NOT_FOUND for an unknown ident | `core/lanShare/__tests__/LanShareTransfer.test.ts` | +4 (extended) |
+| `LanShareService` real two-service end-to-end file transfer integration test | `core/lanShare/__tests__/LanShareService.test.ts` | +1 (extended) |
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test       → 190 files, 942 tests passed (one unrelated pre-existing test — the same
+                      controller tutorial waitFor timing assertion — failed once under
+                      full-suite parallelism and passed cleanly in isolation; not touched by
+                      this change)
 npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded

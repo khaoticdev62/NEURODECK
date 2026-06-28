@@ -213,6 +213,18 @@ const RemovableStorageCenter = lazy(async () => {
   const module = await import('../../features/devices/RemovableStorageCenter')
   return { default: module.RemovableStorageCenter }
 })
+const ResourceGovernor = lazy(async () => {
+  const module = await import('../../features/resource/ResourceGovernor')
+  return { default: module.ResourceGovernor }
+})
+const AIWorkloadScheduler = lazy(async () => {
+  const module = await import('../../features/resource/AIWorkloadScheduler')
+  return { default: module.AIWorkloadScheduler }
+})
+const SchedulerTriggers = lazy(async () => {
+  const module = await import('../../features/resource/SchedulerTriggers')
+  return { default: module.SchedulerTriggers }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -764,6 +776,36 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('storage devices', <RemovableStorageCenter />)
+  },
+  {
+    routeId: 'resource-governor',
+    screenId: 'ND-X037',
+    path: '/resource-governor',
+    title: 'Resource Governor',
+    owningEpic: 'Epic X9',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('resource governor', <ResourceGovernor />)
+  },
+  {
+    routeId: 'ai-workload-scheduler',
+    screenId: 'ND-X038',
+    path: '/ai-workloads',
+    title: 'AI Workload Scheduler',
+    owningEpic: 'Epic X9',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('AI workload scheduler', <AIWorkloadScheduler />)
+  },
+  {
+    routeId: 'scheduler-triggers',
+    screenId: 'ND-X039',
+    path: '/scheduler',
+    title: 'Scheduler and Triggers',
+    owningEpic: 'Epic X9',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('scheduler', <SchedulerTriggers />)
   }
 ]
 
