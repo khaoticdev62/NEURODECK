@@ -144,4 +144,12 @@ export class MemoryStore {
     await this.store.write({ ...index, items: next })
     return removed
   }
+
+  /** Real bulk clear across every scope (Epic X12 §37.2 deletion) — used by the Privacy and Data Map's "Delete all memory" control. */
+  async clearAll(): Promise<number> {
+    const index = await this.store.read()
+    const removed = index.items.length
+    await this.store.write({ ...index, items: [] })
+    return removed
+  }
 }

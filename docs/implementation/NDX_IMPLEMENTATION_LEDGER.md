@@ -2805,3 +2805,25 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X12 — Privacy and Data Map (2026-06-28)
+
+Real Data Lifecycle and Privacy Map plus genuine deletion verification (supplemental spec §37). Telemetry consent and crash reporting are deliberately not attempted in this pass — see the checklist entry for why building consent toggles ahead of any real telemetry collector, or rushing crash reporting alongside this, would be the wrong sequencing.
+
+**`PrivacyDataMapService`** (`src/core/privacy/PrivacyDataMapService.ts`, new) — `getDataMap()` returns 9 rows, one per real data category this codebase actually has: Browser data, Terminal history, Clipboard history, AI conversations, AI memory, Knowledge index, Audit logs, Backups, Vault secrets. Every field (storage location, encryption, retention, sync, export, delete control, provider involvement) was verified directly against the owning store's real code, not assumed — e.g. Terminal history and AI conversations are honestly `itemCount: null`/`not-applicable` because nothing is ever persisted for either (PTY sessions are in-memory only; no chat/completion history is written to disk), and Audit logs are honestly the same because `AuditLog` lives in the renderer process only and was never given disk persistence. Sync, cloud processing, analytics, and crash-report rows from the spec's own §37 list are deliberately omitted — no real subsystem backs any of them yet, and a row describing a feature that doesn't exist would be a fabricated entry.
+
+**Real deletion verification** (§37.2) — `clearCategory()` for Clipboard history, AI memory, and Browser data calls the real owning store's bulk-clear method and then genuinely re-reads the store afterward, returning `verifiedEmpty` as an actual fact, never an assumption. Two stores needed a new bulk-clear method added (both small, mirroring each store's own existing per-item-delete pattern): `MemoryStore.clearAll()` (previously only `clearScope()` existed, scoped to one scope/workspace at a time) and `BrowserPermissionStore.clearAll()` (previously only per-origin `remove()` existed). `ClipboardStore.clear()` already existed and is reused as-is. Knowledge index, Backups, and Vault secrets each already have their own real per-item delete screen (Knowledge Vault, Backup and Restore, Secrets Vault) — the Data Map links to each rather than duplicating a second delete control for the same data.
+
+**`/privacy` screen** (`src/renderer/src/features/privacy/PrivacyDataMap.tsx`, ND-X050) — lists every row with its real metadata and a context-appropriate action: "Clear" (with a `ConfirmationDialog`) for categories clearable here, "Manage" (navigates to the owning screen) for categories with a fuller delete UI elsewhere, or an honest "No delete control needed" label for categories with nothing persisted. After a real clear, the screen shows the genuine `clearedCount`/`verifiedEmpty` result. Reachable from System Dashboard → "Privacy and Data Map".
+
+**New/changed files**: `src/shared/contracts/privacy.ts` (new), `src/core/privacy/PrivacyDataMapService.ts` (new), `src/core/privacy/__tests__/PrivacyDataMapService.test.ts` (new, 6 tests), `src/main/ipc/registerPrivacyHandlers.ts` (new), `src/main/ipc/index.ts` (wiring), `src/shared/contracts/bridge.ts`/`src/preload/index.ts` (new `privacy` bridge member), `src/renderer/src/services/ipc/privacyClient.ts` (new), `src/renderer/src/features/privacy/PrivacyDataMap.tsx` (new), `src/renderer/src/features/privacy/__tests__/PrivacyDataMap.test.tsx` (new, 3 tests), `src/core/memory/MemoryStore.ts` (`clearAll()`, +1 test), `src/core/browser/BrowserPermissionStore.ts` (`clearAll()`, +1 test), `src/renderer/src/app/routing/routes.tsx` (new `/privacy` route), `src/renderer/src/features/system/SystemDashboard.tsx` (new link).
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 207 files / 1016 tests passed
+npm run test -- src/core/privacy src/renderer/src/features/privacy -> 2 files / 9 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

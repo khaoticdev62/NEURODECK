@@ -46,6 +46,7 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Profiles and Identity', path: '/profiles' },
   { label: 'Continuity and Offline', path: '/continuity' },
   { label: 'Secrets Vault', path: '/vault' },
+  { label: 'Privacy and Data Map', path: '/privacy' },
   { label: 'Help Hub', path: '/help' }
 ]
 

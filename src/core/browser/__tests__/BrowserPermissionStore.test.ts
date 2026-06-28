@@ -67,4 +67,14 @@ describe('BrowserPermissionStore', () => {
     const stored = await second.get('https://example.com', 'geolocation')
     expect(stored?.granted).toBe(false)
   })
+
+  it('clearAll removes every stored permission grant', async () => {
+    const store = new BrowserPermissionStore(join(tempDir, 'permissions.json'))
+    await store.set('https://example.com', 'camera', true)
+    await store.set('https://other.example', 'notifications', false)
+
+    await store.clearAll()
+
+    expect(await store.list()).toEqual([])
+  })
 })

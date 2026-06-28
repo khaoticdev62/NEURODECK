@@ -57,6 +57,7 @@ import { GitService } from '../../core/git/GitService'
 import { LockSettingsStore } from '../../core/lock/LockSettingsStore'
 import { ModelProviderService } from '../../core/models/ModelProviderService'
 import { ModelProviderStore } from '../../core/models/ModelProviderStore'
+import { PrivacyDataMapService } from '../../core/privacy/PrivacyDataMapService'
 import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
@@ -108,6 +109,7 @@ import { registerProfileHandlers } from './registerProfileHandlers'
 import { registerUpdateHandlers } from './registerUpdateHandlers'
 import { registerLearningHandlers } from './registerLearningHandlers'
 import { registerVaultHandlers } from './registerVaultHandlers'
+import { registerPrivacyHandlers } from './registerPrivacyHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
@@ -426,15 +428,30 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     new DisplaySettingsStore(join(app.getPath('userData'), 'display-settings.json'))
   )
   registerLockHandlers(new LockSettingsStore(join(app.getPath('userData'), 'lock-settings.json')))
-  registerVaultHandlers(
-    new VaultStore(join(app.getPath('userData'), 'vault.json'), electronSecretCipher)
+  const vaultStore = new VaultStore(
+    join(app.getPath('userData'), 'vault.json'),
+    electronSecretCipher
   )
+  registerVaultHandlers(vaultStore)
   registerProfileHandlers(profileStore)
   registerContinuityHandlers(continuityStore)
+  const browserPermissionStore = new BrowserPermissionStore(
+    join(app.getPath('userData'), 'browser-permissions.json')
+  )
   registerBrowserHandlers(
     new BrowserTabStore(join(app.getPath('userData'), 'browser-tabs.json')),
-    new BrowserPermissionStore(join(app.getPath('userData'), 'browser-permissions.json')),
+    browserPermissionStore,
     getWindow
+  )
+  registerPrivacyHandlers(
+    new PrivacyDataMapService(
+      clipboardStore,
+      memoryStore,
+      browserPermissionStore,
+      knowledgeStore,
+      backupService,
+      vaultStore
+    )
   )
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)
   const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)

@@ -229,6 +229,10 @@ const Vault = lazy(async () => {
   const module = await import('../../features/vault/Vault')
   return { default: module.Vault }
 })
+const PrivacyDataMap = lazy(async () => {
+  const module = await import('../../features/privacy/PrivacyDataMap')
+  return { default: module.PrivacyDataMap }
+})
 const Profiles = lazy(async () => {
   const module = await import('../../features/profiles/Profiles')
   return { default: module.Profiles }
@@ -850,6 +854,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('vault', <Vault />)
+  },
+  {
+    routeId: 'privacy-data-map',
+    screenId: 'ND-X050',
+    path: '/privacy',
+    title: 'Privacy and Data Map',
+    owningEpic: 'Epic X12',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('privacy data map', <PrivacyDataMap />)
   },
   {
     routeId: 'profiles',

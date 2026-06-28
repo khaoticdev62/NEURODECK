@@ -53,4 +53,9 @@ export class BrowserPermissionStore {
     await this.store.write({ permissions: next })
     return true
   }
+
+  /** Real bulk clear (Epic X12 §37.2 deletion) — every per-origin permission grant/denial is removed in one call. */
+  async clearAll(): Promise<void> {
+    await this.store.write({ permissions: [] })
+  }
 }

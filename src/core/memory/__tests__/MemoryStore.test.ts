@@ -123,4 +123,15 @@ describe('MemoryStore', () => {
     expect(remaining).toHaveLength(2)
     expect(remaining.some((item) => item.workspaceId === 'w1')).toBe(false)
   })
+
+  it('clearAll() really deletes every item across every scope', async () => {
+    await store.write(sample)
+    await store.write({ ...sample, workspaceId: 'w2' })
+    await store.write({ ...sample, scope: 'global', workspaceId: undefined })
+
+    const removed = await store.clearAll()
+
+    expect(removed).toBe(3)
+    expect(await store.list()).toHaveLength(0)
+  })
 })

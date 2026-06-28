@@ -227,6 +227,11 @@ const ndx: NdxBridge = {
     saveSessionSnapshot: (request) =>
       ipcRenderer.invoke(IPC_CHANNELS.continuitySessionSnapshotSave, request)
   },
+  privacy: {
+    getDataMap: () => ipcRenderer.invoke(IPC_CHANNELS.privacyDataMapGet),
+    clearDataCategory: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.privacyDataCategoryClear, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

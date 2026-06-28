@@ -55,6 +55,7 @@ import type {
   SaveSessionSnapshotRequest,
   SetSafeModeRequest
 } from './continuity'
+import type { ClearDataCategoryRequest, ClearDataCategoryResult, DataMapEntry } from './privacy'
 import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
@@ -434,6 +435,12 @@ export interface NdxBridge {
     saveSessionSnapshot: (
       request: SaveSessionSnapshotRequest
     ) => Promise<NdxResult<ContinuityState>>
+  }
+  privacy: {
+    getDataMap: () => Promise<NdxResult<DataMapEntry[]>>
+    clearDataCategory: (
+      request: ClearDataCategoryRequest
+    ) => Promise<NdxResult<ClearDataCategoryResult>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>
