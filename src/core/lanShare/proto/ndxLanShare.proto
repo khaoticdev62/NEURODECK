@@ -11,11 +11,15 @@ syntax = "proto3";
 // feature — protocol shapes are not themselves protected expression.
 // No text was copied from any upstream GPL source file.
 //
-// Phase LAN-3 implements the `WarpRegistration` service only (real v1
-// registration; v2's `RequestCertificate` intentionally returns a real
-// UNIMPLEMENTED status until Phase LAN-4 builds the certificate
-// infrastructure it depends on). The `Warp` transfer service is not
-// implemented in this phase — that begins in Phase LAN-5/LAN-6.
+// Phase LAN-3 implemented the `WarpRegistration` service (real v1
+// registration; v2's `RequestCertificate` made real in Phase LAN-4).
+// Phase LAN-5 adds the `Warp` transfer service's real schema and the
+// send-side announcement RPC (`ProcessTransferOpRequest`). The actual
+// chunk-streaming RPC (`StartTransfer`) is intentionally still
+// UNIMPLEMENTED — real bounded-memory streaming, path-safety, and
+// atomic commit on the receiving end is Phase LAN-6's job, and
+// returning a real UNIMPLEMENTED status is honest; pretending to
+// stream file bytes that aren't really sent would not be.
 
 // Deliberately no `package` declaration — the real Warpinator wire
 // protocol has none, and gRPC's full method path includes the package
@@ -48,4 +52,85 @@ message ServiceRegistration {
   uint32 api_version = 5;
   uint32 auth_port = 6;
   string ipv6 = 7;
+}
+
+service Warp {
+  rpc CheckDuplexConnection(LookupName) returns (HaveDuplex) {}
+  rpc WaitingForDuplex(LookupName) returns (HaveDuplex) {}
+  rpc GetRemoteMachineInfo(LookupName) returns (RemoteMachineInfo) {}
+  rpc GetRemoteMachineAvatar(LookupName) returns (stream RemoteMachineAvatar) {}
+  rpc ProcessTransferOpRequest(TransferOpRequest) returns (VoidType) {}
+  rpc PauseTransferOp(OpInfo) returns (VoidType) {}
+  rpc SendTextMessage(TextMessage) returns (VoidType) {}
+  rpc StartTransfer(OpInfo) returns (stream FileChunk) {}
+  rpc CancelTransferOpRequest(OpInfo) returns (VoidType) {}
+  rpc StopTransfer(StopInfo) returns (VoidType) {}
+  rpc Ping(LookupName) returns (VoidType) {}
+}
+
+message RemoteMachineInfo {
+  string display_name = 1;
+  string user_name = 2;
+  uint32 feature_flags = 3;
+}
+
+message RemoteMachineAvatar {
+  bytes avatar_chunk = 1;
+}
+
+message LookupName {
+  string id = 1;
+  string readable_name = 2;
+}
+
+message HaveDuplex {
+  bool response = 2;
+}
+
+message VoidType {
+  int32 dummy = 1;
+}
+
+message OpInfo {
+  string ident = 1;
+  uint64 timestamp = 2;
+  string readable_name = 3;
+  bool use_compression = 4;
+}
+
+message StopInfo {
+  OpInfo info = 1;
+  bool error = 2;
+}
+
+message TransferOpRequest {
+  OpInfo info = 1;
+  string sender_name = 2;
+  string receiver_name = 3;
+  string receiver = 4;
+  uint64 size = 5;
+  uint64 count = 6;
+  string name_if_single = 7;
+  string mime_if_single = 8;
+  repeated string top_dir_basenames = 9;
+}
+
+message FileChunk {
+  string relative_path = 1;
+  int32 file_type = 2;
+  string symlink_target = 3;
+  bytes chunk = 4;
+  uint32 file_mode = 5;
+  FileTime time = 6;
+}
+
+message FileTime {
+  uint64 mtime = 1;
+  uint32 mtime_usec = 2;
+}
+
+message TextMessage {
+  string ident = 1;
+  uint64 timestamp = 2;
+  string message = 3;
 }

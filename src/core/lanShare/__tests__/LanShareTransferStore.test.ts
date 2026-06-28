@@ -78,4 +78,40 @@ describe('LanShareTransferStore', () => {
     expect(jobs[0].id).toBe(second.id)
     expect(jobs[1].id).toBe(first.id)
   })
+
+  it('never loses a job to a concurrent create() read-modify-write race', async () => {
+    const store = new LanShareTransferStore(join(dir, 'jobs.json'))
+    const created = await Promise.all(
+      [1, 2, 3, 4, 5].map((n) =>
+        store.create({
+          direction: 'send',
+          peerId: 'peer-1',
+          displayName: `file-${n}.txt`,
+          itemCount: 1,
+          useCompression: false
+        })
+      )
+    )
+    const jobs = await store.list()
+    expect(jobs).toHaveLength(5)
+    expect(new Set(jobs.map((job) => job.id))).toEqual(new Set(created.map((job) => job.id)))
+  })
+
+  it('never loses an update to a concurrent updateStatus() race on different jobs', async () => {
+    const store = new LanShareTransferStore(join(dir, 'jobs.json'))
+    const jobs = await Promise.all(
+      [1, 2, 3].map((n) =>
+        store.create({
+          direction: 'send',
+          peerId: 'peer-1',
+          displayName: `file-${n}.txt`,
+          itemCount: 1,
+          useCompression: false
+        })
+      )
+    )
+    await Promise.all(jobs.map((job) => store.updateStatus(job.id, 'queued')))
+    const all = await store.list()
+    expect(all.every((job) => job.status === 'queued')).toBe(true)
+  })
 })

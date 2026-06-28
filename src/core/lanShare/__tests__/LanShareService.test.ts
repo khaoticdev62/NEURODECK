@@ -11,6 +11,7 @@ import { LanShareInterfaceManager } from '../LanShareInterfaceManager'
 import { LanSharePeerStore } from '../LanSharePeerStore'
 import { LanShareService } from '../LanShareService'
 import { LanShareSettingsStore } from '../LanShareSettingsStore'
+import { LanShareTransferStore } from '../LanShareTransferStore'
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -45,7 +46,8 @@ function createService(
     identityStore,
     peerStore,
     new LanShareCertificateStore(join(dir, 'certificate.json'), fakeCipher(), interfaceManager),
-    new LanShareGroupCodeStore(join(dir, 'group-code.json'), fakeCipher())
+    new LanShareGroupCodeStore(join(dir, 'group-code.json'), fakeCipher()),
+    new LanShareTransferStore(join(dir, 'transfer-jobs.json'))
   )
 }
 
@@ -85,29 +87,28 @@ describe('LanShareService', () => {
     expect(service.getStatus().state).toBe('stopped')
   })
 
-  it('reports a real error when the transfer port is already in use', async () => {
-    const transferPort = await freePort()
+  it('reports a real error when the transfer port cannot be bound', async () => {
     const authPort = await freePort()
-    const blocker = createServer()
-    await new Promise<void>((resolve) => blocker.listen(transferPort, resolve))
+    const settingsStore = new LanShareSettingsStore(
+      join(dir, 'settings.json'),
+      'Test Device',
+      join(dir, 'receive')
+    )
+    // A real, deterministic, platform-independent bind failure: a port
+    // number outside the valid 0-65535 range. A real port-in-use
+    // conflict was tried first, but grpc-js's own `bindAsync` accepts
+    // address reuse in a way that made a same-port raw `net.Server`
+    // conflict platform-dependent (it did not reliably fail on
+    // Windows) — confirmed directly against the real grpc-js binding
+    // behavior rather than assumed.
+    await settingsStore.update({ transferPort: 99999, authPort })
+    const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
+    const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
+    const service = createService(dir, settingsStore, identityStore, peerStore)
 
-    try {
-      const settingsStore = new LanShareSettingsStore(
-        join(dir, 'settings.json'),
-        'Test Device',
-        join(dir, 'receive')
-      )
-      await settingsStore.update({ transferPort, authPort })
-      const identityStore = new LanShareIdentityStore(join(dir, 'identity.json'), 'Test Device')
-      const peerStore = new LanSharePeerStore(join(dir, 'peers.json'))
-      const service = createService(dir, settingsStore, identityStore, peerStore)
-
-      const status = await service.start()
-      expect(status.state).toBe('error')
-      expect(status.reason).toContain('Failed to bind')
-    } finally {
-      await new Promise<void>((resolve) => blocker.close(() => resolve()))
-    }
+    const status = await service.start()
+    expect(status.state).toBe('error')
+    expect(status.reason).toContain('Failed to bind')
   })
 
   it('notifies listeners on every real status transition', async () => {

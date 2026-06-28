@@ -10,6 +10,7 @@ import type {
   LanShareTransferJob,
   LanShareTransferJobIdRequest,
   NdxResult,
+  SendLanShareFilesRequest,
   SetLanShareGroupCodeRequest,
   SetLanSharePeerTrustRequest,
   UpdateLanShareSettingsRequest
@@ -126,4 +127,12 @@ export async function getLanShareHealth(): Promise<NdxResult<LanShareHealth>> {
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.lanShare.getHealth()
+}
+
+export async function sendLanShareFiles(
+  request: SendLanShareFilesRequest
+): Promise<NdxResult<LanShareTransferJob>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.lanShare.sendFiles(request)
 }

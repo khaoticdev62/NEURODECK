@@ -336,7 +336,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     lanShareIdentityStore,
     lanSharePeerStore,
     lanShareCertificateStore,
-    lanShareGroupCodeStore
+    lanShareGroupCodeStore,
+    lanShareTransferStore
   )
   const agentStore = new AgentStore(join(app.getPath('userData'), 'agents.json'))
   const agentRuntime = new AgentRuntime(

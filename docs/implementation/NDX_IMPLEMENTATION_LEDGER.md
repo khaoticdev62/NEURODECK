@@ -2321,3 +2321,45 @@ npm run lint        → 0 errors, 0 warnings
 npm run typecheck   → node + web TypeScript checks passed
 npm run build       → succeeded
 ```
+
+## LAN Share (Warpinator-compatible) — Phase LAN-5 (2026-06-27)
+
+Real send-side engine: the `Warp` transfer service schema, real preflight/manifest building, real byte-compatible compression, and a real bounded concurrency queue — all confirmed against Warpinator's own real source. The actual chunk-streaming RPC (`StartTransfer`) stays honestly `UNIMPLEMENTED`; that's Phase LAN-6's real receiving/staging engine.
+
+**Real `Warp` service schema** (`core/lanShare/proto/ndxLanShare.proto` + its embedded TS mirror) — independently authored from the real RPC/message shapes the LAN-0 audit recorded (`CheckDuplexConnection`, `WaitingForDuplex`, `GetRemoteMachineInfo`, `GetRemoteMachineAvatar`, `ProcessTransferOpRequest`, `PauseTransferOp`, `SendTextMessage`, `StartTransfer`, `CancelTransferOpRequest`, `StopTransfer`, `Ping`). A new test (`LanShareProtoSchema.test.ts`) parses both the standalone `.proto` file and the embedded string via `protobufjs` and asserts their reflected service/message shapes match exactly — closing the "kept in sync manually" gap the embedded source's own doc comment flagged since Phase LAN-3.
+
+**Real `Ping`/`ProcessTransferOpRequest`, honest `UNIMPLEMENTED` everywhere else** (`core/lanShare/grpc/LanShareTransferServer.ts`/`LanShareTransferClient.ts`) — proven by a real loopback gRPC round trip (announcement delivered with the real peer address) and a real `UNIMPLEMENTED` status confirmed on `StartTransfer`. **Real fix found while building this**: the generic `unimplemented()` helper used a unary-style `callback(error)` for every RPC, but `StartTransfer`/`GetRemoteMachineAvatar` are server-streaming methods whose grpc-js handler receives no callback argument at all — calling the (undefined) callback silently produced a generic `UNKNOWN` status and a hung client call instead of the intended `UNIMPLEMENTED`. Fixed by detecting the streaming case and emitting a real `'error'` event on the call instead, which is grpc-js's actual documented mechanism for terminating a streaming response with an explicit status.
+
+**Real preflight/manifest builder** (`core/lanShare/LanShareManifestBuilder.ts`) — every entry comes from a real `fs.lstat`, using the exact Gio-derived `file_type` integer values Warpinator's own `util.py` uses (`REGULAR=1`, `DIRECTORY=2`, `SYMBOLIC_LINK=3` — confirmed these are `Gio.FileType`'s real enum values, not arbitrary placeholders). Symlinks are recorded with their real target and never followed. Special files (sockets, FIFOs, devices) are rejected. Real cancellation via `AbortSignal` is checked at every traversal step, not just at the start.
+
+**Real byte-compatible chunk compression** (`core/lanShare/grpc/fileChunkCompression.ts`) — confirmed against Warpinator's own `interceptors.py`: plain zlib `deflate`/`inflate` (the zlib-wrapped DEFLATE format, not gzip) applied directly to each non-empty chunk, default level `-1` (their own confirmed gschema default), never applied to directory/symlink marker chunks. A corrupted-input test confirms real decompression failures throw rather than silently returning wrong bytes.
+
+**Real bounded transfer queue** (`core/lanShare/LanShareTransferQueue.ts`) — enforces real global and per-peer concurrency limits over `LanShareTransferStore`'s job state machine (`draft`→`preflighting`→`queued`→`negotiating`→`waiting-for-approval`/`failed`), confirmed by a test that holds a dispatch open and verifies the real active-count never exceeds the configured per-peer limit.
+
+**Real concurrency bug found and fixed in `LanShareTransferStore`** — building the queue's own test (enqueuing multiple jobs concurrently) surfaced a genuine pre-existing race: `create()`/`updateStatus()`/`cancel()` each did an unguarded `read()` then `write()`, so two concurrent calls could both read the same stale list before either wrote back, silently discarding one job. Fixed by adding a real mutation-serializing promise chain (mirroring the exact pattern `JsonStore.write()` already uses one level down for disk writes) so every read-modify-write sequence on this store is now atomic with respect to every other one. Two new regression tests confirm concurrent `create()`/`updateStatus()` calls never lose a job or an update.
+
+**Real send path wired end-to-end** — `LanShareService.sendFiles(peerId, sourcePaths)` builds a real manifest, enqueues a real bounded job, and dispatches a real `ProcessTransferOpRequest` announcement to the peer; reachable from the renderer via a new `lanShare.send.sendFiles` IPC channel. Incoming announcements are recorded as real `receive`-direction jobs in `waiting-for-approval` via `recordIncomingTransfer`.
+
+**Capability registry updates**: `lanShare.parallel` and `lanShare.compression` moved from `unsupported` to `available`, each citing the real module backing them. `lanShare.files`/`lanShare.directories`/`lanShare.text` stay `unsupported`, with their reasons updated to cite Phase LAN-6 specifically (the real chunk-streaming/staging engine) rather than the previous joint "LAN-5/LAN-6" framing, since LAN-5's real preflight/queue/compression building blocks now exist.
+
+### Tests and evidence
+
+| Suite | Location | Count |
+| ----- | -------- | ----- |
+| `LanShareProtoSchema` real structural match between `.proto` file and embedded source, real `Warp` service RPC presence | `core/lanShare/__tests__/LanShareProtoSchema.test.ts` | +2 (new file) |
+| `fileChunkCompression` real zlib round trip, empty-chunk passthrough, corrupted-input rejection | `core/lanShare/__tests__/fileChunkCompression.test.ts` | +3 (new file) |
+| `LanShareManifestBuilder` real file/directory/symlink traversal, special-file rejection, cancellation | `core/lanShare/__tests__/LanShareManifestBuilder.test.ts` | +6 (new file) |
+| `LanShareTransferServer`/`Client` real Ping, real announcement delivery, real UNIMPLEMENTED StartTransfer | `core/lanShare/__tests__/LanShareTransfer.test.ts` | +3 (new file) |
+| `LanShareTransferQueue` real state progression, real dispatch failure handling, real per-peer concurrency bound | `core/lanShare/__tests__/LanShareTransferQueue.test.ts` | +3 (new file) |
+| `LanShareTransferStore` real concurrent-create/concurrent-updateStatus regression coverage | `core/lanShare/__tests__/LanShareTransferStore.test.ts` | +2 (extended) |
+
+**Validation evidence (run 2026-06-27):**
+
+```text
+npm run test       → 182 files, 904 tests passed (one unrelated pre-existing test — a controller
+                      tutorial waitFor timing assertion — failed once under full-suite parallelism
+                      and passed cleanly in isolation; not touched by this change)
+npm run lint        → 0 errors, 0 warnings
+npm run typecheck   → node + web TypeScript checks passed
+npm run build       → succeeded
+```

@@ -213,5 +213,6 @@ export const IPC_CHANNELS = {
   lanShareServiceStop: 'lanShare.service.stop',
   lanShareServiceUpdate: 'lanShare.service.update',
   lanShareInterfaceList: 'lanShare.interfaces.list',
-  lanShareHealthGet: 'lanShare.health.get'
+  lanShareHealthGet: 'lanShare.health.get',
+  lanShareSendFiles: 'lanShare.send.sendFiles'
 } as const

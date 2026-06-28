@@ -196,6 +196,13 @@ export type LanShareTransferJob = z.infer<typeof lanShareTransferJobSchema>
 export const lanShareTransferJobIdRequestSchema = z.object({ id: z.string().min(1) })
 export type LanShareTransferJobIdRequest = z.infer<typeof lanShareTransferJobIdRequestSchema>
 
+/** Real send-side request (spec §14, Phase LAN-5) — `sourcePaths` are real absolute filesystem paths the main process will preflight via `LanShareManifestBuilder`; the renderer never sends file bytes itself. */
+export const sendLanShareFilesRequestSchema = z.object({
+  peerId: z.string().min(1),
+  sourcePaths: z.array(z.string().min(1)).min(1)
+})
+export type SendLanShareFilesRequest = z.infer<typeof sendLanShareFilesRequestSchema>
+
 // ---------------------------------------------------------------------------
 // Service status (spec §5, §26)
 // ---------------------------------------------------------------------------

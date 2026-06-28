@@ -183,14 +183,27 @@ const defaultDetectors: Record<CapabilityId, CapabilityDetector> = {
       'Real v2 certificate exchange is implemented: a real RSA-2048 self-signed certificate, encrypted with the real NaCl secretbox construction Warpinator itself uses, keyed by the configured group code (Phase LAN-4).'
   }),
   'lanShare.files': () =>
-    unsupported('No real send/receive transfer engine exists yet (Phase LAN-5/LAN-6).'),
+    unsupported(
+      'Real preflight/manifest building and transfer announcement exist (Phase LAN-5), but StartTransfer — the real chunk-streaming RPC that would actually move file bytes — is still honestly UNIMPLEMENTED until Phase LAN-6 builds the receiving/staging engine.'
+    ),
   'lanShare.directories': () =>
-    unsupported('No real send/receive transfer engine exists yet (Phase LAN-5/LAN-6).'),
+    unsupported(
+      'The real manifest builder already walks directory trees and records real directory entries (Phase LAN-5), but no real bytes flow yet — Phase LAN-6.'
+    ),
   'lanShare.text': () =>
-    unsupported('No real send/receive transfer engine exists yet (Phase LAN-5/LAN-6).'),
-  'lanShare.parallel': () => unsupported('No real transfer queue exists yet (Phase LAN-5).'),
-  'lanShare.compression': () =>
-    unsupported('No real compression negotiation exists yet (Phase LAN-5).'),
+    unsupported('No real send/receive transfer engine exists yet (Phase LAN-6).'),
+  'lanShare.parallel': () => ({
+    status: 'available',
+    provider: 'core/lanShare/LanShareTransferQueue',
+    reason:
+      'A real, tested bounded concurrency queue (global and per-peer limits) is implemented (Phase LAN-5).'
+  }),
+  'lanShare.compression': () => ({
+    status: 'available',
+    provider: 'node:zlib',
+    reason:
+      "Real zlib chunk compression, byte-compatible with Warpinator's own per-chunk deflate/inflate, is implemented (Phase LAN-5) — wired into the real chunk pipeline once Phase LAN-6 builds it."
+  }),
   'lanShare.resume.ndx': () =>
     unsupported('NDX-enhanced resume needs the real transfer engine from Phase LAN-5/LAN-6.'),
   'lanShare.landlock': () => linuxDependencyOrUnsupported('Landlock LSM'),

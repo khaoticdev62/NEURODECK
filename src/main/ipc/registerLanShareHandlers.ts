@@ -5,6 +5,7 @@ import {
   lanSharePeerIdRequestSchema,
   lanShareTransferJobIdRequestSchema,
   ndxError,
+  sendLanShareFilesRequestSchema,
   setLanSharePeerTrustRequestSchema,
   setLanShareGroupCodeRequestSchema,
   updateLanShareSettingsRequestSchema,
@@ -98,6 +99,32 @@ export function registerLanShareHandlers(
   ipcMain.handle(IPC_CHANNELS.lanShareHealthGet, async (): Promise<NdxResult<LanShareHealth>> => {
     return { ok: true, data: await service.getHealth() }
   })
+
+  ipcMain.handle(
+    IPC_CHANNELS.lanShareSendFiles,
+    async (_event, payload: unknown): Promise<NdxResult<LanShareTransferJob>> => {
+      const parsed = sendLanShareFilesRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That send request is invalid.')
+        }
+      }
+      try {
+        const job = await service.sendFiles(parsed.data.peerId, parsed.data.sourcePaths)
+        return { ok: true, data: job }
+      } catch (error) {
+        return {
+          ok: false,
+          error: ndxError(
+            'system',
+            'send-failed',
+            error instanceof Error ? error.message : 'Failed to start the transfer.'
+          )
+        }
+      }
+    }
+  )
 
   ipcMain.handle(
     IPC_CHANNELS.lanShareSettingsGet,

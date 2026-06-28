@@ -1,8 +1,12 @@
 import { createHash } from 'node:crypto'
 import { constants as fsConstants } from 'node:fs'
 import { access, mkdir } from 'node:fs/promises'
-import { createServer, type Server, type Socket } from 'node:net'
-import type { LanShareHealth, LanShareServiceStatus, LanShareSettings } from '@shared/contracts'
+import type {
+  LanShareHealth,
+  LanShareServiceStatus,
+  LanShareSettings,
+  LanShareTransferJob
+} from '@shared/contracts'
 import type { LanShareCertificateStore } from './LanShareCertificateStore'
 import type { LanShareGroupCodeStore } from './LanShareGroupCodeStore'
 import { LanShareRegistrationClient } from './grpc/LanShareRegistrationClient'
@@ -10,12 +14,17 @@ import {
   LanShareRegistrationServer,
   type NdxServiceRegistration
 } from './grpc/LanShareRegistrationServer'
+import { LanShareTransferClient } from './grpc/LanShareTransferClient'
+import { LanShareTransferServer, type NdxTransferOpRequest } from './grpc/LanShareTransferServer'
 import { parsePeerHost } from './grpc/parsePeerHost'
 import type { LanShareIdentityStore } from './LanShareIdentityStore'
 import type { LanShareInterfaceManager } from './LanShareInterfaceManager'
+import { LanShareManifestBuilder } from './LanShareManifestBuilder'
 import { LanShareMdnsDiscovery, type DiscoveredLanSharePeer } from './LanShareMdnsDiscovery'
 import type { LanSharePeerStore } from './LanSharePeerStore'
 import type { LanShareSettingsStore } from './LanShareSettingsStore'
+import { LanShareTransferQueue } from './LanShareTransferQueue'
+import type { LanShareTransferStore } from './LanShareTransferStore'
 
 /** Warpinator's own current `RPC_API_VERSION` is `2` (confirmed in `meson.build`). Phase LAN-4 makes our own v2 support real (certificate exchange), so this device now honestly reports `2` as well. */
 const SELF_REPORTED_API_VERSION = 2
@@ -36,10 +45,13 @@ const SELF_REPORTED_API_VERSION = 2
  * non-default group code), which only the user can configure.
  */
 export class LanShareService {
-  private transferServer: Server | null = null
+  private transferServer: LanShareTransferServer | null = null
   private registrationServer: LanShareRegistrationServer | null = null
   private readonly mdnsDiscovery = new LanShareMdnsDiscovery()
   private readonly registrationClient = new LanShareRegistrationClient()
+  private readonly transferClient = new LanShareTransferClient()
+  private readonly manifestBuilder = new LanShareManifestBuilder()
+  private readonly transferQueue: LanShareTransferQueue
   private status: LanShareServiceStatus = { state: 'stopped', reason: 'Not started.' }
   private listeners = new Set<(status: LanShareServiceStatus) => void>()
 
@@ -49,8 +61,13 @@ export class LanShareService {
     private readonly identityStore: LanShareIdentityStore,
     private readonly peerStore: LanSharePeerStore,
     private readonly certificateStore: LanShareCertificateStore,
-    private readonly groupCodeStore: LanShareGroupCodeStore
-  ) {}
+    private readonly groupCodeStore: LanShareGroupCodeStore,
+    private readonly transferStore: LanShareTransferStore
+  ) {
+    this.transferQueue = new LanShareTransferQueue(transferStore, (job) =>
+      this.dispatchTransferJob(job)
+    )
+  }
 
   getStatus(): LanShareServiceStatus {
     return this.status
@@ -71,7 +88,12 @@ export class LanShareService {
     const identity = await this.identityStore.get()
 
     try {
-      this.transferServer = await this.listenOn(settings.transferPort)
+      this.transferServer = new LanShareTransferServer()
+      await this.transferServer.start(settings.transferPort, {
+        onTransferAnnounced: (request, peerAddress) => {
+          void this.recordIncomingTransfer(request, peerAddress)
+        }
+      })
       this.registrationServer = new LanShareRegistrationServer()
       await this.registrationServer.start(settings.authPort, {
         getOwnRegistration: () => this.buildOwnRegistration(settings, identity.connectId),
@@ -85,7 +107,8 @@ export class LanShareService {
     } catch (error) {
       await this.registrationServer?.stop()
       this.registrationServer = null
-      this.closeServers()
+      await this.transferServer?.stop()
+      this.transferServer = null
       const reason =
         error instanceof Error
           ? `Failed to bind a real listening socket: ${error.message}`
@@ -117,7 +140,8 @@ export class LanShareService {
     this.mdnsDiscovery.destroy()
     await this.registrationServer?.stop()
     this.registrationServer = null
-    this.closeServers()
+    await this.transferServer?.stop()
+    this.transferServer = null
     this.setStatus({ state: 'stopped', reason: 'Stopped by request.' })
     return this.status
   }
@@ -126,11 +150,80 @@ export class LanShareService {
     const settings = await this.settingsStore.get()
     return {
       serviceState: this.status.state,
-      transferPortBound: this.transferServer?.listening ?? false,
+      transferPortBound: this.transferServer !== null,
       authPortBound: this.registrationServer !== null,
       receiveDirectoryWritable: await this.checkReceiveDirectoryWritable(settings.receiveDirectory),
       interfaceCount: this.interfaceManager.list().length
     }
+  }
+
+  /**
+   * Real send-side entry point (spec §14, Phase LAN-5). Builds a real
+   * manifest from the given source paths (real preflight — rejects
+   * unsafe sources, computes real size/count), then enqueues a real,
+   * concurrency-bounded job whose dispatch is a real
+   * `ProcessTransferOpRequest` announcement to the peer. The actual
+   * file bytes never move yet — `StartTransfer` is honestly
+   * unimplemented until Phase LAN-6 builds the receiving/staging
+   * engine that would write what it pulls.
+   */
+  async sendFiles(peerId: string, sourcePaths: string[]): Promise<LanShareTransferJob> {
+    const peer = await this.peerStore.get(peerId)
+    if (!peer) {
+      throw new Error(`Cannot send files: peer "${peerId}" is not known.`)
+    }
+    const settings = await this.settingsStore.get()
+    const manifest = await this.manifestBuilder.build(sourcePaths)
+    const useCompression = settings.compressionMode !== 'off'
+
+    return this.transferQueue.enqueue({
+      direction: 'send',
+      peerId: peer.id,
+      displayName: manifest.nameIfSingle ?? manifest.topDirBasenames.join(', '),
+      itemCount: manifest.itemCount,
+      totalBytes: manifest.totalBytes,
+      useCompression
+    })
+  }
+
+  private async dispatchTransferJob(job: LanShareTransferJob): Promise<void> {
+    const peer = await this.peerStore.get(job.peerId)
+    if (!peer) {
+      throw new Error(`Cannot announce transfer: peer "${job.peerId}" is no longer known.`)
+    }
+    const settings = await this.settingsStore.get()
+    const request: NdxTransferOpRequest = {
+      info: {
+        ident: job.id,
+        timestamp: String(job.createdAt),
+        readable_name: job.displayName,
+        use_compression: job.useCompression
+      },
+      sender_name: settings.deviceDisplayName,
+      receiver_name: peer.displayName,
+      receiver: peer.id,
+      size: String(job.totalBytes ?? 0),
+      count: String(job.itemCount),
+      name_if_single: job.itemCount === 1 ? job.displayName : '',
+      mime_if_single: '',
+      top_dir_basenames: [job.displayName]
+    }
+    await this.transferClient.announceTransfer(peer.addresses[0], peer.transferPort, request)
+  }
+
+  private async recordIncomingTransfer(
+    request: NdxTransferOpRequest,
+    peerAddress: string
+  ): Promise<void> {
+    const job = await this.transferStore.create({
+      direction: 'receive',
+      peerId: peerAddress,
+      displayName: request.info.readable_name || request.name_if_single || 'Incoming transfer',
+      itemCount: Number(request.count) || 1,
+      totalBytes: Number(request.size) || undefined,
+      useCompression: request.info.use_compression
+    })
+    await this.transferStore.updateStatus(job.id, 'waiting-for-approval')
   }
 
   /**
@@ -287,25 +380,6 @@ export class LanShareService {
     } catch {
       return false
     }
-  }
-
-  private listenOn(port: number): Promise<Server> {
-    return new Promise((resolve, reject) => {
-      const server = createServer((socket: Socket) => {
-        socket.destroy()
-      })
-      const onError = (error: Error): void => reject(error)
-      server.once('error', onError)
-      server.listen(port, () => {
-        server.removeListener('error', onError)
-        resolve(server)
-      })
-    })
-  }
-
-  private closeServers(): void {
-    this.transferServer?.close()
-    this.transferServer = null
   }
 
   private setStatus(status: LanShareServiceStatus): void {

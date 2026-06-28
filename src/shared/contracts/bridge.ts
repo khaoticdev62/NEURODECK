@@ -100,6 +100,7 @@ import type {
   LanShareSettings,
   LanShareTransferJob,
   LanShareTransferJobIdRequest,
+  SendLanShareFilesRequest,
   SetLanShareGroupCodeRequest,
   SetLanSharePeerTrustRequest,
   UpdateLanShareSettingsRequest
@@ -544,5 +545,6 @@ export interface NdxBridge {
     onServiceUpdate: (listener: (status: LanShareServiceStatus) => void) => () => void
     listInterfaces: () => Promise<NdxResult<LanShareNetworkInterface[]>>
     getHealth: () => Promise<NdxResult<LanShareHealth>>
+    sendFiles: (request: SendLanShareFilesRequest) => Promise<NdxResult<LanShareTransferJob>>
   }
 }
