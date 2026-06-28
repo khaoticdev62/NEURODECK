@@ -19,3 +19,14 @@ export const diagnosticsInfoSchema = z.object({
   modelProviderNames: z.array(z.string())
 })
 export type DiagnosticsInfo = z.infer<typeof diagnosticsInfoSchema>
+
+export const supportBundleRecordSchema = z.object({
+  id: z.string(),
+  createdAt: z.string(),
+  path: z.string(),
+  byteSize: z.number(),
+  sha256: z.string(),
+  includes: z.array(z.string()),
+  redactions: z.array(z.string())
+})
+export type SupportBundleRecord = z.infer<typeof supportBundleRecordSchema>

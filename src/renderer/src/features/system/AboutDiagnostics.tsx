@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { DiagnosticsInfo, LanShareHealth, LanShareServiceStatus } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
-import { getDiagnosticsInfo } from '../../services/ipc/diagnosticsClient'
+import { createSupportBundle, getDiagnosticsInfo } from '../../services/ipc/diagnosticsClient'
 import { getLanShareHealth, getLanShareServiceStatus } from '../../services/ipc/lanShareClient'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
 
@@ -18,6 +18,9 @@ export function AboutDiagnostics(): React.JSX.Element {
   const [info, setInfo] = useState<DiagnosticsInfo | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copyStatus, setCopyStatus] = useState<string | null>(null)
+  const [bundleStatus, setBundleStatus] = useState<string | null>(null)
+  const [bundleError, setBundleError] = useState<string | null>(null)
+  const [creatingBundle, setCreatingBundle] = useState(false)
   const [lanShareStatus, setLanShareStatus] = useState<LanShareServiceStatus | null>(null)
   const [lanShareHealth, setLanShareHealth] = useState<LanShareHealth | null>(null)
 
@@ -58,6 +61,19 @@ export function AboutDiagnostics(): React.JSX.Element {
     }
     await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
     setCopyStatus('Diagnostics copied to clipboard.')
+  }
+
+  async function handleCreateSupportBundle(): Promise<void> {
+    setCreatingBundle(true)
+    setBundleStatus(null)
+    setBundleError(null)
+    const result = await createSupportBundle()
+    setCreatingBundle(false)
+    if (result.ok) {
+      setBundleStatus(`Support bundle saved to ${result.data.path}. SHA-256: ${result.data.sha256}`)
+    } else {
+      setBundleError(result.error.userMessage)
+    }
   }
 
   if (error) return <ErrorState title="Diagnostics error" description={error} />
@@ -110,6 +126,24 @@ export function AboutDiagnostics(): React.JSX.Element {
           Copy diagnostics to clipboard
         </ControllerButton>
         {copyStatus && <p className="text-meta text-status-success">{copyStatus}</p>}
+      </section>
+
+      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+        <p className="text-body font-semibold text-text-primary">Support bundle</p>
+        <p className="text-meta text-text-tertiary">
+          Writes a local JSON support bundle with diagnostics, system metrics, network diagnostics,
+          collector errors, and explicit redaction notes. It excludes vault secrets, provider keys,
+          clipboard entries, memory content, workspace files, and environment variables.
+        </p>
+        <ControllerButton
+          variant="secondary"
+          disabled={creatingBundle}
+          onClick={() => void handleCreateSupportBundle()}
+        >
+          {creatingBundle ? 'Creating support bundle...' : 'Create support bundle'}
+        </ControllerButton>
+        {bundleStatus && <p className="text-meta text-status-success">{bundleStatus}</p>}
+        {bundleError && <p className="text-meta text-status-error">{bundleError}</p>}
       </section>
     </div>
   )

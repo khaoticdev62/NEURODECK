@@ -2585,6 +2585,25 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+## Epic X12 — Support Bundle (2026-06-28)
+
+Real local support bundle export for supplemental spec §38.4. This closes the bounded support-bundle slice only; data lifecycle/privacy map, deletion verification, telemetry consent, and crash reporting remain separate X12 items.
+
+**`SupportBundleService`** (`src/core/support/SupportBundleService.ts`, new) — writes a real JSON artifact under `userData/support-bundles`, computes a SHA-256 checksum over the exact serialized content, records byte size from the written file, and tolerates optional collector failures by recording them in `collectorErrors` instead of failing the whole bundle. The required diagnostics collector is still mandatory, so a bundle without runtime identity/version data is never fabricated.
+
+**Privacy boundary** — bundle contents are intentionally limited to real diagnostics, `SystemMetricsService.collect(app.getPath('userData'))`, `NetworkService.getDiagnostics()`, collector errors, and explicit redaction notes. It does **not** include vault secrets, provider API keys, clipboard entries, memory item content, workspace file contents, environment variables, raw logs, crash dumps, or telemetry payloads.
+
+**IPC/UI** — `diagnostics.createSupportBundle` was added to the shared channel list, `NdxBridge`, preload bridge, renderer diagnostics client, and `registerDiagnosticsHandlers.ts`. `/about` now exposes a controller-focusable "Create support bundle" action and reports the saved path plus SHA-256 checksum after creation.
+
+**New/changed files**: `src/core/support/SupportBundleService.ts`, `src/core/support/__tests__/SupportBundleService.test.ts`, `src/shared/contracts/diagnostics.ts`, `src/shared/contracts/ipcChannels.ts`, `src/shared/contracts/bridge.ts`, `src/preload/index.ts`, `src/main/ipc/registerDiagnosticsHandlers.ts`, `src/main/ipc/index.ts`, `src/renderer/src/services/ipc/diagnosticsClient.ts`, `src/renderer/src/features/system/AboutDiagnostics.tsx`, `src/renderer/src/features/system/__tests__/AboutDiagnostics.test.tsx`, `IMPLEMENTATION_CHECKLIST.md`.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -- SupportBundleService AboutDiagnostics -> 2 files / 6 tests passed
+npm run typecheck -> passed
+```
+
 ## Epic X10 — Profiles and Identity Foundation (2026-06-28)
 
 Real persisted profile metadata and session state for supplemental spec §30.

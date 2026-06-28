@@ -6,6 +6,8 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 **Repository reconciliation:** 2026-06-25 — **Phase A is complete**: all 13 core epics (0–12) and all 6 Acceptance Gates above are satisfied for the scope each one actually claims, with every remaining item an explicitly-named, honestly-scoped gap (see each epic's heading, the Acceptance Gates section, and the ledger's "Phase A closeout" entries) rather than a silent gap. Validation baseline at the Phase A closeout commit: 604 unit/integration tests across 122 files, 6/6 Playwright e2e scenarios, full TypeScript checks, lint pass, production build pass, and a real Linux package build (AppImage/deb/snap, via WSL2). Version `0.1.0`. **Phase B has begun**: Epic X1 (platform registry foundation) is complete — see its heading below.
 
+**Recent Phase B reconciliation:** 2026-06-28 — latest committed additions are reflected below: LAN-8 platform-surface integration (`ecb35e3`), Epic X10 encrypted vault (`ff3db8c`), and Epic X10/X11 profile + continuity foundations (`59a34bc`). The checklist marks these as complete only for their explicitly scoped production behavior; broader supplemental gates stay open where isolation, replay workers, OS adapters, or live hardware/interoperability validation are still deferred.
+
 ---
 
 ## Phase A — Core Platform (mega-prompt Epics 0–12)
@@ -233,7 +235,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] LAN device discovery (§19.1) — **real UDP broadcast discovery**: `PeerDiscoveryService` sends and receives real datagrams (confirmed by a real loopback test using two genuinely separate sockets) carrying a real per-device identity fingerprint (`DeviceIdentityStore`, a real Ed25519 keypair generated once and persisted). `PeerStore` does real trust-on-first-use (untrusted by default, matching `RemoteHostStore`'s SSH host-key model) and real online/offline staleness tracking. Manual IP/hostname entry is real; QR pairing is explicitly deferred — needs a real QR generation/scanning library not present in this codebase.
 - [x] Secure peer transfer (§19.2–19.3) — **real authenticated encryption, not full mutual TLS**: `PeerTransferService` transfers real file bytes over real loopback/LAN TCP, encrypted with real AES-256-GCM using a key derived via real PBKDF2 from a pre-shared pairing code entered on both devices — a wrong code produces a real, detectable decryption failure (confirmed by a test), not silently-wrong output. Real filename sanitization blocks path traversal from a malicious peer's declared filename (confirmed by a test). Honest scope: this is real AEAD confidentiality+integrity over a pre-shared secret, not X.509 certificate-based mutual TLS — generating real certificates needs a dependency (`node-forge`/`selfsigned`) not in this codebase, and adding one is its own decision. The whole file is buffered in memory for one-shot encryption — fine for typical transfer sizes, not optimized for huge multi-GB files. Storage-space pre-checks and a destination-preview review step have no UI in this pass.
 
-### Epic X7 — Sync, backup, and migration
+### Epic X7 — Sync, backup, and migration ⚠️ local backup/restore/migration real; sync and conflict resolution deferred
 
 - [ ] Sync engine (syncable data classes, §20.1; exclusions §20.2)
 - [ ] Conflict resolver (§20.4)
@@ -242,7 +244,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Import/export formats (§21.4) — **real for the local `.ndx-backup.json` app-state format**: backups are exportable as versioned JSON bundles with manifest/per-file SHA-256 integrity data, and `backup.importLocal` now uses a native file picker to import only user-selected backup files. Imported files are parsed, schema-checked, and verified before being copied into the managed backup directory; the renderer never supplies arbitrary filesystem paths. Scope remains the existing local app-state backup format only; cross-product importers, archive formats, workspace-content import/export, cloud import, and vault/secret portability remain deferred.
 - [x] Legacy/version migration (§21.5) — **real for managed local backup bundle schema migration**: `backup.migrate` scans `userData/backups`, verifies current `1.0.0` bundles, migrates legacy `0.9.0` app-state bundles into the current manifest/per-file SHA-256 format with atomic writes, and records invalid/blocked files without throwing. `/backup` exposes a controller-focusable Run Migrations action and summary. Scope remains backup-bundle migration only; broader app-store migrations, Tauri-era config imports, renamed settings migrations, and extension/API migrations remain deferred.
 
-### Epic X8 — Device services
+### Epic X8 — Device services ⚠️ read-only device centers real; hot-plug and OS adapters deferred
 
 - [x] Device and Peripheral Center (§22) — **real read-only inventory center**: `DeviceInventoryService` combines the existing persisted `DeviceStore`, live `SystemMetricsService` network/storage observations, and `CapabilityRegistry.refresh()` into a typed `DeviceInventoryReport`; `device.inventory` is wired through IPC/preload/renderer client; `/devices` (ND-X032) is reachable from System Dashboard and shows real device cards, capability states, and an honest hot-plug limitation. Scope is inventory/status only; OS hot-plug watchers, Bluetooth pairing, audio routing, display/dock management, removable-storage actions, profile application, and notifications remain deferred.
 - [x] Bluetooth Center (§23) — **real read-only status center**: `/devices/bluetooth` (ND-X033) reuses the shared `device.inventory` report to show Bluetooth adapter capability status, persisted Bluetooth device records, and concrete disabled reasons for scan/pair/trust/connect/disconnect/forget. No fake adapter state or scan results are shown. Real BlueZ/SteamOS service integration, pairing confirmation, trust/connect/forget actions, battery reporting, audio profiles, controller profiles, and connection diagnostics remain deferred.
@@ -251,14 +253,14 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] Removable Storage Center (§26) — **real read-only status center**: `/devices/storage` (ND-X036) reuses `device.inventory` to show persisted storage records and the current system-metrics storage root, and lists disabled mount, eject, open, format, and repair controls with concrete missing-backend/review reasons. Real udisks2/SteamOS removable-media discovery, mount/eject transactions, safe flush verification, workspace-boundary opening, destructive format review, and filesystem repair remain deferred.
 - [ ] Hot-plug behavior (§22.3)
 
-### Epic X9 — Resource and scheduling
+### Epic X9 — Resource and scheduling ⚠️ status/control surfaces real; enforcement and trigger execution deferred
 
 - [x] Resource Governor (§27) — **real read-only policy dashboard**: `/resource-governor` (ND-X037) uses live `SystemMetricsService` data through existing system IPC to show CPU, memory, storage, battery, thermal, and GPU resource signals plus visible governor profiles/actions. Scope is observability only; no resource policy engine, model-load delay, browser suspension, backup delay, workflow pause, model unload, battery-saver enforcement, or reversible action pipeline is implemented yet.
 - [x] AI Workload Scheduler (§28) — **real read-only admission-signal center**: `/ai-workloads` (ND-X038) uses live system metrics to show memory/thermal/battery capacity signals and enumerates required AI job classes/scheduling factors. Scope is status only; no durable queue, priority, pause/resume/cancel, preemption, resource estimation, admission control, retry policy, OOM prevention, or Activity integration is implemented yet.
 - [x] Time/event Scheduler and Trigger Service (§29) — **real trigger inventory/status center**: `/scheduler` (ND-X039) lists every required trigger type and scheduler requirement with an explicit not-wired health state and permission warning. Scope is inventory/status only; no persistent schedule store, trigger runner, missed-run policy, time-zone/DST handling, duplicate-run protection, quiet-hours enforcement, run history, export/import, or scheduled permission grant store exists yet.
 - [ ] Quiet hours / interruption policy
 
-### Epic X10 — Profiles and identity
+### Epic X10 — Profiles and identity ⚠️ vault/profile/session foundations real; per-service isolation deferred
 
 - [x] User profiles / operating modes (§30) — **real profile foundation, scoped to metadata/session state**: `ProfileStore` persists named profiles and active operating mode/session state through typed `profiles.*` IPC, `/profiles` is controller-reachable, System Dashboard and Command Palette link to it, and the System Rail now reports the active profile when available. Existing workspaces, model routing, controller mapping, theme, notifications, memory, knowledge, extensions, favorites, resource policy, and voice settings remain shared until each owning store is explicitly made profile-aware.
 - [x] Guest/private session (§30.3) — **real session markers, not fake isolation**: profile sessions can be started in guest/private mode and the shared `FeatureRegistry` receives real active-profile/guest-mode context. No existing historical app data is hidden or deleted by switching modes yet; that requires owner-service migration.
@@ -266,7 +268,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [x] SSH key references — folded into the vault as the `ssh-key-reference` item type (a reference string the user provides — e.g. a fingerprint/path/passphrase — not raw private-key file storage, matching the spec's own "reference-based" framing)
 - [⚠️] Lock policy — "Lock with NeuroDeck" (spec §31.2) is satisfied structurally: the vault sits behind the existing Lock Screen gate, so it is genuinely unreachable while locked. A dedicated separate lock-policy *engine* (e.g. auto-lock timers, per-item lock overrides) was not built — no such concept exists elsewhere in this codebase to extend
 
-### Epic X11 — Continuity and offline operation
+### Epic X11 — Continuity and offline operation ⚠️ continuity/safe-mode foundations real; replay workers deferred
 
 - [x] Offline-first queue and connectivity states (§35) — **real continuity foundation**: `ContinuityStore` persists an honest offline queue inventory and `/continuity` shows real renderer online/offline state. No synthetic queued work is generated; feature owners must enqueue retryable operations explicitly.
 - [x] Reconnection handling (§35.3) — **real observable state only**: `/continuity` updates on browser `online`/`offline` events and shows persisted queue count, but no owner-specific replay workers exist yet.
@@ -281,7 +283,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] Deletion verification (§37.2)
 - [ ] Telemetry consent (§38.1–38.2)
 - [ ] Crash reporting (§38.3)
-- [ ] Support bundle (§38.4)
+- [x] Support bundle (§38.4) — **real local redacted bundle**: `SupportBundleService` writes a JSON artifact under `userData/support-bundles` through typed `diagnostics.createSupportBundle` IPC/preload/renderer client wiring. The bundle includes real diagnostics, system metrics, network diagnostics, collector errors, byte size, and SHA-256 checksum, and explicitly excludes vault secrets, provider API keys, clipboard entries, memory item content, workspace files, and environment variables. `/about` now has a controller-focusable Create Support Bundle action that reports the saved path and checksum. Raw logs, telemetry upload, crash report submission, and remote support transport remain deferred.
 
 ### Epic X13 — Internationalization and guidance
 
@@ -351,12 +353,12 @@ Phase A's checked epics above satisfy these for the scope each epic actually cla
 
 ### Supplemental gates (supplemental §57)
 
-- [ ] **Application ecosystem:** real install/update/remove/verify for Flatpak/AppImage; Steam shortcuts functional.
-- [ ] **Extensions:** capability-scoped, signed, quarantined on failure; no unrestricted access granted.
-- [ ] **Knowledge and memory:** scoped, inspectable, deletable; retrieval respects workspace boundaries.
-- [ ] **Voice and capture:** redaction works; privacy review gates capture; no silent recording.
-- [ ] **Sync and backup:** conflict resolution verified; restore tested end-to-end.
-- [ ] **Devices and dock:** hot-plug verified; capability detection accurate (no fabricated sensor data).
-- [ ] **Resource and scheduler:** governor enforces policy; background jobs visible in Activity.
-- [ ] **Profiles and vault:** guest mode isolated; secrets never exposed to renderer/extensions.
-- [ ] **Platform lifecycle:** offline core operation verified per non-negotiable §3.6; Safe Mode functional.
+- [ ] **Application ecosystem:** Flatpak lifecycle and AppImage verification/registration are real; Steam Shortcut Manager and full launch-profile enforcement remain deferred.
+- [ ] **Extensions:** local unpacked extension install, capability scoping, quarantine, and failure containment are real; cryptographic signature verification, signed marketplace, SDK, and CLI remain deferred.
+- [ ] **Knowledge and memory:** text/JSON/CSV knowledge ingestion, lexical retrieval, scoped memory CRUD/export, prompt templates, and personas are real; embeddings, PDF parsing, Tool Library UI, and signed skill packs remain deferred.
+- [ ] **Voice and capture:** dictation/TTS/voice notes/document intake and mic permission gating are real; wake word and privacy-reviewed screen capture remain deferred.
+- [ ] **Sync and backup:** local app-state backup/restore/import/export/migration is real; sync engine, conflict resolver, remote backup, scheduled backup, workspace-content restore, and vault/secret restore remain deferred.
+- [ ] **Devices and dock:** read-only device, Bluetooth, audio, display/dock, and removable-storage centers are real with honest disabled actions; hot-plug and real OS adapter actions remain deferred.
+- [ ] **Resource and scheduler:** resource, AI workload, and trigger inventory/status surfaces are real; governor enforcement, durable queues, quiet hours, trigger execution, and Activity-backed background jobs remain deferred.
+- [ ] **Profiles and vault:** encrypted-at-rest vault, profile metadata, operating modes, guest/private session markers, and feature-registry context are real; true per-service profile isolation and dedicated auto-lock/per-item vault policy remain deferred.
+- [ ] **Platform lifecycle:** Safe Mode persisted flag and continuity metadata are real; replay workers, automatic sensitive-route restore policy, owner-service offline enqueue integration, and full offline-core verification remain deferred.

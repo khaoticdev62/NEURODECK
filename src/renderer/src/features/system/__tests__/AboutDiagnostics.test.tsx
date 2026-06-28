@@ -24,10 +24,26 @@ const sampleInfo: DiagnosticsInfo = {
   modelProviderNames: ['Local Ollama']
 }
 
+const diagnosticsBridge = {
+  get: vi.fn().mockResolvedValue({ ok: true, data: sampleInfo }),
+  createSupportBundle: vi.fn().mockResolvedValue({
+    ok: true,
+    data: {
+      id: 'bundle-1',
+      createdAt: '2026-06-28T12:00:00.000Z',
+      path: '/tmp/ndx-support-bundle.json',
+      byteSize: 512,
+      sha256: 'a'.repeat(64),
+      includes: ['diagnostics'],
+      redactions: ['No provider API keys']
+    }
+  })
+}
+
 describe('AboutDiagnostics', () => {
   it('shows real diagnostics info', async () => {
     stubBridge({
-      diagnostics: { get: vi.fn().mockResolvedValue({ ok: true, data: sampleInfo }) } as never
+      diagnostics: diagnosticsBridge as never
     })
     render(<AboutDiagnostics />)
 
@@ -51,7 +67,7 @@ describe('AboutDiagnostics', () => {
 
   it('copies real diagnostics to the clipboard via the real export action', async () => {
     stubBridge({
-      diagnostics: { get: vi.fn().mockResolvedValue({ ok: true, data: sampleInfo }) } as never,
+      diagnostics: diagnosticsBridge as never,
       system: {
         collectMetrics: vi.fn().mockResolvedValue({
           ok: false,
@@ -71,5 +87,37 @@ describe('AboutDiagnostics', () => {
     expect(await screen.findByText('Diagnostics copied to clipboard.')).toBeInTheDocument()
     expect(writeText).toHaveBeenCalledTimes(1)
     expect(writeText.mock.calls[0][0]).toContain('"appVersion": "0.0.0"')
+  })
+
+  it('creates a support bundle through the diagnostics bridge', async () => {
+    const createSupportBundle = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'bundle-2',
+        createdAt: '2026-06-28T12:00:00.000Z',
+        path: '/tmp/ndx-support-bundle.json',
+        byteSize: 512,
+        sha256: 'b'.repeat(64),
+        includes: ['diagnostics', 'systemMetrics'],
+        redactions: ['No provider API keys', 'No workspace file contents']
+      }
+    })
+    stubBridge({
+      diagnostics: {
+        get: vi.fn().mockResolvedValue({ ok: true, data: sampleInfo }),
+        createSupportBundle
+      } as never
+    })
+
+    const user = userEvent.setup()
+    render(<AboutDiagnostics />)
+    await screen.findByText('0.0.0')
+
+    await user.click(screen.getByRole('button', { name: 'Create support bundle' }))
+
+    expect(createSupportBundle).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/Support bundle saved to/)).toHaveTextContent(
+      '/tmp/ndx-support-bundle.json'
+    )
   })
 })

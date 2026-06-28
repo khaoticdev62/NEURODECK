@@ -80,6 +80,7 @@ export const IPC_CHANNELS = {
   agentToolResult: 'agentTool.result',
   systemMetricsCollect: 'systemMetrics.collect',
   diagnosticsGet: 'diagnostics.get',
+  diagnosticsCreateSupportBundle: 'diagnostics.createSupportBundle',
   powerRestartApp: 'power.restartApp',
   powerQuitApp: 'power.quitApp',
   powerStateEvent: 'power.stateEvent',

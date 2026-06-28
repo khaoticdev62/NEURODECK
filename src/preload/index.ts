@@ -173,7 +173,8 @@ const ndx: NdxBridge = {
     getDiagnostics: () => ipcRenderer.invoke(IPC_CHANNELS.networkGetDiagnostics)
   },
   diagnostics: {
-    get: () => ipcRenderer.invoke(IPC_CHANNELS.diagnosticsGet)
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.diagnosticsGet),
+    createSupportBundle: () => ipcRenderer.invoke(IPC_CHANNELS.diagnosticsCreateSupportBundle)
   },
   power: {
     restartApp: () => ipcRenderer.invoke(IPC_CHANNELS.powerRestartApp),

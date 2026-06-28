@@ -61,6 +61,7 @@ import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
 import { SystemMetricsService } from '../../core/system/SystemMetricsService'
+import { SupportBundleService } from '../../core/support/SupportBundleService'
 import { UpdateService } from '../../core/system/UpdateService'
 import { NetworkService } from '../../core/network/NetworkService'
 import { LearningService } from '../../core/learning/LearningService'
@@ -139,6 +140,26 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const modelProviderService = new ModelProviderService()
   const systemMetricsService = new SystemMetricsService()
   const networkService = new NetworkService()
+  const supportBundleService = new SupportBundleService({
+    outputDirectory: join(app.getPath('userData'), 'support-bundles'),
+    collectors: {
+      diagnostics: async () => {
+        const providers = await modelProviderStore.list()
+        return {
+          appVersion: app.getVersion(),
+          electronVersion: process.versions.electron ?? 'unknown',
+          chromeVersion: process.versions.chrome ?? 'unknown',
+          nodeVersion: process.versions.node,
+          platform: process.platform,
+          arch: process.arch,
+          license: 'Not specified',
+          modelProviderNames: providers.map((provider) => provider.name)
+        }
+      },
+      systemMetrics: () => systemMetricsService.collect(app.getPath('userData')),
+      networkDiagnostics: () => networkService.getDiagnostics()
+    }
+  })
   const learningService = new LearningService({
     userDataPath: app.getPath('userData'),
     bundledCatalog: BUNDLED_CATALOG,
@@ -383,7 +404,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerNetworkHandlers(networkService)
   registerUpdateHandlers(updateService)
   registerLearningHandlers(learningService)
-  registerDiagnosticsHandlers(modelProviderStore)
+  registerDiagnosticsHandlers(modelProviderStore, supportBundleService)
   const disposePower = registerPowerHandlers(getWindow)
   // Real spec §24 suspend/resume: LAN Share's own real sockets/mDNS
   // advertisement must not stay bound across a suspend, and must rebind
