@@ -71,8 +71,8 @@ Status legend:
 | `/build` | ND-021 | IDE-heavy | Editor/workbench | Partial IDE | Monaco popups and deeper editor theming |
 | `/files` | ND-026 | IDE-heavy | Explorer tool window | Partial IDE | deeper preview/editor affordances |
 | `/git` | ND-025 | IDE-heavy | Source Control tool window | Partial IDE | conflict-resolution UI still deferred |
-| `/terminal` | ND-028 | IDE-heavy | Bottom terminal panel | Partial IDE | direct xterm chrome still uses legacy internal grid |
-| `/terminal/builder` | ND-029 | IDE-heavy | Command Builder | Partial IDE | reviewed execution preserved; direct xterm bottom panel still pending |
+| `/terminal` | ND-028 | IDE-heavy | Bottom terminal panel | Partial IDE | direct xterm lifecycle preserved; visual QA pending |
+| `/terminal/builder` | ND-029 | IDE-heavy | Command Builder | Partial IDE | reviewed execution preserved; visual QA pending |
 | `/browser` | ND-030 | IDE-heavy | Browser tool/editor | Partial IDE | richer tab preview remains |
 | `/browser/:tabId` | ND-031 | IDE-heavy | Browser editor group | Partial IDE | native view focus and bounds still require visual QA |
 | `/automations` | ND-032 | Tool-heavy | Workflow library | Frame / Pending Tool | run state badges |
@@ -184,6 +184,15 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+HYBRID-4 partial checks run after direct xterm workbench migration:
+
+```text
+npm run test -- UniversalTerminal TerminalViewport -> 2 files / 6 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -193,8 +202,10 @@ npm run build -> passed
   for `/browser` tabs + native-view editor framing and `/remote` host/session framing; partial
   slice complete for `/ai` Intent + Plan Preview + Impact framing and `/terminal/builder`
   Command Blocks + Review framing; partial slice complete for `/about` Runtime + Diagnostics +
-  Crash Reports framing and `/error-recovery` Error Details + Recovery + Actions framing.
-  Direct xterm bottom-panel chrome and deeper Monaco theming/popups remain.
+  Crash Reports framing and `/error-recovery` Error Details + Recovery + Actions framing; partial
+  slice complete for `/terminal` Direct xterm framing while preserving `TerminalViewport`
+  hydration, resize, input, search, copy, and disposal behavior. Deeper Monaco theming/popups
+  remain.
 - HYBRID-5 must migrate tool-heavy platform screens to shared tool-window/inspector primitives.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.
