@@ -49,7 +49,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Privacy and Data Map', path: '/privacy' },
   { label: 'Help Hub', path: '/help' },
   { label: 'Guided Troubleshooter', path: '/troubleshooter' },
-  { label: 'Platform Health Overview', path: '/platform-health' }
+  { label: 'Platform Health Overview', path: '/platform-health' },
+  { label: 'Screenshot Center', path: '/screenshots' }
 ]
 
 /**

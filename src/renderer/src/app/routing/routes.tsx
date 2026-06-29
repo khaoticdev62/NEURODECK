@@ -277,6 +277,10 @@ const GuidedTroubleshooter = lazy(async () => {
   const module = await import('../../features/troubleshooter/GuidedTroubleshooter')
   return { default: module.GuidedTroubleshooter }
 })
+const ScreenshotCenter = lazy(async () => {
+  const module = await import('../../features/screenshot/ScreenshotCenter')
+  return { default: module.ScreenshotCenter }
+})
 const PlatformHealthOverview = lazy(async () => {
   const module = await import('../../features/system/PlatformHealthOverview')
   return { default: module.PlatformHealthOverview }
@@ -995,13 +999,23 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
   },
   {
     routeId: 'platform-health',
-    screenId: 'ND-X058',
+    screenId: 'ND-X070',
     path: '/platform-health',
     title: 'Platform Health Overview',
     owningEpic: 'Epic X15',
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('platform health', <PlatformHealthOverview />)
+  },
+  {
+    routeId: 'screenshot-center',
+    screenId: 'ND-X058',
+    path: '/screenshots',
+    title: 'Screenshot Center',
+    owningEpic: 'Epic X14',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('screenshot center', <ScreenshotCenter />)
   }
 ]
 

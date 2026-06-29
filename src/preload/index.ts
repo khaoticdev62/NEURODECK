@@ -238,6 +238,14 @@ const ndx: NdxBridge = {
   troubleshooter: {
     runCheck: (request) => ipcRenderer.invoke(IPC_CHANNELS.troubleshooterRunCheck, request)
   },
+  screenshot: {
+    capture: (request) => ipcRenderer.invoke(IPC_CHANNELS.screenshotCapture, request),
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.screenshotList),
+    copyToClipboard: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.screenshotCopyToClipboard, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.screenshotDelete, request),
+    addToWorkspace: (request) => ipcRenderer.invoke(IPC_CHANNELS.screenshotAddToWorkspace, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

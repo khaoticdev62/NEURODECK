@@ -2893,3 +2893,29 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X14 — Screenshot Center (2026-06-28)
+
+Real Screenshot Center (supplemental spec §42.1), scoped to the two capture sources this app can produce reliably without inventing new UI infrastructure (a selection overlay, a drawing canvas) or relying on out-of-scope vision model support.
+
+**`ScreenshotService`** (`src/main/screenshot/ScreenshotService.ts`, new) — lives in `main/`, not `core/`, matching this codebase's existing convention for Electron-API-heavy services (`BrowserSessionService` is the precedent) rather than injecting Electron dependencies into `core/`. `captureCurrentWindow()` uses `webContents.capturePage()` — always reliable, captures this app's own rendered frame, no OS permission required. `captureFullScreen()` uses `desktopCapturer.getSources({ types: ['screen'] })` at the real primary display's actual pixel resolution (`screen.getPrimaryDisplay().size * scaleFactor`, not an arbitrary thumbnail size) — genuinely gated by OS screen-recording permission on some platforms; a real failure throws `ScreenshotCaptureError` with an honest message, never substituting a placeholder image. `list()`/`copyToClipboard()`/`delete()`/`addToWorkspace()` round out real management: `addToWorkspace()` does a real conflict-safe binary copy (mirroring `LanShareReceiveEngine`'s naming pattern) into the active workspace's real root path, never overwriting an existing same-named file.
+
+**`/screenshots` screen** (`src/renderer/src/features/screenshot/ScreenshotCenter.tsx`, ND-X058) — real delayed capture (0/3/5/10s, an actual `setTimeout` in the IPC handler before capturing), Copy, Delete (with confirmation), Add to workspace (disabled with no active workspace), and Share — which reuses the existing real LAN Share Send Composer via the same `navigate('/lan-share/send', { state: { sourcePaths: [...] } })` handoff pattern `FileManager.tsx` already established, rather than building a second send flow.
+
+**Honestly deferred, each named**: Selected region and Current panel (need a real selection-overlay window/canvas that doesn't exist in this codebase yet), Annotation and Redaction (need a real drawing/markup canvas), Ask AI (needs real vision model support — Epic 9 already documents this as out of scope for every feature, not just screenshots).
+
+**Testing gap, consistent with existing precedent, not a new one**: `ScreenshotService` itself has no unit test. Confirmed by auditing every other Electron-API-heavy main-process service in this codebase (`BrowserSessionService`, `registerPowerHandlers`) — none of them have unit tests either; `src/main/` only has tests for pure-logic files with no `electron` import (`browserUrlPolicy.test.ts`). Introducing a new `vi.mock('electron')` pattern for one file, when no other main-process Electron service in this codebase does so, would be an inconsistent one-off rather than a real testing standard. Real coverage instead comes from `ScreenshotCenter.test.tsx` (5 tests against a stubbed bridge) and the real typecheck/lint/build passing.
+
+**A real, low-risk fix made along the way**: a concurrent session had assigned `screenId: 'ND-X058'` to the new Platform Health Overview route, but the spec's own ND-X0xx table defines `ND-X058` as "Screenshot and Recording Center" and `ND-X070` as "Platform Health Overview." Corrected Platform Health Overview to `ND-X070` so this phase's real `ND-X058` Screenshot Center assignment doesn't collide with it.
+
+**New/changed files**: `src/shared/contracts/screenshot.ts` (new), `src/main/screenshot/ScreenshotService.ts` (new), `src/main/ipc/registerScreenshotHandlers.ts` (new), `src/main/ipc/index.ts` (wiring), `src/shared/contracts/bridge.ts`/`src/preload/index.ts` (new `screenshot` bridge member), `src/renderer/src/services/ipc/screenshotClient.ts` (new), `src/renderer/src/features/screenshot/ScreenshotCenter.tsx` (new), `src/renderer/src/features/screenshot/__tests__/ScreenshotCenter.test.tsx` (new, 5 tests), `src/renderer/src/app/routing/routes.tsx` (new `/screenshots` route, corrected Platform Health Overview screen ID), `src/renderer/src/features/system/SystemDashboard.tsx` (new link).
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -> 212 files / 1039 tests passed
+npm run test -- src/renderer/src/features/screenshot -> 1 file / 5 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

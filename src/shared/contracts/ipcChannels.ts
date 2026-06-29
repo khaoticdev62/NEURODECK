@@ -242,5 +242,10 @@ export const IPC_CHANNELS = {
   continuitySessionSnapshotSave: 'continuity.session.save',
   privacyDataMapGet: 'privacy.dataMap.get',
   privacyDataCategoryClear: 'privacy.dataCategory.clear',
-  troubleshooterRunCheck: 'troubleshooter.runCheck'
+  troubleshooterRunCheck: 'troubleshooter.runCheck',
+  screenshotCapture: 'screenshot.capture',
+  screenshotList: 'screenshot.list',
+  screenshotCopyToClipboard: 'screenshot.copyToClipboard',
+  screenshotDelete: 'screenshot.delete',
+  screenshotAddToWorkspace: 'screenshot.addToWorkspace'
 } as const

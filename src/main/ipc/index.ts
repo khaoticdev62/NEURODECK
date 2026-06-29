@@ -67,6 +67,7 @@ import { ModelProviderService } from '../../core/models/ModelProviderService'
 import { ModelProviderStore } from '../../core/models/ModelProviderStore'
 import { PrivacyDataMapService } from '../../core/privacy/PrivacyDataMapService'
 import { GuidedTroubleshooterService } from '../../core/troubleshooter/GuidedTroubleshooterService'
+import { ScreenshotService } from '../screenshot/ScreenshotService'
 import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
@@ -121,6 +122,7 @@ import { registerLearningHandlers } from './registerLearningHandlers'
 import { registerVaultHandlers } from './registerVaultHandlers'
 import { registerPrivacyHandlers } from './registerPrivacyHandlers'
 import { registerTroubleshooterHandlers } from './registerTroubleshooterHandlers'
+import { registerScreenshotHandlers } from './registerScreenshotHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
@@ -485,6 +487,11 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
       extensionStore,
       updateService
     )
+  )
+  registerScreenshotHandlers(
+    new ScreenshotService(join(app.getPath('userData'), 'screenshots')),
+    workspaceStore,
+    getWindow
   )
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)
   const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)

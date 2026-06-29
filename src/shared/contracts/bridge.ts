@@ -58,6 +58,12 @@ import type {
 import type { ClearDataCategoryRequest, ClearDataCategoryResult, DataMapEntry } from './privacy'
 import type { RunTroubleshooterCheckRequest, TroubleshooterResult } from './troubleshooter'
 import type {
+  AddScreenshotToWorkspaceRequest,
+  CaptureScreenshotRequest,
+  ScreenshotIdRequest,
+  ScreenshotRecord
+} from './screenshot'
+import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
   ExtensionInstallPreview,
@@ -454,6 +460,13 @@ export interface NdxBridge {
   }
   troubleshooter: {
     runCheck: (request: RunTroubleshooterCheckRequest) => Promise<NdxResult<TroubleshooterResult>>
+  }
+  screenshot: {
+    capture: (request: CaptureScreenshotRequest) => Promise<NdxResult<ScreenshotRecord>>
+    list: () => Promise<NdxResult<ScreenshotRecord[]>>
+    copyToClipboard: (request: ScreenshotIdRequest) => Promise<NdxResult<null>>
+    remove: (request: ScreenshotIdRequest) => Promise<NdxResult<null>>
+    addToWorkspace: (request: AddScreenshotToWorkspaceRequest) => Promise<NdxResult<string>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>
