@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { AgentDefinition, RoutingProfileId } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import {
@@ -91,51 +92,87 @@ function AgentOperationsCenterWorkspace({
     setAgents((current) => current.filter((agent) => agent.id !== agentId))
   }
 
+  const toolIds = registry.list().map((tool) => tool.id)
+  const enabledCount = agents.filter((agent) => agent.enabled).length
+
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Agent Operations Center</p>
+    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(28rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Agent Factory" subtitle={`${toolIds.length} registered tools`}>
         <ControllerButton
           variant="primary"
           onClick={() => setShowCreateForm((current) => !current)}
         >
           {showCreateForm ? 'Cancel' : 'New agent'}
         </ControllerButton>
-      </div>
 
-      {error && <ErrorState title="Agent error" description={error} />}
+        {showCreateForm ? (
+          <CreateAgentForm
+            workspaceId={workspaceId}
+            toolIds={toolIds}
+            onCreated={(agent) => {
+              setShowCreateForm(false)
+              setAgents((current) => [...current, agent])
+            }}
+            onError={setError}
+          />
+        ) : (
+          <p className="text-meta text-text-tertiary">
+            Create persisted agents with explicit tool allowlists and zero implicit permission
+            ceiling grants.
+          </p>
+        )}
+      </NdxToolWindow>
 
-      {showCreateForm && (
-        <CreateAgentForm
-          workspaceId={workspaceId}
-          toolIds={registry.list().map((tool) => tool.id)}
-          onCreated={(agent) => {
-            setShowCreateForm(false)
-            setAgents((current) => [...current, agent])
-          }}
-          onError={setError}
-        />
-      )}
+      <NdxEditorShell title="Agent Operations Center">
+        <div className="flex min-h-full flex-col gap-3 p-3">
+          {error && <ErrorState title="Agent error" description={error} />}
 
-      {agents.length === 0 ? (
-        <EmptyState
-          className="flex-1"
-          title="No agents yet"
-          description="Create an agent to plan against an objective using the configured model router."
-        />
-      ) : (
-        <ul className="grid grid-cols-2 gap-3">
-          {agents.map((agent) => (
-            <AgentCard
-              key={agent.id}
-              agent={agent}
-              onOpen={() => navigate(`/agents/${agent.id}`)}
-              onToggleEnabled={() => void handleToggleEnabled(agent)}
-              onRemove={() => void handleRemove(agent.id)}
+          {agents.length === 0 ? (
+            <EmptyState
+              className="flex-1"
+              title="No agents yet"
+              description="Create an agent to plan against an objective using the configured model router."
             />
-          ))}
-        </ul>
-      )}
+          ) : (
+            <ul className="grid grid-cols-2 gap-3">
+              {agents.map((agent) => (
+                <AgentCard
+                  key={agent.id}
+                  agent={agent}
+                  onOpen={() => navigate(`/agents/${agent.id}`)}
+                  onToggleEnabled={() => void handleToggleEnabled(agent)}
+                  onRemove={() => void handleRemove(agent.id)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow
+        title="Agent Policy"
+        subtitle={`${enabledCount}/${agents.length} enabled`}
+        side="right"
+      >
+        <p className="text-meta text-text-secondary">
+          Runs still plan through the real Model Router and submit tool calls through ActionQueue
+          review.
+        </p>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Tool registry</p>
+          <p className="text-meta text-text-tertiary">
+            {toolIds.length
+              ? `${toolIds.length} tools available for allowlists.`
+              : 'No tools registered.'}
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Permission default</p>
+          <p className="text-meta text-text-tertiary">
+            New agents start with no permission ceiling grants. Tool access must be explicit.
+          </p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }
@@ -182,7 +219,7 @@ function CreateAgentForm({
   }
 
   return (
-    <div className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <div className="flex flex-col gap-2 border-t border-border pt-3">
       <input
         value={name}
         onChange={(event) => setName(event.target.value)}
@@ -249,33 +286,31 @@ function AgentCard({
   })
 
   return (
-    <li
-      ref={ref}
-      tabIndex={-1}
-      className={`rounded-lg border p-4 ${isFocused ? 'border-border-focus' : 'border-border'} bg-surface`}
-    >
-      <p className="text-body font-semibold text-text-primary">{agent.name}</p>
-      <p className="text-meta text-text-secondary">
-        {agent.role} · {agent.modelProfile} · {agent.enabled ? 'Enabled' : 'Disabled'}
-      </p>
-      <p className="text-meta text-text-tertiary">{agent.goal}</p>
-      <p className="text-meta text-text-tertiary">
-        Child agents:{' '}
-        {agent.childAgentPolicy.allowChildAgents
-          ? `${agent.childAgentPolicy.maxChildrenPerRun} max · depth ${agent.childAgentPolicy.maxDepth}`
-          : 'disabled'}
-      </p>
-      <div className="mt-3 flex gap-2">
-        <ControllerButton variant="primary" onClick={onOpen}>
-          Open
-        </ControllerButton>
-        <ControllerButton variant="secondary" onClick={onToggleEnabled}>
-          {agent.enabled ? 'Disable' : 'Enable'}
-        </ControllerButton>
-        <ControllerButton variant="ghost" onClick={onRemove}>
-          Remove
-        </ControllerButton>
-      </div>
+    <li ref={ref} tabIndex={-1} className="outline-none">
+      <NdxFocusSurface active={isFocused} density="comfortable" className="p-4">
+        <p className="text-body font-semibold text-text-primary">{agent.name}</p>
+        <p className="text-meta text-text-secondary">
+          {agent.role} · {agent.modelProfile} · {agent.enabled ? 'Enabled' : 'Disabled'}
+        </p>
+        <p className="text-meta text-text-tertiary">{agent.goal}</p>
+        <p className="text-meta text-text-tertiary">
+          Child agents:{' '}
+          {agent.childAgentPolicy.allowChildAgents
+            ? `${agent.childAgentPolicy.maxChildrenPerRun} max · depth ${agent.childAgentPolicy.maxDepth}`
+            : 'disabled'}
+        </p>
+        <div className="mt-3 flex gap-2">
+          <ControllerButton variant="primary" onClick={onOpen}>
+            Open
+          </ControllerButton>
+          <ControllerButton variant="secondary" onClick={onToggleEnabled}>
+            {agent.enabled ? 'Disable' : 'Enable'}
+          </ControllerButton>
+          <ControllerButton variant="ghost" onClick={onRemove}>
+            Remove
+          </ControllerButton>
+        </div>
+      </NdxFocusSurface>
     </li>
   )
 }

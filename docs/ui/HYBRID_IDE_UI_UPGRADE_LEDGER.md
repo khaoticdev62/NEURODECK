@@ -82,7 +82,7 @@ Status legend:
 | `/models` | ND-035 | Tool-heavy | Model grid/tool window | Frame / Pending Tool | provider status density |
 | `/models/:providerId` | ND-036 | Tool-heavy | Model inspector | Frame / Pending Tool | credentials hidden |
 | `/models/routing-profiles` | ND-037 | Tool-heavy | Routing table | Frame / Pending Tool | comparisons at 800p |
-| `/agents` | ND-016 | Tool-heavy | Agent cards/detail | Frame / Pending Tool | status refresh |
+| `/agents` | ND-016 | Tool-heavy | Agent cards/detail | Partial Tool | factory/list/policy framing; detail route pending |
 | `/agents/:agentId` | ND-017 | Tool-heavy | Agent detail tabs | Frame / Pending Tool | timeline and tool logs |
 | `/learn` | ND-038 | Dashboard | Spatial learning rows | Frame / Pending Spatial | authored content gap |
 | `/learn/lab/:curriculumId/:moduleId/:lessonId` | ND-039 | Dashboard | Guided lab workbench | Frame / Pending Spatial | lab step focus |
@@ -202,6 +202,15 @@ npm run lint -> passed with unrelated kiosk Prettier warnings in local uncommitt
 npm run build -> passed
 ```
 
+HYBRID-5 partial checks run after Agent Operations Center tool-window migration:
+
+```text
+npm run test -- AgentOperationsCenter -> 1 file / 6 tests passed
+npm run typecheck -> passed
+npm run lint -> passed with unrelated kiosk Prettier warnings in local uncommitted files
+npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -216,7 +225,12 @@ npm run build -> passed
   hydration, resize, input, search, copy, and disposal behavior; partial slice complete for
   Monaco workbench theming/popups while preserving local bundling and TypeScript worker behavior.
   HYBRID-4 is implementation-complete pending HYBRID-9 visual/controller evidence.
-- HYBRID-5 must migrate tool-heavy platform screens to shared tool-window/inspector primitives.
+- HYBRID-5 must continue tool-heavy platform migrations. Partial slice complete for `/agents`
+  Agent Factory + Agent Operations Center + Agent Policy framing while preserving persisted
+  agent definitions, model routing, tool allowlists, enable/remove actions, and zero implicit
+  permission ceiling grants. Remaining targets include `/agents/:agentId`, Workflows, Models,
+  Extensions, System, Permissions, Recovery, Backup, Vault, LAN Share, Devices, Profiles,
+  Continuity, and Platform Health.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.
 - HYBRID-8 and HYBRID-9 need visual/controller/performance evidence at all target resolutions before any full-program completion claim.
