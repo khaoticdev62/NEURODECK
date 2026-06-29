@@ -2589,7 +2589,7 @@ npm run build -> passed
 
 Real Platform Health Overview for supplemental spec §49. This closes the overview surface only; SBOM generation, signing, release provenance, extension verification, dependency review, and compatibility/deprecation policy remain separate X15 hardening items.
 
-**`/platform-health` (ND-X058)** (`src/renderer/src/features/system/PlatformHealthOverview.tsx`, new) — aggregates existing real health sources without a new parallel backend: Feature Registry visibility, Capability Registry statuses, Network diagnostics, LAN Share service status and socket/directory health, Update status, and local crash reports. Each section degrades independently: a failed IPC source becomes an attention card with the real error message while other sections still render.
+**`/platform-health` (ND-X070)** (`src/renderer/src/features/system/PlatformHealthOverview.tsx`, new) — aggregates existing real health sources without a new parallel backend: Feature Registry visibility, Capability Registry statuses, Network diagnostics, LAN Share service status and socket/directory health, Update status, and local crash reports. Each section degrades independently: a failed IPC source becomes an attention card with the real error message while other sections still render.
 
 **Reachability** — route registered in `ROUTE_DEFINITIONS`, linked from System Dashboard, and indexed by Command Palette. The screen is controller-friendly through existing `ControllerButton` controls and offers a real Refresh action that re-runs every source.
 
@@ -2604,6 +2604,29 @@ npm run test -- PlatformHealthOverview -> 1 file / 3 tests passed
 npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed (known ErrorRecovery.tsx static/dynamic import chunking warning)
+```
+
+## Epic X15 — Dependency Review (2026-06-28)
+
+Real dependency review for the current npm tree. This closes the X15 Dependency Review checklist item only; SBOM generation, signing, release provenance, extension verification, and compatibility/deprecation policy remain separate X15 work.
+
+**Review document** (`docs/security/NDX_DEPENDENCY_REVIEW.md`, new) — records the exact commands run, production dependency inventory, dev-only audit findings, decisions, and follow-up.
+
+**Production audit** — `npm audit --omit=dev` reports 0 vulnerabilities.
+
+**Full audit** — `npm audit` reports 5 vulnerabilities (3 moderate, 1 high, 1 critical) in the dev-only Vitest/Vite/esbuild dev-server chain. `npm audit fix --force` would install `vitest@4.1.9`, a breaking test-toolchain major upgrade, so this slice records it as a dev-tooling migration item rather than forcing an unreviewed upgrade.
+
+**Direct runtime inventory** — `npm.cmd ls --omit=dev --depth=0` reports 17 direct production dependencies. `node-pty` is the named native runtime dependency that must keep receiving SteamOS/Linux package validation; LAN Share crypto/network packages remain covered by the LAN Share SBOM entry.
+
+**New/changed files**: `docs/security/NDX_DEPENDENCY_REVIEW.md`, `IMPLEMENTATION_CHECKLIST.md`, `HANDOFF.md`, `docs/implementation/NDX_IMPLEMENTATION_LEDGER.md`.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm audit --omit=dev -> 0 vulnerabilities
+npm audit -> 5 dev-only vulnerabilities in Vitest/Vite/esbuild; force fix requires breaking Vitest v4 upgrade
+npm.cmd ls --omit=dev --depth=0 -> 17 direct production dependencies
+npm run lint -> passed
 ```
 
 ## Epic X12 — Local Crash Reporting (2026-06-28)

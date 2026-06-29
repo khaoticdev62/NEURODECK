@@ -309,9 +309,9 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] Signing (§39)
 - [ ] Release provenance
 - [ ] Extension verification (cross-check with X3)
-- [ ] Dependency review
+- [x] Dependency review — **real npm audit and direct-runtime inventory**: `docs/security/NDX_DEPENDENCY_REVIEW.md` records `npm audit --omit=dev` clean (0 production vulnerabilities), full `npm audit` still showing the known Vitest/Vite/esbuild dev-server chain (5 dev-only vulnerabilities; fix requires breaking Vitest v4 upgrade), and the 17 direct production dependencies from `npm.cmd ls --omit=dev --depth=0`, including the named native packaging risk (`node-pty`).
 - [ ] Compatibility / deprecation policy
-- [x] Platform Health Overview (§49) — **real aggregate status surface**: `/platform-health` (ND-X058) summarizes existing real platform health sources without a new parallel backend: Feature Registry visibility, Capability Registry status, Network diagnostics, LAN Share service/health, Update status, and local crash reports. Each source degrades independently with its real error message, the screen is refreshable, and it is reachable from System Dashboard and Command Palette. It does not claim SBOM/signing/provenance or repair actions; those remain separate X15 items.
+- [x] Platform Health Overview (§49) — **real aggregate status surface**: `/platform-health` (ND-X070) summarizes existing real platform health sources without a new parallel backend: Feature Registry visibility, Capability Registry status, Network diagnostics, LAN Share service/health, Update status, and local crash reports. Each source degrades independently with its real error message, the screen is refreshable, and it is reachable from System Dashboard and Command Palette. It does not claim SBOM/signing/provenance or repair actions; those remain separate X15 items.
 
 ### Supplemental screen inventory
 
