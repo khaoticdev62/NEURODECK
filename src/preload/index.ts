@@ -250,6 +250,10 @@ const ndx: NdxBridge = {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.presentationModeGet),
     set: (request) => ipcRenderer.invoke(IPC_CHANNELS.presentationModeSet, request)
   },
+  notificationPolicy: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.notificationPolicyGet),
+    set: (request) => ipcRenderer.invoke(IPC_CHANNELS.notificationPolicySet, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

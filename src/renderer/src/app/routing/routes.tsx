@@ -285,6 +285,10 @@ const PresentationModeSettingsScreen = lazy(async () => {
   const module = await import('../../features/presentation/PresentationModeSettingsScreen')
   return { default: module.PresentationModeSettingsScreen }
 })
+const NotificationPolicyScreen = lazy(async () => {
+  const module = await import('../../features/notifications/NotificationPolicyScreen')
+  return { default: module.NotificationPolicyScreen }
+})
 const VoiceNotesCenter = lazy(async () => {
   const module = await import('../../features/voice/VoiceNotesCenter')
   return { default: module.VoiceNotesCenter }
@@ -1044,6 +1048,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('presentation mode', <PresentationModeSettingsScreen />)
+  },
+  {
+    routeId: 'notification-policy',
+    screenId: 'ND-X060',
+    path: '/notifications',
+    title: 'Notification Policy',
+    owningEpic: 'Epic X14',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('notification policy', <NotificationPolicyScreen />)
   }
 ]
 

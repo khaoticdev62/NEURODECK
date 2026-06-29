@@ -64,6 +64,7 @@ import type {
   ScreenshotRecord
 } from './screenshot'
 import type { PresentationModeSettings, SetPresentationModeRequest } from './presentationMode'
+import type { NotificationPolicy, SetNotificationPolicyRequest } from './notificationPolicy'
 import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
@@ -473,6 +474,10 @@ export interface NdxBridge {
   presentationMode: {
     get: () => Promise<NdxResult<PresentationModeSettings>>
     set: (request: SetPresentationModeRequest) => Promise<NdxResult<PresentationModeSettings>>
+  }
+  notificationPolicy: {
+    get: () => Promise<NdxResult<NotificationPolicy>>
+    set: (request: SetNotificationPolicyRequest) => Promise<NdxResult<NotificationPolicy>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

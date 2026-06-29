@@ -2995,3 +2995,28 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X14 — Notification Policy and Interruption Management (2026-06-29)
+
+Real Notification Policy Center (supplemental spec §43), built directly on top of the same real `ToastContext` mute mechanism Presentation Mode already established this session — confirming that mechanism generalizes cleanly to a second real consumer rather than needing its own bespoke suppression path.
+
+**`NotificationPolicyStore`** (`src/core/notifications/NotificationPolicyStore.ts`, new) — tiny, real, persisted `{ mutedCategories, quietHoursEnabled, quietHoursStart, quietHoursEnd }`, the same minimal scope every other small settings store in this codebase uses. No Electron API needed here (unlike Presentation Mode's `powerSaveBlocker`), so the IPC handler is pure and simple.
+
+**`isWithinQuietHours()`** (`src/renderer/src/state/quietHours.ts`, new) — a real, pure, directly-unit-tested time-window check that correctly handles the overnight-wraparound case (`start > end`, e.g. `22:00`–`07:00`) by checking "outside the complementary daytime range" instead of a naive `start <= now <= end`, which would silently never match across midnight. Covered by 3 tests spanning same-day, overnight, and degenerate (`start === end`) cases.
+
+**`NotificationPolicyProvider`** (`src/renderer/src/state/notificationPolicy.tsx`, new) — on a real 30-second interval, recomputes whether quiet hours are currently active and the desired mute set (persisted per-category mutes ∪ quiet-hours low-priority categories), diffs it against what's currently applied, and calls the existing real `muteCategory()`/`unmuteCategory()` only for the categories that actually changed — never blindly re-muting/un-muting everything on each tick. `MutableToastCategory` (the schema type) structurally excludes `error` and `approval-required`, so spec §43's "Critical security events remain visible" is enforced by the type system itself, not just a UI omission that a hand-edited policy file could bypass.
+
+**`/notifications` screen** (ND-X060) — per-category mute toggles (only the four real mutable categories) and quiet-hours start/end time inputs with a live "currently active" indicator. Reachable from System Dashboard.
+
+**Honestly deferred, each named**: sound/haptic routing (no audio/haptic-on-notification pipeline exists anywhere in this codebase), per-workspace/per-agent policy (no workspace/agent-scoped notification concept exists), external routing through extensions (no extension notification API exists), fullscreen/game policy (no fullscreen-state detection wired up to anything yet).
+
+**New/changed files**: `src/shared/contracts/notificationPolicy.ts` (new), `src/core/notifications/NotificationPolicyStore.ts` (new), `src/core/notifications/__tests__/NotificationPolicyStore.test.ts` (new, 2 tests), `src/main/ipc/registerNotificationPolicyHandlers.ts` (new), `src/main/ipc/index.ts` (wiring), `src/shared/contracts/bridge.ts`/`src/preload/index.ts` (new `notificationPolicy` bridge member), `src/renderer/src/services/ipc/notificationPolicyClient.ts` (new), `src/renderer/src/state/quietHours.ts` (new), `src/renderer/src/state/__tests__/quietHours.test.ts` (new, 3 tests), `src/renderer/src/state/notificationPolicyContext.ts`/`useNotificationPolicy.ts`/`notificationPolicy.tsx` (new), `src/renderer/src/state/__tests__/notificationPolicy.test.tsx` (new, 2 tests, real end-to-end mute behavior), `src/renderer/src/app/providers/AppProviders.tsx` (new provider in the tree), `src/renderer/src/features/notifications/NotificationPolicyScreen.tsx` (new), `src/renderer/src/features/notifications/__tests__/NotificationPolicyScreen.test.tsx` (new, 3 tests), `src/renderer/src/app/routing/routes.tsx` (new `/notifications` route), `src/renderer/src/features/system/SystemDashboard.tsx` (new link).
+
+**Validation evidence (run 2026-06-29):**
+
+```text
+npm run test -> 220 files / 1062 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

@@ -69,6 +69,7 @@ import { PrivacyDataMapService } from '../../core/privacy/PrivacyDataMapService'
 import { GuidedTroubleshooterService } from '../../core/troubleshooter/GuidedTroubleshooterService'
 import { ScreenshotService } from '../screenshot/ScreenshotService'
 import { PresentationModeStore } from '../../core/presentation/PresentationModeStore'
+import { NotificationPolicyStore } from '../../core/notifications/NotificationPolicyStore'
 import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
@@ -125,6 +126,7 @@ import { registerPrivacyHandlers } from './registerPrivacyHandlers'
 import { registerTroubleshooterHandlers } from './registerTroubleshooterHandlers'
 import { registerScreenshotHandlers } from './registerScreenshotHandlers'
 import { registerPresentationModeHandlers } from './registerPresentationModeHandlers'
+import { registerNotificationPolicyHandlers } from './registerNotificationPolicyHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
@@ -497,6 +499,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   const disposePresentationMode = registerPresentationModeHandlers(
     new PresentationModeStore(join(app.getPath('userData'), 'presentation-mode.json'))
+  )
+  registerNotificationPolicyHandlers(
+    new NotificationPolicyStore(join(app.getPath('userData'), 'notification-policy.json'))
   )
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)
   const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)

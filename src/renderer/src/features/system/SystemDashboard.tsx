@@ -52,7 +52,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Platform Health Overview', path: '/platform-health' },
   { label: 'Screenshot Center', path: '/screenshots' },
   { label: 'Voice Notes', path: '/voice-notes' },
-  { label: 'Presentation Mode', path: '/presentation' }
+  { label: 'Presentation Mode', path: '/presentation' },
+  { label: 'Notification Policy', path: '/notifications' }
 ]
 
 /**
