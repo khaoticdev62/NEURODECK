@@ -281,6 +281,10 @@ const ScreenshotCenter = lazy(async () => {
   const module = await import('../../features/screenshot/ScreenshotCenter')
   return { default: module.ScreenshotCenter }
 })
+const PresentationModeSettingsScreen = lazy(async () => {
+  const module = await import('../../features/presentation/PresentationModeSettingsScreen')
+  return { default: module.PresentationModeSettingsScreen }
+})
 const VoiceNotesCenter = lazy(async () => {
   const module = await import('../../features/voice/VoiceNotesCenter')
   return { default: module.VoiceNotesCenter }
@@ -1030,6 +1034,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('voice notes', <VoiceNotesCenter />)
+  },
+  {
+    routeId: 'presentation-mode',
+    screenId: 'ND-X064',
+    path: '/presentation',
+    title: 'Presentation Mode',
+    owningEpic: 'Epic X14',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('presentation mode', <PresentationModeSettingsScreen />)
   }
 ]
 

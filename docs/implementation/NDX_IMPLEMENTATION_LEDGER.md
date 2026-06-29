@@ -2967,3 +2967,31 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X14 — Presentation Mode (2026-06-29)
+
+Real Presentation Mode (supplemental spec §46.1), deliberately built by reusing three already-real mechanisms rather than inventing new UI infrastructure.
+
+**`PresentationModeStore`** (`src/core/presentation/PresentationModeStore.ts`, new) — tiny, real, persisted `{ enabled, keepScreenAwake }` settings object, the same minimal scope `LockSettingsStore`/`DisplaySettingsStore` already use for a single small settings object.
+
+**`registerPresentationModeHandlers.ts`** (new, in `main/`) — the one genuinely Electron-API piece, `powerSaveBlocker`, is managed here rather than in `core/`, matching `ScreenshotService`'s established precedent for keeping `electron` imports out of the pure-Node `core/` layer. A blocker id is tracked in closure so `start()`/`stop()` are always real, matched pairs — never double-started, never leaked, and a real `dispose()` stops any active blocker on app shutdown.
+
+**`PresentationModeProvider`** (`src/renderer/src/state/presentationMode.tsx`, new) — on enable, calls the already-real `DisplaySettings.setTextScale('large')` (remembering the prior value in a ref to restore on disable) and the already-real `ToastContext.muteCategory()` for exactly two genuinely low-priority categories (`information`, `background-task-complete`); `error`/`approval-required`/`warning` stay visible the whole time, matching spec §43's "Critical security events remain visible" verbatim. No new notification-suppression logic or text-scale CSS was written — both already existed and just needed a caller.
+
+**`/presentation` screen** (ND-X064) and **Secrets Vault gate** — the settings toggle screen is a thin real on/off pair; the one concrete "Hide secrets" integration point is the Secrets Vault's Reveal button, now disabled with an explicit "Reveal is disabled while Presentation Mode is active" message whenever the mode is on.
+
+**Honestly deferred, each named**: "Hide private workspace names" and "Disable clipboard previews" need touching several more display components — real, valuable, but a separable follow-up rather than bundled into this same pass; "Docked layout" has no real target — the existing `DisplayMode` type is `'standard' | 'focus' | 'split' | 'theater'`, with no docked variant to switch to.
+
+**A real, unrelated bug found and fixed**: wiring `Vault.test.tsx` to wrap `PresentationModeProvider` (which depends on `DisplaySettingsProvider`) surfaced a real `TypeError` — `displaySettingsClient.ts`'s `getDisplaySettings()`/`setDisplaySettings()` guarded only `if (!bridge)`, never `if (!bridge?.displaySettings)`, unlike every other IPC client written this session. Any bridge stub missing the `displaySettings` key (a real, reachable state, not just a test artifact) crashed instead of returning a clean `bridgeUnavailableError()`. Fixed both functions and added `displaySettingsClient.test.ts` (2 tests) to lock it in.
+
+**New/changed files**: `src/shared/contracts/presentationMode.ts` (new), `src/core/presentation/PresentationModeStore.ts` (new), `src/core/presentation/__tests__/PresentationModeStore.test.ts` (new, 2 tests), `src/main/ipc/registerPresentationModeHandlers.ts` (new), `src/main/ipc/index.ts` (wiring + disposal), `src/shared/contracts/bridge.ts`/`src/preload/index.ts` (new `presentationMode` bridge member), `src/renderer/src/services/ipc/presentationModeClient.ts` (new), `src/renderer/src/state/presentationModeContext.ts`/`usePresentationMode.ts`/`presentationMode.tsx` (new), `src/renderer/src/app/providers/AppProviders.tsx` (new provider in the tree), `src/renderer/src/features/presentation/PresentationModeSettingsScreen.tsx` (new), `src/renderer/src/features/presentation/__tests__/PresentationModeSettingsScreen.test.tsx` (new, 1 test), `src/renderer/src/features/vault/Vault.tsx` (real reveal gate), `src/renderer/src/features/vault/__tests__/Vault.test.tsx` (provider wrapping + 1 new test), `src/renderer/src/services/ipc/displaySettingsClient.ts` (bug fix), `src/renderer/src/services/ipc/__tests__/displaySettingsClient.test.ts` (new, 2 tests), `src/renderer/src/app/routing/routes.tsx` (new `/presentation` route), `src/renderer/src/features/system/SystemDashboard.tsx` (new link).
+
+**Validation evidence (run 2026-06-29):**
+
+```text
+npm run test -> 216 files / 1051 tests passed, 1 failed (pre-existing Windows temp-dir EBUSY race in TerminalService.test.ts, confirmed unrelated by re-running it in isolation — passed cleanly)
+npm run test -- presentationMode displaySettingsClient Vault -> covered above, all passing
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

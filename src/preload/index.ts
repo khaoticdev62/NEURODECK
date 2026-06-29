@@ -246,6 +246,10 @@ const ndx: NdxBridge = {
     remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.screenshotDelete, request),
     addToWorkspace: (request) => ipcRenderer.invoke(IPC_CHANNELS.screenshotAddToWorkspace, request)
   },
+  presentationMode: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.presentationModeGet),
+    set: (request) => ipcRenderer.invoke(IPC_CHANNELS.presentationModeSet, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

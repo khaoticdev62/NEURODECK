@@ -11,6 +11,7 @@ import {
   revealVaultItem,
   rotateVaultItem
 } from '../../services/ipc/vaultClient'
+import { usePresentationMode } from '../../state/usePresentationMode'
 
 const ITEM_TYPE_LABELS: Record<VaultItemType, string> = {
   'api-credential': 'API credential',
@@ -39,6 +40,7 @@ const CLIPBOARD_CLEAR_MS = 20_000
  * leaving it there indefinitely.
  */
 export function Vault(): React.JSX.Element {
+  const { enabled: presentationModeEnabled } = usePresentationMode()
   const [items, setItems] = useState<VaultItem[]>([])
   const [accessLog, setAccessLog] = useState<VaultAccessLogEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -171,6 +173,7 @@ export function Vault(): React.JSX.Element {
               key={item.id}
               item={item}
               revealedSecret={revealed[item.id]}
+              revealDisabled={presentationModeEnabled}
               onReveal={() => void handleReveal(item)}
               onCopy={(secret) => void handleCopy(item.id, secret)}
               onRotate={(newSecret) => void handleRotate(item, newSecret)}
@@ -277,6 +280,7 @@ function CreateItemForm({
 function VaultItemCard({
   item,
   revealedSecret,
+  revealDisabled,
   onReveal,
   onCopy,
   onRotate,
@@ -284,6 +288,7 @@ function VaultItemCard({
 }: {
   item: VaultItem
   revealedSecret: string | undefined
+  revealDisabled: boolean
   onReveal: () => void
   onCopy: (secret: string) => void
   onRotate: (newSecret: string) => void
@@ -348,9 +353,17 @@ function VaultItemCard({
         </div>
       )}
 
+      {revealDisabled && revealedSecret === undefined && (
+        <p className="mt-2 text-caption text-status-warning">
+          Reveal is disabled while Presentation Mode is active.
+        </p>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-2">
         {revealedSecret === undefined ? (
-          <ControllerButton onClick={onReveal}>Reveal</ControllerButton>
+          <ControllerButton onClick={onReveal} disabled={revealDisabled}>
+            Reveal
+          </ControllerButton>
         ) : (
           <ControllerButton onClick={() => onCopy(revealedSecret)}>Copy</ControllerButton>
         )}

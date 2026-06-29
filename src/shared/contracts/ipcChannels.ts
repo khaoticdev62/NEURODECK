@@ -249,5 +249,7 @@ export const IPC_CHANNELS = {
   screenshotList: 'screenshot.list',
   screenshotCopyToClipboard: 'screenshot.copyToClipboard',
   screenshotDelete: 'screenshot.delete',
-  screenshotAddToWorkspace: 'screenshot.addToWorkspace'
+  screenshotAddToWorkspace: 'screenshot.addToWorkspace',
+  presentationModeGet: 'presentationMode.get',
+  presentationModeSet: 'presentationMode.set'
 } as const

@@ -63,6 +63,7 @@ import type {
   ScreenshotIdRequest,
   ScreenshotRecord
 } from './screenshot'
+import type { PresentationModeSettings, SetPresentationModeRequest } from './presentationMode'
 import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
@@ -468,6 +469,10 @@ export interface NdxBridge {
     copyToClipboard: (request: ScreenshotIdRequest) => Promise<NdxResult<null>>
     remove: (request: ScreenshotIdRequest) => Promise<NdxResult<null>>
     addToWorkspace: (request: AddScreenshotToWorkspaceRequest) => Promise<NdxResult<string>>
+  }
+  presentationMode: {
+    get: () => Promise<NdxResult<PresentationModeSettings>>
+    set: (request: SetPresentationModeRequest) => Promise<NdxResult<PresentationModeSettings>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

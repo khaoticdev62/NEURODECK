@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge, VaultItem } from '@shared/contracts'
+import { ToastProvider } from '../../../components/overlays/Toast'
+import { DisplaySettingsProvider } from '../../../state/displaySettings'
+import { PresentationModeProvider } from '../../../state/presentationMode'
 import { Vault } from '../Vault'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
@@ -11,9 +14,15 @@ function stubBridge(partial: Partial<NdxBridge>): void {
 
 function renderVault(): ReturnType<typeof render> {
   return render(
-    <MemoryRouter>
-      <Vault />
-    </MemoryRouter>
+    <ToastProvider>
+      <DisplaySettingsProvider>
+        <PresentationModeProvider>
+          <MemoryRouter>
+            <Vault />
+          </MemoryRouter>
+        </PresentationModeProvider>
+      </DisplaySettingsProvider>
+    </ToastProvider>
   )
 }
 
@@ -135,5 +144,24 @@ describe('Vault', () => {
     await user.click(deleteButtons[deleteButtons.length - 1])
 
     expect(remove).toHaveBeenCalledWith({ id: 'item-1' })
+  })
+
+  it('disables Reveal while real Presentation Mode is active', async () => {
+    stubBridge({
+      vault: {
+        list: vi.fn().mockResolvedValue({ ok: true, data: [sampleItem] }),
+        listAccessLog: vi.fn().mockResolvedValue({ ok: true, data: [] })
+      } as never,
+      presentationMode: {
+        get: vi.fn().mockResolvedValue({ ok: true, data: { enabled: true, keepScreenAwake: true } })
+      } as never
+    })
+
+    renderVault()
+
+    expect(await screen.findByRole('button', { name: 'Reveal' })).toBeDisabled()
+    expect(
+      screen.getByText('Reveal is disabled while Presentation Mode is active.')
+    ).toBeInTheDocument()
   })
 })

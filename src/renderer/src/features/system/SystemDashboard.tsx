@@ -51,7 +51,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Guided Troubleshooter', path: '/troubleshooter' },
   { label: 'Platform Health Overview', path: '/platform-health' },
   { label: 'Screenshot Center', path: '/screenshots' },
-  { label: 'Voice Notes', path: '/voice-notes' }
+  { label: 'Voice Notes', path: '/voice-notes' },
+  { label: 'Presentation Mode', path: '/presentation' }
 ]
 
 /**

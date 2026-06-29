@@ -6,6 +6,7 @@ import { WorkspaceProvider } from '../../features/workspaces/WorkspaceProvider'
 import { DisplayModeProvider } from '../../state/displayMode'
 import { DisplaySettingsProvider } from '../../state/displaySettings'
 import { LockProvider } from '../../state/lockState'
+import { PresentationModeProvider } from '../../state/presentationMode'
 import { WorkflowRunnerProvider } from '../../workflows/WorkflowRunnerProvider'
 import { RouterRoot } from '../routing/RouterRoot'
 
@@ -19,9 +20,11 @@ export function AppProviders(): React.JSX.Element {
               <WorkflowRunnerProvider>
                 <DisplayModeProvider>
                   <DisplaySettingsProvider>
-                    <LockProvider>
-                      <RouterRoot />
-                    </LockProvider>
+                    <PresentationModeProvider>
+                      <LockProvider>
+                        <RouterRoot />
+                      </LockProvider>
+                    </PresentationModeProvider>
                   </DisplaySettingsProvider>
                 </DisplayModeProvider>
               </WorkflowRunnerProvider>

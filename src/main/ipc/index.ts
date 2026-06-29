@@ -68,6 +68,7 @@ import { ModelProviderStore } from '../../core/models/ModelProviderStore'
 import { PrivacyDataMapService } from '../../core/privacy/PrivacyDataMapService'
 import { GuidedTroubleshooterService } from '../../core/troubleshooter/GuidedTroubleshooterService'
 import { ScreenshotService } from '../screenshot/ScreenshotService'
+import { PresentationModeStore } from '../../core/presentation/PresentationModeStore'
 import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
@@ -123,6 +124,7 @@ import { registerVaultHandlers } from './registerVaultHandlers'
 import { registerPrivacyHandlers } from './registerPrivacyHandlers'
 import { registerTroubleshooterHandlers } from './registerTroubleshooterHandlers'
 import { registerScreenshotHandlers } from './registerScreenshotHandlers'
+import { registerPresentationModeHandlers } from './registerPresentationModeHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
@@ -493,6 +495,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     workspaceStore,
     getWindow
   )
+  const disposePresentationMode = registerPresentationModeHandlers(
+    new PresentationModeStore(join(app.getPath('userData'), 'presentation-mode.json'))
+  )
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)
   const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)
   registerCapabilityHandlers(capabilityRegistry)
@@ -536,6 +541,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     disposeTerminal()
     disposeRemote()
     disposePower()
+    disposePresentationMode()
     powerMonitor.removeListener('suspend', onLanShareSuspend)
     powerMonitor.removeListener('resume', onLanShareResume)
     powerMonitor.removeListener('suspend', onContinuitySuspend)
