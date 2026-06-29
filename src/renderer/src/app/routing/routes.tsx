@@ -277,6 +277,10 @@ const GuidedTroubleshooter = lazy(async () => {
   const module = await import('../../features/troubleshooter/GuidedTroubleshooter')
   return { default: module.GuidedTroubleshooter }
 })
+const PlatformHealthOverview = lazy(async () => {
+  const module = await import('../../features/system/PlatformHealthOverview')
+  return { default: module.PlatformHealthOverview }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -988,6 +992,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('guided troubleshooter', <GuidedTroubleshooter />)
+  },
+  {
+    routeId: 'platform-health',
+    screenId: 'ND-X058',
+    path: '/platform-health',
+    title: 'Platform Health Overview',
+    owningEpic: 'Epic X15',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('platform health', <PlatformHealthOverview />)
   }
 ]
 

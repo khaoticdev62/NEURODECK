@@ -110,6 +110,12 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     label: 'Help Hub',
     path: '/help',
     subtitle: 'ND-X046 - Epic X13'
+  },
+  {
+    id: 'platform-health',
+    label: 'Platform Health Overview',
+    path: '/platform-health',
+    subtitle: 'ND-X058 - Epic X15'
   }
 ]
 

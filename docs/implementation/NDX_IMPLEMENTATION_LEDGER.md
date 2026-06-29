@@ -2585,6 +2585,27 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+## Epic X15 — Platform Health Overview (2026-06-28)
+
+Real Platform Health Overview for supplemental spec §49. This closes the overview surface only; SBOM generation, signing, release provenance, extension verification, dependency review, and compatibility/deprecation policy remain separate X15 hardening items.
+
+**`/platform-health` (ND-X058)** (`src/renderer/src/features/system/PlatformHealthOverview.tsx`, new) — aggregates existing real health sources without a new parallel backend: Feature Registry visibility, Capability Registry statuses, Network diagnostics, LAN Share service status and socket/directory health, Update status, and local crash reports. Each section degrades independently: a failed IPC source becomes an attention card with the real error message while other sections still render.
+
+**Reachability** — route registered in `ROUTE_DEFINITIONS`, linked from System Dashboard, and indexed by Command Palette. The screen is controller-friendly through existing `ControllerButton` controls and offers a real Refresh action that re-runs every source.
+
+**No fabricated repairs** — the screen is read-only. It does not claim to fix missing capabilities, sign artifacts, generate SBOMs, upload crash reports, or repair LAN/network issues. Those remain owned by their existing services or future X15 items.
+
+**New/changed files**: `src/renderer/src/features/system/PlatformHealthOverview.tsx`, `src/renderer/src/features/system/__tests__/PlatformHealthOverview.test.tsx`, `src/renderer/src/app/routing/routes.tsx`, `src/renderer/src/features/system/SystemDashboard.tsx`, `src/renderer/src/features/command-palette/CommandPalette.tsx`, `IMPLEMENTATION_CHECKLIST.md`, `HANDOFF.md`.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -- PlatformHealthOverview -> 1 file / 3 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed (known ErrorRecovery.tsx static/dynamic import chunking warning)
+```
+
 ## Epic X12 — Local Crash Reporting (2026-06-28)
 
 Real local-only crash reporting for supplemental spec §38.3. This closes crash reporting for the bounded behavior now implemented; telemetry consent remains deferred until there is a real telemetry collector or upload path to govern.

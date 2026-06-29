@@ -48,7 +48,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Secrets Vault', path: '/vault' },
   { label: 'Privacy and Data Map', path: '/privacy' },
   { label: 'Help Hub', path: '/help' },
-  { label: 'Guided Troubleshooter', path: '/troubleshooter' }
+  { label: 'Guided Troubleshooter', path: '/troubleshooter' },
+  { label: 'Platform Health Overview', path: '/platform-health' }
 ]
 
 /**

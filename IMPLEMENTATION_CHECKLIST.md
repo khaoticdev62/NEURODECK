@@ -311,7 +311,7 @@ Do not check an epic complete until every story within it satisfies the relevant
 - [ ] Extension verification (cross-check with X3)
 - [ ] Dependency review
 - [ ] Compatibility / deprecation policy
-- [ ] Platform Health Overview (§49)
+- [x] Platform Health Overview (§49) — **real aggregate status surface**: `/platform-health` (ND-X058) summarizes existing real platform health sources without a new parallel backend: Feature Registry visibility, Capability Registry status, Network diagnostics, LAN Share service/health, Update status, and local crash reports. Each source degrades independently with its real error message, the screen is refreshable, and it is reachable from System Dashboard and Command Palette. It does not claim SBOM/signing/provenance or repair actions; those remain separate X15 items.
 
 ### Supplemental screen inventory
 
