@@ -68,7 +68,7 @@ Status legend:
 | `/ai/approvals` | ND-015 | Critical | Permission review | Frame / Pending Critical | destructive review clarity |
 | `/workspaces` | ND-018 | Dashboard | Spatial workspace row/grid | Frame / Pending Spatial | card focus overlap |
 | `/workspaces/detail` | ND-019 | Tool-heavy | Project inspector | Frame / Pending Tool | filesystem actions |
-| `/build` | ND-021 | IDE-heavy | Editor/workbench | Partial IDE | Monaco popups and deeper editor theming |
+| `/build` | ND-021 | IDE-heavy | Editor/workbench | Partial IDE | Monaco local bundling preserved; visual QA pending |
 | `/files` | ND-026 | IDE-heavy | Explorer tool window | Partial IDE | deeper preview/editor affordances |
 | `/git` | ND-025 | IDE-heavy | Source Control tool window | Partial IDE | conflict-resolution UI still deferred |
 | `/terminal` | ND-028 | IDE-heavy | Bottom terminal panel | Partial IDE | direct xterm lifecycle preserved; visual QA pending |
@@ -193,6 +193,15 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+HYBRID-4 partial checks run after Monaco workbench theming:
+
+```text
+npm run test -- BuildStudio -> 1 file / 1 test passed
+npm run typecheck -> passed
+npm run lint -> passed with unrelated kiosk Prettier warnings in local uncommitted files
+npm run build -> passed
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -204,8 +213,9 @@ npm run build -> passed
   Command Blocks + Review framing; partial slice complete for `/about` Runtime + Diagnostics +
   Crash Reports framing and `/error-recovery` Error Details + Recovery + Actions framing; partial
   slice complete for `/terminal` Direct xterm framing while preserving `TerminalViewport`
-  hydration, resize, input, search, copy, and disposal behavior. Deeper Monaco theming/popups
-  remain.
+  hydration, resize, input, search, copy, and disposal behavior; partial slice complete for
+  Monaco workbench theming/popups while preserving local bundling and TypeScript worker behavior.
+  HYBRID-4 is implementation-complete pending HYBRID-9 visual/controller evidence.
 - HYBRID-5 must migrate tool-heavy platform screens to shared tool-window/inspector primitives.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.
