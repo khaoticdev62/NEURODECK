@@ -3047,3 +3047,28 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X14 — Application Sandbox and Policy (2026-06-29)
+
+Real per-application policy (supplemental spec §47), built around the spec's own central instruction: "Where the OS cannot enforce a permission, label it as advisory rather than pretending it is enforced." This discovery shaped the whole design — `ApplicationRecord` already had an unused `permissionProfileId` field (and an unused `workspaceIds` field) from an earlier phase that anticipated this work but never built it.
+
+**Why 9 of 10 categories are structurally advisory, not a policy choice**: `ApplicationLauncher` launches external applications as ordinary detached OS processes (`spawnDetached()`) — NeuroDeck does not run them inside any sandbox it controls. It therefore has no real mechanism to enforce file-roots/network/clipboard/microphone/camera/notifications/AI-context/extension-access/download-location restrictions on an already-launched external process. `ApplicationPolicyStore` persists real, user-visible allow/deny *declarations of intent* for all nine — genuinely useful as a record of what the user expects, never dressed up as an enforced boundary.
+
+**The one real exception — `launchEnvironment`**: `ApplicationLauncher` (`src/core/applications/ApplicationLauncher.ts`) now accepts an optional injected `getLaunchEnvironment(applicationId)` (matching the module's existing `openUrl` injection pattern that already kept it Electron-free) and merges the real result into the actual `child_process.spawn()` call's `env` option. Proven end-to-end, not just type-checked: a new test spawns a real Node process with a script that writes its own `process.env.NDX_TEST_VAR` to a temp file, and asserts the real file contents match what the policy declared — genuine proof the environment reaches the real OS process, not just that the function was called.
+
+**Workspace association reuses existing plumbing**: `ApplicationRecord.workspaceIds` already existed in the schema (always initialized to `[]`, never actually settable by any UI) and `application.upsert` already accepted it. `/app-policies` is the first real consumer of that existing path — no new IPC needed.
+
+**A real, notable side-discovery**: building this surfaced that Epic X2's "Application Library" (marked `[x]` in the checklist) was real for *discovery only* — `ApplicationStore`/`ApplicationDiscoveryService`/`ApplicationLauncher` are all real, but no renderer screen anywhere in this codebase had ever consumed `application.list`. `/app-policies` (ND-X065) is therefore also the first real UI to browse registered applications at all, even though browsing wasn't its primary purpose — a full Application Library/Detail experience (install flows, discovery triggers, launch buttons) remains a distinct, larger, separate gap this phase does not attempt to close.
+
+**`/app-policies` screen** — lists real applications via the already-real `application.list`, per-app advisory category toggles (labeled Allowed/Denied, never claiming enforcement), real launch-environment key/value editing, and real workspace-association toggles against the real workspace list.
+
+**New/changed files**: `src/shared/contracts/applicationPolicy.ts` (new), `src/core/applications/ApplicationPolicyStore.ts` (new), `src/core/applications/__tests__/ApplicationPolicyStore.test.ts` (new, 3 tests), `src/core/applications/ApplicationLauncher.ts` (real `getLaunchEnvironment` injection + env merge), `src/core/applications/__tests__/ApplicationLauncher.test.ts` (+2 tests, real end-to-end env-passing proof), `src/main/ipc/registerApplicationPolicyHandlers.ts` (new), `src/main/ipc/index.ts` (wiring), `src/shared/contracts/bridge.ts`/`src/preload/index.ts` (new `applicationPolicy` bridge member), `src/renderer/src/services/ipc/applicationPolicyClient.ts` (new), `src/renderer/src/features/applications/ApplicationPolicyCenter.tsx` (new), `src/renderer/src/features/applications/__tests__/ApplicationPolicyCenter.test.tsx` (new, 3 tests), `src/renderer/src/app/routing/routes.tsx` (new `/app-policies` route), `src/renderer/src/features/system/SystemDashboard.tsx` (new link).
+
+**Validation evidence (run 2026-06-29):**
+
+```text
+npm run test -> 225 files / 1081 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

@@ -293,6 +293,10 @@ const RecordingCenter = lazy(async () => {
   const module = await import('../../features/recording/RecordingCenter')
   return { default: module.RecordingCenter }
 })
+const ApplicationPolicyCenter = lazy(async () => {
+  const module = await import('../../features/applications/ApplicationPolicyCenter')
+  return { default: module.ApplicationPolicyCenter }
+})
 const VoiceNotesCenter = lazy(async () => {
   const module = await import('../../features/voice/VoiceNotesCenter')
   return { default: module.VoiceNotesCenter }
@@ -1072,6 +1076,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('recording center', <RecordingCenter />)
+  },
+  {
+    routeId: 'application-policy-center',
+    screenId: 'ND-X065',
+    path: '/app-policies',
+    title: 'Application Sandbox and Policy',
+    owningEpic: 'Epic X14',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('application policy center', <ApplicationPolicyCenter />)
   }
 ]
 

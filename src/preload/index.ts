@@ -263,6 +263,10 @@ const ndx: NdxBridge = {
     list: () => ipcRenderer.invoke(IPC_CHANNELS.recordingList),
     remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.recordingDelete, request)
   },
+  applicationPolicy: {
+    get: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationPolicyGet, request),
+    set: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationPolicySet, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

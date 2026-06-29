@@ -74,6 +74,11 @@ import type {
   RecordingSource
 } from './recording'
 import type {
+  ApplicationPolicy,
+  ApplicationPolicyIdRequest,
+  SetApplicationPolicyRequest
+} from './applicationPolicy'
+import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
   ExtensionInstallPreview,
@@ -495,6 +500,10 @@ export interface NdxBridge {
     cancel: (request: RecordingIdRequest) => Promise<NdxResult<null>>
     list: () => Promise<NdxResult<RecordingRecord[]>>
     remove: (request: RecordingIdRequest) => Promise<NdxResult<null>>
+  }
+  applicationPolicy: {
+    get: (request: ApplicationPolicyIdRequest) => Promise<NdxResult<ApplicationPolicy | null>>
+    set: (request: SetApplicationPolicyRequest) => Promise<NdxResult<ApplicationPolicy>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

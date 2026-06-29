@@ -260,5 +260,7 @@ export const IPC_CHANNELS = {
   recordingFinish: 'recording.finish',
   recordingCancel: 'recording.cancel',
   recordingList: 'recording.list',
-  recordingDelete: 'recording.delete'
+  recordingDelete: 'recording.delete',
+  applicationPolicyGet: 'applicationPolicy.get',
+  applicationPolicySet: 'applicationPolicy.set'
 } as const

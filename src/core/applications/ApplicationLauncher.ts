@@ -1,9 +1,11 @@
 import { spawn } from 'node:child_process'
-import type { ApplicationRecord, LaunchResult } from '@shared/contracts'
+import type { ApplicationRecord, LaunchEnvironment, LaunchResult } from '@shared/contracts'
 
 export interface ApplicationLauncherOptions {
   /** Opens an external URI (`steam://...`) — injected so this module stays Electron-free; `main/` provides the real `shell.openExternal`. */
   openUrl: (url: string) => Promise<void>
+  /** Real Epic X14 §47 "launch environment" enforcement — the one application-policy category NeuroDeck can actually enforce, since it owns the real spawn call. Optional so existing call sites/tests are unaffected. */
+  getLaunchEnvironment?: (applicationId: string) => Promise<LaunchEnvironment>
 }
 
 /**
@@ -30,16 +32,28 @@ export class ApplicationLauncher {
       return { launched: true }
     }
 
+    const launchEnvironment = await this.options.getLaunchEnvironment?.(record.id)
+
     if (record.source === 'flatpak') {
       if (!record.executableRef) return { launched: false, message: 'No Flatpak ref recorded.' }
-      return this.spawnDetached('flatpak', ['run', record.executableRef], undefined)
+      return this.spawnDetached(
+        'flatpak',
+        ['run', record.executableRef],
+        undefined,
+        launchEnvironment
+      )
     }
 
     if (!record.executableRef) {
       return { launched: false, message: 'This application has no recorded executable.' }
     }
 
-    return this.spawnDetached(record.executableRef, record.launchArguments, record.workingDirectory)
+    return this.spawnDetached(
+      record.executableRef,
+      record.launchArguments,
+      record.workingDirectory,
+      launchEnvironment
+    )
   }
 
   /**
@@ -54,12 +68,15 @@ export class ApplicationLauncher {
   private spawnDetached(
     executable: string,
     args: string[],
-    cwd: string | undefined
+    cwd: string | undefined,
+    extraEnv: LaunchEnvironment | undefined
   ): Promise<LaunchResult> {
     return new Promise((resolve) => {
       let child: ReturnType<typeof spawn>
       try {
-        child = spawn(executable, args, { cwd, detached: true, stdio: 'ignore' })
+        const env =
+          extraEnv && Object.keys(extraEnv).length > 0 ? { ...process.env, ...extraEnv } : undefined
+        child = spawn(executable, args, { cwd, env, detached: true, stdio: 'ignore' })
       } catch (error) {
         resolve({
           launched: false,

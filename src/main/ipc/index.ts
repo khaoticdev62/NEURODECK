@@ -15,6 +15,7 @@ import { AgentStore } from '../../core/agents/AgentStore'
 import { BackupService } from '../../core/backup/BackupService'
 import { ApplicationDiscoveryService } from '../../core/applications/ApplicationDiscoveryService'
 import { ApplicationLauncher } from '../../core/applications/ApplicationLauncher'
+import { ApplicationPolicyStore } from '../../core/applications/ApplicationPolicyStore'
 import { ApplicationStore } from '../../core/applications/ApplicationStore'
 import { DesktopEntryScanner } from '../../core/applications/discovery/DesktopEntryScanner'
 import {
@@ -95,6 +96,7 @@ import { FEATURE_CATALOG } from '../../shared/features/featureCatalog'
 import { IPC_CHANNELS } from '@shared/contracts'
 import { registerAgentHandlers } from './registerAgentHandlers'
 import { registerApplicationHandlers } from './registerApplicationHandlers'
+import { registerApplicationPolicyHandlers } from './registerApplicationPolicyHandlers'
 import { registerBackupHandlers } from './registerBackupHandlers'
 import { registerBrowserHandlers } from './registerBrowserHandlers'
 import { registerCapabilityHandlers } from './registerCapabilityHandlers'
@@ -232,7 +234,14 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     steamLibraryScanner,
     flatpakAdapter
   )
-  const applicationLauncher = new ApplicationLauncher({ openUrl: (url) => shell.openExternal(url) })
+  const applicationPolicyStore = new ApplicationPolicyStore(
+    join(app.getPath('userData'), 'application-policies.json')
+  )
+  const applicationLauncher = new ApplicationLauncher({
+    openUrl: (url) => shell.openExternal(url),
+    getLaunchEnvironment: (applicationId) =>
+      applicationPolicyStore.getLaunchEnvironment(applicationId)
+  })
   const transactionManager = new TransactionManager()
   const packageLifecycleService = new PackageLifecycleService(
     flatpakAdapter,
@@ -516,6 +525,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     applicationLauncher,
     getWindow
   )
+  registerApplicationPolicyHandlers(applicationPolicyStore)
   registerDeviceHandlers(deviceStore, deviceInventoryService)
   const disposePackages = registerPackageHandlers(
     flatpakAdapter,
