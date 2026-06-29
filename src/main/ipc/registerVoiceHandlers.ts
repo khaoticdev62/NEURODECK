@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import {
+  addVoiceNoteToKnowledgeRequestSchema,
   documentIntakeRequestSchema,
   IPC_CHANNELS,
   ndxError,
@@ -7,18 +8,21 @@ import {
   setMicrophonePermissionRequestSchema,
   voiceNoteIdRequestSchema,
   type DocumentIntakeResult,
+  type KnowledgeSource,
   type MicrophonePermissionStatus,
   type NdxResult,
   type VoiceNote
 } from '@shared/contracts'
 import { intakeDocument } from '../../core/voice/DocumentIntakeService'
+import type { KnowledgeVaultService } from '../../core/knowledge/KnowledgeVaultService'
 import type { MicrophonePermissionStore } from '../../core/voice/MicrophonePermissionStore'
 import type { VoiceNoteStore } from '../../core/voice/VoiceNoteStore'
 
 /** Real Epic X5 voice/speech IPC (supplemental spec §15/§16.4). */
 export function registerVoiceHandlers(
   micStore: MicrophonePermissionStore,
-  voiceNoteStore: VoiceNoteStore
+  voiceNoteStore: VoiceNoteStore,
+  knowledgeVaultService: KnowledgeVaultService
 ): void {
   ipcMain.handle(
     IPC_CHANNELS.microphoneGetStatus,
@@ -72,6 +76,70 @@ export function registerVoiceHandlers(
       }
       await voiceNoteStore.remove(parsed.data.id)
       return { ok: true, data: null }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.voiceNoteDeleteAudio,
+    async (_event, payload: unknown): Promise<NdxResult<VoiceNote>> => {
+      const parsed = voiceNoteIdRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That voice note id is invalid.')
+        }
+      }
+      const updated = await voiceNoteStore.deleteAudio(parsed.data.id)
+      if (!updated) {
+        return {
+          ok: false,
+          error: ndxError('not-found', 'voice-note-not-found', 'That voice note no longer exists.')
+        }
+      }
+      return { ok: true, data: updated }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.voiceNoteAddToKnowledge,
+    async (_event, payload: unknown): Promise<NdxResult<KnowledgeSource>> => {
+      const parsed = addVoiceNoteToKnowledgeRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That voice note request is invalid.')
+        }
+      }
+      const note = (await voiceNoteStore.list()).find(
+        (candidate) => candidate.id === parsed.data.id
+      )
+      if (!note) {
+        return {
+          ok: false,
+          error: ndxError('not-found', 'voice-note-not-found', 'That voice note no longer exists.')
+        }
+      }
+      if (!note.transcript?.trim()) {
+        return {
+          ok: false,
+          error: ndxError(
+            'validation',
+            'voice-note-has-no-transcript',
+            'That voice note has no transcript to add to the Knowledge Vault.'
+          )
+        }
+      }
+      const source = await knowledgeVaultService.addMarkdownNote({
+        title: `Voice note ${new Date(note.createdAt).toLocaleString()}`,
+        text: note.transcript,
+        origin: `voice-note:${note.id}`,
+        workspaceId: note.workspaceId,
+        privacyLevel: parsed.data.privacyLevel
+      })
+      if (parsed.data.deleteAudioAfterIndex && source.ingestionStatus === 'indexed') {
+        await voiceNoteStore.deleteAudio(note.id)
+      }
+      return { ok: true, data: source }
     }
   )
 

@@ -60,10 +60,32 @@ export class VoiceNoteStore {
     return true
   }
 
+  async deleteAudio(id: string): Promise<VoiceNote | undefined> {
+    const index = await this.store.read()
+    const note = index.notes.find((candidate) => candidate.id === id)
+    if (!note) return undefined
+    await rm(note.filePath, { force: true })
+    const updated: VoiceNote = { ...note, audioDeletedAt: Date.now() }
+    await this.store.write({
+      notes: index.notes.map((candidate) => (candidate.id === id ? updated : candidate))
+    })
+    return updated
+  }
+
   async readAudio(id: string): Promise<Buffer | undefined> {
     const index = await this.store.read()
     const note = index.notes.find((candidate) => candidate.id === id)
     if (!note) return undefined
-    return readFile(note.filePath)
+    if (note.audioDeletedAt) return undefined
+    try {
+      return await readFile(note.filePath)
+    } catch (error) {
+      if (isFileNotFoundError(error)) return undefined
+      throw error
+    }
   }
+}
+
+function isFileNotFoundError(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT'
 }

@@ -281,6 +281,10 @@ const ScreenshotCenter = lazy(async () => {
   const module = await import('../../features/screenshot/ScreenshotCenter')
   return { default: module.ScreenshotCenter }
 })
+const VoiceNotesCenter = lazy(async () => {
+  const module = await import('../../features/voice/VoiceNotesCenter')
+  return { default: module.VoiceNotesCenter }
+})
 const PlatformHealthOverview = lazy(async () => {
   const module = await import('../../features/system/PlatformHealthOverview')
   return { default: module.PlatformHealthOverview }
@@ -1016,6 +1020,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('screenshot center', <ScreenshotCenter />)
+  },
+  {
+    routeId: 'voice-notes',
+    screenId: 'ND-X059',
+    path: '/voice-notes',
+    title: 'Voice Notes',
+    owningEpic: 'Epic X14',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('voice notes', <VoiceNotesCenter />)
   }
 ]
 

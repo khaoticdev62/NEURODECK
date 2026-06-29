@@ -514,7 +514,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerKnowledgeHandlers(knowledgeStore, knowledgeVaultService)
   registerMemoryHandlers(memoryStore)
   registerPromptLibraryHandlers(promptTemplateStore, personaStore)
-  registerVoiceHandlers(microphonePermissionStore, voiceNoteStore)
+  registerVoiceHandlers(microphonePermissionStore, voiceNoteStore, knowledgeVaultService)
   registerClipboardHandlers(clipboardStore, snippetStore)
   const disposeLan = registerLanHandlers(
     peerStore,

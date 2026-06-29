@@ -24,6 +24,7 @@ export const voiceNoteSchema = z.object({
   workspaceId: z.string().optional(),
   /** Real absolute path on disk to the recorded real audio file (webm/opus). */
   filePath: z.string().min(1),
+  audioDeletedAt: z.number().int().nonnegative().optional(),
   durationMs: z.number().int().nonnegative(),
   /** Real transcript from the same `SpeechRecognition` session that was active during recording, when the user had dictation running — never a fabricated transcript for an untranscribed note. */
   transcript: z.string().optional(),
@@ -42,6 +43,13 @@ export type SaveVoiceNoteRequest = z.infer<typeof saveVoiceNoteRequestSchema>
 
 export const voiceNoteIdRequestSchema = z.object({ id: z.string().min(1) })
 export type VoiceNoteIdRequest = z.infer<typeof voiceNoteIdRequestSchema>
+
+export const addVoiceNoteToKnowledgeRequestSchema = z.object({
+  id: z.string().min(1),
+  privacyLevel: z.enum(['private', 'workspace', 'profile', 'shareable']).default('workspace'),
+  deleteAudioAfterIndex: z.boolean().default(false)
+})
+export type AddVoiceNoteToKnowledgeRequest = z.infer<typeof addVoiceNoteToKnowledgeRequestSchema>
 
 /**
  * Real Epic X5/X16 document intake (supplemental §16.4) — one-off

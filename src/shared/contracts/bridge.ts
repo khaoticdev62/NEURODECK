@@ -99,6 +99,7 @@ import type {
   UpsertPromptTemplateRequest
 } from './promptLibrary'
 import type {
+  AddVoiceNoteToKnowledgeRequest,
   DocumentIntakeRequest,
   DocumentIntakeResult,
   MicrophonePermissionStatus,
@@ -590,6 +591,10 @@ export interface NdxBridge {
     listVoiceNotes: () => Promise<NdxResult<VoiceNote[]>>
     saveVoiceNote: (request: SaveVoiceNoteRequest) => Promise<NdxResult<VoiceNote>>
     removeVoiceNote: (request: VoiceNoteIdRequest) => Promise<NdxResult<null>>
+    deleteVoiceNoteAudio: (request: VoiceNoteIdRequest) => Promise<NdxResult<VoiceNote>>
+    addVoiceNoteToKnowledge: (
+      request: AddVoiceNoteToKnowledgeRequest
+    ) => Promise<NdxResult<KnowledgeSource>>
     intakeDocument: (request: DocumentIntakeRequest) => Promise<NdxResult<DocumentIntakeResult>>
   }
   clipboard: {

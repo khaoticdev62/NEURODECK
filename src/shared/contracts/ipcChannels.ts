@@ -182,6 +182,8 @@ export const IPC_CHANNELS = {
   voiceNoteList: 'voiceNote.list',
   voiceNoteSave: 'voiceNote.save',
   voiceNoteRemove: 'voiceNote.remove',
+  voiceNoteDeleteAudio: 'voiceNote.deleteAudio',
+  voiceNoteAddToKnowledge: 'voiceNote.addToKnowledge',
   documentIntake: 'document.intake',
   clipboardList: 'clipboard.list',
   clipboardSetPinned: 'clipboard.setPinned',

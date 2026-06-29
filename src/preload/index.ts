@@ -414,6 +414,10 @@ const ndx: NdxBridge = {
     listVoiceNotes: () => ipcRenderer.invoke(IPC_CHANNELS.voiceNoteList),
     saveVoiceNote: (request) => ipcRenderer.invoke(IPC_CHANNELS.voiceNoteSave, request),
     removeVoiceNote: (request) => ipcRenderer.invoke(IPC_CHANNELS.voiceNoteRemove, request),
+    deleteVoiceNoteAudio: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.voiceNoteDeleteAudio, request),
+    addVoiceNoteToKnowledge: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.voiceNoteAddToKnowledge, request),
     intakeDocument: (request) => ipcRenderer.invoke(IPC_CHANNELS.documentIntake, request)
   },
   clipboard: {

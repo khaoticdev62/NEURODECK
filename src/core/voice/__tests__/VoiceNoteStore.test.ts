@@ -51,6 +51,17 @@ describe('VoiceNoteStore', () => {
     expect(await store.remove('missing')).toBe(false)
   })
 
+  it('deleteAudio() removes only the audio file and keeps transcript metadata', async () => {
+    const note = await store.save(sample)
+
+    const updated = await store.deleteAudio(note.id)
+
+    expect(updated?.audioDeletedAt).toBeGreaterThan(0)
+    expect(updated?.transcript).toBe(sample.transcript)
+    expect(await store.readAudio(note.id)).toBeUndefined()
+    expect(await store.list()).toEqual([updated])
+  })
+
   it('saves a note without a transcript when none was captured', async () => {
     const note = await store.save({ audioBase64: sample.audioBase64, durationMs: 1000 })
     expect(note.transcript).toBeUndefined()

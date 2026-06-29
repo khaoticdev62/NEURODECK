@@ -1,6 +1,8 @@
 import type {
+  AddVoiceNoteToKnowledgeRequest,
   DocumentIntakeRequest,
   DocumentIntakeResult,
+  KnowledgeSource,
   MicrophonePermissionStatus,
   NdxResult,
   SaveVoiceNoteRequest,
@@ -40,6 +42,22 @@ export async function removeVoiceNote(request: VoiceNoteIdRequest): Promise<NdxR
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.voice.removeVoiceNote(request)
+}
+
+export async function deleteVoiceNoteAudio(
+  request: VoiceNoteIdRequest
+): Promise<NdxResult<VoiceNote>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.voice.deleteVoiceNoteAudio(request)
+}
+
+export async function addVoiceNoteToKnowledge(
+  request: AddVoiceNoteToKnowledgeRequest
+): Promise<NdxResult<KnowledgeSource>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.voice.addVoiceNoteToKnowledge(request)
 }
 
 export async function intakeDocument(

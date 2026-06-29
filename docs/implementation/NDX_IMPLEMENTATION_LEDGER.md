@@ -2942,3 +2942,28 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X14 - Voice Notes Completion (2026-06-28)
+
+Real Voice Notes completion for supplemental spec section 42.3, built on the existing Epic X5 persisted voice-note foundation instead of introducing a duplicate media store.
+
+**Knowledge Vault handoff** (`src/core/knowledge/KnowledgeVaultService.ts`) - added `addMarkdownNote()` for real transcript ingestion into the existing Knowledge Vault store. It creates `markdown-note` sources, keeps privacy/workspace metadata, runs the same secret-shape guard used by file ingestion, chunks text through the existing parser, and treats non-file sources as never stale during on-disk revalidation.
+
+**Audio deletion without metadata loss** (`src/core/voice/VoiceNoteStore.ts`) - added `deleteAudio()` to remove only the real recorded `.webm` file while preserving note metadata/transcript with `audioDeletedAt`. `readAudio()` now returns `undefined` for deleted or missing audio instead of throwing, which matches the new persisted metadata state.
+
+**Typed IPC and bridge wiring** (`src/shared/contracts/voice.ts`, `src/shared/contracts/ipcChannels.ts`, `src/shared/contracts/bridge.ts`, `src/main/ipc/registerVoiceHandlers.ts`, `src/preload/index.ts`, `src/renderer/src/services/ipc/voiceClient.ts`) - added validated `voiceNote.deleteAudio` and `voiceNote.addToKnowledge` flows. `voiceNote.addToKnowledge` rejects notes without transcripts, writes the real transcript into Knowledge Vault, and only deletes audio after indexing succeeds when the user selects that option.
+
+**`/voice-notes` screen** (`src/renderer/src/features/voice/VoiceNotesCenter.tsx`, ND-X059) - controller-focusable management surface for persisted notes: list, transcript preview, add transcript to Knowledge Vault, delete audio after successful indexing, explicit Delete audio, explicit Delete note, empty/error/loading/status states. The route is reachable from System Dashboard and Command Palette.
+
+**New/changed tests**: `src/core/knowledge/__tests__/KnowledgeVaultService.test.ts` covers direct markdown note indexing; `src/core/voice/__tests__/VoiceNoteStore.test.ts` covers audio-only deletion; `src/renderer/src/features/voice/__tests__/VoiceNotesCenter.test.tsx` covers empty/list/add/delete-audio flows against a stubbed bridge.
+
+**Still deferred**: Recording (section 42.2), Notification Policy Center (section 43), Presentation Mode, Kiosk Architecture, and Application Sandbox/Policy remain open X14 items. Voice capture/recording itself remains the prior Epic X5 foundation; this pass closed the X14-specific Knowledge Vault and post-transcription audio-deletion requirements.
+
+**Validation evidence (run 2026-06-28):**
+
+```text
+npm run test -- VoiceNoteStore KnowledgeVaultService VoiceNotesCenter -> 3 files / 22 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

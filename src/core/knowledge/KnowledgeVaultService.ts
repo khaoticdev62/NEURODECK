@@ -5,6 +5,7 @@ import { basename } from 'node:path'
 import type {
   AddKnowledgeSourceRequest,
   KnowledgeChunk,
+  KnowledgePrivacyLevel,
   KnowledgeQueryResult,
   KnowledgeSource
 } from '@shared/contracts'
@@ -27,6 +28,60 @@ export class KnowledgeVaultService {
   private readonly index = new KnowledgeIndex()
 
   constructor(private readonly store: KnowledgeStore) {}
+
+  async addMarkdownNote(request: {
+    title: string
+    text: string
+    origin: string
+    workspaceId?: string
+    privacyLevel: KnowledgePrivacyLevel
+  }): Promise<KnowledgeSource> {
+    const now = Date.now()
+    const contentHash = createHash('sha256').update(request.text).digest('hex')
+    let source: KnowledgeSource = {
+      id: randomUUID(),
+      type: 'markdown-note',
+      title: request.title,
+      origin: request.origin,
+      workspaceId: request.workspaceId,
+      privacyLevel: request.privacyLevel,
+      ingestionStatus: 'pending',
+      parserVersion: TEXT_PARSER_VERSION,
+      contentHash,
+      createdAt: now,
+      updatedAt: now
+    }
+
+    const secret = detectSecret(request.text)
+    if (secret.detected) {
+      source = {
+        ...source,
+        ingestionStatus: 'failed',
+        failureReason: `Ingestion refused â€” content matches a real secret shape (${secret.label}).`,
+        updatedAt: Date.now()
+      }
+      await this.store.upsertSource(source)
+      return source
+    }
+
+    const knowledgeChunks: KnowledgeChunk[] = chunkText(request.text).map((text, index) => ({
+      id: randomUUID(),
+      sourceId: source.id,
+      index,
+      text
+    }))
+    await this.store.replaceChunks(source.id, knowledgeChunks)
+
+    source = {
+      ...source,
+      ingestionStatus: 'indexed',
+      chunkCount: knowledgeChunks.length,
+      lastIndexedAt: Date.now(),
+      updatedAt: Date.now()
+    }
+    await this.store.upsertSource(source)
+    return source
+  }
 
   async addSource(request: AddKnowledgeSourceRequest): Promise<KnowledgeSource> {
     if (!isSupportedExtension(request.path)) {
@@ -126,6 +181,7 @@ export class KnowledgeVaultService {
 
   /** Real stale detection (supplemental §12.4) — recomputes the source's real on-disk hash rather than trusting the last-known value. */
   private async isStale(source: KnowledgeSource): Promise<boolean> {
+    if (source.type !== 'file') return false
     try {
       await stat(source.origin)
       const raw = await readFile(source.origin, 'utf-8')

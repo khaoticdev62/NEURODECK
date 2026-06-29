@@ -115,7 +115,19 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     id: 'platform-health',
     label: 'Platform Health Overview',
     path: '/platform-health',
-    subtitle: 'ND-X058 - Epic X15'
+    subtitle: 'ND-X070 - Epic X15'
+  },
+  {
+    id: 'screenshot-center',
+    label: 'Screenshot Center',
+    path: '/screenshots',
+    subtitle: 'ND-X058 - Epic X14'
+  },
+  {
+    id: 'voice-notes',
+    label: 'Voice Notes',
+    path: '/voice-notes',
+    subtitle: 'ND-X059 - Epic X14'
   }
 ]
 

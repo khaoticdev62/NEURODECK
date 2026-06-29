@@ -46,6 +46,23 @@ describe('KnowledgeVaultService', () => {
     expect(await store.listChunks(source.id)).toEqual([])
   })
 
+  it('indexes a direct markdown note as real knowledge without a source file', async () => {
+    const source = await service.addMarkdownNote({
+      title: 'Voice note transcript',
+      text: 'Meeting note about recovery checkpoints and workspace safety.',
+      origin: 'voice-note:note-1',
+      privacyLevel: 'workspace'
+    })
+
+    expect(source.type).toBe('markdown-note')
+    expect(source.ingestionStatus).toBe('indexed')
+    expect(source.origin).toBe('voice-note:note-1')
+
+    const results = await service.query('recovery checkpoints', undefined, 10)
+    expect(results[0].sourceTitle).toBe('Voice note transcript')
+    expect(results[0].stale).toBe(false)
+  })
+
   it('rejects an unsupported file type honestly rather than fabricating a parse', async () => {
     const path = join(dir, 'doc.pdf')
     await writeFile(path, 'fake pdf bytes', 'utf-8')
