@@ -37,9 +37,11 @@ export function NavigationRail({
   return (
     <nav
       aria-label="Primary"
-      className="flex flex-col gap-1 overflow-y-auto border-r border-border bg-surface py-3"
+      className="flex flex-col gap-1 overflow-y-auto border-r border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-activitybar-bg)] py-2"
       style={{
-        width: expanded ? 'var(--ndx-rail-primary-expanded)' : 'var(--ndx-rail-primary-collapsed)',
+        width: expanded
+          ? 'var(--ndx-rail-primary-expanded)'
+          : 'var(--ndx-workbench-activitybar-width)',
         zIndex: 'var(--ndx-z-rail)'
       }}
     >

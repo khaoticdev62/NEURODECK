@@ -1,12 +1,18 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BottomControllerRail } from '../../components/navigation/BottomControllerRail'
 import { ContextPanel, type ContextPanelItem } from '../../components/navigation/ContextPanel'
-import { NavigationRail } from '../../components/navigation/NavigationRail'
-import { SystemRail } from '../../components/navigation/SystemRail'
 import {
   UNAVAILABLE_SYSTEM_RAIL_STATUS,
   type SystemRailStatus
 } from '../../components/navigation/systemRailStatus'
+import {
+  NdxActivityBar,
+  NdxBottomPanel,
+  NdxDenseRow,
+  NdxStatusBar,
+  NdxTitleBar,
+  NdxToolWindow,
+  NdxWorkbench
+} from '../../components/workbench'
 import { CoreToolsBootstrap } from '../../ai-safety/CoreToolsBootstrap'
 import { FocusDebugOverlay } from '../../controller/testing/FocusDebugOverlay'
 import { CommandPalette } from '../../features/command-palette/CommandPalette'
@@ -102,31 +108,31 @@ export function ShellLayout({
     return <LockScreen />
   }
 
+  const routeLabel = location.pathname === '/' ? 'Home' : location.pathname
+
   return (
-    <div
-      data-display-mode={baseMode}
-      data-reduce-motion={reduceMotion}
-      data-high-contrast={highContrast}
-      data-text-size={textScale}
-      className="flex h-full flex-col bg-canvas"
+    <NdxWorkbench
+      displayMode={baseMode}
+      reduceMotion={reduceMotion}
+      highContrast={highContrast}
+      textSize={textScale}
+      collapseToolWindows={collapsesRails}
+      titleBar={<NdxTitleBar status={systemRailStatus} activeProfileName={activeProfileName} />}
+      activityBar={<NdxActivityBar hidden={collapsesRails} />}
+      primaryToolWindow={
+        <NdxToolWindow title="Primary Tool Window" subtitle="Workbench context">
+          <div className="flex flex-col gap-2">
+            <NdxDenseRow selected>Route: {routeLabel}</NdxDenseRow>
+            <NdxDenseRow>Project tools migrate here in HYBRID-4.</NdxDenseRow>
+            <NdxDenseRow>Use Activity Bar for primary destinations.</NdxDenseRow>
+          </div>
+        </NdxToolWindow>
+      }
+      secondaryToolWindow={<ContextPanel hidden={false} item={contextItem} />}
+      bottomPanel={<NdxBottomPanel />}
+      statusBar={<NdxStatusBar routeTitle={routeLabel} controllerLayer="workbench" />}
     >
-      <SystemRail
-        status={{
-          ...systemRailStatus,
-          profile:
-            systemRailStatus.profile.available || !activeProfileName
-              ? systemRailStatus.profile
-              : { available: true, value: activeProfileName }
-        }}
-      />
-      <div className="flex min-h-0 flex-1">
-        <NavigationRail hidden={collapsesRails} />
-        <main className="min-w-0 flex-1 overflow-auto" style={{ padding: 'var(--ndx-safe-inset)' }}>
-          <Outlet />
-        </main>
-        <ContextPanel hidden={collapsesRails} item={contextItem} />
-      </div>
-      <BottomControllerRail />
+      <Outlet />
       <CoreToolsBootstrap />
       <PowerStateBridge />
       <LanSharePlatformBridge />
@@ -139,6 +145,6 @@ export function ShellLayout({
       <WorkspaceSwitcherOverlay />
       <QuickAccessOverlay />
       <FocusDebugOverlay />
-    </div>
+    </NdxWorkbench>
   )
 }

@@ -87,12 +87,16 @@ function renderShell(): ReturnType<typeof render> {
 }
 
 describe('ShellLayout', () => {
-  it('renders the standard shell anatomy: system rail, nav rail, content, context panel, controller rail', () => {
-    renderShell()
+  it('renders the hybrid workbench anatomy: title bar, Activity Bar, tool windows, bottom panel, status/action bar', () => {
+    const { container } = renderShell()
     expect(screen.getByRole('banner')).toBeInTheDocument()
+    expect(screen.getByText('Command Center')).toBeInTheDocument()
     expect(screen.getByRole('navigation', { name: 'Primary' })).toBeInTheDocument()
+    expect(screen.getByRole('complementary', { name: 'Primary Tool Window' })).toBeInTheDocument()
     expect(screen.getByRole('complementary', { name: 'Context' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Bottom Tool Window' })).toBeInTheDocument()
     expect(screen.getByRole('contentinfo')).toBeInTheDocument()
+    expect(container.querySelector('[data-ndx-theme="hybrid-dark"]')).not.toBeNull()
   })
 
   it('collapses the navigation rail and context panel in focus mode (wireframe §3.3)', async () => {

@@ -319,6 +319,21 @@ Do not check an epic complete until every story within it satisfies the relevant
 
 ---
 
+### Hybrid IDE UI Upgrade Program
+
+- [x] **HYBRID-0 Audit and baseline** — foundation ledger created at `docs/ui/HYBRID_IDE_UI_UPGRADE_LEDGER.md` with current shell audit and route-by-route migration matrix.
+- [x] **HYBRID-1 Tokens and themes foundation** — existing `tokens.css` now includes semantic workbench aliases for title bar, Activity Bar, tool windows, editor, panel, tabs, status bar, focus density, selected rows, active panes, status tones, OLED/reduced-transparency hooks, and display-mode sizing.
+- [x] **HYBRID-2 Shared primitives foundation** — centralized workbench component entry points added under `src/renderer/src/components/workbench`; individual route migration remains pending.
+- [x] **HYBRID-3 Workbench shell foundation** — `ShellLayout` now renders the canonical workbench frame while preserving existing route content, overlays, IPC, controller providers, lock-screen takeover, and focus/split collapse behavior.
+- [ ] **HYBRID-4 IDE views and Monaco/xterm migration** — Build Studio, Files, Git, Terminal, Browser, Remote, AI Canvas, Command Builder, and diagnostics-like screens still need internal migration.
+- [ ] **HYBRID-5 Tool-heavy platform screen migration** — Agents, Workflows, Models, Extensions, System, Permissions, Recovery, Backup, Vault, LAN Share, Devices, Profiles, Continuity, and Platform Health still need shared tool-window/inspector layouts.
+- [ ] **HYBRID-6 tvOS dashboard/grid migration** — Home, Workspaces, Learning, model/device/media grids, Quick Access, Screenshot Center, and Voice Notes still need spatial lockup migration.
+- [ ] **HYBRID-7 Settings and critical flows** — settings-tree migration and standardized critical dialogs remain pending; reconcile existing Presentation Mode work first.
+- [ ] **HYBRID-8 Responsive/accessibility/controller hardening** — 1280x800, 1280x720, 1920x1080, 2560x1440, large text, high contrast, reduced motion, and controller traversal matrix still pending.
+- [ ] **HYBRID-9 Visual QA and final evidence** — Playwright screenshot coverage, final fidelity matrix, controller matrix, accessibility report, responsive report, performance report, and final report still pending.
+
+---
+
 ### LAN Share — Warpinator-compatible transfers (separate mega-prompt, distinct from Epic X6)
 
 Tracked separately from Epic X6 because it is a different, much larger feature: real wire-protocol interoperability with the external Warpinator/Winpinator ecosystem (gRPC/protobuf, mDNS, registration v1/v2, GPL compliance), not NeuroDeck's own NDX-only peer transfer (which Epic X6 already ships in `src/core/lan/`). See `NeuroDeckOS_Built_In_Warpinator_Winpinator_LAN_Share_Implementation_Prompt.md` for the full spec (39 sections, phases `LAN-0`–`LAN-11`).
