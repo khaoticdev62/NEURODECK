@@ -3072,3 +3072,31 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X14 — Kiosk Architecture (2026-06-29)
+
+Real Kiosk Mode (supplemental spec §46.2), closing the last open item in Epic X14. Built around one decision: every "restriction" reuses an existing real mechanism rather than inventing a parallel one.
+
+**Restricted exit reuses the existing Lock PIN, not a second PIN.** `KioskExitOverlay` is a globally-mounted control — the same "always reachable regardless of the current route" principle `RecordingIndicatorOverlay` already established for its Stop control — that calls the real `verifyLockPin` IPC before disabling kiosk mode. There was no reason to build a separate kiosk-specific credential when a real one already exists and is already wired through `safeStorage`-backed persistence.
+
+**Allowlisted routes and restricted settings are enforced in one place**: `ShellLayout` (the existing real full-shell-takeover precedent already used by `LockScreen`) gained a `useEffect` that redirects any navigation `KioskModeProvider.isRouteAllowed()` disallows back to the configured `startRoutePath`. `isRouteAllowed()` always blocks `/settings/*` (when `restrictSettings` is on) and `/kiosk` itself — the kiosk settings screen is unreachable once kiosk mode is active, so reconfiguring it is only possible after a real PIN-gated exit.
+
+**No secret access** extends Vault's existing Presentation-Mode reveal gate (`revealDisabled`) to also check `kioskModeEnabled` — one boolean OR, not a second gating mechanism.
+
+**Three items honestly scoped rather than silently dropped**:
+- "No developer mode" has nothing to gate — no Developer Mode toggle exists anywhere in this codebase yet (supplemental §44 is unbuilt).
+- "Controller-only operation" needed no new code — the entire shell is already controller-native by construction; kiosk mode doesn't change that property, it inherits it.
+- "Reset session" was deliberately *not* built as a deep workspace-state reset. `WorkspaceContextValue.setActive` is typed `(id: string) => void` and used widely; widening it to accept `null` purely to support an infrequently-used kiosk action wasn't worth the risk to a shared interface. `startRoutePath` redirection already gives kiosk sessions a real "always return to a known starting point" behavior on any blocked navigation, which covers the practical need.
+
+**New/changed files**: `src/shared/contracts/kioskMode.ts` (new), `src/core/kiosk/KioskModeStore.ts` (new), `src/core/kiosk/__tests__/KioskModeStore.test.ts` (new, 2 tests), `src/main/ipc/registerKioskModeHandlers.ts` (new), `src/main/ipc/index.ts` (wiring), `src/shared/contracts/bridge.ts`/`src/preload/index.ts` (new `kioskMode` bridge member), `src/renderer/src/services/ipc/kioskModeClient.ts` (new), `src/renderer/src/state/kioskModeContext.ts`/`useKioskMode.ts`/`kioskMode.tsx` (new provider), `src/renderer/src/state/__tests__/kioskMode.test.tsx` (new, 4 tests), `src/renderer/src/features/kiosk/KioskExitOverlay.tsx` + `KioskModeSettings.tsx` (new), `src/renderer/src/features/kiosk/__tests__/KioskExitOverlay.test.tsx` (new, 2 tests) + `KioskModeSettings.test.tsx` (new, 2 tests), `src/renderer/src/app/shell/ShellLayout.tsx` (route guard + overlay mount), `src/renderer/src/app/shell/__tests__/ShellLayout.test.tsx` (provider wiring), `src/renderer/src/app/providers/AppProviders.tsx` (provider mount), `src/renderer/src/app/routing/routes.tsx` (new `/kiosk` route, `ND-X064` shared with `/presentation` per the spec's own combined table entry), `src/renderer/src/features/system/SystemDashboard.tsx` (new link), `src/renderer/src/features/vault/Vault.tsx` + `__tests__/Vault.test.tsx` (kiosk-mode reveal gate).
+
+**Validation evidence (run 2026-06-29):**
+
+```text
+npm run test -> 229 files / 1101 tests passed (one unrelated pre-existing flaky failure — AgentRuntime.test.ts's Windows tempdir rmdir race — confirmed passing in isolation)
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
+This closes Epic X14 (Presentation/Recording/Kiosk Modes, Application Sandbox and Policy, Notification Policy, Screenshot Center, Voice Notes) in full.

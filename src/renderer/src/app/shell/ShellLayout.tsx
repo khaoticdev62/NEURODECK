@@ -20,6 +20,7 @@ import { ActivityAndNotificationsOverlay } from '../../features/activity/Activit
 import { EmergencyStopOverlay } from '../../features/ai-canvas/EmergencyStopOverlay'
 import { AgentToolExecutionBridge } from '../../features/agents/AgentToolExecutionBridge'
 import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwitcherOverlay'
+import { KioskExitOverlay } from '../../features/kiosk/KioskExitOverlay'
 import { LockScreen } from '../../features/system/LockScreen'
 import { PowerStateBridge } from '../../features/system/PowerStateBridge'
 import { QuickAccessOverlay } from '../../features/system/QuickAccessOverlay'
@@ -30,6 +31,7 @@ import { saveSessionSnapshot } from '../../services/ipc/continuityClient'
 import { getProfileState } from '../../services/ipc/profileClient'
 import { useDisplayMode } from '../../state/useDisplayMode'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
+import { useKioskMode } from '../../state/useKioskMode'
 import { useLockState } from '../../state/useLockState'
 import { useEffect, useState } from 'react'
 
@@ -60,6 +62,7 @@ export function ShellLayout({
   const { baseMode } = useDisplayMode()
   const { reduceMotion, highContrast, textScale } = useDisplaySettings()
   const { isLocked } = useLockState()
+  const { enabled: kioskEnabled, startRoutePath, isRouteAllowed } = useKioskMode()
   const [activeProfileName, setActiveProfileName] = useState<string | null>(null)
   const collapsesRails = baseMode === 'focus' || baseMode === 'split'
 
@@ -100,6 +103,15 @@ export function ShellLayout({
     const route = `${location.pathname}${location.search}${location.hash}`
     void saveSessionSnapshot({ route })
   }, [location.hash, location.pathname, location.search])
+
+  // Epic X14 §46.2 "Allowlisted apps/routes" and "Restricted settings": a
+  // disallowed navigation while kiosk mode is active redirects back to the
+  // kiosk's configured start route rather than rendering the screen.
+  useEffect(() => {
+    if (kioskEnabled && !isRouteAllowed(location.pathname)) {
+      navigate(startRoutePath, { replace: true })
+    }
+  }, [kioskEnabled, isRouteAllowed, location.pathname, navigate, startRoutePath])
 
   // Full takeover, same as Emergency Stop's queue-pause but for the whole
   // shell: no nav, no Command Palette, no overlays — only LockScreen itself
@@ -145,6 +157,7 @@ export function ShellLayout({
       <WorkspaceSwitcherOverlay />
       <QuickAccessOverlay />
       <FocusDebugOverlay />
+      <KioskExitOverlay />
     </NdxWorkbench>
   )
 }

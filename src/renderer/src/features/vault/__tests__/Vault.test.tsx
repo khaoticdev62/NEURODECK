@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge, VaultItem } from '@shared/contracts'
 import { ToastProvider } from '../../../components/overlays/Toast'
 import { DisplaySettingsProvider } from '../../../state/displaySettings'
+import { KioskModeProvider } from '../../../state/kioskMode'
 import { PresentationModeProvider } from '../../../state/presentationMode'
 import { Vault } from '../Vault'
 
@@ -17,9 +18,11 @@ function renderVault(): ReturnType<typeof render> {
     <ToastProvider>
       <DisplaySettingsProvider>
         <PresentationModeProvider>
-          <MemoryRouter>
-            <Vault />
-          </MemoryRouter>
+          <KioskModeProvider>
+            <MemoryRouter>
+              <Vault />
+            </MemoryRouter>
+          </KioskModeProvider>
         </PresentationModeProvider>
       </DisplaySettingsProvider>
     </ToastProvider>
@@ -161,7 +164,7 @@ describe('Vault', () => {
 
     expect(await screen.findByRole('button', { name: 'Reveal' })).toBeDisabled()
     expect(
-      screen.getByText('Reveal is disabled while Presentation Mode is active.')
+      screen.getByText('Reveal is disabled while Presentation Mode or Kiosk Mode is active.')
     ).toBeInTheDocument()
   })
 })

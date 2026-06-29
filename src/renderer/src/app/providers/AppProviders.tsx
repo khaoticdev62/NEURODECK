@@ -5,6 +5,7 @@ import { FocusEngineProvider } from '../../controller/focus/FocusEngineProvider'
 import { WorkspaceProvider } from '../../features/workspaces/WorkspaceProvider'
 import { DisplayModeProvider } from '../../state/displayMode'
 import { DisplaySettingsProvider } from '../../state/displaySettings'
+import { KioskModeProvider } from '../../state/kioskMode'
 import { LockProvider } from '../../state/lockState'
 import { NotificationPolicyProvider } from '../../state/notificationPolicy'
 import { PresentationModeProvider } from '../../state/presentationMode'
@@ -26,7 +27,9 @@ export function AppProviders(): React.JSX.Element {
                       <DisplaySettingsProvider>
                         <PresentationModeProvider>
                           <LockProvider>
-                            <RouterRoot />
+                            <KioskModeProvider>
+                              <RouterRoot />
+                            </KioskModeProvider>
                           </LockProvider>
                         </PresentationModeProvider>
                       </DisplaySettingsProvider>

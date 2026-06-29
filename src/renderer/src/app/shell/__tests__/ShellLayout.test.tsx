@@ -8,6 +8,7 @@ import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvid
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { DisplayModeProvider } from '../../../state/displayMode'
 import { DisplaySettingsProvider } from '../../../state/displaySettings'
+import { KioskModeProvider } from '../../../state/kioskMode'
 import { LockProvider } from '../../../state/lockState'
 import { useDisplayMode } from '../../../state/useDisplayMode'
 import { WorkspaceProvider } from '../../../features/workspaces/WorkspaceProvider'
@@ -65,17 +66,19 @@ function renderShell(): ReturnType<typeof render> {
             <DisplayModeProvider>
               <DisplaySettingsProvider>
                 <LockProvider>
-                  <MemoryRouter initialEntries={['/']}>
-                    <Routes>
-                      <Route element={<ShellLayout />}>
-                        <Route path="/" element={<ModeSwitcher />} />
-                        <Route
-                          path="/search"
-                          element={<div data-testid="search-screen">Search</div>}
-                        />
-                      </Route>
-                    </Routes>
-                  </MemoryRouter>
+                  <KioskModeProvider>
+                    <MemoryRouter initialEntries={['/']}>
+                      <Routes>
+                        <Route element={<ShellLayout />}>
+                          <Route path="/" element={<ModeSwitcher />} />
+                          <Route
+                            path="/search"
+                            element={<div data-testid="search-screen">Search</div>}
+                          />
+                        </Route>
+                      </Routes>
+                    </MemoryRouter>
+                  </KioskModeProvider>
                 </LockProvider>
               </DisplaySettingsProvider>
             </DisplayModeProvider>

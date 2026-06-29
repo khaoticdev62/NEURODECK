@@ -16,6 +16,7 @@ import { BackupService } from '../../core/backup/BackupService'
 import { ApplicationDiscoveryService } from '../../core/applications/ApplicationDiscoveryService'
 import { ApplicationLauncher } from '../../core/applications/ApplicationLauncher'
 import { ApplicationPolicyStore } from '../../core/applications/ApplicationPolicyStore'
+import { KioskModeStore } from '../../core/kiosk/KioskModeStore'
 import { ApplicationStore } from '../../core/applications/ApplicationStore'
 import { DesktopEntryScanner } from '../../core/applications/discovery/DesktopEntryScanner'
 import {
@@ -97,6 +98,7 @@ import { IPC_CHANNELS } from '@shared/contracts'
 import { registerAgentHandlers } from './registerAgentHandlers'
 import { registerApplicationHandlers } from './registerApplicationHandlers'
 import { registerApplicationPolicyHandlers } from './registerApplicationPolicyHandlers'
+import { registerKioskModeHandlers } from './registerKioskModeHandlers'
 import { registerBackupHandlers } from './registerBackupHandlers'
 import { registerBrowserHandlers } from './registerBrowserHandlers'
 import { registerCapabilityHandlers } from './registerCapabilityHandlers'
@@ -526,6 +528,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     getWindow
   )
   registerApplicationPolicyHandlers(applicationPolicyStore)
+  registerKioskModeHandlers(new KioskModeStore(join(app.getPath('userData'), 'kiosk-mode.json')))
   registerDeviceHandlers(deviceStore, deviceInventoryService)
   const disposePackages = registerPackageHandlers(
     flatpakAdapter,

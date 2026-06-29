@@ -78,6 +78,7 @@ import type {
   ApplicationPolicyIdRequest,
   SetApplicationPolicyRequest
 } from './applicationPolicy'
+import type { KioskModeSettings, SetKioskModeRequest } from './kioskMode'
 import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
@@ -504,6 +505,10 @@ export interface NdxBridge {
   applicationPolicy: {
     get: (request: ApplicationPolicyIdRequest) => Promise<NdxResult<ApplicationPolicy | null>>
     set: (request: SetApplicationPolicyRequest) => Promise<NdxResult<ApplicationPolicy>>
+  }
+  kioskMode: {
+    get: () => Promise<NdxResult<KioskModeSettings>>
+    set: (request: SetKioskModeRequest) => Promise<NdxResult<KioskModeSettings>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

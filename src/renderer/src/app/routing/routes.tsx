@@ -297,6 +297,10 @@ const ApplicationPolicyCenter = lazy(async () => {
   const module = await import('../../features/applications/ApplicationPolicyCenter')
   return { default: module.ApplicationPolicyCenter }
 })
+const KioskModeSettings = lazy(async () => {
+  const module = await import('../../features/kiosk/KioskModeSettings')
+  return { default: module.KioskModeSettings }
+})
 const VoiceNotesCenter = lazy(async () => {
   const module = await import('../../features/voice/VoiceNotesCenter')
   return { default: module.VoiceNotesCenter }
@@ -1086,6 +1090,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('application policy center', <ApplicationPolicyCenter />)
+  },
+  {
+    routeId: 'kiosk-mode-settings',
+    screenId: 'ND-X064',
+    path: '/kiosk',
+    title: 'Kiosk Mode',
+    owningEpic: 'Epic X14',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('kiosk mode settings', <KioskModeSettings />)
   }
 ]
 

@@ -11,6 +11,7 @@ import {
   revealVaultItem,
   rotateVaultItem
 } from '../../services/ipc/vaultClient'
+import { useKioskMode } from '../../state/useKioskMode'
 import { usePresentationMode } from '../../state/usePresentationMode'
 
 const ITEM_TYPE_LABELS: Record<VaultItemType, string> = {
@@ -41,6 +42,7 @@ const CLIPBOARD_CLEAR_MS = 20_000
  */
 export function Vault(): React.JSX.Element {
   const { enabled: presentationModeEnabled } = usePresentationMode()
+  const { enabled: kioskModeEnabled } = useKioskMode()
   const [items, setItems] = useState<VaultItem[]>([])
   const [accessLog, setAccessLog] = useState<VaultAccessLogEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -173,7 +175,7 @@ export function Vault(): React.JSX.Element {
               key={item.id}
               item={item}
               revealedSecret={revealed[item.id]}
-              revealDisabled={presentationModeEnabled}
+              revealDisabled={presentationModeEnabled || kioskModeEnabled}
               onReveal={() => void handleReveal(item)}
               onCopy={(secret) => void handleCopy(item.id, secret)}
               onRotate={(newSecret) => void handleRotate(item, newSecret)}
@@ -355,7 +357,7 @@ function VaultItemCard({
 
       {revealDisabled && revealedSecret === undefined && (
         <p className="mt-2 text-caption text-status-warning">
-          Reveal is disabled while Presentation Mode is active.
+          Reveal is disabled while Presentation Mode or Kiosk Mode is active.
         </p>
       )}
 

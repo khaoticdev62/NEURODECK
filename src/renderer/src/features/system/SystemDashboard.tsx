@@ -55,7 +55,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Presentation Mode', path: '/presentation' },
   { label: 'Notification Policy', path: '/notifications' },
   { label: 'Recording Center', path: '/recording' },
-  { label: 'Application Sandbox and Policy', path: '/app-policies' }
+  { label: 'Application Sandbox and Policy', path: '/app-policies' },
+  { label: 'Kiosk Mode', path: '/kiosk' }
 ]
 
 /**

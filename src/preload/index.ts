@@ -267,6 +267,10 @@ const ndx: NdxBridge = {
     get: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationPolicyGet, request),
     set: (request) => ipcRenderer.invoke(IPC_CHANNELS.applicationPolicySet, request)
   },
+  kioskMode: {
+    get: () => ipcRenderer.invoke(IPC_CHANNELS.kioskModeGet),
+    set: (request) => ipcRenderer.invoke(IPC_CHANNELS.kioskModeSet, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),
