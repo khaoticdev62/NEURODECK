@@ -102,8 +102,8 @@ Status legend:
 | `/settings/network` | ND-045 | Settings/tool | Network inspector | Frame / Pending Tool | read-only clarity |
 | `/settings/updates` | ND-049 | Critical/settings | Update review | Frame / Pending Critical | install review |
 | `/power` | ND-051 | Critical | Power dialog/screen | Frame / Pending Critical | irreversible host actions |
-| `/about` | ND-056 | Tool-heavy | Diagnostics detail | Frame / Pending Tool | support bundle privacy |
-| `/error-recovery` | ND-055 | Critical | Recovery dialog/screen | Frame / Pending Critical | crash recovery clarity |
+| `/about` | ND-056 | Tool-heavy | Diagnostics detail | Partial IDE | support bundle privacy preserved; visual QA pending |
+| `/error-recovery` | ND-055 | Critical | Recovery dialog/screen | Partial IDE | crash recovery clarity preserved; visual QA pending |
 | `/integrations` | ND-048 | Tool-heavy | Integrations tool | Frame / Pending Tool | provider grouping |
 | `/extensions` | - | Tool-heavy | Extensions manager | Frame / Pending Tool | permissions/signature status |
 | `/recovery` | ND-052 | Critical/tool | Recovery timeline | Frame / Pending Critical | restore review |
@@ -175,6 +175,15 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+HYBRID-4 partial checks run after diagnostics and recovery workbench migration:
+
+```text
+npm run test -- AboutDiagnostics ErrorRecovery -> 2 files / 11 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -183,8 +192,9 @@ npm run build -> passed
   preview framing and `/git` Source Control + diff + Repository framing; partial slice complete
   for `/browser` tabs + native-view editor framing and `/remote` host/session framing; partial
   slice complete for `/ai` Intent + Plan Preview + Impact framing and `/terminal/builder`
-  Command Blocks + Review framing. Diagnostics-like screens, direct xterm bottom-panel chrome,
-  and deeper Monaco theming/popups remain.
+  Command Blocks + Review framing; partial slice complete for `/about` Runtime + Diagnostics +
+  Crash Reports framing and `/error-recovery` Error Details + Recovery + Actions framing.
+  Direct xterm bottom-panel chrome and deeper Monaco theming/popups remain.
 - HYBRID-5 must migrate tool-heavy platform screens to shared tool-window/inspector primitives.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.

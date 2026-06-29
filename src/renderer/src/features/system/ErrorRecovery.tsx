@@ -6,6 +6,7 @@ import { EmptyState } from '../../components/feedback/UXState'
 import { useFocusEngine } from '../../controller/focus/useFocusEngine'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { useToast } from '../../components/overlays/useToast'
+import { NdxDenseRow, NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { getDiagnosticsInfo } from '../../services/ipc/diagnosticsClient'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
 import { quitApp } from '../../services/ipc/powerClient'
@@ -57,23 +58,19 @@ function ActionRow({
   })
 
   return (
-    <li
-      ref={ref}
-      tabIndex={-1}
-      className={`flex items-center justify-between rounded-lg border p-3 transition-colors ${
-        isFocused
-          ? 'border-border-focus bg-surface-raised'
-          : 'border-border bg-surface hover:bg-surface-raised/60'
-      }`}
-    >
-      <span className="text-body font-medium text-text-primary">{action.label}</span>
-      <ControllerButton
-        aria-label={action.label}
-        variant={index === 0 ? 'primary' : 'secondary'}
-        onClick={onActivate}
-      >
-        Select
-      </ControllerButton>
+    <li ref={ref} tabIndex={-1} className="outline-none">
+      <NdxDenseRow selected={isFocused}>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-body font-medium text-text-primary">{action.label}</span>
+          <ControllerButton
+            aria-label={action.label}
+            variant={index === 0 ? 'primary' : 'secondary'}
+            onClick={onActivate}
+          >
+            Select
+          </ControllerButton>
+        </div>
+      </NdxDenseRow>
     </li>
   )
 }
@@ -166,41 +163,52 @@ export function ErrorRecoveryContent({
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <header>
-        <p className="text-title font-semibold text-text-primary">Something went wrong</p>
-        <p className="max-w-3xl text-body text-text-secondary">{error.userMessage}</p>
-      </header>
+    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(28rem,1fr)_20rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Error Details" subtitle={error.category}>
+        <Field label="Technical code" value={error.code} />
+        <Field label="Category" value={error.category} />
+        <Field label="Affected feature" value={error.affectedFeature} />
+        {error.correlationId && <Field label="Correlation ID" value={error.correlationId} />}
+      </NdxToolWindow>
 
-      <section className="grid gap-3 md:grid-cols-2">
-        <div className="space-y-2 border border-border bg-surface p-3">
-          <p className="text-meta font-semibold text-text-primary">Error details</p>
-          <Field label="Technical code" value={error.code} />
-          <Field label="Category" value={error.category} />
-          <Field label="Affected feature" value={error.affectedFeature} />
-          {error.correlationId && <Field label="Correlation ID" value={error.correlationId} />}
+      <NdxEditorShell title="Recovery">
+        <div className="flex min-h-full flex-col gap-4 p-3">
+          <header>
+            <p className="text-title font-semibold text-text-primary">Something went wrong</p>
+            <p className="max-w-3xl text-body text-text-secondary">{error.userMessage}</p>
+          </header>
+
+          <section className="space-y-2 border border-border bg-surface p-3">
+            <p className="text-meta font-semibold text-text-primary">What still works</p>
+            <p className="text-meta text-text-secondary">{error.whatStillWorks}</p>
+          </section>
+
+          {error.details && Object.keys(error.details).length > 0 && (
+            <details className="border border-border bg-surface p-3">
+              <summary className="cursor-pointer text-meta font-semibold text-text-primary">
+                Diagnostic details
+              </summary>
+              <pre className="mt-2 overflow-auto rounded bg-canvas p-2 text-xs text-text-secondary">
+                {JSON.stringify(error.details, null, 2)}
+              </pre>
+            </details>
+          )}
+
+          {exportStatus && (
+            <p
+              className={`text-meta ${
+                exportStatus.startsWith('Could not') ? 'text-status-error' : 'text-status-success'
+              }`}
+            >
+              {exportStatus}
+            </p>
+          )}
+          {exporting && <p className="text-meta text-text-secondary">Copying diagnostics…</p>}
         </div>
+      </NdxEditorShell>
 
-        <div className="space-y-2 border border-border bg-surface p-3">
-          <p className="text-meta font-semibold text-text-primary">What still works</p>
-          <p className="text-meta text-text-secondary">{error.whatStillWorks}</p>
-        </div>
-      </section>
-
-      {error.details && Object.keys(error.details).length > 0 && (
-        <details className="border border-border bg-surface p-3">
-          <summary className="cursor-pointer text-meta font-semibold text-text-primary">
-            Diagnostic details
-          </summary>
-          <pre className="mt-2 overflow-auto rounded bg-canvas p-2 text-xs text-text-secondary">
-            {JSON.stringify(error.details, null, 2)}
-          </pre>
-        </details>
-      )}
-
-      {actions.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <p className="text-meta font-semibold text-text-primary">Recovery actions</p>
+      <NdxToolWindow title="Recovery Actions" subtitle={`${actions.length} available`} side="right">
+        {actions.length > 0 && (
           <ul className="flex flex-col gap-2">
             {actions.map((action, index) => (
               <ActionRow
@@ -211,19 +219,8 @@ export function ErrorRecoveryContent({
               />
             ))}
           </ul>
-        </section>
-      )}
-
-      {exportStatus && (
-        <p
-          className={`text-meta ${
-            exportStatus.startsWith('Could not') ? 'text-status-error' : 'text-status-success'
-          }`}
-        >
-          {exportStatus}
-        </p>
-      )}
-      {exporting && <p className="text-meta text-text-secondary">Copying diagnostics…</p>}
+        )}
+      </NdxToolWindow>
     </div>
   )
 }

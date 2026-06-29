@@ -7,6 +7,7 @@ import type {
 } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxDenseRow, NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   createSupportBundle,
   getDiagnosticsInfo,
@@ -100,74 +101,80 @@ export function AboutDiagnostics(): React.JSX.Element {
   if (!info) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <p className="text-title font-semibold text-text-primary">About and Diagnostics</p>
-
-      <section className="flex flex-col gap-1 border border-border bg-surface p-3">
-        <Field label="App version" value={info.appVersion} />
-        <Field label="Electron" value={info.electronVersion} />
-        <Field label="Chromium" value={info.chromeVersion} />
-        <Field label="Node.js" value={info.nodeVersion} />
-        <Field label="Platform" value={`${info.platform} (${info.arch})`} />
-        <Field label="License" value={info.license} />
-        <Field
-          label="Installed integrations"
-          value={
-            info.modelProviderNames.length ? info.modelProviderNames.join(', ') : 'None configured'
-          }
-        />
-      </section>
-
-      {lanShareStatus && lanShareHealth && (
-        <section className="flex flex-col gap-1 border border-border bg-surface p-3">
-          <p className="text-body font-semibold text-text-primary">LAN Share</p>
-          <Field label="Service" value={`${lanShareStatus.state}: ${lanShareStatus.reason}`} />
+    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(28rem,1fr)_20rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Runtime" subtitle={`${info.platform} / ${info.arch}`}>
+        <div className="flex flex-col gap-1">
+          <Field label="App version" value={info.appVersion} />
+          <Field label="Electron" value={info.electronVersion} />
+          <Field label="Chromium" value={info.chromeVersion} />
+          <Field label="Node.js" value={info.nodeVersion} />
+          <Field label="Platform" value={`${info.platform} (${info.arch})`} />
+          <Field label="License" value={info.license} />
           <Field
-            label="Sockets"
-            value={`Transfer ${lanShareHealth.transferPortBound ? 'bound' : 'not bound'}; registration ${
-              lanShareHealth.authPortBound ? 'bound' : 'not bound'
-            }`}
+            label="Installed integrations"
+            value={
+              info.modelProviderNames.length
+                ? info.modelProviderNames.join(', ')
+                : 'None configured'
+            }
           />
-          <Field
-            label="Receive directory"
-            value={lanShareHealth.receiveDirectoryWritable ? 'Writable' : 'Not writable'}
-          />
-          <Field label="Network interfaces" value={String(lanShareHealth.interfaceCount)} />
-        </section>
-      )}
+        </div>
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Diagnostic export</p>
-        <p className="text-meta text-text-tertiary">
-          Copies the above plus a live system metrics snapshot to the clipboard. Contains no API
-          keys or other secrets.
-        </p>
-        <ControllerButton variant="primary" onClick={() => void handleExport()}>
-          Copy diagnostics to clipboard
-        </ControllerButton>
-        {copyStatus && <p className="text-meta text-status-success">{copyStatus}</p>}
-      </section>
+        {lanShareStatus && lanShareHealth && (
+          <div className="flex flex-col gap-1 border-t border-border pt-3">
+            <p className="text-body font-semibold text-text-primary">LAN Share</p>
+            <Field label="Service" value={`${lanShareStatus.state}: ${lanShareStatus.reason}`} />
+            <Field
+              label="Sockets"
+              value={`Transfer ${lanShareHealth.transferPortBound ? 'bound' : 'not bound'}; registration ${
+                lanShareHealth.authPortBound ? 'bound' : 'not bound'
+              }`}
+            />
+            <Field
+              label="Receive directory"
+              value={lanShareHealth.receiveDirectoryWritable ? 'Writable' : 'Not writable'}
+            />
+            <Field label="Network interfaces" value={String(lanShareHealth.interfaceCount)} />
+          </div>
+        )}
+      </NdxToolWindow>
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Support bundle</p>
-        <p className="text-meta text-text-tertiary">
-          Writes a local JSON support bundle with diagnostics, system metrics, network diagnostics,
-          collector errors, and explicit redaction notes. It excludes vault secrets, provider keys,
-          clipboard entries, memory content, workspace files, and environment variables.
-        </p>
-        <ControllerButton
-          variant="secondary"
-          disabled={creatingBundle}
-          onClick={() => void handleCreateSupportBundle()}
-        >
-          {creatingBundle ? 'Creating support bundle...' : 'Create support bundle'}
-        </ControllerButton>
-        {bundleStatus && <p className="text-meta text-status-success">{bundleStatus}</p>}
-        {bundleError && <p className="text-meta text-status-error">{bundleError}</p>}
-      </section>
+      <NdxEditorShell title="About and Diagnostics">
+        <div className="flex min-h-full flex-col gap-3 p-3">
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Diagnostic export</p>
+            <p className="text-meta text-text-tertiary">
+              Copies the above plus a live system metrics snapshot to the clipboard. Contains no API
+              keys or other secrets.
+            </p>
+            <ControllerButton variant="primary" onClick={() => void handleExport()}>
+              Copy diagnostics to clipboard
+            </ControllerButton>
+            {copyStatus && <p className="text-meta text-status-success">{copyStatus}</p>}
+          </section>
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Crash reports</p>
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Support bundle</p>
+            <p className="text-meta text-text-tertiary">
+              Writes a local JSON support bundle with diagnostics, system metrics, network
+              diagnostics, collector errors, and explicit redaction notes. It excludes vault
+              secrets, provider keys, clipboard entries, memory content, workspace files, and
+              environment variables.
+            </p>
+            <ControllerButton
+              variant="secondary"
+              disabled={creatingBundle}
+              onClick={() => void handleCreateSupportBundle()}
+            >
+              {creatingBundle ? 'Creating support bundle...' : 'Create support bundle'}
+            </ControllerButton>
+            {bundleStatus && <p className="text-meta text-status-success">{bundleStatus}</p>}
+            {bundleError && <p className="text-meta text-status-error">{bundleError}</p>}
+          </section>
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Crash Reports" subtitle="Local only" side="right">
         <p className="text-meta text-text-tertiary">
           Local-only renderer and process crash reports. Nothing is uploaded or sent to telemetry.
         </p>
@@ -177,19 +184,21 @@ export function AboutDiagnostics(): React.JSX.Element {
         )}
         {!crashReportError &&
           crashReports.slice(0, 5).map((report) => (
-            <article key={report.id} className="border border-border-muted bg-canvas p-2">
-              <p className="text-meta font-semibold text-text-primary">
-                {report.kind} - {new Date(report.createdAt).toLocaleString()}
-              </p>
-              <p className="text-meta text-text-secondary">{report.message}</p>
-              {report.correlationId && (
-                <p className="text-caption text-text-tertiary">
-                  Correlation: {report.correlationId}
+            <NdxDenseRow key={report.id}>
+              <article>
+                <p className="font-semibold text-text-primary">
+                  {report.kind} - {new Date(report.createdAt).toLocaleString()}
                 </p>
-              )}
-            </article>
+                <p className="text-text-secondary">{report.message}</p>
+                {report.correlationId && (
+                  <p className="text-caption text-text-tertiary">
+                    Correlation: {report.correlationId}
+                  </p>
+                )}
+              </article>
+            </NdxDenseRow>
           ))}
-      </section>
+      </NdxToolWindow>
     </div>
   )
 }
