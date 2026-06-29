@@ -8,8 +8,10 @@ import type {
   GitStatus
 } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { cn } from '../../components/primitives/cn'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { GitDiffViewer } from '../git/GitDiffViewer'
 import {
   checkoutGitBranch,
@@ -325,8 +327,8 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
   )
 
   return (
-    <div className="grid h-full min-w-[58rem] grid-cols-[minmax(16rem,0.8fr)_minmax(22rem,1.35fr)_minmax(14rem,0.7fr)] gap-3 overflow-auto">
-      <div className="flex min-h-0 flex-col gap-4 overflow-auto border border-border bg-surface p-3">
+    <div className="grid h-full min-w-[58rem] grid-cols-[18rem_minmax(24rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Source Control" subtitle={status.branch ?? 'detached HEAD'}>
         <div className="flex items-center justify-between text-meta text-text-secondary">
           <span>
             Branch: <span className="text-text-primary">{status.branch ?? 'detached HEAD'}</span>
@@ -387,7 +389,7 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
             onChange={(event) => setMessage(event.target.value)}
             placeholder="Commit message"
             rows={3}
-            className="rounded-md border border-border bg-surface p-2 text-body text-text-primary"
+            className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
           />
           <ControllerButton
             variant="primary"
@@ -397,11 +399,13 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
             Review commit
           </ControllerButton>
         </section>
-      </div>
+      </NdxToolWindow>
 
-      <GitDiffViewer path={selectedChange?.path ?? null} diff={diff} loading={diffLoading} />
+      <NdxEditorShell title={selectedChange?.path ?? 'Diff Viewer'}>
+        <GitDiffViewer path={selectedChange?.path ?? null} diff={diff} loading={diffLoading} />
+      </NdxEditorShell>
 
-      <div className="flex min-h-0 flex-col gap-4 overflow-auto border border-border bg-surface p-3">
+      <NdxToolWindow title="Repository" subtitle={remotes[0]?.name ?? 'Local'} side="right">
         <section>
           <p className="mb-1 text-meta font-semibold text-text-primary">Remote</p>
           {remotes.length === 0 ? (
@@ -574,7 +578,7 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
             </ul>
           )}
         </section>
-      </div>
+      </NdxToolWindow>
       <ConfirmationDialog
         open={commitReviewOpen}
         title="Review local commit"
@@ -658,8 +662,13 @@ function ChangeRow({
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1 text-meta text-text-primary">
       <ControllerButton
-        variant={selected ? 'secondary' : 'ghost'}
-        className="min-w-0 justify-start px-2 font-mono text-meta"
+        variant="ghost"
+        className={cn(
+          'min-w-0 justify-start rounded-sm border border-transparent px-2 font-mono text-meta',
+          selected
+            ? 'border-[var(--ndx-workbench-active-pane-border)] bg-[var(--ndx-workbench-selected-row-bg)]'
+            : ''
+        )}
         aria-pressed={selected}
         onClick={onPreview}
       >

@@ -26,7 +26,7 @@ export function NdxToolWindow({
         <p className="text-meta font-semibold uppercase tracking-wide text-text-primary">{title}</p>
         {subtitle && <p className="truncate text-meta text-text-tertiary">{subtitle}</p>}
       </div>
-      <div className="min-h-0 flex-1 overflow-auto p-3">{children}</div>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-3">{children}</div>
     </aside>
   )
 }

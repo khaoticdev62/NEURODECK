@@ -6,6 +6,7 @@ import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { cn } from '../../components/primitives/cn'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { deleteFile, listFiles } from '../../services/ipc/fileClient'
 import { FilePreview } from './FilePreview'
 import { useWorkspaces } from './useWorkspaces'
@@ -103,8 +104,8 @@ export function FileManager(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full gap-4">
-      <div className="flex w-1/2 flex-col gap-2">
+    <div className="grid h-full min-w-[56rem] grid-cols-[18rem_minmax(28rem,1fr)] gap-2 overflow-auto">
+      <NdxToolWindow title="Explorer" subtitle={activeWorkspace.name}>
         <Breadcrumbs relativePath={relativePath} onNavigate={setRelativePath} />
         {error && <ErrorState title="Couldn't list this folder" description={error} />}
         {loading ? (
@@ -133,10 +134,10 @@ export function FileManager(): React.JSX.Element {
             ))}
           </ul>
         )}
-      </div>
-      <div className="w-1/2">
+      </NdxToolWindow>
+      <NdxEditorShell title={selectedFile ?? 'File Preview'}>
         <FilePreview workspaceId={activeWorkspace.id} relativePath={selectedFile} />
-      </div>
+      </NdxEditorShell>
       <ConfirmationDialog
         open={deleteReview !== null}
         title="Delete file"
@@ -209,8 +210,10 @@ function FileRow({
         type="button"
         onClick={onOpen}
         className={cn(
-          'flex min-h-[var(--ndx-target-min)] items-center justify-between rounded-md px-3 text-left text-body text-text-primary',
-          isFocused ? 'bg-surface-raised' : 'hover:bg-surface-raised/60'
+          'flex min-h-9 items-center justify-between rounded-sm border border-transparent px-2 text-left text-meta text-text-primary',
+          isFocused
+            ? 'border-[var(--ndx-workbench-active-pane-border)] bg-[var(--ndx-workbench-selected-row-bg)]'
+            : 'hover:bg-surface-raised/60'
         )}
       >
         <span>{entry.isDirectory ? `📁 ${entry.name}` : entry.name}</span>
