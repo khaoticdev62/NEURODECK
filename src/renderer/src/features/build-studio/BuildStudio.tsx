@@ -3,6 +3,13 @@ import type * as monacoEditor from 'monaco-editor'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import {
+  NdxBreadcrumbs,
+  NdxEditorShell,
+  NdxEditorTab,
+  NdxEditorTabs,
+  NdxToolWindow
+} from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { getGitStatus } from '../../services/ipc/gitClient'
 import { completeModel } from '../../services/ipc/modelClient'
@@ -277,10 +284,11 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
     setPredictionError(null)
   }, [predictionProposal, replaceEditorRange])
 
+  const breadcrumbItems = activePath?.split(/[/\\]/).filter(Boolean) ?? []
+
   return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[14rem_minmax(28rem,1fr)_16rem] gap-3 overflow-auto">
-      <div className="flex min-h-0 flex-col gap-2 overflow-auto border border-border bg-surface p-2">
-        <p className="px-1 text-meta font-semibold text-text-primary">Project</p>
+    <div className="grid h-full min-w-[64rem] grid-cols-[15rem_minmax(28rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Project" subtitle={gitSummary?.branch ?? 'Workspace'}>
         <ProjectTree workspaceId={workspaceId} onOpenFile={(path) => void openFile(path)} />
         {gitSummary && (
           <p className="mt-auto px-1 text-meta text-text-tertiary">
@@ -288,11 +296,11 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
             {gitSummary.changeCount === 1 ? '' : 's'}
           </p>
         )}
-      </div>
+      </NdxToolWindow>
 
-      <div className="flex min-h-0 flex-col border border-border bg-surface">
+      <NdxEditorShell title={activePath ?? 'Build Studio'}>
         <div className="flex items-center justify-between border-b border-border px-2 py-1">
-          <div className="flex min-w-0 gap-1 overflow-x-auto">
+          <NdxEditorTabs>
             {openFiles.map((file) => (
               <Tab
                 key={file.path}
@@ -303,7 +311,7 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
                 onClose={() => closeFile(file.path)}
               />
             ))}
-          </div>
+          </NdxEditorTabs>
           {activeFile && !activeFile.error && (
             <div className="flex shrink-0 items-center gap-2 pl-2">
               {activeFile.saveError && (
@@ -321,6 +329,7 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
             </div>
           )}
         </div>
+        <NdxBreadcrumbs items={breadcrumbItems} />
         <div className="min-h-0 flex-1">
           {!activeFile ? (
             <EmptyState
@@ -338,9 +347,9 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
             />
           )}
         </div>
-      </div>
+      </NdxEditorShell>
 
-      <div className="flex min-h-0 flex-col gap-3 overflow-auto border border-border bg-surface p-2">
+      <NdxToolWindow title="Inspector" subtitle="Symbols, problems, AI edits" side="right">
         <section className="flex flex-col gap-2 border-b border-border pb-3">
           <p className="px-1 text-meta font-semibold text-text-primary">Structural edits</p>
           <div className="grid gap-2">
@@ -368,7 +377,7 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
             value={predictionPrompt}
             onChange={(event) => setPredictionPrompt(event.target.value)}
             disabled={!activeFile || predictionBusy}
-            className="min-h-20 resize-none border border-border bg-background px-2 py-1 text-body text-text-primary"
+            className="min-h-20 resize-none border border-border bg-canvas px-2 py-1 text-body text-text-primary"
             placeholder="Describe the edit to propose"
           />
           <ControllerButton
@@ -380,7 +389,7 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
           </ControllerButton>
           {predictionError && <p className="text-meta text-status-error">{predictionError}</p>}
           {predictionProposal && (
-            <div className="grid gap-2 border border-border bg-background p-2">
+            <div className="grid gap-2 border border-border bg-canvas p-2">
               <p className="text-meta text-text-tertiary">
                 {predictionProposal.provider} · {predictionProposal.rangeLabel}
               </p>
@@ -419,7 +428,7 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
             }
           />
         </section>
-      </div>
+      </NdxToolWindow>
     </div>
   )
 }
@@ -491,15 +500,14 @@ function Tab({
 
   return (
     <div className="flex shrink-0 items-center">
-      <ControllerButton ref={ref} variant={active ? 'secondary' : 'ghost'} onClick={onSelect}>
-        {dirty ? '● ' : ''}
+      <NdxEditorTab ref={ref} active={active} dirty={dirty} onClick={onSelect}>
         {name}
-      </ControllerButton>
+      </NdxEditorTab>
       <button
         type="button"
         aria-label={`Close ${name}`}
         onClick={onClose}
-        className="px-1 text-meta text-text-tertiary hover:text-text-primary"
+        className="h-[var(--ndx-workbench-tabbar-height)] border-r border-[var(--ndx-workbench-border)] px-2 text-meta text-text-tertiary hover:bg-surface-raised hover:text-text-primary"
       >
         ×
       </button>

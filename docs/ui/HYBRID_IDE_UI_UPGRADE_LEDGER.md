@@ -51,6 +51,7 @@ Status legend:
 - `Pending Tool`: route should migrate to tool-window/inspector patterns in HYBRID-5.
 - `Pending Spatial`: route should migrate to tvOS-style dashboard/grid lockups in HYBRID-6.
 - `Pending Critical`: route should migrate through HYBRID-7 safety/dialog/settings rules.
+- `Partial IDE`: internal route migration started; route still has named pending work before HYBRID-4 can close.
 
 | Route | Screen | Current category | Hybrid target | Status | Main risks |
 |---|---:|---|---|---|---|
@@ -67,10 +68,10 @@ Status legend:
 | `/ai/approvals` | ND-015 | Critical | Permission review | Frame / Pending Critical | destructive review clarity |
 | `/workspaces` | ND-018 | Dashboard | Spatial workspace row/grid | Frame / Pending Spatial | card focus overlap |
 | `/workspaces/detail` | ND-019 | Tool-heavy | Project inspector | Frame / Pending Tool | filesystem actions |
-| `/build` | ND-021 | IDE-heavy | Editor/workbench | Frame / Pending IDE | Monaco popups, tabs, breadcrumbs |
+| `/build` | ND-021 | IDE-heavy | Editor/workbench | Partial IDE | Monaco popups and deeper editor theming |
 | `/files` | ND-026 | IDE-heavy | Explorer tool window | Frame / Pending IDE | tree focus, destructive file ops |
 | `/git` | ND-025 | IDE-heavy | Source Control tool window | Frame / Pending IDE | stage/discard review |
-| `/terminal` | ND-028 | IDE-heavy | Bottom terminal panel | Frame / Pending IDE | xterm focus and resize |
+| `/terminal` | ND-028 | IDE-heavy | Bottom terminal panel | Partial IDE | direct xterm chrome still uses legacy internal grid |
 | `/terminal/builder` | ND-029 | IDE-heavy | Command Builder | Frame / Pending IDE | reviewed execution |
 | `/browser` | ND-030 | IDE-heavy | Browser tool/editor | Frame / Pending IDE | WebContentsView bounds |
 | `/browser/:tabId` | ND-031 | IDE-heavy | Browser editor group | Frame / Pending IDE | native view focus |
@@ -138,9 +139,21 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+HYBRID-4 partial checks run after Build Studio and Terminal chrome migration:
+
+```text
+npm run test -- BuildStudio UniversalTerminal -> 2 files / 5 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
 ## Remaining Program Work
 
-- HYBRID-4 must migrate IDE-heavy screens internally; current route content is only framed by the workbench.
+- HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
+  shared project/editor/inspector framing, editor tabs, and breadcrumbs; partial slice complete for
+  `/terminal` alternate-mode workbench framing. Files, Git, Browser, Remote, AI Canvas, Command
+  Builder, diagnostics-like screens, and direct xterm bottom-panel chrome remain.
 - HYBRID-5 must migrate tool-heavy platform screens to shared tool-window/inspector primitives.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.

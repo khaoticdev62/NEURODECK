@@ -42,8 +42,7 @@ export function NdxBottomPanel(): React.JSX.Element {
       </div>
       {open && (
         <div className="h-[var(--ndx-workbench-bottom-panel-height)] border-t border-[var(--ndx-workbench-border)] p-3 text-meta text-text-secondary">
-          {activeTab} panel ready. Route-specific content will migrate here during HYBRID-4 and
-          later phases.
+          No active {activeTab.toLowerCase()} items.
         </div>
       )}
     </section>

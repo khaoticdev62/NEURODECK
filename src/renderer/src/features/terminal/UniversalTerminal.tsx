@@ -4,6 +4,7 @@ import { EmptyState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
+import { NdxTerminalFrame } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { getGitStatus } from '../../services/ipc/gitClient'
 import {
@@ -117,26 +118,59 @@ function WorkspaceTerminal({
   }
 
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? null
+  const modeBar = (['direct', 'intent', 'split', 'remote'] as TerminalMode[]).map((candidate) => (
+    <ModeButton
+      key={candidate}
+      id={candidate}
+      active={mode === candidate}
+      onSelect={() => setMode(candidate)}
+    />
+  ))
+  const sessionList = (
+    <aside className="flex min-h-0 flex-col border-r border-border bg-surface-raised/40">
+      <header className="border-b border-border p-3">
+        <p className="text-meta uppercase tracking-[0.18em] text-text-tertiary">ND-028</p>
+        <h1 className="text-title font-semibold text-text-primary">Universal Terminal</h1>
+        <p className="truncate text-meta text-text-secondary">{activeWorkspace.name}</p>
+        <p className="truncate text-meta text-text-tertiary">
+          {branch ? `Branch ${branch}` : 'Local workspace'}
+        </p>
+      </header>
+      <div className="p-2">
+        <NewSessionButton onCreate={() => void handleCreate()} />
+        <BuilderButton onOpen={() => setMode('intent')} />
+      </div>
+      <div className="min-h-0 flex-1 overflow-auto px-2 pb-2">
+        {sessions.map((session) => (
+          <SessionButton
+            key={session.id}
+            session={session}
+            active={session.id === activeSessionId}
+            onSelect={() => setActiveSessionId(session.id)}
+          />
+        ))}
+      </div>
+    </aside>
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-col border border-border bg-surface">
       <div className="flex items-center gap-2 border-b border-border bg-surface-raised/40 px-3 py-2">
-        {(['direct', 'intent', 'split', 'remote'] as TerminalMode[]).map((candidate) => (
-          <ModeButton
-            key={candidate}
-            id={candidate}
-            active={mode === candidate}
-            onSelect={() => setMode(candidate)}
-          />
-        ))}
+        {modeBar}
       </div>
       <div className="min-h-0 flex-1">
         {mode === 'intent' ? (
-          <CommandBuilderPanel onSwitchToDirect={() => setMode('direct')} />
+          <NdxTerminalFrame modeBar={null} sessionList={sessionList} toolbar={null}>
+            <CommandBuilderPanel onSwitchToDirect={() => setMode('direct')} />
+          </NdxTerminalFrame>
         ) : mode === 'split' ? (
-          <SplitTerminalPanel workspace={activeWorkspace} />
+          <NdxTerminalFrame modeBar={null} sessionList={sessionList} toolbar={null}>
+            <SplitTerminalPanel workspace={activeWorkspace} />
+          </NdxTerminalFrame>
         ) : mode === 'remote' ? (
-          <RemoteModePanel />
+          <NdxTerminalFrame modeBar={null} sessionList={sessionList} toolbar={null}>
+            <RemoteModePanel />
+          </NdxTerminalFrame>
         ) : (
           <div className="grid h-full min-h-0 grid-cols-[15rem_minmax(0,1fr)] overflow-hidden">
             <aside className="flex min-h-0 flex-col border-r border-border bg-surface-raised/40">
