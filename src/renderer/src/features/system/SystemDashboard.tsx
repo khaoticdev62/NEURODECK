@@ -53,7 +53,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Screenshot Center', path: '/screenshots' },
   { label: 'Voice Notes', path: '/voice-notes' },
   { label: 'Presentation Mode', path: '/presentation' },
-  { label: 'Notification Policy', path: '/notifications' }
+  { label: 'Notification Policy', path: '/notifications' },
+  { label: 'Recording Center', path: '/recording' }
 ]
 
 /**

@@ -253,5 +253,12 @@ export const IPC_CHANNELS = {
   presentationModeGet: 'presentationMode.get',
   presentationModeSet: 'presentationMode.set',
   notificationPolicyGet: 'notificationPolicy.get',
-  notificationPolicySet: 'notificationPolicy.set'
+  notificationPolicySet: 'notificationPolicy.set',
+  recordingListSources: 'recording.listSources',
+  recordingBegin: 'recording.begin',
+  recordingAppendChunk: 'recording.appendChunk',
+  recordingFinish: 'recording.finish',
+  recordingCancel: 'recording.cancel',
+  recordingList: 'recording.list',
+  recordingDelete: 'recording.delete'
 } as const

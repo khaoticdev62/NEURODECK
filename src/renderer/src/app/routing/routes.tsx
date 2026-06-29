@@ -289,6 +289,10 @@ const NotificationPolicyScreen = lazy(async () => {
   const module = await import('../../features/notifications/NotificationPolicyScreen')
   return { default: module.NotificationPolicyScreen }
 })
+const RecordingCenter = lazy(async () => {
+  const module = await import('../../features/recording/RecordingCenter')
+  return { default: module.RecordingCenter }
+})
 const VoiceNotesCenter = lazy(async () => {
   const module = await import('../../features/voice/VoiceNotesCenter')
   return { default: module.VoiceNotesCenter }
@@ -1058,6 +1062,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('notification policy', <NotificationPolicyScreen />)
+  },
+  {
+    routeId: 'recording-center',
+    screenId: 'ND-X058',
+    path: '/recording',
+    title: 'Recording Center',
+    owningEpic: 'Epic X14',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('recording center', <RecordingCenter />)
   }
 ]
 

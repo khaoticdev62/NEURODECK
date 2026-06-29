@@ -8,6 +8,7 @@ import { DisplaySettingsProvider } from '../../state/displaySettings'
 import { LockProvider } from '../../state/lockState'
 import { NotificationPolicyProvider } from '../../state/notificationPolicy'
 import { PresentationModeProvider } from '../../state/presentationMode'
+import { RecordingProvider } from '../../state/recording'
 import { WorkflowRunnerProvider } from '../../workflows/WorkflowRunnerProvider'
 import { RouterRoot } from '../routing/RouterRoot'
 
@@ -16,23 +17,25 @@ export function AppProviders(): React.JSX.Element {
     <RootErrorBoundary>
       <ToastProvider>
         <NotificationPolicyProvider>
-          <FocusEngineProvider>
-            <AiSafetyProvider>
-              <WorkspaceProvider>
-                <WorkflowRunnerProvider>
-                  <DisplayModeProvider>
-                    <DisplaySettingsProvider>
-                      <PresentationModeProvider>
-                        <LockProvider>
-                          <RouterRoot />
-                        </LockProvider>
-                      </PresentationModeProvider>
-                    </DisplaySettingsProvider>
-                  </DisplayModeProvider>
-                </WorkflowRunnerProvider>
-              </WorkspaceProvider>
-            </AiSafetyProvider>
-          </FocusEngineProvider>
+          <RecordingProvider>
+            <FocusEngineProvider>
+              <AiSafetyProvider>
+                <WorkspaceProvider>
+                  <WorkflowRunnerProvider>
+                    <DisplayModeProvider>
+                      <DisplaySettingsProvider>
+                        <PresentationModeProvider>
+                          <LockProvider>
+                            <RouterRoot />
+                          </LockProvider>
+                        </PresentationModeProvider>
+                      </DisplaySettingsProvider>
+                    </DisplayModeProvider>
+                  </WorkflowRunnerProvider>
+                </WorkspaceProvider>
+              </AiSafetyProvider>
+            </FocusEngineProvider>
+          </RecordingProvider>
         </NotificationPolicyProvider>
       </ToastProvider>
     </RootErrorBoundary>

@@ -254,6 +254,15 @@ const ndx: NdxBridge = {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.notificationPolicyGet),
     set: (request) => ipcRenderer.invoke(IPC_CHANNELS.notificationPolicySet, request)
   },
+  recording: {
+    listSources: () => ipcRenderer.invoke(IPC_CHANNELS.recordingListSources),
+    begin: (request) => ipcRenderer.invoke(IPC_CHANNELS.recordingBegin, request),
+    appendChunk: (request) => ipcRenderer.invoke(IPC_CHANNELS.recordingAppendChunk, request),
+    finish: (request) => ipcRenderer.invoke(IPC_CHANNELS.recordingFinish, request),
+    cancel: (request) => ipcRenderer.invoke(IPC_CHANNELS.recordingCancel, request),
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.recordingList),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.recordingDelete, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

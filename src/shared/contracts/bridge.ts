@@ -66,6 +66,14 @@ import type {
 import type { PresentationModeSettings, SetPresentationModeRequest } from './presentationMode'
 import type { NotificationPolicy, SetNotificationPolicyRequest } from './notificationPolicy'
 import type {
+  AppendRecordingChunkRequest,
+  BeginRecordingRequest,
+  BeginRecordingResult,
+  RecordingIdRequest,
+  RecordingRecord,
+  RecordingSource
+} from './recording'
+import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
   ExtensionInstallPreview,
@@ -478,6 +486,15 @@ export interface NdxBridge {
   notificationPolicy: {
     get: () => Promise<NdxResult<NotificationPolicy>>
     set: (request: SetNotificationPolicyRequest) => Promise<NdxResult<NotificationPolicy>>
+  }
+  recording: {
+    listSources: () => Promise<NdxResult<RecordingSource[]>>
+    begin: (request: BeginRecordingRequest) => Promise<NdxResult<BeginRecordingResult>>
+    appendChunk: (request: AppendRecordingChunkRequest) => Promise<NdxResult<null>>
+    finish: (request: RecordingIdRequest) => Promise<NdxResult<RecordingRecord>>
+    cancel: (request: RecordingIdRequest) => Promise<NdxResult<null>>
+    list: () => Promise<NdxResult<RecordingRecord[]>>
+    remove: (request: RecordingIdRequest) => Promise<NdxResult<null>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

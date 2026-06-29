@@ -70,6 +70,7 @@ import { GuidedTroubleshooterService } from '../../core/troubleshooter/GuidedTro
 import { ScreenshotService } from '../screenshot/ScreenshotService'
 import { PresentationModeStore } from '../../core/presentation/PresentationModeStore'
 import { NotificationPolicyStore } from '../../core/notifications/NotificationPolicyStore'
+import { RecordingService } from '../recording/RecordingService'
 import { VaultStore } from '../../core/vault/VaultStore'
 import { ModelRouter } from '../../core/models/ModelRouter'
 import { OllamaRuntimeService } from '../../core/models/OllamaRuntimeService'
@@ -127,6 +128,7 @@ import { registerTroubleshooterHandlers } from './registerTroubleshooterHandlers
 import { registerScreenshotHandlers } from './registerScreenshotHandlers'
 import { registerPresentationModeHandlers } from './registerPresentationModeHandlers'
 import { registerNotificationPolicyHandlers } from './registerNotificationPolicyHandlers'
+import { registerRecordingHandlers } from './registerRecordingHandlers'
 import { registerRecoveryHandlers } from './registerRecoveryHandlers'
 import { registerRemoteHandlers } from './registerRemoteHandlers'
 import { registerSystemHandlers } from './registerSystemHandlers'
@@ -503,6 +505,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerNotificationPolicyHandlers(
     new NotificationPolicyStore(join(app.getPath('userData'), 'notification-policy.json'))
   )
+  registerRecordingHandlers(new RecordingService(join(app.getPath('userData'), 'recordings')))
   const disposeTerminal = registerTerminalHandlers(terminalService, workspaceStore, getWindow)
   const disposeRemote = registerRemoteHandlers(remoteHostStore, remoteConnectionService, getWindow)
   registerCapabilityHandlers(capabilityRegistry)
