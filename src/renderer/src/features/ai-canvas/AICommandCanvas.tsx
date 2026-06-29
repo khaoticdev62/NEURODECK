@@ -4,6 +4,7 @@ import type { RoutingProfileId } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { createAgent, listAgents, startAgentRun } from '../../services/ipc/agentClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { requestPlanPreview, type PlanPreview } from './planPreview'
@@ -119,44 +120,41 @@ function CommandCanvasWorkspace({ workspaceId }: { workspaceId: string }): React
   }
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4">
-      <p className="text-title font-semibold text-text-primary">AI Command Canvas</p>
+    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(28rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Intent" subtitle={profileId}>
+        {error && <ErrorState title="Command Canvas error" description={error} />}
+        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+          Intent
+        </p>
+        <textarea
+          value={intent}
+          onChange={(event) => setIntent(event.target.value)}
+          placeholder="Describe what you want done…"
+          rows={6}
+          className="resize-none rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+        />
+        <select
+          value={profileId}
+          onChange={(event) => setProfileId(event.target.value as RoutingProfileId)}
+          className="rounded-md border border-border bg-canvas p-2 text-meta text-text-primary"
+        >
+          {ROUTING_PROFILES.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+        </select>
+        <ControllerButton
+          variant="primary"
+          disabled={!intent.trim() || generating}
+          onClick={() => void handleGeneratePlan()}
+        >
+          {generating ? 'Generating plan…' : 'Generate plan'}
+        </ControllerButton>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Command Canvas error" description={error} />}
-
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_2fr_1fr] gap-3 overflow-hidden">
-        <section className="flex flex-col gap-2 overflow-auto border border-border bg-surface p-3">
-          <p className="text-meta font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-            Intent
-          </p>
-          <textarea
-            value={intent}
-            onChange={(event) => setIntent(event.target.value)}
-            placeholder="Describe what you want done…"
-            rows={6}
-            className="resize-none rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-          />
-          <select
-            value={profileId}
-            onChange={(event) => setProfileId(event.target.value as RoutingProfileId)}
-            className="rounded-md border border-border bg-canvas p-2 text-meta text-text-primary"
-          >
-            {ROUTING_PROFILES.map((id) => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-          </select>
-          <ControllerButton
-            variant="primary"
-            disabled={!intent.trim() || generating}
-            onClick={() => void handleGeneratePlan()}
-          >
-            {generating ? 'Generating plan…' : 'Generate plan'}
-          </ControllerButton>
-        </section>
-
-        <section className="flex flex-col gap-2 overflow-auto border border-border bg-surface p-3">
+      <NdxEditorShell title="Plan Preview">
+        <div className="flex min-h-full flex-col gap-3 p-3">
           <p className="text-meta font-semibold uppercase tracking-[0.18em] text-text-tertiary">
             Plan
           </p>
@@ -193,58 +191,62 @@ function CommandCanvasWorkspace({ workspaceId }: { workspaceId: string }): React
               Generate a plan to see a real model-produced preview before running anything.
             </p>
           )}
-        </section>
+        </div>
+      </NdxEditorShell>
 
-        <section className="flex flex-col gap-2 overflow-auto border border-border bg-surface p-3">
-          <p className="text-meta font-semibold uppercase tracking-[0.18em] text-text-tertiary">
-            Impact
-          </p>
-          {plan ? (
-            <div className="flex flex-col gap-2">
-              <StatusBadge
-                tone={
-                  plan.riskLevel === 'high'
-                    ? 'error'
-                    : plan.riskLevel === 'medium'
-                      ? 'warning'
-                      : 'success'
-                }
-                label={`Risk: ${plan.riskLevel}`}
-              />
-              <p className="text-meta text-text-secondary">Files: {plan.filesEstimate}</p>
-              <p className="text-meta text-text-secondary">
-                Network: {plan.networkRequired ? 'Required' : 'Not required'}
-              </p>
-              <p className="text-meta text-text-secondary">
-                Reversible: {plan.reversible ? 'Yes' : 'No'}
-              </p>
-              <p className="text-meta text-text-tertiary">Model profile: {profileId}</p>
-            </div>
-          ) : (
-            <p className="text-meta text-text-secondary">No plan yet.</p>
-          )}
-        </section>
-      </div>
+      <NdxToolWindow
+        title="Impact"
+        subtitle={plan ? `Risk ${plan.riskLevel}` : 'No plan'}
+        side="right"
+      >
+        <p className="text-meta font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+          Impact
+        </p>
+        {plan ? (
+          <div className="flex flex-col gap-2">
+            <StatusBadge
+              tone={
+                plan.riskLevel === 'high'
+                  ? 'error'
+                  : plan.riskLevel === 'medium'
+                    ? 'warning'
+                    : 'success'
+              }
+              label={`Risk: ${plan.riskLevel}`}
+            />
+            <p className="text-meta text-text-secondary">Files: {plan.filesEstimate}</p>
+            <p className="text-meta text-text-secondary">
+              Network: {plan.networkRequired ? 'Required' : 'Not required'}
+            </p>
+            <p className="text-meta text-text-secondary">
+              Reversible: {plan.reversible ? 'Yes' : 'No'}
+            </p>
+            <p className="text-meta text-text-tertiary">Model profile: {profileId}</p>
+          </div>
+        ) : (
+          <p className="text-meta text-text-secondary">No plan yet.</p>
+        )}
 
-      <div className="flex justify-end gap-2 border-t border-border pt-3">
-        <ControllerButton
-          variant="ghost"
-          onClick={() => {
-            setPlan(null)
-            setIntent('')
-            setError(null)
-          }}
-        >
-          Cancel
-        </ControllerButton>
-        <ControllerButton
-          variant="primary"
-          disabled={!plan || starting}
-          onClick={() => void handleApproveAndRun()}
-        >
-          {starting ? 'Starting…' : 'Approve & run'}
-        </ControllerButton>
-      </div>
+        <div className="mt-auto flex justify-end gap-2 border-t border-border pt-3">
+          <ControllerButton
+            variant="ghost"
+            onClick={() => {
+              setPlan(null)
+              setIntent('')
+              setError(null)
+            }}
+          >
+            Cancel
+          </ControllerButton>
+          <ControllerButton
+            variant="primary"
+            disabled={!plan || starting}
+            onClick={() => void handleApproveAndRun()}
+          >
+            {starting ? 'Starting…' : 'Approve & run'}
+          </ControllerButton>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

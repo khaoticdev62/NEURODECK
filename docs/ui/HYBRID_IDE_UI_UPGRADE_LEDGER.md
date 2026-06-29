@@ -63,7 +63,7 @@ Status legend:
 | `/onboarding/calibration` | ND-004 | Critical setup | Controller setup | Frame / Pending Critical | controller-only path |
 | `/onboarding/tutorial` | ND-007 | Dashboard | Spatial learning | Frame / Pending Spatial | step focus restoration |
 | `/boot` | ND-001 | Critical shell | Boot shell | Frame / Pending Critical | no overlay interference |
-| `/ai` | ND-013 | Tool-heavy | AI secondary tool window | Frame / Pending Tool | approvals, context visibility |
+| `/ai` | ND-013 | IDE-heavy | AI command workbench | Partial IDE | per-step execution semantics still deferred |
 | `/ai/timeline` | ND-014 | Tool-heavy | Timeline/log viewer | Frame / Pending Tool | long timeline focus |
 | `/ai/approvals` | ND-015 | Critical | Permission review | Frame / Pending Critical | destructive review clarity |
 | `/workspaces` | ND-018 | Dashboard | Spatial workspace row/grid | Frame / Pending Spatial | card focus overlap |
@@ -72,7 +72,7 @@ Status legend:
 | `/files` | ND-026 | IDE-heavy | Explorer tool window | Partial IDE | deeper preview/editor affordances |
 | `/git` | ND-025 | IDE-heavy | Source Control tool window | Partial IDE | conflict-resolution UI still deferred |
 | `/terminal` | ND-028 | IDE-heavy | Bottom terminal panel | Partial IDE | direct xterm chrome still uses legacy internal grid |
-| `/terminal/builder` | ND-029 | IDE-heavy | Command Builder | Frame / Pending IDE | reviewed execution |
+| `/terminal/builder` | ND-029 | IDE-heavy | Command Builder | Partial IDE | reviewed execution preserved; direct xterm bottom panel still pending |
 | `/browser` | ND-030 | IDE-heavy | Browser tool/editor | Partial IDE | richer tab preview remains |
 | `/browser/:tabId` | ND-031 | IDE-heavy | Browser editor group | Partial IDE | native view focus and bounds still require visual QA |
 | `/automations` | ND-032 | Tool-heavy | Workflow library | Frame / Pending Tool | run state badges |
@@ -166,14 +166,25 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+HYBRID-4 partial checks run after AI Canvas and Command Builder workbench migration:
+
+```text
+npm run test -- AICommandCanvas CommandBuilder -> 3 files / 16 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
   shared project/editor/inspector framing, editor tabs, and breadcrumbs; partial slice complete for
   `/terminal` alternate-mode workbench framing; partial slice complete for `/files` Explorer +
   preview framing and `/git` Source Control + diff + Repository framing; partial slice complete
-  for `/browser` tabs + native-view editor framing and `/remote` host/session framing. AI Canvas,
-  Command Builder, diagnostics-like screens, and direct xterm bottom-panel chrome remain.
+  for `/browser` tabs + native-view editor framing and `/remote` host/session framing; partial
+  slice complete for `/ai` Intent + Plan Preview + Impact framing and `/terminal/builder`
+  Command Blocks + Review framing. Diagnostics-like screens, direct xterm bottom-panel chrome,
+  and deeper Monaco theming/popups remain.
 - HYBRID-5 must migrate tool-heavy platform screens to shared tool-window/inspector primitives.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.

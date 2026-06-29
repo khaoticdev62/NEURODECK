@@ -7,6 +7,7 @@ import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { EmptyState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { completeModel } from '../../services/ipc/modelClient'
 import { listTerminalSessions, onTerminalExit } from '../../services/ipc/terminalClient'
@@ -331,7 +332,6 @@ export function CommandBuilder({
             Build shell syntax as reviewable blocks. Nothing runs from this screen.
           </p>
         </div>
-        <StatusBadge tone={RISK_TONES[risk.level]} label={`${risk.label} risk`} />
       </header>
 
       {error && (
@@ -341,28 +341,31 @@ export function CommandBuilder({
       )}
 
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_18rem] gap-3">
-        <section className="min-h-0 overflow-auto border border-border bg-surface p-3">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-body font-semibold text-text-primary">Command blocks</h2>
-            <FocusableButton id="builder-add-block" variant="secondary" onClick={addBlock}>
-              Add block
-            </FocusableButton>
+        <NdxEditorShell title="Command Blocks">
+          <div className="min-h-full p-3">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-body font-semibold text-text-primary">Command blocks</h2>
+              <FocusableButton id="builder-add-block" variant="secondary" onClick={addBlock}>
+                Add block
+              </FocusableButton>
+            </div>
+            <ol className="flex flex-col gap-2">
+              {blocks.map((block, index) => (
+                <CommandBlockRow
+                  key={block.id}
+                  block={block}
+                  position={index + 1}
+                  removable={blocks.length > 1}
+                  onChange={(update) => updateBlock(block.id, update)}
+                  onRemove={() => removeBlock(block.id)}
+                />
+              ))}
+            </ol>
           </div>
-          <ol className="flex flex-col gap-2">
-            {blocks.map((block, index) => (
-              <CommandBlockRow
-                key={block.id}
-                block={block}
-                position={index + 1}
-                removable={blocks.length > 1}
-                onChange={(update) => updateBlock(block.id, update)}
-                onRemove={() => removeBlock(block.id)}
-              />
-            ))}
-          </ol>
-        </section>
+        </NdxEditorShell>
 
-        <aside className="flex flex-col gap-3 border border-border bg-surface p-3">
+        <NdxToolWindow title="Review" subtitle={`${risk.label} risk`} side="right">
+          <StatusBadge tone={RISK_TONES[risk.level]} label={`${risk.label} risk`} />
           <label className="text-meta font-semibold text-text-primary" htmlFor="builder-session">
             Target session
           </label>
@@ -458,7 +461,7 @@ export function CommandBuilder({
               Send to approval review
             </FocusableButton>
           </div>
-        </aside>
+        </NdxToolWindow>
       </div>
 
       {savedActions.length > 0 && (
