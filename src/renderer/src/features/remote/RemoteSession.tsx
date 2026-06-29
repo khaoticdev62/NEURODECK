@@ -4,6 +4,7 @@ import type { RemoteHost, RemoteSession as RemoteSessionType } from '@shared/con
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   createRemoteSession,
   listRemoteHosts,
@@ -114,97 +115,101 @@ export function RemoteSession(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col border border-border bg-surface">
-      <header className="flex min-h-12 items-center justify-between border-b border-status-warning/30 bg-status-warning/5 px-3">
-        <div className="min-w-0">
-          <p className="truncate text-meta font-semibold text-text-primary">
-            Remote session · {host.username}@{host.hostname}
-          </p>
-          <p className="text-meta text-text-tertiary">
-            Every action here runs on the remote host, not this device.
-          </p>
+    <div className="grid h-full min-w-[64rem] grid-cols-[22rem_minmax(32rem,1fr)] gap-2 overflow-auto">
+      <NdxToolWindow title="Remote Host" subtitle={`${host.username}@${host.hostname}`}>
+        <div className="flex flex-col gap-3 border border-status-warning/30 bg-status-warning/5 p-3">
+          <div className="min-w-0">
+            <p className="truncate text-meta font-semibold text-text-primary">
+              Remote session · {host.username}@{host.hostname}
+            </p>
+            <p className="text-meta text-text-tertiary">
+              Every action here runs on the remote host, not this device.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {session?.status === 'running' && (
+              <>
+                <ControllerButton
+                  variant="ghost"
+                  onClick={() => {
+                    setSearchOpen((current) => !current)
+                    setSearchFound(null)
+                  }}
+                >
+                  Find
+                </ControllerButton>
+                <ControllerButton variant="ghost" onClick={handleCopySelection}>
+                  Copy selection
+                </ControllerButton>
+              </>
+            )}
+            {session && (
+              <StatusBadge
+                tone={
+                  session.status === 'running'
+                    ? 'success'
+                    : session.status === 'connecting'
+                      ? 'neutral'
+                      : 'error'
+                }
+                label={
+                  session.status === 'running'
+                    ? 'Connected'
+                    : session.status === 'connecting'
+                      ? 'Connecting'
+                      : session.status === 'exited'
+                        ? 'Disconnected'
+                        : 'Connection error'
+                }
+              />
+            )}
+            {session?.status === 'running' && (
+              <ControllerButton variant="destructive" onClick={() => void handleDisconnect()}>
+                Disconnect
+              </ControllerButton>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {session?.status === 'running' && (
-            <>
-              <ControllerButton
-                variant="ghost"
-                onClick={() => {
-                  setSearchOpen((current) => !current)
-                  setSearchFound(null)
-                }}
-              >
-                Find
-              </ControllerButton>
-              <ControllerButton variant="ghost" onClick={handleCopySelection}>
-                Copy selection
-              </ControllerButton>
-            </>
-          )}
-          {session && (
-            <StatusBadge
-              tone={
-                session.status === 'running'
-                  ? 'success'
-                  : session.status === 'connecting'
-                    ? 'neutral'
-                    : 'error'
-              }
-              label={
-                session.status === 'running'
-                  ? 'Connected'
-                  : session.status === 'connecting'
-                    ? 'Connecting'
-                    : session.status === 'exited'
-                      ? 'Disconnected'
-                      : 'Connection error'
-              }
+      </NdxToolWindow>
+
+      <NdxEditorShell title={host.name}>
+        {searchOpen && (
+          <div className="flex items-center gap-2 border-b border-border bg-surface-raised/40 px-3 py-2">
+            <input
+              value={searchQuery}
+              onChange={(event) => {
+                setSearchQuery(event.target.value)
+                setSearchFound(null)
+              }}
+              placeholder="Search scrollback"
+              className="min-w-0 flex-1 rounded-md border border-border bg-canvas p-1.5 text-meta text-text-primary"
             />
-          )}
-          {session?.status === 'running' && (
-            <ControllerButton variant="destructive" onClick={() => void handleDisconnect()}>
-              Disconnect
+            <ControllerButton variant="ghost" onClick={() => handleFind('previous')}>
+              Previous
             </ControllerButton>
-          )}
-        </div>
-      </header>
-
-      {searchOpen && (
-        <div className="flex items-center gap-2 border-b border-border bg-surface-raised/40 px-3 py-2">
-          <input
-            value={searchQuery}
-            onChange={(event) => {
-              setSearchQuery(event.target.value)
-              setSearchFound(null)
-            }}
-            placeholder="Search scrollback"
-            className="min-w-0 flex-1 rounded-md border border-border bg-canvas p-1.5 text-meta text-text-primary"
-          />
-          <ControllerButton variant="ghost" onClick={() => handleFind('previous')}>
-            Previous
-          </ControllerButton>
-          <ControllerButton variant="ghost" onClick={() => handleFind('next')}>
-            Next
-          </ControllerButton>
-          {searchFound === false && (
-            <span className="text-meta text-status-warning">No matches</span>
-          )}
-        </div>
-      )}
-
-      {error && <ErrorState title="Remote session error" description={error} />}
-
-      <div className="min-h-0 flex-1">
-        {session && session.status !== 'error' ? (
-          <RemoteSessionViewport
-            ref={viewportRef}
-            session={session}
-            onError={handleViewportError}
-          />
-        ) : (
-          !error && <p className="p-6 text-meta text-text-secondary">Establishing connection…</p>
+            <ControllerButton variant="ghost" onClick={() => handleFind('next')}>
+              Next
+            </ControllerButton>
+            {searchFound === false && (
+              <span className="text-meta text-status-warning">No matches</span>
+            )}
+          </div>
         )}
-      </div>
+
+        {error && <ErrorState title="Remote session error" description={error} />}
+
+        <div className="h-full min-h-0">
+          {session && session.status !== 'error' ? (
+            <RemoteSessionViewport
+              ref={viewportRef}
+              session={session}
+              onError={handleViewportError}
+            />
+          ) : (
+            !error && <p className="p-6 text-meta text-text-secondary">Establishing connection…</p>
+          )}
+        </div>
+      </NdxEditorShell>
     </div>
   )
 }

@@ -73,8 +73,8 @@ Status legend:
 | `/git` | ND-025 | IDE-heavy | Source Control tool window | Partial IDE | conflict-resolution UI still deferred |
 | `/terminal` | ND-028 | IDE-heavy | Bottom terminal panel | Partial IDE | direct xterm chrome still uses legacy internal grid |
 | `/terminal/builder` | ND-029 | IDE-heavy | Command Builder | Frame / Pending IDE | reviewed execution |
-| `/browser` | ND-030 | IDE-heavy | Browser tool/editor | Frame / Pending IDE | WebContentsView bounds |
-| `/browser/:tabId` | ND-031 | IDE-heavy | Browser editor group | Frame / Pending IDE | native view focus |
+| `/browser` | ND-030 | IDE-heavy | Browser tool/editor | Partial IDE | richer tab preview remains |
+| `/browser/:tabId` | ND-031 | IDE-heavy | Browser editor group | Partial IDE | native view focus and bounds still require visual QA |
 | `/automations` | ND-032 | Tool-heavy | Workflow library | Frame / Pending Tool | run state badges |
 | `/automations/forge` | ND-033 | IDE-heavy | Workflow canvas | Frame / Pending IDE | non-drag movement |
 | `/automations/forge/:workflowId` | ND-033 | IDE-heavy | Workflow canvas | Frame / Pending IDE | inspector sync |
@@ -86,8 +86,8 @@ Status legend:
 | `/agents/:agentId` | ND-017 | Tool-heavy | Agent detail tabs | Frame / Pending Tool | timeline and tool logs |
 | `/learn` | ND-038 | Dashboard | Spatial learning rows | Frame / Pending Spatial | authored content gap |
 | `/learn/lab/:curriculumId/:moduleId/:lessonId` | ND-039 | Dashboard | Guided lab workbench | Frame / Pending Spatial | lab step focus |
-| `/remote` | ND-040 | IDE-heavy | Remote tool window | Frame / Pending IDE | SSH trust review |
-| `/remote/:hostId` | ND-041 | IDE-heavy | Remote terminal panel | Frame / Pending IDE | xterm remote focus |
+| `/remote` | ND-040 | IDE-heavy | Remote tool window | Partial IDE | non-SSH target types remain deferred |
+| `/remote/:hostId` | ND-041 | IDE-heavy | Remote terminal panel | Partial IDE | remote xterm focus still needs visual QA |
 | `/lan-share` | ND-LAN-001 | Tool-heavy | LAN Share tool | Frame / Pending Tool | transfer events |
 | `/lan-share/peers` | ND-LAN-002 | Tool-heavy | Peer list | Frame / Pending Tool | trust badges |
 | `/lan-share/peers/:peerId` | ND-LAN-003 | Critical/tool | Device trust detail | Frame / Pending Critical | trust decisions |
@@ -157,13 +157,23 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+HYBRID-4 partial checks run after Browser and Remote workbench migration:
+
+```text
+npm run test -- BrowserHub BrowserView RemoteSystems RemoteSession -> 4 files / 14 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
   shared project/editor/inspector framing, editor tabs, and breadcrumbs; partial slice complete for
   `/terminal` alternate-mode workbench framing; partial slice complete for `/files` Explorer +
-  preview framing and `/git` Source Control + diff + Repository framing. Browser, Remote, AI
-  Canvas, Command Builder, diagnostics-like screens, and direct xterm bottom-panel chrome remain.
+  preview framing and `/git` Source Control + diff + Repository framing; partial slice complete
+  for `/browser` tabs + native-view editor framing and `/remote` host/session framing. AI Canvas,
+  Command Builder, diagnostics-like screens, and direct xterm bottom-panel chrome remain.
 - HYBRID-5 must migrate tool-heavy platform screens to shared tool-window/inspector primitives.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.

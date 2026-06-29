@@ -4,6 +4,8 @@ import type { BrowserTab } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { useFocusable } from '../../controller/focus/useFocusable'
+import { cn } from '../../components/primitives/cn'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   createBrowserTab,
   listBrowserTabs,
@@ -77,34 +79,35 @@ function BrowserHubWorkspace({ workspaceId }: { workspaceId: string }): React.JS
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Browser Hub</p>
+    <div className="grid h-full min-w-[56rem] grid-cols-[20rem_minmax(28rem,1fr)] gap-2 overflow-auto">
+      <NdxToolWindow title="Browser Tabs" subtitle="Workspace session">
         <ControllerButton variant="primary" disabled={creating} onClick={() => void handleNewTab()}>
           {creating ? 'Opening…' : 'New tab'}
         </ControllerButton>
-      </div>
+        {error && <ErrorState title="Browser error" description={error} />}
 
-      {error && <ErrorState title="Browser error" description={error} />}
-
-      {tabs.length === 0 ? (
+        {tabs.length === 0 ? (
+          <EmptyState title="No tabs open" description="Open a new tab to start browsing." />
+        ) : (
+          <ul className="flex flex-col gap-1">
+            {tabs.map((tab) => (
+              <BrowserTabCard
+                key={tab.id}
+                tab={tab}
+                onOpen={() => navigate(`/browser/${tab.id}`)}
+                onRemove={() => void handleRemove(tab.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </NdxToolWindow>
+      <NdxEditorShell title="Browser Preview">
         <EmptyState
-          className="flex-1"
-          title="No tabs open"
-          description="Open a new tab to start browsing."
+          className="h-full"
+          title="No tab selected"
+          description="Open a browser tab from the tab list."
         />
-      ) : (
-        <ul className="grid grid-cols-2 gap-3">
-          {tabs.map((tab) => (
-            <BrowserTabCard
-              key={tab.id}
-              tab={tab}
-              onOpen={() => navigate(`/browser/${tab.id}`)}
-              onRemove={() => void handleRemove(tab.id)}
-            />
-          ))}
-        </ul>
-      )}
+      </NdxEditorShell>
     </div>
   )
 }
@@ -128,7 +131,12 @@ function BrowserTabCard({
     <li
       ref={ref}
       tabIndex={-1}
-      className={`rounded-lg border p-4 ${isFocused ? 'border-border-focus' : 'border-border'} bg-surface`}
+      className={cn(
+        'rounded-sm border bg-canvas p-3',
+        isFocused
+          ? 'border-[var(--ndx-workbench-active-pane-border)] bg-[var(--ndx-workbench-selected-row-bg)]'
+          : 'border-border'
+      )}
     >
       <p className="text-body font-semibold text-text-primary">{tab.title || tab.url}</p>
       <p className="text-meta text-text-secondary">{tab.url}</p>

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { BrowserPermissionRequest, BrowserTab } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   goBackBrowserTab,
   goForwardBrowserTab,
@@ -108,8 +109,8 @@ export function BrowserView(): React.JSX.Element {
   if (!tab) return <ErrorState title="Tab not found" description={error ?? 'Unknown tab.'} />
 
   return (
-    <div className="flex h-full flex-col gap-2 p-4">
-      <div className="flex items-center gap-2">
+    <div className="grid h-full min-w-[64rem] grid-cols-[22rem_minmax(32rem,1fr)] gap-2 overflow-auto">
+      <NdxToolWindow title="Browser Controls" subtitle={tab.title || tab.url}>
         <ControllerButton variant="ghost" onClick={() => navigate('/browser')}>
           Tabs
         </ControllerButton>
@@ -139,7 +140,7 @@ export function BrowserView(): React.JSX.Element {
           onKeyDown={(event) => {
             if (event.key === 'Enter') void handleNavigate()
           }}
-          className="flex-1 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+          className="w-full rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
         />
         <ControllerButton variant="primary" onClick={() => void handleNavigate()}>
           Go
@@ -147,12 +148,13 @@ export function BrowserView(): React.JSX.Element {
         <ControllerButton variant="ghost" onClick={() => void openExternalUrl(tab.url)}>
           Open externally
         </ControllerButton>
-      </div>
+        {error && <ErrorState title="Browser error" description={error} />}
+        {tab.loading && <p className="text-meta text-text-tertiary">Loading…</p>}
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Browser error" description={error} />}
-      {tab.loading && <p className="text-meta text-text-tertiary">Loading…</p>}
-
-      <div ref={placeholderRef} className="min-h-0 flex-1 border border-border bg-canvas" />
+      <NdxEditorShell title={tab.title || tab.url}>
+        <div ref={placeholderRef} className="h-full min-h-0 border border-border bg-canvas" />
+      </NdxEditorShell>
 
       <BrowserPermissionDialog
         request={permissionRequest}

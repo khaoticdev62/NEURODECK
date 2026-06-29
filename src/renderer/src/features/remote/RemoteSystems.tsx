@@ -4,6 +4,8 @@ import type { RemoteHost, RemoteHostAuthMethod } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { useFocusable } from '../../controller/focus/useFocusable'
+import { cn } from '../../components/primitives/cn'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   addRemoteHost,
   listRemoteHosts,
@@ -59,46 +61,53 @@ export function RemoteSystems(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Remote Systems</p>
+    <div className="grid h-full min-w-[58rem] grid-cols-[22rem_minmax(30rem,1fr)] gap-2 overflow-auto">
+      <NdxToolWindow title="Remote Hosts" subtitle="SSH targets">
         <ControllerButton variant="primary" onClick={() => setShowAddForm((current) => !current)}>
           {showAddForm ? 'Cancel' : 'Add host'}
         </ControllerButton>
-      </div>
+        {error && <ErrorState title="Remote systems error" description={error} />}
 
-      {error && <ErrorState title="Remote systems error" description={error} />}
-
-      {showAddForm && (
-        <AddHostForm
-          onAdded={() => {
-            setShowAddForm(false)
-            void refresh()
-          }}
-          onError={setError}
-        />
-      )}
-
-      {loading ? (
-        <p className="text-meta text-text-secondary">Loading hosts…</p>
-      ) : hosts.length === 0 ? (
-        <EmptyState
-          className="flex-1"
-          title="No remote hosts"
-          description="Add an SSH host to connect a terminal session to it."
-        />
-      ) : (
-        <ul className="flex flex-col gap-2 overflow-auto">
-          {hosts.map((host) => (
-            <HostCard
-              key={host.id}
-              host={host}
-              onOpen={() => navigate(`/remote/${host.id}`)}
-              onRemove={() => void handleRemove(host.id)}
+        {loading ? (
+          <p className="text-meta text-text-secondary">Loading hosts…</p>
+        ) : hosts.length === 0 ? (
+          <EmptyState
+            className="flex-1"
+            title="No remote hosts"
+            description="Add an SSH host to connect a terminal session to it."
+          />
+        ) : (
+          <ul className="flex flex-col gap-2 overflow-auto">
+            {hosts.map((host) => (
+              <HostCard
+                key={host.id}
+                host={host}
+                onOpen={() => navigate(`/remote/${host.id}`)}
+                onRemove={() => void handleRemove(host.id)}
+              />
+            ))}
+          </ul>
+        )}
+      </NdxToolWindow>
+      <NdxEditorShell title={showAddForm ? 'Add SSH Host' : 'Remote Session Launcher'}>
+        {showAddForm ? (
+          <div className="p-3">
+            <AddHostForm
+              onAdded={() => {
+                setShowAddForm(false)
+                void refresh()
+              }}
+              onError={setError}
             />
-          ))}
-        </ul>
-      )}
+          </div>
+        ) : (
+          <EmptyState
+            className="h-full"
+            title="Select a remote host"
+            description="Open a host to start a remote terminal session."
+          />
+        )}
+      </NdxEditorShell>
     </div>
   )
 }
@@ -246,7 +255,12 @@ function HostCard({
     <li
       ref={ref}
       tabIndex={-1}
-      className={`border p-3 ${isFocused ? 'border-border-focus' : 'border-border'} bg-surface`}
+      className={cn(
+        'rounded-sm border bg-canvas p-3',
+        isFocused
+          ? 'border-[var(--ndx-workbench-active-pane-border)] bg-[var(--ndx-workbench-selected-row-bg)]'
+          : 'border-border'
+      )}
     >
       <p className="text-body font-semibold text-text-primary">{host.name}</p>
       <p className="text-meta text-text-secondary">
