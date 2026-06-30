@@ -10,6 +10,7 @@ import { useWorkspaces } from '../workspaces/useWorkspaces'
 const STEP_KIND_LABEL: Record<WorkflowStepKind, string> = {
   'tool-action': 'Tool action',
   condition: 'Condition (stops the run if not met)',
+  'ai-decision': 'AI decision (fails the run if the model says stop)',
   'user-approval': 'User approval',
   delay: 'Delay',
   validator: 'Validator (fails the run if not met)',
@@ -38,6 +39,8 @@ function makeStep(kind: WorkflowStepKind): WorkflowStep {
         title: 'New condition',
         expression: { variable: '', operator: 'equals', value: '' }
       }
+    case 'ai-decision':
+      return { id, kind, title: 'New AI decision', prompt: '' }
     case 'user-approval':
       return { id, kind, title: 'New approval', prompt: 'Proceed?' }
     case 'delay':
@@ -347,6 +350,16 @@ function StepEditor({
             className="flex-1 rounded-md border border-border bg-canvas p-2 text-meta text-text-primary"
           />
         </div>
+      )}
+
+      {step.kind === 'ai-decision' && (
+        <textarea
+          value={step.prompt}
+          onChange={(event) => onChange({ ...step, prompt: event.target.value })}
+          placeholder="What should the model decide? (it sees current context variables and must answer proceed/stop)"
+          rows={2}
+          className="rounded-md border border-border bg-canvas p-2 text-meta text-text-primary"
+        />
       )}
 
       {step.kind === 'user-approval' && (

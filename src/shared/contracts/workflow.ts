@@ -6,17 +6,19 @@ import { z } from 'zod'
  * executor (parallel branches, merges, cycle detection, labeled jumps)
  * is disproportionate scope for this slice. A deliberate simplification,
  * the same kind Epic 2 made for focus-engine group transitions: steps run
- * in order; `condition`/`validator` are the only nodes that affect
- * control flow, and they can only stop the run early, never branch or
- * loop. AI decision, Script, Parallel branch, Merge, and Rollback node
- * types are not implemented — AI decision needs Epic 9's model router;
- * Script needs a new headless (non-interactive) execution primitive
- * `TerminalService` doesn't provide; Parallel/Merge/Rollback need the
- * full graph model this slice intentionally doesn't build.
+ * in order; `condition`/`validator`/`ai-decision` are the only nodes that
+ * affect control flow, and they can only stop the run early, never branch
+ * or loop. `ai-decision` is real (Epic 9's model router unblocked it) —
+ * see `workflows/aiDecision.ts` for the strict-JSON response contract.
+ * Script, Parallel branch, Merge, and Rollback node types are still not
+ * implemented — Script needs a new headless (non-interactive) execution
+ * primitive `TerminalService` doesn't provide; Parallel/Merge/Rollback
+ * need the full graph model this slice intentionally doesn't build.
  */
 export const workflowStepKindSchema = z.enum([
   'tool-action',
   'condition',
+  'ai-decision',
   'user-approval',
   'delay',
   'validator',
@@ -53,6 +55,13 @@ export const workflowStepSchema = z.discriminatedUnion('kind', [
     kind: z.literal('condition'),
     title: z.string(),
     expression: conditionExpressionSchema
+  }),
+  z.object({
+    id: z.string(),
+    kind: z.literal('ai-decision'),
+    title: z.string(),
+    /** Sent to the routed model alongside the run's current context variables; the model must respond with strict JSON, never free-form prose. */
+    prompt: z.string().min(1).max(2000)
   }),
   z.object({
     id: z.string(),

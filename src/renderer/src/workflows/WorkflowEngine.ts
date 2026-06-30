@@ -7,6 +7,7 @@ import type {
   WorkflowStepRun
 } from '@shared/contracts'
 import { evaluateCondition } from './evaluateCondition'
+import { requestAiDecision } from './aiDecision'
 
 const TERMINAL_ACTION_STATUSES = new Set(['passed', 'failed', 'denied', 'cancelled', 'rolled-back'])
 
@@ -131,6 +132,26 @@ export class WorkflowEngine {
         return {
           stepId: step.id,
           status: met ? 'passed' : 'skipped',
+          startedAt,
+          finishedAt: Date.now()
+        }
+      }
+
+      case 'ai-decision': {
+        const decision = await requestAiDecision(step.prompt, run.context)
+        if (!decision.ok) {
+          return {
+            stepId: step.id,
+            status: 'failed',
+            message: decision.error,
+            startedAt,
+            finishedAt: Date.now()
+          }
+        }
+        return {
+          stepId: step.id,
+          status: decision.data.proceed ? 'passed' : 'failed',
+          message: decision.data.reason,
           startedAt,
           finishedAt: Date.now()
         }

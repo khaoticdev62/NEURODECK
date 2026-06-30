@@ -3202,3 +3202,26 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic 8 — Workflow Engine "AI decision" step (2026-06-30)
+
+Real `ai-decision` workflow step kind, closing the named gap HANDOFF.md and the checklist both tracked since Epic 9's model router landed ("AI decision is unblocked by Epic 9's real model router but not yet wired into the engine").
+
+**Design constraint carried over from the engine's existing scope note**: this engine is deliberately sequential, not a graph executor — `condition`/`validator` are the only step kinds allowed to affect control flow, and only by stopping a run early, never branching or looping. `ai-decision` had to fit that same shape rather than introducing a new control-flow primitive. It does: the model evaluates a structured yes/no checkpoint and a `proceed: false` answer fails the run early, exactly like a failed `validator` — no branching logic was added anywhere in `WorkflowEngine.start()`'s loop.
+
+**`workflows/aiDecision.ts`** mirrors `features/ai-canvas/planPreview.ts`'s already-proven strict-JSON contract pattern: a system prompt instructing the model to respond with *only* `{"proceed": boolean, "reason": string}`, a `extractJsonObject()` helper that strips markdown fences models sometimes add despite instructions, and `zod` validation of the parsed response — a malformed or wrongly-shaped response fails the step honestly (`status: 'failed'`) rather than the engine guessing what the model meant. The step's prompt is combined with the run's current `context` variables (serialized as JSON) before being sent, so the model can ground its decision in real workflow state, not just the static prompt text.
+
+**Schema**: `workflowStepKindSchema` gained `'ai-decision'`; the discriminated union gained `{id, kind: 'ai-decision', title, prompt}` — no new fields needed on `WorkflowStepRun`, since the existing `message` field already carries the model's `reason` exactly the way `validator`'s failure message already works.
+
+**Forge UI**: `/automations/forge` now offers "AI decision (fails the run if the model says stop)" in the step-kind picker, with a prompt textarea — the same per-kind conditional-render pattern every other step kind already uses.
+
+**New/changed files**: `src/shared/contracts/workflow.ts` (new step kind + schema member), `src/renderer/src/workflows/aiDecision.ts` (new) + `__tests__/aiDecision.test.ts` (new, 6 tests), `src/renderer/src/workflows/WorkflowEngine.ts` (new `case 'ai-decision'`) + `__tests__/WorkflowEngine.test.ts` (+3 tests), `src/renderer/src/features/workflows/WorkflowForge.tsx` (new step-kind label/factory/editor) + `__tests__/WorkflowForge.test.tsx` (+1 test).
+
+**Validation evidence (run 2026-06-30):**
+
+```text
+npm run test -> 239 files / 1142 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

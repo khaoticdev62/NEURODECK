@@ -1,11 +1,27 @@
-import { describe, expect, it, vi } from 'vitest'
-import type { WorkflowDefinition, WorkflowRun, WorkflowStep } from '@shared/contracts'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { NdxBridge, WorkflowDefinition, WorkflowRun, WorkflowStep } from '@shared/contracts'
 import { ActionQueue } from '../../ai-safety/ActionQueue'
 import { AuditLog } from '../../ai-safety/AuditLog'
 import { PermissionBroker } from '../../ai-safety/PermissionBroker'
 import { ToolRegistry } from '../../ai-safety/ToolRegistry'
 import type { ToolDefinition } from '../../ai-safety/ToolRegistry'
 import { WorkflowEngine } from '../WorkflowEngine'
+
+function stubModelCompletion(content: string): void {
+  window.ndx = {
+    modelProviders: {
+      complete: vi.fn().mockResolvedValue({
+        ok: true,
+        data: { providerId: 'p1', providerName: 'Provider', modelId: 'm1', content }
+      })
+    }
+  } as unknown as NdxBridge
+}
+
+afterEach(() => {
+  // @ts-expect-error test-only cleanup of a global the real preload script injects
+  delete window.ndx
+})
 
 /**
  * Grants the tool's capability up front, simulating the real "permission
@@ -211,5 +227,55 @@ describe('WorkflowEngine', () => {
 
     expect(final.status).toBe('passed')
     expect(final.steps[0].message).toBe('all good')
+  })
+
+  it('passes the run when a real ai-decision step proceeds', async () => {
+    stubModelCompletion('{"proceed": true, "reason": "Safe to continue"}')
+    const queue = makeQueue(realTool)
+    const engine = new WorkflowEngine()
+    const definition = makeDefinition([
+      { id: 's1', kind: 'ai-decision', title: 'Check', prompt: 'Is this safe?' },
+      { id: 's2', kind: 'tool-action', title: 'Run demo', toolId: 'demo-tool', args: {} }
+    ])
+
+    const final = await engine.start(definition, makeRun(definition.id), queue, vi.fn())
+
+    expect(final.status).toBe('passed')
+    expect(final.steps[0]).toMatchObject({
+      stepId: 's1',
+      status: 'passed',
+      message: 'Safe to continue'
+    })
+    expect(final.steps).toHaveLength(2)
+  })
+
+  it('fails the run when a real ai-decision step says stop', async () => {
+    stubModelCompletion('{"proceed": false, "reason": "Too risky"}')
+    const queue = makeQueue(realTool)
+    const engine = new WorkflowEngine()
+    const definition = makeDefinition([
+      { id: 's1', kind: 'ai-decision', title: 'Check', prompt: 'Is this safe?' },
+      { id: 's2', kind: 'tool-action', title: 'Never runs', toolId: 'demo-tool', args: {} }
+    ])
+
+    const final = await engine.start(definition, makeRun(definition.id), queue, vi.fn())
+
+    expect(final.status).toBe('failed')
+    expect(final.steps[0]).toMatchObject({ stepId: 's1', status: 'failed', message: 'Too risky' })
+    expect(final.steps).toHaveLength(1)
+  })
+
+  it('fails the run honestly when the model response is not valid JSON', async () => {
+    stubModelCompletion('not json')
+    const queue = makeQueue(realTool)
+    const engine = new WorkflowEngine()
+    const definition = makeDefinition([
+      { id: 's1', kind: 'ai-decision', title: 'Check', prompt: 'Is this safe?' }
+    ])
+
+    const final = await engine.start(definition, makeRun(definition.id), queue, vi.fn())
+
+    expect(final.status).toBe('failed')
+    expect(final.steps[0].status).toBe('failed')
   })
 })

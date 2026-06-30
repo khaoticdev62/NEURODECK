@@ -129,4 +129,46 @@ describe('WorkflowForge', () => {
 
     expect(screen.getByText('No steps yet')).toBeInTheDocument()
   })
+
+  it('adds a real ai-decision step with an editable prompt', async () => {
+    const save = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        id: 'wf2',
+        workspaceId: 'w1',
+        name: 'Decision workflow',
+        description: '',
+        steps: [],
+        version: 1,
+        createdAt: 0,
+        updatedAt: 0
+      }
+    })
+    stubBridge({ workflows: { save } as never })
+    const user = userEvent.setup()
+    renderForge()
+
+    await user.type(screen.getByPlaceholderText('Workflow name'), 'Decision workflow')
+    await user.selectOptions(
+      screen.getByDisplayValue('Tool action'),
+      'AI decision (fails the run if the model says stop)'
+    )
+    await user.click(screen.getByRole('button', { name: 'Add step' }))
+    expect(screen.getByText(/1\. AI decision/)).toBeInTheDocument()
+
+    const promptField = screen.getByPlaceholderText(
+      'What should the model decide? (it sees current context variables and must answer proceed/stop)'
+    )
+    await user.type(promptField, 'Is this safe to continue?')
+
+    await user.click(screen.getByRole('button', { name: 'Save workflow' }))
+
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({
+        steps: expect.arrayContaining([
+          expect.objectContaining({ kind: 'ai-decision', prompt: 'Is this safe to continue?' })
+        ])
+      })
+    )
+  })
 })
