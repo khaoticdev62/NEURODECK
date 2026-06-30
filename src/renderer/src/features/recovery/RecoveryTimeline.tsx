@@ -3,6 +3,7 @@ import type { RecoveryCheckpoint } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { GitDiffViewer } from '../git/GitDiffViewer'
 import {
@@ -111,8 +112,8 @@ function RecoveryTimelineWorkspace({ workspaceId }: { workspaceId: string }): Re
   }
 
   return (
-    <div className="grid h-full min-w-[56rem] grid-cols-[minmax(20rem,1fr)_minmax(24rem,1.4fr)] gap-3 overflow-auto">
-      <div className="flex min-h-0 flex-col gap-2 overflow-auto border border-border bg-surface p-3">
+    <div className="grid h-full min-w-[64rem] grid-cols-[22rem_minmax(36rem,1fr)] gap-2 overflow-auto">
+      <NdxToolWindow title="Recovery Timeline" subtitle={`${checkpoints.length} checkpoints`}>
         <p className="text-title font-semibold text-text-primary">Recovery Timeline</p>
         {error && <ErrorState title="Recovery error" description={error} />}
         {checkpoints.length === 0 ? (
@@ -132,30 +133,36 @@ function RecoveryTimelineWorkspace({ workspaceId }: { workspaceId: string }): Re
             ))}
           </ul>
         )}
-      </div>
+      </NdxToolWindow>
 
-      <div className="flex min-h-0 flex-col gap-2">
-        {selected && (
-          <div className="flex items-center justify-between border border-border bg-surface p-2">
-            <div>
-              <p className="text-meta text-text-primary">{selected.description}</p>
-              <p className="text-meta text-text-tertiary">
-                {REVERSIBILITY_LABEL[selected.reversibility]}
-              </p>
+      <NdxEditorShell title="Before / After Diff">
+        <div className="flex min-h-full min-w-0 flex-col gap-2 p-2">
+          {selected && (
+            <div className="flex items-center justify-between border border-border bg-surface p-2">
+              <div>
+                <p className="text-meta text-text-primary">{selected.description}</p>
+                <p className="text-meta text-text-tertiary">
+                  {REVERSIBILITY_LABEL[selected.reversibility]}
+                </p>
+              </div>
+              <ControllerButton
+                variant="primary"
+                disabled={!selected.hadPreviousContent || restoring}
+                onClick={() => setRestoreReviewOpen(true)}
+              >
+                {restoring ? 'Restoring…' : 'Restore to this point'}
+              </ControllerButton>
             </div>
-            <ControllerButton
-              variant="primary"
-              disabled={!selected.hadPreviousContent || restoring}
-              onClick={() => setRestoreReviewOpen(true)}
-            >
-              {restoring ? 'Restoring…' : 'Restore to this point'}
-            </ControllerButton>
+          )}
+          <div className="min-h-0 flex-1">
+            <GitDiffViewer
+              path={selected?.relativePath ?? null}
+              diff={diff}
+              loading={diffLoading}
+            />
           </div>
-        )}
-        <div className="min-h-0 flex-1">
-          <GitDiffViewer path={selected?.relativePath ?? null} diff={diff} loading={diffLoading} />
         </div>
-      </div>
+      </NdxEditorShell>
 
       <ConfirmationDialog
         open={restoreReviewOpen}

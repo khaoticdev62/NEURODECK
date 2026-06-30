@@ -6,6 +6,7 @@ import type {
 } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxSpatialLockup, NdxToolWindow } from '../../components/workbench'
 import { runTroubleshooterCheck } from '../../services/ipc/troubleshooterClient'
 
 const ISSUE_LABELS: Record<TroubleshooterIssueId, string> = {
@@ -70,62 +71,83 @@ export function GuidedTroubleshooter(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <p className="text-title font-semibold text-text-primary">Guided Troubleshooter</p>
-      <p className="text-meta text-text-secondary">
-        Every check below runs a real diagnostic against this device — nothing here is simulated,
-        and no issue is ever reported as fixed without a real passing check.
-      </p>
+    <div className="grid h-full min-w-[76rem] grid-cols-[minmax(44rem,1fr)_20rem] gap-2 overflow-auto">
+      <NdxEditorShell title="Guided Diagnostics">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
+          <p className="text-title font-semibold text-text-primary">Guided Troubleshooter</p>
+          <p className="text-meta text-text-secondary">
+            Every check below runs a real diagnostic against this device — nothing here is
+            simulated, and no issue is ever reported as fixed without a real passing check.
+          </p>
 
-      {error && <ErrorState title="Troubleshooter error" description={error} />}
+          {error && <ErrorState title="Troubleshooter error" description={error} />}
 
-      <article className="border border-border bg-surface p-3">
-        <p className="text-meta font-semibold text-text-primary">Controller not detected</p>
-        <ControllerButton className="mt-2" onClick={handleCheckController}>
-          Check controller
-        </ControllerButton>
-        {controllerCheck && <p className="mt-2 text-meta text-text-secondary">{controllerCheck}</p>}
-      </article>
-
-      {ISSUE_IDS.map((issueId) => {
-        const result = results[issueId]
-        return (
-          <article key={issueId} className="border border-border bg-surface p-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-meta font-semibold text-text-primary">{ISSUE_LABELS[issueId]}</p>
-              <ControllerButton
-                disabled={running === issueId}
-                onClick={() => void handleRun(issueId)}
-              >
-                {running === issueId ? 'Running…' : 'Run diagnostic'}
+          <NdxSpatialLockup>
+            <article>
+              <p className="text-meta font-semibold text-text-primary">Controller not detected</p>
+              <ControllerButton className="mt-2" onClick={handleCheckController}>
+                Check controller
               </ControllerButton>
-            </div>
+              {controllerCheck && (
+                <p className="mt-2 text-meta text-text-secondary">{controllerCheck}</p>
+              )}
+            </article>
+          </NdxSpatialLockup>
 
-            {result && (
-              <div className="mt-2">
-                <p className={`text-meta font-semibold ${STATUS_COLOR[result.overallStatus]}`}>
-                  Overall: {result.overallStatus}
-                </p>
-                <ul className="mt-1 grid gap-1 text-caption text-text-secondary">
-                  {result.steps.map((step) => (
-                    <li key={step.label}>
-                      <span className={STATUS_COLOR[step.status]}>{step.status}</span> —{' '}
-                      {step.label}: {step.detail}
-                    </li>
-                  ))}
-                </ul>
-                {result.remediation.length > 0 && (
-                  <ul className="mt-2 list-disc pl-5 text-caption text-text-tertiary">
-                    {result.remediation.map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-          </article>
-        )
-      })}
+          {ISSUE_IDS.map((issueId) => {
+            const result = results[issueId]
+            return (
+              <NdxSpatialLockup key={issueId}>
+                <article>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-meta font-semibold text-text-primary">
+                      {ISSUE_LABELS[issueId]}
+                    </p>
+                    <ControllerButton
+                      disabled={running === issueId}
+                      onClick={() => void handleRun(issueId)}
+                    >
+                      {running === issueId ? 'Running…' : 'Run diagnostic'}
+                    </ControllerButton>
+                  </div>
+
+                  {result && (
+                    <div className="mt-2">
+                      <p
+                        className={`text-meta font-semibold ${STATUS_COLOR[result.overallStatus]}`}
+                      >
+                        Overall: {result.overallStatus}
+                      </p>
+                      <ul className="mt-1 grid gap-1 text-caption text-text-secondary">
+                        {result.steps.map((step) => (
+                          <li key={step.label}>
+                            <span className={STATUS_COLOR[step.status]}>{step.status}</span> —{' '}
+                            {step.label}: {step.detail}
+                          </li>
+                        ))}
+                      </ul>
+                      {result.remediation.length > 0 && (
+                        <ul className="mt-2 list-disc pl-5 text-caption text-text-tertiary">
+                          {result.remediation.map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+                </article>
+              </NdxSpatialLockup>
+            )
+          })}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Fix Policy" subtitle="Diagnostics only" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Checks never report a fix unless the real diagnostic passes.</p>
+          <p>Unsupported issue types are intentionally absent until real probes exist.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

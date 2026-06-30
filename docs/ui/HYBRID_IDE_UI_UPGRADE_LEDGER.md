@@ -55,19 +55,19 @@ Status legend:
 
 | Route | Screen | Current category | Hybrid target | Status | Main risks |
 |---|---:|---|---|---|---|
-| `/` | ND-008 | Dashboard | Spatial dashboard | Frame / Pending Spatial | focus scale overlap, real-data shelf density |
-| `/search` | ND-010 | Tool | Search tool window | Frame / Pending IDE | result virtualization, preview focus |
-| `/onboarding/welcome` | ND-003 | Dashboard | Spatial onboarding | Frame / Pending Spatial | large text, initial focus |
-| `/onboarding/providers` | ND-005 | Critical setup | Settings/permission dialog | Frame / Pending Critical | secret entry, provider validation |
-| `/onboarding/workspaces` | ND-006 | Dashboard | Spatial workspace grid | Frame / Pending Spatial | picker focus, empty state |
-| `/onboarding/calibration` | ND-004 | Critical setup | Controller setup | Frame / Pending Critical | controller-only path |
+| `/` | ND-008 | Dashboard | Spatial dashboard | Partial Spatial | focus scale overlap; visual QA pending |
+| `/search` | ND-010 | Tool | Search tool window | Partial IDE | search scope/results/health framing; preview focus pending |
+| `/onboarding/welcome` | ND-003 | Dashboard | Spatial onboarding | Partial Spatial | large text visual QA pending |
+| `/onboarding/providers` | ND-005 | Critical setup | Settings/permission dialog | Partial Critical | provider category lockups; secret entry validation preserved |
+| `/onboarding/workspaces` | ND-006 | Dashboard | Spatial workspace grid | Partial Spatial | picker focus preserved; visual QA pending |
+| `/onboarding/calibration` | ND-004 | Critical setup | Controller setup | Partial Critical | controller-only path preserved; visual QA pending |
 | `/onboarding/tutorial` | ND-007 | Dashboard | Spatial learning | Frame / Pending Spatial | step focus restoration |
 | `/boot` | ND-001 | Critical shell | Boot shell | Frame / Pending Critical | no overlay interference |
 | `/ai` | ND-013 | IDE-heavy | AI command workbench | Partial IDE | per-step execution semantics still deferred |
 | `/ai/timeline` | ND-014 | Tool-heavy | Timeline/log viewer | Frame / Pending Tool | long timeline focus |
-| `/ai/approvals` | ND-015 | Critical | Permission review | Frame / Pending Critical | destructive review clarity |
-| `/workspaces` | ND-018 | Dashboard | Spatial workspace row/grid | Frame / Pending Spatial | card focus overlap |
-| `/workspaces/detail` | ND-019 | Tool-heavy | Project inspector | Frame / Pending Tool | filesystem actions |
+| `/ai/approvals` | ND-015 | Critical | Permission review | Partial Critical | approval queue editor/review-policy framing; visual QA pending |
+| `/workspaces` | ND-018 | Dashboard | Spatial workspace row/grid | Partial Spatial | card focus overlap visual QA pending |
+| `/workspaces/detail` | ND-019 | Tool-heavy | Project inspector | Partial Tool | workspace tool/detail/scope framing; filesystem actions preserved |
 | `/build` | ND-021 | IDE-heavy | Editor/workbench | Partial IDE | Monaco local bundling preserved; visual QA pending |
 | `/files` | ND-026 | IDE-heavy | Explorer tool window | Partial IDE | deeper preview/editor affordances |
 | `/git` | ND-025 | IDE-heavy | Source Control tool window | Partial IDE | conflict-resolution UI still deferred |
@@ -76,15 +76,15 @@ Status legend:
 | `/browser` | ND-030 | IDE-heavy | Browser tool/editor | Partial IDE | richer tab preview remains |
 | `/browser/:tabId` | ND-031 | IDE-heavy | Browser editor group | Partial IDE | native view focus and bounds still require visual QA |
 | `/automations` | ND-032 | Tool-heavy | Workflow library | Partial Tool | workflow tools/library/run-context framing; visual QA pending |
-| `/automations/forge` | ND-033 | IDE-heavy | Workflow canvas | Frame / Pending IDE | non-drag movement |
-| `/automations/forge/:workflowId` | ND-033 | IDE-heavy | Workflow canvas | Frame / Pending IDE | inspector sync |
+| `/automations/forge` | ND-033 | IDE-heavy | Workflow canvas | Partial IDE | workflow tools/editor/run-safety framing; non-drag movement pending |
+| `/automations/forge/:workflowId` | ND-033 | IDE-heavy | Workflow canvas | Partial IDE | workflow tools/editor/run-safety framing; inspector sync pending |
 | `/automations/runs/:runId` | ND-034 | Tool-heavy | Run detail tabs | Partial Tool | run summary/timeline/actions framing; visual QA pending |
 | `/models` | ND-035 | Tool-heavy | Model grid/tool window | Partial Tool | provider setup/list/routing-context framing; visual QA pending |
 | `/models/:providerId` | ND-036 | Tool-heavy | Model inspector | Partial Tool | provider/detail/policy framing; visual QA pending |
 | `/models/routing-profiles` | ND-037 | Tool-heavy | Routing table | Partial Tool | profile list/preview/decision context framing; visual QA pending |
 | `/agents` | ND-016 | Tool-heavy | Agent cards/detail | Partial Tool | factory/list/policy framing; detail route pending |
 | `/agents/:agentId` | ND-017 | Tool-heavy | Agent detail tabs | Partial Tool | profile/detail/run-context framing; visual QA pending |
-| `/learn` | ND-038 | Dashboard | Spatial learning rows | Frame / Pending Spatial | authored content gap |
+| `/learn` | ND-038 | Dashboard | Spatial learning rows | Partial Spatial | authored content gap; visual QA pending |
 | `/learn/lab/:curriculumId/:moduleId/:lessonId` | ND-039 | Dashboard | Guided lab workbench | Frame / Pending Spatial | lab step focus |
 | `/remote` | ND-040 | IDE-heavy | Remote tool window | Partial IDE | non-SSH target types remain deferred |
 | `/remote/:hostId` | ND-041 | IDE-heavy | Remote terminal panel | Partial IDE | remote xterm focus still needs visual QA |
@@ -96,21 +96,21 @@ Status legend:
 | `/lan-share/transfers/:jobId` | ND-LAN-008 | Tool-heavy | Transfer detail | Partial Tool | transfer state/detail/action-policy framing; visual QA pending |
 | `/lan-share/settings` | ND-LAN-017 | Settings | Settings tree | Partial Tool | settings scope/preferences/security-policy framing; visual QA pending |
 | `/system` | ND-042 | Tool-heavy | System dashboard | Partial Tool | system tools/metrics/scope framing; visual QA pending |
-| `/settings/controller` | ND-043 | Settings | Settings tree | Frame / Pending Critical | controller remap gaps |
-| `/settings/display` | ND-044 | Settings | Settings tree | Frame / Pending Critical | theme interactions |
-| `/settings/privacy` | ND-046 | Critical/settings | Permission matrix | Frame / Pending Critical | audit readability |
+| `/settings/controller` | ND-043 | Settings | Settings tree | Partial Critical | settings tree/editor/scope framing; controller remap gaps |
+| `/settings/display` | ND-044 | Settings | Settings tree | Partial Critical | settings tree/editor/scope framing; theme interactions |
+| `/settings/privacy` | ND-046 | Critical/settings | Permission matrix | Partial Critical | settings tree/editor/security framing; audit readability |
 | `/settings/network` | ND-045 | Settings/tool | Network inspector | Partial Tool | network tools/diagnostics/scope framing; visual QA pending |
-| `/settings/updates` | ND-049 | Critical/settings | Update review | Frame / Pending Critical | install review |
-| `/power` | ND-051 | Critical | Power dialog/screen | Frame / Pending Critical | irreversible host actions |
+| `/settings/updates` | ND-049 | Critical/settings | Update review | Partial Critical | settings tree/editor/release-policy framing; install review |
+| `/power` | ND-051 | Critical | Power dialog/screen | Partial Critical | editor/host-safety framing; irreversible host actions still blocked |
 | `/about` | ND-056 | Tool-heavy | Diagnostics detail | Partial IDE | support bundle privacy preserved; visual QA pending |
 | `/error-recovery` | ND-055 | Critical | Recovery dialog/screen | Partial IDE | crash recovery clarity preserved; visual QA pending |
 | `/integrations` | ND-048 | Tool-heavy | Integrations tool | Partial Tool | integration groups/inventory/scope framing; visual QA pending |
 | `/extensions` | - | Tool-heavy | Extensions manager | Partial Tool | extension sources/inventory/trust-policy framing; visual QA pending |
-| `/recovery` | ND-052 | Critical/tool | Recovery timeline | Frame / Pending Critical | restore review |
+| `/recovery` | ND-052 | Critical/tool | Recovery timeline | Partial Critical | shared timeline/detail framing; restore review preserved |
 | `/storage` | ND-047 | Tool-heavy | Storage/recovery | Partial Tool | storage scope/recovery/storage-policy framing; visual QA pending |
-| `/backup` | ND-X030 | Critical/tool | Backup review | Frame / Pending Critical | restore rollback |
+| `/backup` | ND-X030 | Critical/tool | Backup review | Partial Critical | editor/restore-policy framing; restore rollback preserved |
 | `/vault` | ND-X043 | Critical/tool | Vault tool | Partial Tool | vault guardrails/secret-inventory/reveal-policy framing; visual QA pending |
-| `/privacy` | ND-X050 | Critical/tool | Privacy data map | Frame / Pending Critical | data deletion |
+| `/privacy` | ND-X050 | Critical/tool | Privacy data map | Partial Critical | editor/deletion-policy framing; data deletion preserved |
 | `/profiles` | ND-X042 | Tool-heavy | Profile manager | Partial Tool | profile session/manager/scope framing; visual QA pending |
 | `/continuity` | ND-X044 | Tool-heavy | Continuity tool | Partial Tool | continuity state/center/restore-policy framing; visual QA pending |
 | `/devices` | ND-X032 | Dashboard/tool | Device grid | Partial Tool | device classes/peripheral-inventory/capability-policy framing; visual QA pending |
@@ -121,12 +121,12 @@ Status legend:
 | `/resource-governor` | ND-X037 | Tool-heavy | Resource tool | Partial Tool | governor profiles/resource metrics/action scope framing; visual QA pending |
 | `/ai-workloads` | ND-X038 | Tool-heavy | Scheduler tool | Partial Tool | workload classes/capacity/scheduler scope framing; visual QA pending |
 | `/scheduler` | ND-X039 | Tool-heavy | Trigger inventory | Partial Tool | trigger inventory/scheduler inventory/permission policy framing; visual QA pending |
-| `/help` | ND-X046 | Dashboard/tool | Help hub | Frame / Pending Spatial | help route density |
-| `/troubleshooter` | ND-X057 | Critical/tool | Guided recovery | Frame / Pending Critical | fix claims |
+| `/help` | ND-X046 | Dashboard/tool | Help hub | Partial Spatial | help cards use spatial lockups; route density pending visual QA |
+| `/troubleshooter` | ND-X057 | Critical/tool | Guided recovery | Partial Critical | editor/fix-policy framing; fix claims preserved |
 | `/platform-health` | ND-X070 | Tool-heavy | Health overview | Partial Tool | health sources/overview/policy framing; visual QA pending |
-| `/screenshots` | ND-X058 | Dashboard/media | Media surface | Frame / Pending Spatial | capture privacy |
-| `/voice-notes` | ND-X059 | Dashboard/media | Media surface | Frame / Pending Spatial | transcript privacy |
-| `/presentation` | ND-X064 | Settings/critical | Presentation settings | Frame / Pending Critical | in-progress local changes |
+| `/screenshots` | ND-X058 | Dashboard/media | Media surface | Partial Spatial | capture and media cards use spatial lockups; privacy path preserved |
+| `/voice-notes` | ND-X059 | Dashboard/media | Media surface | Partial Spatial | note cards use spatial lockups; transcript privacy preserved |
+| `/presentation` | ND-X064 | Settings/critical | Presentation settings | Partial Critical | settings tree/editor/policy framing; in-progress local changes preserved |
 
 ## Evidence
 
@@ -286,6 +286,29 @@ npm run lint -> passed
 npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
 ```
 
+HYBRID-6 partial checks run after dashboard, grid, and media spatial migration:
+
+```text
+npm run test -- HomeCommandCenter WorkspaceHub LearningHub HelpHub ScreenshotCenter VoiceNotesCenter -> 6 files / 23 tests passed
+```
+
+HYBRID-7 partial checks run after settings, safety, restore, and policy surface migration:
+
+```text
+npm run test -- ControllerSettings DisplayThemeSettings PrivacyPermissions Updates PowerMenu BackupAndRestore PrivacyDataMap RecoveryTimeline GuidedTroubleshooter ApprovalQueue PresentationModeSettingsScreen NotificationPolicyScreen KioskModeSettings -> 17 files / 71 tests passed
+```
+
+HYBRID-6/7 follow-up checks run after search, workspace detail, workflow forge, and onboarding spatial/critical migration:
+
+```text
+npm run test -- GlobalSearch WorkspaceDetail WorkflowForge -> 4 files / 17 tests passed
+npm run test -- FirstRunWelcome AIProviderSetup WorkspaceDiscovery ControllerCalibration -> 5 files / 26 tests passed
+npm run test -- HomeCommandCenter WorkspaceHub LearningHub HelpHub ScreenshotCenter VoiceNotesCenter GlobalSearch WorkspaceDetail WorkflowForge FirstRunWelcome AIProviderSetup WorkspaceDiscovery ControllerCalibration ControllerSettings DisplayThemeSettings PrivacyPermissions Updates PowerMenu BackupAndRestore PrivacyDataMap RecoveryTimeline GuidedTroubleshooter ApprovalQueue PresentationModeSettingsScreen NotificationPolicyScreen KioskModeSettings -> 32 files / 137 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -300,7 +323,8 @@ npm run build -> passed with existing ErrorRecovery dynamic/static import chunki
   hydration, resize, input, search, copy, and disposal behavior; partial slice complete for
   Monaco workbench theming/popups while preserving local bundling and TypeScript worker behavior.
   HYBRID-4 is implementation-complete pending HYBRID-9 visual/controller evidence.
-- HYBRID-5 must continue tool-heavy platform migrations. Partial slice complete for `/agents`
+- HYBRID-5 tool-heavy platform migrations are broadly partial-complete through the shared
+  workbench primitives. Partial slice complete for `/agents`
   Agent Factory + Agent Operations Center + Agent Policy framing while preserving persisted
   agent definitions, model routing, tool allowlists, enable/remove actions, and zero implicit
   permission ceiling grants. Partial slice complete for `/models` Provider Setup + Model Control
@@ -324,9 +348,15 @@ npm run build -> passed with existing ErrorRecovery dynamic/static import chunki
   `/resource-governor`, `/ai-workloads`, `/scheduler`, `/platform-health`, `/extensions`, `/vault`,
   `/devices`, `/devices/bluetooth`, `/devices/audio`, `/devices/display`, `/devices/storage`, and
   all LAN Share routes while preserving their existing IPC-backed behavior and honest deferred
-  controls. Remaining HYBRID-5 targets include Permissions, Recovery, Backup, Privacy, trusted
-  publishers, updates, and any route-level inspectors not yet covered by the shared workbench
-  primitives.
-- HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
-- HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.
+  controls. Remaining HYBRID-5 targets are deeper per-route inspectors, trusted publishers, and
+  route-specific visual/controller evidence rather than new parallel platform UI systems.
+- HYBRID-6 partial spatial migration is complete for Home, Workspaces, Learning Hub, Help Hub,
+  Screenshot Center, Voice Notes, onboarding welcome, and workspace discovery. Remaining HYBRID-6
+  targets include Guided Controller Tutorial, Guided Lab, Boot-adjacent spatial states where
+  appropriate, and route-by-route overlap evidence at 1280x800 and target docked sizes.
+- HYBRID-7 partial critical/settings migration is complete for controller/display/privacy/update
+  settings, power, recovery, backup, privacy data map, guided troubleshooter, approval queue,
+  presentation, notification policy, kiosk mode, AI provider setup, and controller calibration.
+  Remaining HYBRID-7 work is full dialog-standardization coverage, notification/sandbox policy
+  reconciliation with presentation-mode work, and controller/accessibility evidence.
 - HYBRID-8 and HYBRID-9 need visual/controller/performance evidence at all target resolutions before any full-program completion claim.

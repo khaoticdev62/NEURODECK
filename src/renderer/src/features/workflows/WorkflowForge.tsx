@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { ConditionOperator, WorkflowStep, WorkflowStepKind } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { listWorkflows, saveWorkflow } from '../../services/ipc/workflowClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
@@ -59,14 +60,8 @@ function makeStep(kind: WorkflowStepKind): WorkflowStep {
 
 /**
  * ND-033 Workflow Forge, built as a controller-friendly ordered step list
- * rather than a free-form pan/zoom node canvas — a deliberate scope
- * simplification (see `shared/contracts/workflow.ts`'s scope note). Real:
- * every workflow saved here is a genuine, runnable `WorkflowDefinition`.
- * Cycle detection/unreachable-node flags don't apply to a linear list;
- * "destructive nodes require recovery metadata" doesn't apply either,
- * since no tool-action this slice can register writes a file directly
- * (file writes already go through `RecoveryService` at the `FileService`
- * layer, not per-workflow-step).
+ * rather than a free-form pan/zoom node canvas. Every workflow saved here is a
+ * genuine runnable `WorkflowDefinition`.
  */
 export function WorkflowForge(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
@@ -159,75 +154,94 @@ function WorkflowForgeWorkspace({
   const registeredTools = registry.list()
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <p className="text-title font-semibold text-text-primary">Workflow Forge</p>
-
-      {error && <ErrorState title="Couldn't save workflow" description={error} />}
-
-      <div className="flex flex-col gap-2">
-        <input
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="Workflow name"
-          className="rounded-md border border-border bg-surface p-2 text-body text-text-primary"
-        />
-        <textarea
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-          placeholder="Description"
-          rows={2}
-          className="rounded-md border border-border bg-surface p-2 text-body text-text-primary"
-        />
-      </div>
-
-      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
-        {steps.length === 0 ? (
-          <EmptyState title="No steps yet" description="Add a step below to build this workflow." />
-        ) : (
-          <ol className="flex flex-col gap-2">
-            {steps.map((step, index) => (
-              <StepEditor
-                key={step.id}
-                step={step}
-                index={index}
-                total={steps.length}
-                registeredTools={registeredTools.map((tool) => tool.id)}
-                onChange={(next) => updateStep(step.id, next)}
-                onRemove={() => removeStep(step.id)}
-                onMove={(direction) => moveStep(step.id, direction)}
-              />
+    <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[17rem_minmax(0,1fr)_19rem]">
+      <NdxToolWindow title="Workflow Tools" subtitle={`${registeredTools.length} registered`}>
+        <div className="flex flex-col gap-2">
+          <select
+            value={newStepKind}
+            onChange={(event) => setNewStepKind(event.target.value as WorkflowStepKind)}
+            className="rounded-md border border-border bg-surface p-2 text-body text-text-primary"
+          >
+            {Object.entries(STEP_KIND_LABEL).map(([kind, label]) => (
+              <option key={kind} value={kind}>
+                {label}
+              </option>
             ))}
-          </ol>
-        )}
-      </div>
+          </select>
+          <ControllerButton
+            variant="secondary"
+            onClick={() => setSteps((current) => [...current, makeStep(newStepKind)])}
+          >
+            Add step
+          </ControllerButton>
+        </div>
+      </NdxToolWindow>
 
-      <div className="flex items-center gap-2 border-t border-border pt-3">
-        <select
-          value={newStepKind}
-          onChange={(event) => setNewStepKind(event.target.value as WorkflowStepKind)}
-          className="rounded-md border border-border bg-surface p-2 text-body text-text-primary"
-        >
-          {Object.entries(STEP_KIND_LABEL).map(([kind, label]) => (
-            <option key={kind} value={kind}>
-              {label}
-            </option>
-          ))}
-        </select>
-        <ControllerButton
-          variant="secondary"
-          onClick={() => setSteps((current) => [...current, makeStep(newStepKind)])}
-        >
-          Add step
-        </ControllerButton>
-        <ControllerButton
-          variant="primary"
-          className="ml-auto"
-          disabled={saving}
-          onClick={() => void handleSave()}
-        >
-          {saving ? 'Saving…' : 'Save workflow'}
-        </ControllerButton>
-      </div>
+      <NdxEditorShell title="Workflow Forge">
+        <div className="flex h-full min-h-0 flex-col gap-4 p-4">
+          <p className="text-title font-semibold text-text-primary">Workflow Forge</p>
+
+          {error && <ErrorState title="Couldn't save workflow" description={error} />}
+
+          <div className="flex flex-col gap-2">
+            <input
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              placeholder="Workflow name"
+              className="rounded-md border border-border bg-surface p-2 text-body text-text-primary"
+            />
+            <textarea
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="Description"
+              rows={2}
+              className="rounded-md border border-border bg-surface p-2 text-body text-text-primary"
+            />
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
+            {steps.length === 0 ? (
+              <EmptyState
+                title="No steps yet"
+                description="Add a step from the Workflow Tools panel to build this workflow."
+              />
+            ) : (
+              <ol className="flex flex-col gap-2">
+                {steps.map((step, index) => (
+                  <StepEditor
+                    key={step.id}
+                    step={step}
+                    index={index}
+                    total={steps.length}
+                    registeredTools={registeredTools.map((tool) => tool.id)}
+                    onChange={(next) => updateStep(step.id, next)}
+                    onRemove={() => removeStep(step.id)}
+                    onMove={(direction) => moveStep(step.id, direction)}
+                  />
+                ))}
+              </ol>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 border-t border-border pt-3">
+            <ControllerButton
+              variant="primary"
+              className="ml-auto"
+              disabled={saving}
+              onClick={() => void handleSave()}
+            >
+              {saving ? 'Saving...' : 'Save workflow'}
+            </ControllerButton>
+          </div>
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Run Safety" subtitle={`${steps.length} steps`} side="right">
+        <p className="text-meta text-text-secondary">
+          Saved definitions remain real runnable workflows. Tool execution still flows through the
+          shared AI safety registry and Action Queue.
+        </p>
+      </NdxToolWindow>
     </div>
   )
 }
@@ -250,21 +264,21 @@ function StepEditor({
   onMove: (direction: -1 | 1) => void
 }): React.JSX.Element {
   return (
-    <li className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <li className="flex flex-col gap-2 border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)] p-3">
       <div className="flex items-center justify-between">
         <span className="text-meta uppercase tracking-[0.12em] text-text-tertiary">
           {index + 1}. {STEP_KIND_LABEL[step.kind]}
         </span>
         <div className="flex gap-1">
           <ControllerButton variant="ghost" disabled={index === 0} onClick={() => onMove(-1)}>
-            ↑
+            Up
           </ControllerButton>
           <ControllerButton
             variant="ghost"
             disabled={index === total - 1}
             onClick={() => onMove(1)}
           >
-            ↓
+            Down
           </ControllerButton>
           <ControllerButton variant="ghost" onClick={onRemove}>
             Remove
@@ -286,7 +300,7 @@ function StepEditor({
             onChange={(event) => onChange({ ...step, toolId: event.target.value })}
             className="rounded-md border border-border bg-canvas p-2 text-meta text-text-primary"
           >
-            <option value="">Select a registered tool…</option>
+            <option value="">Select a registered tool...</option>
             {registeredTools.map((toolId) => (
               <option key={toolId} value={toolId}>
                 {toolId}
@@ -299,7 +313,7 @@ function StepEditor({
               try {
                 onChange({ ...step, args: JSON.parse(event.target.value) })
               } catch {
-                // Invalid JSON while typing — ignore until it parses again.
+                // Invalid JSON while typing; ignore until it parses again.
               }
             }}
             placeholder="Tool arguments (JSON)"

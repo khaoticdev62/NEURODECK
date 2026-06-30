@@ -4,6 +4,7 @@ import type { ScreenshotRecord, ScreenshotSource } from '@shared/contracts'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxSpatialLockup } from '../../components/workbench'
 import {
   addScreenshotToWorkspace,
   captureScreenshot,
@@ -102,35 +103,40 @@ export function ScreenshotCenter(): React.JSX.Element {
       {error && <ErrorState title="Screenshot error" description={error} />}
       {status && <p className="text-meta text-status-success">{status}</p>}
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-meta font-semibold text-text-primary">Capture</p>
-        <div className="flex items-center gap-2">
-          <span className="text-meta text-text-secondary">Delay:</span>
-          {DELAY_OPTIONS.map((seconds) => (
+      <NdxSpatialLockup>
+        <section className="flex flex-col gap-2">
+          <p className="text-meta font-semibold text-text-primary">Capture</p>
+          <div className="flex items-center gap-2">
+            <span className="text-meta text-text-secondary">Delay:</span>
+            {DELAY_OPTIONS.map((seconds) => (
+              <ControllerButton
+                key={seconds}
+                variant={delaySeconds === seconds ? 'primary' : 'secondary'}
+                onClick={() => setDelaySeconds(seconds)}
+              >
+                {seconds === 0 ? 'None' : `${seconds}s`}
+              </ControllerButton>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
             <ControllerButton
-              key={seconds}
-              variant={delaySeconds === seconds ? 'primary' : 'secondary'}
-              onClick={() => setDelaySeconds(seconds)}
+              variant="primary"
+              disabled={capturing}
+              onClick={() => void handleCapture('current-window')}
             >
-              {seconds === 0 ? 'None' : `${seconds}s`}
+              {capturing ? 'Capturing…' : 'Capture current window'}
             </ControllerButton>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <ControllerButton
-            variant="primary"
-            disabled={capturing}
-            onClick={() => void handleCapture('current-window')}
-          >
-            {capturing ? 'Capturing…' : 'Capture current window'}
-          </ControllerButton>
-          <ControllerButton disabled={capturing} onClick={() => void handleCapture('full-screen')}>
-            {capturing ? 'Capturing…' : 'Capture full screen'}
-          </ControllerButton>
-        </div>
-      </section>
+            <ControllerButton
+              disabled={capturing}
+              onClick={() => void handleCapture('full-screen')}
+            >
+              {capturing ? 'Capturing…' : 'Capture full screen'}
+            </ControllerButton>
+          </div>
+        </section>
+      </NdxSpatialLockup>
 
-      <section className="grid gap-3">
+      <section className="grid gap-3 xl:grid-cols-2">
         {loading ? (
           <p className="text-meta text-text-secondary">Loading screenshots…</p>
         ) : screenshots.length === 0 ? (
@@ -140,34 +146,36 @@ export function ScreenshotCenter(): React.JSX.Element {
           />
         ) : (
           screenshots.map((record) => (
-            <article key={record.id} className="border border-border bg-surface p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-meta font-semibold text-text-primary">
-                    {record.source === 'full-screen' ? 'Full screen' : 'Current window'}
-                  </p>
-                  <p className="text-caption text-text-tertiary">
-                    {new Date(record.capturedAt).toLocaleString()} · {formatBytes(record.bytes)}
-                  </p>
-                  <p className="mt-1 break-all text-caption text-text-tertiary">{record.path}</p>
+            <NdxSpatialLockup key={record.id}>
+              <article>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-meta font-semibold text-text-primary">
+                      {record.source === 'full-screen' ? 'Full screen' : 'Current window'}
+                    </p>
+                    <p className="text-caption text-text-tertiary">
+                      {new Date(record.capturedAt).toLocaleString()} · {formatBytes(record.bytes)}
+                    </p>
+                    <p className="mt-1 break-all text-caption text-text-tertiary">{record.path}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <ControllerButton onClick={() => void handleCopy(record)}>Copy</ControllerButton>
-                <ControllerButton onClick={() => handleShare(record)}>
-                  Share via LAN Share
-                </ControllerButton>
-                <ControllerButton
-                  disabled={!activeWorkspace}
-                  onClick={() => void handleAddToWorkspace(record)}
-                >
-                  Add to workspace
-                </ControllerButton>
-                <ControllerButton variant="destructive" onClick={() => setDeleteReview(record)}>
-                  Delete
-                </ControllerButton>
-              </div>
-            </article>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <ControllerButton onClick={() => void handleCopy(record)}>Copy</ControllerButton>
+                  <ControllerButton onClick={() => handleShare(record)}>
+                    Share via LAN Share
+                  </ControllerButton>
+                  <ControllerButton
+                    disabled={!activeWorkspace}
+                    onClick={() => void handleAddToWorkspace(record)}
+                  >
+                    Add to workspace
+                  </ControllerButton>
+                  <ControllerButton variant="destructive" onClick={() => setDeleteReview(record)}>
+                    Delete
+                  </ControllerButton>
+                </div>
+              </article>
+            </NdxSpatialLockup>
           ))
         )}
       </section>

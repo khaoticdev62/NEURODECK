@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NdxSpatialLockup } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 
 interface WelcomeCard {
@@ -49,13 +50,12 @@ export function FirstRunWelcome(): React.JSX.Element {
       </div>
       <div className="grid grid-cols-2 gap-4">
         {CARDS.map((card) => (
-          <div
-            key={card.title}
-            className="w-64 rounded-lg border border-border bg-surface p-4 text-left"
-          >
-            <p className="text-body font-semibold text-text-primary">{card.title}</p>
-            <p className="mt-1 text-meta text-text-secondary">{card.description}</p>
-          </div>
+          <NdxSpatialLockup key={card.title}>
+            <div className="w-64 text-left">
+              <p className="text-body font-semibold text-text-primary">{card.title}</p>
+              <p className="mt-1 text-meta text-text-secondary">{card.description}</p>
+            </div>
+          </NdxSpatialLockup>
         ))}
       </div>
       <ControllerButton

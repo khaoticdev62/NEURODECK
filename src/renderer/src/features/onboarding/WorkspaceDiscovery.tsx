@@ -4,6 +4,7 @@ import type { DiscoveredWorkspace, WorkspaceDiscoverySource } from '@shared/cont
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxSpatialLockup } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import {
   createWorkspace,
@@ -257,34 +258,34 @@ function DiscoveredCard({
   })
 
   return (
-    <li
-      ref={ref}
-      tabIndex={-1}
-      className={`flex flex-col gap-2 rounded-lg border p-4 ${isFocused ? 'border-border-focus' : 'border-border'} bg-surface`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-body font-semibold text-text-primary">{item.name}</p>
-          <p className="text-meta text-text-secondary">{item.rootPath}</p>
+    <li ref={ref} tabIndex={-1} className="flex flex-col">
+      <NdxSpatialLockup selected={isFocused}>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-body font-semibold text-text-primary">{item.name}</p>
+              <p className="text-meta text-text-secondary">{item.rootPath}</p>
+            </div>
+            <StatusBadge tone="info" label={SOURCE_LABELS[item.source]} />
+          </div>
+          {item.reason && <p className="text-meta text-text-secondary">{item.reason}</p>}
+          <div className="mt-1 flex gap-2">
+            {item.source === 'ssh' ? (
+              <ControllerButton variant="ghost" disabled aria-label={`${item.name} is remote only`}>
+                Remote only
+              </ControllerButton>
+            ) : isAdded ? (
+              <ControllerButton variant="ghost" disabled aria-label={`${item.name} already added`}>
+                Added
+              </ControllerButton>
+            ) : (
+              <ControllerButton variant="primary" onClick={onAdd} aria-label={`Add ${item.name}`}>
+                Add
+              </ControllerButton>
+            )}
+          </div>
         </div>
-        <StatusBadge tone="info" label={SOURCE_LABELS[item.source]} />
-      </div>
-      {item.reason && <p className="text-meta text-text-secondary">{item.reason}</p>}
-      <div className="mt-1 flex gap-2">
-        {item.source === 'ssh' ? (
-          <ControllerButton variant="ghost" disabled aria-label={`${item.name} is remote only`}>
-            Remote only
-          </ControllerButton>
-        ) : isAdded ? (
-          <ControllerButton variant="ghost" disabled aria-label={`${item.name} already added`}>
-            Added
-          </ControllerButton>
-        ) : (
-          <ControllerButton variant="primary" onClick={onAdd} aria-label={`Add ${item.name}`}>
-            Add
-          </ControllerButton>
-        )}
-      </div>
+      </NdxSpatialLockup>
     </li>
   )
 }

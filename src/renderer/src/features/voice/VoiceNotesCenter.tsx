@@ -3,6 +3,7 @@ import type { VoiceNote } from '@shared/contracts'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxSpatialLockup } from '../../components/workbench'
 import {
   addVoiceNoteToKnowledge,
   deleteVoiceNoteAudio,
@@ -108,7 +109,7 @@ export function VoiceNotesCenter(): React.JSX.Element {
           description="Recorded notes will appear here after dictation or voice capture saves them."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
           {notes.map((note) => (
             <VoiceNoteCard
               key={note.id}
@@ -166,52 +167,54 @@ function VoiceNoteCard({
   const audioDeleted = Boolean(note.audioDeletedAt)
 
   return (
-    <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-      <div>
-        <p className="text-body font-semibold text-text-primary">
-          {new Date(note.createdAt).toLocaleString()}
-        </p>
-        <p className="text-caption text-text-tertiary">
-          {formatDuration(note.durationMs)} - {audioDeleted ? 'audio deleted' : 'audio retained'}
-        </p>
-      </div>
+    <NdxSpatialLockup>
+      <section className="flex h-full flex-col gap-2">
+        <div>
+          <p className="text-body font-semibold text-text-primary">
+            {new Date(note.createdAt).toLocaleString()}
+          </p>
+          <p className="text-caption text-text-tertiary">
+            {formatDuration(note.durationMs)} - {audioDeleted ? 'audio deleted' : 'audio retained'}
+          </p>
+        </div>
 
-      {hasTranscript ? (
-        <p className="max-h-24 overflow-auto text-meta text-text-secondary">{note.transcript}</p>
-      ) : (
-        <p className="text-meta text-text-tertiary">No transcript captured for this note.</p>
-      )}
+        {hasTranscript ? (
+          <p className="max-h-24 overflow-auto text-meta text-text-secondary">{note.transcript}</p>
+        ) : (
+          <p className="text-meta text-text-tertiary">No transcript captured for this note.</p>
+        )}
 
-      <label className="flex items-center gap-2 text-meta text-text-secondary">
-        <input
-          type="checkbox"
-          checked={deleteAudioAfterIndex}
-          disabled={!hasTranscript || audioDeleted}
-          onChange={(event) => setDeleteAudioAfterIndex(event.currentTarget.checked)}
-        />
-        Delete audio after adding transcript
-      </label>
+        <label className="flex items-center gap-2 text-meta text-text-secondary">
+          <input
+            type="checkbox"
+            checked={deleteAudioAfterIndex}
+            disabled={!hasTranscript || audioDeleted}
+            onChange={(event) => setDeleteAudioAfterIndex(event.currentTarget.checked)}
+          />
+          Delete audio after adding transcript
+        </label>
 
-      <div className="flex flex-wrap gap-2">
-        <ControllerButton
-          variant="primary"
-          disabled={!hasTranscript}
-          onClick={() => onAddToKnowledge(deleteAudioAfterIndex)}
-        >
-          Add to Knowledge Vault
-        </ControllerButton>
-        <ControllerButton
-          variant="secondary"
-          disabled={!hasTranscript || audioDeleted}
-          onClick={onDeleteAudio}
-        >
-          Delete audio
-        </ControllerButton>
-        <ControllerButton variant="destructive" onClick={onDeleteNote}>
-          Delete note
-        </ControllerButton>
-      </div>
-    </section>
+        <div className="flex flex-wrap gap-2">
+          <ControllerButton
+            variant="primary"
+            disabled={!hasTranscript}
+            onClick={() => onAddToKnowledge(deleteAudioAfterIndex)}
+          >
+            Add to Knowledge Vault
+          </ControllerButton>
+          <ControllerButton
+            variant="secondary"
+            disabled={!hasTranscript || audioDeleted}
+            onClick={onDeleteAudio}
+          >
+            Delete audio
+          </ControllerButton>
+          <ControllerButton variant="destructive" onClick={onDeleteNote}>
+            Delete note
+          </ControllerButton>
+        </div>
+      </section>
+    </NdxSpatialLockup>
   )
 }
 

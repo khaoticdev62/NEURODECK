@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxSettingsTree, NdxToolWindow } from '../../components/workbench'
 import {
   HOLD_THRESHOLD_MS,
   REPEAT_DELAY_MS,
@@ -89,58 +90,78 @@ export function ControllerSettings(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Controller Settings</p>
-        <ControllerButton variant="ghost" onClick={() => navigate('/onboarding/calibration')}>
-          Test controller input
-        </ControllerButton>
-      </div>
+    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxSettingsTree>
+        <div className="space-y-2 text-meta text-text-secondary">
+          <p className="text-text-primary">Controller</p>
+          <p>Haptics</p>
+          <p>Input timing</p>
+          <p>Deferred adapters</p>
+        </div>
+      </NdxSettingsTree>
 
-      {error && <ErrorState title="Controller settings error" description={error} />}
-
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Detected controller</p>
-        <p className="text-meta text-text-secondary">{controllerKind}</p>
-      </section>
-
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Haptics</p>
-        <div className="flex gap-2">
-          {INTENSITY_LEVELS.map((level) => (
-            <ControllerButton
-              key={level}
-              variant={intensity === level ? 'primary' : 'secondary'}
-              onClick={() => void applyIntensity(level)}
-            >
-              {level}
+      <NdxEditorShell title="Controller Preferences">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-title font-semibold text-text-primary">Controller Settings</p>
+            <ControllerButton variant="ghost" onClick={() => navigate('/onboarding/calibration')}>
+              Test controller input
             </ControllerButton>
+          </div>
+
+          {error && <ErrorState title="Controller settings error" description={error} />}
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Detected controller</p>
+            <p className="text-meta text-text-secondary">{controllerKind}</p>
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Haptics</p>
+            <div className="flex gap-2">
+              {INTENSITY_LEVELS.map((level) => (
+                <ControllerButton
+                  key={level}
+                  variant={intensity === level ? 'primary' : 'secondary'}
+                  onClick={() => void applyIntensity(level)}
+                >
+                  {level}
+                </ControllerButton>
+              ))}
+            </div>
+            <ControllerButton variant="ghost" onClick={() => void testHaptics()}>
+              Test haptics
+            </ControllerButton>
+            {testResult && <p className="text-meta text-text-tertiary">Result: {testResult}</p>}
+            {saveStatus && <p className="text-meta text-status-success">{saveStatus}</p>}
+          </section>
+
+          <section className="flex flex-col gap-1 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Input timing (read-only)</p>
+            <p className="text-meta text-text-secondary">Hold duration: {HOLD_THRESHOLD_MS} ms</p>
+            <p className="text-meta text-text-secondary">Repeat delay: {REPEAT_DELAY_MS} ms</p>
+            <p className="text-meta text-text-secondary">Repeat rate: {REPEAT_RATE_MS} ms</p>
+            <p className="text-meta text-text-secondary">Left-stick dead zone: {STICK_DEAD_ZONE}</p>
+            <p className="text-meta text-text-tertiary">
+              Not adjustable yet — needs a config-threading refactor through the polling engine.
+            </p>
+          </section>
+
+          {DEFERRED_SECTIONS.map((section) => (
+            <section key={section.title} className="border border-border bg-surface p-3 opacity-60">
+              <p className="text-body font-semibold text-text-primary">{section.title}</p>
+              <p className="text-meta text-text-tertiary">Not available: {section.reason}</p>
+            </section>
           ))}
         </div>
-        <ControllerButton variant="ghost" onClick={() => void testHaptics()}>
-          Test haptics
-        </ControllerButton>
-        {testResult && <p className="text-meta text-text-tertiary">Result: {testResult}</p>}
-        {saveStatus && <p className="text-meta text-status-success">{saveStatus}</p>}
-      </section>
+      </NdxEditorShell>
 
-      <section className="flex flex-col gap-1 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Input timing (read-only)</p>
-        <p className="text-meta text-text-secondary">Hold duration: {HOLD_THRESHOLD_MS} ms</p>
-        <p className="text-meta text-text-secondary">Repeat delay: {REPEAT_DELAY_MS} ms</p>
-        <p className="text-meta text-text-secondary">Repeat rate: {REPEAT_RATE_MS} ms</p>
-        <p className="text-meta text-text-secondary">Left-stick dead zone: {STICK_DEAD_ZONE}</p>
-        <p className="text-meta text-text-tertiary">
-          Not adjustable yet — needs a config-threading refactor through the polling engine.
-        </p>
-      </section>
-
-      {DEFERRED_SECTIONS.map((section) => (
-        <section key={section.title} className="border border-border bg-surface p-3 opacity-60">
-          <p className="text-body font-semibold text-text-primary">{section.title}</p>
-          <p className="text-meta text-text-tertiary">Not available: {section.reason}</p>
-        </section>
-      ))}
+      <NdxToolWindow title="Controller Scope" subtitle={controllerKind} side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Only haptics intensity is persisted in this slice.</p>
+          <p>Rear buttons, gyro, and trackpads still require Steam Input or a native adapter.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

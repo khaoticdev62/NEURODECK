@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxSpatialLockup } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { Modal } from '../../components/overlays/Modal'
 import type { Curriculum, CurriculumProgress, LearningArea } from '@shared/contracts'
@@ -102,50 +103,52 @@ function CurriculumCard({
   const labs = labCount(curriculum)
 
   return (
-    <ControllerButton
-      ref={ref}
-      variant="secondary"
-      className={`flex h-full flex-col items-start gap-3 text-left ${isFocused ? 'ring-2 ring-border-focus' : ''}`}
-      onClick={onStart}
-    >
-      <div className="flex w-full items-start justify-between gap-2">
-        <span className="text-body font-semibold text-text-primary">{curriculum.title}</span>
-        {curriculum.bundled && <StatusBadge tone="neutral" label="Bundled" />}
-      </div>
-      <p className="text-meta text-text-secondary line-clamp-2">{curriculum.description}</p>
-      <div className="mt-auto flex w-full flex-wrap items-center gap-2 text-meta text-text-secondary">
-        <span>{AREA_LABELS[curriculum.area]}</span>
-        <span>·</span>
-        <span>{minutes} min</span>
-        {labs > 0 && (
-          <>
-            <span>·</span>
-            <span>
-              {labs} lab{labs === 1 ? '' : 's'}
-            </span>
-          </>
+    <NdxSpatialLockup selected={isFocused}>
+      <ControllerButton
+        ref={ref}
+        variant="secondary"
+        className="flex h-full min-h-72 flex-col items-start gap-3 border-0 bg-transparent p-0 text-left shadow-none hover:bg-transparent"
+        onClick={onStart}
+      >
+        <div className="flex w-full items-start justify-between gap-2">
+          <span className="text-body font-semibold text-text-primary">{curriculum.title}</span>
+          {curriculum.bundled && <StatusBadge tone="neutral" label="Bundled" />}
+        </div>
+        <p className="text-meta text-text-secondary line-clamp-2">{curriculum.description}</p>
+        <div className="mt-auto flex w-full flex-wrap items-center gap-2 text-meta text-text-secondary">
+          <span>{AREA_LABELS[curriculum.area]}</span>
+          <span>·</span>
+          <span>{minutes} min</span>
+          {labs > 0 && (
+            <>
+              <span>·</span>
+              <span>
+                {labs} lab{labs === 1 ? '' : 's'}
+              </span>
+            </>
+          )}
+          <span>·</span>
+          <span>Offline</span>
+        </div>
+        {curriculum.requiredTools.length > 0 && (
+          <p className="text-meta text-text-secondary">
+            Tools: {curriculum.requiredTools.join(', ')}
+          </p>
         )}
-        <span>·</span>
-        <span>Offline</span>
-      </div>
-      {curriculum.requiredTools.length > 0 && (
-        <p className="text-meta text-text-secondary">
-          Tools: {curriculum.requiredTools.join(', ')}
-        </p>
-      )}
-      <div className="w-full">
-        <div className="flex justify-between text-meta text-text-secondary">
-          <span>Progress</span>
-          <span>{progressPercent}%</span>
+        <div className="w-full">
+          <div className="flex justify-between text-meta text-text-secondary">
+            <span>Progress</span>
+            <span>{progressPercent}%</span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-canvas">
+            <div
+              className="h-full bg-status-success transition-all"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
-        <div className="h-2 w-full overflow-hidden rounded-full bg-canvas">
-          <div
-            className="h-full bg-status-success transition-all"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
-    </ControllerButton>
+      </ControllerButton>
+    </NdxSpatialLockup>
   )
 }
 

@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxSpatialLockup } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { useWorkspaces } from './useWorkspaces'
 
@@ -45,7 +46,7 @@ export function WorkspaceHub(): React.JSX.Element {
           description="Add a folder to get started — NeuroDeck will remember it for next time."
         />
       ) : (
-        <ul className="grid grid-cols-2 gap-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {workspaces.map((workspace) => (
             <WorkspaceCard
               key={workspace.id}
@@ -88,24 +89,24 @@ function WorkspaceCard({
   })
 
   return (
-    <li
-      ref={ref}
-      tabIndex={-1}
-      className={`rounded-lg border p-4 ${isFocused ? 'border-border-focus' : 'border-border'} bg-surface`}
-    >
-      <p className="text-body font-semibold text-text-primary">{name}</p>
-      <p className="text-meta text-text-secondary">{rootPath}</p>
-      <p className="text-meta text-text-tertiary">
-        Added {new Date(createdAt).toLocaleDateString()}
-      </p>
-      <div className="mt-3 flex gap-2">
-        <ControllerButton variant="primary" onClick={onOpen}>
-          Open
-        </ControllerButton>
-        <ControllerButton variant="ghost" onClick={onRemove}>
-          Remove
-        </ControllerButton>
-      </div>
+    <li ref={ref} tabIndex={-1}>
+      <NdxSpatialLockup selected={isFocused}>
+        <section className="flex min-h-40 flex-col">
+          <p className="text-body font-semibold text-text-primary">{name}</p>
+          <p className="break-all text-meta text-text-secondary">{rootPath}</p>
+          <p className="text-meta text-text-tertiary">
+            Added {new Date(createdAt).toLocaleDateString()}
+          </p>
+          <div className="mt-auto flex flex-wrap gap-2 pt-3">
+            <ControllerButton variant="primary" onClick={onOpen}>
+              Open
+            </ControllerButton>
+            <ControllerButton variant="ghost" onClick={onRemove}>
+              Remove
+            </ControllerButton>
+          </div>
+        </section>
+      </NdxSpatialLockup>
     </li>
   )
 }

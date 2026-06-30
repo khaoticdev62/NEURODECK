@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxSettingsTree, NdxToolWindow } from '../../components/workbench'
 import { checkForUpdates, getUpdateStatus } from '../../services/ipc/updateClient'
 import type { UpdateStatus } from '@shared/contracts'
 
@@ -89,68 +90,93 @@ export function Updates(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <header>
-        <p className="text-title font-semibold text-text-primary">Updates</p>
-        <p className="text-body text-text-secondary">
-          Current versions are shown below. The full download/apply/rollback flow is disabled until
-          a signed release pipeline is configured.
-        </p>
-      </header>
+    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(44rem,1fr)_20rem] gap-2 overflow-auto">
+      <NdxSettingsTree>
+        <div className="space-y-2 text-meta text-text-secondary">
+          <p className="text-text-primary">Release checks</p>
+          <p>Application status</p>
+          <p>Components</p>
+        </div>
+      </NdxSettingsTree>
 
-      {error && <ErrorState title="Update check error" description={error} />}
+      <NdxEditorShell title="Update Review">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
+          <header>
+            <p className="text-title font-semibold text-text-primary">Updates</p>
+            <p className="text-body text-text-secondary">
+              Current versions are shown below. The full download/apply/rollback flow is disabled
+              until a signed release pipeline is configured.
+            </p>
+          </header>
 
-      {status && (
-        <section className="space-y-2 border border-border bg-surface p-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-body font-semibold text-text-primary">NeuroDeck app</p>
-              <p className="text-meta text-text-secondary">
-                Current version: {status.currentVersion}
-                {status.latestVersion && ` · Latest: ${status.latestVersion}`}
-              </p>
-              {status.updateAvailable && status.changelog && (
-                <p className="text-meta text-text-secondary">Changelog: {status.changelog}</p>
-              )}
-              {status.compatibility && (
-                <p className="text-meta text-text-secondary">
-                  Compatibility: {status.compatibility}
+          {error && <ErrorState title="Update check error" description={error} />}
+
+          {status && (
+            <section className="space-y-2 border border-border bg-surface p-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-body font-semibold text-text-primary">NeuroDeck app</p>
+                  <p className="text-meta text-text-secondary">
+                    Current version: {status.currentVersion}
+                    {status.latestVersion && ` · Latest: ${status.latestVersion}`}
+                  </p>
+                  {status.updateAvailable && status.changelog && (
+                    <p className="text-meta text-text-secondary">Changelog: {status.changelog}</p>
+                  )}
+                  {status.compatibility && (
+                    <p className="text-meta text-text-secondary">
+                      Compatibility: {status.compatibility}
+                    </p>
+                  )}
+                  {status.reason && (
+                    <p className="text-meta text-text-secondary">{status.reason}</p>
+                  )}
+                </div>
+                <div className="flex flex-col gap-2">
+                  <ControllerButton
+                    variant="primary"
+                    disabled={checking}
+                    onClick={() => void handleCheck()}
+                  >
+                    {checking ? 'Checking…' : 'Check for updates'}
+                  </ControllerButton>
+                  <ControllerButton variant="secondary" disabled>
+                    Download and apply
+                  </ControllerButton>
+                </div>
+              </div>
+              {!status.checkEnabled && (
+                <p className="text-meta text-status-warning">
+                  Update checking is disabled: {status.reason}
                 </p>
               )}
-              {status.reason && <p className="text-meta text-text-secondary">{status.reason}</p>}
-            </div>
-            <div className="flex flex-col gap-2">
-              <ControllerButton
-                variant="primary"
-                disabled={checking}
-                onClick={() => void handleCheck()}
-              >
-                {checking ? 'Checking…' : 'Check for updates'}
-              </ControllerButton>
-              <ControllerButton variant="secondary" disabled>
-                Download and apply
-              </ControllerButton>
-            </div>
-          </div>
-          {!status.checkEnabled && (
-            <p className="text-meta text-status-warning">
-              Update checking is disabled: {status.reason}
-            </p>
+            </section>
           )}
-        </section>
-      )}
 
-      <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {SECTIONS.map((section) => (
-          <div key={section.id} className="space-y-1 border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">{section.name}</p>
-            <p className="text-meta text-text-secondary">{section.note}</p>
-            <p className="text-meta text-text-tertiary">
-              Current version: {section.currentVersion}
-            </p>
-          </div>
-        ))}
-      </section>
+          <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {SECTIONS.map((section) => (
+              <div key={section.id} className="space-y-1 border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">{section.name}</p>
+                <p className="text-meta text-text-secondary">{section.note}</p>
+                <p className="text-meta text-text-tertiary">
+                  Current version: {section.currentVersion}
+                </p>
+              </div>
+            ))}
+          </section>
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow
+        title="Release Policy"
+        subtitle={status?.checkEnabled ? 'Checks enabled' : 'Checks disabled'}
+        side="right"
+      >
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Download, apply, and rollback stay disabled until signed releases are configured.</p>
+          <p>Version information is sourced through the typed update IPC service.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

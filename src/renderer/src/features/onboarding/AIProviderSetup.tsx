@@ -5,6 +5,7 @@ import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxSpatialLockup } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { addModelProvider, listModelProviders } from '../../services/ipc/modelClient'
 
@@ -222,69 +223,67 @@ function ProviderCategoryCard({
   })
 
   return (
-    <div
-      ref={ref}
-      tabIndex={-1}
-      className={`flex flex-col gap-2 rounded-md border bg-surface p-4 ${
-        isFocused ? 'border-border-focus' : 'border-border'
-      } ${category.supported ? '' : 'opacity-60'}`}
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-body font-semibold text-text-primary">{category.name}</p>
-          <StatusBadge
-            tone={connected ? 'success' : category.supported ? 'neutral' : 'error'}
-            label={
-              connected
-                ? 'Connected'
-                : category.supported
-                  ? justAdded
-                    ? 'Added'
-                    : 'Not connected'
-                  : 'Not available'
-            }
-          />
+    <div ref={ref} tabIndex={-1} className={category.supported ? '' : 'opacity-60'}>
+      <NdxSpatialLockup selected={isFocused}>
+        <div className="flex flex-col gap-2">
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <p className="text-body font-semibold text-text-primary">{category.name}</p>
+              <StatusBadge
+                tone={connected ? 'success' : category.supported ? 'neutral' : 'error'}
+                label={
+                  connected
+                    ? 'Connected'
+                    : category.supported
+                      ? justAdded
+                        ? 'Added'
+                        : 'Not connected'
+                      : 'Not available'
+                }
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1 text-meta text-text-secondary">
+            <p>Capabilities: {category.capabilities}</p>
+            <p>Privacy: {category.privacy}</p>
+            <p>Cost control: {category.costControl}</p>
+            {category.reason && <p className="text-status-error">{category.reason}</p>}
+          </div>
+
+          {isConfiguring && category.kind && (
+            <AddProviderForm
+              kind={category.kind}
+              onAdded={onAdded}
+              onError={onError}
+              onCancel={onCancel}
+            />
+          )}
+
+          {!isConfiguring && (
+            <div className="mt-1 flex gap-2">
+              <ControllerButton
+                variant="primary"
+                disabled={!category.supported}
+                onClick={onConfigure}
+                aria-label={`Configure ${category.name}`}
+              >
+                {connected ? 'Reconfigure' : 'Configure'}
+              </ControllerButton>
+              <ControllerButton
+                variant="secondary"
+                onClick={onExplain}
+                aria-label={`Explain ${category.name}`}
+              >
+                Explain
+              </ControllerButton>
+              <ControllerButton variant="ghost" disabled>
+                Advanced
+              </ControllerButton>
+            </div>
+          )}
         </div>
-      </div>
-
-      <div className="flex flex-col gap-1 text-meta text-text-secondary">
-        <p>Capabilities: {category.capabilities}</p>
-        <p>Privacy: {category.privacy}</p>
-        <p>Cost control: {category.costControl}</p>
-        {category.reason && <p className="text-status-error">{category.reason}</p>}
-      </div>
-
-      {isConfiguring && category.kind && (
-        <AddProviderForm
-          kind={category.kind}
-          onAdded={onAdded}
-          onError={onError}
-          onCancel={onCancel}
-        />
-      )}
-
-      {!isConfiguring && (
-        <div className="mt-1 flex gap-2">
-          <ControllerButton
-            variant="primary"
-            disabled={!category.supported}
-            onClick={onConfigure}
-            aria-label={`Configure ${category.name}`}
-          >
-            {connected ? 'Reconfigure' : 'Configure'}
-          </ControllerButton>
-          <ControllerButton
-            variant="secondary"
-            onClick={onExplain}
-            aria-label={`Explain ${category.name}`}
-          >
-            Explain
-          </ControllerButton>
-          <ControllerButton variant="ghost" disabled>
-            Advanced
-          </ControllerButton>
-        </div>
-      )}
+      </NdxSpatialLockup>
     </div>
   )
 }

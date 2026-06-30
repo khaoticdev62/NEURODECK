@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { CriticalConfirmationDialog } from '../../components/overlays/CriticalConfirmationDialog'
+import { NdxSpatialLockup } from '../../components/workbench'
 import { HOLD_THRESHOLD_MS } from '../../controller/adapters/gamepadPolling'
 import { useFocusEngine } from '../../controller/focus/useFocusEngine'
 import { useFocusable } from '../../controller/focus/useFocusable'
@@ -154,9 +155,11 @@ function Section({
   children: React.ReactNode
 }): React.JSX.Element {
   return (
-    <section className="rounded-lg border border-border bg-surface p-4">
-      <h2 className="mb-2 text-body font-semibold text-text-primary">{title}</h2>
-      {children}
-    </section>
+    <NdxSpatialLockup>
+      <section>
+        <h2 className="mb-2 text-body font-semibold text-text-primary">{title}</h2>
+        {children}
+      </section>
+    </NdxSpatialLockup>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
+import { NdxEditorShell, NdxSpatialLockup, NdxToolWindow } from '../../components/workbench'
 import {
   createBackup,
   getBackupSchedule,
@@ -162,158 +163,175 @@ export function BackupAndRestore(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Backup and Restore</p>
-          <p className="text-meta text-text-secondary">
-            Local app-state backups with manifest verification and secret-store exclusion.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <ControllerButton onClick={handleMigrate} disabled={busy}>
-            Run Migrations
-          </ControllerButton>
-          <ControllerButton onClick={handleImport} disabled={busy}>
-            Import Backup
-          </ControllerButton>
-          <ControllerButton variant="primary" onClick={handleCreate} disabled={busy}>
-            Create Backup
-          </ControllerButton>
-        </div>
-      </header>
-
-      {error && <ErrorState title="Backup request failed" description={error} />}
-
-      {schedule && (
-        <section className="flex flex-wrap items-center gap-3 border border-border bg-surface p-3">
-          <ControllerButton
-            variant={schedule.enabled ? 'primary' : 'secondary'}
-            onClick={() => void handleToggleScheduled()}
-          >
-            Scheduled backups: {schedule.enabled ? 'On' : 'Off'}
-          </ControllerButton>
-          <div className="flex flex-wrap gap-2">
-            {INTERVAL_OPTIONS.map((option) => (
-              <ControllerButton
-                key={option.hours}
-                variant={schedule.intervalHours === option.hours ? 'primary' : 'secondary'}
-                onClick={() => void handleChangeInterval(option.hours)}
-              >
-                {option.label}
-              </ControllerButton>
-            ))}
-          </div>
-          <p className="text-meta text-text-secondary">
-            {schedule.enabled
-              ? `Next: ${schedule.nextRunAt ? new Date(schedule.nextRunAt).toLocaleString() : 'pending'}`
-              : 'Scheduled backups are off.'}
-            {schedule.lastRunAt
-              ? ` · Last ran ${new Date(schedule.lastRunAt).toLocaleString()}`
-              : ''}
-          </p>
-        </section>
-      )}
-
-      {verification && (
-        <section className="border border-border bg-surface p-3">
-          <p className="text-meta font-semibold text-text-primary">
-            Verification {verification.ok ? 'passed' : 'failed'}
-          </p>
-          <p className="text-meta text-text-secondary">
-            Checked {new Date(verification.checkedAt).toLocaleString()}
-          </p>
-          {verification.failures.length > 0 && (
-            <ul className="mt-2 list-disc pl-5 text-meta text-status-error">
-              {verification.failures.map((failure) => (
-                <li key={failure}>{failure}</li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-
-      {restoreResult && (
-        <section className="border border-status-success/40 bg-status-success/10 p-3">
-          <p className="text-meta font-semibold text-status-success">Restore complete</p>
-          <p className="text-meta text-text-secondary">
-            Restored {restoreResult.restoredFileCount} file
-            {restoreResult.restoredFileCount === 1 ? '' : 's'} and removed{' '}
-            {restoreResult.removedFileCount} stale file
-            {restoreResult.removedFileCount === 1 ? '' : 's'}. Rollback backup:{' '}
-            {restoreResult.rollbackBackupId}
-          </p>
-          <p className="mt-1 break-all text-caption text-text-tertiary">
-            {restoreResult.rollbackBackupPath}
-          </p>
-        </section>
-      )}
-
-      {migrationReport && (
-        <section className="border border-border bg-surface p-3">
-          <p className="text-meta font-semibold text-text-primary">Migration report</p>
-          <p className="text-meta text-text-secondary">
-            Checked {migrationReport.total} backup{migrationReport.total === 1 ? '' : 's'}:{' '}
-            {migrationReport.current} current, {migrationReport.migrated} migrated,{' '}
-            {migrationReport.invalid} invalid, {migrationReport.blocked} blocked.
-          </p>
-          {migrationReport.records.length > 0 && (
-            <ul className="mt-2 grid gap-1 text-caption text-text-tertiary">
-              {migrationReport.records.slice(0, 5).map((record) => (
-                <li key={`${record.path}:${record.status}`} className="break-all">
-                  {record.status}: {record.message} ({record.path})
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
-
-      <section className="grid gap-3 overflow-auto">
-        {loading ? (
-          <p className="text-meta text-text-secondary">Loading backups...</p>
-        ) : backups.length === 0 ? (
-          <EmptyState
-            title="No backups yet"
-            description="Create a local backup to capture non-secret NeuroDeck app state."
-          />
-        ) : (
-          backups.map((record) => (
-            <article key={record.id} className="border border-border bg-surface p-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-meta font-semibold text-text-primary">
-                    {record.label ?? 'App-state backup'}
-                  </p>
-                  <p className="text-meta text-text-secondary">
-                    {new Date(record.createdAt).toLocaleString()} | {record.fileCount} files |{' '}
-                    {formatBytes(record.totalBytes)}
-                  </p>
-                  <p className="mt-1 break-all text-caption text-text-tertiary">{record.path}</p>
-                </div>
-                <span className={record.verified ? 'text-status-success' : 'text-status-warning'}>
-                  {record.verified ? 'Verified' : 'Needs check'}
-                </span>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <ControllerButton onClick={() => void handleVerify(record)} disabled={busy}>
-                  Verify
-                </ControllerButton>
-                <ControllerButton
-                  variant="destructive"
-                  onClick={() => setRestoreReview(record)}
-                  disabled={busy || !record.verified}
-                >
-                  Restore
-                </ControllerButton>
-              </div>
-              <p className="mt-2 text-caption text-text-tertiary">
-                Excludes secret stores: {record.excludedSecretPaths.join(', ')}
+    <div className="grid h-full min-w-[76rem] grid-cols-[minmax(44rem,1fr)_20rem] gap-2 overflow-auto">
+      <NdxEditorShell title="Backup Review">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
+          <header className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">Backup and Restore</p>
+              <p className="text-meta text-text-secondary">
+                Local app-state backups with manifest verification and secret-store exclusion.
               </p>
-            </article>
-          ))
-        )}
-      </section>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <ControllerButton onClick={handleMigrate} disabled={busy}>
+                Run Migrations
+              </ControllerButton>
+              <ControllerButton onClick={handleImport} disabled={busy}>
+                Import Backup
+              </ControllerButton>
+              <ControllerButton variant="primary" onClick={handleCreate} disabled={busy}>
+                Create Backup
+              </ControllerButton>
+            </div>
+          </header>
+
+          {error && <ErrorState title="Backup request failed" description={error} />}
+
+          {schedule && (
+            <section className="flex flex-wrap items-center gap-3 border border-border bg-surface p-3">
+              <ControllerButton
+                variant={schedule.enabled ? 'primary' : 'secondary'}
+                onClick={() => void handleToggleScheduled()}
+              >
+                Scheduled backups: {schedule.enabled ? 'On' : 'Off'}
+              </ControllerButton>
+              <div className="flex flex-wrap gap-2">
+                {INTERVAL_OPTIONS.map((option) => (
+                  <ControllerButton
+                    key={option.hours}
+                    variant={schedule.intervalHours === option.hours ? 'primary' : 'secondary'}
+                    onClick={() => void handleChangeInterval(option.hours)}
+                  >
+                    {option.label}
+                  </ControllerButton>
+                ))}
+              </div>
+              <p className="text-meta text-text-secondary">
+                {schedule.enabled
+                  ? `Next: ${schedule.nextRunAt ? new Date(schedule.nextRunAt).toLocaleString() : 'pending'}`
+                  : 'Scheduled backups are off.'}
+                {schedule.lastRunAt
+                  ? ` · Last ran ${new Date(schedule.lastRunAt).toLocaleString()}`
+                  : ''}
+              </p>
+            </section>
+          )}
+
+          {verification && (
+            <section className="border border-border bg-surface p-3">
+              <p className="text-meta font-semibold text-text-primary">
+                Verification {verification.ok ? 'passed' : 'failed'}
+              </p>
+              <p className="text-meta text-text-secondary">
+                Checked {new Date(verification.checkedAt).toLocaleString()}
+              </p>
+              {verification.failures.length > 0 && (
+                <ul className="mt-2 list-disc pl-5 text-meta text-status-error">
+                  {verification.failures.map((failure) => (
+                    <li key={failure}>{failure}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
+          {restoreResult && (
+            <section className="border border-status-success/40 bg-status-success/10 p-3">
+              <p className="text-meta font-semibold text-status-success">Restore complete</p>
+              <p className="text-meta text-text-secondary">
+                Restored {restoreResult.restoredFileCount} file
+                {restoreResult.restoredFileCount === 1 ? '' : 's'} and removed{' '}
+                {restoreResult.removedFileCount} stale file
+                {restoreResult.removedFileCount === 1 ? '' : 's'}. Rollback backup:{' '}
+                {restoreResult.rollbackBackupId}
+              </p>
+              <p className="mt-1 break-all text-caption text-text-tertiary">
+                {restoreResult.rollbackBackupPath}
+              </p>
+            </section>
+          )}
+
+          {migrationReport && (
+            <section className="border border-border bg-surface p-3">
+              <p className="text-meta font-semibold text-text-primary">Migration report</p>
+              <p className="text-meta text-text-secondary">
+                Checked {migrationReport.total} backup{migrationReport.total === 1 ? '' : 's'}:{' '}
+                {migrationReport.current} current, {migrationReport.migrated} migrated,{' '}
+                {migrationReport.invalid} invalid, {migrationReport.blocked} blocked.
+              </p>
+              {migrationReport.records.length > 0 && (
+                <ul className="mt-2 grid gap-1 text-caption text-text-tertiary">
+                  {migrationReport.records.slice(0, 5).map((record) => (
+                    <li key={`${record.path}:${record.status}`} className="break-all">
+                      {record.status}: {record.message} ({record.path})
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+
+          <section className="grid gap-3 overflow-auto xl:grid-cols-2">
+            {loading ? (
+              <p className="text-meta text-text-secondary">Loading backups...</p>
+            ) : backups.length === 0 ? (
+              <EmptyState
+                title="No backups yet"
+                description="Create a local backup to capture non-secret NeuroDeck app state."
+              />
+            ) : (
+              backups.map((record) => (
+                <NdxSpatialLockup key={record.id}>
+                  <article>
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-meta font-semibold text-text-primary">
+                          {record.label ?? 'App-state backup'}
+                        </p>
+                        <p className="text-meta text-text-secondary">
+                          {new Date(record.createdAt).toLocaleString()} | {record.fileCount} files |{' '}
+                          {formatBytes(record.totalBytes)}
+                        </p>
+                        <p className="mt-1 break-all text-caption text-text-tertiary">
+                          {record.path}
+                        </p>
+                      </div>
+                      <span
+                        className={record.verified ? 'text-status-success' : 'text-status-warning'}
+                      >
+                        {record.verified ? 'Verified' : 'Needs check'}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <ControllerButton onClick={() => void handleVerify(record)} disabled={busy}>
+                        Verify
+                      </ControllerButton>
+                      <ControllerButton
+                        variant="destructive"
+                        onClick={() => setRestoreReview(record)}
+                        disabled={busy || !record.verified}
+                      >
+                        Restore
+                      </ControllerButton>
+                    </div>
+                    <p className="mt-2 text-caption text-text-tertiary">
+                      Excludes secret stores: {record.excludedSecretPaths.join(', ')}
+                    </p>
+                  </article>
+                </NdxSpatialLockup>
+              ))
+            )}
+          </section>
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Restore Policy" subtitle={`${backups.length} backups`} side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Restore creates a rollback backup before changing app-state files.</p>
+          <p>Secret-bearing stores are excluded from these backup records.</p>
+        </div>
+      </NdxToolWindow>
 
       <ConfirmationDialog
         open={restoreReview !== null}
