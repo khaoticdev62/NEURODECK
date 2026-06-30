@@ -79,7 +79,7 @@ Status legend:
 | `/automations/forge` | ND-033 | IDE-heavy | Workflow canvas | Frame / Pending IDE | non-drag movement |
 | `/automations/forge/:workflowId` | ND-033 | IDE-heavy | Workflow canvas | Frame / Pending IDE | inspector sync |
 | `/automations/runs/:runId` | ND-034 | Tool-heavy | Run detail tabs | Frame / Pending Tool | logs/output focus |
-| `/models` | ND-035 | Tool-heavy | Model grid/tool window | Frame / Pending Tool | provider status density |
+| `/models` | ND-035 | Tool-heavy | Model grid/tool window | Partial Tool | provider setup/list/routing-context framing; detail routes pending |
 | `/models/:providerId` | ND-036 | Tool-heavy | Model inspector | Frame / Pending Tool | credentials hidden |
 | `/models/routing-profiles` | ND-037 | Tool-heavy | Routing table | Frame / Pending Tool | comparisons at 800p |
 | `/agents` | ND-016 | Tool-heavy | Agent cards/detail | Partial Tool | factory/list/policy framing; detail route pending |
@@ -211,6 +211,15 @@ npm run lint -> passed with unrelated kiosk Prettier warnings in local uncommitt
 npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
 ```
 
+HYBRID-5 partial checks run after Model Control Center tool-window migration:
+
+```text
+npm run test -- ModelControlCenter -> 1 file / 5 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -228,7 +237,10 @@ npm run build -> passed with existing ErrorRecovery dynamic/static import chunki
 - HYBRID-5 must continue tool-heavy platform migrations. Partial slice complete for `/agents`
   Agent Factory + Agent Operations Center + Agent Policy framing while preserving persisted
   agent definitions, model routing, tool allowlists, enable/remove actions, and zero implicit
-  permission ceiling grants. Remaining targets include `/agents/:agentId`, Workflows, Models,
+  permission ceiling grants. Partial slice complete for `/models` Provider Setup + Model Control
+  Center + Routing Context framing while preserving provider list/add/remove/enable/test IPC
+  behavior, encrypted cloud key boundaries, and real provider-probe semantics. Remaining targets
+  include `/agents/:agentId`, `/models/:providerId`, `/models/routing-profiles`, Workflows,
   Extensions, System, Permissions, Recovery, Backup, Vault, LAN Share, Devices, Profiles,
   Continuity, and Platform Health.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.

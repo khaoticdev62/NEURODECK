@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { ModelProvider, ModelProviderKind } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import {
   addModelProvider,
@@ -74,10 +75,19 @@ export function ModelControlCenter(): React.JSX.Element {
     setProviders((current) => current.map((item) => (item.id === provider.id ? result.data : item)))
   }
 
+  const enabledCount = providers.filter((provider) => provider.enabled).length
+  const localCount = providers.filter(
+    (provider) => provider.kind !== 'cloud-openai-compatible'
+  ).length
+  const cloudCount = providers.length - localCount
+
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Model Control Center</p>
+    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Provider Setup" subtitle={`${providers.length} configured`}>
+        <p className="text-meta text-text-secondary">
+          Providers are stored through the existing model service. Cloud API keys stay encrypted in
+          the main process and never return to the renderer.
+        </p>
         <div className="flex gap-2">
           <ControllerButton
             variant="secondary"
@@ -89,39 +99,74 @@ export function ModelControlCenter(): React.JSX.Element {
             {showAddForm ? 'Cancel' : 'Add provider'}
           </ControllerButton>
         </div>
-      </div>
 
-      {error && <ErrorState title="Model provider error" description={error} />}
+        {showAddForm ? (
+          <AddProviderForm
+            onAdded={() => {
+              setShowAddForm(false)
+              void refresh()
+            }}
+            onError={setError}
+          />
+        ) : (
+          <p className="text-meta text-text-tertiary">
+            Add local OpenAI-compatible endpoints, managed Ollama runtimes, or cloud-compatible
+            providers when the network/security tradeoff is explicit.
+          </p>
+        )}
+      </NdxToolWindow>
 
-      {showAddForm && (
-        <AddProviderForm
-          onAdded={() => {
-            setShowAddForm(false)
-            void refresh()
-          }}
-          onError={setError}
-        />
-      )}
+      <NdxEditorShell title="Model Control Center">
+        <div className="flex min-h-full flex-col gap-3 p-3">
+          {error && <ErrorState title="Model provider error" description={error} />}
 
-      {providers.length === 0 ? (
-        <EmptyState
-          className="flex-1"
-          title="No providers connected"
-          description="Add a local (e.g. Ollama) or cloud OpenAI-compatible provider to discover its real models."
-        />
-      ) : (
-        <ul className="flex flex-col gap-2 overflow-auto">
-          {providers.map((provider) => (
-            <ProviderRow
-              key={provider.id}
-              provider={provider}
-              onOpen={() => navigate(`/models/${provider.id}`)}
-              onRemove={() => void handleRemove(provider.id)}
-              onToggle={() => void handleToggle(provider)}
+          {providers.length === 0 ? (
+            <EmptyState
+              className="flex-1"
+              title="No providers connected"
+              description="Add a local (e.g. Ollama) or cloud OpenAI-compatible provider to discover its real models."
             />
-          ))}
-        </ul>
-      )}
+          ) : (
+            <ul className="flex flex-col gap-2 overflow-auto">
+              {providers.map((provider) => (
+                <ProviderRow
+                  key={provider.id}
+                  provider={provider}
+                  onOpen={() => navigate(`/models/${provider.id}`)}
+                  onRemove={() => void handleRemove(provider.id)}
+                  onToggle={() => void handleToggle(provider)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow
+        title="Routing Context"
+        subtitle={`${enabledCount}/${providers.length} enabled`}
+        side="right"
+      >
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Provider mix</p>
+          <p className="text-meta text-text-tertiary">
+            {localCount} local-compatible · {cloudCount} cloud-compatible
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Discovery policy</p>
+          <p className="text-meta text-text-tertiary">
+            Model lists and capabilities come from real provider probes. The UI does not infer
+            capabilities from model names.
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Secrets boundary</p>
+          <p className="text-meta text-text-tertiary">
+            API key presence is visible, but secret values remain behind OS-backed encryption.
+          </p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }
@@ -157,7 +202,7 @@ function AddProviderForm({
   }
 
   return (
-    <div className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <div className="flex flex-col gap-2 border-t border-border pt-3">
       <input
         value={name}
         onChange={(event) => setName(event.target.value)}
@@ -231,32 +276,30 @@ function ProviderRow({
   }
 
   return (
-    <li
-      ref={ref}
-      tabIndex={-1}
-      className={`border p-3 ${isFocused ? 'border-border-focus' : 'border-border'} bg-surface`}
-    >
-      <p className="text-body font-semibold text-text-primary">{provider.name}</p>
-      <p className="text-meta text-text-secondary">
-        {provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local'} · {provider.baseUrl}
-        {provider.hasApiKey ? ' · API key set' : ''}
-        {provider.enabled ? ' · Enabled' : ' · Disabled'}
-      </p>
-      {testResult && <p className="text-meta text-text-tertiary">{testResult}</p>}
-      <div className="mt-2 flex gap-2">
-        <ControllerButton variant="primary" disabled={testing} onClick={() => void handleTest()}>
-          {testing ? 'Testing…' : 'Test connection'}
-        </ControllerButton>
-        <ControllerButton variant="secondary" onClick={onOpen}>
-          Open
-        </ControllerButton>
-        <ControllerButton variant="ghost" onClick={onRemove}>
-          Remove
-        </ControllerButton>
-        <ControllerButton variant="secondary" onClick={onToggle}>
-          {provider.enabled ? 'Disable' : 'Enable'}
-        </ControllerButton>
-      </div>
+    <li ref={ref} tabIndex={-1} className="outline-none">
+      <NdxFocusSurface active={isFocused} density="dense" className="p-3">
+        <p className="text-body font-semibold text-text-primary">{provider.name}</p>
+        <p className="text-meta text-text-secondary">
+          {provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local'} · {provider.baseUrl}
+          {provider.hasApiKey ? ' · API key set' : ''}
+          {provider.enabled ? ' · Enabled' : ' · Disabled'}
+        </p>
+        {testResult && <p className="text-meta text-text-tertiary">{testResult}</p>}
+        <div className="mt-2 flex gap-2">
+          <ControllerButton variant="primary" disabled={testing} onClick={() => void handleTest()}>
+            {testing ? 'Testing…' : 'Test connection'}
+          </ControllerButton>
+          <ControllerButton variant="secondary" onClick={onOpen}>
+            Open
+          </ControllerButton>
+          <ControllerButton variant="ghost" onClick={onRemove}>
+            Remove
+          </ControllerButton>
+          <ControllerButton variant="secondary" onClick={onToggle}>
+            {provider.enabled ? 'Disable' : 'Enable'}
+          </ControllerButton>
+        </div>
+      </NdxFocusSurface>
     </li>
   )
 }
