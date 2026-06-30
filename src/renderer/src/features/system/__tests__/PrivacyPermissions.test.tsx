@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { BrowserPermission, NdxBridge } from '@shared/contracts'
 import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
@@ -34,14 +35,16 @@ afterEach(() => {
 
 function renderScreen(grant = false): ReturnType<typeof render> {
   return render(
-    <FocusEngineProvider adapters={[new TestAdapter()]}>
-      <AiSafetyProvider>
-        <LockProvider>
-          <RegisterTestTool grant={grant} />
-          <PrivacyPermissions />
-        </LockProvider>
-      </AiSafetyProvider>
-    </FocusEngineProvider>
+    <MemoryRouter>
+      <FocusEngineProvider adapters={[new TestAdapter()]}>
+        <AiSafetyProvider>
+          <LockProvider>
+            <RegisterTestTool grant={grant} />
+            <PrivacyPermissions />
+          </LockProvider>
+        </AiSafetyProvider>
+      </FocusEngineProvider>
+    </MemoryRouter>
   )
 }
 

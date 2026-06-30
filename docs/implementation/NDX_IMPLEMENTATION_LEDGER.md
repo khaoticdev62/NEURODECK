@@ -3179,3 +3179,26 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X4 — Tool Library (2026-06-30)
+
+Real Tool Library (supplemental §14.3), closing one of the two named gaps left in §14's checklist item ("prompt templates and personas real; tool library and skill packs deferred").
+
+**Nothing new had to be built at the data layer** — `ToolRegistry.list()`, `PermissionBroker.evaluate()`, and `AuditLog` were all already real and already consumed by Privacy and Permissions' own per-tool grant view. What didn't exist was a dedicated reference screen for *browsing the catalog itself* — Privacy and Permissions is framed around managing grants (title + capability + revoke), not understanding what a tool does, its risk level, its reversibility, or its real usage history.
+
+`/tools` (ND-X017) lists every registered tool and, for the selected one, shows description, required capability, risk (reusing `ApprovalQueue.tsx`'s existing `RISK_TONE` mapping for visual consistency), reversibility, current grant state, and the real `AuditLog` entries filtered by `entry.tool === selected.id` — the first place in the UI a user can see "here's everywhere this specific tool has actually run and what happened." Privacy and Permissions gained a "Browse Tool Library" link into it.
+
+**Honestly out of scope by architecture, not omission** — the spec's full §14.3 field list (Registered tools, Provider, Capabilities, Permissions, Health, Version, Audit usage, Disable control) doesn't map cleanly onto this app's built-in safety tools the way it would onto Extensions: "Provider" has no attribution model for internal tools (these aren't provider-sourced the way an Extension is), "Health"/"Version" have no fault-tracking or versioning concept for built-in tools (unlike Extensions' real quarantine/fault state), and "Disable control" has no real mechanism — a registered safety tool can't currently be turned off, and adding that would change `ActionQueue`'s submission semantics, which deserves its own deliberate design rather than a button bolted onto a reference screen.
+
+**A real side-effect worth recording**: this closes part of the reasoning chain that previously blocked skill packs (§14.4) — the spec requires skill packs to "use the same signing and permission model as extensions," and the prior blocker was that extension signing was presence-only, not cryptographically verified. Epic X15 (`ManifestSignature.ts`/`TrustedPublisherStore`) made that real. Skill packs are still not built, but the checklist now records the *actual* remaining gap honestly: the bundle format itself (prompts + workflows + tools + learning content + controller shortcuts + documentation as one packaged/installable unit) doesn't exist, not the signing foundation it would need to sit on.
+
+**New/changed files**: `src/renderer/src/features/tools/ToolLibrary.tsx` (new) + `__tests__/ToolLibrary.test.tsx` (new, 4 tests), `src/renderer/src/app/routing/routes.tsx` (new `/tools` route, `ND-X017`), `src/renderer/src/features/system/SystemDashboard.tsx` (new link), `src/renderer/src/features/system/PrivacyPermissions.tsx` + `__tests__/PrivacyPermissions.test.tsx` (new "Browse Tool Library" link + `MemoryRouter` test wrapping).
+
+**Validation evidence (run 2026-06-30):**
+
+```text
+npm run test -> 238 files / 1132 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

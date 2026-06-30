@@ -305,6 +305,10 @@ const TrustedPublishers = lazy(async () => {
   const module = await import('../../features/extensions/TrustedPublishers')
   return { default: module.TrustedPublishers }
 })
+const ToolLibrary = lazy(async () => {
+  const module = await import('../../features/tools/ToolLibrary')
+  return { default: module.ToolLibrary }
+})
 const VoiceNotesCenter = lazy(async () => {
   const module = await import('../../features/voice/VoiceNotesCenter')
   return { default: module.VoiceNotesCenter }
@@ -1113,6 +1117,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('trusted publishers', <TrustedPublishers />)
+  },
+  {
+    routeId: 'tool-library',
+    screenId: 'ND-X017',
+    path: '/tools',
+    title: 'Tool Library',
+    owningEpic: 'Epic X4',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('tool library', <ToolLibrary />)
   }
 ]
 

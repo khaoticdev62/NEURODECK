@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
@@ -51,6 +52,7 @@ const DEFERRED_VIEWS: DeferredView[] = [
  * that tool is invoked) genuinely requires approval again.
  */
 export function PrivacyPermissions(): React.JSX.Element {
+  const navigate = useNavigate()
   const { registry, broker } = useAiSafety()
   const { pinConfigured, refreshStatus } = useLockState()
   const entries = useAuditEntries()
@@ -125,7 +127,12 @@ export function PrivacyPermissions(): React.JSX.Element {
       <p className="text-title font-semibold text-text-primary">Privacy and Permissions</p>
 
       <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Effective access by tool</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-body font-semibold text-text-primary">Effective access by tool</p>
+          <ControllerButton variant="ghost" onClick={() => navigate('/tools')}>
+            Browse Tool Library
+          </ControllerButton>
+        </div>
         <p className="text-meta text-text-tertiary">
           Capability grants are broker-wide, not per-agent — this shows what each registered tool
           currently needs and whether that capability is presently granted.
