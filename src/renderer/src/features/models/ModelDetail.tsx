@@ -8,6 +8,7 @@ import type {
 } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import {
   benchmarkLocalModel,
   getLocalModelStatus,
@@ -88,104 +89,125 @@ export function ModelDetail(): React.JSX.Element {
     else setError(result.error.userMessage)
   }
 
-  if (loading) return <p className="p-4 text-meta text-text-secondary">Loading…</p>
+  if (loading) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
   if (!provider)
     return <ErrorState title="Provider not found" description={error ?? 'Unknown provider.'} />
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-title font-semibold text-text-primary">{provider.name}</p>
-          <p className="text-meta text-text-secondary">
-            {provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local'} · {provider.baseUrl}
-          </p>
-        </div>
+    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow
+        title="Provider"
+        subtitle={provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local'}
+      >
+        <p className="text-body font-semibold text-text-primary">{provider.name}</p>
+        <p className="break-all text-meta text-text-secondary">{provider.baseUrl}</p>
         <ControllerButton variant="ghost" onClick={() => navigate('/models')}>
           Back
         </ControllerButton>
-      </div>
-      {error && <ErrorState title="Model provider error" description={error} />}
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Overview</p>
-        <p className="text-meta text-text-secondary">
-          Credential:{' '}
-          {provider.hasApiKey
-            ? 'API key stored with OS-backed encryption'
-            : 'No API key configured'}
-        </p>
-        <p className="text-meta text-text-secondary">
-          Status: {provider.enabled ? 'Enabled' : 'Disabled'} · Added{' '}
-          {new Date(provider.createdAt).toLocaleString()}
-        </p>
-      </section>
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <div className="flex items-center justify-between">
-          <p className="text-body font-semibold text-text-primary">Models and capabilities</p>
-          <ControllerButton variant="primary" disabled={busy} onClick={() => void handleTest()}>
-            {busy ? 'Working…' : 'Probe provider'}
-          </ControllerButton>
-        </div>
-        {!testResult && (
-          <p className="text-meta text-text-tertiary">
-            Probe the real endpoint to discover models. Capabilities are not inferred from model
-            names.
-          </p>
-        )}
-        {testResult && <p className="text-meta text-text-secondary">{testResult.message}</p>}
-        {testResult?.models.map((model) => (
-          <div
-            key={model.id}
-            className="flex flex-wrap items-center justify-between gap-2 border-t border-border py-2"
-          >
-            <span className="text-meta text-text-primary">
-              {model.id}
-              {runtime?.runningModelIds.includes(model.id) ? ' · Loaded' : ''}
-            </span>
-            {provider.kind === 'ollama' && runtime?.supported && (
-              <span className="flex gap-1">
-                <ControllerButton
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={() => void handleRuntime('load', model.id)}
-                >
-                  Load
-                </ControllerButton>
-                <ControllerButton
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={() => void handleRuntime('unload', model.id)}
-                >
-                  Unload
-                </ControllerButton>
-                <ControllerButton
-                  variant="secondary"
-                  disabled={busy}
-                  onClick={() => void handleRuntime('benchmark', model.id)}
-                >
-                  Benchmark
-                </ControllerButton>
+        <ControllerButton variant="ghost" onClick={() => void handleRemove()}>
+          Remove provider
+        </ControllerButton>
+      </NdxToolWindow>
+
+      <NdxEditorShell title="Model Provider Detail">
+        <div className="flex min-h-full flex-col gap-3 p-3">
+          {error && <ErrorState title="Model provider error" description={error} />}
+
+          <NdxFocusSurface active density="comfortable" className="p-3">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-body font-semibold text-text-primary">Models and capabilities</p>
+                <p className="text-meta text-text-tertiary">
+                  Probe the real endpoint to discover models. Capabilities are not inferred from
+                  model names.
+                </p>
+              </div>
+              <ControllerButton variant="primary" disabled={busy} onClick={() => void handleTest()}>
+                {busy ? 'Working...' : 'Probe provider'}
+              </ControllerButton>
+            </div>
+          </NdxFocusSurface>
+
+          {testResult && <p className="text-meta text-text-secondary">{testResult.message}</p>}
+          {testResult?.models.map((model) => (
+            <div
+              key={model.id}
+              className="flex flex-wrap items-center justify-between gap-2 border border-border bg-surface p-3"
+            >
+              <span className="text-meta text-text-primary">
+                {model.id}
+                {runtime?.runningModelIds.includes(model.id) ? ' - Loaded' : ''}
               </span>
-            )}
-          </div>
-        ))}
-        {provider.kind === 'ollama' && runtime && !runtime.supported && (
-          <p className="text-meta text-status-warning">
-            Runtime controls unavailable: {runtime.reason}
+              {provider.kind === 'ollama' && runtime?.supported && (
+                <span className="flex gap-1">
+                  <ControllerButton
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => void handleRuntime('load', model.id)}
+                  >
+                    Load
+                  </ControllerButton>
+                  <ControllerButton
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => void handleRuntime('unload', model.id)}
+                  >
+                    Unload
+                  </ControllerButton>
+                  <ControllerButton
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => void handleRuntime('benchmark', model.id)}
+                  >
+                    Benchmark
+                  </ControllerButton>
+                </span>
+              )}
+            </div>
+          ))}
+          {provider.kind === 'ollama' && runtime && !runtime.supported && (
+            <p className="text-meta text-status-warning">
+              Runtime controls unavailable: {runtime.reason}
+            </p>
+          )}
+          {benchmark && (
+            <section className="border border-border bg-surface p-3 text-meta text-text-secondary">
+              Measured benchmark for {benchmark.modelId}: {benchmark.durationMs} ms
+              {benchmark.tokensPerSecond !== undefined
+                ? ` - ${benchmark.tokensPerSecond.toFixed(1)} tok/s`
+                : ' - token timing not reported'}
+            </section>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow
+        title="Provider Policy"
+        subtitle={provider.enabled ? 'Enabled' : 'Disabled'}
+        side="right"
+      >
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Credential</p>
+          <p className="text-meta text-text-tertiary">
+            {provider.hasApiKey
+              ? 'API key stored with OS-backed encryption'
+              : 'No API key configured'}
           </p>
-        )}
-      </section>
-      {benchmark && (
-        <section className="border border-border bg-surface p-3 text-meta text-text-secondary">
-          Measured benchmark for {benchmark.modelId}: {benchmark.durationMs} ms
-          {benchmark.tokensPerSecond !== undefined
-            ? ` · ${benchmark.tokensPerSecond.toFixed(1)} tok/s`
-            : ' · token timing not reported'}
-        </section>
-      )}
-      <ControllerButton variant="ghost" onClick={() => void handleRemove()}>
-        Remove provider
-      </ControllerButton>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Created</p>
+          <p className="text-meta text-text-tertiary">
+            {new Date(provider.createdAt).toLocaleString()}
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Runtime controls</p>
+          <p className="text-meta text-text-tertiary">
+            Load, unload, and benchmark actions are shown only for managed Ollama runtimes that
+            report support.
+          </p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

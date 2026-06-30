@@ -4,9 +4,11 @@
 
 **2026-06-29 HYBRID-5 Agents follow-up:** Agent Operations Center (`/agents`) now uses shared Agent Factory, Agent Operations Center, and Agent Policy workbench regions while preserving persisted agent list/create/enable/remove IPC behavior, ToolRegistry allowlist sourcing, model routing handoff, and no implicit permission ceiling grants. `/agents/:agentId` detail tabs remain to migrate.
 
-**2026-06-29 HYBRID-5 Models follow-up:** Model Control Center (`/models`) now uses shared Provider Setup, Model Control Center, and Routing Context workbench regions while preserving provider list/add/remove/enable/test IPC behavior, encrypted cloud API key boundaries, and real provider-probe semantics. `/models/:providerId` remains to migrate.
+**2026-06-29 HYBRID-5 Models follow-up:** Model Control Center (`/models`) now uses shared Provider Setup, Model Control Center, and Routing Context workbench regions while preserving provider list/add/remove/enable/test IPC behavior, encrypted cloud API key boundaries, and real provider-probe semantics.
 
-**2026-06-29 HYBRID-5 Routing Profiles follow-up:** Routing Profiles (`/models/routing-profiles`) now uses shared Profiles, Routing Profiles, and Decision Context workbench regions while preserving the real `routeModel` IPC preview request, current system/provider measurement path, and private-workspace routing semantics. `/models/:providerId` remains to migrate.
+**2026-06-29 HYBRID-5 Model Detail follow-up:** Model Provider Detail (`/models/:providerId`) now uses shared Provider, Model Provider Detail, and Provider Policy workbench regions while preserving provider lookup, remove-provider navigation, real endpoint probing, managed Ollama load/unload/benchmark controls, and benchmark display behavior.
+
+**2026-06-29 HYBRID-5 Routing Profiles follow-up:** Routing Profiles (`/models/routing-profiles`) now uses shared Profiles, Routing Profiles, and Decision Context workbench regions while preserving the real `routeModel` IPC preview request, current system/provider measurement path, and private-workspace routing semantics.
 
 **2026-06-29 HYBRID-5 Workflows follow-up:** Workflow Library (`/automations`) now uses shared Workflow Tools, Workflow Library, and Run Context workbench regions while preserving active-workspace scoping, persisted workflow list/remove IPC behavior, and WorkflowRunnerProvider run submission through the existing Workflow Engine/ActionQueue path. `/automations/runs/:runId` remains to migrate.
 

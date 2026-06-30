@@ -79,8 +79,8 @@ Status legend:
 | `/automations/forge` | ND-033 | IDE-heavy | Workflow canvas | Frame / Pending IDE | non-drag movement |
 | `/automations/forge/:workflowId` | ND-033 | IDE-heavy | Workflow canvas | Frame / Pending IDE | inspector sync |
 | `/automations/runs/:runId` | ND-034 | Tool-heavy | Run detail tabs | Frame / Pending Tool | logs/output focus |
-| `/models` | ND-035 | Tool-heavy | Model grid/tool window | Partial Tool | provider setup/list/routing-context framing; detail routes pending |
-| `/models/:providerId` | ND-036 | Tool-heavy | Model inspector | Frame / Pending Tool | credentials hidden |
+| `/models` | ND-035 | Tool-heavy | Model grid/tool window | Partial Tool | provider setup/list/routing-context framing; visual QA pending |
+| `/models/:providerId` | ND-036 | Tool-heavy | Model inspector | Partial Tool | provider/detail/policy framing; visual QA pending |
 | `/models/routing-profiles` | ND-037 | Tool-heavy | Routing table | Partial Tool | profile list/preview/decision context framing; visual QA pending |
 | `/agents` | ND-016 | Tool-heavy | Agent cards/detail | Partial Tool | factory/list/policy framing; detail route pending |
 | `/agents/:agentId` | ND-017 | Tool-heavy | Agent detail tabs | Frame / Pending Tool | timeline and tool logs |
@@ -238,6 +238,15 @@ npm run lint -> blocked by unrelated scripts/sign-extension-manifest.mjs explici
 npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
 ```
 
+HYBRID-5 partial checks run after Model Provider Detail tool-window migration:
+
+```text
+npm run test -- ModelDetail -> 1 file / 3 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -258,11 +267,13 @@ npm run build -> passed with existing ErrorRecovery dynamic/static import chunki
   permission ceiling grants. Partial slice complete for `/models` Provider Setup + Model Control
   Center + Routing Context framing while preserving provider list/add/remove/enable/test IPC
   behavior, encrypted cloud key boundaries, and real provider-probe semantics. Partial slice
-  complete for `/models/routing-profiles` Profiles + Routing Profiles + Decision Context framing
-  while preserving real `routeModel` IPC preview behavior and private-workspace routing semantics.
-  Partial slice complete for `/automations` Workflow Tools + Workflow Library + Run Context
-  framing while preserving persisted workflow listing/removal and WorkflowRunnerProvider run
-  submission. Remaining targets include `/agents/:agentId`, `/models/:providerId`,
+  complete for `/models/:providerId` Provider + Model Provider Detail + Provider Policy framing
+  while preserving provider lookup, removal, endpoint probe, Ollama runtime controls, and benchmark
+  behavior. Partial slice complete for `/models/routing-profiles` Profiles + Routing Profiles +
+  Decision Context framing while preserving real `routeModel` IPC preview behavior and
+  private-workspace routing semantics. Partial slice complete for `/automations` Workflow Tools +
+  Workflow Library + Run Context framing while preserving persisted workflow listing/removal and
+  WorkflowRunnerProvider run submission. Remaining targets include `/agents/:agentId`,
   `/automations/runs/:runId`, Extensions, System, Permissions, Recovery, Backup, Vault, LAN Share,
   Devices, Profiles, Continuity, and Platform Health.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
