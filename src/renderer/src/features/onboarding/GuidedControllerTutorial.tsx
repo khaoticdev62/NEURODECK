@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NdxEditorShell, NdxSpatialLockup } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { useFocusEngine } from '../../controller/focus/useFocusEngine'
 import { faceButtonGlyph } from '../../controller/mappings/controllerGlyphs'
@@ -187,7 +188,7 @@ export function GuidedControllerTutorial(): React.JSX.Element {
   const assistGlyph = faceButtonGlyph(controllerKind, 3)
 
   return (
-    <div className="flex h-full flex-col gap-6 p-8">
+    <div className="flex h-full min-w-0 flex-col gap-4 overflow-hidden p-6">
       <div className="flex items-center justify-between">
         <p className="text-title font-semibold text-text-primary">Controller Tutorial</p>
         <div className="flex gap-1">
@@ -200,34 +201,40 @@ export function GuidedControllerTutorial(): React.JSX.Element {
         </div>
       </div>
 
-      <div className="flex-1 rounded-lg border border-border bg-surface p-6">
-        <p className="text-display font-semibold text-text-primary">{lesson.title}</p>
-        <p className="mt-2 text-body text-text-secondary">{lesson.instruction}</p>
+      <NdxEditorShell title="ND-007 Guided Controller Tutorial">
+        <div className="flex min-h-full flex-col gap-4 p-5">
+          <NdxSpatialLockup selected>
+            <div>
+              <p className="text-display font-semibold text-text-primary">{lesson.title}</p>
+              <p className="mt-2 text-body text-text-secondary">{lesson.instruction}</p>
+            </div>
+          </NdxSpatialLockup>
 
-        <div className="mt-6">
-          {lessonIndex === 0 && <FocusGrid />}
-          {lessonIndex === 1 && (
-            <OpenBackLesson detailOpen={detailOpen} onOpen={() => setDetailOpen(true)} />
-          )}
-          {lessonIndex === 2 && (
-            <ActionItemLesson label="Press X for actions" actionGlyph={contextGlyph} />
-          )}
-          {lessonIndex === 3 && (
-            <ActionItemLesson label="Press Y to ask AI" actionGlyph={assistGlyph} />
-          )}
-          {lessonIndex === 4 && <CommandPaletteLesson />}
-          {lessonIndex === 5 && (
-            <ApproveLesson resultMessage={resultMessage} onApprove={submitTutorialAction} />
-          )}
-          {lessonIndex === 6 && (
-            <PauseLesson progress={progress} isPaused={isPaused} onTogglePause={togglePause} />
+          <div>
+            {lessonIndex === 0 && <FocusGrid />}
+            {lessonIndex === 1 && (
+              <OpenBackLesson detailOpen={detailOpen} onOpen={() => setDetailOpen(true)} />
+            )}
+            {lessonIndex === 2 && (
+              <ActionItemLesson label="Press X for actions" actionGlyph={contextGlyph} />
+            )}
+            {lessonIndex === 3 && (
+              <ActionItemLesson label="Press Y to ask AI" actionGlyph={assistGlyph} />
+            )}
+            {lessonIndex === 4 && <CommandPaletteLesson />}
+            {lessonIndex === 5 && (
+              <ApproveLesson resultMessage={resultMessage} onApprove={submitTutorialAction} />
+            )}
+            {lessonIndex === 6 && (
+              <PauseLesson progress={progress} isPaused={isPaused} onTogglePause={togglePause} />
+            )}
+          </div>
+
+          {lessonState === 'completed' && (
+            <p className="mt-4 text-body text-status-success">Lesson complete — great work!</p>
           )}
         </div>
-
-        {lessonState === 'completed' && (
-          <p className="mt-4 text-body text-status-success">Lesson complete — great work!</p>
-        )}
-      </div>
+      </NdxEditorShell>
 
       <div className="flex items-center justify-between text-meta text-text-secondary">
         <p>
@@ -268,13 +275,15 @@ function GridCell({ id, label }: { id: string; label: string }): React.JSX.Eleme
   })
 
   return (
-    <div
-      ref={ref}
-      tabIndex={-1}
-      className={`flex h-24 items-center justify-center rounded-md border ${isFocused ? 'border-border-focus bg-surface-raised' : 'border-border'} text-body text-text-primary`}
-    >
-      {label}
-    </div>
+    <NdxSpatialLockup selected={isFocused}>
+      <div
+        ref={ref}
+        tabIndex={-1}
+        className="flex h-24 items-center justify-center text-body text-text-primary"
+      >
+        {label}
+      </div>
+    </NdxSpatialLockup>
   )
 }
 

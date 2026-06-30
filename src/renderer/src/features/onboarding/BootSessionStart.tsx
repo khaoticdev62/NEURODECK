@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxFocusSurface, NdxSpatialLockup } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { getControllerSettings } from '../../services/ipc/controllerSettingsClient'
 import { listModelProviders } from '../../services/ipc/modelClient'
@@ -214,65 +215,70 @@ export function BootSessionStart(): React.JSX.Element {
   if (phase === 'failed') {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-6 p-8 text-center">
-        <ErrorState
-          title="Boot failed"
-          description={error ?? 'A critical service failed to initialize.'}
-        />
-        <div className="flex gap-3">
-          <ControllerButton
-            ref={retryRef}
-            variant="primary"
-            className={retryFocused ? 'ring-2 ring-border-focus' : undefined}
-            onClick={() => window.location.reload()}
-          >
-            Retry
-          </ControllerButton>
-          <ControllerButton variant="secondary" onClick={() => void handleDiagnostics()}>
-            Diagnostics
-          </ControllerButton>
-          <ControllerButton variant="ghost" onClick={() => void quitApp()}>
-            Exit
-          </ControllerButton>
-        </div>
+        <NdxFocusSurface density="spatial" active className="w-full max-w-2xl p-6">
+          <ErrorState
+            title="Boot failed"
+            description={error ?? 'A critical service failed to initialize.'}
+          />
+          <div className="mt-6 flex justify-center gap-3">
+            <ControllerButton
+              ref={retryRef}
+              variant="primary"
+              className={retryFocused ? 'ring-2 ring-border-focus' : undefined}
+              onClick={() => window.location.reload()}
+            >
+              Retry
+            </ControllerButton>
+            <ControllerButton variant="secondary" onClick={() => void handleDiagnostics()}>
+              Diagnostics
+            </ControllerButton>
+            <ControllerButton variant="ghost" onClick={() => void quitApp()}>
+              Exit
+            </ControllerButton>
+          </div>
+        </NdxFocusSurface>
       </div>
     )
   }
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-8 p-8 text-center">
-      <div>
-        <p className="text-display font-semibold text-text-primary">NeuroDeck</p>
-        <p className="text-body text-text-secondary">Controller-native AI operating harness</p>
-      </div>
+      <NdxSpatialLockup selected>
+        <div className="min-w-80">
+          <p className="text-display font-semibold text-text-primary">NeuroDeck</p>
+          <p className="text-body text-text-secondary">Controller-native AI operating harness</p>
+        </div>
+      </NdxSpatialLockup>
 
       <div className="w-full max-w-md">
         <ol className="flex flex-col gap-2 text-left">
           {steps.map((step) => (
-            <li
-              key={step.id}
-              className="flex items-center justify-between rounded-md border border-border bg-surface p-3"
-            >
-              <span className="text-body text-text-primary">{step.label}</span>
-              <StatusBadge
-                tone={
-                  step.status === 'ok'
-                    ? 'success'
-                    : step.status === 'failed'
-                      ? 'error'
-                      : step.status === 'running'
-                        ? 'approval'
-                        : 'neutral'
-                }
-                label={
-                  step.status === 'ok'
-                    ? 'Done'
-                    : step.status === 'failed'
-                      ? 'Failed'
-                      : step.status === 'running'
-                        ? '…'
-                        : 'Waiting'
-                }
-              />
+            <li key={step.id}>
+              <NdxFocusSurface density="dense" active={step.status === 'running'} className="p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-body text-text-primary">{step.label}</span>
+                  <StatusBadge
+                    tone={
+                      step.status === 'ok'
+                        ? 'success'
+                        : step.status === 'failed'
+                          ? 'error'
+                          : step.status === 'running'
+                            ? 'approval'
+                            : 'neutral'
+                    }
+                    label={
+                      step.status === 'ok'
+                        ? 'Done'
+                        : step.status === 'failed'
+                          ? 'Failed'
+                          : step.status === 'running'
+                            ? '…'
+                            : 'Waiting'
+                    }
+                  />
+                </div>
+              </NdxFocusSurface>
             </li>
           ))}
         </ol>

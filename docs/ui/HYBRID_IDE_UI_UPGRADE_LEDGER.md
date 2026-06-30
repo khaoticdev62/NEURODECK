@@ -61,8 +61,8 @@ Status legend:
 | `/onboarding/providers` | ND-005 | Critical setup | Settings/permission dialog | Partial Critical | provider category lockups; secret entry validation preserved |
 | `/onboarding/workspaces` | ND-006 | Dashboard | Spatial workspace grid | Partial Spatial | picker focus preserved; visual QA pending |
 | `/onboarding/calibration` | ND-004 | Critical setup | Controller setup | Partial Critical | controller-only path preserved; visual QA pending |
-| `/onboarding/tutorial` | ND-007 | Dashboard | Spatial learning | Frame / Pending Spatial | step focus restoration |
-| `/boot` | ND-001 | Critical shell | Boot shell | Frame / Pending Critical | no overlay interference |
+| `/onboarding/tutorial` | ND-007 | Dashboard | Spatial learning | Partial Spatial | shared editor/spatial framing; step focus restoration preserved; viewport evidence added |
+| `/boot` | ND-001 | Critical shell | Boot shell | Partial Critical | shared boot-state/failure framing; no overlay interference preserved |
 | `/ai` | ND-013 | IDE-heavy | AI command workbench | Partial IDE | per-step execution semantics still deferred |
 | `/ai/timeline` | ND-014 | Tool-heavy | Timeline/log viewer | Frame / Pending Tool | long timeline focus |
 | `/ai/approvals` | ND-015 | Critical | Permission review | Partial Critical | approval queue editor/review-policy framing; visual QA pending |
@@ -85,7 +85,7 @@ Status legend:
 | `/agents` | ND-016 | Tool-heavy | Agent cards/detail | Partial Tool | factory/list/policy framing; detail route pending |
 | `/agents/:agentId` | ND-017 | Tool-heavy | Agent detail tabs | Partial Tool | profile/detail/run-context framing; visual QA pending |
 | `/learn` | ND-038 | Dashboard | Spatial learning rows | Partial Spatial | authored content gap; visual QA pending |
-| `/learn/lab/:curriculumId/:moduleId/:lessonId` | ND-039 | Dashboard | Guided lab workbench | Frame / Pending Spatial | lab step focus |
+| `/learn/lab/:curriculumId/:moduleId/:lessonId` | ND-039 | Dashboard | Guided lab workbench | Partial Spatial | instruction/tool/editor/coach framing; lab terminal and coach behavior preserved |
 | `/remote` | ND-040 | IDE-heavy | Remote tool window | Partial IDE | non-SSH target types remain deferred |
 | `/remote/:hostId` | ND-041 | IDE-heavy | Remote terminal panel | Partial IDE | remote xterm focus still needs visual QA |
 | `/lan-share` | ND-LAN-001 | Tool-heavy | LAN Share tool | Partial Tool | service/control/network-policy framing; visual QA pending |
@@ -309,6 +309,16 @@ npm run lint -> passed
 npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
 ```
 
+HYBRID-6/7/8 closure checks run after Guided Controller Tutorial, Guided Lab, and Boot-state migration:
+
+```text
+npm run test -- GuidedControllerTutorial GuidedLab BootSessionStart -> 3 files / 18 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
+npm run test:e2e -- hybrid-ui.spec.ts -> 1 file / 1 test passed across 1280x800, 1920x1080, and 2560x1440 route viewport checks
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -351,12 +361,14 @@ npm run build -> passed with existing ErrorRecovery dynamic/static import chunki
   controls. Remaining HYBRID-5 targets are deeper per-route inspectors, trusted publishers, and
   route-specific visual/controller evidence rather than new parallel platform UI systems.
 - HYBRID-6 partial spatial migration is complete for Home, Workspaces, Learning Hub, Help Hub,
-  Screenshot Center, Voice Notes, onboarding welcome, and workspace discovery. Remaining HYBRID-6
-  targets include Guided Controller Tutorial, Guided Lab, Boot-adjacent spatial states where
-  appropriate, and route-by-route overlap evidence at 1280x800 and target docked sizes.
+  Screenshot Center, Voice Notes, onboarding welcome, workspace discovery, Guided Controller
+  Tutorial, and Guided Lab. Route viewport evidence now covers the last two remaining spatial
+  targets at 1280x800, 1920x1080, and 2560x1440.
 - HYBRID-7 partial critical/settings migration is complete for controller/display/privacy/update
   settings, power, recovery, backup, privacy data map, guided troubleshooter, approval queue,
-  presentation, notification policy, kiosk mode, AI provider setup, and controller calibration.
-  Remaining HYBRID-7 work is full dialog-standardization coverage, notification/sandbox policy
-  reconciliation with presentation-mode work, and controller/accessibility evidence.
-- HYBRID-8 and HYBRID-9 need visual/controller/performance evidence at all target resolutions before any full-program completion claim.
+  presentation, notification policy, kiosk mode, AI provider setup, controller calibration, and
+  Boot-state treatment. Remaining HYBRID-7 work is deeper full-program dialog-standardization
+  coverage rather than any known un-migrated critical route in this slice.
+- HYBRID-8 route-level responsive evidence has started with `e2e/hybrid-ui.spec.ts` for the final
+  pending hybrid routes. HYBRID-9 still needs broader full-program visual/controller/performance
+  evidence before claiming every route in the product has been visually QA'd.

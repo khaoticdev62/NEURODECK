@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { getCurriculum, getProgress, updateProgress } from '../../services/ipc/learningClient'
 import { LabTerminal } from './LabTerminal'
@@ -171,7 +172,7 @@ export function GuidedLab(): React.JSX.Element {
   const completed = lessonStatus === 'completed'
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
+    <div className="flex h-full min-h-0 min-w-0 flex-col gap-4 overflow-hidden p-6">
       <header className="flex items-center justify-between gap-4">
         <div>
           <button
@@ -196,8 +197,7 @@ export function GuidedLab(): React.JSX.Element {
 
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[22rem_minmax(0,1fr)_20rem]">
         {/* Instruction pane */}
-        <section className="flex min-h-0 flex-col gap-4 overflow-auto rounded-lg border border-border bg-surface p-4">
-          <h2 className="text-body font-semibold text-text-primary">Instructions</h2>
+        <NdxToolWindow title="Instructions" subtitle={currentModule.title}>
           <LessonInstructions lesson={currentLesson} />
 
           {currentLesson.hints.length > 0 && (
@@ -212,29 +212,30 @@ export function GuidedLab(): React.JSX.Element {
               </ul>
             </div>
           )}
-        </section>
+        </NdxToolWindow>
 
         {/* Terminal pane */}
-        <section className="flex min-h-0 flex-col gap-2">
-          <h2 className="text-body font-semibold text-text-primary">Lab terminal</h2>
-          {!activeWorkspace ? (
-            <EmptyState
-              title="No active workspace"
-              description="Select or create a workspace before running this lab."
-            />
-          ) : (
-            <LabTerminal
-              workspaceId={activeWorkspace.id}
-              relativeCwd={currentLesson.cwd}
-              setupCommand={currentLesson.setupCommand}
-              onData={handleTerminalData}
-            />
-          )}
-        </section>
+        <NdxEditorShell title="Lab terminal">
+          <div className="flex h-full min-h-0 flex-col p-3">
+            {!activeWorkspace ? (
+              <EmptyState
+                title="No active workspace"
+                description="Select or create a workspace before running this lab."
+              />
+            ) : (
+              <LabTerminal
+                workspaceId={activeWorkspace.id}
+                relativeCwd={currentLesson.cwd}
+                setupCommand={currentLesson.setupCommand}
+                onData={handleTerminalData}
+              />
+            )}
+          </div>
+        </NdxEditorShell>
 
         {/* Objectives / validation / coach */}
         <section className="flex min-h-0 flex-col gap-4 overflow-auto">
-          <div className="rounded-lg border border-border bg-surface p-4">
+          <NdxFocusSurface density="comfortable" className="p-4">
             <h2 className="text-body font-semibold text-text-primary">Objectives</h2>
             {currentLesson.objectives.length === 0 ? (
               <p className="text-meta text-text-secondary">No objectives for this lesson.</p>
@@ -257,17 +258,17 @@ export function GuidedLab(): React.JSX.Element {
                 ))}
               </ul>
             )}
-          </div>
+          </NdxFocusSurface>
 
-          <div className="rounded-lg border border-border bg-surface p-4">
+          <NdxFocusSurface density="comfortable" className="p-4">
             <h2 className="text-body font-semibold text-text-primary">Validation</h2>
             <p className="mt-2 text-meta text-text-secondary">
               Automated lab validation is not implemented yet. Mark the lesson complete manually
               once you have met the objectives yourself.
             </p>
-          </div>
+          </NdxFocusSurface>
 
-          <div className="flex min-h-0 flex-col gap-2 rounded-lg border border-border bg-surface p-4">
+          <NdxFocusSurface density="comfortable" className="flex min-h-0 flex-col gap-2 p-4">
             <h2 className="text-body font-semibold text-text-primary">AI coach</h2>
             {coach.reason ? (
               <p className="text-meta text-text-secondary">{coach.reason}</p>
@@ -318,7 +319,7 @@ export function GuidedLab(): React.JSX.Element {
                 </div>
               </>
             )}
-          </div>
+          </NdxFocusSurface>
         </section>
       </div>
     </div>
