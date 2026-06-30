@@ -264,5 +264,9 @@ export const IPC_CHANNELS = {
   applicationPolicyGet: 'applicationPolicy.get',
   applicationPolicySet: 'applicationPolicy.set',
   kioskModeGet: 'kioskMode.get',
-  kioskModeSet: 'kioskMode.set'
+  kioskModeSet: 'kioskMode.set',
+  trustedPublisherList: 'trustedPublisher.list',
+  trustedPublisherAdd: 'trustedPublisher.add',
+  trustedPublisherRevoke: 'trustedPublisher.revoke',
+  trustedPublisherUnrevoke: 'trustedPublisher.unrevoke'
 } as const

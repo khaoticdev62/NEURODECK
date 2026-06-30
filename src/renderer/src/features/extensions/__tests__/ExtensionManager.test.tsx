@@ -1,5 +1,6 @@
 import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
   ExtensionHealthEvent,
@@ -58,9 +59,11 @@ function stubBridge(partial: Partial<NdxBridge>): void {
 
 function renderScreen(): ReturnType<typeof render> {
   return render(
-    <FocusEngineProvider adapters={[new TestAdapter()]}>
-      <ExtensionManager />
-    </FocusEngineProvider>
+    <MemoryRouter>
+      <FocusEngineProvider adapters={[new TestAdapter()]}>
+        <ExtensionManager />
+      </FocusEngineProvider>
+    </MemoryRouter>
   )
 }
 

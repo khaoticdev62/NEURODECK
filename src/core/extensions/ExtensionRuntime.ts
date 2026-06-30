@@ -1,7 +1,9 @@
-import type { ExtensionRecord, InstallExtensionRequest } from '@shared/contracts'
+import type { ExtensionRecord, ExtensionTrust, InstallExtensionRequest } from '@shared/contracts'
 import { loadManifest } from './ManifestLoader'
+import { verifyManifestSignature } from './ManifestSignature'
 import type { ExtensionHost } from './ExtensionHost'
 import type { ExtensionStore } from './ExtensionStore'
+import type { TrustedPublisherStore } from './TrustedPublisherStore'
 
 const QUARANTINE_FAULT_THRESHOLD = 3
 
@@ -23,7 +25,9 @@ export class ExtensionRuntime {
   constructor(
     private readonly store: ExtensionStore,
     private readonly host: ExtensionHost,
-    private readonly notify: ExtensionRuntimeNotify
+    private readonly notify: ExtensionRuntimeNotify,
+    /** Optional so existing call sites/tests built before Epic X15's real signature verification are unaffected. */
+    private readonly trustedPublishers?: TrustedPublisherStore
   ) {}
 
   async install(request: InstallExtensionRequest): Promise<ExtensionRecord> {
@@ -31,6 +35,8 @@ export class ExtensionRuntime {
     if (!result.valid || !result.manifest) {
       throw new Error(result.reason ?? 'Invalid extension manifest.')
     }
+
+    const trust = await this.resolveTrust(result.manifest)
 
     const requestedCapabilities = new Set(result.manifest.capabilities.map((c) => c.capability))
     const grantedCapabilities = request.approvedCapabilities.filter((capability) =>
@@ -42,7 +48,7 @@ export class ExtensionRuntime {
       manifest: result.manifest,
       installPath: request.directoryPath,
       state: 'installed',
-      trust: result.manifest.signature ? 'signed' : 'unsigned',
+      trust,
       grantedCapabilities,
       faultCount: 0,
       installedAt: now,
@@ -51,6 +57,36 @@ export class ExtensionRuntime {
     const saved = await this.store.upsert(record)
     this.notify(saved)
     return saved
+  }
+
+  /**
+   * Real Epic X15 signature verification. `unsigned` and `signed` (a
+   * signature is present but its fingerprint is not in the local
+   * trusted-publisher keystore) never block install — they are
+   * informational trust tiers, matching this codebase's pre-existing
+   * behavior. A fingerprint that *does* match a trusted publisher is
+   * cryptographically checked: a forged signature claiming a trusted
+   * publisher's identity fails install outright rather than silently
+   * downgrading to a lower trust tier, since that specific case is
+   * tamper evidence, not merely "unverified."
+   */
+  private async resolveTrust(
+    manifest: NonNullable<Awaited<ReturnType<typeof loadManifest>>['manifest']>
+  ): Promise<ExtensionTrust> {
+    if (!manifest.signature) return 'unsigned'
+    if (!this.trustedPublishers) return 'signed'
+
+    const publisher = await this.trustedPublishers.get(manifest.signature.publicKeyFingerprint)
+    if (!publisher) return 'signed'
+    if (publisher.revoked) return 'revoked'
+
+    const valid = verifyManifestSignature(manifest, publisher.publicKeyPem)
+    if (!valid) {
+      throw new Error(
+        `This extension's signature claims to be from the trusted publisher "${publisher.publisherName}" but does not cryptographically verify against that publisher's key. Refusing to install.`
+      )
+    }
+    return 'verified-publisher'
   }
 
   async setEnabled(id: string, enabled: boolean): Promise<ExtensionRecord> {

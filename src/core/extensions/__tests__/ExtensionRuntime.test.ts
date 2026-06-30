@@ -1,9 +1,12 @@
+import { generateKeyPairSync } from 'node:crypto'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ExtensionRuntime } from '../ExtensionRuntime'
 import { ExtensionStore } from '../ExtensionStore'
+import { TrustedPublisherStore } from '../TrustedPublisherStore'
+import { canonicalizeManifestForSigning, signManifestPayload } from '../ManifestSignature'
 
 let dir: string
 let store: ExtensionStore
@@ -143,5 +146,98 @@ describe('ExtensionRuntime', () => {
 
     expect(host.stop).toHaveBeenCalledWith('ext.demo')
     expect(await store.get('ext.demo')).toBeUndefined()
+  })
+
+  describe('real Epic X15 signature verification', () => {
+    function signedManifest(
+      fingerprint: string,
+      privateKeyPem: string
+    ): typeof MANIFEST & {
+      signature: { algorithm: string; publicKeyFingerprint: string; signature: string }
+    } {
+      const payload = canonicalizeManifestForSigning(MANIFEST as never)
+      return {
+        ...MANIFEST,
+        signature: {
+          algorithm: 'ed25519',
+          publicKeyFingerprint: fingerprint,
+          signature: signManifestPayload(payload, privateKeyPem)
+        }
+      }
+    }
+
+    it('marks an unsigned manifest as unsigned', async () => {
+      await writeFile(join(dir, 'manifest.json'), JSON.stringify(MANIFEST), 'utf-8')
+      const trustedPublishers = new TrustedPublisherStore(join(dir, 'trusted.json'))
+      const runtime = new ExtensionRuntime(store, fakeHost() as never, vi.fn(), trustedPublishers)
+
+      const record = await runtime.install({ directoryPath: dir, approvedCapabilities: [] })
+
+      expect(record.trust).toBe('unsigned')
+    })
+
+    it('marks a signed manifest from an unknown key as signed, not verified', async () => {
+      const { privateKey } = generateKeyPairSync('ed25519')
+      const privateKeyPem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString()
+      const manifest = signedManifest('unknown-fingerprint', privateKeyPem)
+      await writeFile(join(dir, 'manifest.json'), JSON.stringify(manifest), 'utf-8')
+      const trustedPublishers = new TrustedPublisherStore(join(dir, 'trusted.json'))
+      const runtime = new ExtensionRuntime(store, fakeHost() as never, vi.fn(), trustedPublishers)
+
+      const record = await runtime.install({ directoryPath: dir, approvedCapabilities: [] })
+
+      expect(record.trust).toBe('signed')
+    })
+
+    it('marks a manifest signed by a real trusted publisher as verified-publisher', async () => {
+      const { publicKey, privateKey } = generateKeyPairSync('ed25519')
+      const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }).toString()
+      const privateKeyPem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString()
+      const trustedPublishers = new TrustedPublisherStore(join(dir, 'trusted.json'))
+      const publisher = await trustedPublishers.add(publicKeyPem, 'Demo Publisher')
+      const manifest = signedManifest(publisher.fingerprint, privateKeyPem)
+      await writeFile(join(dir, 'manifest.json'), JSON.stringify(manifest), 'utf-8')
+      const runtime = new ExtensionRuntime(store, fakeHost() as never, vi.fn(), trustedPublishers)
+
+      const record = await runtime.install({ directoryPath: dir, approvedCapabilities: [] })
+
+      expect(record.trust).toBe('verified-publisher')
+    })
+
+    it('refuses to install a manifest with a forged signature claiming a trusted publisher', async () => {
+      const real = generateKeyPairSync('ed25519')
+      const impostor = generateKeyPairSync('ed25519')
+      const realPublicKeyPem = real.publicKey.export({ type: 'spki', format: 'pem' }).toString()
+      const impostorPrivateKeyPem = impostor.privateKey
+        .export({ type: 'pkcs8', format: 'pem' })
+        .toString()
+      const trustedPublishers = new TrustedPublisherStore(join(dir, 'trusted.json'))
+      const publisher = await trustedPublishers.add(realPublicKeyPem, 'Demo Publisher')
+      // Signed with the impostor's key but claiming the real publisher's fingerprint.
+      const manifest = signedManifest(publisher.fingerprint, impostorPrivateKeyPem)
+      await writeFile(join(dir, 'manifest.json'), JSON.stringify(manifest), 'utf-8')
+      const runtime = new ExtensionRuntime(store, fakeHost() as never, vi.fn(), trustedPublishers)
+
+      await expect(
+        runtime.install({ directoryPath: dir, approvedCapabilities: [] })
+      ).rejects.toThrow(/does not cryptographically verify/)
+      expect(await store.list()).toEqual([])
+    })
+
+    it('marks a manifest signed by a revoked trusted publisher as revoked', async () => {
+      const { publicKey, privateKey } = generateKeyPairSync('ed25519')
+      const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }).toString()
+      const privateKeyPem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString()
+      const trustedPublishers = new TrustedPublisherStore(join(dir, 'trusted.json'))
+      const publisher = await trustedPublishers.add(publicKeyPem, 'Demo Publisher')
+      await trustedPublishers.setRevoked(publisher.fingerprint, true)
+      const manifest = signedManifest(publisher.fingerprint, privateKeyPem)
+      await writeFile(join(dir, 'manifest.json'), JSON.stringify(manifest), 'utf-8')
+      const runtime = new ExtensionRuntime(store, fakeHost() as never, vi.fn(), trustedPublishers)
+
+      const record = await runtime.install({ directoryPath: dir, approvedCapabilities: [] })
+
+      expect(record.trust).toBe('revoked')
+    })
   })
 })

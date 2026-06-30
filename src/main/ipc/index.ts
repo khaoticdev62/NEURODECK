@@ -38,6 +38,7 @@ import { ExtensionDataStore } from '../../core/extensions/ExtensionDataStore'
 import { ExtensionHost } from '../../core/extensions/ExtensionHost'
 import { ExtensionRuntime } from '../../core/extensions/ExtensionRuntime'
 import { ExtensionStore } from '../../core/extensions/ExtensionStore'
+import { TrustedPublisherStore } from '../../core/extensions/TrustedPublisherStore'
 import { KnowledgeStore } from '../../core/knowledge/KnowledgeStore'
 import { KnowledgeVaultService } from '../../core/knowledge/KnowledgeVaultService'
 import { MemoryStore } from '../../core/memory/MemoryStore'
@@ -99,6 +100,7 @@ import { registerAgentHandlers } from './registerAgentHandlers'
 import { registerApplicationHandlers } from './registerApplicationHandlers'
 import { registerApplicationPolicyHandlers } from './registerApplicationPolicyHandlers'
 import { registerKioskModeHandlers } from './registerKioskModeHandlers'
+import { registerTrustedPublisherHandlers } from './registerTrustedPublisherHandlers'
 import { registerBackupHandlers } from './registerBackupHandlers'
 import { registerBrowserHandlers } from './registerBrowserHandlers'
 import { registerCapabilityHandlers } from './registerCapabilityHandlers'
@@ -251,6 +253,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     applicationStore
   )
   const extensionStore = new ExtensionStore(join(app.getPath('userData'), 'extensions.json'))
+  const trustedPublisherStore = new TrustedPublisherStore(
+    join(app.getPath('userData'), 'trusted-publishers.json')
+  )
   const extensionDataStore = new ExtensionDataStore(join(app.getPath('userData'), 'extension-data'))
   const capabilityBroker = new CapabilityBroker()
   capabilityBroker.register('show-notification', async ({ args }) => {
@@ -283,17 +288,22 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
       }
     }
   )
-  const extensionRuntime = new ExtensionRuntime(extensionStore, extensionHost, (record) => {
-    const window = getWindow()
-    if (window && !window.webContents.isDestroyed()) {
-      window.webContents.send(IPC_CHANNELS.extensionHealthEvent, {
-        id: record.manifest.id,
-        state: record.state,
-        faultCount: record.faultCount,
-        quarantineReason: record.quarantineReason
-      })
-    }
-  })
+  const extensionRuntime = new ExtensionRuntime(
+    extensionStore,
+    extensionHost,
+    (record) => {
+      const window = getWindow()
+      if (window && !window.webContents.isDestroyed()) {
+        window.webContents.send(IPC_CHANNELS.extensionHealthEvent, {
+          id: record.manifest.id,
+          state: record.state,
+          faultCount: record.faultCount,
+          quarantineReason: record.quarantineReason
+        })
+      }
+    },
+    trustedPublisherStore
+  )
   const knowledgeStore = new KnowledgeStore(join(app.getPath('userData'), 'knowledge.json'))
   const knowledgeVaultService = new KnowledgeVaultService(knowledgeStore)
   const memoryStore = new MemoryStore(join(app.getPath('userData'), 'memory.json'))
@@ -529,6 +539,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   registerApplicationPolicyHandlers(applicationPolicyStore)
   registerKioskModeHandlers(new KioskModeStore(join(app.getPath('userData'), 'kiosk-mode.json')))
+  registerTrustedPublisherHandlers(trustedPublisherStore)
   registerDeviceHandlers(deviceStore, deviceInventoryService)
   const disposePackages = registerPackageHandlers(
     flatpakAdapter,

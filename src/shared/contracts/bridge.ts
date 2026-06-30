@@ -80,6 +80,11 @@ import type {
 } from './applicationPolicy'
 import type { KioskModeSettings, SetKioskModeRequest } from './kioskMode'
 import type {
+  AddTrustedPublisherRequest,
+  TrustedPublisherFingerprintRequest,
+  TrustedPublisherRecord
+} from './trustedPublisher'
+import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
   ExtensionInstallPreview,
@@ -509,6 +514,16 @@ export interface NdxBridge {
   kioskMode: {
     get: () => Promise<NdxResult<KioskModeSettings>>
     set: (request: SetKioskModeRequest) => Promise<NdxResult<KioskModeSettings>>
+  }
+  trustedPublisher: {
+    list: () => Promise<NdxResult<TrustedPublisherRecord[]>>
+    add: (request: AddTrustedPublisherRequest) => Promise<NdxResult<TrustedPublisherRecord>>
+    revoke: (
+      request: TrustedPublisherFingerprintRequest
+    ) => Promise<NdxResult<TrustedPublisherRecord>>
+    unrevoke: (
+      request: TrustedPublisherFingerprintRequest
+    ) => Promise<NdxResult<TrustedPublisherRecord>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

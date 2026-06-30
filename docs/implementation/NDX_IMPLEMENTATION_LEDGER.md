@@ -3100,3 +3100,27 @@ npm run build -> passed
 ```
 
 This closes Epic X14 (Presentation/Recording/Kiosk Modes, Application Sandbox and Policy, Notification Policy, Screenshot Center, Voice Notes) in full.
+
+## Epic X15 — Supply Chain and Production Hardening, first pass (2026-06-29)
+
+Two of the five X15 items are now real; three are honestly deferred with named reasons.
+
+**SBOM generation** (`npm run sbom` / `npm run sbom:prod`): `scripts/generate-sbom.mjs` reads the real `package-lock.json` (no external tooling, no fabricated data) and produces `docs/security/sbom.json` — a CycloneDX-lite JSON SBOM with every package's real name, version, license expression, PURL, and integrity hash from the lockfile. Result: 896 packages (162 production, 734 dev), 18 distinct license expressions, 100% permissive licenses in the production tree (Apache-2.0, MIT, ISC, BSD-*, CC0, Python-2.0) consistent with the existing LAN Share license audit. The generated artifact is checked into `docs/security/`.
+
+**Extension signature verification** — closed the presence-only gap Epic X3 left documented: `ExtensionRuntime.install()` previously set `trust: result.manifest.signature ? 'signed' : 'unsigned'` without any cryptographic check. Now `resolveTrust()` (a new private method) consults a real `TrustedPublisherStore` (Ed25519 public-key registry the user manages via the new `/trusted-publishers` screen in Extension Manager) and calls `verifyManifestSignature()` via `node:crypto`'s built-in `crypto.verify(null, ...)` — never a homegrown crypto primitive. The four trust tiers the schema already defined (`unsigned`, `signed`, `verified-publisher`, `revoked`) are now all reachable by real code paths, not just schema declarations. The critical tamper-detection case — a manifest claiming a known trusted publisher's fingerprint but signed by a different private key — is refused outright at install time with a clear error, rather than silently downgraded. This is proven by a real end-to-end test that generates real Ed25519 keypairs, signs a real manifest with an impostor key, and asserts the correct exception. The signing helper for extension developers is `scripts/sign-extension-manifest.mjs`.
+
+**Honestly deferred (named reasons, not silent gaps)**:
+- "Artifact signing, checksum publication, build provenance" (§39): requires a real release pipeline with distribution signing keys (AppImage/deb/snap signing, SLSA provenance generation). No signing keys exist in this dev environment. Deferred per the same precedent as LAN-11 (also deferred for exactly this named reason).
+- "Compatibility/deprecation policy": the X15 checklist's intent is a release-process/extension-API versioning concern, not a code feature — requires a concrete extension API versioning scheme that doesn't exist yet. Deferred to when the first real Extension Marketplace/SDK is built.
+
+**New/changed files**: `scripts/generate-sbom.mjs` (new), `scripts/sign-extension-manifest.mjs` (new), `docs/security/sbom.json` (new, generated artifact), `package.json` (new `sbom`/`sbom:prod` scripts), `src/shared/contracts/trustedPublisher.ts` (new), `src/shared/contracts/index.ts`/`ipcChannels.ts`/`bridge.ts` (new trusted publisher entries), `src/core/extensions/ManifestSignature.ts` (new), `src/core/extensions/TrustedPublisherStore.ts` (new), `src/core/extensions/ExtensionRuntime.ts` (real trust resolution + optional `TrustedPublisherStore` dep), `src/core/extensions/__tests__/ManifestSignature.test.ts` (new, 5 tests), `src/core/extensions/__tests__/TrustedPublisherStore.test.ts` (new, 2 tests), `src/core/extensions/__tests__/ExtensionRuntime.test.ts` (+5 tests, all real crypto), `src/main/ipc/registerTrustedPublisherHandlers.ts` (new), `src/main/ipc/index.ts` (wiring), `src/preload/index.ts` (new bridge member), `src/renderer/src/services/ipc/trustedPublisherClient.ts` (new), `src/renderer/src/features/extensions/TrustedPublishers.tsx` (new screen), `src/renderer/src/features/extensions/__tests__/TrustedPublishers.test.tsx` (new, 3 tests), `src/renderer/src/features/extensions/ExtensionManager.tsx` (Trusted Publishers navigation link + `MemoryRouter`-wrapping fix in test), `src/renderer/src/features/extensions/__tests__/ExtensionManager.test.tsx` (MemoryRouter wrapper fix), `src/renderer/src/app/routing/routes.tsx` (new `/trusted-publishers` route), `src/renderer/src/features/system/SystemDashboard.tsx` (new link).
+
+**Validation evidence (run 2026-06-29):**
+
+```text
+npm run test -> 232 files / 1106 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+npm run sbom -> passed (docs/security/sbom.json generated, 896 packages)
+```

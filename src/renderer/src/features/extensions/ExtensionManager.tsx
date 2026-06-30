@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type {
   ExtensionCapability,
   ExtensionHealthEvent,
@@ -321,6 +322,7 @@ function ExtensionDetail({
  * no marketplace data, SDK wizard, or unsigned "verified" claims are invented.
  */
 export function ExtensionManager(): React.JSX.Element {
+  const navigate = useNavigate()
   const [records, setRecords] = useState<ExtensionRecord[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [directoryPath, setDirectoryPath] = useState('')
@@ -503,13 +505,18 @@ export function ExtensionManager(): React.JSX.Element {
             their real trust and API foundations exist.
           </p>
         </div>
-        <ControllerButton
-          variant="secondary"
-          disabled={busy}
-          onClick={() => void refresh(selectedId)}
-        >
-          Refresh
-        </ControllerButton>
+        <div className="flex gap-2">
+          <ControllerButton variant="ghost" onClick={() => navigate('/trusted-publishers')}>
+            Trusted Publishers
+          </ControllerButton>
+          <ControllerButton
+            variant="secondary"
+            disabled={busy}
+            onClick={() => void refresh(selectedId)}
+          >
+            Refresh
+          </ControllerButton>
+        </div>
       </header>
 
       {error && <ErrorState title="Extension error" description={error} className="py-3" />}

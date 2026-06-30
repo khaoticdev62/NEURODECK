@@ -271,6 +271,12 @@ const ndx: NdxBridge = {
     get: () => ipcRenderer.invoke(IPC_CHANNELS.kioskModeGet),
     set: (request) => ipcRenderer.invoke(IPC_CHANNELS.kioskModeSet, request)
   },
+  trustedPublisher: {
+    list: () => ipcRenderer.invoke(IPC_CHANNELS.trustedPublisherList),
+    add: (request) => ipcRenderer.invoke(IPC_CHANNELS.trustedPublisherAdd, request),
+    revoke: (request) => ipcRenderer.invoke(IPC_CHANNELS.trustedPublisherRevoke, request),
+    unrevoke: (request) => ipcRenderer.invoke(IPC_CHANNELS.trustedPublisherUnrevoke, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),

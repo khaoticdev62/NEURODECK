@@ -301,6 +301,10 @@ const KioskModeSettings = lazy(async () => {
   const module = await import('../../features/kiosk/KioskModeSettings')
   return { default: module.KioskModeSettings }
 })
+const TrustedPublishers = lazy(async () => {
+  const module = await import('../../features/extensions/TrustedPublishers')
+  return { default: module.TrustedPublishers }
+})
 const VoiceNotesCenter = lazy(async () => {
   const module = await import('../../features/voice/VoiceNotesCenter')
   return { default: module.VoiceNotesCenter }
@@ -1100,6 +1104,15 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('kiosk mode settings', <KioskModeSettings />)
+  },
+  {
+    routeId: 'trusted-publishers',
+    path: '/trusted-publishers',
+    title: 'Trusted Publishers',
+    owningEpic: 'Epic X15',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('trusted publishers', <TrustedPublishers />)
   }
 ]
 
