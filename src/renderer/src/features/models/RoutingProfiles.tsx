@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { ModelRouteDecision, RoutingProfileId } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import { routeModel } from '../../services/ipc/modelClient'
 
 const PROFILES: Array<{ id: RoutingProfileId; label: string; description: string }> = [
@@ -59,50 +60,77 @@ export function RoutingProfiles(): React.JSX.Element {
     }
   }
 
+  const selectedProfile = PROFILES.find((profile) => profile.id === profileId) ?? PROFILES[0]
+
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div>
-        <p className="text-title font-semibold text-text-primary">Routing Profiles</p>
+    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Profiles" subtitle={`${PROFILES.length} routing modes`}>
         <p className="text-meta text-text-secondary">
-          Routes against real provider availability and current device measurements.
+          Profiles route against real provider availability and current device measurements.
         </p>
-      </div>
-      <div className="grid gap-2 md:grid-cols-2">
-        {PROFILES.map((profile) => (
-          <ControllerButton
-            key={profile.id}
-            variant={profileId === profile.id ? 'primary' : 'secondary'}
-            onClick={() => setProfileId(profile.id)}
-          >
-            <span className="flex flex-col items-start">
-              <span>{profile.label}</span>
-              <span className="text-meta opacity-80">{profile.description}</span>
-            </span>
-          </ControllerButton>
-        ))}
-      </div>
-      <ControllerButton variant="primary" disabled={loading} onClick={() => void preview()}>
-        {loading ? 'Measuring and probing…' : 'Preview route'}
-      </ControllerButton>
-      {error && <ErrorState title="No route available" description={error} />}
-      {decision && (
-        <section className="border border-border bg-surface p-3">
-          <p className="text-body font-semibold text-text-primary">{decision.modelId}</p>
-          <p className="text-meta text-text-secondary">
-            {decision.providerName} · {decision.local ? 'Local' : 'Cloud'}
+        <div className="flex flex-col gap-2">
+          {PROFILES.map((profile) => (
+            <ControllerButton
+              key={profile.id}
+              variant={profileId === profile.id ? 'primary' : 'secondary'}
+              onClick={() => setProfileId(profile.id)}
+            >
+              <span className="flex flex-col items-start">
+                <span>{profile.label}</span>
+                <span className="text-meta opacity-80">{profile.description}</span>
+              </span>
+            </ControllerButton>
+          ))}
+        </div>
+      </NdxToolWindow>
+
+      <NdxEditorShell title="Routing Profiles">
+        <div className="flex min-h-full flex-col gap-3 p-3">
+          <NdxFocusSurface active density="comfortable" className="p-4">
+            <p className="text-body font-semibold text-text-primary">{selectedProfile.label}</p>
+            <p className="text-meta text-text-secondary">{selectedProfile.description}</p>
+            <ControllerButton variant="primary" disabled={loading} onClick={() => void preview()}>
+              {loading ? 'Measuring and probing...' : 'Preview route'}
+            </ControllerButton>
+          </NdxFocusSurface>
+
+          {error && <ErrorState title="No route available" description={error} />}
+          {decision && (
+            <section className="border border-border bg-surface p-3">
+              <p className="text-body font-semibold text-text-primary">{decision.modelId}</p>
+              <p className="text-meta text-text-secondary">
+                {decision.providerName} - {decision.local ? 'Local' : 'Cloud'}
+              </p>
+              <ul className="mt-2 text-meta text-text-tertiary">
+                {decision.reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+              <p className="mt-2 text-meta text-text-secondary">
+                Memory {decision.measured.memoryUsedPercent?.toFixed(1) ?? 'unavailable'}% - Battery{' '}
+                {decision.measured.batteryPercent ?? 'unavailable'}% - Thermal{' '}
+                {decision.measured.temperatureCelsius?.toFixed(1) ?? 'unavailable'} C
+              </p>
+            </section>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Decision Context" subtitle={profileId} side="right">
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Preview input</p>
+          <p className="text-meta text-text-tertiary">
+            Temperature 0.2, max 2048 tokens, private workspace only for private profile.
           </p>
-          <ul className="mt-2 text-meta text-text-tertiary">
-            {decision.reasons.map((reason) => (
-              <li key={reason}>{reason}</li>
-            ))}
-          </ul>
-          <p className="mt-2 text-meta text-text-secondary">
-            Memory {decision.measured.memoryUsedPercent?.toFixed(1) ?? 'unavailable'}% · Battery{' '}
-            {decision.measured.batteryPercent ?? 'unavailable'}% · Thermal{' '}
-            {decision.measured.temperatureCelsius?.toFixed(1) ?? 'unavailable'}°C
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Routing source</p>
+          <p className="text-meta text-text-tertiary">
+            The preview uses the existing typed model router IPC. No provider availability or
+            measurements are mocked here.
           </p>
-        </section>
-      )}
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }
