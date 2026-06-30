@@ -83,7 +83,7 @@ Status legend:
 | `/models/:providerId` | ND-036 | Tool-heavy | Model inspector | Partial Tool | provider/detail/policy framing; visual QA pending |
 | `/models/routing-profiles` | ND-037 | Tool-heavy | Routing table | Partial Tool | profile list/preview/decision context framing; visual QA pending |
 | `/agents` | ND-016 | Tool-heavy | Agent cards/detail | Partial Tool | factory/list/policy framing; detail route pending |
-| `/agents/:agentId` | ND-017 | Tool-heavy | Agent detail tabs | Frame / Pending Tool | timeline and tool logs |
+| `/agents/:agentId` | ND-017 | Tool-heavy | Agent detail tabs | Partial Tool | profile/detail/run-context framing; visual QA pending |
 | `/learn` | ND-038 | Dashboard | Spatial learning rows | Frame / Pending Spatial | authored content gap |
 | `/learn/lab/:curriculumId/:moduleId/:lessonId` | ND-039 | Dashboard | Guided lab workbench | Frame / Pending Spatial | lab step focus |
 | `/remote` | ND-040 | IDE-heavy | Remote tool window | Partial IDE | non-SSH target types remain deferred |
@@ -256,6 +256,15 @@ npm run lint -> passed
 npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
 ```
 
+HYBRID-5 partial checks run after Agent Detail tool-window migration:
+
+```text
+npm run test -- AgentDetail -> 1 file / 10 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -284,9 +293,12 @@ npm run build -> passed with existing ErrorRecovery dynamic/static import chunki
   Workflow Library + Run Context framing while preserving persisted workflow listing/removal and
   WorkflowRunnerProvider run submission. Partial slice complete for `/automations/runs/:runId`
   Run Summary + Workflow Run Detail + Run Actions framing while preserving live-run precedence,
-  persisted run fallback, approval resolution, cancel action, and timeline messages. Remaining
-  targets include `/agents/:agentId`, Extensions, System, Permissions, Recovery, Backup, Vault,
-  LAN Share, Devices, Profiles, Continuity, and Platform Health.
+  persisted run fallback, approval resolution, cancel action, and timeline messages. Partial slice
+  complete for `/agents/:agentId` Agent Profile + Agent Detail + Run Context framing while
+  preserving start-run, dry-run, pause/resume, cancel, tool execution tabs, file tabs, permissions,
+  audit log filtering, and live `agentRun.update` behavior. Remaining targets include Extensions,
+  System, Permissions, Recovery, Backup, Vault, LAN Share, Devices, Profiles, Continuity, and
+  Platform Health.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.
 - HYBRID-8 and HYBRID-9 need visual/controller/performance evidence at all target resolutions before any full-program completion claim.

@@ -4,6 +4,7 @@ import type { AgentDefinition, AgentRun, AgentToolExecutionRecord } from '@share
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import type { AuditEntry } from '../../ai-safety/AuditLog'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import {
@@ -140,115 +141,180 @@ export function AgentDetail(): React.JSX.Element {
   if (!agent) return <ErrorState title="Agent not found" description={error ?? 'Unknown agent.'} />
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-title font-semibold text-text-primary">{agent.name}</p>
+    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(34rem,1fr)_19rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Agent Profile" subtitle={agent.enabled ? 'Enabled' : 'Disabled'}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-title font-semibold text-text-primary">{agent.name}</p>
+            <p className="text-meta text-text-secondary">
+              {agent.role} · {agent.modelProfile} · {agent.enabled ? 'Enabled' : 'Disabled'}
+            </p>
+          </div>
+          <ControllerButton variant="ghost" onClick={() => navigate('/agents')}>
+            Back
+          </ControllerButton>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Guardrails</p>
           <p className="text-meta text-text-secondary">
-            {agent.role} · {agent.modelProfile} · {agent.enabled ? 'Enabled' : 'Disabled'}
+            {agent.toolAllowlist.length} allowed tools, {agent.permissionCeiling.length} capability
+            grants.
           </p>
         </div>
-        <ControllerButton variant="ghost" onClick={() => navigate('/agents')}>
-          Back
-        </ControllerButton>
-      </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Resource limits</p>
+          <p className="text-meta text-text-secondary">
+            {agent.resourceLimits.maxTokens} max tokens, {agent.resourceLimits.maxToolCalls} tool
+            calls.
+          </p>
+        </div>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Agent run error" description={error} />}
+      <NdxEditorShell title="Agent Detail">
+        <div className="flex min-h-full flex-col gap-4 p-4">
+          {error && <ErrorState title="Agent run error" description={error} />}
 
-      <div className="flex gap-2">
-        {(['overview', 'tools', 'logs', 'files', 'permissions'] as Tab[]).map((candidate) => (
-          <ControllerButton
-            key={candidate}
-            variant={tab === candidate ? 'primary' : 'secondary'}
-            onClick={() => setTab(candidate)}
-          >
-            {candidate[0].toUpperCase() + candidate.slice(1)}
-          </ControllerButton>
-        ))}
-      </div>
+          <div className="flex gap-2">
+            {(['overview', 'tools', 'logs', 'files', 'permissions'] as Tab[]).map((candidate) => (
+              <ControllerButton
+                key={candidate}
+                variant={tab === candidate ? 'primary' : 'secondary'}
+                onClick={() => setTab(candidate)}
+              >
+                {candidate[0].toUpperCase() + candidate.slice(1)}
+              </ControllerButton>
+            ))}
+          </div>
 
-      {tab === 'overview' ? (
-        <>
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Overview</p>
-            <p className="text-meta text-text-secondary">Goal: {agent.goal}</p>
-            <p className="text-meta text-text-secondary">
-              Tool allowlist:{' '}
-              {agent.toolAllowlist.length ? agent.toolAllowlist.join(', ') : 'none (plan only)'}
-            </p>
-            <p className="text-meta text-text-secondary">
-              Resource limits: {agent.resourceLimits.maxTokens} max tokens ·{' '}
-              {agent.resourceLimits.timeoutMs}ms timeout · {agent.resourceLimits.maxToolCalls} max
-              tool calls
-            </p>
-            <p className="text-meta text-text-secondary">
-              Child agent policy:{' '}
-              {agent.childAgentPolicy.allowChildAgents
-                ? `${agent.childAgentPolicy.maxChildrenPerRun} max · depth ${agent.childAgentPolicy.maxDepth}`
-                : 'disabled'}
-            </p>
-          </section>
+          {tab === 'overview' ? (
+            <>
+              <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Overview</p>
+                <p className="text-meta text-text-secondary">Goal: {agent.goal}</p>
+                <p className="text-meta text-text-secondary">
+                  Tool allowlist:{' '}
+                  {agent.toolAllowlist.length ? agent.toolAllowlist.join(', ') : 'none (plan only)'}
+                </p>
+                <p className="text-meta text-text-secondary">
+                  Resource limits: {agent.resourceLimits.maxTokens} max tokens ·{' '}
+                  {agent.resourceLimits.timeoutMs}ms timeout · {agent.resourceLimits.maxToolCalls}{' '}
+                  max tool calls
+                </p>
+                <p className="text-meta text-text-secondary">
+                  Child agent policy:{' '}
+                  {agent.childAgentPolicy.allowChildAgents
+                    ? `${agent.childAgentPolicy.maxChildrenPerRun} max · depth ${agent.childAgentPolicy.maxDepth}`
+                    : 'disabled'}
+                </p>
+              </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Start a run</p>
-            <input
-              value={objective}
-              onChange={(event) => setObjective(event.target.value)}
-              placeholder="Objective for this run"
-              disabled={!agent.enabled}
-              className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-            />
-            {!agent.enabled && (
-              <p className="text-meta text-status-warning">This agent is disabled.</p>
-            )}
-            <label className="flex items-center gap-2 text-meta text-text-secondary">
-              <input
-                type="checkbox"
-                checked={dryRun}
-                onChange={(event) => setDryRun(event.target.checked)}
-              />
-              Dry run — plan with a real model completion, but never submit any tool call to
-              ActionQueue
-            </label>
-            <ControllerButton
-              variant="primary"
-              disabled={starting || !agent.enabled || !objective.trim()}
-              onClick={() => void handleStart()}
-            >
-              {starting ? 'Starting…' : dryRun ? 'Start dry run' : 'Start run'}
-            </ControllerButton>
-          </section>
-
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Runs</p>
-            {runs.length === 0 ? (
-              <p className="text-meta text-text-tertiary">No runs yet.</p>
-            ) : (
-              <ul className="flex flex-col gap-3">
-                {runs.map((run) => (
-                  <RunRow
-                    key={run.id}
-                    run={run}
-                    selected={run.id === selectedRun?.id}
-                    onSelect={() => setSelectedRunId(run.id)}
-                    onCancel={() => void handleCancel(run.id)}
-                    onPause={() => void handlePause(run.id)}
-                    onResume={() => void handleResume(run.id)}
+              <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Start a run</p>
+                <input
+                  value={objective}
+                  onChange={(event) => setObjective(event.target.value)}
+                  placeholder="Objective for this run"
+                  disabled={!agent.enabled}
+                  className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+                />
+                {!agent.enabled && (
+                  <p className="text-meta text-status-warning">This agent is disabled.</p>
+                )}
+                <label className="flex items-center gap-2 text-meta text-text-secondary">
+                  <input
+                    type="checkbox"
+                    checked={dryRun}
+                    onChange={(event) => setDryRun(event.target.checked)}
                   />
-                ))}
-              </ul>
+                  Dry run — plan with a real model completion, but never submit any tool call to
+                  ActionQueue
+                </label>
+                <ControllerButton
+                  variant="primary"
+                  disabled={starting || !agent.enabled || !objective.trim()}
+                  onClick={() => void handleStart()}
+                >
+                  {starting ? 'Starting…' : dryRun ? 'Start dry run' : 'Start run'}
+                </ControllerButton>
+              </section>
+
+              <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Runs</p>
+                {runs.length === 0 ? (
+                  <p className="text-meta text-text-tertiary">No runs yet.</p>
+                ) : (
+                  <ul className="flex flex-col gap-3">
+                    {runs.map((run) => (
+                      <RunRow
+                        key={run.id}
+                        run={run}
+                        selected={run.id === selectedRun?.id}
+                        onSelect={() => setSelectedRunId(run.id)}
+                        onCancel={() => void handleCancel(run.id)}
+                        onPause={() => void handlePause(run.id)}
+                        onResume={() => void handleResume(run.id)}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
+          ) : tab === 'tools' ? (
+            <ToolsTab run={selectedRun} />
+          ) : tab === 'logs' ? (
+            <LogsTab agentId={agent.id} runId={selectedRun?.id} entries={auditEntries} />
+          ) : tab === 'files' ? (
+            <FilesTab run={selectedRun} />
+          ) : (
+            <PermissionsTab agent={agent} run={selectedRun} />
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow
+        title="Run Context"
+        subtitle={selectedRun ? 'Selected run' : 'No selected run'}
+        side="right"
+      >
+        {selectedRun ? (
+          <>
+            <div>
+              <p className="text-meta font-semibold text-text-primary">Selected run</p>
+              <p className="text-meta text-text-tertiary">
+                {selectedRun.dryRun ? 'Dry run' : 'Execution run'}
+              </p>
+            </div>
+            <div className="border-t border-border pt-3">
+              <p className="text-meta font-semibold text-text-primary">Runtime state</p>
+              <p className="text-meta text-text-tertiary">
+                {selectedRun.timeline.length} timeline events, {selectedRun.toolExecutions.length}{' '}
+                tool calls
+              </p>
+            </div>
+            {(selectedRun.promptTokens !== undefined ||
+              selectedRun.completionTokens !== undefined) && (
+              <div className="border-t border-border pt-3">
+                <p className="text-meta font-semibold text-text-primary">Token usage</p>
+                <p className="text-meta text-text-tertiary">
+                  {selectedRun.promptTokens ?? 0} prompt, {selectedRun.completionTokens ?? 0}{' '}
+                  completion
+                </p>
+              </div>
             )}
-          </section>
-        </>
-      ) : tab === 'tools' ? (
-        <ToolsTab run={selectedRun} />
-      ) : tab === 'logs' ? (
-        <LogsTab agentId={agent.id} runId={selectedRun?.id} entries={auditEntries} />
-      ) : tab === 'files' ? (
-        <FilesTab run={selectedRun} />
-      ) : (
-        <PermissionsTab agent={agent} run={selectedRun} />
-      )}
+          </>
+        ) : (
+          <p className="text-meta text-text-tertiary">
+            Start or select a run to inspect runtime state.
+          </p>
+        )}
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Real data scope</p>
+          <p className="text-meta text-text-tertiary">
+            Runs are loaded through typed Agent Runtime IPC and then kept current through the live
+            agentRun.update stream.
+          </p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

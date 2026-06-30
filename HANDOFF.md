@@ -2,7 +2,9 @@
 
 ## Current state
 
-**2026-06-29 HYBRID-5 Agents follow-up:** Agent Operations Center (`/agents`) now uses shared Agent Factory, Agent Operations Center, and Agent Policy workbench regions while preserving persisted agent list/create/enable/remove IPC behavior, ToolRegistry allowlist sourcing, model routing handoff, and no implicit permission ceiling grants. `/agents/:agentId` detail tabs remain to migrate.
+**2026-06-29 HYBRID-5 Agents follow-up:** Agent Operations Center (`/agents`) now uses shared Agent Factory, Agent Operations Center, and Agent Policy workbench regions while preserving persisted agent list/create/enable/remove IPC behavior, ToolRegistry allowlist sourcing, model routing handoff, and no implicit permission ceiling grants.
+
+**2026-06-29 HYBRID-5 Agent Detail follow-up:** Agent Detail (`/agents/:agentId`) now uses shared Agent Profile, Agent Detail, and Run Context workbench regions while preserving persisted agent/run loading, start-run, dry-run, pause/resume, cancel, tool execution tabs, files tab derivation, permission ceiling/denial display, audit log filtering, and live `agentRun.update` behavior. Rich per-run artifacts and e2e coverage remain deferred until the backing data model expands.
 
 **2026-06-29 HYBRID-5 Models follow-up:** Model Control Center (`/models`) now uses shared Provider Setup, Model Control Center, and Routing Context workbench regions while preserving provider list/add/remove/enable/test IPC behavior, encrypted cloud API key boundaries, and real provider-probe semantics.
 
