@@ -272,5 +272,13 @@ export const IPC_CHANNELS = {
   trustedPublisherList: 'trustedPublisher.list',
   trustedPublisherAdd: 'trustedPublisher.add',
   trustedPublisherRevoke: 'trustedPublisher.revoke',
-  trustedPublisherUnrevoke: 'trustedPublisher.unrevoke'
+  trustedPublisherUnrevoke: 'trustedPublisher.unrevoke',
+  steamShortcutListProfiles: 'steamShortcut.listProfiles',
+  steamShortcutList: 'steamShortcut.list',
+  steamShortcutCreate: 'steamShortcut.create',
+  steamShortcutUpdate: 'steamShortcut.update',
+  steamShortcutRemove: 'steamShortcut.remove',
+  steamShortcutListBackups: 'steamShortcut.listBackups',
+  steamShortcutRestoreBackup: 'steamShortcut.restoreBackup',
+  steamShortcutCheckRunning: 'steamShortcut.checkRunning'
 } as const

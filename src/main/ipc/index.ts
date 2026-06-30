@@ -25,6 +25,7 @@ import {
   defaultLibraryFoldersVdfPath,
   SteamLibraryScanner
 } from '../../core/applications/discovery/SteamLibraryScanner'
+import { defaultSteamRoot } from '../../core/steam/SteamUserdataPaths'
 import { FlatpakAdapter } from '../../core/applications/FlatpakAdapter'
 import { PackageLifecycleService } from '../../core/applications/PackageLifecycleService'
 import { BrowserTabStore } from '../../core/browser/BrowserTabStore'
@@ -103,6 +104,7 @@ import { registerApplicationHandlers } from './registerApplicationHandlers'
 import { registerApplicationPolicyHandlers } from './registerApplicationPolicyHandlers'
 import { registerKioskModeHandlers } from './registerKioskModeHandlers'
 import { registerTrustedPublisherHandlers } from './registerTrustedPublisherHandlers'
+import { registerSteamShortcutHandlers } from './registerSteamShortcutHandlers'
 import { registerBackupHandlers } from './registerBackupHandlers'
 import { registerBrowserHandlers } from './registerBrowserHandlers'
 import { registerCapabilityHandlers } from './registerCapabilityHandlers'
@@ -237,6 +239,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   const steamLibraryScanner = new SteamLibraryScanner(
     defaultLibraryFoldersVdfPath(homedir(), process.platform)
   )
+  const steamRoot = defaultSteamRoot(homedir(), process.platform)
   const flatpakAdapter = new FlatpakAdapter()
   const applicationDiscoveryService = new ApplicationDiscoveryService(
     applicationStore,
@@ -547,6 +550,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerApplicationPolicyHandlers(applicationPolicyStore)
   registerKioskModeHandlers(new KioskModeStore(join(app.getPath('userData'), 'kiosk-mode.json')))
   registerTrustedPublisherHandlers(trustedPublisherStore)
+  registerSteamShortcutHandlers(steamRoot, join(app.getPath('userData'), 'steam-shortcut-backups'))
   registerDeviceHandlers(deviceStore, deviceInventoryService)
   const disposePackages = registerPackageHandlers(
     flatpakAdapter,

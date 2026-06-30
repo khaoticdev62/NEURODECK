@@ -3269,3 +3269,36 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X2 — Steam Shortcut Manager (2026-06-30)
+
+Real Steam Shortcut Manager (supplemental §8), the one item this codebase had explicitly named as needing "its own focused, carefully-tested pass" rather than attempting alongside other work — done now as exactly that, on its own, with §8.3's full safety pipeline real rather than checklist-deferred. The user explicitly chose this item knowing it carries real corruption risk to their actual Steam configuration if done carelessly; the implementation below is the direct response to that risk, not a shortcut around it.
+
+**The binary format, built and proven independently of any Steam-specific knowledge first.** `core/steam/SteamBinaryVdf.ts` is a from-scratch codec for `shortcuts.vdf`'s real binary KeyValues format (`0x00` nested object / `0x01` UTF-8 string / `0x02` little-endian int32 / `0x08` close-object) — genuinely reverse-engineered-format-compatible, not guessed. Nine tests prove it: full tree round-trips, negative and `INT32_MAX` values (catching a signed-vs-unsigned bug class this format is known to trip up naive implementations on), real non-ASCII content (CJK/Cyrillic/Arabic in one string), a literal hand-built byte sequence checked against the documented layout (not just self-consistency — an independent check that the encoder's output actually matches the real format, not just that decode(encode(x)) == x), and explicit `VdfParseError` on truncated ints, unterminated strings, and unknown type bytes rather than silently misparsing or reading past the buffer.
+
+**The single most safety-critical design decision**: `core/steam/SteamShortcutCodec.ts` never reconstructs a shortcut entry from scratch when editing one that already existed. Every parsed entry keeps its original raw VDF node; a write clones that node and overlays only the fields the caller actually changed. This means a future Steam client field, or a field some other tool wrote, that this codec doesn't even know about survives an edit untouched — proven by a real test that hand-injects an unmodeled `SomeFutureField` into a parsed entry, edits an unrelated field, and asserts the unknown field is still there byte-for-byte afterward. This is the property that turns "this codec only models 16 fields" from a corruption risk into a non-issue.
+
+**`core/steam/SteamShortcutService.ts` implements every one of §8.3's named safety requirements for real**, not as separate "TODO: add safety" items:
+- **Backup**: a dedicated, bounded (last 10) local backup history written before every single change — not a reuse of the workspace-scoped `RecoveryService` (a deliberate choice: `shortcuts.vdf` is a system file outside any workspace, and forcing it through a workspace-shaped abstraction would be a worse architectural fit than a small, equally-real, purpose-built mechanism).
+- **Schema-aware parsing**: the real binary codec above, never a naive string/regex hack against binary data.
+- **Process-state awareness**: `checkSteamRunning()` shells out to `pgrep -x steam` (Linux) or `tasklist` (Windows) via `execFile` — never a shell string, matching `GitService`/`FlatpakAdapter`'s established safe-exec convention — and returns one of three honest states (`'running'`/`'not-running'`/`'unknown'`), never collapsing a detection failure into a false "not running." The UI shows a real warning when Steam is running rather than silently blocking the write (Steam itself might overwrite the change on its own next save, and the user should know that, but the choice to proceed is still theirs).
+- **Atomic write**: every write goes to a real temp file in the same directory, then `rename()`s over the real target — a crash mid-write can never leave a half-written `shortcuts.vdf` on disk.
+- **Validation**: the new content is parsed and checked *before* it's ever written to disk (catching the codec's own bugs before they touch a real file), and the file is read back and re-parsed *after* writing to confirm what's actually on disk matches what was intended — two real checks, not one assumed-successful write.
+- **Recovery support**: `listBackups()`/`restoreFromBackup()` are real, with a real path-traversal guard on the backup file name and a real pre-restore parse-validation (a corrupted or foreign file can never silently overwrite the real `shortcuts.vdf`).
+
+**Multi-profile honesty**: `core/steam/SteamUserdataPaths.ts` discovers every real Steam user ID under `userdata/` rather than assuming "the" user — a machine can have more than one account that has ever logged in, and the UI lets the person pick explicitly when there's more than one, rather than this app silently guessing.
+
+**`/steam-shortcuts` (ND-X005)** lists real shortcuts for the selected profile, with create/hide/remove (remove behind a real `ConfirmationDialog`), a real backup list with restore (also behind confirmation), the real Steam-running warning, and an explicit "Steam only reads this file at startup" restart note (§8.1's "Document restart requirements").
+
+**Honestly deferred, not attempted in this pass**: launch profiles (§8.2 — resolution/fullscreen/performance profile/network-VPN policy/pre-post-launch workflows) need their own design sitting on top of this now-real foundation; artwork references, controller-profile guidance, and collection/category assignment are not wired in.
+
+**New files**: `src/core/steam/SteamBinaryVdf.ts` + `__tests__/SteamBinaryVdf.test.ts` (9 tests), `src/core/steam/SteamShortcutCodec.ts` + `__tests__/SteamShortcutCodec.test.ts` (8 tests), `src/core/steam/SteamShortcutService.ts` + `__tests__/SteamShortcutService.test.ts` (12 tests, real temp-directory fixtures, real `pgrep` process detection on this machine), `src/core/steam/SteamUserdataPaths.ts`, `src/shared/contracts/steamShortcuts.ts`, `src/main/ipc/registerSteamShortcutHandlers.ts`, `src/renderer/src/services/ipc/steamShortcutClient.ts`, `src/renderer/src/features/steam/SteamShortcutManager.tsx` + `__tests__/SteamShortcutManager.test.tsx` (6 tests). **Changed**: `src/shared/contracts/index.ts`/`ipcChannels.ts`/`bridge.ts`, `src/main/ipc/index.ts`, `src/preload/index.ts`, `src/renderer/src/app/routing/routes.tsx` (new `/steam-shortcuts` route), `src/renderer/src/features/system/SystemDashboard.tsx` (new link).
+
+**Validation evidence (run 2026-06-30):**
+
+```text
+npm run test -> 244 files / 1188 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

@@ -86,6 +86,17 @@ import type {
   TrustedPublisherRecord
 } from './trustedPublisher'
 import type {
+  CreateSteamShortcutRequest,
+  RemoveSteamShortcutRequest,
+  RestoreSteamShortcutBackupRequest,
+  SelectSteamProfileRequest,
+  SteamRunningState,
+  SteamShortcutBackup,
+  SteamShortcutEntry,
+  SteamUserProfile,
+  UpdateSteamShortcutRequest
+} from './steamShortcuts'
+import type {
   ExtensionHealthEvent,
   ExtensionIdRequest,
   ExtensionInstallPreview,
@@ -530,6 +541,18 @@ export interface NdxBridge {
     unrevoke: (
       request: TrustedPublisherFingerprintRequest
     ) => Promise<NdxResult<TrustedPublisherRecord>>
+  }
+  steamShortcuts: {
+    listProfiles: () => Promise<NdxResult<SteamUserProfile[]>>
+    list: (request: SelectSteamProfileRequest) => Promise<NdxResult<SteamShortcutEntry[]>>
+    create: (request: CreateSteamShortcutRequest) => Promise<NdxResult<SteamShortcutEntry[]>>
+    update: (request: UpdateSteamShortcutRequest) => Promise<NdxResult<SteamShortcutEntry[]>>
+    remove: (request: RemoveSteamShortcutRequest) => Promise<NdxResult<SteamShortcutEntry[]>>
+    listBackups: (request: SelectSteamProfileRequest) => Promise<NdxResult<SteamShortcutBackup[]>>
+    restoreBackup: (
+      request: RestoreSteamShortcutBackupRequest
+    ) => Promise<NdxResult<SteamShortcutEntry[]>>
+    checkRunning: (request: SelectSteamProfileRequest) => Promise<NdxResult<SteamRunningState>>
   }
   browserTabs: {
     list: (request: WorkspaceBrowserRequest) => Promise<NdxResult<BrowserTab[]>>

@@ -309,6 +309,10 @@ const ToolLibrary = lazy(async () => {
   const module = await import('../../features/tools/ToolLibrary')
   return { default: module.ToolLibrary }
 })
+const SteamShortcutManager = lazy(async () => {
+  const module = await import('../../features/steam/SteamShortcutManager')
+  return { default: module.SteamShortcutManager }
+})
 const VoiceNotesCenter = lazy(async () => {
   const module = await import('../../features/voice/VoiceNotesCenter')
   return { default: module.VoiceNotesCenter }
@@ -1127,6 +1131,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('tool library', <ToolLibrary />)
+  },
+  {
+    routeId: 'steam-shortcut-manager',
+    screenId: 'ND-X005',
+    path: '/steam-shortcuts',
+    title: 'Steam Shortcut Manager',
+    owningEpic: 'Epic X2',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('steam shortcut manager', <SteamShortcutManager />)
   }
 ]
 

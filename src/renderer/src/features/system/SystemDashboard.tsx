@@ -59,7 +59,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Application Sandbox and Policy', path: '/app-policies' },
   { label: 'Kiosk Mode', path: '/kiosk' },
   { label: 'Trusted Publishers', path: '/trusted-publishers' },
-  { label: 'Tool Library', path: '/tools' }
+  { label: 'Tool Library', path: '/tools' },
+  { label: 'Steam Shortcut Manager', path: '/steam-shortcuts' }
 ]
 
 /**

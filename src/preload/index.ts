@@ -280,6 +280,17 @@ const ndx: NdxBridge = {
     revoke: (request) => ipcRenderer.invoke(IPC_CHANNELS.trustedPublisherRevoke, request),
     unrevoke: (request) => ipcRenderer.invoke(IPC_CHANNELS.trustedPublisherUnrevoke, request)
   },
+  steamShortcuts: {
+    listProfiles: () => ipcRenderer.invoke(IPC_CHANNELS.steamShortcutListProfiles),
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.steamShortcutList, request),
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.steamShortcutCreate, request),
+    update: (request) => ipcRenderer.invoke(IPC_CHANNELS.steamShortcutUpdate, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.steamShortcutRemove, request),
+    listBackups: (request) => ipcRenderer.invoke(IPC_CHANNELS.steamShortcutListBackups, request),
+    restoreBackup: (request) =>
+      ipcRenderer.invoke(IPC_CHANNELS.steamShortcutRestoreBackup, request),
+    checkRunning: (request) => ipcRenderer.invoke(IPC_CHANNELS.steamShortcutCheckRunning, request)
+  },
   browserTabs: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabList, request),
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.browserTabCreate, request),
