@@ -3225,3 +3225,24 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic 6 — Git AI Commit-Message Assistance (2026-06-30)
+
+Real AI commit-message assistance, closing the named gap ND-025's own checklist entry has tracked since Epic 6 ("Pull requests, AI commit assistance, and a merge-conflict resolution UI remain").
+
+**Why this one doesn't use the strict-JSON contract** every other AI-assisted feature this session has used (`aiDecision.ts`, `planPreview.ts`): those outputs get parsed and drive real application logic (a workflow's pass/fail, a plan-preview's risk badges), so free-form prose would be a real safety/correctness risk. A commit message has no such downstream consumer — it's text a human reads, edits, and explicitly approves before anything happens. Demanding JSON here would just make the model's job harder for no real safety gain, so `gitCommitMessage.ts` asks for plain text and trims it.
+
+**`requestCommitMessageSuggestion(workspaceId, stagedChanges)`** fetches the real diff for each staged file via the already-real `getGitDiff()` IPC (the same one the diff-preview panel already calls), capped at 10 files and 2000 characters per file to bound the prompt — staged changes beyond the cap are noted as omitted rather than silently dropped. The combined diff is sent to the routed model with a system prompt asking for a conventional commit message; the raw response is trimmed and returned, or a real error is surfaced if the model call fails or returns an empty string.
+
+**Wiring**: `WorkspaceGitTab.tsx` gained a "Suggest message" button next to the existing commit-message textarea — disabled when nothing is staged, shows "Asking the model…" while in flight, and on success simply populates the textarea. Nothing about the existing commit flow changed: the user still must click "Review commit" and confirm through the existing `ConfirmationDialog` before anything commits — this is a draft aid, not an auto-commit path.
+
+**New/changed files**: `src/renderer/src/features/workspaces/gitCommitMessage.ts` (new) + `__tests__/gitCommitMessage.test.ts` (new, 5 tests), `src/renderer/src/features/workspaces/WorkspaceGitTab.tsx` (new "Suggest message" control) + `__tests__/WorkspaceGitTab.test.tsx` (+1 test).
+
+**Validation evidence (run 2026-06-30):**
+
+```text
+npm run test -> 240 files / 1148 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

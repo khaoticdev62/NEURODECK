@@ -196,4 +196,32 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
       within(branchesSection as HTMLElement).queryByText('recovery/2026-06-23-150000')
     ).not.toBeInTheDocument()
   })
+
+  it('fills the commit message from a real AI suggestion without auto-committing', async () => {
+    const stagedStatus: GitStatus = {
+      ...baseStatus,
+      changes: [{ path: 'tracked.txt', status: 'M.', staged: true }]
+    }
+    const diff = vi.fn().mockResolvedValue({ ok: true, data: { diff: '+real change' } })
+    const complete = vi.fn().mockResolvedValue({ ok: true, data: { content: 'fix: real change' } })
+    stubBridge({
+      git: {
+        status: vi.fn().mockResolvedValue({ ok: true, data: stagedStatus }),
+        branches: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        log: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        remotes: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        stashList: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        diff
+      } as never,
+      modelProviders: { complete } as never
+    })
+    const user = userEvent.setup()
+
+    render(<WorkspaceGitTab workspaceId="w1" />)
+    await user.click(await screen.findByRole('button', { name: 'Suggest message' }))
+
+    expect(diff).toHaveBeenCalledWith({ workspaceId: 'w1', path: 'tracked.txt', staged: true })
+    expect(await screen.findByDisplayValue('fix: real change')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
 })

@@ -34,6 +34,7 @@ import {
   stashSaveGit,
   unstageGitPaths
 } from '../../services/ipc/gitClient'
+import { requestCommitMessageSuggestion } from './gitCommitMessage'
 
 export interface WorkspaceGitTabProps {
   workspaceId: string
@@ -74,6 +75,7 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
   const [remotes, setRemotes] = useState<GitRemote[]>([])
   const [stashes, setStashes] = useState<GitStashEntry[]>([])
   const [message, setMessage] = useState('')
+  const [suggestingMessage, setSuggestingMessage] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedChange, setSelectedChange] = useState<GitFileChange | null>(null)
   const [diff, setDiff] = useState<string | null>(null)
@@ -160,6 +162,19 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
     setCommitReviewOpen(false)
     setMessage('')
     await refresh()
+  }
+
+  async function handleSuggestMessage(): Promise<void> {
+    const stagedChanges = status?.changes.filter((change) => change.staged) ?? []
+    setSuggestingMessage(true)
+    const result = await requestCommitMessageSuggestion(workspaceId, stagedChanges)
+    setSuggestingMessage(false)
+    if (result.ok) {
+      setMessage(result.data)
+      setError(null)
+    } else {
+      setError(result.error)
+    }
   }
 
   async function handleCheckout(branch: string): Promise<void> {
@@ -391,13 +406,22 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
             rows={3}
             className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
           />
-          <ControllerButton
-            variant="primary"
-            disabled={staged.length === 0 || message.trim().length === 0}
-            onClick={() => setCommitReviewOpen(true)}
-          >
-            Review commit
-          </ControllerButton>
+          <div className="flex flex-wrap gap-2">
+            <ControllerButton
+              variant="secondary"
+              disabled={staged.length === 0 || suggestingMessage}
+              onClick={() => void handleSuggestMessage()}
+            >
+              {suggestingMessage ? 'Asking the model…' : 'Suggest message'}
+            </ControllerButton>
+            <ControllerButton
+              variant="primary"
+              disabled={staged.length === 0 || message.trim().length === 0}
+              onClick={() => setCommitReviewOpen(true)}
+            >
+              Review commit
+            </ControllerButton>
+          </div>
         </section>
       </NdxToolWindow>
 
