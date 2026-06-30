@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { LanSharePeer } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { addManualLanSharePeer, listLanSharePeers } from '../../services/ipc/lanShareClient'
 
@@ -47,50 +48,75 @@ export function LanShareNearbyDevices(): React.JSX.Element {
   }, [])
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Nearby Devices</p>
-        <div className="flex gap-2">
-          <ControllerButton variant="ghost" onClick={() => void refresh()}>
-            Refresh
-          </ControllerButton>
-          <ControllerButton variant="primary" onClick={() => setShowAddForm((current) => !current)}>
-            {showAddForm ? 'Cancel' : 'Add manually'}
-          </ControllerButton>
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Discovery Sources" subtitle="mDNS + manual">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>
+            Nearby devices are discovered by the LAN Share peer store and manual registration probe.
+          </p>
+          <p>{peers.length} peer records are currently known.</p>
         </div>
-      </div>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Nearby devices error" description={error} />}
+      <NdxEditorShell title="Peer Inventory">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-title font-semibold text-text-primary">Nearby Devices</p>
+            <div className="flex gap-2">
+              <ControllerButton variant="ghost" onClick={() => void refresh()}>
+                Refresh
+              </ControllerButton>
+              <ControllerButton
+                variant="primary"
+                onClick={() => setShowAddForm((current) => !current)}
+              >
+                {showAddForm ? 'Cancel' : 'Add manually'}
+              </ControllerButton>
+            </div>
+          </div>
 
-      {showAddForm && (
-        <AddPeerForm
-          onAdded={() => {
-            setShowAddForm(false)
-            void refresh()
-          }}
-          onError={setError}
-        />
-      )}
+          {error && <ErrorState title="Nearby devices error" description={error} />}
 
-      {loading ? (
-        <p className="text-meta text-text-secondary">Discovering devices…</p>
-      ) : peers.length === 0 ? (
-        <EmptyState
-          className="flex-1"
-          title="No devices found yet"
-          description="Devices on the same network running a Warpinator-compatible service will appear here automatically, or add one manually by address."
-        />
-      ) : (
-        <ul className="flex flex-col gap-2 overflow-auto">
-          {peers.map((peer) => (
-            <PeerCard
-              key={peer.id}
-              peer={peer}
-              onOpen={() => navigate(`/lan-share/peers/${peer.id}`)}
+          {showAddForm && (
+            <AddPeerForm
+              onAdded={() => {
+                setShowAddForm(false)
+                void refresh()
+              }}
+              onError={setError}
             />
-          ))}
-        </ul>
-      )}
+          )}
+
+          {loading ? (
+            <p className="text-meta text-text-secondary">Discovering devices…</p>
+          ) : peers.length === 0 ? (
+            <EmptyState
+              className="flex-1"
+              title="No devices found yet"
+              description="Devices on the same network running a Warpinator-compatible service will appear here automatically, or add one manually by address."
+            />
+          ) : (
+            <ul className="flex flex-col gap-2 overflow-auto">
+              {peers.map((peer) => (
+                <PeerCard
+                  key={peer.id}
+                  peer={peer}
+                  onOpen={() => navigate(`/lan-share/peers/${peer.id}`)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Trust Policy" subtitle="Never silent" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>
+            Manual add performs a real registration handshake before any peer appears as usable.
+          </p>
+          <p>Trust state is shown per device and changed only on the detail route.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

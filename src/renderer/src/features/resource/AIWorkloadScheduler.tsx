@@ -3,6 +3,7 @@ import type { SystemMetricsSnapshot } from '@shared/contracts'
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
 
 const JOB_CLASSES = [
@@ -71,85 +72,113 @@ export function AIWorkloadScheduler(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Checking workload capacity...</p>
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">AI Workload Scheduler</p>
-          <p className="text-meta text-text-secondary">
-            Admission signals for AI work; queue enforcement is not built yet.
+    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Workload Classes" subtitle={`${JOB_CLASSES.length} classes`}>
+        <p className="text-meta text-text-secondary">
+          Job classes are inventory only. Queue admission is not enforced by this screen.
+        </p>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Signal count</p>
+          <p className="text-meta text-text-tertiary">
+            {SCHEDULING_FACTORS.length} scheduling factors
           </p>
         </div>
-        <ControllerButton variant="primary" disabled={loading} onClick={() => void handleRefresh()}>
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </ControllerButton>
-      </div>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Workload scheduler error" description={error} />}
+      <NdxEditorShell title="Workload Capacity">
+        <div className="flex min-h-full flex-col gap-4 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">AI Workload Scheduler</p>
+              <p className="text-meta text-text-secondary">
+                Admission signals for AI work; queue enforcement is not built yet.
+              </p>
+            </div>
+            <ControllerButton
+              variant="primary"
+              disabled={loading}
+              onClick={() => void handleRefresh()}
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </ControllerButton>
+          </div>
 
-      {snapshot && (
-        <>
-          <section className="grid gap-3 md:grid-cols-3">
-            <CapacityCard
-              label="Memory headroom"
-              value={`${snapshot.memory.value?.usagePercent.toFixed(1) ?? '?'}% used`}
-              healthy={
-                snapshot.memory.available && (snapshot.memory.value?.usagePercent ?? 100) < 85
-              }
-            />
-            <CapacityCard
-              label="Thermal"
-              value={
-                snapshot.thermal.available && snapshot.thermal.value?.[0]
-                  ? `${snapshot.thermal.value[0].celsius.toFixed(1)}C`
-                  : 'Unavailable'
-              }
-              healthy={
-                !snapshot.thermal.available || (snapshot.thermal.value?.[0]?.celsius ?? 0) < 80
-              }
-            />
-            <CapacityCard
-              label="Battery"
-              value={
-                snapshot.battery.available && snapshot.battery.value?.[0]?.capacityPercent !== null
-                  ? `${snapshot.battery.value?.[0]?.capacityPercent ?? '?'}%`
-                  : 'Unavailable'
-              }
-              healthy={
-                !snapshot.battery.available ||
-                (snapshot.battery.value?.[0]?.capacityPercent ?? 100) > 25
-              }
-            />
-          </section>
+          {error && <ErrorState title="Workload scheduler error" description={error} />}
 
-          <section className="border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Job classes</p>
-            <div className="mt-2 grid gap-2 md:grid-cols-2">
-              {JOB_CLASSES.map((jobClass) => (
-                <div
-                  key={jobClass}
-                  className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
-                >
-                  <p className="text-meta font-semibold text-text-primary">{jobClass}</p>
-                  <StatusBadge tone="neutral" label="not queued" />
+          {snapshot && (
+            <>
+              <section className="grid gap-3 md:grid-cols-3">
+                <CapacityCard
+                  label="Memory headroom"
+                  value={`${snapshot.memory.value?.usagePercent.toFixed(1) ?? '?'}% used`}
+                  healthy={
+                    snapshot.memory.available && (snapshot.memory.value?.usagePercent ?? 100) < 85
+                  }
+                />
+                <CapacityCard
+                  label="Thermal"
+                  value={
+                    snapshot.thermal.available && snapshot.thermal.value?.[0]
+                      ? `${snapshot.thermal.value[0].celsius.toFixed(1)}C`
+                      : 'Unavailable'
+                  }
+                  healthy={
+                    !snapshot.thermal.available || (snapshot.thermal.value?.[0]?.celsius ?? 0) < 80
+                  }
+                />
+                <CapacityCard
+                  label="Battery"
+                  value={
+                    snapshot.battery.available &&
+                    snapshot.battery.value?.[0]?.capacityPercent !== null
+                      ? `${snapshot.battery.value?.[0]?.capacityPercent ?? '?'}%`
+                      : 'Unavailable'
+                  }
+                  healthy={
+                    !snapshot.battery.available ||
+                    (snapshot.battery.value?.[0]?.capacityPercent ?? 100) > 25
+                  }
+                />
+              </section>
+
+              <section className="border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Job classes</p>
+                <div className="mt-2 grid gap-2 md:grid-cols-2">
+                  {JOB_CLASSES.map((jobClass) => (
+                    <div
+                      key={jobClass}
+                      className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
+                    >
+                      <p className="text-meta font-semibold text-text-primary">{jobClass}</p>
+                      <StatusBadge tone="neutral" label="not queued" />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </section>
+              </section>
 
-          <section className="border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Scheduling factors</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {SCHEDULING_FACTORS.map((factor) => (
-                <StatusBadge key={factor} tone="info" label={factor} />
-              ))}
-            </div>
-            <p className="mt-3 text-meta text-text-secondary">
-              Queue, priority, pause, resume, cancel, preemption, retry policy, and activity
-              integration require a durable scheduler service and are not enforced by this screen.
-            </p>
-          </section>
-        </>
-      )}
+              <section className="border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Scheduling factors</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {SCHEDULING_FACTORS.map((factor) => (
+                    <StatusBadge key={factor} tone="info" label={factor} />
+                  ))}
+                </div>
+                <p className="mt-3 text-meta text-text-secondary">
+                  Queue, priority, pause, resume, cancel, preemption, retry policy, and activity
+                  integration require a durable scheduler service and are not enforced by this
+                  screen.
+                </p>
+              </section>
+            </>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Scheduler Scope" subtitle="No durable queue" side="right">
+        <p className="text-meta text-text-tertiary">
+          Durable queue enforcement, preemption, and retry policy require a scheduler service.
+        </p>
+      </NdxToolWindow>
     </div>
   )
 }

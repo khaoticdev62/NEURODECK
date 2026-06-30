@@ -3,6 +3,7 @@ import type { OperatingMode, ProfileState, UserProfile } from '@shared/contracts
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   createProfile,
   deleteProfile,
@@ -94,84 +95,118 @@ export function Profiles(): React.JSX.Element {
   )
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Profiles and Identity</p>
-          <p className="text-meta text-text-secondary">
-            Real persisted profile metadata and guest/private session state.
-          </p>
-        </div>
-        <ControllerButton variant="primary" disabled={creating} onClick={() => setCreating(true)}>
-          Add Profile
-        </ControllerButton>
-      </header>
-
-      {error && <ErrorState title="Profile request failed" description={error} />}
-
-      {activeProfile && state && (
-        <section className="border border-border bg-surface p-3">
-          <p className="text-body font-semibold text-text-primary">Active session</p>
-          <p className="text-meta text-text-secondary">
-            {activeProfile.name} / {activeProfile.mode}
-            {state.session.guestModeActive ? ' / guest mode' : ''}
-            {state.session.privateModeActive ? ' / private mode' : ''}
-          </p>
-          {state.session.privateModeActive && (
-            <ControllerButton variant="secondary" onClick={() => void handleEndPrivateSession()}>
-              End private session
-            </ControllerButton>
-          )}
-        </section>
-      )}
-
-      <section className="border border-status-warning bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Scope boundary</p>
+    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Profile Session" subtitle={activeProfile?.mode ?? 'No active profile'}>
         <p className="text-meta text-text-secondary">
-          This pass does not migrate existing workspaces, settings, memory, knowledge, extensions,
-          or notifications into per-profile stores. Those remain shared until each owner service is
-          made profile-aware.
+          Real persisted profile metadata and guest/private session state.
         </p>
-      </section>
-
-      {creating && (
-        <CreateProfileForm
-          onCancel={() => setCreating(false)}
-          onSubmit={(input) => void handleCreate(input)}
-        />
-      )}
-
-      <section className="grid gap-2">
-        {loading ? (
-          <p className="text-meta text-text-secondary">Loading profiles...</p>
-        ) : !state || state.profiles.length === 0 ? (
-          <EmptyState title="No profiles" description="The profile store has no entries." />
-        ) : (
-          state.profiles.map((profile) => (
-            <ProfileCard
-              key={profile.id}
-              profile={profile}
-              active={profile.id === state.session.activeProfileId}
-              onStart={() => void handleStart(profile, false)}
-              onStartPrivate={() => void handleStart(profile, true)}
-              onDelete={() => setDeleteReview(profile)}
-            />
-          ))
+        {activeProfile && state && (
+          <div className="border-t border-border pt-3">
+            <p className="text-meta font-semibold text-text-primary">Active</p>
+            <p className="text-meta text-text-tertiary">
+              {activeProfile.mode}
+              {state.session.guestModeActive ? ' / guest mode' : ''}
+              {state.session.privateModeActive ? ' / private mode' : ''}
+            </p>
+          </div>
         )}
-      </section>
+      </NdxToolWindow>
 
-      <ConfirmationDialog
-        open={deleteReview !== null}
-        title="Delete profile"
-        action={`Delete "${deleteReview?.name ?? 'this profile'}"`}
-        scope={deleteReview?.mode}
-        consequence="This removes only the profile metadata. Shared app data is not deleted."
-        confirmLabel="Delete"
-        onConfirm={() => {
-          if (deleteReview) void handleDelete(deleteReview)
-        }}
-        onCancel={() => setDeleteReview(null)}
-      />
+      <NdxEditorShell title="Profile Manager">
+        <div className="flex min-h-full flex-col gap-4 p-4">
+          <header className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">Profiles and Identity</p>
+              <p className="text-meta text-text-secondary">
+                Real persisted profile metadata and guest/private session state.
+              </p>
+            </div>
+            <ControllerButton
+              variant="primary"
+              disabled={creating}
+              onClick={() => setCreating(true)}
+            >
+              Add Profile
+            </ControllerButton>
+          </header>
+
+          {error && <ErrorState title="Profile request failed" description={error} />}
+
+          {activeProfile && state && (
+            <section className="border border-border bg-surface p-3">
+              <p className="text-body font-semibold text-text-primary">Active session</p>
+              <p className="text-meta text-text-secondary">
+                {activeProfile.name} / {activeProfile.mode}
+                {state.session.guestModeActive ? ' / guest mode' : ''}
+                {state.session.privateModeActive ? ' / private mode' : ''}
+              </p>
+              {state.session.privateModeActive && (
+                <ControllerButton
+                  variant="secondary"
+                  onClick={() => void handleEndPrivateSession()}
+                >
+                  End private session
+                </ControllerButton>
+              )}
+            </section>
+          )}
+
+          <section className="border border-status-warning bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Scope boundary</p>
+            <p className="text-meta text-text-secondary">
+              This pass does not migrate existing workspaces, settings, memory, knowledge,
+              extensions, or notifications into per-profile stores. Those remain shared until each
+              owner service is made profile-aware.
+            </p>
+          </section>
+
+          {creating && (
+            <CreateProfileForm
+              onCancel={() => setCreating(false)}
+              onSubmit={(input) => void handleCreate(input)}
+            />
+          )}
+
+          <section className="grid gap-2">
+            {loading ? (
+              <p className="text-meta text-text-secondary">Loading profiles...</p>
+            ) : !state || state.profiles.length === 0 ? (
+              <EmptyState title="No profiles" description="The profile store has no entries." />
+            ) : (
+              state.profiles.map((profile) => (
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  active={profile.id === state.session.activeProfileId}
+                  onStart={() => void handleStart(profile, false)}
+                  onStartPrivate={() => void handleStart(profile, true)}
+                  onDelete={() => setDeleteReview(profile)}
+                />
+              ))
+            )}
+          </section>
+
+          <ConfirmationDialog
+            open={deleteReview !== null}
+            title="Delete profile"
+            action={`Delete "${deleteReview?.name ?? 'this profile'}"`}
+            scope={deleteReview?.mode}
+            consequence="This removes only the profile metadata. Shared app data is not deleted."
+            confirmLabel="Delete"
+            onConfirm={() => {
+              if (deleteReview) void handleDelete(deleteReview)
+            }}
+            onCancel={() => setDeleteReview(null)}
+          />
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Profile Scope" subtitle="Shared services" side="right">
+        <p className="text-meta text-text-tertiary">
+          Existing workspaces, settings, memory, knowledge, extensions, and notifications remain
+          shared until their owner services become profile-aware.
+        </p>
+      </NdxToolWindow>
     </div>
   )
 }

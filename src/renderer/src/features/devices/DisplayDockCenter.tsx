@@ -4,6 +4,7 @@ import type { DeviceInventoryRecord, DeviceInventoryReport } from '@shared/contr
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { collectDeviceInventory } from '../../services/ipc/deviceClient'
 
 const DISPLAY_OPERATIONS = [
@@ -74,89 +75,109 @@ export function DisplayDockCenter(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Checking display devices...</p>
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Display and Dock Center</p>
-          <p className="text-meta text-text-secondary">
-            Read-only display and dock status from the shared device inventory.
-          </p>
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Display Scope" subtitle="KScreen pending">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Display and dock records come from the shared device inventory.</p>
+          <p>Resolution, refresh-rate, and dock profiles require transactional rollback support.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <ControllerButton variant="secondary" onClick={() => navigate('/devices')}>
-            Device Center
-          </ControllerButton>
-          <ControllerButton
-            variant="primary"
-            disabled={loading}
-            onClick={() => void handleRefresh()}
-          >
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </ControllerButton>
-        </div>
-      </div>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Display status error" description={error} />}
-
-      {report && (
-        <>
-          <section className="border border-border bg-surface p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-body font-semibold text-text-primary">
-                  External display capability
-                </p>
-                <p className="text-meta text-text-secondary">
-                  {displayCapability?.reason ?? 'External display capability was not reported.'}
-                </p>
-                {displayCapability?.provider && (
-                  <p className="text-caption text-text-tertiary">
-                    Backend: {displayCapability.provider}
-                  </p>
-                )}
-              </div>
-              <StatusBadge
-                tone={capabilityTone(displayCapability?.status)}
-                label={displayCapability?.status ?? 'unknown'}
-              />
+      <NdxEditorShell title="Display Inventory">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">Display and Dock Center</p>
+              <p className="text-meta text-text-secondary">
+                Read-only display and dock status from the shared device inventory.
+              </p>
             </div>
-          </section>
+            <div className="flex flex-wrap gap-2">
+              <ControllerButton variant="secondary" onClick={() => navigate('/devices')}>
+                Device Center
+              </ControllerButton>
+              <ControllerButton
+                variant="primary"
+                disabled={loading}
+                onClick={() => void handleRefresh()}
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </ControllerButton>
+            </div>
+          </div>
 
-          <section className="grid gap-3 lg:grid-cols-2">
-            {displayDevices.length === 0 ? (
-              <div className="border border-border bg-surface p-3">
-                <p className="text-body font-semibold text-text-primary">
-                  No display or dock records
-                </p>
-                <p className="text-meta text-text-secondary">
-                  NeuroDeck has no persisted display/dock records and no real OS display enumeration
-                  backend yet.
-                </p>
-              </div>
-            ) : (
-              displayDevices.map((device) => <DeviceCard key={device.id} device={device} />)
-            )}
-          </section>
+          {error && <ErrorState title="Display status error" description={error} />}
 
-          <section className="border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Controls</p>
-            <div className="mt-2 grid gap-2 md:grid-cols-2">
-              {DISPLAY_OPERATIONS.map((operation) => (
-                <div
-                  key={operation.label}
-                  className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
-                >
+          {report && (
+            <>
+              <section className="border border-border bg-surface p-3">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-meta font-semibold text-text-primary">{operation.label}</p>
-                    <p className="text-caption text-text-tertiary">{operation.reason}</p>
+                    <p className="text-body font-semibold text-text-primary">
+                      External display capability
+                    </p>
+                    <p className="text-meta text-text-secondary">
+                      {displayCapability?.reason ?? 'External display capability was not reported.'}
+                    </p>
+                    {displayCapability?.provider && (
+                      <p className="text-caption text-text-tertiary">
+                        Backend: {displayCapability.provider}
+                      </p>
+                    )}
                   </div>
-                  <StatusBadge tone="neutral" label="not wired" />
+                  <StatusBadge
+                    tone={capabilityTone(displayCapability?.status)}
+                    label={displayCapability?.status ?? 'unknown'}
+                  />
                 </div>
-              ))}
-            </div>
-          </section>
-        </>
-      )}
+              </section>
+
+              <section className="grid gap-3 lg:grid-cols-2">
+                {displayDevices.length === 0 ? (
+                  <div className="border border-border bg-surface p-3">
+                    <p className="text-body font-semibold text-text-primary">
+                      No display or dock records
+                    </p>
+                    <p className="text-meta text-text-secondary">
+                      NeuroDeck has no persisted display/dock records and no real OS display
+                      enumeration backend yet.
+                    </p>
+                  </div>
+                ) : (
+                  displayDevices.map((device) => <DeviceCard key={device.id} device={device} />)
+                )}
+              </section>
+
+              <section className="border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Controls</p>
+                <div className="mt-2 grid gap-2 md:grid-cols-2">
+                  {DISPLAY_OPERATIONS.map((operation) => (
+                    <div
+                      key={operation.label}
+                      className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
+                    >
+                      <div>
+                        <p className="text-meta font-semibold text-text-primary">
+                          {operation.label}
+                        </p>
+                        <p className="text-caption text-text-tertiary">{operation.reason}</p>
+                      </div>
+                      <StatusBadge tone="neutral" label="not wired" />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Operation Policy" subtitle="Rollback required" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Display mutations need a safe rollback timer before they can be exposed.</p>
+          <p>Safe mode remains deferred until a real OS display transaction layer exists.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import type { VaultAccessLogEntry, VaultItem, VaultItemType } from '@shared/cont
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   createVaultItem,
   deleteVaultItem,
@@ -139,68 +140,95 @@ export function Vault(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Secrets Vault</p>
-          <p className="text-meta text-text-secondary">
-            Encrypted at rest. Reveal and copy are explicit, audited actions.
-          </p>
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow
+        title="Vault Guardrails"
+        subtitle={
+          presentationModeEnabled || kioskModeEnabled ? 'Reveal restricted' : 'Reveal enabled'
+        }
+      >
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Secrets are listed without values. Reveal and copy remain separate audited actions.</p>
+          <p>{items.length} encrypted vault items are currently indexed.</p>
         </div>
-        <ControllerButton variant="primary" onClick={() => setCreating(true)} disabled={creating}>
-          Add Secret
-        </ControllerButton>
-      </header>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Vault request failed" description={error} />}
+      <NdxEditorShell title="Secret Inventory">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
+          <header className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">Secrets Vault</p>
+              <p className="text-meta text-text-secondary">
+                Encrypted at rest. Reveal and copy are explicit, audited actions.
+              </p>
+            </div>
+            <ControllerButton
+              variant="primary"
+              onClick={() => setCreating(true)}
+              disabled={creating}
+            >
+              Add Secret
+            </ControllerButton>
+          </header>
 
-      {creating && (
-        <CreateItemForm
-          onCancel={() => setCreating(false)}
-          onSubmit={(input) => void handleCreate(input)}
-        />
-      )}
+          {error && <ErrorState title="Vault request failed" description={error} />}
 
-      <section className="grid gap-3 overflow-auto">
-        {loading ? (
-          <p className="text-meta text-text-secondary">Loading vault...</p>
-        ) : items.length === 0 ? (
-          <EmptyState
-            title="Vault is empty"
-            description="Add a credential, key reference, or other secret to store it encrypted at rest."
-          />
-        ) : (
-          items.map((item) => (
-            <VaultItemCard
-              key={item.id}
-              item={item}
-              revealedSecret={revealed[item.id]}
-              revealDisabled={presentationModeEnabled || kioskModeEnabled}
-              onReveal={() => void handleReveal(item)}
-              onCopy={(secret) => void handleCopy(item.id, secret)}
-              onRotate={(newSecret) => void handleRotate(item, newSecret)}
-              onDelete={() => setDeleteReview(item)}
+          {creating && (
+            <CreateItemForm
+              onCancel={() => setCreating(false)}
+              onSubmit={(input) => void handleCreate(input)}
             />
-          ))
-        )}
-      </section>
+          )}
 
-      {accessLog.length > 0 && (
-        <section className="border border-border bg-surface p-3">
-          <p className="text-meta font-semibold text-text-primary">Access log</p>
-          <ul className="mt-2 grid gap-1 text-caption text-text-tertiary">
-            {accessLog
-              .slice(-10)
-              .reverse()
-              .map((entry) => (
-                <li key={entry.id}>
-                  {new Date(entry.timestamp).toLocaleString()} — {entry.action} &ldquo;
-                  {entry.itemLabel}&rdquo;
-                </li>
-              ))}
-          </ul>
-        </section>
-      )}
+          <section className="grid gap-3 overflow-auto">
+            {loading ? (
+              <p className="text-meta text-text-secondary">Loading vault...</p>
+            ) : items.length === 0 ? (
+              <EmptyState
+                title="Vault is empty"
+                description="Add a credential, key reference, or other secret to store it encrypted at rest."
+              />
+            ) : (
+              items.map((item) => (
+                <VaultItemCard
+                  key={item.id}
+                  item={item}
+                  revealedSecret={revealed[item.id]}
+                  revealDisabled={presentationModeEnabled || kioskModeEnabled}
+                  onReveal={() => void handleReveal(item)}
+                  onCopy={(secret) => void handleCopy(item.id, secret)}
+                  onRotate={(newSecret) => void handleRotate(item, newSecret)}
+                  onDelete={() => setDeleteReview(item)}
+                />
+              ))
+            )}
+          </section>
+
+          {accessLog.length > 0 && (
+            <section className="border border-border bg-surface p-3">
+              <p className="text-meta font-semibold text-text-primary">Access log</p>
+              <ul className="mt-2 grid gap-1 text-caption text-text-tertiary">
+                {accessLog
+                  .slice(-10)
+                  .reverse()
+                  .map((entry) => (
+                    <li key={entry.id}>
+                      {new Date(entry.timestamp).toLocaleString()} — {entry.action} &ldquo;
+                      {entry.itemLabel}&rdquo;
+                    </li>
+                  ))}
+              </ul>
+            </section>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Reveal Policy" subtitle="Audited actions" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Presentation Mode and Kiosk Mode disable reveal actions before values are fetched.</p>
+          <p>Copied secrets are cleared from the clipboard after the existing timeout.</p>
+        </div>
+      </NdxToolWindow>
 
       <ConfirmationDialog
         open={deleteReview !== null}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { LanShareTransferJob } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import {
   acceptLanShareTransfer,
@@ -67,64 +68,82 @@ export function LanShareTransfers(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Transfers</p>
-        <ControllerButton variant="primary" onClick={() => navigate('/lan-share/send')}>
-          Send files
-        </ControllerButton>
-      </div>
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Transfer Queues" subtitle={`${active.length} active`}>
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Active, approval, and terminal jobs come from the real LAN Share transfer queue.</p>
+          <p>{history.length} terminal-status transfers are retained as history.</p>
+        </div>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Transfers error" description={error} />}
+      <NdxEditorShell title="Transfer Monitor">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-title font-semibold text-text-primary">Transfers</p>
+            <ControllerButton variant="primary" onClick={() => navigate('/lan-share/send')}>
+              Send files
+            </ControllerButton>
+          </div>
 
-      {loading ? (
-        <p className="text-meta text-text-secondary">Loading transfers…</p>
-      ) : jobs.length === 0 ? (
-        <EmptyState
-          className="flex-1"
-          title="No transfers yet"
-          description="Sent and received files will appear here."
-        />
-      ) : (
-        <>
-          <section className="flex flex-col gap-2">
-            <p className="text-body font-semibold text-text-primary">Active</p>
-            {active.length === 0 ? (
-              <p className="text-meta text-text-secondary">Nothing in progress.</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {active.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    onOpen={() => navigate(`/lan-share/transfers/${job.id}`)}
-                    onAccept={() => void handleAccept(job.id)}
-                    onReject={() => void handleReject(job.id)}
-                    onCancel={() => void handleCancel(job.id)}
-                  />
-                ))}
-              </ul>
-            )}
-          </section>
+          {error && <ErrorState title="Transfers error" description={error} />}
 
-          <section className="flex flex-col gap-2 overflow-auto">
-            <p className="text-body font-semibold text-text-primary">History</p>
-            {history.length === 0 ? (
-              <p className="text-meta text-text-secondary">No completed transfers yet.</p>
-            ) : (
-              <ul className="flex flex-col gap-2">
-                {history.map((job) => (
-                  <JobCard
-                    key={job.id}
-                    job={job}
-                    onOpen={() => navigate(`/lan-share/transfers/${job.id}`)}
-                  />
-                ))}
-              </ul>
-            )}
-          </section>
-        </>
-      )}
+          {loading ? (
+            <p className="text-meta text-text-secondary">Loading transfers…</p>
+          ) : jobs.length === 0 ? (
+            <EmptyState
+              className="flex-1"
+              title="No transfers yet"
+              description="Sent and received files will appear here."
+            />
+          ) : (
+            <>
+              <section className="flex flex-col gap-2">
+                <p className="text-body font-semibold text-text-primary">Active</p>
+                {active.length === 0 ? (
+                  <p className="text-meta text-text-secondary">Nothing in progress.</p>
+                ) : (
+                  <ul className="flex flex-col gap-2">
+                    {active.map((job) => (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        onOpen={() => navigate(`/lan-share/transfers/${job.id}`)}
+                        onAccept={() => void handleAccept(job.id)}
+                        onReject={() => void handleReject(job.id)}
+                        onCancel={() => void handleCancel(job.id)}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="flex flex-col gap-2 overflow-auto">
+                <p className="text-body font-semibold text-text-primary">History</p>
+                {history.length === 0 ? (
+                  <p className="text-meta text-text-secondary">No completed transfers yet.</p>
+                ) : (
+                  <ul className="flex flex-col gap-2">
+                    {history.map((job) => (
+                      <JobCard
+                        key={job.id}
+                        job={job}
+                        onOpen={() => navigate(`/lan-share/transfers/${job.id}`)}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </section>
+            </>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Approval Policy" subtitle="Explicit" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Incoming jobs require accept or reject while waiting for approval.</p>
+          <p>Conflict-safe receive names are chosen by the real receive engine.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

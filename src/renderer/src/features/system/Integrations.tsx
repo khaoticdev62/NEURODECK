@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
 import { EmptyState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { listModelProviders } from '../../services/ipc/modelClient'
 import { listRemoteHosts } from '../../services/ipc/remoteClient'
@@ -223,29 +224,55 @@ export function Integrations(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <header>
-        <p className="text-title font-semibold text-text-primary">Integrations</p>
-        <p className="text-body text-text-secondary">
-          Real integrations are shown as-is; unsupported categories are labeled honestly.
+    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Integration Groups" subtitle={`${groups.length} groups`}>
+        <p className="text-meta text-text-secondary">
+          Model providers and remote systems are backed by real services. Unsupported categories are
+          explicit.
         </p>
-      </header>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Focus source</p>
+          <p className="text-meta text-text-tertiary">
+            The first real integration row keeps the existing controller initial-focus behavior.
+          </p>
+        </div>
+      </NdxToolWindow>
 
-      {groups.map((group, groupIndex) => (
-        <section key={group.category}>
-          <p className="mb-1 text-meta font-semibold text-text-primary">{group.category}</p>
-          <div className="flex flex-col gap-1">
-            {group.items.map((item, index) => (
-              <IntegrationRow
-                key={item.id}
-                item={item}
-                index={groupIndex === 0 ? index : -1}
-                onActivate={() => undefined}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+      <NdxEditorShell title="Integration Inventory">
+        <div className="flex min-h-full flex-col gap-4 p-4">
+          <header>
+            <p className="text-title font-semibold text-text-primary">Integrations</p>
+            <p className="text-body text-text-secondary">
+              Real integrations are shown as-is; unsupported categories are labeled honestly.
+            </p>
+          </header>
+
+          {groups.map((group, groupIndex) => (
+            <section key={group.category}>
+              <p className="mb-1 text-meta font-semibold text-text-primary">{group.category}</p>
+              <div className="flex flex-col gap-1">
+                {group.items.map((item, index) => (
+                  <IntegrationRow
+                    key={item.id}
+                    item={item}
+                    index={groupIndex === 0 ? index : -1}
+                    onActivate={() => undefined}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Integration Scope" subtitle="No fake state" side="right">
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Status policy</p>
+          <p className="text-meta text-text-tertiary">
+            Categories without backend services are marked unsupported instead of simulated.
+          </p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

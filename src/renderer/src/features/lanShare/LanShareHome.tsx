@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { LanShareHealth, LanShareIdentity, LanShareServiceStatus } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   getLanShareHealth,
   getLanShareIdentity,
@@ -89,54 +90,76 @@ export function LanShareHome(): React.JSX.Element {
   const isRunning = status?.state === 'running'
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">LAN Share</p>
-        <ControllerButton
-          variant={isRunning ? 'destructive' : 'primary'}
-          disabled={busy || status?.state === 'starting'}
-          onClick={() => void handleToggleService()}
-        >
-          {busy ? 'Working…' : isRunning ? 'Stop service' : 'Start service'}
-        </ControllerButton>
-      </div>
-
-      {error && <ErrorState title="LAN Share error" description={error} />}
-
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Service status</p>
-        <p className="text-meta text-text-secondary">
-          {status ? `${status.state} — ${status.reason}` : 'Loading…'}
-        </p>
-        {identity && (
-          <p className="text-meta text-text-tertiary">
-            {identity.displayName} · connect id {identity.connectId}
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="LAN Share Service" subtitle={status?.state ?? 'Loading'}>
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>
+            Service start, stop, identity, and socket health come from the real LAN Share service.
           </p>
-        )}
-        {health && (
-          <p className="text-meta text-text-tertiary">
-            Transfer port {health.transferPortBound ? 'bound' : 'not bound'} · Registration port{' '}
-            {health.authPortBound ? 'bound' : 'not bound'} · Receive directory{' '}
-            {health.receiveDirectoryWritable ? 'writable' : 'not writable'} ·{' '}
-            {health.interfaceCount} network interface{health.interfaceCount === 1 ? '' : 's'}
-          </p>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <p className="text-body font-semibold text-text-primary">Go to</p>
-        <div className="flex flex-wrap gap-2">
-          {SUB_LINKS.map((link) => (
-            <ControllerButton
-              key={link.path}
-              variant="secondary"
-              onClick={() => navigate(link.path)}
-            >
-              {link.label}
-            </ControllerButton>
-          ))}
+          {identity && <p>Connect ID: {identity.connectId}</p>}
         </div>
-      </section>
+      </NdxToolWindow>
+
+      <NdxEditorShell title="LAN Share Control">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-title font-semibold text-text-primary">LAN Share</p>
+            <ControllerButton
+              variant={isRunning ? 'destructive' : 'primary'}
+              disabled={busy || status?.state === 'starting'}
+              onClick={() => void handleToggleService()}
+            >
+              {busy ? 'Working…' : isRunning ? 'Stop service' : 'Start service'}
+            </ControllerButton>
+          </div>
+
+          {error && <ErrorState title="LAN Share error" description={error} />}
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Service status</p>
+            <p className="text-meta text-text-secondary">
+              {status ? `${status.state} — ${status.reason}` : 'Loading…'}
+            </p>
+            {identity && (
+              <p className="text-meta text-text-tertiary">
+                {identity.displayName} · connect id {identity.connectId}
+              </p>
+            )}
+            {health && (
+              <p className="text-meta text-text-tertiary">
+                Transfer port {health.transferPortBound ? 'bound' : 'not bound'} · Registration port{' '}
+                {health.authPortBound ? 'bound' : 'not bound'} · Receive directory{' '}
+                {health.receiveDirectoryWritable ? 'writable' : 'not writable'} ·{' '}
+                {health.interfaceCount} network interface{health.interfaceCount === 1 ? '' : 's'}
+              </p>
+            )}
+          </section>
+
+          <section className="flex flex-col gap-2">
+            <p className="text-body font-semibold text-text-primary">Go to</p>
+            <div className="flex flex-wrap gap-2">
+              {SUB_LINKS.map((link) => (
+                <ControllerButton
+                  key={link.path}
+                  variant="secondary"
+                  onClick={() => navigate(link.path)}
+                >
+                  {link.label}
+                </ControllerButton>
+              ))}
+            </div>
+          </section>
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Network Policy" subtitle="Real sockets" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>
+            Firewall probing and compatibility matrices remain deferred until real probes exist.
+          </p>
+          <p>Receive directory writability and interface counts are reported by the service.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

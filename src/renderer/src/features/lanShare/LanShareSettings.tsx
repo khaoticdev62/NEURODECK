@@ -6,6 +6,7 @@ import type {
 } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   getLanShareSettings,
   listLanShareInterfaces,
@@ -83,133 +84,156 @@ export function LanShareSettings(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <p className="text-title font-semibold text-text-primary">LAN Share Settings</p>
-      {error && <ErrorState title="Settings error" description={error} />}
-      {message && <p className="text-meta text-status-success">{message}</p>}
-
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Group code (secure mode)</p>
-        <p className="text-meta text-text-secondary">
-          {settings.groupCodeConfigured
-            ? 'A real, non-default group code is set — secure mode is active.'
-            : 'Still using the default group code — incoming approval is always required until you set one.'}
-        </p>
-        <div className="flex gap-2">
-          <input
-            value={groupCode}
-            onChange={(event) => setGroupCode(event.target.value)}
-            placeholder="New group code (8-32 characters)"
-            type="password"
-            className="flex-1 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-          />
-          <ControllerButton
-            variant="primary"
-            disabled={saving}
-            onClick={() => void handleSetGroupCode()}
-          >
-            Set code
-          </ControllerButton>
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow
+        title="Settings Scope"
+        subtitle={settings.groupCodeConfigured ? 'Secure mode' : 'Default code'}
+      >
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Settings are persisted through the LAN Share settings service.</p>
+          <p>{interfaces.length} network interfaces are reported for binding context.</p>
         </div>
-      </section>
+      </NdxToolWindow>
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Device name</p>
-        <div className="flex gap-2">
-          <input
-            defaultValue={settings.deviceDisplayName}
-            onBlur={(event) => {
-              const value = event.target.value.trim()
-              if (value && value !== settings.deviceDisplayName) {
-                void saveSettings({ deviceDisplayName: value })
+      <NdxEditorShell title="LAN Share Preferences">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
+          <p className="text-title font-semibold text-text-primary">LAN Share Settings</p>
+          {error && <ErrorState title="Settings error" description={error} />}
+          {message && <p className="text-meta text-status-success">{message}</p>}
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Group code (secure mode)</p>
+            <p className="text-meta text-text-secondary">
+              {settings.groupCodeConfigured
+                ? 'A real, non-default group code is set — secure mode is active.'
+                : 'Still using the default group code — incoming approval is always required until you set one.'}
+            </p>
+            <div className="flex gap-2">
+              <input
+                value={groupCode}
+                onChange={(event) => setGroupCode(event.target.value)}
+                placeholder="New group code (8-32 characters)"
+                type="password"
+                className="flex-1 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+              />
+              <ControllerButton
+                variant="primary"
+                disabled={saving}
+                onClick={() => void handleSetGroupCode()}
+              >
+                Set code
+              </ControllerButton>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Device name</p>
+            <div className="flex gap-2">
+              <input
+                defaultValue={settings.deviceDisplayName}
+                onBlur={(event) => {
+                  const value = event.target.value.trim()
+                  if (value && value !== settings.deviceDisplayName) {
+                    void saveSettings({ deviceDisplayName: value })
+                  }
+                }}
+                className="flex-1 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+              />
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Network</p>
+            <label className="flex items-center gap-2 text-meta text-text-secondary">
+              Transfer port
+              <input
+                defaultValue={settings.transferPort}
+                inputMode="numeric"
+                onBlur={(event) => {
+                  const value = Number(event.target.value)
+                  if (value && value !== settings.transferPort)
+                    void saveSettings({ transferPort: value })
+                }}
+                className="w-24 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+              />
+            </label>
+            <label className="flex items-center gap-2 text-meta text-text-secondary">
+              Registration port
+              <input
+                defaultValue={settings.authPort}
+                inputMode="numeric"
+                onBlur={(event) => {
+                  const value = Number(event.target.value)
+                  if (value && value !== settings.authPort) void saveSettings({ authPort: value })
+                }}
+                className="w-24 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+              />
+            </label>
+            {interfaces.length > 0 && (
+              <ul className="flex flex-col gap-1">
+                {interfaces.map((iface) => (
+                  <li key={iface.id} className="text-meta text-text-tertiary">
+                    {iface.name} · {iface.address} ({iface.family}, {iface.inferredType})
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Receive directory</p>
+            <input
+              defaultValue={settings.receiveDirectory}
+              onBlur={(event) => {
+                const value = event.target.value.trim()
+                if (value && value !== settings.receiveDirectory) {
+                  void saveSettings({ receiveDirectory: value })
+                }
+              }}
+              className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+            />
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Compression</p>
+            <select
+              value={settings.compressionMode}
+              onChange={(event) =>
+                void saveSettings({
+                  compressionMode: event.target.value as LanShareCompressionMode
+                })
               }
-            }}
-            className="flex-1 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-          />
+              className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+            >
+              <option value="auto">Auto</option>
+              <option value="off">Off</option>
+              <option value="compatible">Compatible (always on)</option>
+            </select>
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Auto-start</p>
+            <p className="text-meta text-text-secondary">
+              Requires secure mode (a real, non-default group code) — enforced by the backend, not
+              just this screen.
+            </p>
+            <ControllerButton
+              variant={settings.autoStartEnabled ? 'destructive' : 'primary'}
+              disabled={saving || (!settings.groupCodeConfigured && !settings.autoStartEnabled)}
+              onClick={() => void saveSettings({ autoStartEnabled: !settings.autoStartEnabled })}
+            >
+              {settings.autoStartEnabled ? 'Disable auto-start' : 'Enable auto-start'}
+            </ControllerButton>
+          </section>
         </div>
-      </section>
+      </NdxEditorShell>
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Network</p>
-        <label className="flex items-center gap-2 text-meta text-text-secondary">
-          Transfer port
-          <input
-            defaultValue={settings.transferPort}
-            inputMode="numeric"
-            onBlur={(event) => {
-              const value = Number(event.target.value)
-              if (value && value !== settings.transferPort)
-                void saveSettings({ transferPort: value })
-            }}
-            className="w-24 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-          />
-        </label>
-        <label className="flex items-center gap-2 text-meta text-text-secondary">
-          Registration port
-          <input
-            defaultValue={settings.authPort}
-            inputMode="numeric"
-            onBlur={(event) => {
-              const value = Number(event.target.value)
-              if (value && value !== settings.authPort) void saveSettings({ authPort: value })
-            }}
-            className="w-24 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-          />
-        </label>
-        {interfaces.length > 0 && (
-          <ul className="flex flex-col gap-1">
-            {interfaces.map((iface) => (
-              <li key={iface.id} className="text-meta text-text-tertiary">
-                {iface.name} · {iface.address} ({iface.family}, {iface.inferredType})
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Receive directory</p>
-        <input
-          defaultValue={settings.receiveDirectory}
-          onBlur={(event) => {
-            const value = event.target.value.trim()
-            if (value && value !== settings.receiveDirectory) {
-              void saveSettings({ receiveDirectory: value })
-            }
-          }}
-          className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-        />
-      </section>
-
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Compression</p>
-        <select
-          value={settings.compressionMode}
-          onChange={(event) =>
-            void saveSettings({ compressionMode: event.target.value as LanShareCompressionMode })
-          }
-          className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-        >
-          <option value="auto">Auto</option>
-          <option value="off">Off</option>
-          <option value="compatible">Compatible (always on)</option>
-        </select>
-      </section>
-
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Auto-start</p>
-        <p className="text-meta text-text-secondary">
-          Requires secure mode (a real, non-default group code) — enforced by the backend, not just
-          this screen.
-        </p>
-        <ControllerButton
-          variant={settings.autoStartEnabled ? 'destructive' : 'primary'}
-          disabled={saving || (!settings.groupCodeConfigured && !settings.autoStartEnabled)}
-          onClick={() => void saveSettings({ autoStartEnabled: !settings.autoStartEnabled })}
-        >
-          {settings.autoStartEnabled ? 'Disable auto-start' : 'Enable auto-start'}
-        </ControllerButton>
-      </section>
+      <NdxToolWindow title="Security Policy" subtitle="Backend enforced" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Auto-start requires secure mode and is enforced by the backend.</p>
+          <p>Per-interface binding is displayed as context until service support is complete.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

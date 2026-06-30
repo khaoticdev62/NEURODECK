@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import type { LanSharePeer, LanShareTrustState } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   listLanSharePeers,
   removeLanSharePeer,
@@ -92,64 +93,84 @@ export function LanShareDeviceDetail(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <p className="text-title font-semibold text-text-primary">{peer.displayName}</p>
-      {error && <ErrorState title="Device action error" description={error} />}
-
-      <section className="flex flex-col gap-1 border border-border bg-surface p-3">
-        <p className="text-meta text-text-secondary">
-          Address {peer.addresses[0] ?? 'unknown'} · transfer port {peer.transferPort} ·
-          registration port {peer.authPort}
-        </p>
-        <p className="text-meta text-text-secondary">
-          Status {peer.status} · discovered via {peer.discoverySource} · last seen{' '}
-          {new Date(peer.lastSeenAt).toLocaleString()}
-        </p>
-        <p className="text-meta text-text-secondary">
-          Registration v{peer.registrationVersion} · platform {peer.platform} · trust{' '}
-          {peer.trustState}
-          {peer.groupMatch ? ' · group code matches' : ' · group code not confirmed'}
-        </p>
-        {peer.fingerprint && (
-          <p className="text-meta text-text-tertiary">Certificate fingerprint {peer.fingerprint}</p>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-2">
-        <p className="text-body font-semibold text-text-primary">Trust</p>
-        <div className="flex gap-2">
-          {TRUST_ACTIONS.map((action) => (
-            <ControllerButton
-              key={action.trustState}
-              variant={action.variant}
-              disabled={busy || peer.trustState === action.trustState}
-              onClick={() => void handleSetTrust(action.trustState)}
-            >
-              {action.label}
-            </ControllerButton>
-          ))}
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Peer Identity" subtitle={peer.status}>
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>{peer.addresses[0] ?? 'unknown address'}</p>
+          <p>Discovered via {peer.discoverySource}.</p>
         </div>
-      </section>
+      </NdxToolWindow>
 
-      <section className="flex flex-col gap-2">
-        <p className="text-body font-semibold text-text-primary">Actions</p>
-        <div className="flex gap-2">
-          <ControllerButton
-            variant="primary"
-            disabled={peer.trustState === 'blocked'}
-            onClick={() => navigate(`/lan-share/send?peerId=${peer.id}`)}
-          >
-            Send files to this device
-          </ControllerButton>
-          <ControllerButton
-            variant="destructive"
-            disabled={busy}
-            onClick={() => void handleRemove()}
-          >
-            Remove device
-          </ControllerButton>
+      <NdxEditorShell title="Device Detail">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
+          <p className="text-title font-semibold text-text-primary">{peer.displayName}</p>
+          {error && <ErrorState title="Device action error" description={error} />}
+
+          <section className="flex flex-col gap-1 border border-border bg-surface p-3">
+            <p className="text-meta text-text-secondary">
+              Address {peer.addresses[0] ?? 'unknown'} · transfer port {peer.transferPort} ·
+              registration port {peer.authPort}
+            </p>
+            <p className="text-meta text-text-secondary">
+              Status {peer.status} · discovered via {peer.discoverySource} · last seen{' '}
+              {new Date(peer.lastSeenAt).toLocaleString()}
+            </p>
+            <p className="text-meta text-text-secondary">
+              Registration v{peer.registrationVersion} · platform {peer.platform} · trust{' '}
+              {peer.trustState}
+              {peer.groupMatch ? ' · group code matches' : ' · group code not confirmed'}
+            </p>
+            {peer.fingerprint && (
+              <p className="text-meta text-text-tertiary">
+                Certificate fingerprint {peer.fingerprint}
+              </p>
+            )}
+          </section>
+
+          <section className="flex flex-col gap-2">
+            <p className="text-body font-semibold text-text-primary">Trust</p>
+            <div className="flex gap-2">
+              {TRUST_ACTIONS.map((action) => (
+                <ControllerButton
+                  key={action.trustState}
+                  variant={action.variant}
+                  disabled={busy || peer.trustState === action.trustState}
+                  onClick={() => void handleSetTrust(action.trustState)}
+                >
+                  {action.label}
+                </ControllerButton>
+              ))}
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-2">
+            <p className="text-body font-semibold text-text-primary">Actions</p>
+            <div className="flex gap-2">
+              <ControllerButton
+                variant="primary"
+                disabled={peer.trustState === 'blocked'}
+                onClick={() => navigate(`/lan-share/send?peerId=${peer.id}`)}
+              >
+                Send files to this device
+              </ControllerButton>
+              <ControllerButton
+                variant="destructive"
+                disabled={busy}
+                onClick={() => void handleRemove()}
+              >
+                Remove device
+              </ControllerButton>
+            </div>
+          </section>
         </div>
-      </section>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Trust Policy" subtitle={peer.trustState} side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Trust changes call the real peer trust state machine.</p>
+          <p>Blocked devices cannot be selected for send until trust changes.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import type { DeviceInventoryRecord, DeviceInventoryReport } from '@shared/contr
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { collectDeviceInventory } from '../../services/ipc/deviceClient'
 
 const AUDIO_OPERATIONS = [
@@ -76,87 +77,111 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Checking audio devices...</p>
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Audio and Microphone Center</p>
-          <p className="text-meta text-text-secondary">
-            Read-only audio status from the shared device inventory and microphone capability.
-          </p>
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Audio Scope" subtitle="PipeWire pending">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Output, microphone, and headset records come from the shared device inventory.</p>
+          <p>Routing, input gain, and capture diagnostics require a real OS audio adapter.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <ControllerButton variant="secondary" onClick={() => navigate('/devices')}>
-            Device Center
-          </ControllerButton>
-          <ControllerButton
-            variant="primary"
-            disabled={loading}
-            onClick={() => void handleRefresh()}
-          >
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </ControllerButton>
-        </div>
-      </div>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Audio status error" description={error} />}
-
-      {report && (
-        <>
-          <section className="border border-border bg-surface p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-body font-semibold text-text-primary">Microphone capability</p>
-                <p className="text-meta text-text-secondary">
-                  {microphoneCapability?.reason ?? 'Microphone capability was not reported.'}
-                </p>
-                {microphoneCapability?.provider && (
-                  <p className="text-caption text-text-tertiary">
-                    Backend: {microphoneCapability.provider}
-                  </p>
-                )}
-              </div>
-              <StatusBadge
-                tone={capabilityTone(microphoneCapability?.status)}
-                label={microphoneCapability?.status ?? 'unknown'}
-              />
+      <NdxEditorShell title="Audio Inventory">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">
+                Audio and Microphone Center
+              </p>
+              <p className="text-meta text-text-secondary">
+                Read-only audio status from the shared device inventory and microphone capability.
+              </p>
             </div>
-          </section>
+            <div className="flex flex-wrap gap-2">
+              <ControllerButton variant="secondary" onClick={() => navigate('/devices')}>
+                Device Center
+              </ControllerButton>
+              <ControllerButton
+                variant="primary"
+                disabled={loading}
+                onClick={() => void handleRefresh()}
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </ControllerButton>
+            </div>
+          </div>
 
-          <section className="grid gap-3 lg:grid-cols-2">
-            {audioDevices.length === 0 ? (
-              <div className="border border-border bg-surface p-3">
-                <p className="text-body font-semibold text-text-primary">
-                  No audio devices in inventory
-                </p>
-                <p className="text-meta text-text-secondary">
-                  NeuroDeck has no persisted audio device records and no real OS audio enumeration
-                  backend yet.
-                </p>
-              </div>
-            ) : (
-              audioDevices.map((device) => <AudioDeviceCard key={device.id} device={device} />)
-            )}
-          </section>
+          {error && <ErrorState title="Audio status error" description={error} />}
 
-          <section className="border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Controls</p>
-            <div className="mt-2 grid gap-2 md:grid-cols-2">
-              {AUDIO_OPERATIONS.map((operation) => (
-                <div
-                  key={operation.label}
-                  className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
-                >
+          {report && (
+            <>
+              <section className="border border-border bg-surface p-3">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-meta font-semibold text-text-primary">{operation.label}</p>
-                    <p className="text-caption text-text-tertiary">{operation.reason}</p>
+                    <p className="text-body font-semibold text-text-primary">
+                      Microphone capability
+                    </p>
+                    <p className="text-meta text-text-secondary">
+                      {microphoneCapability?.reason ?? 'Microphone capability was not reported.'}
+                    </p>
+                    {microphoneCapability?.provider && (
+                      <p className="text-caption text-text-tertiary">
+                        Backend: {microphoneCapability.provider}
+                      </p>
+                    )}
                   </div>
-                  <StatusBadge tone="neutral" label="not wired" />
+                  <StatusBadge
+                    tone={capabilityTone(microphoneCapability?.status)}
+                    label={microphoneCapability?.status ?? 'unknown'}
+                  />
                 </div>
-              ))}
-            </div>
-          </section>
-        </>
-      )}
+              </section>
+
+              <section className="grid gap-3 lg:grid-cols-2">
+                {audioDevices.length === 0 ? (
+                  <div className="border border-border bg-surface p-3">
+                    <p className="text-body font-semibold text-text-primary">
+                      No audio devices in inventory
+                    </p>
+                    <p className="text-meta text-text-secondary">
+                      NeuroDeck has no persisted audio device records and no real OS audio
+                      enumeration backend yet.
+                    </p>
+                  </div>
+                ) : (
+                  audioDevices.map((device) => <AudioDeviceCard key={device.id} device={device} />)
+                )}
+              </section>
+
+              <section className="border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Controls</p>
+                <div className="mt-2 grid gap-2 md:grid-cols-2">
+                  {AUDIO_OPERATIONS.map((operation) => (
+                    <div
+                      key={operation.label}
+                      className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
+                    >
+                      <div>
+                        <p className="text-meta font-semibold text-text-primary">
+                          {operation.label}
+                        </p>
+                        <p className="text-caption text-text-tertiary">{operation.reason}</p>
+                      </div>
+                      <StatusBadge tone="neutral" label="not wired" />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Operation Policy" subtitle="Read only" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Audio routing cannot be applied without permission-aware device transactions.</p>
+          <p>All listed controls remain non-executing evidence until the backend is wired.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

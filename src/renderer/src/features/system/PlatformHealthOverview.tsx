@@ -10,6 +10,7 @@ import type {
   UpdateStatus
 } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { listCapabilities } from '../../services/ipc/capabilityClient'
 import { listCrashReports } from '../../services/ipc/diagnosticsClient'
 import { listFeatures } from '../../services/ipc/featureClient'
@@ -71,55 +72,85 @@ export function PlatformHealthOverview(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Platform Health Overview</p>
-          {state && (
+    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Health Sources" subtitle="Aggregated">
+        <p className="text-meta text-text-secondary">
+          Feature registry, capabilities, network, LAN Share, updates, and crash reports are checked
+          through their existing typed clients.
+        </p>
+        {state && (
+          <div className="border-t border-border pt-3">
+            <p className="text-meta font-semibold text-text-primary">Last checked</p>
             <p className="text-meta text-text-tertiary">
-              Last checked {new Date(state.refreshedAt).toLocaleString()}
+              {new Date(state.refreshedAt).toLocaleString()}
             </p>
-          )}
-        </div>
-        <ControllerButton variant="primary" disabled={loading} onClick={() => void handleRefresh()}>
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </ControllerButton>
-      </div>
+          </div>
+        )}
+      </NdxToolWindow>
 
-      <section className="grid grid-cols-3 gap-3">
-        <SummaryTile label="Attention" value={String(attentionCount)} tone="attention" />
-        <SummaryTile label="Degraded" value={String(degradedCount)} tone="degraded" />
-        <SummaryTile
-          label="Healthy"
-          value={String(cards.length - attentionCount - degradedCount)}
-        />
-      </section>
-
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {cards.map((card) => (
-          <section
-            key={card.title}
-            className="flex flex-col gap-2 border border-border bg-surface p-3"
-          >
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-body font-semibold text-text-primary">{card.title}</p>
-              <span className={`text-caption font-semibold ${levelClass(card.level)}`}>
-                {card.level}
-              </span>
+      <NdxEditorShell title="Platform Health">
+        <div className="flex min-h-full flex-col gap-4 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">Platform Health Overview</p>
+              {state && (
+                <p className="text-meta text-text-tertiary">
+                  Last checked {new Date(state.refreshedAt).toLocaleString()}
+                </p>
+              )}
             </div>
-            <p className="text-meta text-text-secondary">{card.summary}</p>
-            {card.details.length > 0 && (
-              <ul className="flex flex-col gap-1">
-                {card.details.map((detail) => (
-                  <li key={detail} className="text-caption text-text-tertiary">
-                    {detail}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ControllerButton
+              variant="primary"
+              disabled={loading}
+              onClick={() => void handleRefresh()}
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </ControllerButton>
+          </div>
+
+          <section className="grid grid-cols-3 gap-3">
+            <SummaryTile label="Attention" value={String(attentionCount)} tone="attention" />
+            <SummaryTile label="Degraded" value={String(degradedCount)} tone="degraded" />
+            <SummaryTile
+              label="Healthy"
+              value={String(cards.length - attentionCount - degradedCount)}
+            />
           </section>
-        ))}
-      </div>
+
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {cards.map((card) => (
+              <section
+                key={card.title}
+                className="flex flex-col gap-2 border border-border bg-surface p-3"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-body font-semibold text-text-primary">{card.title}</p>
+                  <span className={`text-caption font-semibold ${levelClass(card.level)}`}>
+                    {card.level}
+                  </span>
+                </div>
+                <p className="text-meta text-text-secondary">{card.summary}</p>
+                {card.details.length > 0 && (
+                  <ul className="flex flex-col gap-1">
+                    {card.details.map((detail) => (
+                      <li key={detail} className="text-caption text-text-tertiary">
+                        {detail}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            ))}
+          </div>
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Health Policy" subtitle="No remediation" side="right">
+        <p className="text-meta text-text-tertiary">
+          This overview reports health from real sources only. Repair actions remain in their owning
+          screens.
+        </p>
+      </NdxToolWindow>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { getRecoveryStorageSummary } from '../../services/ipc/recoveryClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
@@ -50,35 +51,60 @@ export function StorageAndRecovery(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <p className="text-title font-semibold text-text-primary">Storage and Recovery</p>
-
-      {error && <ErrorState title="Couldn't load recovery storage" description={error} />}
-
-      <section className="border border-border bg-surface p-3">
-        <p className="mb-1 text-meta font-semibold text-text-primary">Recovery points</p>
-        {summary ? (
-          <p className="text-meta text-text-secondary">
-            {summary.checkpointCount} checkpoint{summary.checkpointCount === 1 ? '' : 's'} ·{' '}
-            {formatBytes(summary.totalBytes)} of snapshots
-          </p>
-        ) : (
-          <p className="text-meta text-text-secondary">Loading…</p>
-        )}
-        <ControllerButton variant="primary" className="mt-2" onClick={() => navigate('/recovery')}>
-          Open Recovery Timeline
-        </ControllerButton>
-      </section>
-
-      <section className="border border-dashed border-border bg-canvas/40 p-3">
-        <p className="mb-1 text-meta font-semibold text-text-tertiary">
-          Disk usage, model storage, workspace cache, browser data, logs, and trash
+    <div className="grid h-full min-w-[64rem] grid-cols-[18rem_minmax(32rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Storage Scope" subtitle={activeWorkspace.name}>
+        <p className="text-meta text-text-secondary">
+          This slice is scoped to real recovery checkpoint storage for the active workspace.
         </p>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Workspace</p>
+          <p className="break-all text-meta text-text-tertiary">{activeWorkspace.rootPath}</p>
+        </div>
+      </NdxToolWindow>
+
+      <NdxEditorShell title="Storage and Recovery">
+        <div className="flex min-h-full flex-col gap-4 p-4">
+          <p className="text-title font-semibold text-text-primary">Storage and Recovery</p>
+
+          {error && <ErrorState title="Couldn't load recovery storage" description={error} />}
+
+          <section className="border border-border bg-surface p-3">
+            <p className="mb-1 text-meta font-semibold text-text-primary">Recovery points</p>
+            {summary ? (
+              <p className="text-meta text-text-secondary">
+                {summary.checkpointCount} checkpoint{summary.checkpointCount === 1 ? '' : 's'} ·{' '}
+                {formatBytes(summary.totalBytes)} of snapshots
+              </p>
+            ) : (
+              <p className="text-meta text-text-secondary">Loading…</p>
+            )}
+            <ControllerButton
+              variant="primary"
+              className="mt-2"
+              onClick={() => navigate('/recovery')}
+            >
+              Open Recovery Timeline
+            </ControllerButton>
+          </section>
+
+          <section className="border border-dashed border-border bg-canvas/40 p-3">
+            <p className="mb-1 text-meta font-semibold text-text-tertiary">
+              Disk usage, model storage, workspace cache, browser data, logs, and trash
+            </p>
+            <p className="text-meta text-text-tertiary">
+              Not real yet — each needs a service this epic doesn&apos;t own (system metrics, Epic
+              9&apos;s model runtime, Epic 10&apos;s browser, a real log-file inventory).
+            </p>
+          </section>
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Storage Policy" subtitle="Recovery only" side="right">
         <p className="text-meta text-text-tertiary">
-          Not real yet — each needs a service this epic doesn&apos;t own (system metrics, Epic
-          9&apos;s model runtime, Epic 10&apos;s browser, a real log-file inventory).
+          Cleanup and storage totals remain disabled until each storage class has a real inventory
+          and review path.
         </p>
-      </section>
+      </NdxToolWindow>
     </div>
   )
 }

@@ -3,6 +3,7 @@ import type { MetricValue, SystemMetricsSnapshot } from '@shared/contracts'
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
 
 const GOVERNOR_PROFILES = [
@@ -64,95 +65,120 @@ export function ResourceGovernor(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Measuring resource state...</p>
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Resource Governor</p>
-          <p className="text-meta text-text-secondary">
-            Read-only policy dashboard from live system metrics.
-          </p>
+    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Governor Profiles" subtitle="Observed only">
+        <p className="text-meta text-text-secondary">
+          Profiles are reported from live metrics. No resource policy engine is enforcing them yet.
+        </p>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Profile count</p>
+          <p className="text-meta text-text-tertiary">{GOVERNOR_PROFILES.length} policy profiles</p>
         </div>
-        <ControllerButton variant="primary" disabled={loading} onClick={() => void handleRefresh()}>
-          {loading ? 'Refreshing...' : 'Refresh'}
-        </ControllerButton>
-      </div>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Resource metrics error" description={error} />}
-
-      {snapshot && (
-        <>
-          <section className="grid gap-3 md:grid-cols-3">
-            <MetricSummary
-              title="CPU"
-              metric={snapshot.cpu}
-              value={(cpu) => `${cpu.usagePercent.toFixed(1)}%`}
-            />
-            <MetricSummary
-              title="Memory"
-              metric={snapshot.memory}
-              value={(memory) => `${memory.usagePercent.toFixed(1)}%`}
-            />
-            <MetricSummary
-              title="Storage"
-              metric={snapshot.storage}
-              value={(storage) => `${storage.usagePercent.toFixed(1)}%`}
-            />
-            <MetricSummary
-              title="Battery"
-              metric={snapshot.battery}
-              value={(batteries) =>
-                batteries[0]?.capacityPercent === null || batteries.length === 0
-                  ? 'Unknown'
-                  : `${batteries[0].capacityPercent}%`
-              }
-            />
-            <MetricSummary
-              title="Thermal"
-              metric={snapshot.thermal}
-              value={(sensors) =>
-                sensors.length === 0 ? 'Unavailable' : `${sensors[0].celsius.toFixed(1)}C`
-              }
-            />
-            <MetricSummary
-              title="GPU"
-              metric={snapshot.gpu}
-              value={(devices) =>
-                devices.length === 0 ? 'Unavailable' : `${devices[0].usagePercent.toFixed(1)}%`
-              }
-            />
-          </section>
-
-          <section className="border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Profiles</p>
-            <div className="mt-2 grid gap-2 md:grid-cols-2">
-              {GOVERNOR_PROFILES.map((profile) => (
-                <div
-                  key={profile.label}
-                  className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
-                >
-                  <div>
-                    <p className="text-meta font-semibold text-text-primary">{profile.label}</p>
-                    <p className="text-caption text-text-tertiary">{profile.reason}</p>
-                  </div>
-                  <StatusBadge
-                    tone={profile.status === 'observed' ? 'info' : 'neutral'}
-                    label={profile.status}
-                  />
-                </div>
-              ))}
+      <NdxEditorShell title="Resource Metrics">
+        <div className="flex min-h-full flex-col gap-4 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">Resource Governor</p>
+              <p className="text-meta text-text-secondary">
+                Read-only policy dashboard from live system metrics.
+              </p>
             </div>
-          </section>
+            <ControllerButton
+              variant="primary"
+              disabled={loading}
+              onClick={() => void handleRefresh()}
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </ControllerButton>
+          </div>
 
-          <section className="border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Policy actions</p>
-            <p className="text-meta text-text-secondary">
-              Delay model load, reduce context, pause downloads, suspend browser tabs, delay
-              backups, and unload inactive models are not wired because no resource policy engine
-              can enforce or reverse those actions yet.
-            </p>
-          </section>
-        </>
-      )}
+          {error && <ErrorState title="Resource metrics error" description={error} />}
+
+          {snapshot && (
+            <>
+              <section className="grid gap-3 md:grid-cols-3">
+                <MetricSummary
+                  title="CPU"
+                  metric={snapshot.cpu}
+                  value={(cpu) => `${cpu.usagePercent.toFixed(1)}%`}
+                />
+                <MetricSummary
+                  title="Memory"
+                  metric={snapshot.memory}
+                  value={(memory) => `${memory.usagePercent.toFixed(1)}%`}
+                />
+                <MetricSummary
+                  title="Storage"
+                  metric={snapshot.storage}
+                  value={(storage) => `${storage.usagePercent.toFixed(1)}%`}
+                />
+                <MetricSummary
+                  title="Battery"
+                  metric={snapshot.battery}
+                  value={(batteries) =>
+                    batteries[0]?.capacityPercent === null || batteries.length === 0
+                      ? 'Unknown'
+                      : `${batteries[0].capacityPercent}%`
+                  }
+                />
+                <MetricSummary
+                  title="Thermal"
+                  metric={snapshot.thermal}
+                  value={(sensors) =>
+                    sensors.length === 0 ? 'Unavailable' : `${sensors[0].celsius.toFixed(1)}C`
+                  }
+                />
+                <MetricSummary
+                  title="GPU"
+                  metric={snapshot.gpu}
+                  value={(devices) =>
+                    devices.length === 0 ? 'Unavailable' : `${devices[0].usagePercent.toFixed(1)}%`
+                  }
+                />
+              </section>
+
+              <section className="border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Profiles</p>
+                <div className="mt-2 grid gap-2 md:grid-cols-2">
+                  {GOVERNOR_PROFILES.map((profile) => (
+                    <div
+                      key={profile.label}
+                      className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
+                    >
+                      <div>
+                        <p className="text-meta font-semibold text-text-primary">{profile.label}</p>
+                        <p className="text-caption text-text-tertiary">{profile.reason}</p>
+                      </div>
+                      <StatusBadge
+                        tone={profile.status === 'observed' ? 'info' : 'neutral'}
+                        label={profile.status}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Policy actions</p>
+                <p className="text-meta text-text-secondary">
+                  Delay model load, reduce context, pause downloads, suspend browser tabs, delay
+                  backups, and unload inactive models are not wired because no resource policy
+                  engine can enforce or reverse those actions yet.
+                </p>
+              </section>
+            </>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Action Scope" subtitle="No enforcement" side="right">
+        <p className="text-meta text-text-tertiary">
+          Delay, unload, throttle, and pause actions remain disabled until an enforceable and
+          reversible policy engine exists.
+        </p>
+      </NdxToolWindow>
     </div>
   )
 }

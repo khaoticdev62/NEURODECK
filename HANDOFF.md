@@ -2,6 +2,8 @@
 
 ## Current state
 
+**2026-06-30 HYBRID-5 platform tools batch:** Network/VPN, Integrations, Storage and Recovery, Profiles, Continuity, Resource Governor, AI Workload Scheduler, Scheduler and Triggers, Platform Health, Extension Manager, Secrets Vault, Device/Peripheral Center plus Bluetooth/Audio/Display/Storage detail routes, and all LAN Share route surfaces now use shared tool-window/editor/policy workbench regions. Existing typed IPC/service behavior, read-only/deferred action honesty, controller focus rows, reveal/delete/transfer/trust gates, and LAN Share live update paths were preserved. Evidence: focused route tests passed for the platform batches and LAN Share, plus `npm run typecheck`, `npm run lint`, and `npm run build` passed; build still reports the existing ErrorRecovery dynamic/static import chunking warning.
+
 **2026-06-29 HYBRID-5 Agents follow-up:** Agent Operations Center (`/agents`) now uses shared Agent Factory, Agent Operations Center, and Agent Policy workbench regions while preserving persisted agent list/create/enable/remove IPC behavior, ToolRegistry allowlist sourcing, model routing handoff, and no implicit permission ceiling grants.
 
 **2026-06-29 HYBRID-5 Agent Detail follow-up:** Agent Detail (`/agents/:agentId`) now uses shared Agent Profile, Agent Detail, and Run Context workbench regions while preserving persisted agent/run loading, start-run, dry-run, pause/resume, cancel, tool execution tabs, files tab derivation, permission ceiling/denial display, audit log filtering, and live `agentRun.update` behavior. Rich per-run artifacts and e2e coverage remain deferred until the backing data model expands.

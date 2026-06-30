@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import type { LanSharePeer } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import {
   listLanSharePeers,
   pickLanShareFiles,
@@ -76,57 +77,75 @@ export function LanShareSendComposer(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <p className="text-title font-semibold text-text-primary">Send Files</p>
-      {error && <ErrorState title="Send error" description={error} />}
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Send Context" subtitle={`${sourcePaths.length} selected`}>
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>File picking and send submission use the LAN Share IPC bridge.</p>
+          <p>{peers.length} unblocked peers are available as recipients.</p>
+        </div>
+      </NdxToolWindow>
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">1. Choose a device</p>
-        {peers.length === 0 ? (
-          <p className="text-meta text-text-secondary">
-            No devices available to send to yet — discover or add one first.
-          </p>
-        ) : (
-          <select
-            value={peerId}
-            onChange={(event) => setPeerId(event.target.value)}
-            className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+      <NdxEditorShell title="Send Composer">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
+          <p className="text-title font-semibold text-text-primary">Send Files</p>
+          {error && <ErrorState title="Send error" description={error} />}
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">1. Choose a device</p>
+            {peers.length === 0 ? (
+              <p className="text-meta text-text-secondary">
+                No devices available to send to yet — discover or add one first.
+              </p>
+            ) : (
+              <select
+                value={peerId}
+                onChange={(event) => setPeerId(event.target.value)}
+                className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+              >
+                <option value="">Select a device…</option>
+                {peers.map((peer) => (
+                  <option key={peer.id} value={peer.id}>
+                    {peer.displayName} ({peer.status})
+                  </option>
+                ))}
+              </select>
+            )}
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">2. Choose files</p>
+            <ControllerButton variant="secondary" onClick={() => void handlePickFiles()}>
+              Choose files…
+            </ControllerButton>
+            {sourcePaths.length > 0 && (
+              <ul className="flex flex-col gap-1">
+                {sourcePaths.map((path) => (
+                  <li key={path} className="text-meta text-text-secondary">
+                    {basename(path)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <ControllerButton
+            variant="primary"
+            disabled={sending || !peerId || sourcePaths.length === 0}
+            onClick={() => void handleSend()}
           >
-            <option value="">Select a device…</option>
-            {peers.map((peer) => (
-              <option key={peer.id} value={peer.id}>
-                {peer.displayName} ({peer.status})
-              </option>
-            ))}
-          </select>
-        )}
-      </section>
+            {sending
+              ? 'Sending…'
+              : `Send ${sourcePaths.length || ''} file${sourcePaths.length === 1 ? '' : 's'}`}
+          </ControllerButton>
+        </div>
+      </NdxEditorShell>
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">2. Choose files</p>
-        <ControllerButton variant="secondary" onClick={() => void handlePickFiles()}>
-          Choose files…
-        </ControllerButton>
-        {sourcePaths.length > 0 && (
-          <ul className="flex flex-col gap-1">
-            {sourcePaths.map((path) => (
-              <li key={path} className="text-meta text-text-secondary">
-                {basename(path)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <ControllerButton
-        variant="primary"
-        disabled={sending || !peerId || sourcePaths.length === 0}
-        onClick={() => void handleSend()}
-      >
-        {sending
-          ? 'Sending…'
-          : `Send ${sourcePaths.length || ''} file${sourcePaths.length === 1 ? '' : 's'}`}
-      </ControllerButton>
+      <NdxToolWindow title="Preflight Policy" subtitle="Main process" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Manifest building and file stat checks stay in the main process when Send runs.</p>
+          <p>Blocked peers are filtered before the recipient selector is rendered.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

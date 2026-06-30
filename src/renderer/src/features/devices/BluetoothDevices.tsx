@@ -4,6 +4,7 @@ import type { DeviceInventoryRecord, DeviceInventoryReport } from '@shared/contr
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { collectDeviceInventory } from '../../services/ipc/deviceClient'
 
 const BLUETOOTH_OPERATIONS = [
@@ -74,89 +75,113 @@ export function BluetoothDevices(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Checking Bluetooth status...</p>
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Bluetooth Devices</p>
-          <p className="text-meta text-text-secondary">
-            Adapter status and known Bluetooth records from the shared device inventory.
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Bluetooth Scope" subtitle="BlueZ pending">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Known records come from the shared device inventory.</p>
+          <p>
+            Scan, pair, trust, connect, and forget remain unavailable until a real backend exists.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <ControllerButton variant="secondary" onClick={() => navigate('/devices')}>
-            Device Center
-          </ControllerButton>
-          <ControllerButton
-            variant="primary"
-            disabled={loading}
-            onClick={() => void handleRefresh()}
-          >
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </ControllerButton>
-        </div>
-      </div>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Bluetooth status error" description={error} />}
-
-      {report && (
-        <>
-          <section className="border border-border bg-surface p-3">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-body font-semibold text-text-primary">Adapter capability</p>
-                <p className="text-meta text-text-secondary">
-                  {bluetoothCapability?.reason ?? 'Bluetooth capability was not reported.'}
-                </p>
-                {bluetoothCapability?.provider && (
-                  <p className="text-caption text-text-tertiary">
-                    Backend: {bluetoothCapability.provider}
-                  </p>
-                )}
-              </div>
-              <StatusBadge
-                tone={capabilityTone(bluetoothCapability?.status)}
-                label={bluetoothCapability?.status ?? 'unknown'}
-              />
+      <NdxEditorShell title="Bluetooth Inventory">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">Bluetooth Devices</p>
+              <p className="text-meta text-text-secondary">
+                Adapter status and known Bluetooth records from the shared device inventory.
+              </p>
             </div>
-          </section>
+            <div className="flex flex-wrap gap-2">
+              <ControllerButton variant="secondary" onClick={() => navigate('/devices')}>
+                Device Center
+              </ControllerButton>
+              <ControllerButton
+                variant="primary"
+                disabled={loading}
+                onClick={() => void handleRefresh()}
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </ControllerButton>
+            </div>
+          </div>
 
-          <section className="grid gap-3 lg:grid-cols-2">
-            {bluetoothDevices.length === 0 ? (
-              <div className="border border-border bg-surface p-3">
-                <p className="text-body font-semibold text-text-primary">
-                  No Bluetooth devices in inventory
-                </p>
-                <p className="text-meta text-text-secondary">
-                  NeuroDeck has no persisted Bluetooth device records and no real Bluetooth scan
-                  backend yet.
-                </p>
-              </div>
-            ) : (
-              bluetoothDevices.map((device) => (
-                <BluetoothDeviceCard key={device.id} device={device} />
-              ))
-            )}
-          </section>
+          {error && <ErrorState title="Bluetooth status error" description={error} />}
 
-          <section className="border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Controls</p>
-            <div className="mt-2 grid gap-2 md:grid-cols-2">
-              {BLUETOOTH_OPERATIONS.map((operation) => (
-                <div
-                  key={operation.label}
-                  className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
-                >
+          {report && (
+            <>
+              <section className="border border-border bg-surface p-3">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="text-meta font-semibold text-text-primary">{operation.label}</p>
-                    <p className="text-caption text-text-tertiary">{operation.reason}</p>
+                    <p className="text-body font-semibold text-text-primary">Adapter capability</p>
+                    <p className="text-meta text-text-secondary">
+                      {bluetoothCapability?.reason ?? 'Bluetooth capability was not reported.'}
+                    </p>
+                    {bluetoothCapability?.provider && (
+                      <p className="text-caption text-text-tertiary">
+                        Backend: {bluetoothCapability.provider}
+                      </p>
+                    )}
                   </div>
-                  <StatusBadge tone="neutral" label="not wired" />
+                  <StatusBadge
+                    tone={capabilityTone(bluetoothCapability?.status)}
+                    label={bluetoothCapability?.status ?? 'unknown'}
+                  />
                 </div>
-              ))}
-            </div>
-          </section>
-        </>
-      )}
+              </section>
+
+              <section className="grid gap-3 lg:grid-cols-2">
+                {bluetoothDevices.length === 0 ? (
+                  <div className="border border-border bg-surface p-3">
+                    <p className="text-body font-semibold text-text-primary">
+                      No Bluetooth devices in inventory
+                    </p>
+                    <p className="text-meta text-text-secondary">
+                      NeuroDeck has no persisted Bluetooth device records and no real Bluetooth scan
+                      backend yet.
+                    </p>
+                  </div>
+                ) : (
+                  bluetoothDevices.map((device) => (
+                    <BluetoothDeviceCard key={device.id} device={device} />
+                  ))
+                )}
+              </section>
+
+              <section className="border border-border bg-surface p-3">
+                <p className="text-body font-semibold text-text-primary">Controls</p>
+                <div className="mt-2 grid gap-2 md:grid-cols-2">
+                  {BLUETOOTH_OPERATIONS.map((operation) => (
+                    <div
+                      key={operation.label}
+                      className="flex items-start justify-between gap-3 border border-border bg-surface-raised p-2"
+                    >
+                      <div>
+                        <p className="text-meta font-semibold text-text-primary">
+                          {operation.label}
+                        </p>
+                        <p className="text-caption text-text-tertiary">{operation.reason}</p>
+                      </div>
+                      <StatusBadge tone="neutral" label="not wired" />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Operation Policy" subtitle="Read only" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Pairing and trust changes need explicit identity verification before they can run.</p>
+          <p>
+            Unsupported actions stay visible as disabled capability evidence, not fake controls.
+          </p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

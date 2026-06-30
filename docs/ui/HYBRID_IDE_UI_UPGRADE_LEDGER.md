@@ -88,42 +88,42 @@ Status legend:
 | `/learn/lab/:curriculumId/:moduleId/:lessonId` | ND-039 | Dashboard | Guided lab workbench | Frame / Pending Spatial | lab step focus |
 | `/remote` | ND-040 | IDE-heavy | Remote tool window | Partial IDE | non-SSH target types remain deferred |
 | `/remote/:hostId` | ND-041 | IDE-heavy | Remote terminal panel | Partial IDE | remote xterm focus still needs visual QA |
-| `/lan-share` | ND-LAN-001 | Tool-heavy | LAN Share tool | Frame / Pending Tool | transfer events |
-| `/lan-share/peers` | ND-LAN-002 | Tool-heavy | Peer list | Frame / Pending Tool | trust badges |
-| `/lan-share/peers/:peerId` | ND-LAN-003 | Critical/tool | Device trust detail | Frame / Pending Critical | trust decisions |
-| `/lan-share/send` | ND-LAN-004 | Critical/tool | Send review | Frame / Pending Critical | file review |
-| `/lan-share/transfers` | ND-LAN-007 | Tool-heavy | Transfers panel | Frame / Pending Tool | live updates |
-| `/lan-share/transfers/:jobId` | ND-LAN-008 | Tool-heavy | Transfer detail | Frame / Pending Tool | cancellation/retry |
-| `/lan-share/settings` | ND-LAN-017 | Settings | Settings tree | Frame / Pending Critical | group code privacy |
+| `/lan-share` | ND-LAN-001 | Tool-heavy | LAN Share tool | Partial Tool | service/control/network-policy framing; visual QA pending |
+| `/lan-share/peers` | ND-LAN-002 | Tool-heavy | Peer list | Partial Tool | discovery/peer-inventory/trust-policy framing; visual QA pending |
+| `/lan-share/peers/:peerId` | ND-LAN-003 | Critical/tool | Device trust detail | Partial Tool | peer identity/device detail/trust-policy framing; visual QA pending |
+| `/lan-share/send` | ND-LAN-004 | Critical/tool | Send review | Partial Tool | send context/composer/preflight-policy framing; visual QA pending |
+| `/lan-share/transfers` | ND-LAN-007 | Tool-heavy | Transfers panel | Partial Tool | queue/monitor/approval-policy framing; visual QA pending |
+| `/lan-share/transfers/:jobId` | ND-LAN-008 | Tool-heavy | Transfer detail | Partial Tool | transfer state/detail/action-policy framing; visual QA pending |
+| `/lan-share/settings` | ND-LAN-017 | Settings | Settings tree | Partial Tool | settings scope/preferences/security-policy framing; visual QA pending |
 | `/system` | ND-042 | Tool-heavy | System dashboard | Partial Tool | system tools/metrics/scope framing; visual QA pending |
 | `/settings/controller` | ND-043 | Settings | Settings tree | Frame / Pending Critical | controller remap gaps |
 | `/settings/display` | ND-044 | Settings | Settings tree | Frame / Pending Critical | theme interactions |
 | `/settings/privacy` | ND-046 | Critical/settings | Permission matrix | Frame / Pending Critical | audit readability |
-| `/settings/network` | ND-045 | Settings/tool | Network inspector | Frame / Pending Tool | read-only clarity |
+| `/settings/network` | ND-045 | Settings/tool | Network inspector | Partial Tool | network tools/diagnostics/scope framing; visual QA pending |
 | `/settings/updates` | ND-049 | Critical/settings | Update review | Frame / Pending Critical | install review |
 | `/power` | ND-051 | Critical | Power dialog/screen | Frame / Pending Critical | irreversible host actions |
 | `/about` | ND-056 | Tool-heavy | Diagnostics detail | Partial IDE | support bundle privacy preserved; visual QA pending |
 | `/error-recovery` | ND-055 | Critical | Recovery dialog/screen | Partial IDE | crash recovery clarity preserved; visual QA pending |
-| `/integrations` | ND-048 | Tool-heavy | Integrations tool | Frame / Pending Tool | provider grouping |
-| `/extensions` | - | Tool-heavy | Extensions manager | Frame / Pending Tool | permissions/signature status |
+| `/integrations` | ND-048 | Tool-heavy | Integrations tool | Partial Tool | integration groups/inventory/scope framing; visual QA pending |
+| `/extensions` | - | Tool-heavy | Extensions manager | Partial Tool | extension sources/inventory/trust-policy framing; visual QA pending |
 | `/recovery` | ND-052 | Critical/tool | Recovery timeline | Frame / Pending Critical | restore review |
-| `/storage` | ND-047 | Tool-heavy | Storage/recovery | Frame / Pending Tool | storage warnings |
+| `/storage` | ND-047 | Tool-heavy | Storage/recovery | Partial Tool | storage scope/recovery/storage-policy framing; visual QA pending |
 | `/backup` | ND-X030 | Critical/tool | Backup review | Frame / Pending Critical | restore rollback |
-| `/vault` | ND-X043 | Critical/tool | Vault tool | Frame / Pending Critical | reveal hiding |
+| `/vault` | ND-X043 | Critical/tool | Vault tool | Partial Tool | vault guardrails/secret-inventory/reveal-policy framing; visual QA pending |
 | `/privacy` | ND-X050 | Critical/tool | Privacy data map | Frame / Pending Critical | data deletion |
-| `/profiles` | ND-X042 | Tool-heavy | Profile manager | Frame / Pending Tool | session isolation wording |
-| `/continuity` | ND-X044 | Tool-heavy | Continuity tool | Frame / Pending Tool | restore policy |
-| `/devices` | ND-X032 | Dashboard/tool | Device grid | Frame / Pending Spatial | disabled controls |
-| `/devices/bluetooth` | ND-X033 | Tool-heavy | Device detail | Frame / Pending Tool | unsupported actions |
-| `/devices/audio` | ND-X034 | Tool-heavy | Device detail | Frame / Pending Tool | mic privacy |
-| `/devices/display` | ND-X035 | Tool-heavy | Device detail | Frame / Pending Tool | display recovery |
-| `/devices/storage` | ND-X036 | Tool-heavy | Device detail | Frame / Pending Tool | destructive storage actions |
-| `/resource-governor` | ND-X037 | Tool-heavy | Resource tool | Frame / Pending Tool | live metrics |
-| `/ai-workloads` | ND-X038 | Tool-heavy | Scheduler tool | Frame / Pending Tool | queue claims |
-| `/scheduler` | ND-X039 | Tool-heavy | Trigger inventory | Frame / Pending Tool | disabled execution |
+| `/profiles` | ND-X042 | Tool-heavy | Profile manager | Partial Tool | profile session/manager/scope framing; visual QA pending |
+| `/continuity` | ND-X044 | Tool-heavy | Continuity tool | Partial Tool | continuity state/center/restore-policy framing; visual QA pending |
+| `/devices` | ND-X032 | Dashboard/tool | Device grid | Partial Tool | device classes/peripheral-inventory/capability-policy framing; visual QA pending |
+| `/devices/bluetooth` | ND-X033 | Tool-heavy | Device detail | Partial Tool | Bluetooth scope/inventory/operation-policy framing; visual QA pending |
+| `/devices/audio` | ND-X034 | Tool-heavy | Device detail | Partial Tool | audio scope/inventory/operation-policy framing; visual QA pending |
+| `/devices/display` | ND-X035 | Tool-heavy | Device detail | Partial Tool | display scope/inventory/rollback-policy framing; visual QA pending |
+| `/devices/storage` | ND-X036 | Tool-heavy | Device detail | Partial Tool | storage scope/inventory/recovery-policy framing; visual QA pending |
+| `/resource-governor` | ND-X037 | Tool-heavy | Resource tool | Partial Tool | governor profiles/resource metrics/action scope framing; visual QA pending |
+| `/ai-workloads` | ND-X038 | Tool-heavy | Scheduler tool | Partial Tool | workload classes/capacity/scheduler scope framing; visual QA pending |
+| `/scheduler` | ND-X039 | Tool-heavy | Trigger inventory | Partial Tool | trigger inventory/scheduler inventory/permission policy framing; visual QA pending |
 | `/help` | ND-X046 | Dashboard/tool | Help hub | Frame / Pending Spatial | help route density |
 | `/troubleshooter` | ND-X057 | Critical/tool | Guided recovery | Frame / Pending Critical | fix claims |
-| `/platform-health` | ND-X070 | Tool-heavy | Health overview | Frame / Pending Tool | aggregate errors |
+| `/platform-health` | ND-X070 | Tool-heavy | Health overview | Partial Tool | health sources/overview/policy framing; visual QA pending |
 | `/screenshots` | ND-X058 | Dashboard/media | Media surface | Frame / Pending Spatial | capture privacy |
 | `/voice-notes` | ND-X059 | Dashboard/media | Media surface | Frame / Pending Spatial | transcript privacy |
 | `/presentation` | ND-X064 | Settings/critical | Presentation settings | Frame / Pending Critical | in-progress local changes |
@@ -274,6 +274,18 @@ npm run lint -> passed
 npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
 ```
 
+HYBRID-5 partial checks run after platform tools batch migration:
+
+```text
+npm run test -- NetworkAndVpn Integrations StorageAndRecovery PlatformHealthOverview -> 4 files / 13 tests passed
+npm run test -- Profiles ContinuityCenter ResourceGovernor AIWorkloadScheduler SchedulerTriggers -> 7 files / 18 tests passed
+npm run test -- ExtensionManager Vault BluetoothDevices AudioMicrophoneCenter DisplayDockCenter RemovableStorageCenter DevicePeripheralCenter -> 9 files / 46 tests passed
+npm run test -- LanShare -> 21 files / 101 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -307,9 +319,14 @@ npm run build -> passed with existing ErrorRecovery dynamic/static import chunki
   preserving start-run, dry-run, pause/resume, cancel, tool execution tabs, file tabs, permissions,
   audit log filtering, and live `agentRun.update` behavior. Partial slice complete for `/system`
   System Tools + Metrics + Metrics Scope framing while preserving typed system metrics IPC,
-  manual refresh, unavailable-sensor honesty, and navigation to system-area tools. Remaining
-  targets include Extensions, Permissions, Recovery, Backup, Vault, LAN Share, Devices, Profiles,
-  Continuity, and Platform Health.
+  manual refresh, unavailable-sensor honesty, and navigation to system-area tools. Partial slice
+  complete for `/settings/network`, `/integrations`, `/storage`, `/profiles`, `/continuity`,
+  `/resource-governor`, `/ai-workloads`, `/scheduler`, `/platform-health`, `/extensions`, `/vault`,
+  `/devices`, `/devices/bluetooth`, `/devices/audio`, `/devices/display`, `/devices/storage`, and
+  all LAN Share routes while preserving their existing IPC-backed behavior and honest deferred
+  controls. Remaining HYBRID-5 targets include Permissions, Recovery, Backup, Privacy, trusted
+  publishers, updates, and any route-level inspectors not yet covered by the shared workbench
+  primitives.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.
 - HYBRID-8 and HYBRID-9 need visual/controller/performance evidence at all target resolutions before any full-program completion claim.

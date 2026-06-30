@@ -10,6 +10,7 @@ import type {
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import {
   clearExtensionQuarantine,
@@ -496,89 +497,110 @@ export function ExtensionManager(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 p-4">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Extension Manager</p>
-          <p className="text-body text-text-secondary">
-            Local unpacked extensions only. Marketplace, SDK, and CLI surfaces remain deferred until
-            their real trust and API foundations exist.
+    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Extension Sources" subtitle="Local runtime">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>
+            Installs are limited to local unpacked folders until marketplace and SDK trust
+            foundations exist.
           </p>
+          <p>{records.length} extension records are registered with the isolated runtime.</p>
         </div>
-        <div className="flex gap-2">
-          <ControllerButton variant="ghost" onClick={() => navigate('/trusted-publishers')}>
-            Trusted Publishers
-          </ControllerButton>
-          <ControllerButton
-            variant="secondary"
-            disabled={busy}
-            onClick={() => void refresh(selectedId)}
-          >
-            Refresh
-          </ControllerButton>
-        </div>
-      </header>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Extension error" description={error} className="py-3" />}
+      <NdxEditorShell title="Extension Inventory">
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
+          <header className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-title font-semibold text-text-primary">Extension Manager</p>
+              <p className="text-body text-text-secondary">
+                Local unpacked extensions only. Marketplace, SDK, and CLI surfaces remain deferred
+                until their real trust and API foundations exist.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <ControllerButton variant="ghost" onClick={() => navigate('/trusted-publishers')}>
+                Trusted Publishers
+              </ControllerButton>
+              <ControllerButton
+                variant="secondary"
+                disabled={busy}
+                onClick={() => void refresh(selectedId)}
+              >
+                Refresh
+              </ControllerButton>
+            </div>
+          </header>
 
-      <section className="flex flex-wrap gap-2 rounded-md border border-border bg-surface p-3">
-        <input
-          value={directoryPath}
-          onChange={(event) => handleDirectoryChange(event.target.value)}
-          placeholder="Absolute unpacked extension folder"
-          className="min-w-64 flex-1 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
-        />
-        <ControllerButton
-          variant="primary"
-          disabled={busy || !directoryPath.trim()}
-          onClick={() => void handlePreviewInstall()}
-        >
-          Review local folder
-        </ControllerButton>
-      </section>
+          {error && <ErrorState title="Extension error" description={error} className="py-3" />}
 
-      {preview && (
-        <InstallPreviewPanel
-          preview={preview}
-          approvedCapabilities={approvedCapabilities}
-          busy={busy}
-          onToggleCapability={handleToggleApprovedCapability}
-          onInstall={() => void handleInstallReviewed()}
-          onCancel={() => {
-            setPreview(null)
-            setApprovedCapabilities([])
-          }}
-        />
-      )}
-
-      <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.6fr)]">
-        <section className="flex min-h-0 flex-col gap-2 overflow-auto">
-          {records.length === 0 ? (
-            <EmptyState
-              title="No extensions installed"
-              description="Install a local unpacked extension folder to validate its real manifest and register it with the isolated runtime."
+          <section className="flex flex-wrap gap-2 rounded-md border border-border bg-surface p-3">
+            <input
+              value={directoryPath}
+              onChange={(event) => handleDirectoryChange(event.target.value)}
+              placeholder="Absolute unpacked extension folder"
+              className="min-w-64 flex-1 rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
             />
-          ) : (
-            records.map((record, index) => (
-              <ExtensionRow
-                key={record.manifest.id}
-                record={record}
-                selected={selected?.manifest.id === record.manifest.id}
-                index={index}
-                onSelect={() => setSelectedId(record.manifest.id)}
-              />
-            ))
-          )}
-        </section>
+            <ControllerButton
+              variant="primary"
+              disabled={busy || !directoryPath.trim()}
+              onClick={() => void handlePreviewInstall()}
+            >
+              Review local folder
+            </ControllerButton>
+          </section>
 
-        <ExtensionDetail
-          record={selected}
-          busy={busy}
-          onToggle={(record) => void handleToggle(record)}
-          onClearQuarantine={(record) => void handleClearQuarantine(record)}
-          onRemove={(record) => void handleRemove(record)}
-        />
-      </div>
+          {preview && (
+            <InstallPreviewPanel
+              preview={preview}
+              approvedCapabilities={approvedCapabilities}
+              busy={busy}
+              onToggleCapability={handleToggleApprovedCapability}
+              onInstall={() => void handleInstallReviewed()}
+              onCancel={() => {
+                setPreview(null)
+                setApprovedCapabilities([])
+              }}
+            />
+          )}
+
+          <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(280px,0.8fr)_minmax(0,1.6fr)]">
+            <section className="flex min-h-0 flex-col gap-2 overflow-auto">
+              {records.length === 0 ? (
+                <EmptyState
+                  title="No extensions installed"
+                  description="Install a local unpacked extension folder to validate its real manifest and register it with the isolated runtime."
+                />
+              ) : (
+                records.map((record, index) => (
+                  <ExtensionRow
+                    key={record.manifest.id}
+                    record={record}
+                    selected={selected?.manifest.id === record.manifest.id}
+                    index={index}
+                    onSelect={() => setSelectedId(record.manifest.id)}
+                  />
+                ))
+              )}
+            </section>
+
+            <ExtensionDetail
+              record={selected}
+              busy={busy}
+              onToggle={(record) => void handleToggle(record)}
+              onClearQuarantine={(record) => void handleClearQuarantine(record)}
+              onRemove={(record) => void handleRemove(record)}
+            />
+          </div>
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Trust Policy" subtitle="Review required" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Requested capabilities remain denied unless explicitly granted during review.</p>
+          <p>Quarantined extensions stay blocked until the runtime clears their fault state.</p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }
