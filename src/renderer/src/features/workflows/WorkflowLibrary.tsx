@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { WorkflowDefinition } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { listWorkflows, removeWorkflow } from '../../services/ipc/workflowClient'
 import { useWorkflowRunner } from '../../workflows/useWorkflowRunner'
@@ -67,14 +68,17 @@ function WorkflowLibraryWorkspace({ workspaceId }: { workspaceId: string }): Rea
     if (run) navigate(`/automations/runs/${run.id}`)
   }
 
+  const runnableCount = workflows.filter((workflow) => workflow.steps.length > 0).length
+  const stepCount = workflows.reduce((total, workflow) => total + workflow.steps.length, 0)
+
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Workflow Library</p>
+    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="Workflow Tools" subtitle={`${workflows.length} definitions`}>
+        <p className="text-meta text-text-secondary">
+          Workflows are persisted per active workspace and run through the real Workflow Engine and
+          ActionQueue review path.
+        </p>
         <div className="flex gap-2">
-          {/* Agent Operations Center has no Primary Navigation Rail destination of its
-              own (wireframe §6.2 lists exactly 11) — the spec groups Workflows and Agents
-              under the same implementation stage, so this is its real entry point. */}
           <ControllerButton variant="secondary" onClick={() => navigate('/agents')}>
             Agents
           </ControllerButton>
@@ -82,29 +86,57 @@ function WorkflowLibraryWorkspace({ workspaceId }: { workspaceId: string }): Rea
             New workflow
           </ControllerButton>
         </div>
-      </div>
+        <p className="text-meta text-text-tertiary">
+          Categories and pre-shipped templates remain deferred until real authored workflow
+          templates exist.
+        </p>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="Workflow error" description={error} />}
+      <NdxEditorShell title="Workflow Library">
+        <div className="flex min-h-full flex-col gap-3 p-3">
+          {error && <ErrorState title="Workflow error" description={error} />}
 
-      {workflows.length === 0 ? (
-        <EmptyState
-          className="flex-1"
-          title="No workflows yet"
-          description="Create a workflow to automate a sequence of real tool actions."
-        />
-      ) : (
-        <ul className="grid grid-cols-2 gap-3">
-          {workflows.map((workflow) => (
-            <WorkflowCard
-              key={workflow.id}
-              workflow={workflow}
-              onOpen={() => navigate(`/automations/forge/${workflow.id}`)}
-              onRun={() => void handleRun(workflow)}
-              onRemove={() => void handleRemove(workflow.id)}
+          {workflows.length === 0 ? (
+            <EmptyState
+              className="flex-1"
+              title="No workflows yet"
+              description="Create a workflow to automate a sequence of real tool actions."
             />
-          ))}
-        </ul>
-      )}
+          ) : (
+            <ul className="grid grid-cols-2 gap-3">
+              {workflows.map((workflow) => (
+                <WorkflowCard
+                  key={workflow.id}
+                  workflow={workflow}
+                  onOpen={() => navigate(`/automations/forge/${workflow.id}`)}
+                  onRun={() => void handleRun(workflow)}
+                  onRemove={() => void handleRemove(workflow.id)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow title="Run Context" subtitle={`${runnableCount} runnable`} side="right">
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Workspace</p>
+          <p className="text-meta text-text-tertiary">{workspaceId}</p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Step inventory</p>
+          <p className="text-meta text-text-tertiary">
+            {stepCount} persisted step{stepCount === 1 ? '' : 's'} across this library.
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Execution path</p>
+          <p className="text-meta text-text-tertiary">
+            Runs still execute through the existing WorkflowRunnerProvider, Workflow Engine, and
+            reviewed tool-action pipeline.
+          </p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }
@@ -127,29 +159,31 @@ function WorkflowCard({
   })
 
   return (
-    <li
-      ref={ref}
-      tabIndex={-1}
-      className={`rounded-lg border p-4 ${isFocused ? 'border-border-focus' : 'border-border'} bg-surface`}
-    >
-      <p className="text-body font-semibold text-text-primary">{workflow.name}</p>
-      <p className="text-meta text-text-secondary">
-        {workflow.steps.length} step{workflow.steps.length === 1 ? '' : 's'} · v{workflow.version}
-      </p>
-      {workflow.description && (
-        <p className="text-meta text-text-tertiary">{workflow.description}</p>
-      )}
-      <div className="mt-3 flex gap-2">
-        <ControllerButton variant="primary" onClick={onRun} disabled={workflow.steps.length === 0}>
-          Run
-        </ControllerButton>
-        <ControllerButton variant="secondary" onClick={onOpen}>
-          Open
-        </ControllerButton>
-        <ControllerButton variant="ghost" onClick={onRemove}>
-          Remove
-        </ControllerButton>
-      </div>
+    <li ref={ref} tabIndex={-1} className="outline-none">
+      <NdxFocusSurface active={isFocused} density="comfortable" className="p-4">
+        <p className="text-body font-semibold text-text-primary">{workflow.name}</p>
+        <p className="text-meta text-text-secondary">
+          {workflow.steps.length} step{workflow.steps.length === 1 ? '' : 's'} · v{workflow.version}
+        </p>
+        {workflow.description && (
+          <p className="text-meta text-text-tertiary">{workflow.description}</p>
+        )}
+        <div className="mt-3 flex gap-2">
+          <ControllerButton
+            variant="primary"
+            onClick={onRun}
+            disabled={workflow.steps.length === 0}
+          >
+            Run
+          </ControllerButton>
+          <ControllerButton variant="secondary" onClick={onOpen}>
+            Open
+          </ControllerButton>
+          <ControllerButton variant="ghost" onClick={onRemove}>
+            Remove
+          </ControllerButton>
+        </div>
+      </NdxFocusSurface>
     </li>
   )
 }
