@@ -224,4 +224,58 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
     expect(await screen.findByDisplayValue('fix: real change')).toBeInTheDocument()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+
+  it('lists a real merge conflict and resolves it with Keep ours through the typed bridge', async () => {
+    const conflictedStatus: GitStatus = {
+      ...baseStatus,
+      changes: [{ path: 'file.txt', status: 'UU', staged: false }],
+      hasConflicts: true
+    }
+    const resolveConflict = vi.fn().mockResolvedValue({ ok: true, data: null })
+    stubBridge({
+      git: {
+        status: vi.fn().mockResolvedValue({ ok: true, data: conflictedStatus }),
+        branches: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        log: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        remotes: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        stashList: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        resolveConflict
+      } as never
+    })
+    const user = userEvent.setup()
+
+    render(<WorkspaceGitTab workspaceId="w1" />)
+
+    expect(await screen.findByText('Conflicts (1)')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Keep ours' }))
+
+    expect(resolveConflict).toHaveBeenCalledWith({
+      workspaceId: 'w1',
+      path: 'file.txt',
+      resolution: 'ours'
+    })
+  })
+
+  it('does not show a conflicted file in the ordinary Staged/Changes lists', async () => {
+    const conflictedStatus: GitStatus = {
+      ...baseStatus,
+      changes: [{ path: 'file.txt', status: 'UU', staged: false }],
+      hasConflicts: true
+    }
+    stubBridge({
+      git: {
+        status: vi.fn().mockResolvedValue({ ok: true, data: conflictedStatus }),
+        branches: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        log: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        remotes: vi.fn().mockResolvedValue({ ok: true, data: [] }),
+        stashList: vi.fn().mockResolvedValue({ ok: true, data: [] })
+      } as never
+    })
+
+    render(<WorkspaceGitTab workspaceId="w1" />)
+
+    await screen.findByText('Conflicts (1)')
+    expect(screen.getByText('Nothing staged.')).toBeInTheDocument()
+    expect(screen.getByText('No unstaged changes.')).toBeInTheDocument()
+  })
 })

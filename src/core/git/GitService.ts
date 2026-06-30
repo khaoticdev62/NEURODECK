@@ -1,21 +1,19 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import type {
-  GitBranch,
-  GitCommit,
-  GitFileChange,
-  GitRemote,
-  GitStashEntry,
-  GitStatus
+import {
+  isUnmergedStatus,
+  type GitBranch,
+  type GitCommit,
+  type GitFileChange,
+  type GitRemote,
+  type GitStashEntry,
+  type GitStatus
 } from '@shared/contracts/git'
 
 const execFileAsync = promisify(execFile)
 
 const RECORD_SEPARATOR = '\x1e'
 const FIELD_SEPARATOR = '\x1f'
-
-/** Porcelain v2 XY codes for unmerged paths — both sides touched the same path during a merge/rebase. */
-const UNMERGED_CODES = new Set(['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU'])
 
 /**
  * Real Git operations via the system `git` binary (mega-prompt §22) — never
@@ -110,7 +108,7 @@ export class GitService {
       }
     }
 
-    const hasConflicts = changes.some((change) => UNMERGED_CODES.has(change.status))
+    const hasConflicts = changes.some((change) => isUnmergedStatus(change.status))
     return { isRepository: true, branch, ahead, behind, changes, hasConflicts }
   }
 
@@ -129,6 +127,12 @@ export class GitService {
 
   async stage(root: string, paths: string[]): Promise<void> {
     await this.run(root, ['add', '--', ...paths])
+  }
+
+  /** Real merge-conflict resolution (mega-prompt §22's named gap). `git checkout --ours/--theirs` restores the chosen side's content into the working tree; staging afterward is what actually marks the path resolved for the in-progress merge/rebase, matching real `git` semantics — not a NeuroDeck-invented shortcut. */
+  async resolveConflict(root: string, path: string, resolution: 'ours' | 'theirs'): Promise<void> {
+    await this.run(root, ['checkout', `--${resolution}`, '--', path])
+    await this.run(root, ['add', '--', path])
   }
 
   async unstage(root: string, paths: string[]): Promise<void> {

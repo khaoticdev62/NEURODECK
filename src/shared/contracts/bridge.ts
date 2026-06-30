@@ -189,6 +189,7 @@ import type {
   GitForcePushRequest,
   GitRemote,
   GitRemoteOperationRequest,
+  GitResolveConflictRequest,
   GitRestorePathsRequest,
   GitStagePathsRequest,
   GitStashEntry,
@@ -367,6 +368,7 @@ export interface NdxBridge {
     createBranch: (request: GitCreateBranchRequest) => Promise<NdxResult<null>>
     deleteBranch: (request: GitDeleteBranchRequest) => Promise<NdxResult<null>>
     forcePush: (request: GitForcePushRequest) => Promise<NdxResult<null>>
+    resolveConflict: (request: GitResolveConflictRequest) => Promise<NdxResult<null>>
   }
   terminal: {
     create: (request: CreateTerminalRequest) => Promise<NdxResult<TerminalSession>>

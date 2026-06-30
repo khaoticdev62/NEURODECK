@@ -8,6 +8,7 @@ import {
   gitFetchRequestSchema,
   gitForcePushRequestSchema,
   gitRemoteOperationRequestSchema,
+  gitResolveConflictRequestSchema,
   gitRestorePathsRequestSchema,
   gitStagePathsRequestSchema,
   gitStashPopRequestSchema,
@@ -351,6 +352,22 @@ export function registerGitHandlers(
       if (!root) return workspaceNotFound()
       try {
         await gitService.forcePush(root, parsed.data.remote, parsed.data.branch)
+        return { ok: true, data: null }
+      } catch (error) {
+        return { ok: false, error: toGitError(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.gitResolveConflict,
+    async (_event, payload: unknown): Promise<NdxResult<null>> => {
+      const parsed = gitResolveConflictRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const root = await resolveRoot(parsed.data.workspaceId)
+      if (!root) return workspaceNotFound()
+      try {
+        await gitService.resolveConflict(root, parsed.data.path, parsed.data.resolution)
         return { ok: true, data: null }
       } catch (error) {
         return { ok: false, error: toGitError(error) }

@@ -40,6 +40,7 @@ export const IPC_CHANNELS = {
   gitBranchCreate: 'git.branchCreate',
   gitBranchDelete: 'git.branchDelete',
   gitForcePush: 'git.forcePush',
+  gitResolveConflict: 'git.resolveConflict',
   terminalCreate: 'terminal.create',
   terminalList: 'terminal.list',
   terminalSnapshot: 'terminal.snapshot',

@@ -11,6 +11,7 @@ import type {
   GitForcePushRequest,
   GitRemote,
   GitRemoteOperationRequest,
+  GitResolveConflictRequest,
   GitRestorePathsRequest,
   GitStagePathsRequest,
   GitStashEntry,
@@ -140,4 +141,12 @@ export async function forcePushGit(request: GitForcePushRequest): Promise<NdxRes
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.git.forcePush(request)
+}
+
+export async function resolveGitConflict(
+  request: GitResolveConflictRequest
+): Promise<NdxResult<null>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.git.resolveConflict(request)
 }

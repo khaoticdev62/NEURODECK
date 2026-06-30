@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { isUnmergedStatus } from '@shared/contracts'
 import type {
   GitBranch,
   GitCommit,
@@ -29,6 +30,7 @@ import {
   popGitStash,
   pullGit,
   pushGit,
+  resolveGitConflict,
   restoreGitPaths,
   stageGitPaths,
   stashSaveGit,
@@ -66,7 +68,15 @@ function recoveryBranchName(): string {
  * all. Force push uses `--force-with-lease` (fails closed on a moved
  * remote ref, never blind `--force`) and requires its own separate,
  * more severe confirmation that repeats the exact branch and remote name.
- * Conflict-resolution UI remains out of scope.
+ * Merge-conflict resolution is real: a dedicated Conflicts section lists
+ * every real unmerged path (`isUnmergedStatus()`, the same shared
+ * predicate `GitService.status()` uses to compute `hasConflicts`, so the
+ * two can never drift against separately-maintained copies) with
+ * one-click "Keep ours"/"Keep theirs" actions backed by real
+ * `git checkout --ours/--theirs` + `git add` (`GitService.resolveConflict()`).
+ * Manual resolution (hand-editing the conflict markers) isn't built — that
+ * needs an in-app file editor reachable from here, which Build Studio
+ * already is but isn't yet deep-linked from this screen.
  */
 export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JSX.Element {
   const [status, setStatus] = useState<GitStatus | null>(null)
@@ -175,6 +185,16 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
     } else {
       setError(result.error)
     }
+  }
+
+  async function handleResolveConflict(path: string, resolution: 'ours' | 'theirs'): Promise<void> {
+    const result = await resolveGitConflict({ workspaceId, path, resolution })
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    setError(null)
+    await refresh()
   }
 
   async function handleCheckout(branch: string): Promise<void> {
@@ -332,8 +352,13 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
     )
   }
 
-  const staged = status.changes.filter((change) => change.staged)
-  const unstaged = status.changes.filter((change) => !change.staged)
+  const conflicted = status.changes.filter((change) => isUnmergedStatus(change.status))
+  const staged = status.changes.filter(
+    (change) => change.staged && !isUnmergedStatus(change.status)
+  )
+  const unstaged = status.changes.filter(
+    (change) => !change.staged && !isUnmergedStatus(change.status)
+  )
   const regularBranches = branches.filter(
     (branch) => !branch.name.startsWith(RECOVERY_BRANCH_PREFIX)
   )
@@ -356,6 +381,41 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
         </div>
 
         {error && <ErrorState title="Git operation failed" description={error} />}
+
+        {conflicted.length > 0 && (
+          <section className="border border-status-error/40 bg-status-error/10 p-2">
+            <p className="mb-1 text-meta font-semibold text-status-error">
+              Conflicts ({conflicted.length})
+            </p>
+            <ul className="flex flex-col gap-2">
+              {conflicted.map((change) => (
+                <li key={change.path} className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => void previewChange(change)}
+                    className="truncate text-left text-meta text-text-primary hover:underline"
+                  >
+                    {change.path}
+                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <ControllerButton
+                      variant="secondary"
+                      onClick={() => void handleResolveConflict(change.path, 'ours')}
+                    >
+                      Keep ours
+                    </ControllerButton>
+                    <ControllerButton
+                      variant="secondary"
+                      onClick={() => void handleResolveConflict(change.path, 'theirs')}
+                    >
+                      Keep theirs
+                    </ControllerButton>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section>
           <p className="mb-1 text-meta font-semibold text-text-primary">Staged ({staged.length})</p>

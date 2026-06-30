@@ -3246,3 +3246,26 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic 6 — Git Merge-Conflict Resolution UI (2026-06-30)
+
+Real merge-conflict resolution, closing the last of the three gaps ND-025's checklist entry named back in Epic 6 ("Pull requests, AI commit assistance, and a merge-conflict resolution UI remain") — AI commit assistance closed earlier this session, this closes conflict resolution. Pull requests stay deferred (no real Git host API integration exists in this codebase).
+
+**Single source of truth for "what counts as a conflict"**: `GitService.status()` already computed `hasConflicts` from a private `UNMERGED_CODES` set of porcelain v2 XY status codes — but that set lived only in `core/`, unreachable from the renderer. Rather than re-deriving (and risking drift from) the same classification a second time in `WorkspaceGitTab.tsx`, the set moved to `shared/contracts/git.ts` as `UNMERGED_STATUS_CODES`/`isUnmergedStatus()`, and `GitService.ts` now imports it instead of keeping its own copy. One real definition, two real consumers.
+
+**`GitService.resolveConflict(root, path, resolution)`** runs `git checkout --ours|--theirs -- <path>` followed by `git add -- <path>` — genuine Git semantics for resolving a conflict (not a NeuroDeck-invented shortcut): `--ours`/`--theirs` restores the chosen side's blob into the working tree, and `git add` is what actually collapses the index's multi-stage conflict entry into a normal resolved entry. Proven by real temp-repository tests (`createRealMergeConflict()`) that create two genuinely divergent branches modifying the same file and run a real `git merge` that actually conflicts — not a fabricated status object. One real, instructive assertion correction during this work: resolving with `--ours` when "ours" is the current branch's own HEAD content produces **no diff at all** against HEAD once staged (a real, correct Git outcome) — the first draft of that test wrongly expected a staged change to appear, and was fixed to assert the file simply has no pending change, while the `--theirs` case (which does differ from HEAD) correctly asserts `staged: true`.
+
+**UI**: `WorkspaceGitTab.tsx` gained a dedicated "Conflicts" section (rendered above Staged/Changes, with a real error-toned highlight) listing every path `isUnmergedStatus()` matches, with "Keep ours"/"Keep theirs" buttons wired to the new `resolveGitConflict()` IPC client call. Conflicted paths are excluded from the ordinary Staged/Changes lists while unresolved, so a path never appears in two sections claiming two different states at once.
+
+**Honestly deferred**: manual resolution (hand-editing the conflict markers `<<<<<<<`/`=======`/`>>>>>>>` directly) has no in-app entry point yet. The real editing infrastructure exists (Build Studio), but this screen doesn't deep-link into it yet — a real, scoped, separate follow-up, not attempted here to keep this change to the one real capability (ours/theirs) that's fully proven end-to-end.
+
+**New/changed files**: `src/shared/contracts/git.ts` (new `UNMERGED_STATUS_CODES`/`isUnmergedStatus`/`gitResolveConflictRequestSchema`), `src/core/git/GitService.ts` (reuses the shared predicate, new `resolveConflict()`) + `__tests__/GitService.test.ts` (+3 tests, real merge-conflict fixtures, plus a `core.autocrlf false` test-repo config fix to keep file-content assertions byte-exact on Windows), `src/main/ipc/registerGitHandlers.ts` (new handler), `src/shared/contracts/ipcChannels.ts`/`bridge.ts` (new `git.resolveConflict` entry), `src/preload/index.ts`/`src/renderer/src/services/ipc/gitClient.ts` (wiring), `src/renderer/src/features/workspaces/WorkspaceGitTab.tsx` (new Conflicts section) + `__tests__/WorkspaceGitTab.test.tsx` (+2 tests).
+
+**Validation evidence (run 2026-06-30):**
+
+```text
+npm run test -> 240 files / 1153 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

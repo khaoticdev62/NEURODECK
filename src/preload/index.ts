@@ -85,7 +85,8 @@ const ndx: NdxBridge = {
     restore: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitRestore, request),
     createBranch: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitBranchCreate, request),
     deleteBranch: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitBranchDelete, request),
-    forcePush: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitForcePush, request)
+    forcePush: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitForcePush, request),
+    resolveConflict: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitResolveConflict, request)
   },
   terminal: {
     create: (request) => ipcRenderer.invoke(IPC_CHANNELS.terminalCreate, request),

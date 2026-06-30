@@ -9,6 +9,13 @@ export const gitFileChangeSchema = z.object({
 })
 export type GitFileChange = z.infer<typeof gitFileChangeSchema>
 
+/** Porcelain v2 XY codes for unmerged paths — both sides touched the same path during a merge/rebase. Shared so `GitService.ts` (status detection) and the renderer (conflict-resolution UI) never drift against two separately-maintained copies of the same set. */
+export const UNMERGED_STATUS_CODES = new Set(['DD', 'AU', 'UD', 'UA', 'DU', 'AA', 'UU'])
+
+export function isUnmergedStatus(status: string): boolean {
+  return UNMERGED_STATUS_CODES.has(status)
+}
+
 export const gitStatusSchema = z.object({
   isRepository: z.boolean(),
   branch: z.string().nullable(),
@@ -57,6 +64,13 @@ export const gitCommitRequestSchema = z.object({
   message: z.string().min(1)
 })
 export type GitCommitRequest = z.infer<typeof gitCommitRequestSchema>
+
+export const gitResolveConflictRequestSchema = z.object({
+  workspaceId: z.string().min(1),
+  path: z.string().min(1),
+  resolution: z.enum(['ours', 'theirs'])
+})
+export type GitResolveConflictRequest = z.infer<typeof gitResolveConflictRequestSchema>
 
 export const gitCheckoutRequestSchema = z.object({
   workspaceId: z.string().min(1),

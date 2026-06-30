@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
@@ -21,6 +21,10 @@ beforeEach(async () => {
   await git(['init', '--initial-branch=main'])
   await git(['config', 'user.email', 'test@example.com'])
   await git(['config', 'user.name', 'Test User'])
+  // Keep file content byte-identical to what the test writes — Windows
+  // Git installs often default core.autocrlf to true, which would silently
+  // rewrite LF to CRLF on checkout and break exact-content assertions.
+  await git(['config', 'core.autocrlf', 'false'])
 })
 
 afterEach(async () => {
@@ -179,6 +183,57 @@ describe('GitService', () => {
     await writeFile(join(dir, 'new-untracked.txt'), 'never committed')
 
     await expect(service.restore(dir, ['new-untracked.txt'])).rejects.toThrow()
+  })
+
+  async function createRealMergeConflict(): Promise<void> {
+    await writeFile(join(dir, 'file.txt'), 'base\n')
+    await git(['add', '.'])
+    await git(['commit', '-m', 'base'])
+
+    await git(['checkout', '-b', 'feature'])
+    await writeFile(join(dir, 'file.txt'), 'feature change\n')
+    await git(['commit', '-am', 'feature change'])
+
+    await git(['checkout', 'main'])
+    await writeFile(join(dir, 'file.txt'), 'main change\n')
+    await git(['commit', '-am', 'main change'])
+
+    // A real conflicting merge — git exits non-zero here, which is the
+    // expected/correct outcome, not a test setup failure.
+    await execFileAsync('git', ['merge', 'feature'], { cwd: dir }).catch(() => undefined)
+  }
+
+  it('reports a real merge conflict via hasConflicts', async () => {
+    await createRealMergeConflict()
+
+    const status = await service.status(dir)
+
+    expect(status.hasConflicts).toBe(true)
+    expect(status.changes.find((change) => change.path === 'file.txt')?.status).toBe('UU')
+  })
+
+  it('resolves a real conflict with --ours, leaving no pending change since ours already matches HEAD', async () => {
+    await createRealMergeConflict()
+
+    await service.resolveConflict(dir, 'file.txt', 'ours')
+
+    const status = await service.status(dir)
+    expect(status.hasConflicts).toBe(false)
+    // "ours" is the current branch's own HEAD content, so resolving with it
+    // and staging produces no diff against HEAD at all — a real, correct
+    // git outcome, not a bug in the resolution.
+    expect(status.changes.find((change) => change.path === 'file.txt')).toBeUndefined()
+    expect(await readFile(join(dir, 'file.txt'), 'utf-8')).toBe('main change\n')
+  })
+
+  it('resolves a real conflict with --theirs and stages the result', async () => {
+    await createRealMergeConflict()
+
+    await service.resolveConflict(dir, 'file.txt', 'theirs')
+
+    const status = await service.status(dir)
+    expect(status.hasConflicts).toBe(false)
+    expect(await readFile(join(dir, 'file.txt'), 'utf-8')).toBe('feature change\n')
   })
 
   it('creates a real new branch without switching to it', async () => {
