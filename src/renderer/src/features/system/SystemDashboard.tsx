@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { MetricValue, SystemMetricsSnapshot } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
 
 interface SystemLink {
@@ -110,17 +111,9 @@ export function SystemDashboard(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Collecting metrics…</p>
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-auto p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">System Dashboard</p>
-        <ControllerButton variant="primary" disabled={loading} onClick={() => void handleRefresh()}>
-          {loading ? 'Refreshing…' : 'Refresh'}
-        </ControllerButton>
-      </div>
-
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-        <p className="text-body font-semibold text-text-primary">Settings and tools</p>
-        <div className="flex flex-wrap gap-2">
+    <div className="grid h-full min-w-[72rem] grid-cols-[22rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+      <NdxToolWindow title="System Tools" subtitle={`${SYSTEM_LINKS.length} destinations`}>
+        <div className="flex flex-col gap-2">
           {SYSTEM_LINKS.map((link) => (
             <ControllerButton
               key={link.path}
@@ -131,137 +124,182 @@ export function SystemDashboard(): React.JSX.Element {
             </ControllerButton>
           ))}
         </div>
-      </section>
+      </NdxToolWindow>
 
-      {error && <ErrorState title="System metrics error" description={error} />}
-
-      {snapshot && (
-        <>
-          <p className="text-meta text-text-tertiary">
-            Collected {new Date(snapshot.collectedAt).toLocaleTimeString()} on{' '}
-            {snapshot.hostPlatform} · core uptime {Math.round(snapshot.core.uptimeSeconds / 60)} min
-          </p>
-
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-            <MetricCard title="CPU" metric={snapshot.cpu}>
-              {(cpu) => (
-                <>
-                  <Stat label="Usage" value={`${cpu.usagePercent.toFixed(1)}%`} />
-                  <Stat label="Logical cores" value={String(cpu.logicalCores)} />
-                  <Stat label="Model" value={cpu.model} />
-                </>
-              )}
-            </MetricCard>
-
-            <MetricCard title="Memory" metric={snapshot.memory}>
-              {(memory) => (
-                <>
-                  <Stat label="Usage" value={`${memory.usagePercent.toFixed(1)}%`} />
-                  <Stat label="Used" value={formatBytes(memory.usedBytes)} />
-                  <Stat label="Total" value={formatBytes(memory.totalBytes)} />
-                </>
-              )}
-            </MetricCard>
-
-            <MetricCard title="Swap" metric={snapshot.swap}>
-              {(swap) => (
-                <>
-                  <Stat label="Usage" value={`${swap.usagePercent.toFixed(1)}%`} />
-                  <Stat label="Used" value={formatBytes(swap.usedBytes)} />
-                  <Stat label="Total" value={formatBytes(swap.totalBytes)} />
-                </>
-              )}
-            </MetricCard>
-
-            <MetricCard title="Storage" metric={snapshot.storage}>
-              {(storage) => (
-                <>
-                  <Stat label="Path" value={storage.path} />
-                  <Stat label="Usage" value={`${storage.usagePercent.toFixed(1)}%`} />
-                  <Stat label="Available" value={formatBytes(storage.availableBytes)} />
-                </>
-              )}
-            </MetricCard>
-
-            <MetricCard title="Battery" metric={snapshot.battery}>
-              {(batteries) =>
-                batteries.length === 0 ? (
-                  <p className="text-meta text-text-tertiary">No battery device.</p>
-                ) : (
-                  batteries.map((battery) => (
-                    <div key={battery.name} className="mb-1">
-                      <Stat
-                        label={battery.name}
-                        value={`${battery.capacityPercent ?? '?'}% · ${battery.status ?? 'unknown'}`}
-                      />
-                    </div>
-                  ))
-                )
-              }
-            </MetricCard>
-
-            <MetricCard title="Thermal" metric={snapshot.thermal}>
-              {(sensors) =>
-                sensors.length === 0 ? (
-                  <p className="text-meta text-text-tertiary">No thermal sensors.</p>
-                ) : (
-                  sensors.map((sensor) => (
-                    <Stat
-                      key={sensor.name}
-                      label={sensor.name}
-                      value={`${sensor.celsius.toFixed(1)}°C`}
-                    />
-                  ))
-                )
-              }
-            </MetricCard>
-
-            <MetricCard title="Fans" metric={snapshot.fans}>
-              {(fans) =>
-                fans.length === 0 ? (
-                  <p className="text-meta text-text-tertiary">No fan sensors.</p>
-                ) : (
-                  fans.map((fan) => (
-                    <Stat key={fan.name} label={fan.name} value={`${fan.rpm} rpm`} />
-                  ))
-                )
-              }
-            </MetricCard>
-
-            <MetricCard title="GPU" metric={snapshot.gpu}>
-              {(devices) =>
-                devices.length === 0 ? (
-                  <p className="text-meta text-text-tertiary">No supported GPU usage sensor.</p>
-                ) : (
-                  devices.map((device) => (
-                    <Stat
-                      key={device.device}
-                      label={device.device}
-                      value={`${device.usagePercent.toFixed(1)}%`}
-                    />
-                  ))
-                )
-              }
-            </MetricCard>
-
-            <MetricCard title="Network" metric={snapshot.network}>
-              {(interfaces) =>
-                interfaces.map((iface) => (
-                  <Stat
-                    key={iface.name}
-                    label={iface.name}
-                    value={`${iface.addressCount} address${iface.addressCount === 1 ? '' : 'es'}${iface.internal ? ' · internal' : ''}`}
-                  />
-                ))
-              }
-            </MetricCard>
-
-            <MetricCard title="Processes" metric={snapshot.processes}>
-              {(processes) => <Stat label="Count" value={String(processes.length)} />}
-            </MetricCard>
+      <NdxEditorShell title="Metrics">
+        <div className="flex min-h-full flex-col gap-4 p-4">
+          <div className="flex items-center justify-between">
+            <p className="text-title font-semibold text-text-primary">System Dashboard</p>
+            <ControllerButton
+              variant="primary"
+              disabled={loading}
+              onClick={() => void handleRefresh()}
+            >
+              {loading ? 'Refreshing…' : 'Refresh'}
+            </ControllerButton>
           </div>
-        </>
-      )}
+
+          {error && <ErrorState title="System metrics error" description={error} />}
+
+          {snapshot && (
+            <>
+              <p className="text-meta text-text-tertiary">
+                Collected {new Date(snapshot.collectedAt).toLocaleTimeString()} on{' '}
+                {snapshot.hostPlatform} · core uptime {Math.round(snapshot.core.uptimeSeconds / 60)}{' '}
+                min
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                <MetricCard title="CPU" metric={snapshot.cpu}>
+                  {(cpu) => (
+                    <>
+                      <Stat label="Usage" value={`${cpu.usagePercent.toFixed(1)}%`} />
+                      <Stat label="Logical cores" value={String(cpu.logicalCores)} />
+                      <Stat label="Model" value={cpu.model} />
+                    </>
+                  )}
+                </MetricCard>
+
+                <MetricCard title="Memory" metric={snapshot.memory}>
+                  {(memory) => (
+                    <>
+                      <Stat label="Usage" value={`${memory.usagePercent.toFixed(1)}%`} />
+                      <Stat label="Used" value={formatBytes(memory.usedBytes)} />
+                      <Stat label="Total" value={formatBytes(memory.totalBytes)} />
+                    </>
+                  )}
+                </MetricCard>
+
+                <MetricCard title="Swap" metric={snapshot.swap}>
+                  {(swap) => (
+                    <>
+                      <Stat label="Usage" value={`${swap.usagePercent.toFixed(1)}%`} />
+                      <Stat label="Used" value={formatBytes(swap.usedBytes)} />
+                      <Stat label="Total" value={formatBytes(swap.totalBytes)} />
+                    </>
+                  )}
+                </MetricCard>
+
+                <MetricCard title="Storage" metric={snapshot.storage}>
+                  {(storage) => (
+                    <>
+                      <Stat label="Path" value={storage.path} />
+                      <Stat label="Usage" value={`${storage.usagePercent.toFixed(1)}%`} />
+                      <Stat label="Available" value={formatBytes(storage.availableBytes)} />
+                    </>
+                  )}
+                </MetricCard>
+
+                <MetricCard title="Battery" metric={snapshot.battery}>
+                  {(batteries) =>
+                    batteries.length === 0 ? (
+                      <p className="text-meta text-text-tertiary">No battery device.</p>
+                    ) : (
+                      batteries.map((battery) => (
+                        <div key={battery.name} className="mb-1">
+                          <Stat
+                            label={battery.name}
+                            value={`${battery.capacityPercent ?? '?'}% · ${battery.status ?? 'unknown'}`}
+                          />
+                        </div>
+                      ))
+                    )
+                  }
+                </MetricCard>
+
+                <MetricCard title="Thermal" metric={snapshot.thermal}>
+                  {(sensors) =>
+                    sensors.length === 0 ? (
+                      <p className="text-meta text-text-tertiary">No thermal sensors.</p>
+                    ) : (
+                      sensors.map((sensor) => (
+                        <Stat
+                          key={sensor.name}
+                          label={sensor.name}
+                          value={`${sensor.celsius.toFixed(1)}°C`}
+                        />
+                      ))
+                    )
+                  }
+                </MetricCard>
+
+                <MetricCard title="Fans" metric={snapshot.fans}>
+                  {(fans) =>
+                    fans.length === 0 ? (
+                      <p className="text-meta text-text-tertiary">No fan sensors.</p>
+                    ) : (
+                      fans.map((fan) => (
+                        <Stat key={fan.name} label={fan.name} value={`${fan.rpm} rpm`} />
+                      ))
+                    )
+                  }
+                </MetricCard>
+
+                <MetricCard title="GPU" metric={snapshot.gpu}>
+                  {(devices) =>
+                    devices.length === 0 ? (
+                      <p className="text-meta text-text-tertiary">No supported GPU usage sensor.</p>
+                    ) : (
+                      devices.map((device) => (
+                        <Stat
+                          key={device.device}
+                          label={device.device}
+                          value={`${device.usagePercent.toFixed(1)}%`}
+                        />
+                      ))
+                    )
+                  }
+                </MetricCard>
+
+                <MetricCard title="Network" metric={snapshot.network}>
+                  {(interfaces) =>
+                    interfaces.map((iface) => (
+                      <Stat
+                        key={iface.name}
+                        label={iface.name}
+                        value={`${iface.addressCount} address${iface.addressCount === 1 ? '' : 'es'}${iface.internal ? ' · internal' : ''}`}
+                      />
+                    ))
+                  }
+                </MetricCard>
+
+                <MetricCard title="Processes" metric={snapshot.processes}>
+                  {(processes) => <Stat label="Count" value={String(processes.length)} />}
+                </MetricCard>
+              </div>
+            </>
+          )}
+        </div>
+      </NdxEditorShell>
+
+      <NdxToolWindow
+        title="Metrics Scope"
+        subtitle={snapshot ? snapshot.hostPlatform : 'Awaiting collection'}
+        side="right"
+      >
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Collection mode</p>
+          <p className="text-meta text-text-tertiary">
+            Manual refresh only. No background polling is started by this screen.
+          </p>
+        </div>
+        {snapshot && (
+          <div className="border-t border-border pt-3">
+            <p className="text-meta font-semibold text-text-primary">Core process</p>
+            <p className="text-meta text-text-secondary">PID {snapshot.core.pid}</p>
+            <p className="text-meta text-text-tertiary">
+              Uptime {Math.round(snapshot.core.uptimeSeconds / 60)} min
+            </p>
+          </div>
+        )}
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Sensor policy</p>
+          <p className="text-meta text-text-tertiary">
+            Unavailable battery, thermal, fan, and GPU sensors stay explicit rather than using
+            fabricated values.
+          </p>
+        </div>
+      </NdxToolWindow>
     </div>
   )
 }

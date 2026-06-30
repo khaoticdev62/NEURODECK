@@ -95,7 +95,7 @@ Status legend:
 | `/lan-share/transfers` | ND-LAN-007 | Tool-heavy | Transfers panel | Frame / Pending Tool | live updates |
 | `/lan-share/transfers/:jobId` | ND-LAN-008 | Tool-heavy | Transfer detail | Frame / Pending Tool | cancellation/retry |
 | `/lan-share/settings` | ND-LAN-017 | Settings | Settings tree | Frame / Pending Critical | group code privacy |
-| `/system` | ND-042 | Tool-heavy | System dashboard | Frame / Pending Tool | diagnostics density |
+| `/system` | ND-042 | Tool-heavy | System dashboard | Partial Tool | system tools/metrics/scope framing; visual QA pending |
 | `/settings/controller` | ND-043 | Settings | Settings tree | Frame / Pending Critical | controller remap gaps |
 | `/settings/display` | ND-044 | Settings | Settings tree | Frame / Pending Critical | theme interactions |
 | `/settings/privacy` | ND-046 | Critical/settings | Permission matrix | Frame / Pending Critical | audit readability |
@@ -265,6 +265,15 @@ npm run lint -> passed
 npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
 ```
 
+HYBRID-5 partial checks run after System Dashboard tool-window migration:
+
+```text
+npm run test -- SystemDashboard -> 1 file / 4 tests passed
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed with existing ErrorRecovery dynamic/static import chunking warning
+```
+
 ## Remaining Program Work
 
 - HYBRID-4 must continue IDE-heavy internal migration. Partial slice complete for `/build`
@@ -296,9 +305,11 @@ npm run build -> passed with existing ErrorRecovery dynamic/static import chunki
   persisted run fallback, approval resolution, cancel action, and timeline messages. Partial slice
   complete for `/agents/:agentId` Agent Profile + Agent Detail + Run Context framing while
   preserving start-run, dry-run, pause/resume, cancel, tool execution tabs, file tabs, permissions,
-  audit log filtering, and live `agentRun.update` behavior. Remaining targets include Extensions,
-  System, Permissions, Recovery, Backup, Vault, LAN Share, Devices, Profiles, Continuity, and
-  Platform Health.
+  audit log filtering, and live `agentRun.update` behavior. Partial slice complete for `/system`
+  System Tools + Metrics + Metrics Scope framing while preserving typed system metrics IPC,
+  manual refresh, unavailable-sensor honesty, and navigation to system-area tools. Remaining
+  targets include Extensions, Permissions, Recovery, Backup, Vault, LAN Share, Devices, Profiles,
+  Continuity, and Platform Health.
 - HYBRID-6 must migrate dashboard/grid/media screens to spatial lockup primitives.
 - HYBRID-7 must reconcile in-progress presentation-mode work before notification policy, kiosk, or sandbox flows.
 - HYBRID-8 and HYBRID-9 need visual/controller/performance evidence at all target resolutions before any full-program completion claim.
