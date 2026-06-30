@@ -1,4 +1,6 @@
 import { app, BrowserWindow } from 'electron'
+import { mkdtempSync, rmSync } from 'fs'
+import { tmpdir } from 'os'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -29,6 +31,38 @@ app.setName('NeuroDeck OS')
 let mainWindow: BrowserWindow | null = null
 let disposeIpcServices: (() => void) | null = null
 
+const VOLATILE_CHROMIUM_PROFILE_DIRS = [
+  'blob_storage',
+  'Cache',
+  'Code Cache',
+  'DawnGraphiteCache',
+  'DawnWebGPUCache',
+  'GPUCache',
+  'Session Storage'
+] as const
+
+function configureChromiumRuntimeCache(): void {
+  const runtimeCachePath = mkdtempSync(join(tmpdir(), 'neurodeck-chromium-cache-'))
+
+  app.commandLine.appendSwitch('disk-cache-dir', runtimeCachePath)
+  app.commandLine.appendSwitch('disable-gpu-shader-disk-cache')
+}
+
+function clearVolatileChromiumProfileState(): void {
+  const userDataPath = app.getPath('userData')
+
+  for (const profileDir of VOLATILE_CHROMIUM_PROFILE_DIRS) {
+    try {
+      rmSync(join(userDataPath, profileDir), { recursive: true, force: true })
+    } catch (error) {
+      console.warn(`Unable to clear volatile Chromium profile directory "${profileDir}"`, error)
+    }
+  }
+}
+
+configureChromiumRuntimeCache()
+clearVolatileChromiumProfileState()
+
 function createWindow(): void {
   mainWindow = new BrowserWindow({
     width: 1280,
@@ -57,9 +91,9 @@ function createWindow(): void {
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
+    mainWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#/boot`)
   } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    mainWindow.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/boot' })
   }
 }
 

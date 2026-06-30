@@ -25,6 +25,7 @@ type BootPhase = 'booting' | 'complete' | 'failed'
 const BOOT_TIMEOUT_MS = 15000
 const DETAILS_REVEAL_MS = 10000
 const BOOT_STEP_TIMEOUT_MS = 1500
+const BOOT_SHELL_FALLBACK_MS = 3000
 
 function getBootStepTimeoutMs(): number {
   return Number(import.meta.env.VITE_BOOT_STEP_TIMEOUT_MS ?? BOOT_STEP_TIMEOUT_MS)
@@ -64,6 +65,7 @@ export function BootSessionStart(): React.JSX.Element {
   const [showDetails, setShowDetails] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const abortRef = useRef(false)
+  const bootRunIdRef = useRef(0)
 
   const { ref: exitRef, isFocused: exitFocused } = useFocusable<HTMLButtonElement>({
     id: 'boot:exit',
@@ -92,18 +94,31 @@ export function BootSessionStart(): React.JSX.Element {
     // never progress past whatever step was running when the first,
     // throwaway invocation's cleanup fired.
     abortRef.current = false
+    const bootRunId = bootRunIdRef.current + 1
+    bootRunIdRef.current = bootRunId
+
+    function isCurrentBootRun(): boolean {
+      return !abortRef.current && bootRunIdRef.current === bootRunId
+    }
 
     function updateStep(stepId: string, status: BootStepStatus, detail?: string): void {
-      if (abortRef.current) return
+      if (!isCurrentBootRun()) return
       setSteps((previous) =>
         previous.map((step) => (step.id === stepId ? { ...step, status, detail } : step))
       )
     }
 
     function finishBoot(nextPhase: BootPhase, message?: string): void {
-      if (abortRef.current) return
+      if (!isCurrentBootRun()) return
       setPhase(nextPhase)
       if (message) setError(message)
+    }
+
+    function routeIntoShell(workspaces: unknown[] = [], hasProviders = false): void {
+      if (!isCurrentBootRun()) return
+      const isFirstRun = workspaces.length === 0 && !hasProviders
+      finishBoot('complete')
+      navigate(isFirstRun ? '/onboarding/welcome' : '/')
     }
 
     async function runStep<T>(
@@ -137,12 +152,12 @@ export function BootSessionStart(): React.JSX.Element {
           })
         ])
       } catch (error) {
-        if (abortRef.current) return { ok: false, error: 'aborted' }
+        if (!isCurrentBootRun()) return { ok: false, error: 'aborted' }
         const message = error instanceof Error ? error.message : 'An unexpected error occurred.'
         updateStep(stepId, 'failed', message)
         return { ok: false, error: message }
       }
-      if (abortRef.current) return { ok: false, error: 'aborted' }
+      if (!isCurrentBootRun()) return { ok: false, error: 'aborted' }
       if (result.ok) {
         updateStep(stepId, 'ok')
         return { ok: true, data: result.data }
@@ -152,15 +167,29 @@ export function BootSessionStart(): React.JSX.Element {
     }
 
     const detailsTimer = setTimeout(() => {
-      if (!abortRef.current) setShowDetails(true)
+      if (isCurrentBootRun()) setShowDetails(true)
     }, DETAILS_REVEAL_MS)
 
     const timeoutTimer = setTimeout(() => {
-      if (!abortRef.current) {
+      if (isCurrentBootRun()) {
         setError('Boot is taking longer than expected.')
         setPhase('failed')
       }
     }, BOOT_TIMEOUT_MS)
+
+    const shellFallbackTimer = setTimeout(() => {
+      if (!isCurrentBootRun()) return
+      updateStep('workspace', 'failed', 'Workspace restore is still responding; opening shell.')
+      updateStep('model', 'failed', 'Model runtime check is still responding; opening shell.')
+      updateStep(
+        'controller',
+        'failed',
+        'Controller settings check is still responding; opening shell.'
+      )
+      updateStep('core', 'ok')
+      finishBoot('complete')
+      navigate('/')
+    }, BOOT_SHELL_FALLBACK_MS)
 
     async function runBoot(): Promise<void> {
       // A failed workspace read is a degraded condition, not a fatal one —
@@ -202,15 +231,18 @@ export function BootSessionStart(): React.JSX.Element {
       // the rest of `runBoot` (including the navigate() call below) silently.
       void collectSystemMetrics().catch(() => undefined)
 
-      if (abortRef.current) return
+      if (!isCurrentBootRun()) return
 
-      const hasWorkspaces = workspaces.length > 0
       const hasProviders = modelResult.ok && modelResult.data.length > 0
       const bootStateIsKnown = workspaceResult.ok && modelResult.ok
-      const isFirstRun = bootStateIsKnown && !hasWorkspaces && !hasProviders
 
+      clearTimeout(shellFallbackTimer)
+      if (bootStateIsKnown) {
+        routeIntoShell(workspaces, hasProviders)
+        return
+      }
       finishBoot('complete')
-      navigate(isFirstRun ? '/onboarding/welcome' : '/')
+      navigate('/')
     }
 
     void runBoot()
@@ -219,6 +251,7 @@ export function BootSessionStart(): React.JSX.Element {
       abortRef.current = true
       clearTimeout(detailsTimer)
       clearTimeout(timeoutTimer)
+      clearTimeout(shellFallbackTimer)
     }
   }, [navigate, bootStepTimeoutMs])
 

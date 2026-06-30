@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Route, Routes } from 'react-router-dom'
 import { BootSessionStart } from '../../features/onboarding/BootSessionStart'
 import { ShellLayout } from '../shell/ShellLayout'
 import { ROUTE_DEFINITIONS, renderRouteElement } from './routes'
@@ -17,7 +17,6 @@ export function RouterRoot(): React.JSX.Element {
     <HashRouter>
       <Routes>
         <Route path="/boot" element={<BootSessionStart />} />
-        <Route path="/" element={<Navigate to="/boot" replace />} />
         <Route element={<ShellLayout />}>
           {ROUTE_DEFINITIONS.filter((route) => route.routeId !== 'boot').map((route) => (
             <Route key={route.routeId} path={route.path} element={renderRouteElement(route)} />
