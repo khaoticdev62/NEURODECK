@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import {
+  addKnowledgeNoteRequestSchema,
   addKnowledgeSourceRequestSchema,
   IPC_CHANNELS,
   knowledgeQueryRequestSchema,
@@ -112,6 +113,26 @@ export function registerKnowledgeHandlers(
         }
       }
       return { ok: true, data: updated }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.knowledgeAddNote,
+    async (_event, payload: unknown): Promise<NdxResult<KnowledgeSource>> => {
+      const parsed = addKnowledgeNoteRequestSchema.safeParse(payload)
+      if (!parsed.success) {
+        return {
+          ok: false,
+          error: ndxError('validation', 'invalid-request', 'That add-note request is invalid.')
+        }
+      }
+      const source = await service.addMarkdownNote({
+        title: parsed.data.title,
+        text: parsed.data.text,
+        origin: parsed.data.origin,
+        privacyLevel: parsed.data.privacyLevel
+      })
+      return { ok: true, data: source }
     }
   )
 

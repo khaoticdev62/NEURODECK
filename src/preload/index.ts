@@ -419,7 +419,8 @@ const ndx: NdxBridge = {
     reindexSource: (request) => ipcRenderer.invoke(IPC_CHANNELS.knowledgeSourceReindex, request),
     setSourcePaused: (request) =>
       ipcRenderer.invoke(IPC_CHANNELS.knowledgeSourceSetPaused, request),
-    query: (request) => ipcRenderer.invoke(IPC_CHANNELS.knowledgeQuery, request)
+    query: (request) => ipcRenderer.invoke(IPC_CHANNELS.knowledgeQuery, request),
+    addNote: (request) => ipcRenderer.invoke(IPC_CHANNELS.knowledgeAddNote, request)
   },
   memory: {
     list: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryList, request),

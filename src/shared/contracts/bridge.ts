@@ -96,6 +96,7 @@ import type {
 import type {
   AddKnowledgeSourceRequest,
   KnowledgeQueryRequest,
+  AddKnowledgeNoteRequest,
   KnowledgeQueryResult,
   KnowledgeSource,
   KnowledgeSourceIdRequest,
@@ -621,6 +622,7 @@ export interface NdxBridge {
       request: SetKnowledgeSourcePausedRequest
     ) => Promise<NdxResult<KnowledgeSource>>
     query: (request: KnowledgeQueryRequest) => Promise<NdxResult<KnowledgeQueryResult[]>>
+    addNote: (request: AddKnowledgeNoteRequest) => Promise<NdxResult<KnowledgeSource>>
   }
   memory: {
     list: (request?: MemoryQueryRequest) => Promise<NdxResult<MemoryItem[]>>

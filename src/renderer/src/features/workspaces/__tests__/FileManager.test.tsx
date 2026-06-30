@@ -7,6 +7,7 @@ import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
 import { ToastProvider } from '../../../components/overlays/Toast'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { ShareSheetProvider } from '../../../state/shareSheet'
 import { FileManager } from '../FileManager'
 import { WorkspaceContext, type WorkspaceContextValue } from '../WorkspaceContext'
 
@@ -44,9 +45,11 @@ function renderFileManager(): ReturnType<typeof render> {
       <FocusEngineProvider adapters={[new TestAdapter()]}>
         <AiSafetyProvider>
           <MemoryRouter>
-            <WorkspaceContext.Provider value={activeWorkspaceValue}>
-              <FileManager />
-            </WorkspaceContext.Provider>
+            <ShareSheetProvider>
+              <WorkspaceContext.Provider value={activeWorkspaceValue}>
+                <FileManager />
+              </WorkspaceContext.Provider>
+            </ShareSheetProvider>
           </MemoryRouter>
         </AiSafetyProvider>
       </FocusEngineProvider>
@@ -62,9 +65,13 @@ describe('FileManager', () => {
         <FocusEngineProvider adapters={[new TestAdapter()]}>
           <AiSafetyProvider>
             <MemoryRouter>
-              <WorkspaceContext.Provider value={{ ...activeWorkspaceValue, activeWorkspace: null }}>
-                <FileManager />
-              </WorkspaceContext.Provider>
+              <ShareSheetProvider>
+                <WorkspaceContext.Provider
+                  value={{ ...activeWorkspaceValue, activeWorkspace: null }}
+                >
+                  <FileManager />
+                </WorkspaceContext.Provider>
+              </ShareSheetProvider>
             </MemoryRouter>
           </AiSafetyProvider>
         </FocusEngineProvider>
@@ -218,10 +225,12 @@ describe('FileManager', () => {
         <FocusEngineProvider adapters={[new TestAdapter()]}>
           <AiSafetyProvider>
             <MemoryRouter>
-              <WorkspaceContext.Provider value={activeWorkspaceValue}>
-                <FileManager />
-              </WorkspaceContext.Provider>
-              <LocationProbe />
+              <ShareSheetProvider>
+                <WorkspaceContext.Provider value={activeWorkspaceValue}>
+                  <FileManager />
+                </WorkspaceContext.Provider>
+                <LocationProbe />
+              </ShareSheetProvider>
             </MemoryRouter>
           </AiSafetyProvider>
         </FocusEngineProvider>

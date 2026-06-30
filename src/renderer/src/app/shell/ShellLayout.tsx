@@ -21,6 +21,7 @@ import { EmergencyStopOverlay } from '../../features/ai-canvas/EmergencyStopOver
 import { AgentToolExecutionBridge } from '../../features/agents/AgentToolExecutionBridge'
 import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwitcherOverlay'
 import { KioskExitOverlay } from '../../features/kiosk/KioskExitOverlay'
+import { ShareSheetOverlay } from '../../features/shareSheet/ShareSheetOverlay'
 import { LockScreen } from '../../features/system/LockScreen'
 import { PowerStateBridge } from '../../features/system/PowerStateBridge'
 import { QuickAccessOverlay } from '../../features/system/QuickAccessOverlay'
@@ -158,6 +159,7 @@ export function ShellLayout({
       <QuickAccessOverlay />
       <FocusDebugOverlay />
       <KioskExitOverlay />
+      <ShareSheetOverlay />
     </NdxWorkbench>
   )
 }

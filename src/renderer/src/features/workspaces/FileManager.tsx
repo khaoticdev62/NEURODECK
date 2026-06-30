@@ -8,6 +8,7 @@ import { useFocusable } from '../../controller/focus/useFocusable'
 import { cn } from '../../components/primitives/cn'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { deleteFile, listFiles } from '../../services/ipc/fileClient'
+import { useShareSheet } from '../../state/useShareSheet'
 import { FilePreview } from './FilePreview'
 import { useWorkspaces } from './useWorkspaces'
 
@@ -32,6 +33,7 @@ function resolveAbsolutePath(rootPath: string, relativePath: string): string {
  */
 export function FileManager(): React.JSX.Element {
   const navigate = useNavigate()
+  const { openShareSheet } = useShareSheet()
   const { activeWorkspace } = useWorkspaces()
   const [relativePath, setRelativePath] = useState('')
   const [entries, setEntries] = useState<FileEntry[]>([])
@@ -130,6 +132,15 @@ export function FileManager(): React.JSX.Element {
                           }
                         })
                 }
+                onShare={
+                  entry.isDirectory
+                    ? undefined
+                    : () =>
+                        openShareSheet({
+                          filePaths: [resolveAbsolutePath(activeWorkspace.rootPath, entry.path)],
+                          sourceLabel: entry.name
+                        })
+                }
               />
             ))}
           </ul>
@@ -190,12 +201,14 @@ function FileRow({
   entry,
   onOpen,
   onDelete,
-  onSendViaLanShare
+  onSendViaLanShare,
+  onShare
 }: {
   entry: FileEntry
   onOpen: () => void
   onDelete?: () => void
   onSendViaLanShare?: () => void
+  onShare?: () => void
 }): React.JSX.Element {
   const { ref, isFocused } = useFocusable<HTMLButtonElement>({
     id: `file:${entry.path}`,
@@ -221,11 +234,16 @@ function FileRow({
           <span className="text-meta text-text-tertiary">{formatBytes(entry.sizeBytes)}</span>
         )}
       </button>
-      {(onSendViaLanShare || onDelete) && (
+      {(onSendViaLanShare || onShare || onDelete) && (
         <div className="flex gap-1">
           {onSendViaLanShare && (
             <ControllerButton variant="secondary" onClick={onSendViaLanShare}>
               Send via LAN Share
+            </ControllerButton>
+          )}
+          {onShare && (
+            <ControllerButton variant="secondary" onClick={onShare}>
+              Share
             </ControllerButton>
           )}
           {onDelete && (

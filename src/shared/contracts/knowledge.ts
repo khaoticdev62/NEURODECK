@@ -101,3 +101,12 @@ export const knowledgeQueryResultSchema = z.object({
   stale: z.boolean()
 })
 export type KnowledgeQueryResult = z.infer<typeof knowledgeQueryResultSchema>
+
+/** Real Epic X6 Universal Share Sheet — "Add to Knowledge Vault" target (supplemental §17.4). */
+export const addKnowledgeNoteRequestSchema = z.object({
+  title: z.string().min(1).max(200),
+  text: z.string().min(1).max(100_000),
+  origin: z.string().min(1).max(500),
+  privacyLevel: knowledgePrivacyLevelSchema.default('workspace')
+})
+export type AddKnowledgeNoteRequest = z.infer<typeof addKnowledgeNoteRequestSchema>

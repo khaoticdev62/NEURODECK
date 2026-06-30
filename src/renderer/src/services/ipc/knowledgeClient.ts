@@ -1,4 +1,5 @@
 import type {
+  AddKnowledgeNoteRequest,
   AddKnowledgeSourceRequest,
   KnowledgeQueryRequest,
   KnowledgeQueryResult,
@@ -53,4 +54,12 @@ export async function queryKnowledge(
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.knowledge.query(request)
+}
+
+export async function addKnowledgeNote(
+  request: AddKnowledgeNoteRequest
+): Promise<NdxResult<KnowledgeSource>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.knowledge.addNote(request)
 }

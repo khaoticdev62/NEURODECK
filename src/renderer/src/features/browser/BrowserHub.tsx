@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import type { BrowserTab } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
@@ -38,6 +38,7 @@ export function BrowserHub(): React.JSX.Element {
 
 function BrowserHubWorkspace({ workspaceId }: { workspaceId: string }): React.JSX.Element {
   const navigate = useNavigate()
+  const location = useLocation()
   const [tabs, setTabs] = useState<BrowserTab[]>([])
   const [error, setError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
@@ -57,6 +58,19 @@ function BrowserHubWorkspace({ workspaceId }: { workspaceId: string }): React.JS
       active = false
     }
   }, [workspaceId])
+
+  // Real Universal Share Sheet "Open in Browser" target (supplemental
+  // §17.4): consumed once, then replaced out of history state so
+  // revisiting this route never re-opens the same tab.
+  const openUrlFromState = (location.state as { openUrl?: string } | null)?.openUrl
+  useEffect(() => {
+    if (!openUrlFromState) return
+    navigate(location.pathname, { replace: true, state: null })
+    void createBrowserTab({ workspaceId, url: openUrlFromState }).then((result) => {
+      if (result.ok) navigate(`/browser/${result.data.id}`)
+      else setError(result.error.userMessage)
+    })
+  }, [openUrlFromState, workspaceId, navigate, location.pathname])
 
   async function handleNewTab(): Promise<void> {
     setCreating(true)

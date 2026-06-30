@@ -3124,3 +3124,35 @@ npm run lint -> passed
 npm run build -> passed
 npm run sbom -> passed (docs/security/sbom.json generated, 896 packages)
 ```
+
+## Epic X6 — Universal Share Sheet (2026-06-29)
+
+Real Epic X6 Universal Share Sheet (supplemental §17.4), the last open item in that epic. The whole design follows one rule: every target routes to a backend that already exists — no new storage or dispatch mechanism invented.
+
+**A real, notable side-discovery**: while picking where to make the Share Sheet reachable from, neither Clipboard Center (§17.1) nor Snippets (§17.3) — both checked `[x]` real in the checklist — actually have a renderer screen. `ClipboardStore`/`SnippetStore` and their full typed IPC clients are genuinely real, but no route in `routes.tsx` mounts a UI for either. This is the same backend-real/UI-missing pattern already documented for Epic X2's Application Library (found during the Application Sandbox and Policy work) and Epic X6's own Clipboard "send to terminal/editor" note. The checklist entries for both are corrected to say so explicitly. The Share Sheet does not attempt to backfill either screen — that is a separate, larger gap.
+
+**Architecture**: `ShareSheetProvider` (state only, mounted in `AppProviders` outside the router, like `KioskModeProvider`) exposes `useShareSheet().openShareSheet(payload)`. `ShareSheetOverlay` (the actual UI, rendered inside `ShellLayout` since it needs `useNavigate()`) reads the current payload and renders only the targets that payload supports:
+- **Copy to Clipboard** — `navigator.clipboard.writeText()`, the exact pattern already used by Vault/CommandBuilder/RemoteSessionViewport/AboutDiagnostics.
+- **Add to Knowledge Vault** — a new `knowledge.addNote` IPC (`AddKnowledgeNoteRequest`) wrapping the already-real `KnowledgeVaultService.addMarkdownNote()`, the same method Voice Notes already proved real. This is the first renderer caller of that method outside Voice Notes.
+- **Save as Snippet** — `upsertSnippet()`, the first real renderer consumer of that IPC (Snippets had none before this).
+- **Send to terminal session** — lists the active workspace's real sessions via `terminal.list`, writes via the existing real `terminal.write`.
+- **Open in Browser** — a new real consumer of `location.state.openUrl` added to `BrowserHub.tsx`'s `BrowserHubWorkspace`: creates a real tab via the existing `createBrowserTab()` and navigates to it, then clears the state so revisiting the route never reopens the same tab.
+- **Open in External App** — the existing real `shell.openExternal` via `openExternalUrl()`.
+- **Send to Nearby Device** — the same `/lan-share/send` state-passing pattern Screenshot Center and Recording Center already established.
+
+**Not offered, named reasons**: "Workflow," "Export archive," and "Workspace" from the spec's target list each need a concrete design this pass doesn't build (which workflow runs on shared text? which archive format? what does "share to a workspace" actually persist as?) — offering them would be controls with nothing real behind them.
+
+**First real trigger point**: File Manager's per-file row gained a "Share" button alongside the existing "Send via LAN Share"/"Delete" — opens the sheet with that file's real absolute path.
+
+**A real lint-driven fix found along the way**: the first draft of `ShareSheetOverlay` reset `status`/`error`/`terminalSessions` synchronously at the top of a `useEffect` body, which `react-hooks/set-state-in-effect` correctly flagged as a cascading-render risk. Fixed by splitting into an outer `ShareSheetOverlay` (no state) that remounts an inner `ShareSheetContent` keyed by `JSON.stringify(payload)` whenever a new share request opens — a fresh component instance naturally gets fresh `useState` defaults, and the remaining effect only calls `setTerminalSessions` inside its `.then()` callback, never synchronously.
+
+**New/changed files**: `src/shared/contracts/knowledge.ts` (new `addKnowledgeNoteRequestSchema`), `src/shared/contracts/ipcChannels.ts`/`bridge.ts` (new `knowledge.addNote` entry), `src/main/ipc/registerKnowledgeHandlers.ts` (new handler), `src/preload/index.ts`/`src/renderer/src/services/ipc/knowledgeClient.ts` (wiring), `src/renderer/src/state/shareSheetContext.ts`/`useShareSheet.ts`/`shareSheet.tsx` (new), `src/renderer/src/features/shareSheet/ShareSheetOverlay.tsx` (new) + `__tests__/ShareSheetOverlay.test.tsx` (new, 5 tests), `src/renderer/src/app/providers/AppProviders.tsx` (provider mount), `src/renderer/src/app/shell/ShellLayout.tsx` + `__tests__/ShellLayout.test.tsx` (overlay mount + test wiring), `src/renderer/src/features/workspaces/FileManager.tsx` + `__tests__/FileManager.test.tsx` (Share button + test wiring), `src/renderer/src/features/workspaces/__tests__/WorkspaceDetail.test.tsx` (provider wiring — indirectly mounts `FileManager`), `src/renderer/src/features/browser/BrowserHub.tsx` (real `openUrl` state consumer), `eslint.config.mjs` (new `scripts/**/*.mjs` override, needed for the X15 dev-signing script, not specific to this feature).
+
+**Validation evidence (run 2026-06-29):**
+
+```text
+npm run test -> 234 files / 1114 tests passed (one unrelated pre-existing flaky failure — GuidedControllerTutorial.test.tsx timing — confirmed passing in isolation)
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

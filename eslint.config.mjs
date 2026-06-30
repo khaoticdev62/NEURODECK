@@ -28,5 +28,13 @@ export default defineConfig(
       ...eslintPluginReactRefresh.configs.vite.rules
     }
   },
+  {
+    // Plain Node dev-tooling scripts, not part of the typed app surface.
+    files: ['scripts/**/*.mjs'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-unused-vars': 'off'
+    }
+  },
   eslintConfigPrettier
 )

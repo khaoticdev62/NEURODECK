@@ -7,6 +7,7 @@ import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
 import { ToastProvider } from '../../../components/overlays/Toast'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { ShareSheetProvider } from '../../../state/shareSheet'
 import { WorkspaceContext, type WorkspaceContextValue } from '../WorkspaceContext'
 import { WorkspaceDetail } from '../WorkspaceDetail'
 
@@ -40,9 +41,11 @@ function renderDetail(value: WorkspaceContextValue): ReturnType<typeof render> {
       <FocusEngineProvider adapters={[new TestAdapter()]}>
         <AiSafetyProvider>
           <MemoryRouter>
-            <WorkspaceContext.Provider value={value}>
-              <WorkspaceDetail />
-            </WorkspaceContext.Provider>
+            <ShareSheetProvider>
+              <WorkspaceContext.Provider value={value}>
+                <WorkspaceDetail />
+              </WorkspaceContext.Provider>
+            </ShareSheetProvider>
           </MemoryRouter>
         </AiSafetyProvider>
       </FocusEngineProvider>

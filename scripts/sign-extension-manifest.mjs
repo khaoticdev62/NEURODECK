@@ -40,10 +40,14 @@ const keyPath = resolve(argMap.key)
 
 const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
 const privateKeyPem = readFileSync(keyPath, 'utf-8')
-const publicKeyPem = readFileSync(keyPath.replace('private', 'public').replace('priv', 'pub'), 'utf-8')
+const publicKeyPem = readFileSync(
+  keyPath.replace('private', 'public').replace('priv', 'pub'),
+  'utf-8'
+)
 const fingerprint = createHash('sha256').update(publicKeyPem.trim()).digest('hex')
 
 // Canonical payload: manifest without signature field, sorted keys.
+/** @returns {unknown} */
 function sortKeysDeep(value) {
   if (Array.isArray(value)) return value.map(sortKeysDeep)
   if (value !== null && typeof value === 'object') {
@@ -54,7 +58,8 @@ function sortKeysDeep(value) {
   return value
 }
 
-const { signature: _, ...unsigned } = manifest
+const unsigned = { ...manifest }
+delete unsigned.signature
 const payload = JSON.stringify(sortKeysDeep(unsigned))
 
 const { sign } = await import('node:crypto')

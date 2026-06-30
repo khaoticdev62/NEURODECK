@@ -10,6 +10,7 @@ import { LockProvider } from '../../state/lockState'
 import { NotificationPolicyProvider } from '../../state/notificationPolicy'
 import { PresentationModeProvider } from '../../state/presentationMode'
 import { RecordingProvider } from '../../state/recording'
+import { ShareSheetProvider } from '../../state/shareSheet'
 import { WorkflowRunnerProvider } from '../../workflows/WorkflowRunnerProvider'
 import { RouterRoot } from '../routing/RouterRoot'
 
@@ -28,7 +29,9 @@ export function AppProviders(): React.JSX.Element {
                         <PresentationModeProvider>
                           <LockProvider>
                             <KioskModeProvider>
-                              <RouterRoot />
+                              <ShareSheetProvider>
+                                <RouterRoot />
+                              </ShareSheetProvider>
                             </KioskModeProvider>
                           </LockProvider>
                         </PresentationModeProvider>

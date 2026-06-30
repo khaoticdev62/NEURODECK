@@ -164,6 +164,7 @@ export const IPC_CHANNELS = {
   knowledgeSourceReindex: 'knowledge.sourceReindex',
   knowledgeSourceSetPaused: 'knowledge.sourceSetPaused',
   knowledgeQuery: 'knowledge.query',
+  knowledgeAddNote: 'knowledge.addNote',
   memoryList: 'memory.list',
   memoryWrite: 'memory.write',
   memoryUpdate: 'memory.update',

@@ -10,6 +10,7 @@ import { DisplayModeProvider } from '../../../state/displayMode'
 import { DisplaySettingsProvider } from '../../../state/displaySettings'
 import { KioskModeProvider } from '../../../state/kioskMode'
 import { LockProvider } from '../../../state/lockState'
+import { ShareSheetProvider } from '../../../state/shareSheet'
 import { useDisplayMode } from '../../../state/useDisplayMode'
 import { WorkspaceProvider } from '../../../features/workspaces/WorkspaceProvider'
 import type { NdxBridge } from '@shared/contracts'
@@ -67,17 +68,19 @@ function renderShell(): ReturnType<typeof render> {
               <DisplaySettingsProvider>
                 <LockProvider>
                   <KioskModeProvider>
-                    <MemoryRouter initialEntries={['/']}>
-                      <Routes>
-                        <Route element={<ShellLayout />}>
-                          <Route path="/" element={<ModeSwitcher />} />
-                          <Route
-                            path="/search"
-                            element={<div data-testid="search-screen">Search</div>}
-                          />
-                        </Route>
-                      </Routes>
-                    </MemoryRouter>
+                    <ShareSheetProvider>
+                      <MemoryRouter initialEntries={['/']}>
+                        <Routes>
+                          <Route element={<ShellLayout />}>
+                            <Route path="/" element={<ModeSwitcher />} />
+                            <Route
+                              path="/search"
+                              element={<div data-testid="search-screen">Search</div>}
+                            />
+                          </Route>
+                        </Routes>
+                      </MemoryRouter>
+                    </ShareSheetProvider>
                   </KioskModeProvider>
                 </LockProvider>
               </DisplaySettingsProvider>
