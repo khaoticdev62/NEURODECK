@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Workspace } from '@shared/contracts'
+import { ndxError, type NdxResult, type Workspace } from '@shared/contracts'
 import {
   createWorkspace,
   listWorkspaces,
@@ -9,6 +9,33 @@ import {
 import { WorkspaceContext, type WorkspaceContextValue } from './WorkspaceContext'
 
 const ACTIVE_WORKSPACE_KEY_NONE = null
+const WORKSPACE_LOAD_TIMEOUT_MS = 1500
+
+function getWorkspaceLoadTimeoutMs(): number {
+  return Number(import.meta.env.VITE_WORKSPACE_LOAD_TIMEOUT_MS ?? WORKSPACE_LOAD_TIMEOUT_MS)
+}
+
+function listWorkspacesWithTimeout(timeoutMs: number): Promise<NdxResult<Workspace[]>> {
+  return Promise.race([
+    listWorkspaces(),
+    new Promise<NdxResult<Workspace[]>>((resolve) => {
+      window.setTimeout(() => {
+        resolve({
+          ok: false,
+          error: ndxError(
+            'timeout',
+            'WORKSPACE_LOAD_TIMEOUT',
+            `Workspace registry timed out after ${timeoutMs}ms.`,
+            {
+              message: 'Workspace list IPC did not resolve before the renderer timeout.',
+              retryable: true
+            }
+          )
+        })
+      }, timeoutMs)
+    })
+  ])
+}
 
 /**
  * Real workspace state, backed by the IPC layer Epic 5 built (no fake
@@ -19,6 +46,7 @@ const ACTIVE_WORKSPACE_KEY_NONE = null
  * (Epic 8's task state, Epic 6's terminal sessions) needs resuming too.
  */
 export function WorkspaceProvider({ children }: { children: ReactNode }): React.JSX.Element {
+  const workspaceLoadTimeoutMs = getWorkspaceLoadTimeoutMs()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(
     ACTIVE_WORKSPACE_KEY_NONE
@@ -38,7 +66,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
   const refresh = useCallback(async () => {
     setLoading(true)
     try {
-      const result = await listWorkspaces()
+      const result = await listWorkspacesWithTimeout(workspaceLoadTimeoutMs)
       if (result.ok) {
         setWorkspaces(result.data)
         setError(null)
@@ -50,7 +78,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [workspaceLoadTimeoutMs])
 
   // Deliberately not `refresh()` here: that function sets state synchronously
   // (`setLoading(true)`) before its first `await`, which the React Compiler
@@ -59,7 +87,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
   // not synchronous work disguised by an `await`.
   useEffect(() => {
     let cancelled = false
-    void listWorkspaces()
+    void listWorkspacesWithTimeout(workspaceLoadTimeoutMs)
       .then((result) => {
         if (cancelled) return
         if (result.ok) {
@@ -79,7 +107,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [workspaceLoadTimeoutMs])
 
   const addFromPicker = useCallback(async () => {
     const picked = await pickWorkspaceFolder()

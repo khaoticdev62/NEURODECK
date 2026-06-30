@@ -7,6 +7,7 @@ import { useWorkspaces } from '../useWorkspaces'
 afterEach(() => {
   // @ts-expect-error test-only cleanup of a global the real preload script injects
   delete window.ndx
+  delete import.meta.env.VITE_WORKSPACE_LOAD_TIMEOUT_MS
 })
 
 function Probe(): React.JSX.Element {
@@ -67,5 +68,26 @@ describe('WorkspaceProvider', () => {
     })
     expect(screen.getByText('error: none')).toBeInTheDocument()
     expect(screen.getByText('count: 1')).toBeInTheDocument()
+  })
+
+  it('settles loading to false when the workspace IPC call hangs', async () => {
+    import.meta.env.VITE_WORKSPACE_LOAD_TIMEOUT_MS = '20'
+    window.ndx = {
+      workspaces: {
+        list: vi.fn(() => new Promise(() => undefined))
+      } as never
+    } as Partial<NdxBridge> as NdxBridge
+
+    render(
+      <WorkspaceProvider>
+        <Probe />
+      </WorkspaceProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByText('loading: false')).toBeInTheDocument()
+    })
+    expect(screen.getByText('error: Workspace registry timed out after 20ms.')).toBeInTheDocument()
+    expect(screen.getByText('count: 0')).toBeInTheDocument()
   })
 })

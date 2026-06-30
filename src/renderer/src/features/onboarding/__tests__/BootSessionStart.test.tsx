@@ -15,6 +15,8 @@ function stubBridge(partial: Partial<NdxBridge>): void {
 afterEach(() => {
   // @ts-expect-error test-only cleanup of a global the real preload script injects
   delete window.ndx
+  delete import.meta.env.VITE_BOOT_STEP_TIMEOUT_MS
+  delete import.meta.env.VITE_WORKSPACE_LOAD_TIMEOUT_MS
 })
 
 function renderBoot(options: { strict?: boolean } = {}): ReturnType<typeof renderWithProviders> {
@@ -136,7 +138,7 @@ describe('BootSessionStart', () => {
     })
   })
 
-  it('degrades gracefully into the shell when workspace loading fails, rather than blocking boot', async () => {
+  it('degrades gracefully into Home when workspace loading fails, rather than blocking boot', async () => {
     stubBridge(makeBridge({ workspaceFails: true }))
     renderBoot()
 
@@ -147,12 +149,12 @@ describe('BootSessionStart', () => {
     // single non-fatal store read failing, since Retry would just hit the
     // same failure again.
     await waitFor(() => {
-      expect(screen.getByText('Controller-native AI')).toBeInTheDocument()
+      expect(screen.getByText('Create or discover a workspace')).toBeInTheDocument()
     })
     expect(screen.queryByText('Boot failed')).not.toBeInTheDocument()
   })
 
-  it('degrades into the shell when the workspace IPC call rejects, instead of silently stalling boot', async () => {
+  it('degrades into Home when the workspace IPC call rejects, instead of silently stalling boot', async () => {
     // A rejected promise (e.g. a dropped IPC invoke) is a different failure
     // shape than a resolved `{ ok: false }` result — `runStep` used to have
     // no try/catch around this, so a rejection propagated out of `runBoot`'s
@@ -163,7 +165,19 @@ describe('BootSessionStart', () => {
     renderBoot()
 
     await waitFor(() => {
-      expect(screen.getByText('Controller-native AI')).toBeInTheDocument()
+      expect(screen.getByText('Create or discover a workspace')).toBeInTheDocument()
+    })
+    expect(screen.queryByText('Boot failed')).not.toBeInTheDocument()
+  })
+
+  it('times out a hung workspace read and opens Home instead of holding the UI', async () => {
+    import.meta.env.VITE_BOOT_STEP_TIMEOUT_MS = '20'
+    import.meta.env.VITE_WORKSPACE_LOAD_TIMEOUT_MS = '20'
+    stubBridge(makeBridge({ hang: true }))
+    renderBoot()
+
+    await waitFor(() => {
+      expect(screen.getByText('Create or discover a workspace')).toBeInTheDocument()
     })
     expect(screen.queryByText('Boot failed')).not.toBeInTheDocument()
   })

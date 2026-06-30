@@ -24,6 +24,11 @@ type BootPhase = 'booting' | 'complete' | 'failed'
 
 const BOOT_TIMEOUT_MS = 15000
 const DETAILS_REVEAL_MS = 10000
+const BOOT_STEP_TIMEOUT_MS = 1500
+
+function getBootStepTimeoutMs(): number {
+  return Number(import.meta.env.VITE_BOOT_STEP_TIMEOUT_MS ?? BOOT_STEP_TIMEOUT_MS)
+}
 
 interface BootStepResult<T> {
   ok: true
@@ -33,6 +38,7 @@ interface BootStepResult<T> {
 interface BootStepFailure {
   ok: false
   error: string
+  timedOut?: boolean
 }
 
 /**
@@ -47,6 +53,7 @@ interface BootStepFailure {
  */
 export function BootSessionStart(): React.JSX.Element {
   const navigate = useNavigate()
+  const bootStepTimeoutMs = getBootStepTimeoutMs()
   const [phase, setPhase] = useState<BootPhase>('booting')
   const [steps, setSteps] = useState<BootStep[]>([
     { id: 'core', label: 'Loading core services', status: 'pending' },
@@ -113,9 +120,22 @@ export function BootSessionStart(): React.JSX.Element {
       // sequence with no further state updates — the step just sat on
       // "running" until the unrelated 15s global timeout finally fired.
       // Treat a rejection exactly like a structured failure result instead.
-      let result: { ok: true; data: T } | { ok: false; error: { userMessage: string } }
+      let result:
+        | { ok: true; data: T }
+        | { ok: false; error: { userMessage: string }; timedOut?: boolean }
       try {
-        result = await promise
+        result = await Promise.race([
+          promise,
+          new Promise<{ ok: false; error: { userMessage: string }; timedOut: true }>((resolve) => {
+            window.setTimeout(() => {
+              resolve({
+                ok: false,
+                error: { userMessage: `${label} timed out after ${bootStepTimeoutMs}ms.` },
+                timedOut: true
+              })
+            }, bootStepTimeoutMs)
+          })
+        ])
       } catch (error) {
         if (abortRef.current) return { ok: false, error: 'aborted' }
         const message = error instanceof Error ? error.message : 'An unexpected error occurred.'
@@ -128,7 +148,7 @@ export function BootSessionStart(): React.JSX.Element {
         return { ok: true, data: result.data }
       }
       updateStep(stepId, 'failed', result.error.userMessage)
-      return { ok: false, error: result.error.userMessage }
+      return { ok: false, error: result.error.userMessage, timedOut: result.timedOut }
     }
 
     const detailsTimer = setTimeout(() => {
@@ -152,7 +172,11 @@ export function BootSessionStart(): React.JSX.Element {
       // than permanently walling the user out behind a "Boot failed" screen
       // that a Retry can never get past, since Retry just re-reads the same
       // state.
-      const workspaceResult = await runStep('workspace', 'Restoring workspace', listWorkspaces())
+      const [workspaceResult, modelResult, controllerResult] = await Promise.all([
+        runStep('workspace', 'Restoring workspace', listWorkspaces()),
+        runStep('model', 'Checking model runtime', listModelProviders()),
+        runStep('controller', 'Connecting controller', getControllerSettings())
+      ])
       if (!workspaceResult.ok) {
         updateStep('workspace', 'failed', workspaceResult.error)
       }
@@ -163,17 +187,11 @@ export function BootSessionStart(): React.JSX.Element {
       // of whether any one store's data came back clean.
       updateStep('core', 'ok')
 
-      const modelResult = await runStep('model', 'Checking model runtime', listModelProviders())
       if (!modelResult.ok) {
         // Model runtime is optional for basic shell access; continue degraded.
         updateStep('model', 'failed', modelResult.error)
       }
 
-      const controllerResult = await runStep(
-        'controller',
-        'Connecting controller',
-        getControllerSettings()
-      )
       if (!controllerResult.ok) {
         // Controller settings are optional at boot; focus engine has its own fallbacks.
         updateStep('controller', 'failed', controllerResult.error)
@@ -182,18 +200,14 @@ export function BootSessionStart(): React.JSX.Element {
       // System metrics are informative only. Caught for the same reason
       // `runStep` now is — an uncaught rejection here would otherwise abort
       // the rest of `runBoot` (including the navigate() call below) silently.
-      try {
-        await collectSystemMetrics()
-      } catch {
-        // Not a user-facing boot step; no-op is honest here.
-        // A future boot log can record this without console noise.
-      }
+      void collectSystemMetrics().catch(() => undefined)
 
       if (abortRef.current) return
 
       const hasWorkspaces = workspaces.length > 0
       const hasProviders = modelResult.ok && modelResult.data.length > 0
-      const isFirstRun = !hasWorkspaces && !hasProviders
+      const bootStateIsKnown = workspaceResult.ok && modelResult.ok
+      const isFirstRun = bootStateIsKnown && !hasWorkspaces && !hasProviders
 
       finishBoot('complete')
       navigate(isFirstRun ? '/onboarding/welcome' : '/')
@@ -206,7 +220,7 @@ export function BootSessionStart(): React.JSX.Element {
       clearTimeout(detailsTimer)
       clearTimeout(timeoutTimer)
     }
-  }, [navigate])
+  }, [navigate, bootStepTimeoutMs])
 
   function handleDiagnostics(): void {
     navigate('/about')
