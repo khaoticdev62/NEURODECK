@@ -4,18 +4,28 @@ import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import {
   createBackup,
+  getBackupSchedule,
   importLocalBackup,
   listBackups,
   migrateBackups,
   restoreBackup,
+  setBackupSchedule,
   verifyBackup
 } from '../../services/ipc/backupClient'
 import type {
   BackupMigrationReport,
   BackupRecord,
   BackupRestoreResult,
+  BackupScheduleSettings,
   BackupVerification
 } from '@shared/contracts'
+
+const INTERVAL_OPTIONS: Array<{ label: string; hours: number }> = [
+  { label: 'Every 6 hours', hours: 6 },
+  { label: 'Every 12 hours', hours: 12 },
+  { label: 'Daily', hours: 24 },
+  { label: 'Weekly', hours: 168 }
+]
 
 export function BackupAndRestore(): React.JSX.Element {
   const [backups, setBackups] = useState<BackupRecord[]>([])
@@ -26,6 +36,7 @@ export function BackupAndRestore(): React.JSX.Element {
   const [restoreReview, setRestoreReview] = useState<BackupRecord | null>(null)
   const [restoreResult, setRestoreResult] = useState<BackupRestoreResult | null>(null)
   const [migrationReport, setMigrationReport] = useState<BackupMigrationReport | null>(null)
+  const [schedule, setSchedule] = useState<BackupScheduleSettings | null>(null)
 
   useEffect(() => {
     let active = true
@@ -43,6 +54,33 @@ export function BackupAndRestore(): React.JSX.Element {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    let active = true
+    void getBackupSchedule().then((result) => {
+      if (active && result.ok) setSchedule(result.data)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function handleToggleScheduled(): Promise<void> {
+    if (!schedule) return
+    const result = await setBackupSchedule({
+      enabled: !schedule.enabled,
+      intervalHours: schedule.intervalHours
+    })
+    if (result.ok) setSchedule(result.data)
+    else setError(result.error.userMessage)
+  }
+
+  async function handleChangeInterval(intervalHours: number): Promise<void> {
+    if (!schedule) return
+    const result = await setBackupSchedule({ enabled: schedule.enabled, intervalHours })
+    if (result.ok) setSchedule(result.data)
+    else setError(result.error.userMessage)
+  }
 
   async function handleCreate(): Promise<void> {
     setBusy(true)
@@ -146,6 +184,36 @@ export function BackupAndRestore(): React.JSX.Element {
       </header>
 
       {error && <ErrorState title="Backup request failed" description={error} />}
+
+      {schedule && (
+        <section className="flex flex-wrap items-center gap-3 border border-border bg-surface p-3">
+          <ControllerButton
+            variant={schedule.enabled ? 'primary' : 'secondary'}
+            onClick={() => void handleToggleScheduled()}
+          >
+            Scheduled backups: {schedule.enabled ? 'On' : 'Off'}
+          </ControllerButton>
+          <div className="flex flex-wrap gap-2">
+            {INTERVAL_OPTIONS.map((option) => (
+              <ControllerButton
+                key={option.hours}
+                variant={schedule.intervalHours === option.hours ? 'primary' : 'secondary'}
+                onClick={() => void handleChangeInterval(option.hours)}
+              >
+                {option.label}
+              </ControllerButton>
+            ))}
+          </div>
+          <p className="text-meta text-text-secondary">
+            {schedule.enabled
+              ? `Next: ${schedule.nextRunAt ? new Date(schedule.nextRunAt).toLocaleString() : 'pending'}`
+              : 'Scheduled backups are off.'}
+            {schedule.lastRunAt
+              ? ` · Last ran ${new Date(schedule.lastRunAt).toLocaleString()}`
+              : ''}
+          </p>
+        </section>
+      )}
 
       {verification && (
         <section className="border border-border bg-surface p-3">

@@ -3156,3 +3156,26 @@ npm run typecheck -> passed
 npm run lint -> passed
 npm run build -> passed
 ```
+
+## Epic X7 — Scheduled Backup (2026-06-29)
+
+Real scheduled backup, closing the named gap on `BackupService`'s existing real local backup foundation. No real OS-level cron/launchd integration exists in this codebase (and adding one is out of scope for an Electron app aiming for cross-platform-without-native-installers behavior), so the design is an honest "check-and-catch-up" scheduler rather than a precise-instant cron claim.
+
+**`BackupScheduleStore`** persists `{enabled, intervalHours, lastRunAt, nextRunAt}`. **`BackupScheduler`** (`core/backup/BackupScheduler.ts`) runs a real check every 15 minutes (configurable) via `setInterval`, plus once immediately on `start()` — so a backup that was due while the app was closed runs as soon as the app is next opened, rather than being silently skipped or requiring the app to be running at the exact scheduled instant. `isBackupDue()`/`computeNextRunAt()` are extracted as pure functions, tested independently of any timer or file I/O.
+
+Wired into `main/ipc/index.ts`: `backupScheduler.start()` runs after `registerBackupHandlers()`, and `backupScheduler.stop()` is added to the existing `before-quit` dispose chain (the same accumulating-dispose-function pattern `disposePackages`/`disposeLan`/`disposeLanShare` already use).
+
+`/backup` (`BackupAndRestore.tsx`) gained a real on/off toggle and four interval presets (6h/12h/daily/weekly), showing the real next/last-run timestamps from the persisted schedule.
+
+**A real, notable side-discovery**: this screen had zero test coverage before this work, despite "Backup (§21.1–21.2)" being checked `[x]` real in the checklist — the same backend-real/undertested pattern already flagged for Clipboard Center, Snippets, and the Application Library elsewhere in this ledger. A full `BackupAndRestore.test.tsx` was added covering both the pre-existing create/empty-state behavior and the new schedule section, rather than testing only the new code in isolation.
+
+**New/changed files**: `src/shared/contracts/backupSchedule.ts` (new), `src/shared/contracts/index.ts`/`ipcChannels.ts`/`bridge.ts` (new `backup.getSchedule`/`backup.setSchedule` entries), `src/core/backup/BackupScheduleStore.ts` (new) + `__tests__/BackupScheduleStore.test.ts` (new, 2 tests), `src/core/backup/BackupScheduler.ts` (new) + `__tests__/BackupScheduler.test.ts` (new, 7 tests), `src/main/ipc/registerBackupHandlers.ts` (new handlers, new `backupScheduleStore` constructor param), `src/main/ipc/index.ts` (wiring + dispose), `src/preload/index.ts`/`src/renderer/src/services/ipc/backupClient.ts` (wiring), `src/renderer/src/features/backup/BackupAndRestore.tsx` (new schedule section) + `__tests__/BackupAndRestore.test.tsx` (new, 5 tests — first test coverage this screen has ever had).
+
+**Validation evidence (run 2026-06-29):**
+
+```text
+npm run test -> 237 files / 1128 tests passed (one unrelated pre-existing flaky failure — GuidedControllerTutorial.test.tsx timing — confirmed passing in isolation)
+npm run typecheck -> passed
+npm run lint -> passed
+npm run build -> passed
+```

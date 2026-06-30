@@ -3,9 +3,11 @@ import type {
   BackupMigrationReport,
   BackupRecord,
   BackupRestoreResult,
+  BackupScheduleSettings,
   BackupVerification,
   CreateBackupRequest,
-  NdxResult
+  NdxResult,
+  SetBackupScheduleRequest
 } from '@shared/contracts'
 import { bridgeUnavailableError, getNdxBridge } from './ndxBridge'
 
@@ -49,4 +51,18 @@ export async function migrateBackups(): Promise<NdxResult<BackupMigrationReport>
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.backups.migrate()
+}
+
+export async function getBackupSchedule(): Promise<NdxResult<BackupScheduleSettings>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.backups.getSchedule()
+}
+
+export async function setBackupSchedule(
+  request: SetBackupScheduleRequest
+): Promise<NdxResult<BackupScheduleSettings>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.backups.setSchedule(request)
 }

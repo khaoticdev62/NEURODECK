@@ -4,21 +4,27 @@ import {
   backupMigrationReportSchema,
   backupRecordSchema,
   backupRestoreResultSchema,
+  backupScheduleSettingsSchema,
   backupVerificationSchema,
   createBackupRequestSchema,
+  setBackupScheduleRequestSchema,
   IPC_CHANNELS,
   ndxError,
   type BackupMigrationReport,
   type BackupRecord,
   type BackupRestoreResult,
+  type BackupScheduleSettings,
   type BackupVerification,
   type NdxResult
 } from '@shared/contracts'
 import type { BackupService } from '../../core/backup/BackupService'
+import { computeNextRunAt } from '../../core/backup/BackupScheduler'
+import type { BackupScheduleStore } from '../../core/backup/BackupScheduleStore'
 
 export function registerBackupHandlers(
   backupService: BackupService,
-  getWindow: () => BrowserWindow | null
+  getWindow: () => BrowserWindow | null,
+  backupScheduleStore: BackupScheduleStore
 ): void {
   ipcMain.handle(IPC_CHANNELS.backupList, async (): Promise<NdxResult<BackupRecord[]>> => {
     const records = await backupService.list()
@@ -101,6 +107,32 @@ export function registerBackupHandlers(
     async (): Promise<NdxResult<BackupMigrationReport>> => {
       const report = await backupService.migrateManagedBackups()
       return { ok: true, data: backupMigrationReportSchema.parse(report) }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.backupGetSchedule,
+    async (): Promise<NdxResult<BackupScheduleSettings>> => {
+      const schedule = await backupScheduleStore.get()
+      return { ok: true, data: backupScheduleSettingsSchema.parse(schedule) }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.backupSetSchedule,
+    async (_event, payload: unknown): Promise<NdxResult<BackupScheduleSettings>> => {
+      const parsed = setBackupScheduleRequestSchema.safeParse(payload)
+      if (!parsed.success) return invalidRequest()
+      const now = Date.now()
+      const current = await backupScheduleStore.get()
+      const schedule: BackupScheduleSettings = {
+        enabled: parsed.data.enabled,
+        intervalHours: parsed.data.intervalHours,
+        lastRunAt: current.lastRunAt,
+        nextRunAt: parsed.data.enabled ? computeNextRunAt(parsed.data.intervalHours, now) : null
+      }
+      const saved = await backupScheduleStore.set(schedule)
+      return { ok: true, data: backupScheduleSettingsSchema.parse(saved) }
     }
   )
 }

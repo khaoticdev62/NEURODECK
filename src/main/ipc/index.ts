@@ -12,6 +12,8 @@ import { hostname, homedir } from 'node:os'
 import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
+import { BackupScheduleStore } from '../../core/backup/BackupScheduleStore'
+import { BackupScheduler } from '../../core/backup/BackupScheduler'
 import { BackupService } from '../../core/backup/BackupService'
 import { ApplicationDiscoveryService } from '../../core/applications/ApplicationDiscoveryService'
 import { ApplicationLauncher } from '../../core/applications/ApplicationLauncher'
@@ -158,6 +160,10 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     app.getPath('userData'),
     join(app.getPath('userData'), 'backups')
   )
+  const backupScheduleStore = new BackupScheduleStore(
+    join(app.getPath('userData'), 'backup-schedule.json')
+  )
+  const backupScheduler = new BackupScheduler(backupScheduleStore, backupService)
   const workflowStore = new WorkflowStore(join(app.getPath('userData'), 'workflows'))
   const workflowRunStore = new WorkflowRunStore(join(app.getPath('userData'), 'workflows'))
   const modelProviderStore = new ModelProviderStore(
@@ -445,7 +451,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerFileHandlers(fileService, recoveryService, workspaceStore)
   registerGitHandlers(gitService, workspaceStore, fileService, recoveryService)
   registerRecoveryHandlers(recoveryService, fileService, workspaceStore)
-  registerBackupHandlers(backupService, getWindow)
+  registerBackupHandlers(backupService, getWindow, backupScheduleStore)
+  backupScheduler.start()
   registerWorkflowHandlers(workflowStore, workflowRunStore)
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)
   registerAgentHandlers(agentStore, agentRuntime)
@@ -570,6 +577,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     getWindow
   )
   return () => {
+    backupScheduler.stop()
     disposeTerminal()
     disposeRemote()
     disposePower()

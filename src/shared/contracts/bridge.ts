@@ -31,6 +31,7 @@ import type {
   BackupVerification,
   CreateBackupRequest
 } from './backup'
+import type { BackupScheduleSettings, SetBackupScheduleRequest } from './backupSchedule'
 import type {
   CreateVaultItemRequest,
   RevealVaultItemResult,
@@ -343,6 +344,8 @@ export interface NdxBridge {
     restore: (request: BackupIdRequest) => Promise<NdxResult<BackupRestoreResult>>
     importLocal: () => Promise<NdxResult<BackupRecord | null>>
     migrate: () => Promise<NdxResult<BackupMigrationReport>>
+    getSchedule: () => Promise<NdxResult<BackupScheduleSettings>>
+    setSchedule: (request: SetBackupScheduleRequest) => Promise<NdxResult<BackupScheduleSettings>>
   }
   git: {
     status: (request: WorkspaceGitRequest) => Promise<NdxResult<GitStatus>>

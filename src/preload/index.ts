@@ -62,7 +62,9 @@ const ndx: NdxBridge = {
     verify: (request) => ipcRenderer.invoke(IPC_CHANNELS.backupVerify, request),
     restore: (request) => ipcRenderer.invoke(IPC_CHANNELS.backupRestore, request),
     importLocal: () => ipcRenderer.invoke(IPC_CHANNELS.backupImportLocal),
-    migrate: () => ipcRenderer.invoke(IPC_CHANNELS.backupMigrate)
+    migrate: () => ipcRenderer.invoke(IPC_CHANNELS.backupMigrate),
+    getSchedule: () => ipcRenderer.invoke(IPC_CHANNELS.backupGetSchedule),
+    setSchedule: (request) => ipcRenderer.invoke(IPC_CHANNELS.backupSetSchedule, request)
   },
   git: {
     status: (request) => ipcRenderer.invoke(IPC_CHANNELS.gitStatus, request),
