@@ -13,15 +13,15 @@
   --breakpoint-docked-2k: 2560px;
 
   /* Surfaces and backgrounds */
-  --color-canvas: #0b0c10;
-  --color-surface: #14161c;
-  --color-surface-raised: #1c1f27;
+  --color-canvas: #080a0d;
+  --color-surface: #10141a;
+  --color-surface-raised: #171d25;
   --color-overlay: rgb(11 12 16 / 0.85);
 
   /* Borders */
-  --color-border: #2a2e38;
-  --color-border-strong: #3a3f4c;
-  --color-border-focus: #7aa2ff;
+  --color-border: #242b36;
+  --color-border-strong: #3c4656;
+  --color-border-focus: #78dce8;
 
   /* Text hierarchy */
   --color-text-primary: rgb(245 246 250 / 0.95);
@@ -29,16 +29,16 @@
   --color-text-tertiary: rgb(208 212 222 / 0.45);
 
   /* Status colors — always paired with text/icon, never color alone (spec §8.3) */
-  --color-status-info: #5ea8ff;
-  --color-status-success: #4fd18b;
-  --color-status-warning: #f2b84b;
-  --color-status-error: #f05b6e;
-  --color-status-approval: #b48bff;
+  --color-status-info: #78dce8;
+  --color-status-success: #58d68d;
+  --color-status-warning: #f4c95d;
+  --color-status-error: #ff6b7a;
+  --color-status-approval: #a78bfa;
 
   /* Radius */
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
 
   /* Shadow / elevation */
   --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.45);
@@ -103,21 +103,21 @@
   /* HYBRID-1 semantic workbench aliases. These keep feature code off raw
      palette values while the full screen migration proceeds route by route. */
   --ndx-workbench-canvas-bg: var(--color-canvas);
-  --ndx-workbench-titlebar-bg: #0f1219;
-  --ndx-workbench-activitybar-bg: #10131a;
-  --ndx-workbench-tool-bg: #121720;
-  --ndx-workbench-editor-bg: #0b0d13;
-  --ndx-workbench-panel-bg: #111722;
-  --ndx-workbench-statusbar-bg: #171d29;
-  --ndx-workbench-border: #2f3748;
+  --ndx-workbench-titlebar-bg: #0c1016;
+  --ndx-workbench-activitybar-bg: #0b0f15;
+  --ndx-workbench-tool-bg: #0d1219;
+  --ndx-workbench-editor-bg: #090c11;
+  --ndx-workbench-panel-bg: #0f151e;
+  --ndx-workbench-statusbar-bg: #111924;
+  --ndx-workbench-border: #27313e;
   --ndx-workbench-border-active: var(--color-border-focus);
-  --ndx-workbench-tab-active-bg: #1a2130;
-  --ndx-workbench-tab-inactive-bg: #111722;
-  --ndx-workbench-row-selected-bg: rgb(122 162 255 / 0.14);
-  --ndx-workbench-row-active-bg: rgb(139 92 246 / 0.14);
+  --ndx-workbench-tab-active-bg: #17212d;
+  --ndx-workbench-tab-inactive-bg: #101720;
+  --ndx-workbench-row-selected-bg: rgb(120 220 232 / 0.13);
+  --ndx-workbench-row-active-bg: rgb(244 201 93 / 0.12);
   --ndx-workbench-focus-dense-shadow: inset 2px 0 0 var(--color-border-focus);
   --ndx-workbench-focus-spatial-shadow:
-    0 0 0 2px rgb(185 156 255 / 0.55), 0 12px 28px rgb(0 0 0 / 0.42);
+    0 0 0 2px rgb(120 220 232 / 0.55), 0 10px 22px rgb(0 0 0 / 0.36);
   --ndx-workbench-focus-ring: 0 0 0 2px var(--color-border-focus);
   --ndx-workbench-status-info: var(--color-status-info);
   --ndx-workbench-status-success: var(--color-status-success);
@@ -184,6 +184,14 @@
   --ndx-motion-slow: 0.01ms;
 }
 
+.ndx-workbench-main {
+  background:
+    linear-gradient(90deg, rgb(120 220 232 / 0.04) 1px, transparent 1px),
+    linear-gradient(180deg, rgb(120 220 232 / 0.025) 1px, transparent 1px),
+    var(--ndx-workbench-editor-bg);
+  background-size: 48px 48px;
+}
+
 [data-high-contrast='true'] {
   --color-border: #5a6070;
   --color-text-secondary: rgb(208 212 222 / 0.9);
@@ -202,7 +210,8 @@
 
 .ndx-focus-surface {
   border: 1px solid var(--ndx-workbench-border);
-  background: var(--color-surface);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%),
+    var(--color-surface);
   color: var(--color-text-primary);
   transition:
     transform var(--ndx-motion-fast) var(--ndx-motion-easing),
@@ -225,7 +234,7 @@
 
 .ndx-focus-surface[data-focus-density='spatial']:focus-within,
 .ndx-focus-surface[data-focus-density='spatial']:hover {
-  transform: translateY(-2px) scale(1.04);
+  transform: translateY(-1px) scale(1.015);
   box-shadow: var(--ndx-workbench-focus-spatial-shadow);
   border-color: var(--ndx-workbench-border-active);
 }

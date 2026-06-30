@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import type { AgentRun, WorkflowDefinition, WorkflowRun, Workspace } from '@shared/contracts'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
-import { NdxSpatialLockup } from '../../components/workbench'
+import { NdxFocusSurface } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { listAgents, listAgentRuns } from '../../services/ipc/agentClient'
 import { listWorkflows, listWorkflowRuns } from '../../services/ipc/workflowClient'
@@ -152,20 +152,28 @@ export function HomeCommandCenter(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-title font-semibold text-text-primary">Home</p>
-          <p className="text-meta text-text-secondary">
-            {targetWorkspace
-              ? `Active workspace: ${targetWorkspace.name}`
-              : `${workspaces.length} workspaces available`}
-          </p>
+    <div className="flex min-h-full flex-col gap-3 p-3">
+      <section className="shrink-0 border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)]">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-stretch gap-0">
+          <div className="min-w-0 border-r border-[var(--ndx-workbench-border)] p-4">
+            <p className="text-meta uppercase tracking-wide text-text-tertiary">Command center</p>
+            <h1 className="mt-1 truncate text-display font-semibold text-text-primary">
+              {targetWorkspace?.name ?? 'Home'}
+            </h1>
+            <p className="mt-1 truncate text-meta text-text-secondary">
+              {targetWorkspace
+                ? `Active workspace: ${targetWorkspace.name}`
+                : `${workspaces.length} workspaces available`}
+            </p>
+          </div>
+          <div className="grid min-w-[260px] grid-cols-2">
+            <Metric label="Workflows" value={summary.workflows.length} />
+            <Metric label="Agents" value={summary.agentCount} />
+            <Metric label="Workflow runs" value={runningWorkflows.length} />
+            <Metric label="Agent runs" value={runningAgents.length} />
+          </div>
         </div>
-        <ControllerButton variant="secondary" onClick={() => navigate('/search')}>
-          Search
-        </ControllerButton>
-      </div>
+      </section>
 
       {(error || summary.errors.length > 0) && (
         <ErrorState
@@ -175,56 +183,68 @@ export function HomeCommandCenter(): React.JSX.Element {
       )}
 
       {targetWorkspace && (
-        <section className="grid grid-cols-[1.2fr_0.8fr] gap-3">
-          <NdxSpatialLockup>
-            <section>
-              <p className="text-body font-semibold text-text-primary">Continue</p>
-              <p className="mt-1 text-title font-semibold text-text-primary">
-                {targetWorkspace.name}
-              </p>
-              <p className="text-meta text-text-secondary">{targetWorkspace.rootPath}</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <ControllerButton
-                  ref={continueRef}
-                  variant="primary"
-                  className={continueFocused ? 'ring-2 ring-border-focus' : undefined}
-                  onClick={() => {
-                    setActive(targetWorkspace.id)
-                    navigate('/workspaces/detail')
-                  }}
-                >
-                  Continue
-                </ControllerButton>
-                <ControllerButton variant="secondary" onClick={() => navigate('/files')}>
-                  Files
-                </ControllerButton>
-                <ControllerButton variant="secondary" onClick={() => navigate('/terminal')}>
-                  Terminal
-                </ControllerButton>
-                <ControllerButton variant="secondary" onClick={() => navigate('/git')}>
-                  Git
-                </ControllerButton>
+        <section className="grid shrink-0 grid-cols-[minmax(0,1fr)_280px] gap-3">
+          <div className="border border-[var(--ndx-workbench-border)] bg-surface p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <p className="text-meta uppercase tracking-wide text-text-tertiary">Resume</p>
+                <p className="mt-1 truncate text-title font-semibold text-text-primary">
+                  {targetWorkspace.rootPath}
+                </p>
               </div>
-            </section>
-          </NdxSpatialLockup>
+              <ControllerButton
+                ref={continueRef}
+                variant="primary"
+                className={continueFocused ? 'ring-2 ring-border-focus' : undefined}
+                onClick={() => {
+                  setActive(targetWorkspace.id)
+                  navigate('/workspaces/detail')
+                }}
+              >
+                Continue
+              </ControllerButton>
+            </div>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <ControllerButton variant="secondary" onClick={() => navigate('/files')}>
+                Files
+              </ControllerButton>
+              <ControllerButton variant="secondary" onClick={() => navigate('/terminal')}>
+                Terminal
+              </ControllerButton>
+              <ControllerButton variant="secondary" onClick={() => navigate('/git')}>
+                Git
+              </ControllerButton>
+            </div>
+          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Metric label="Workflows" value={summary.workflows.length} />
-            <Metric label="Agents" value={summary.agentCount} />
-            <Metric label="Workflow runs" value={runningWorkflows.length} />
-            <Metric label="Agent runs" value={runningAgents.length} />
+          <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">
+            <p className="text-meta uppercase tracking-wide text-text-tertiary">Jump</p>
+            <div className="mt-3 grid gap-2">
+              <ControllerButton variant="secondary" onClick={() => navigate('/search')}>
+                Search
+              </ControllerButton>
+              <ControllerButton variant="secondary" onClick={() => navigate('/ai')}>
+                AI canvas
+              </ControllerButton>
+              <ControllerButton variant="ghost" onClick={() => navigate('/automations')}>
+                Open workflows
+              </ControllerButton>
+            </div>
           </div>
         </section>
       )}
 
-      <section>
-        <div className="mb-2 flex items-center justify-between">
-          <p className="text-body font-semibold text-text-primary">Workspaces</p>
+      <section className="shrink-0">
+        <div className="mb-2 flex items-center justify-between border-b border-[var(--ndx-workbench-border)] pb-2">
+          <div>
+            <p className="text-body font-semibold text-text-primary">Workspaces</p>
+            <p className="text-meta text-text-tertiary">Controller-ready project targets</p>
+          </div>
           <ControllerButton variant="ghost" onClick={() => navigate('/workspaces')}>
             Manage
           </ControllerButton>
         </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
           {workspaces.slice(0, 6).map((workspace) => (
             <WorkspaceCard
               key={workspace.id}
@@ -239,9 +259,12 @@ export function HomeCommandCenter(): React.JSX.Element {
         </div>
       </section>
 
-      <section>
-        <p className="mb-2 text-body font-semibold text-text-primary">Recommendations</p>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+      <section className="shrink-0">
+        <div className="mb-2 border-b border-[var(--ndx-workbench-border)] pb-2">
+          <p className="text-body font-semibold text-text-primary">Next actions</p>
+          <p className="text-meta text-text-tertiary">Common routes for the active workspace</p>
+        </div>
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
           <Recommendation
             title="Create workflow"
             detail="Automate real tool steps"
@@ -266,12 +289,12 @@ export function HomeCommandCenter(): React.JSX.Element {
 
 function Metric({ label, value }: { label: string; value: number }): React.JSX.Element {
   return (
-    <NdxSpatialLockup>
-      <div>
-        <p className="text-meta text-text-secondary">{label}</p>
-        <p className="text-title font-semibold text-text-primary">{value}</p>
+    <NdxFocusSurface density="spatial" selected={value > 0}>
+      <div className="p-3">
+        <p className="truncate text-meta text-text-secondary">{label}</p>
+        <p className="mt-1 text-title font-semibold tabular-nums text-text-primary">{value}</p>
       </div>
-    </NdxSpatialLockup>
+    </NdxFocusSurface>
   )
 }
 
@@ -285,12 +308,17 @@ function WorkspaceCard({
   onOpen: () => void
 }): React.JSX.Element {
   return (
-    <NdxSpatialLockup selected={active}>
-      <button type="button" onClick={onOpen} className="block w-full text-left">
-        <p className="text-body font-semibold text-text-primary">{workspace.name}</p>
-        <p className="break-all text-meta text-text-tertiary">{workspace.rootPath}</p>
+    <NdxFocusSurface density="spatial" selected={active}>
+      <button type="button" onClick={onOpen} className="block min-h-[88px] w-full p-3 text-left">
+        <span className="mb-2 inline-flex border border-[var(--ndx-workbench-border)] px-2 py-0.5 text-meta text-text-tertiary">
+          {active ? 'Active' : 'Workspace'}
+        </span>
+        <p className="truncate text-body font-semibold text-text-primary">{workspace.name}</p>
+        <p className="mt-1 line-clamp-2 break-all text-meta text-text-tertiary">
+          {workspace.rootPath}
+        </p>
       </button>
-    </NdxSpatialLockup>
+    </NdxFocusSurface>
   )
 }
 
@@ -305,11 +333,15 @@ function Recommendation({
 }): React.JSX.Element {
   const navigate = useNavigate()
   return (
-    <NdxSpatialLockup>
-      <button type="button" onClick={() => navigate(path)} className="block w-full text-left">
+    <NdxFocusSurface density="spatial">
+      <button
+        type="button"
+        onClick={() => navigate(path)}
+        className="block min-h-[88px] w-full p-3 text-left"
+      >
         <p className="text-body font-semibold text-text-primary">{title}</p>
-        <p className="text-meta text-text-secondary">{detail}</p>
+        <p className="mt-1 text-meta text-text-secondary">{detail}</p>
       </button>
-    </NdxSpatialLockup>
+    </NdxFocusSurface>
   )
 }

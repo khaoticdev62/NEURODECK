@@ -30,18 +30,26 @@ export function ContextPanel({
   return (
     <aside
       aria-label="Context"
-      className="flex flex-col border-l border-border bg-surface p-4"
+      className="flex flex-col border-l border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)] p-3"
       style={{ width: 'var(--ndx-context-panel-width)', zIndex: 'var(--ndx-z-context-panel)' }}
     >
       {item ? (
         <div className="flex flex-col gap-3">
-          <h3 className="text-title font-semibold text-text-primary">{item.title}</h3>
-          {item.status && <p className="text-meta text-text-secondary">{item.status}</p>}
+          <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">
+            <p className="text-meta uppercase tracking-wide text-text-tertiary">Context</p>
+            <h3 className="mt-1 truncate text-title font-semibold text-text-primary">
+              {item.title}
+            </h3>
+            {item.status && <p className="mt-1 text-meta text-text-secondary">{item.status}</p>}
+          </div>
           {item.description && <p className="text-body text-text-secondary">{item.description}</p>}
           {item.metadata && item.metadata.length > 0 && (
-            <dl className="flex flex-col gap-1">
+            <dl className="flex flex-col border border-[var(--ndx-workbench-border)]">
               {item.metadata.map((entry) => (
-                <div key={entry.label} className="flex justify-between text-meta">
+                <div
+                  key={entry.label}
+                  className="flex justify-between gap-3 border-b border-[var(--ndx-workbench-border)] px-3 py-2 text-meta last:border-b-0"
+                >
                   <dt className="text-text-tertiary">{entry.label}</dt>
                   <dd className="text-text-primary">{entry.value}</dd>
                 </div>

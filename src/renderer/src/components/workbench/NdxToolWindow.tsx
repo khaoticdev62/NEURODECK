@@ -18,12 +18,14 @@ export function NdxToolWindow({
     <aside
       aria-label={title}
       className={cn(
-        'flex min-h-0 flex-col border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)]',
+        'flex min-h-0 flex-col border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)] shadow-[inset_-1px_0_0_rgb(255_255_255_/_0.025)]',
         side === 'left' ? 'border-r' : 'border-l'
       )}
     >
-      <div className="border-b border-[var(--ndx-workbench-border)] px-3 py-2">
-        <p className="text-meta font-semibold uppercase tracking-wide text-text-primary">{title}</p>
+      <div className="border-b border-[var(--ndx-workbench-border)] bg-[rgb(255_255_255_/_0.02)] px-3 py-2">
+        <p className="text-meta font-semibold uppercase tracking-wide text-text-secondary">
+          {title}
+        </p>
         {subtitle && <p className="truncate text-meta text-text-tertiary">{subtitle}</p>}
       </div>
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-3">{children}</div>

@@ -60,7 +60,7 @@ export function NdxWorkbench({
         {activityBar}
         {!collapseToolWindows && primaryToolWindow}
         <main
-          className="min-h-0 min-w-0 overflow-auto bg-[var(--ndx-workbench-editor-bg)]"
+          className="ndx-workbench-main min-h-0 min-w-0 overflow-auto bg-[var(--ndx-workbench-editor-bg)]"
           style={{ padding: 'var(--ndx-workbench-content-inset)' }}
         >
           {children}

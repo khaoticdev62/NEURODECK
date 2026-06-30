@@ -13,6 +13,7 @@ import {
   NdxToolWindow,
   NdxWorkbench
 } from '../../components/workbench'
+import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { CoreToolsBootstrap } from '../../ai-safety/CoreToolsBootstrap'
 import { FocusDebugOverlay } from '../../controller/testing/FocusDebugOverlay'
 import { CommandPalette } from '../../features/command-palette/CommandPalette'
@@ -122,6 +123,18 @@ export function ShellLayout({
   }
 
   const routeLabel = location.pathname === '/' ? 'Home' : location.pathname
+  const routeGroup = getRouteGroup(location.pathname)
+  const shellContextItem =
+    contextItem ??
+    ({
+      title: routeLabel,
+      status: routeGroup,
+      metadata: [
+        { label: 'Layer', value: 'Workbench' },
+        { label: 'Input', value: 'Controller' },
+        { label: 'Review gate', value: 'Enabled' }
+      ]
+    } satisfies ContextPanelItem)
 
   return (
     <NdxWorkbench
@@ -133,15 +146,32 @@ export function ShellLayout({
       titleBar={<NdxTitleBar status={systemRailStatus} activeProfileName={activeProfileName} />}
       activityBar={<NdxActivityBar hidden={collapsesRails} />}
       primaryToolWindow={
-        <NdxToolWindow title="Primary Tool Window" subtitle="Workbench context">
-          <div className="flex flex-col gap-2">
-            <NdxDenseRow selected>Route: {routeLabel}</NdxDenseRow>
-            <NdxDenseRow>Project tools migrate here in HYBRID-4.</NdxDenseRow>
-            <NdxDenseRow>Use Activity Bar for primary destinations.</NdxDenseRow>
+        <NdxToolWindow title="Command Deck" subtitle={routeGroup}>
+          <div className="flex flex-col gap-3">
+            <div className="rounded-sm border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">
+              <p className="text-meta uppercase tracking-wide text-text-tertiary">Current screen</p>
+              <p className="mt-1 text-title font-semibold text-text-primary">{routeLabel}</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <NdxDenseRow selected>Active layer: workbench</NdxDenseRow>
+              <NdxDenseRow>Focus model: controller grid</NdxDenseRow>
+              <NdxDenseRow>Review gate: enabled</NdxDenseRow>
+            </div>
+            <div className="grid grid-cols-1 gap-2">
+              <ControllerButton variant="secondary" onClick={() => navigate('/search')}>
+                Search workspace
+              </ControllerButton>
+              <ControllerButton variant="secondary" onClick={() => navigate('/ai')}>
+                Ask AI
+              </ControllerButton>
+              <ControllerButton variant="ghost" onClick={() => navigate('/system')}>
+                System status
+              </ControllerButton>
+            </div>
           </div>
         </NdxToolWindow>
       }
-      secondaryToolWindow={<ContextPanel hidden={false} item={contextItem} />}
+      secondaryToolWindow={<ContextPanel hidden={false} item={shellContextItem} />}
       bottomPanel={<NdxBottomPanel />}
       statusBar={<NdxStatusBar routeTitle={routeLabel} controllerLayer="workbench" />}
     >
@@ -162,4 +192,15 @@ export function ShellLayout({
       <ShareSheetOverlay />
     </NdxWorkbench>
   )
+}
+
+function getRouteGroup(pathname: string): string {
+  if (pathname === '/') return 'Home'
+  if (pathname.startsWith('/ai')) return 'AI runtime'
+  if (pathname.startsWith('/workspaces') || pathname.startsWith('/files')) return 'Workspace'
+  if (pathname.startsWith('/terminal') || pathname.startsWith('/git')) return 'Developer tools'
+  if (pathname.startsWith('/system') || pathname.startsWith('/settings')) return 'System'
+  if (pathname.startsWith('/remote') || pathname.startsWith('/browser')) return 'Remote work'
+  if (pathname.startsWith('/automations') || pathname.startsWith('/agents')) return 'Automation'
+  return 'Workbench'
 }
