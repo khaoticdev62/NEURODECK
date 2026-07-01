@@ -1,33 +1,73 @@
 # NeuroDeck OS Dependency Review
 
-Date: 2026-06-28
+Date: 2026-07-01
 
-Scope: Epic X15 dependency review for the current `package.json` / `package-lock.json` tree on branch `epic10/remote-systems-backend`.
+Scope: UI polish dependency foundation and current `package.json` / `package-lock.json` tree after the Vitest 4 migration and SBOM refresh.
 
 ## Summary
 
 - Production audit: `npm audit --omit=dev` reports 0 vulnerabilities.
-- Full audit: `npm audit` reports 5 vulnerabilities in the Vitest/Vite/esbuild dev-server toolchain.
-- Runtime dependency count: 17 direct production dependencies.
+- Full audit: `npm audit` reports 0 vulnerabilities.
+- Direct production dependency count: 35.
+- SBOM: `docs/security/sbom.json` regenerated with 983 packages: 308 production, 675 dev.
 - Native runtime dependency: `node-pty`.
-- Current decision: do not run `npm audit fix --force` in this slice because it upgrades Vitest from v2 to v4 and is a breaking test-toolchain change. Track it as a dev-tooling upgrade, not a shipped-app production vulnerability.
+- Current decision: the UI polish stack is approved as a lean foundation. It adds headless primitives, motion, icons, fonts, table/virtualization, charts, markdown/PDF rendering, panels, form infrastructure, error boundaries, and accessibility tooling without replacing Electron, React, Tailwind, or the existing typed IPC architecture.
 
 ## Commands Run
 
 ```text
-npm audit --omit=dev
+npm audit
 -> found 0 vulnerabilities
 
-npm audit
--> 5 vulnerabilities (3 moderate, 1 high, 1 critical)
--> affected chain: vitest -> vite/vite-node/@vitest/mocker -> esbuild
--> fix requires npm audit fix --force, installing vitest@4.1.9
-
 npm.cmd ls --omit=dev --depth=0
--> 17 direct production dependencies
+-> 35 direct production dependencies
+
+npm run sbom
+-> SBOM generated: docs/security/sbom.json
+-> 983 packages (308 production, 675 dev)
+
+npm run lint -- --quiet
+-> passed
+
+npm run typecheck
+-> passed
+
+npm run build
+-> passed
 ```
 
-## Production Dependencies
+## UI Polish Dependency Additions
+
+| Package | Version | Runtime role | Review note |
+| --- | ---: | --- | --- |
+| `@base-ui/react` | 1.6.0 | Headless accessible UI primitives | Used for future polished controls without importing a competing visual theme framework. MIT. |
+| `lucide-react` | 1.22.0 | Icon system | Lightweight React icon set for controller buttons, tools, nav, and status affordances. ISC. |
+| `motion` | 12.42.2 | Animation and transitions | Production animation layer; must respect reduced-motion settings. MIT. |
+| `class-variance-authority` | 0.7.1 | Component variant composition | Keeps button/panel/control variants deterministic and typed. Apache-2.0. |
+| `tailwind-merge` | 3.6.0 | Tailwind class conflict resolution | Supports reusable polished primitives without class-order bugs. MIT. |
+| `@fontsource-variable/inter` | 5.2.8 | Bundled UI font | Local font package; avoids CDN dependency. OFL-1.1. |
+| `@fontsource-variable/jetbrains-mono` | 5.2.8 | Bundled code/terminal font | Local monospace font package for code/terminal surfaces. OFL-1.1. |
+| `react-hook-form` | 7.80.0 | Complex form state | Needed for settings, provider setup, package/app policy forms. MIT. |
+| `@hookform/resolvers` | 5.4.0 | Zod-backed form validation | Keeps forms aligned with existing Zod contract pattern. MIT. |
+| `@tanstack/react-table` | 8.21.3 | Data grids and sortable lists | Useful for packages, applications, permissions, logs, and model tables. MIT. |
+| `@tanstack/react-virtual` | 3.14.5 | Virtualized lists | Needed for Deck-friendly large lists without renderer jank. MIT. |
+| `react-resizable-panels` | 4.12.0 | Split pane layouts | Supports editor/workbench polish while keeping keyboard/controller fallbacks required. MIT. |
+| `echarts` | 6.1.0 | Charts and telemetry visuals | For system metrics, model routing, package progress, and workload charts. Apache-2.0. |
+| `react-markdown` | 10.1.0 | Markdown rendering | For docs, AI replies, and knowledge surfaces. MIT. |
+| `remark-gfm` | 4.0.1 | GitHub-flavored markdown | Adds tables/task lists/strikethrough to markdown rendering. MIT. |
+| `rehype-sanitize` | 6.0.0 | Markdown sanitization | Required because markdown can cross trust boundaries. MIT. |
+| `pdfjs-dist` | 6.1.200 | Local PDF rendering | For knowledge/docs previews without browser plugin reliance. Apache-2.0. |
+| `react-error-boundary` | 6.1.2 | Renderer error isolation | Supports polished recoverable UI failures around feature panes. MIT. |
+
+## UI Polish Dev Tooling Additions
+
+| Package | Version | Role | Review note |
+| --- | ---: | --- | --- |
+| `axe-core` | 4.12.1 | Accessibility audit engine | Dev/test only. MPL-2.0. |
+| `@axe-core/playwright` | 4.12.1 | Playwright accessibility assertions | Dev/test only. MPL-2.0. |
+| `prettier-plugin-tailwindcss` | 0.8.0 | Tailwind class sorting | Dev only; use carefully because the working tree has broad pre-existing CRLF churn. MIT. |
+
+## Existing Production Dependencies
 
 | Package | Version | Runtime role | Review note |
 | --- | ---: | --- | --- |
@@ -43,36 +83,30 @@ npm.cmd ls --omit=dev --depth=0
 | `diff` | 9.0.0 | Git/recovery diff views | Text diff library. |
 | `monaco-editor` | 0.55.1 | Build Studio editor | Locally bundled; do not switch to CDN. |
 | `node-pty` | 1.1.0 | Real PTY terminal sessions | Native dependency; packaging must continue to verify rebuild/install on target OS. |
-| `react-router-dom` | 7.18.0 | Renderer routing | App navigation. |
+| `react-router-dom` | 7.18.1 | Renderer routing | App navigation. |
 | `selfsigned` | 5.5.0 | LAN Share certificate generation | Used for local Warpinator-compatible certs; covered in LAN Share SBOM. |
 | `ssh2` | 1.17.0 | Remote SSH sessions | Network/crypto dependency; secrets remain encrypted at rest and never sent to renderer. |
 | `tweetnacl` | 1.0.3 | LAN Share group-code crypto | Small audited crypto primitive; covered in LAN Share SBOM. |
 | `zod` | 4.4.3 | Runtime IPC validation | Load-bearing validation dependency shared across main/preload/renderer. |
 
-## Dev-Only Vulnerabilities
+## Resolved Dev-Tooling Vulnerabilities
 
-The full audit finding is confined to `vitest` and its dev-server stack:
+The previous review tracked 5 vulnerabilities in the old `vitest`/`vite`/`vite-node`/`esbuild` dev-server chain. This pass migrated direct `vitest` to `4.1.9` and ran `npm audit fix`; the final `npm audit` is clean.
 
-- `vitest <= 3.2.5`
-- `vite <= 6.4.2`
-- `vite-node <= 2.2.0-beta.2`
-- `@vitest/mocker <= 3.0.0-beta.4`
-- `esbuild <= 0.24.2 || 0.27.3 - 0.28.0`
-
-Impact in plain English: these advisories matter when an untrusted website can reach a development server and read responses or, on Windows, abuse the dev server path handling. The packaged NeuroDeck app does not ship the Vite/Vitest dev server. Local development should still keep dev servers bound to trusted localhost interfaces.
-
-Fix status: `npm audit fix --force` would install `vitest@4.1.9`, a breaking major upgrade. That needs its own test-toolchain migration pass with full unit/e2e verification.
+Impact in plain English: the old findings were development-server risks, not packaged-app runtime code. They still mattered because a clean full audit is the simplest release gate to reason about. The test fixtures that depended on Node's `Blob` were adjusted to use local test blobs with `arrayBuffer()`, keeping the web TypeScript config clean.
 
 ## Decisions
 
-1. Treat production dependency posture as clean for this review because `npm audit --omit=dev` is clean.
-2. Track the Vitest/Vite/esbuild chain as a dev-tooling risk, not a production shipped-app risk.
-3. Do not force-upgrade Vitest in this slice.
-4. Keep `node-pty` as a named packaging risk because it is the direct native dependency backing the real terminal.
-5. Keep Monaco locally bundled; the existing `dompurify` override remains the first place to check for Monaco transitive CVEs.
+1. Keep the new UI stack headless or utility-based; do not introduce a second themed component framework.
+2. Keep markdown rendering paired with `rehype-sanitize` wherever user/model/workspace content can cross trust boundaries.
+3. Keep fonts locally bundled through Fontsource; no CDN font dependency.
+4. Use `motion` only behind the existing reduced-motion controls.
+5. Keep `node-pty` as a named packaging risk because it is the direct native dependency backing the real terminal.
+6. Keep Monaco locally bundled; the existing `dompurify` override remains the first place to check for Monaco transitive CVEs.
 
 ## Follow-Up
 
-- Plan a dedicated Vitest v4 migration if the dev-server advisories need to be fully cleared from `npm audit`.
-- Keep `npm audit --omit=dev` in the release gate.
-- Include native-module verification for `node-pty` in SteamOS/Linux package validation.
+- Add focused accessibility checks with `@axe-core/playwright` as screens receive the polish pass.
+- Use `react-resizable-panels` only where controller-accessible resizing semantics are provided.
+- Use table virtualization for large lists, not small static settings groups.
+- Re-run `npm audit`, `npm run sbom`, `npm run typecheck`, `npm run lint`, and `npm run build` after any future dependency expansion.

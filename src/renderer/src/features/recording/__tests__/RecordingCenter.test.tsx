@@ -1,4 +1,3 @@
-import { Blob } from 'node:buffer'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
@@ -12,6 +11,15 @@ import { RecordingCenter } from '../RecordingCenter'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
+}
+
+function testBlob(bytes: Uint8Array = new Uint8Array()): Blob {
+  return {
+    arrayBuffer: async () =>
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    size: bytes.byteLength,
+    type: 'video/webm'
+  } as Blob
 }
 
 class FakeTrack {
@@ -40,7 +48,7 @@ class FakeMediaRecorder {
     FakeMediaRecorder.instances.push(this)
   }
   start = vi.fn()
-  stop = vi.fn(() => this.emit('stop', { data: new Blob([]) }))
+  stop = vi.fn(() => this.emit('stop', { data: testBlob() }))
   addEventListener(type: string, listener: (event: { data: Blob }) => void): void {
     const existing = this.listeners.get(type) ?? []
     existing.push(listener)

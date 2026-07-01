@@ -1,4 +1,3 @@
-import { Blob } from 'node:buffer'
 import { describe, expect, it } from 'vitest'
 import {
   blobToBase64,
@@ -6,6 +5,15 @@ import {
   estimatedBytesPerSecond,
   resolutionDimensions
 } from '../recordingMedia'
+
+function testBlob(bytes: Uint8Array): Blob {
+  return {
+    arrayBuffer: async () =>
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    size: bytes.byteLength,
+    type: 'application/octet-stream'
+  } as Blob
+}
 
 describe('resolutionDimensions', () => {
   it('returns real pixel targets for 720p and 1080p', () => {
@@ -46,7 +54,7 @@ describe('buildDesktopCaptureConstraints', () => {
 describe('blobToBase64', () => {
   it('round-trips real binary data through base64', async () => {
     const bytes = new Uint8Array([0, 1, 2, 253, 254, 255])
-    const blob = new Blob([bytes])
+    const blob = testBlob(bytes)
 
     const base64 = await blobToBase64(blob as unknown as globalThis.Blob)
     const decoded = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0))

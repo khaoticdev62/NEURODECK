@@ -1,4 +1,3 @@
-import { Blob } from 'node:buffer'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,6 +7,15 @@ import { useRecording } from '../useRecording'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
+}
+
+function testBlob(bytes: Uint8Array = new Uint8Array()): Blob {
+  return {
+    arrayBuffer: async () =>
+      bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+    size: bytes.byteLength,
+    type: 'video/webm'
+  } as Blob
 }
 
 class FakeTrack {
@@ -42,7 +50,7 @@ class FakeMediaRecorder {
   }
   start = vi.fn()
   stop = vi.fn(() => {
-    this.emit('stop', { data: new Blob([]) })
+    this.emit('stop', { data: testBlob() })
   })
   addEventListener(type: string, listener: (event: { data: Blob }) => void): void {
     const existing = this.listeners.get(type) ?? []
@@ -118,7 +126,7 @@ describe('RecordingProvider', () => {
     expect(await screen.findByText('recording')).toBeInTheDocument()
 
     const recorder = FakeMediaRecorder.instances[0]
-    recorder.emit('dataavailable', { data: new Blob([new Uint8Array([1, 2, 3])]) })
+    recorder.emit('dataavailable', { data: testBlob(new Uint8Array([1, 2, 3])) })
 
     await vi.waitFor(() => expect(appendChunk).toHaveBeenCalled())
     expect(appendChunk.mock.calls[0][0].recordingId).toBe('rec-1')
