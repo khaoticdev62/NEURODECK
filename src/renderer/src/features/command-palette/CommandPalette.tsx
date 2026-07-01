@@ -140,6 +140,12 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     label: 'Prompt and Persona Library',
     path: '/prompt-library',
     subtitle: 'ND-X016 - Epic X4'
+  },
+  {
+    id: 'memory-control-center',
+    label: 'AI Memory Control Center',
+    path: '/memory',
+    subtitle: 'ND-X014 - Epic X4'
   }
 ]
 

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type {
+  MemoryDisabledState,
   MemoryExport,
   MemoryItem,
   MemoryQueryRequest,
@@ -120,6 +121,11 @@ export class MemoryStore {
     if (next.length === index.items.length) return false
     await this.store.write({ ...index, items: next })
     return true
+  }
+
+  async getDisabledState(): Promise<MemoryDisabledState> {
+    const index = await this.store.read()
+    return { allDisabled: index.allDisabled, disabledTypes: index.disabledTypes }
   }
 
   async setDisabled(type: MemoryType | undefined, disabled: boolean): Promise<void> {

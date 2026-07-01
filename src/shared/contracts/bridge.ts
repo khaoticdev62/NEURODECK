@@ -116,6 +116,7 @@ import type {
 } from './knowledge'
 import type {
   ClearMemoryScopeRequest,
+  MemoryDisabledState,
   MemoryIdRequest,
   MemoryExport,
   MemoryItem,
@@ -658,6 +659,7 @@ export interface NdxBridge {
     update: (request: UpdateMemoryRequest) => Promise<NdxResult<MemoryItem>>
     delete: (request: MemoryIdRequest) => Promise<NdxResult<null>>
     setDisabled: (request: SetMemoryDisabledRequest) => Promise<NdxResult<null>>
+    getDisabledState: () => Promise<NdxResult<MemoryDisabledState>>
     clearScope: (request: ClearMemoryScopeRequest) => Promise<NdxResult<number>>
     export: (request?: MemoryQueryRequest) => Promise<NdxResult<MemoryExport>>
   }

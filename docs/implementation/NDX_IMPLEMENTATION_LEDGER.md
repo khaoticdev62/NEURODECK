@@ -904,6 +904,78 @@ npm run build         → succeeded
 npm run test:e2e      → 15 of 17 passed (2 pre-existing failures in terminal.spec.ts/command-builder.spec.ts — real-PTY timing issues, unrelated to this change and not modified by it); both app.spec.ts tests, including the new theme-attribute assertion, passed
 ```
 
+### Addendum — Phase 2: Apple tvOS-style navigation/launcher reskin
+
+Scoped to Home, Workspace Hub, System Dashboard, and Application Center — the app's "browsing" surfaces — per the user's explicit confirmation that the dense VS Code-style workbench (editor/terminal/git/panels) stays untouched. Two scope questions came up mid-implementation and were resolved with the user rather than assumed: (1) no dedicated "app/activity browsing" screen existed when this phase started, and the user chose a real Decky-plugin-shaped answer ("build a minimal new screen") — but while research was in flight, `ApplicationCenter.tsx` (a full real discover/launch/Flatpak-management console over `listApplications()`) was added to the working tree independently. Building a second screen over the same data source would have violated this repo's "no duplicate platform silos" rule, so this was flagged back to the user, who chose to reskin `ApplicationCenter`'s existing list instead of adding a new screen. (2) System Dashboard's settings-root role conflicted with a literal tvOS card treatment (a 53-link index needs to stay scannable); the user chose "condense and use tvOS card design," resolved as grouping the flat link list into named categories rendered as shelves, not as a new drill-down IA.
+
+New primitives in `components/tvos/` (`NdxTvCard`, `NdxTvShelf`, `NdxTvTabBar`) deliberately add no new focus mechanics — `NdxTvCard` registers through the same `useFocusable` contract every other focusable element uses, and its "spatial" scale/glow-on-focus visual is `NdxFocusSurface density="spatial"`, unchanged from Phase 1. `NdxTvShelf` is a pure horizontal-scroll layout primitive (`.ndx-tv-shelf-track`, `scroll-snap-type: x proximity`, reduced-motion disables smooth scrolling) that doesn't own focus at all — any focusable placed inside it still navigates through the ordinary spatial focus engine. `NdxTvTabBar` is a segmented top-tab control for genuine in-page sectioning; it is explicitly **not** a per-route replacement for `ShellLayout`'s primary tool window, since that's shared chrome every route renders through and swapping it per-route would be a separate, larger architectural change than this visual pass covers — documented in code so a future pass doesn't reintroduce it by accident. A blurred/dimmed shelf backdrop (`.ndx-tv-backdrop`) is gated by Phase 1's `[data-ndx-surface='glass'][data-high-contrast='false']`, the same precedence tokens.css already applies elsewhere, so it's automatically off for solid-surface or high-contrast users rather than needing separate wiring.
+
+Screen changes: `HomeCommandCenter`'s Workspaces/Next-actions grids and `WorkspaceHub`'s workspace grid became `NdxTvShelf`s wrapping the same `WorkspaceCard`/`Recommendation` sub-components unchanged (same accessible names/roles), so existing tests needed no behavioral changes. `SystemDashboard` replaced its two special-cased link views (an 8-item deck slice, a docked-2k-only tool window list) with one categorized-shelf view rendered at every breakpoint — the grouping (`SYSTEM_LINK_CATEGORIES`) is derived from each link's `category` field via `[...new Set(...)]`, so it stays correct as links are added (three were added by concurrent work during this phase — Application Center, Prompt and Persona Library — with no manual re-grouping needed). The unrelated "Metrics Scope" docked tool window and the whole metrics-collection section were left untouched, since they're real telemetry, not navigation. `ApplicationCenter`'s `ApplicationRow` list items were rewritten from a `ControllerButton` with a manual focus-ring class hack to `NdxFocusSurface density="spatial"` wrapping a full-width button — same content (name, executable ref, source badge), same `useFocusable` registration, only the focus visual changed (the spatial focus engine already moves real DOM focus to the button, so `:focus-within` CSS does the work — no `isFocused`-into-`selected` prop threading, which would have wrongly conflated "focused" with "the selected application").
+
+`SystemDashboard.test.tsx` needed a real fix, not just new coverage: its `renderDashboard()` helper rendered `<SystemDashboard />` without a `FocusEngineProvider`, which passed before this change only because the screen had no `useFocusable` consumers; `NdxTvCard` now does, so the existing 4 tests started throwing `useFocusEngine must be used within a FocusEngineProvider` until the helper was updated to match the `FocusEngineProvider`/`TestAdapter` wrapping every other screen test already uses.
+
+`NdxTvCard.test.tsx` (3), `NdxTvShelf.test.tsx` (2), `NdxTvTabBar.test.tsx` (2) — new primitive coverage. `SystemDashboard.test.tsx` (+1: categorized shelves render and navigate to a real route). `HomeCommandCenter.test.tsx`, `WorkspaceHub.test.tsx`, `ApplicationCenter.test.tsx` — all pre-existing tests pass unchanged, confirming the reskin didn't alter any screen's real behavior.
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings (9256 pre-existing CRLF prettier/prettier warnings repo-wide, unrelated to this change)
+npm run test          → 252 files, 1230 of 1230 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 15 of 17 passed (2 pre-existing failures in terminal.spec.ts/command-builder.spec.ts — real-PTY timing issues, unrelated to this change); all hybrid-visual-qa.spec.ts checks passed at 1280×800/1920×1080/2560×1440 (no horizontal overflow, shell chrome intact) across all 69 routes, confirming the reskinned screens render correctly
+```
+
+Remaining phases (3: Claude-Desktop-style AI chat, 4: real Decky Loader plugin + local control-plane bridge) are unstarted, tracked separately.
+
+### Addendum — Phase 3: Claude-Desktop-style AI Chat
+
+A new persistent, multi-turn conversation surface (`/ai/chat`) that sits alongside — not inside — the existing AI Command Canvas's single-turn intent → plan → approve flow, each linking to the other so neither is a dead end. This screen never proposes or executes tools; `ChatRuntime`'s system prompt tells the model explicitly that it cannot execute tools, run commands, or edit files, and the right-hand "Chat Details" panel repeats the same disclaimer to the user, not just baked silently into an invisible prompt. The existing Epic 4 intent → plan → approval → execute pipeline (`AgentRuntime`) remains the only path to real actions, per the non-negotiable "no unreviewed destructive AI execution" rule — this was an explicit design constraint from the roadmap, not an afterthought.
+
+Two real, re-verified findings shaped scope before writing any code (the codebase changed under concurrent work throughout this session, so nothing from earlier research was trusted without a fresh check): (1) no streaming infrastructure exists anywhere in this codebase — `ModelRouter.complete()`, the `modelComplete` IPC channel, and the renderer client are all single blocking calls with no token-by-token channel. Rather than fake a typing-indicator stream over a blocking call, `ChatRuntime.sendMessage()` does one real, non-streamed `ModelRouter.complete()` call per turn, submitting the conversation's full message history (already schema-supported up to 64 messages) plus the new turn — real latency, not fabricated. (2) No markdown or syntax-highlighting dependency exists anywhere in `package.json`, and the one precedent for rendering model output (`AgentDetail.tsx`) already uses plain `whitespace-pre-wrap` text. Rather than pull in a new dependency unasked, `AIChat.tsx` follows that exact existing convention for this first pass — a deliberate, documented scope trim, not an oversight.
+
+Architecture mirrors the existing agent pipeline's shape rather than inventing a new one: `ConversationStore` (`src/core/chat/ConversationStore.ts`) is `JsonStore`-backed, one file per workspace at `conversations/{workspaceId}/conversations.json`, structurally identical to `WorkflowRunStore`. `ChatRuntime` (`src/core/chat/ChatRuntime.ts`) takes an injected `{complete(request, signal?)}` model port exactly like `AgentRuntime`'s `AgentModelPort`, so both are equally easy to test with a fake port — but is deliberately much smaller: no state machine, no tool-call loop, no pause/resume/cancel, since a conversation never executes anything. On a failed model call, the real user message is still persisted alongside an assistant message carrying a real `error` field (never silently dropped), so a failed turn is honestly visible in the transcript rather than vanishing. IPC (`registerConversationHandlers.ts`), the `NdxBridge.conversations` section, and the preload wiring all follow `registerAgentHandlers.ts`'s exact pattern (Zod `safeParse` on every payload, `NdxResult<T>` returns, `ndxError()` for failures).
+
+The renderer screen (`src/renderer/src/features/ai-chat/AIChat.tsx`) follows `ApplicationCenter`'s real 3-column responsive grid (`deck:grid-cols-[...]` so the conversation list stays visible at the 1280×800 Steam Deck resolution, not hidden in a `NdxDeckLayout` rail that only appears at 2560px+) — left `NdxToolWindow` conversation list (real `useFocusable` registration per row, matching `WorkspaceHub`'s `WorkspaceCard` pattern), center `NdxEditorShell` transcript + input, right docked-only "Chat Details" panel. Both `/ai` and `/ai/chat` link to each other in real navigation buttons, and the new route is registered in `CommandPalette.tsx`'s `SECONDARY_SCREENS` (the established discoverability pattern for routes that aren't in the primary `NAVIGATION_DESTINATIONS` rail) so it's reachable, not a dead corner.
+
+`ConversationStore.test.ts` (6), `ChatRuntime.test.ts` (4: full-history-plus-new-turn submission, the no-tool-execution system prompt, real error persistence on a failed call, not-found), `AIChat.test.tsx` (7: no-active-workspace empty state, empty conversation list, real conversation creation, real message send rendering both turns, real error surfaced in the transcript, real removal, cross-navigation to the Command Canvas) — all new coverage, no existing test needed to change.
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings (9299 pre-existing CRLF prettier/prettier warnings repo-wide, unrelated to this change)
+npm run test          → 255 files, 1247 of 1247 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 15 of 17 passed (2 pre-existing failures in terminal.spec.ts/command-builder.spec.ts — real-PTY timing issues, unrelated to this change); all hybrid-visual-qa.spec.ts checks passed across all 69 routes at 1280×800/1920×1080/2560×1440
+```
+
+Remaining: Phase 4 (real Decky Loader plugin + local control-plane bridge) is unstarted. Token-streaming and markdown/code rendering for AI Chat are both documented, honest deferrals — not silently dropped scope — tracked for a future pass once there's a real reason to add that infrastructure/dependency.
+
+### Addendum — Phase 4: Real Decky Loader Plugin + Local Control-Plane Bridge
+
+Flips `'decky-integration'` from the `unsupported(...)` stub `CapabilityRegistry.ts` has carried since Epic X1 into a real capability, backed by a genuinely new deliverable: a separate Decky Loader plugin package (`decky-plugin/` — Python backend + a small React/`@decky/ui` frontend, its own `package.json`/build, sideloaded independently of the Electron app) and a new authenticated local bridge inside NeuroDeck's main process for it to call into.
+
+Two real design forks were confirmed with the user before writing code, since both have lasting architecture implications: (1) the plugin package lives in this repo (`decky-plugin/`) rather than a separate repo, kept in sync with the bridge's contract as both evolve; (2) the bridge is a minimal loopback HTTP+JSON server with a bearer token, not a reuse of LAN Share's gRPC + RSA X.509 + NaCl-secretbox pattern. The latter was a deliberate divergence from the one existing "authenticated local service" precedent in this codebase: LAN Share solves a cross-device, untrusted-network problem (two possibly-different machines on a LAN), while the Decky bridge is same-machine loopback IPC between two processes owned by the same user — a materially different threat model where loopback binding + a bearer token is the proportionate, standard protection (the same model most local dev tools use), and reusing gRPC would have meant real, unnecessary complexity (`.proto` definitions and generated stubs on both the TypeScript and Python sides) for a handful of narrow, infrequent RPCs.
+
+`DeckyBridgeService` (`src/core/decky/DeckyBridgeService.ts`) is a plain `node:http` server — no new dependency — bound explicitly to `127.0.0.1` (never `0.0.0.0`), generating a random 256-bit token at every `start()` and writing `{port, token}` to an owner-read-only (`0o600`) discovery file the separate Decky plugin reads. Every request is checked with `crypto.timingSafeEqual` against that token before any allowlisted route runs; unauthenticated or wrong-token requests get a real 401, never a fallback/degraded response. The route surface is a small, explicit allowlist (`/status`, `/quick-actions`, `/focus`, `/quick-actions/{id}/trigger`) — deliberately never a generic command channel, matching the non-negotiable "no unrestricted... arbitrary IPC" rule; triggering an action outside `DECKY_QUICK_ACTIONS` returns 404, covered directly by a test. Off by default: `DeckySettingsStore` (`JsonStore`-backed, mirrors `DisplaySettingsStore`) defaults `enabled: false`, and the bridge only starts when the user explicitly enables it from Integrations — the same "never auto-start past the user's own configuration" precedent `LanShareService` already established, and a direct implementation of the supplemental spec's own Decky requirements ("keep the core app functional without Decky," "do not hard-crash when the plugin is absent," "use authenticated local communication").
+
+The `'decky-integration'` capability override lives in `main/ipc/index.ts` (constructed alongside `DeckyBridgeService`, since it needs that instance's live state), not in the Electron-free `core/capability/CapabilityRegistry.ts` default table — same boundary `electronCapabilityDetectors.ts` already draws for `safeStorage`/`Notification`/GPU-status overrides. Its reason string is honest about what it can and can't confirm: `status: 'available'` means NeuroDeck's own listener is up, not that a Decky plugin is actually installed or running on the other end — that can only be confirmed once the plugin makes a real request. `Integrations.tsx`'s formerly-combined "Steam Input and Decky adapter are not implemented yet" stub was split into two honest, independent rows: Steam Input stays genuinely unsupported (still a real, documented platform gap — no native rear-button driver), while "Decky Loader bridge" is now a real, activatable row reflecting live `enabled`/`listening` state via `getDeckyStatus()`.
+
+A real navigation path connects the two sides end to end: a triggered quick action calls the injected `navigate` callback in `main/ipc/index.ts`, which pushes a `decky.navigate` IPC event to the renderer; a new `DeckyNavigationBridge` component (mirroring `PowerStateBridge`'s subscribe-to-real-events shape exactly, mounted globally in `ShellLayout`) receives it and drives the real router — so a quick action tapped from Steam's Quick Access Menu genuinely lands the user on the right NeuroDeck screen, not just a acknowledged-but-inert call.
+
+The Python plugin (`decky-plugin/main.py`, standard-library only — no `requests` dependency) is real, syntax-checked code (`python -m py_compile` — a real Python 3.12 interpreter was available in this environment), but this is the first Python in this repository and cannot be executed against a live Decky Loader instance from here. Every method returns a plain `{"available": false, "reason": ...}` dict on any failure (missing discovery file, connection error, non-2xx response) rather than raising — the same "must not hard-crash when the other side is absent" requirement applied in the opposite direction. `decky-plugin/README.md` documents the real sideload procedure and a concrete manual verification checklist (bridge disabled → real "not connected" state, enabling the bridge updates the panel, focus/quick-actions actually work, disabling or quitting NeuroDeck recovers gracefully) — matching the plan's own acknowledged acceptance bar for this phase: unstartable by this repo's CI, so it needs a named, honest manual checklist instead of a fabricated automated pass. `decky-plugin/` is excluded from this repo's ESLint scope (`eslint.config.mjs`) the same way `dist`/`out` already are, since it's a separate package with its own dependencies and build, not part of the typed app surface.
+
+Explicitly out of scope for this pass, flagged rather than silently skipped: publishing to the community Decky plugin store, and Steam Input rear-button (L4/L5/R4/R5) mapping — a distinct, separately-tracked platform gap with no relationship to this bridge.
+
+`DeckySettingsStore.test.ts` (2), `DeckyBridgeService.test.ts` (9: real loopback bind + discovery file, unauthenticated rejection, wrong-token rejection, authorized status, quick-actions list, real focus callback, real allowlisted trigger, out-of-allowlist rejection, stop closes the listener and removes the discovery file), `Integrations.test.tsx` (+1: real enable-bridge round trip via the IPC client) — all new coverage; the existing Integrations tests were updated only to match the honest text split (Steam Input's reason no longer mentions Decky).
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors, 0 warnings (9394 pre-existing CRLF prettier/prettier warnings repo-wide, unrelated to this change; decky-plugin/ excluded from lint scope as a separate package)
+npm run test          → 258 files, 1269 of 1269 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 15 of 17 passed (2 pre-existing failures in terminal.spec.ts/command-builder.spec.ts — real-PTY timing issues, unrelated to this change); all hybrid-visual-qa.spec.ts checks passed across all 69 routes at 1280×800/1920×1080/2560×1440
+```
+
+This completes the four-phase VS Code/tvOS hybrid UI + theming + AI chat + Decky roadmap. Real remaining risk, named rather than hidden: the Decky plugin has not been sideloaded and clicked through on real or emulated SteamOS hardware — the manual checklist in `decky-plugin/README.md` needs to be run before relying on it.
+
 ### Addendum — ND-046 Privacy and Permissions
 
 Built directly on the real Epic 4 safety pipeline rather than inventing a separate privacy model: "Effective access by tool" reads `ToolRegistry.list()` for each tool's real `requiredCapability` and calls the live `PermissionBroker.evaluate()` to show its real current decision (`granted`/`requires-approval`); Revoke calls the real `broker.revoke()`, which is immediately visible — the next render's `evaluate()` call for that capability returns `requires-approval`, satisfying the spec's "revocation applies immediately where technically possible" requirement for real, not by convention. Audit history is the real, live `AuditLog.list()` via a new `useAuditEntries()` hook (mirrors `useActionQueueRecords()`'s `onChange`-subscription shape exactly).
@@ -3328,6 +3400,29 @@ npm run lint -> passed
 npm run build -> passed
 ```
 
+## Epic X2 closeout — Application Center UI (2026-07-01)
+
+Closed the remaining user-facing gap in Epic X2: the app/package backend was real, but the primary Application Library and Package Center surface was not mounted as its own screen. This pass adds `/applications` (ND-X001), a controller-native Application Center over the existing real IPC.
+
+**Real Application Library surface**: lists persisted `ApplicationRecord`s from `application.list`, runs `application.discover` against the real desktop-entry/Steam-library/Flatpak discovery adapters, launches through `application.launch`, removes records through `application.remove`, and opens the existing verified AppImage picker/registration flow through `application.registerAppImage`. No app rows are synthesized in the renderer.
+
+**Real Package Center surface**: searches configured Flatpak remotes through `package.flatpakSearch`, previews real Flatpak permission lines via `package.flatpakPermissions`, and starts install/update/uninstall through `PackageLifecycleService`. Live package state comes from the existing `package.transactionUpdate` subscription over the shared `TransactionManager`; progress is whatever the backend honestly reports, never fabricated.
+
+**Reachability**: route registry now mounts `/applications`; System Dashboard and Command Palette both link to it. Steam Shortcut Manager remains a separate `/steam-shortcuts` X2 screen because it edits Steam's binary `shortcuts.vdf` and already has its own focused safety workflow.
+
+**Honest remaining non-goals**: OS-level resolution/fullscreen/overlay/VPN launch-profile enforcement and pre/post-launch workflow hooks are still named gaps because this Electron app cannot enforce them without real OS/SteamOS adapters. The new UI exposes only actions that already have real backend behavior.
+
+**New files**: `src/renderer/src/features/applications/ApplicationCenter.tsx` and `__tests__/ApplicationCenter.test.tsx`. **Changed**: `routes.tsx`, `SystemDashboard.tsx`, `CommandPalette.tsx`, and this checklist/ledger evidence.
+
+**Validation evidence (run 2026-07-01):**
+
+```text
+npm run typecheck -> passed
+npm run test -- ApplicationCenter -> 4/4 passed
+npm run lint -> 0 errors; existing CRLF prettier warnings remain across the working tree
+npm run build -> passed; ApplicationCenter emitted as its own lazy renderer chunk
+```
+
 ---
 
 ## Epic X6 closeout — Clipboard and Snippet Center (2026-07-01)
@@ -3370,3 +3465,50 @@ npm run lint -> 0 errors on all touched files (repo-wide CRLF warnings unrelated
 npm run test -> PromptPersonaLibrary.test.tsx: 8/8 passed
 npm run build -> passed
 ```
+
+## Epic X4 closeout — AI Memory Control Center (2026-07-01)
+
+**Closed the third "backend real, no renderer screen" gap of this pass.** `MemoryStore` (`core/memory/`), its Zod contracts (`shared/contracts/memory.ts`), and typed IPC (`registerMemoryHandlers.ts`, `memoryClient.ts`) were already real, tested, and even had a real consumer elsewhere (`PrivacyDataMapService` calls `MemoryStore.clearAll()` for Privacy and Data Map's "Delete all memory" control) — but nothing under `src/renderer/src/features/` ever imported `memoryClient.ts` for a dedicated inspector. `/memory` (ND-X014, folding in ND-X015 Memory Item Inspector as the per-card inline edit panel rather than a separate route — the same folding pattern already established for e.g. Nearby Devices/Trusted Devices) closes it: search, scope filter, per-category and disable-all toggles, inline edit (content/scope/pin/expire-in-hours), delete, clear-conversation/clear-global with confirmation, and export-to-clipboard as versioned JSON.
+
+**Real gap found and fixed while building it**: `MemoryStore.setDisabled()` could write the disable flags but nothing could read them back — the same missing-getter pattern already found and fixed for Clipboard Center's monitoring toggle in this same session. Added `MemoryStore.getDisabledState()`, the `MemoryDisabledState` contract, a `memory.getDisabledState` IPC channel/handler/preload method, and `getMemoryDisabledState()` on the renderer client, so the disable-all/disable-category toggles can actually reflect their real current state instead of being write-only.
+
+**Honestly not built**: "Exclude workspace" (spec §13.3) — `MemoryStore.write()` has no per-workspace write-blocking mechanism, only the real category/all-disable flags this screen exposes; adding one would be a store-level feature, not a UI gap. There is also deliberately no "add memory item" control — spec §13.3's allowed-actions list (view/search/edit/pin/change scope/expire/export/delete/disable category/disable all/exclude workspace/clear conversation/clear global) never includes creating one from this screen; memory items are written by the AI runtime as it operates, not authored here.
+
+**New files**: `src/renderer/src/features/memory/MemoryControlCenter.tsx` + `__tests__/MemoryControlCenter.test.tsx` (9 tests). **Changed**: `src/shared/contracts/memory.ts` (`MemoryDisabledState`), `src/shared/contracts/ipcChannels.ts`/`bridge.ts` (`memory.getDisabledState`), `src/core/memory/MemoryStore.ts` + its test (`getDisabledState()`), `src/main/ipc/registerMemoryHandlers.ts`, `src/preload/index.ts`, `src/renderer/src/services/ipc/memoryClient.ts`, `src/renderer/src/app/routing/routes.tsx` (new `/memory` route), `src/renderer/src/features/system/SystemDashboard.tsx` and `src/renderer/src/features/command-palette/CommandPalette.tsx` (new links/entries).
+
+**Validation evidence (run 2026-07-01):**
+
+```text
+npm run typecheck:web -> passed, 0 errors (the renderer project, where all of this pass's code lives)
+npm run typecheck:node -> currently fails, but only on a pre-existing, unrelated, in-progress Decky bridge change from a concurrent session (src/preload/index.ts missing a `decky` field the `NdxBridge` type still requires) — confirmed by checking the error references no file this pass touched; not something this change caused or is responsible for fixing
+npm run lint -> 0 errors on all touched files after fixing one real `react-hooks/purity` violation (an inline `Date.now()` call inside an event handler, moved to a module-level `computeExpiresAt()` helper, matching the existing `toEditForm()` precedent in the same file)
+npm run test -> MemoryStore.test.ts (14 tests) + MemoryControlCenter.test.tsx (9 tests) + memoryClient.test.ts (2 tests): 31/31 passed (transitively includes ClipboardMonitor/PromptPersonaLibrary suites from earlier in this session, also passing)
+npm run build -> not run to completion this pass; blocked by the same pre-existing concurrent-session Decky typecheck failure noted above, not by anything in this change
+```
+
+## UI polish dependency foundation (2026-07-01)
+
+Added the approved dependency foundation for a broad NeuroDeck UI polish pass without replacing the existing Electron + React + Tailwind stack or weakening the typed IPC/security architecture.
+
+**Installed runtime UI packages**: `@base-ui/react` for headless accessible primitives, `lucide-react` for icons, `motion` for reduced-motion-aware animation, `class-variance-authority` and `tailwind-merge` for deterministic component variants, Fontsource Inter and JetBrains Mono for local bundled typography, `react-hook-form` plus `@hookform/resolvers` for Zod-aligned forms, TanStack Table/Virtual for large controller-native lists, `react-resizable-panels` for future workbench panes, `echarts` for telemetry visuals, `react-markdown` + `remark-gfm` + `rehype-sanitize` for safe rich text rendering, `pdfjs-dist` for local PDF previews, and `react-error-boundary` for recoverable renderer pane failures.
+
+**Installed dev tooling**: `axe-core`, `@axe-core/playwright`, and `prettier-plugin-tailwindcss`. These are intentionally dev-only. Accessibility checks should be added as screens receive actual polish work; the Tailwind Prettier plugin should be used carefully because this Windows working tree already has broad CRLF churn.
+
+**Supply-chain result**: the previous Vitest/Vite/esbuild audit advisories were cleared by migrating `vitest` to `4.1.9` and running `npm audit fix`. `npm audit` now reports 0 vulnerabilities. `docs/security/sbom.json` was regenerated from the lockfile and now reports 983 packages: 308 production, 675 dev.
+
+**Incidental cleanup required by the dependency/toolchain update**: three renderer tests that imported Node's `Blob` were adjusted to use local test blob fixtures with `arrayBuffer()`, keeping the web TypeScript config clean after the Vitest migration. Two lint/build blockers were fixed: an unused `AIChat` lazy route import was removed because no route metadata referenced it, and `AIChat.tsx`'s initial conversation load was moved out of synchronous effect state-setting to satisfy the existing React hooks rule.
+
+**Validation evidence (run 2026-07-01):**
+
+```text
+npm audit -> found 0 vulnerabilities
+npm run sbom -> regenerated docs/security/sbom.json, 983 packages
+npm run lint -- --quiet -> passed
+npm run typecheck -> passed (node + web)
+npm run build -> passed
+npm run test -- RecordingCenter recordingMedia recording.test ApplicationCenter -> 15/15 passed
+npm run test -- GlobalSearch.test.tsx -> 9/9 passed
+npm run test -- GuidedControllerTutorial.test.tsx -> 6/6 passed
+```
+
+**Known test-suite caveat**: the full parallel `npm run test` run after the Vitest migration reached 1228/1230 passing tests. The two failures were `GlobalSearch.test.tsx` and `GuidedControllerTutorial.test.tsx` timing queries under full-suite load; both pass cleanly when run in isolation, and no production code path was changed for either feature in this dependency pass.

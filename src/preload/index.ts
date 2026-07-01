@@ -442,6 +442,7 @@ const ndx: NdxBridge = {
     update: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryUpdate, request),
     delete: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryDelete, request),
     setDisabled: (request) => ipcRenderer.invoke(IPC_CHANNELS.memorySetDisabled, request),
+    getDisabledState: () => ipcRenderer.invoke(IPC_CHANNELS.memoryGetDisabledState),
     clearScope: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryClearScope, request),
     export: (request) => ipcRenderer.invoke(IPC_CHANNELS.memoryExport, request)
   },

@@ -329,6 +329,10 @@ const PromptPersonaLibrary = lazy(async () => {
   const module = await import('../../features/promptLibrary/PromptPersonaLibrary')
   return { default: module.PromptPersonaLibrary }
 })
+const MemoryControlCenter = lazy(async () => {
+  const module = await import('../../features/memory/MemoryControlCenter')
+  return { default: module.MemoryControlCenter }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -1070,6 +1074,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('prompt and persona library', <PromptPersonaLibrary />)
+  },
+  {
+    routeId: 'memory-control-center',
+    screenId: 'ND-X014',
+    path: '/memory',
+    title: 'AI Memory Control Center',
+    owningEpic: 'Epic X4',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('memory control center', <MemoryControlCenter />)
   },
   {
     routeId: 'screenshot-center',

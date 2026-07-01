@@ -9,6 +9,7 @@ import {
   setMemoryDisabledRequestSchema,
   updateMemoryRequestSchema,
   writeMemoryRequestSchema,
+  type MemoryDisabledState,
   type MemoryExport,
   type MemoryItem,
   type NdxResult
@@ -115,6 +116,13 @@ export function registerMemoryHandlers(store: MemoryStore): void {
       }
       await store.setDisabled(parsed.data.type, parsed.data.disabled)
       return { ok: true, data: null }
+    }
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.memoryGetDisabledState,
+    async (): Promise<NdxResult<MemoryDisabledState>> => {
+      return { ok: true, data: await store.getDisabledState() }
     }
   )
 

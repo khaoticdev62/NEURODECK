@@ -1,5 +1,6 @@
 import type {
   ClearMemoryScopeRequest,
+  MemoryDisabledState,
   MemoryExport,
   MemoryIdRequest,
   MemoryItem,
@@ -41,6 +42,12 @@ export async function setMemoryDisabled(
   const bridge = getNdxBridge()
   if (!bridge) return bridgeUnavailableError()
   return bridge.memory.setDisabled(request)
+}
+
+export async function getMemoryDisabledState(): Promise<NdxResult<MemoryDisabledState>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.memory.getDisabledState()
 }
 
 export async function clearMemoryScope(

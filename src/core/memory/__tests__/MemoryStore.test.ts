@@ -111,6 +111,22 @@ describe('MemoryStore', () => {
     )
   })
 
+  it('getDisabledState() reports the real current disabled-category and disable-all state', async () => {
+    expect(await store.getDisabledState()).toEqual({ allDisabled: false, disabledTypes: [] })
+
+    await store.setDisabled('user-preference', true)
+    expect(await store.getDisabledState()).toEqual({
+      allDisabled: false,
+      disabledTypes: ['user-preference']
+    })
+
+    await store.setDisabled(undefined, true)
+    expect(await store.getDisabledState()).toEqual({
+      allDisabled: true,
+      disabledTypes: ['user-preference']
+    })
+  })
+
   it('clearScope() really deletes every item in a scope, scoped to a workspace when given', async () => {
     await store.write(sample)
     await store.write({ ...sample, workspaceId: 'w2' })

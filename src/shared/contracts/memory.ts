@@ -82,6 +82,12 @@ export const setMemoryDisabledRequestSchema = z.object({
 })
 export type SetMemoryDisabledRequest = z.infer<typeof setMemoryDisabledRequestSchema>
 
+export const memoryDisabledStateSchema = z.object({
+  allDisabled: z.boolean(),
+  disabledTypes: z.array(memoryTypeSchema)
+})
+export type MemoryDisabledState = z.infer<typeof memoryDisabledStateSchema>
+
 export const updateMemoryRequestSchema = z.object({
   id: z.string().min(1),
   content: z.string().min(1).max(2000).optional(),
