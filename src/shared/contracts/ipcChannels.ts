@@ -194,6 +194,7 @@ export const IPC_CHANNELS = {
   clipboardRemove: 'clipboard.remove',
   clipboardClear: 'clipboard.clear',
   clipboardSetMonitoring: 'clipboard.setMonitoring',
+  clipboardGetMonitoring: 'clipboard.getMonitoring',
   clipboardUpdate: 'clipboard.update',
   snippetList: 'snippet.list',
   snippetUpsert: 'snippet.upsert',

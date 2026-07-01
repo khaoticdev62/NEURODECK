@@ -689,6 +689,7 @@ export interface NdxBridge {
     remove: (request: ClipboardEntryIdRequest) => Promise<NdxResult<null>>
     clear: () => Promise<NdxResult<null>>
     setMonitoring: (request: SetClipboardMonitoringRequest) => Promise<NdxResult<null>>
+    getMonitoring: () => Promise<NdxResult<boolean>>
   }
   snippets: {
     list: () => Promise<NdxResult<Snippet[]>>

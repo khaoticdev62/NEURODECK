@@ -49,7 +49,8 @@ const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Kiosk Mode', path: '/kiosk' },
   { label: 'Trusted Publishers', path: '/trusted-publishers' },
   { label: 'Tool Library', path: '/tools' },
-  { label: 'Steam Shortcut Manager', path: '/steam-shortcuts' }
+  { label: 'Steam Shortcut Manager', path: '/steam-shortcuts' },
+  { label: 'Clipboard and Snippet Center', path: '/clipboard' }
 ]
 
 /**

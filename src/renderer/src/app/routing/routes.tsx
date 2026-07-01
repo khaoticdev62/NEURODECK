@@ -321,6 +321,10 @@ const PlatformHealthOverview = lazy(async () => {
   const module = await import('../../features/system/PlatformHealthOverview')
   return { default: module.PlatformHealthOverview }
 })
+const ClipboardSnippetCenter = lazy(async () => {
+  const module = await import('../../features/clipboard/ClipboardSnippetCenter')
+  return { default: module.ClipboardSnippetCenter }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -1042,6 +1046,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('platform health', <PlatformHealthOverview />)
+  },
+  {
+    routeId: 'clipboard-snippet-center',
+    screenId: 'ND-X022',
+    path: '/clipboard',
+    title: 'Clipboard and Snippet Center',
+    owningEpic: 'Epic X6',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('clipboard and snippet center', <ClipboardSnippetCenter />)
   },
   {
     routeId: 'screenshot-center',

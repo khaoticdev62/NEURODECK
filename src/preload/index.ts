@@ -471,7 +471,8 @@ const ndx: NdxBridge = {
     setPinned: (request) => ipcRenderer.invoke(IPC_CHANNELS.clipboardSetPinned, request),
     remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.clipboardRemove, request),
     clear: () => ipcRenderer.invoke(IPC_CHANNELS.clipboardClear),
-    setMonitoring: (request) => ipcRenderer.invoke(IPC_CHANNELS.clipboardSetMonitoring, request)
+    setMonitoring: (request) => ipcRenderer.invoke(IPC_CHANNELS.clipboardSetMonitoring, request),
+    getMonitoring: () => ipcRenderer.invoke(IPC_CHANNELS.clipboardGetMonitoring)
   },
   snippets: {
     list: () => ipcRenderer.invoke(IPC_CHANNELS.snippetList),

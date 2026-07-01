@@ -1,5 +1,6 @@
 import {
   app,
+  clipboard,
   Notification,
   powerMonitor,
   session,
@@ -51,6 +52,7 @@ import { PromptTemplateStore } from '../../core/promptLibrary/PromptTemplateStor
 import { MicrophonePermissionStore } from '../../core/voice/MicrophonePermissionStore'
 import { VoiceNoteStore } from '../../core/voice/VoiceNoteStore'
 import { ClipboardStore } from '../../core/clipboard/ClipboardStore'
+import { ClipboardMonitor } from '../../core/clipboard/ClipboardMonitor'
 import { SnippetStore } from '../../core/clipboard/SnippetStore'
 import { DeviceIdentityStore } from '../../core/lan/DeviceIdentityStore'
 import { PeerDiscoveryService } from '../../core/lan/PeerDiscoveryService'
@@ -349,6 +351,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     join(app.getPath('userData'), 'clipboard.json'),
     electronSecretCipher
   )
+  const clipboardMonitor = new ClipboardMonitor(clipboardStore, () => clipboard.readText())
+  clipboardMonitor.start()
   const snippetStore = new SnippetStore(join(app.getPath('userData'), 'snippets.json'))
   const peerStore = new PeerStore(join(app.getPath('userData'), 'lan-peers.json'))
   const peerTransferService = new PeerTransferService()
@@ -582,6 +586,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   )
   return () => {
     backupScheduler.stop()
+    clipboardMonitor.stop()
     disposeTerminal()
     disposeRemote()
     disposePower()

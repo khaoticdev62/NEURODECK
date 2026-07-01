@@ -128,6 +128,12 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     label: 'Voice Notes',
     path: '/voice-notes',
     subtitle: 'ND-X059 - Epic X14'
+  },
+  {
+    id: 'clipboard-snippet-center',
+    label: 'Clipboard and Snippet Center',
+    path: '/clipboard',
+    subtitle: 'ND-X022 - Epic X6'
   }
 ]
 

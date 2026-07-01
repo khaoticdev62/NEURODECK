@@ -92,6 +92,10 @@ export function registerClipboardHandlers(
     }
   )
 
+  ipcMain.handle(IPC_CHANNELS.clipboardGetMonitoring, async (): Promise<NdxResult<boolean>> => {
+    return { ok: true, data: await clipboardStore.isMonitoringEnabled() }
+  })
+
   ipcMain.handle(IPC_CHANNELS.snippetList, async (): Promise<NdxResult<Snippet[]>> => {
     return { ok: true, data: await snippetStore.list() }
   })

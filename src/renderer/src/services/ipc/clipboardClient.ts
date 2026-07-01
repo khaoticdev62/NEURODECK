@@ -45,3 +45,9 @@ export async function setClipboardMonitoring(
   if (!bridge) return bridgeUnavailableError()
   return bridge.clipboard.setMonitoring(request)
 }
+
+export async function getClipboardMonitoring(): Promise<NdxResult<boolean>> {
+  const bridge = getNdxBridge()
+  if (!bridge) return bridgeUnavailableError()
+  return bridge.clipboard.getMonitoring()
+}
