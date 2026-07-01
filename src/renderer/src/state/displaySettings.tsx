@@ -1,12 +1,25 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { DisplaySettings, TextScale } from '@shared/contracts'
+import type {
+  Accent,
+  Density,
+  DisplaySettings,
+  FocusStyle,
+  RadiusStyle,
+  SurfaceStyle,
+  TextScale
+} from '@shared/contracts'
 import { getDisplaySettings, setDisplaySettings } from '../services/ipc/displaySettingsClient'
 import { DisplaySettingsContext, type DisplaySettingsContextValue } from './displaySettingsContext'
 
 const DEFAULT_SETTINGS: DisplaySettings = {
   reduceMotion: false,
   highContrast: false,
-  textScale: 'normal'
+  textScale: 'normal',
+  accent: 'cyan',
+  radiusStyle: 'sharp',
+  density: 'comfortable',
+  surfaceStyle: 'solid',
+  focusStyle: 'ring'
 }
 
 /**
@@ -44,7 +57,12 @@ export function DisplaySettingsProvider({ children }: { children: ReactNode }): 
       ...settings,
       setReduceMotion: (reduceMotion: boolean) => void persist({ ...settings, reduceMotion }),
       setHighContrast: (highContrast: boolean) => void persist({ ...settings, highContrast }),
-      setTextScale: (textScale: TextScale) => void persist({ ...settings, textScale })
+      setTextScale: (textScale: TextScale) => void persist({ ...settings, textScale }),
+      setAccent: (accent: Accent) => void persist({ ...settings, accent }),
+      setRadiusStyle: (radiusStyle: RadiusStyle) => void persist({ ...settings, radiusStyle }),
+      setDensity: (density: Density) => void persist({ ...settings, density }),
+      setSurfaceStyle: (surfaceStyle: SurfaceStyle) => void persist({ ...settings, surfaceStyle }),
+      setFocusStyle: (focusStyle: FocusStyle) => void persist({ ...settings, focusStyle })
     }),
     [settings]
   )

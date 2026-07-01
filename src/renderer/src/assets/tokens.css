@@ -21,7 +21,7 @@
   /* Borders */
   --color-border: #242b36;
   --color-border-strong: #3c4656;
-  --color-border-focus: #78dce8;
+  --color-border-focus: var(--ndx-accent);
 
   /* Text hierarchy */
   --color-text-primary: rgb(245 246 250 / 0.95);
@@ -42,7 +42,7 @@
 
   /* Shadow / elevation */
   --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.45);
-  --shadow-focus-bloom: 0 0 0 4px rgb(122 162 255 / 0.35);
+  --shadow-focus-bloom: 0 0 0 4px rgb(var(--ndx-accent-rgb) / 0.35);
 
   /* Type scale: 16px minimum body text, 14px only for secondary metadata (spec §8.3).
      Each size multiplies by --ndx-text-scale (default 1, real ND-044 override below)
@@ -100,6 +100,15 @@
   /* ND-044 real text-scale override (default = no scaling) */
   --ndx-text-scale: 1;
 
+  /* ND-044 theme builder: single accent indirection point. All accent-
+     dependent tokens below derive from these two, so a `[data-ndx-accent]`
+     preset only ever needs to set these — nothing else references a raw
+     accent hex. `--ndx-accent-rgb` is the space-separated triplet form so
+     call sites can pick their own alpha via rgb(var(--ndx-accent-rgb) / a). */
+  --ndx-accent: #78dce8;
+  --ndx-accent-rgb: 120 220 232;
+  --ndx-accent-soft: rgb(var(--ndx-accent-rgb) / 0.18);
+
   /* HYBRID-1 semantic workbench aliases. These keep feature code off raw
      palette values while the full screen migration proceeds route by route. */
   --ndx-workbench-canvas-bg: var(--color-canvas);
@@ -116,9 +125,9 @@
   --ndx-workbench-tab-inactive-bg: #101720;
   --ndx-workbench-control-bg: #121a24;
   --ndx-workbench-control-bg-hover: #182331;
-  --ndx-workbench-control-bg-active: #79dce8;
+  --ndx-workbench-control-bg-active: var(--ndx-accent);
   --ndx-workbench-control-text-active: #071014;
-  --ndx-workbench-row-selected-bg: rgb(120 220 232 / 0.13);
+  --ndx-workbench-row-selected-bg: rgb(var(--ndx-accent-rgb) / 0.13);
   --ndx-workbench-row-active-bg: rgb(244 201 93 / 0.12);
   --ndx-workbench-row-hover-bg: rgb(255 255 255 / 0.045);
   --ndx-workbench-danger-bg: rgb(255 107 122 / 0.12);
@@ -127,9 +136,20 @@
   --ndx-workbench-glass-bg: rgb(11 16 23 / 0.72);
   --ndx-workbench-focus-dense-shadow: inset 2px 0 0 var(--color-border-focus);
   --ndx-workbench-focus-spatial-shadow:
-    0 0 0 1px rgb(120 220 232 / 0.65), 0 8px 18px rgb(0 0 0 / 0.34);
+    0 0 0 1px rgb(var(--ndx-accent-rgb) / 0.65), 0 8px 18px rgb(0 0 0 / 0.34);
+  --ndx-workbench-focus-underline-shadow: inset 0 -2px 0 var(--ndx-accent);
   --ndx-workbench-focus-ring:
-    0 0 0 1px var(--color-border-focus), 0 0 0 4px rgb(120 220 232 / 0.18);
+    0 0 0 1px var(--color-border-focus), 0 0 0 4px var(--ndx-accent-soft);
+
+  /* ND-044 theme builder: focus-style indirection. `.ndx-focus-surface`
+     (comfortable density) and `.ndx-workbench-row` read these rather than
+     a fixed shadow, so `[data-ndx-focus-style]` only needs to repoint two
+     variables. The 'dense'/'spatial' focus-density shadows stay fixed —
+     those encode structural context (list row vs. floating card), not the
+     user's focus-style preference. */
+  --ndx-focus-indicator-surface: var(--ndx-workbench-focus-ring);
+  --ndx-focus-indicator-row: var(--ndx-workbench-focus-dense-shadow);
+
   --ndx-workbench-status-info: var(--color-status-info);
   --ndx-workbench-status-success: var(--color-status-success);
   --ndx-workbench-status-warning: var(--color-status-warning);
@@ -167,6 +187,98 @@
 
 [data-ndx-theme='reduced-transparency'] {
   --color-overlay: rgb(11 12 16 / 0.98);
+}
+
+/* ND-044 theme builder: accent palette. Reuses the four existing,
+   already-contrast-checked status hues plus the original cyan default
+   rather than inventing new, unvetted colors — 'cyan' matches
+   --color-status-info, 'violet' matches --color-status-approval, 'amber'
+   matches --color-status-warning, 'green' matches --color-status-success,
+   'rose' matches --color-status-error. */
+[data-ndx-accent='cyan'] {
+  --ndx-accent: #78dce8;
+  --ndx-accent-rgb: 120 220 232;
+}
+
+[data-ndx-accent='violet'] {
+  --ndx-accent: #a78bfa;
+  --ndx-accent-rgb: 167 139 250;
+}
+
+[data-ndx-accent='amber'] {
+  --ndx-accent: #f4c95d;
+  --ndx-accent-rgb: 244 201 93;
+}
+
+[data-ndx-accent='green'] {
+  --ndx-accent: #58d68d;
+  --ndx-accent-rgb: 88 214 141;
+}
+
+[data-ndx-accent='rose'] {
+  --ndx-accent: #ff6b7a;
+  --ndx-accent-rgb: 255 107 122;
+}
+
+/* ND-044 theme builder: corner radius style. 'sharp' matches the existing
+   defaults declared in @theme above. */
+[data-ndx-radius='soft'] {
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 14px;
+}
+
+[data-ndx-radius='round'] {
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+}
+
+/* ND-044 theme builder: spacing density. Interactive target sizes
+   (--ndx-button-height, --ndx-target-min) intentionally do not scale down
+   with 'compact' — shrinking tap targets below the 48px accessibility
+   minimum would violate the wireframe spec's touch-target rule regardless
+   of the user's density preference. Only layout spacing/row height/content
+   inset scale. 'comfortable' matches the existing defaults. */
+[data-ndx-density='compact'] {
+  --ndx-spacing-grid: 6px;
+  --ndx-list-row-height: 56px;
+  --ndx-workbench-content-inset: 6px;
+}
+
+[data-ndx-density='spacious'] {
+  --ndx-spacing-grid: 10px;
+  --ndx-list-row-height: 84px;
+  --ndx-workbench-content-inset: 14px;
+}
+
+/* ND-044 theme builder: surface style. Glass mode is only applied when
+   high contrast is off — high contrast already demands opaque, high-
+   separation surfaces, so a transparent/blurred panel would directly
+   undermine the reason the user turned it on. */
+[data-ndx-surface='glass'][data-high-contrast='false'] {
+  --ndx-workbench-tool-bg: rgb(13 18 25 / 0.72);
+  --ndx-workbench-panel-bg: rgb(15 21 30 / 0.72);
+  --ndx-workbench-titlebar-bg: rgb(12 16 22 / 0.72);
+  --ndx-workbench-statusbar-bg: rgb(17 25 36 / 0.72);
+}
+
+[data-ndx-surface='glass'][data-high-contrast='false'] .ndx-workbench-surface,
+[data-ndx-surface='glass'][data-high-contrast='false'] .ndx-os-panel {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ND-044 theme builder: focus-indicator style. 'ring' matches the existing
+   defaults (see --ndx-focus-indicator-surface/-row above). */
+[data-ndx-focus-style='bloom'] {
+  --ndx-focus-indicator-surface: var(--shadow-focus-bloom);
+  --ndx-focus-indicator-row: var(--shadow-focus-bloom);
+}
+
+[data-ndx-focus-style='underline'] {
+  --ndx-focus-indicator-surface: var(--ndx-workbench-focus-underline-shadow);
+  --ndx-focus-indicator-row: var(--ndx-workbench-focus-underline-shadow);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -240,8 +352,7 @@
 .ndx-workbench-surface {
   border: 1px solid var(--ndx-workbench-border);
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 48%),
-    var(--ndx-workbench-panel-bg);
+    linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 48%), var(--ndx-workbench-panel-bg);
 }
 
 .ndx-workbench-row {
@@ -263,7 +374,7 @@
 .ndx-workbench-row[data-active='true'] {
   border-color: var(--ndx-workbench-border-active);
   background: var(--ndx-workbench-row-selected-bg);
-  box-shadow: var(--ndx-workbench-focus-dense-shadow);
+  box-shadow: var(--ndx-focus-indicator-row);
 }
 
 .ndx-input {
@@ -276,7 +387,7 @@
 
 .ndx-input:focus-visible {
   border-color: var(--ndx-workbench-border-active);
-  box-shadow: var(--ndx-workbench-focus-ring);
+  box-shadow: var(--ndx-focus-indicator-surface);
 }
 
 .ndx-input::placeholder {
@@ -364,7 +475,8 @@
 
 .ndx-focus-surface {
   border: 1px solid var(--ndx-workbench-border);
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%),
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%),
     var(--ndx-workbench-panel-bg);
   color: var(--color-text-primary);
   transition:
@@ -382,7 +494,7 @@
 
 .ndx-focus-surface[data-focus-density='comfortable']:focus-within,
 .ndx-focus-surface[data-focus-density='comfortable']:hover {
-  box-shadow: var(--ndx-workbench-focus-ring);
+  box-shadow: var(--ndx-focus-indicator-surface);
   border-color: var(--ndx-workbench-border-active);
 }
 
@@ -420,4 +532,75 @@
   .ndx-focus-surface[data-focus-density='spatial']:hover {
     transform: none;
   }
+}
+
+/* Phase 2 tvOS-style navigation/launcher reskin (Home, Workspace Hub,
+   System Dashboard categories, Apps Library) — scoped to these browsing
+   surfaces only, per the wireframe spec's "dense workbench stays dense"
+   precedence. Cards use a fixed, deliberately generous tile size rather
+   than scaling with `--ndx-density`, since a "compact" density preference
+   is about list/spacing rhythm in the workbench, not about shrinking
+   full-bleed launcher tiles. */
+.ndx-tv-card {
+  width: 15rem;
+  min-height: 8.5rem;
+}
+
+.ndx-tv-shelf-track {
+  display: flex;
+  gap: var(--ndx-spacing-grid);
+  overflow-x: auto;
+  padding-block: 2px;
+  padding-inline: 2px;
+  scroll-padding-inline: 2px;
+  scroll-snap-type: x proximity;
+}
+
+.ndx-tv-shelf-track > * {
+  scroll-snap-align: start;
+}
+
+[data-reduce-motion='true'] .ndx-tv-shelf-track {
+  scroll-behavior: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ndx-tv-shelf-track {
+    scroll-behavior: auto;
+  }
+}
+
+.ndx-tv-tab {
+  border-bottom: 2px solid transparent;
+}
+
+.ndx-tv-tab-active {
+  border-bottom-color: var(--ndx-accent);
+}
+
+.ndx-tv-tab:focus-visible {
+  outline: none;
+  box-shadow: var(--ndx-focus-indicator-surface);
+}
+
+/* Blurred, dimmed backdrop behind a shelf section — only when the user has
+   opted into glass surfaces (Phase 1's `surfaceStyle`), and never under
+   high contrast, matching the same `[data-ndx-surface='glass']
+   [data-high-contrast='false']` gating tokens.css already applies to
+   workbench panels. Solid `surfaceStyle` (the default) renders no backdrop
+   at all rather than a fake/disabled one. */
+[data-ndx-surface='glass'][data-high-contrast='false'] .ndx-tv-backdrop {
+  position: relative;
+}
+
+[data-ndx-surface='glass'][data-high-contrast='false'] .ndx-tv-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: -1rem;
+  z-index: -1;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 20% 0%, rgb(var(--ndx-accent-rgb) / 0.1), transparent 60%),
+    var(--ndx-workbench-glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
 }

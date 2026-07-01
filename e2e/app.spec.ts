@@ -73,3 +73,41 @@ test('boots and renders the baseline shell', async () => {
   await expect(window.getByText('No active workspace')).toBeVisible()
   await close()
 })
+
+/**
+ * ND-044 theme builder: `DisplayThemeSettings` persists through the real
+ * IPC store, and `ShellLayout`/`NdxWorkbench` thread the result into
+ * `data-ndx-*` attributes `tokens.css` responds to. This is the only check
+ * that would catch a prop-threading regression between the two — a unit
+ * test on either component in isolation wouldn't.
+ */
+test('theme builder controls patch the live data-ndx-* attributes on the workbench root', async () => {
+  const { app, close } = await launchApp()
+  const window = await app.firstWindow()
+  await expect(window.getByRole('banner')).toBeVisible({ timeout: 20000 })
+
+  await window.evaluate(() => {
+    window.location.hash = '/settings/display'
+  })
+  await expect(window).toHaveURL(/settings\/display/)
+
+  const workbenchRoot = window.locator('[data-ndx-theme]')
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-accent', 'cyan')
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-radius', 'sharp')
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-density', 'comfortable')
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-focus-style', 'ring')
+
+  await window.getByRole('button', { name: /Violet/ }).click()
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-accent', 'violet')
+
+  await window.getByRole('button', { name: 'round' }).click()
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-radius', 'round')
+
+  await window.getByRole('button', { name: 'spacious' }).click()
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-density', 'spacious')
+
+  await window.getByRole('button', { name: 'underline' }).click()
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-focus-style', 'underline')
+
+  await close()
+})

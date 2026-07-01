@@ -1,9 +1,21 @@
-import type { TextScale } from '@shared/contracts'
+import type { Accent, Density, FocusStyle, RadiusStyle, TextScale } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { NdxEditorShell, NdxSettingsTree, NdxToolWindow } from '../../components/workbench'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
 
 const TEXT_SCALES: TextScale[] = ['normal', 'large', 'larger']
+
+const ACCENTS: { value: Accent; label: string; swatch: string }[] = [
+  { value: 'cyan', label: 'Cyan', swatch: '#78dce8' },
+  { value: 'violet', label: 'Violet', swatch: '#a78bfa' },
+  { value: 'amber', label: 'Amber', swatch: '#f4c95d' },
+  { value: 'green', label: 'Green', swatch: '#58d68d' },
+  { value: 'rose', label: 'Rose', swatch: '#ff6b7a' }
+]
+
+const RADIUS_STYLES: RadiusStyle[] = ['sharp', 'soft', 'round']
+const DENSITIES: Density[] = ['compact', 'comfortable', 'spacious']
+const FOCUS_STYLES: FocusStyle[] = ['ring', 'bloom', 'underline']
 
 interface DeferredSection {
   title: string
@@ -13,12 +25,7 @@ interface DeferredSection {
 const DEFERRED_SECTIONS: DeferredSection[] = [
   {
     title: 'Appearance',
-    reason: 'No light theme exists yet — this is a single, fixed dark theme.'
-  },
-  { title: 'Transparency', reason: 'No glass/blur visual effects exist yet to toggle.' },
-  {
-    title: 'Focus style',
-    reason: 'No alternate focus-ring style exists yet — only the current ring/bloom.'
+    reason: 'No light theme exists yet — accent/radius/density/surface/focus style are real, but the base is still a single, fixed dark theme.'
   },
   { title: 'Wallpaper', reason: 'No wallpaper system exists yet.' },
   {
@@ -32,17 +39,32 @@ const DEFERRED_SECTIONS: DeferredSection[] = [
 ]
 
 /**
- * ND-044 Display and Theme Settings, scoped to the three real overrides
- * this single-theme dark UI can support without inventing a visual system
- * that doesn't exist: a forced reduce-motion override (independent of the
- * OS `prefers-reduced-motion` media query `tokens.css` already honors), a
- * forced high-contrast override (same relationship to `prefers-contrast:
- * more`), and a real text-size scale applied via the `--ndx-text-scale`
- * custom property the whole type scale already multiplies by.
+ * ND-044 Display and Theme Settings: the original three overrides (forced
+ * reduce-motion, forced high-contrast, text-scale) plus a structured theme
+ * builder — accent color, corner radius, spacing density, surface style,
+ * and focus-indicator style — each patching the `--ndx-*`/`--color-*` token
+ * layer in tokens.css via a `data-ndx-*` attribute on the workbench root.
  */
 export function DisplayThemeSettings(): React.JSX.Element {
-  const { reduceMotion, highContrast, textScale, setReduceMotion, setHighContrast, setTextScale } =
-    useDisplaySettings()
+  const {
+    reduceMotion,
+    highContrast,
+    textScale,
+    accent,
+    radiusStyle,
+    density,
+    surfaceStyle,
+    focusStyle,
+    setReduceMotion,
+    setHighContrast,
+    setTextScale,
+    setAccent,
+    setRadiusStyle,
+    setDensity,
+    setSurfaceStyle,
+    setFocusStyle
+  } = useDisplaySettings()
+  const glassDisabled = highContrast
 
   return (
     <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
@@ -52,6 +74,11 @@ export function DisplayThemeSettings(): React.JSX.Element {
           <p>Motion</p>
           <p>Contrast</p>
           <p>Text size</p>
+          <p>Accent color</p>
+          <p>Corner style</p>
+          <p>Density</p>
+          <p>Surface style</p>
+          <p>Focus style</p>
           <p>Deferred visuals</p>
         </div>
       </NdxSettingsTree>
@@ -103,6 +130,105 @@ export function DisplayThemeSettings(): React.JSX.Element {
             </div>
           </section>
 
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Accent color</p>
+            <p className="text-meta text-text-tertiary">
+              Colors focus rings, selected rows, and active controls throughout the workbench.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {ACCENTS.map((option) => (
+                <ControllerButton
+                  key={option.value}
+                  variant={accent === option.value ? 'primary' : 'secondary'}
+                  onClick={() => setAccent(option.value)}
+                  className="items-center gap-2"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-3 w-3 rounded-full border border-border-strong"
+                    style={{ backgroundColor: option.swatch }}
+                  />
+                  {option.label}
+                </ControllerButton>
+              ))}
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Corner style</p>
+            <div className="flex gap-2">
+              {RADIUS_STYLES.map((style) => (
+                <ControllerButton
+                  key={style}
+                  variant={radiusStyle === style ? 'primary' : 'secondary'}
+                  onClick={() => setRadiusStyle(style)}
+                >
+                  {style}
+                </ControllerButton>
+              ))}
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Density</p>
+            <p className="text-meta text-text-tertiary">
+              Adjusts spacing and list row height. Button and touch-target sizes stay fixed to keep
+              every control at least 48px, regardless of density.
+            </p>
+            <div className="flex gap-2">
+              {DENSITIES.map((option) => (
+                <ControllerButton
+                  key={option}
+                  variant={density === option ? 'primary' : 'secondary'}
+                  onClick={() => setDensity(option)}
+                >
+                  {option}
+                </ControllerButton>
+              ))}
+            </div>
+          </section>
+
+          <section
+            className={`flex flex-col gap-2 border border-border bg-surface p-3 ${glassDisabled ? 'opacity-60' : ''}`}
+          >
+            <p className="text-body font-semibold text-text-primary">Surface style</p>
+            <p className="text-meta text-text-tertiary">
+              {glassDisabled
+                ? 'Forced to solid while high contrast is on — a transparent/blurred surface would undermine the extra separation high contrast provides.'
+                : 'Glass adds a blurred, translucent background to panels and tool windows.'}
+            </p>
+            <div className="flex gap-2">
+              <ControllerButton
+                variant={surfaceStyle === 'solid' ? 'primary' : 'secondary'}
+                onClick={() => setSurfaceStyle('solid')}
+              >
+                solid
+              </ControllerButton>
+              <ControllerButton
+                variant={surfaceStyle === 'glass' ? 'primary' : 'secondary'}
+                disabled={glassDisabled}
+                onClick={() => setSurfaceStyle('glass')}
+              >
+                glass
+              </ControllerButton>
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+            <p className="text-body font-semibold text-text-primary">Focus style</p>
+            <div className="flex gap-2">
+              {FOCUS_STYLES.map((style) => (
+                <ControllerButton
+                  key={style}
+                  variant={focusStyle === style ? 'primary' : 'secondary'}
+                  onClick={() => setFocusStyle(style)}
+                >
+                  {style}
+                </ControllerButton>
+              ))}
+            </div>
+          </section>
+
           {DEFERRED_SECTIONS.map((section) => (
             <section key={section.title} className="border border-border bg-surface p-3 opacity-60">
               <p className="text-body font-semibold text-text-primary">{section.title}</p>
@@ -112,9 +238,28 @@ export function DisplayThemeSettings(): React.JSX.Element {
         </div>
       </NdxEditorShell>
 
-      <NdxToolWindow title="Theme Scope" subtitle={textScale} side="right">
+      <NdxToolWindow title="Theme Preview" subtitle={textScale} side="right">
         <div className="space-y-3 text-meta text-text-secondary">
-          <p>Existing reduced motion, high contrast, and text scale attributes remain intact.</p>
+          <div className="flex items-center gap-2 border border-border bg-surface p-2">
+            <span
+              aria-hidden="true"
+              className="inline-block h-4 w-4 rounded-full border border-border-strong"
+              style={{ backgroundColor: ACCENTS.find((option) => option.value === accent)?.swatch }}
+            />
+            <p className="text-text-primary">{ACCENTS.find((option) => option.value === accent)?.label}</p>
+          </div>
+          <p>
+            Corners: <span className="text-text-primary">{radiusStyle}</span>
+          </p>
+          <p>
+            Density: <span className="text-text-primary">{density}</span>
+          </p>
+          <p>
+            Surface: <span className="text-text-primary">{surfaceStyle}</span>
+          </p>
+          <p>
+            Focus style: <span className="text-text-primary">{focusStyle}</span>
+          </p>
           <p>Wallpaper, light theme, and OLED-specific modes need a separate visual system.</p>
         </div>
       </NdxToolWindow>

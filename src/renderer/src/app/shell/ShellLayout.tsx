@@ -62,7 +62,8 @@ export function ShellLayout({
   const navigate = useNavigate()
   const location = useLocation()
   const { baseMode } = useDisplayMode()
-  const { reduceMotion, highContrast, textScale } = useDisplaySettings()
+  const { reduceMotion, highContrast, textScale, accent, radiusStyle, density, surfaceStyle, focusStyle } =
+    useDisplaySettings()
   const { isLocked } = useLockState()
   const { enabled: kioskEnabled, startRoutePath, isRouteAllowed } = useKioskMode()
   const [activeProfileName, setActiveProfileName] = useState<string | null>(null)
@@ -142,6 +143,11 @@ export function ShellLayout({
       reduceMotion={reduceMotion}
       highContrast={highContrast}
       textSize={textScale}
+      accent={accent}
+      radiusStyle={radiusStyle}
+      density={density}
+      surfaceStyle={surfaceStyle}
+      focusStyle={focusStyle}
       collapseToolWindows={collapsesRails}
       titleBar={<NdxTitleBar status={systemRailStatus} activeProfileName={activeProfileName} />}
       activityBar={<NdxActivityBar hidden={collapsesRails} />}
