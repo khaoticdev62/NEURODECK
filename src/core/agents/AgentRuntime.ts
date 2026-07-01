@@ -59,7 +59,10 @@ export class AgentRuntime {
     await this.persist(run)
     const controller = new AbortController()
     this.controllers.set(run.id, controller)
-    void this.execute(agent, run, controller)
+    void this.execute(agent, run, controller).catch(() => {
+      this.controllers.delete(run.id)
+      this.resumePausedRun(run.id)
+    })
     return run
   }
 

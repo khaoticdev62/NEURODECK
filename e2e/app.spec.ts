@@ -29,6 +29,15 @@ test('boots and renders the baseline shell', async () => {
   await expect(window.getByRole('banner')).toBeVisible({ timeout: 20000 })
   await expect(window.getByRole('navigation', { name: 'Primary' })).toBeVisible()
   await expect(window.getByRole('link', { name: 'Home' })).toBeVisible()
+  await window.setViewportSize({ width: 1280, height: 800 })
+  await expect
+    .poll(async () =>
+      window.evaluate(() => ({
+        width: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth
+      }))
+    )
+    .toEqual({ width: 1280, scrollWidth: 1280 })
 
   await window.evaluate(() => {
     window.location.hash = '/terminal'
@@ -50,6 +59,13 @@ test('boots and renders the baseline shell', async () => {
   })
   await expect(window).toHaveURL(/remote/)
   await expect(window.getByText('No remote hosts')).toBeVisible()
+  await expect
+    .poll(async () =>
+      window.evaluate(
+        () => document.documentElement.scrollWidth <= document.documentElement.clientWidth
+      )
+    )
+    .toBe(true)
   await window.evaluate(() => {
     window.location.hash = '/ai'
   })

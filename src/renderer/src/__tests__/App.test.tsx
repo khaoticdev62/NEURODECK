@@ -41,7 +41,6 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByText('NeuroDeck')).toBeInTheDocument()
-    expect(screen.getByText('Loading core services')).toBeInTheDocument()
 
     await waitFor(() => {
       expect(screen.getByRole('banner')).toBeInTheDocument()

@@ -3,6 +3,7 @@ import { cn } from '../primitives/cn'
 
 export interface NdxToolWindowProps {
   title: string
+  ariaLabel?: string
   subtitle?: string
   side?: 'left' | 'right'
   children: ReactNode
@@ -10,19 +11,20 @@ export interface NdxToolWindowProps {
 
 export function NdxToolWindow({
   title,
+  ariaLabel,
   subtitle,
   side = 'left',
   children
 }: NdxToolWindowProps): React.JSX.Element {
   return (
     <aside
-      aria-label={title}
+      aria-label={ariaLabel ?? title}
       className={cn(
         'flex min-h-0 flex-col border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)] shadow-[inset_-1px_0_0_rgb(255_255_255_/_0.025)]',
         side === 'left' ? 'border-r' : 'border-l'
       )}
     >
-      <div className="border-b border-[var(--ndx-workbench-border)] bg-[rgb(255_255_255_/_0.02)] px-3 py-2">
+      <div className="border-b border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-glass-bg)] px-3 py-2">
         <p className="text-meta font-semibold uppercase tracking-wide text-text-secondary">
           {title}
         </p>

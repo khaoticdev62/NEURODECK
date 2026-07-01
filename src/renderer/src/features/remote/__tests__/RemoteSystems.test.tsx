@@ -71,7 +71,7 @@ describe('RemoteSystems', () => {
     await user.click(screen.getByRole('button', { name: 'Test connection' }))
 
     expect(testConnection).toHaveBeenCalledWith({ hostId: 'host-1' })
-    expect(await screen.findByText('Reachable · 42ms')).toBeInTheDocument()
+    expect(await screen.findByText('Reachable - 42ms')).toBeInTheDocument()
   })
 
   it('adds a password host through the typed bridge and refreshes the list', async () => {

@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
@@ -91,7 +91,9 @@ async function advanceToLesson(adapter: TestAdapter, target: number): Promise<vo
   ]
 
   for (const step of sequence) {
-    adapter.inject(step.action)
+    act(() => {
+      adapter.inject(step.action)
+    })
     await waitFor(() => expect(screen.getByText(step.expectedTitle)).toBeInTheDocument(), WAIT)
     if (step.expectedTitle === targetTitle[target]) break
   }
@@ -104,7 +106,9 @@ describe('GuidedControllerTutorial', () => {
 
     expect(screen.getByText('1. Move focus')).toBeInTheDocument()
 
-    adapter.inject('nav.down')
+    act(() => {
+      adapter.inject('nav.down')
+    })
 
     await waitFor(() => {
       expect(screen.getByText('2. Open and go back')).toBeInTheDocument()
@@ -115,13 +119,19 @@ describe('GuidedControllerTutorial', () => {
     stubBridge()
     const { adapter } = renderTutorial()
 
-    adapter.inject('nav.down')
+    act(() => {
+      adapter.inject('nav.down')
+    })
     await waitFor(() => expect(screen.getByText('2. Open and go back')).toBeInTheDocument(), WAIT)
 
-    adapter.inject('confirm')
+    act(() => {
+      adapter.inject('confirm')
+    })
     await waitFor(() => expect(screen.getByText('Detail view')).toBeInTheDocument(), WAIT)
 
-    adapter.inject('back')
+    act(() => {
+      adapter.inject('back')
+    })
     await waitFor(() => expect(screen.getByText('3. Object actions')).toBeInTheDocument(), WAIT)
   })
 
@@ -131,10 +141,14 @@ describe('GuidedControllerTutorial', () => {
 
     await advanceToLesson(adapter, 3)
 
-    adapter.inject('context')
+    act(() => {
+      adapter.inject('context')
+    })
     await waitFor(() => expect(screen.getByText('4. Ask AI')).toBeInTheDocument(), WAIT)
 
-    adapter.inject('assist')
+    act(() => {
+      adapter.inject('assist')
+    })
     await waitFor(
       () => expect(screen.getByText('5. Open Command Palette')).toBeInTheDocument(),
       WAIT
@@ -147,7 +161,9 @@ describe('GuidedControllerTutorial', () => {
 
     await advanceToLesson(adapter, 5)
 
-    adapter.inject('commands')
+    act(() => {
+      adapter.inject('commands')
+    })
     await waitFor(() => {
       expect(screen.getByText('6. Approve a harmless plan')).toBeInTheDocument()
     }, WAIT)
@@ -159,7 +175,9 @@ describe('GuidedControllerTutorial', () => {
 
     await advanceToLesson(adapter, 6)
 
-    adapter.inject('confirm')
+    act(() => {
+      adapter.inject('confirm')
+    })
     await waitFor(() => {
       expect(screen.getByText('7. Pause and resume')).toBeInTheDocument()
     }, WAIT)

@@ -127,8 +127,8 @@ function WorkspaceTerminal({
     />
   ))
   const sessionList = (
-    <aside className="flex min-h-0 flex-col border-r border-border bg-surface-raised/40">
-      <header className="border-b border-border p-3">
+    <aside className="flex min-h-0 flex-col border-r border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)]">
+      <header className="border-b border-[var(--ndx-workbench-border)] p-3">
         <p className="text-meta uppercase tracking-[0.18em] text-text-tertiary">ND-028</p>
         <h1 className="text-title font-semibold text-text-primary">Universal Terminal</h1>
         <p className="truncate text-meta text-text-secondary">{activeWorkspace.name}</p>
@@ -154,8 +154,8 @@ function WorkspaceTerminal({
   )
 
   return (
-    <div className="flex h-full min-h-0 flex-col border border-border bg-surface">
-      <div className="flex items-center gap-2 border-b border-border bg-surface-raised/40 px-3 py-2">
+    <div className="flex h-full min-h-0 min-w-0 flex-col border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)]">
+      <div className="flex items-center gap-2 overflow-x-auto border-b border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-glass-bg)] px-3 py-2">
         {modeBar}
       </div>
       <div className="min-h-0 flex-1">
@@ -187,7 +187,7 @@ function WorkspaceTerminal({
               )}
               {activeSession ? (
                 <>
-                  <header className="flex min-h-12 items-center justify-between border-b border-border px-3">
+                  <header className="flex min-h-12 flex-wrap items-center justify-between gap-2 border-b border-[var(--ndx-workbench-border)] px-3 py-2">
                     <div className="min-w-0">
                       <p className="truncate font-mono text-meta text-text-primary">
                         {activeSession.shell} · {activeSession.cwd}
@@ -196,7 +196,7 @@ function WorkspaceTerminal({
                         PID {activeSession.pid} · {activeSession.cols}×{activeSession.rows}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <ControllerButton
                         variant="ghost"
                         onClick={() => {
@@ -225,7 +225,7 @@ function WorkspaceTerminal({
                     </div>
                   </header>
                   {searchOpen && (
-                    <div className="flex items-center gap-2 border-b border-border bg-surface-raised/40 px-3 py-2">
+                    <div className="flex flex-wrap items-center gap-2 border-b border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-glass-bg)] px-3 py-2">
                       <input
                         value={searchQuery}
                         onChange={(event) => {
@@ -233,7 +233,7 @@ function WorkspaceTerminal({
                           setSearchFound(null)
                         }}
                         placeholder="Search scrollback"
-                        className="min-w-0 flex-1 rounded-md border border-border bg-canvas p-1.5 text-meta text-text-primary"
+                        className="ndx-input min-w-0 flex-1 px-2 text-meta"
                       />
                       <ControllerButton variant="ghost" onClick={() => handleFind('previous')}>
                         Previous

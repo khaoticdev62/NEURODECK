@@ -110,15 +110,26 @@
   --ndx-workbench-panel-bg: #0f151e;
   --ndx-workbench-statusbar-bg: #111924;
   --ndx-workbench-border: #27313e;
+  --ndx-workbench-border-muted: rgb(136 154 176 / 0.18);
   --ndx-workbench-border-active: var(--color-border-focus);
   --ndx-workbench-tab-active-bg: #17212d;
   --ndx-workbench-tab-inactive-bg: #101720;
+  --ndx-workbench-control-bg: #121a24;
+  --ndx-workbench-control-bg-hover: #182331;
+  --ndx-workbench-control-bg-active: #79dce8;
+  --ndx-workbench-control-text-active: #071014;
   --ndx-workbench-row-selected-bg: rgb(120 220 232 / 0.13);
   --ndx-workbench-row-active-bg: rgb(244 201 93 / 0.12);
+  --ndx-workbench-row-hover-bg: rgb(255 255 255 / 0.045);
+  --ndx-workbench-danger-bg: rgb(255 107 122 / 0.12);
+  --ndx-workbench-warning-bg: rgb(244 201 93 / 0.12);
+  --ndx-workbench-success-bg: rgb(88 214 141 / 0.1);
+  --ndx-workbench-glass-bg: rgb(11 16 23 / 0.72);
   --ndx-workbench-focus-dense-shadow: inset 2px 0 0 var(--color-border-focus);
   --ndx-workbench-focus-spatial-shadow:
     0 0 0 1px rgb(120 220 232 / 0.65), 0 8px 18px rgb(0 0 0 / 0.34);
-  --ndx-workbench-focus-ring: 0 0 0 2px var(--color-border-focus);
+  --ndx-workbench-focus-ring:
+    0 0 0 1px var(--color-border-focus), 0 0 0 4px rgb(120 220 232 / 0.18);
   --ndx-workbench-status-info: var(--color-status-info);
   --ndx-workbench-status-success: var(--color-status-success);
   --ndx-workbench-status-warning: var(--color-status-warning);
@@ -226,6 +237,103 @@
     var(--ndx-workbench-panel-bg);
 }
 
+.ndx-workbench-surface {
+  border: 1px solid var(--ndx-workbench-border);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 48%),
+    var(--ndx-workbench-panel-bg);
+}
+
+.ndx-workbench-row {
+  border: 1px solid transparent;
+  background: transparent;
+  transition:
+    transform var(--ndx-motion-fast) var(--ndx-motion-easing),
+    background-color var(--ndx-motion-fast) var(--ndx-motion-easing),
+    border-color var(--ndx-motion-fast) var(--ndx-motion-easing),
+    box-shadow var(--ndx-motion-fast) var(--ndx-motion-easing);
+}
+
+.ndx-workbench-row:hover {
+  border-color: var(--ndx-workbench-border-muted);
+  background: var(--ndx-workbench-row-hover-bg);
+}
+
+.ndx-workbench-row[data-selected='true'],
+.ndx-workbench-row[data-active='true'] {
+  border-color: var(--ndx-workbench-border-active);
+  background: var(--ndx-workbench-row-selected-bg);
+  box-shadow: var(--ndx-workbench-focus-dense-shadow);
+}
+
+.ndx-input {
+  min-height: var(--ndx-target-min);
+  border: 1px solid var(--ndx-workbench-border);
+  background: var(--ndx-workbench-control-bg);
+  color: var(--color-text-primary);
+  outline: none;
+}
+
+.ndx-input:focus-visible {
+  border-color: var(--ndx-workbench-border-active);
+  box-shadow: var(--ndx-workbench-focus-ring);
+}
+
+.ndx-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.ndx-deck-grid {
+  display: grid;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+  overflow: hidden;
+}
+
+.ndx-deck-grid-main {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ndx-deck-grid-left,
+.ndx-deck-grid-right {
+  min-height: 0;
+  min-width: 0;
+  display: none;
+}
+
+@media (min-width: 1920px) {
+  .ndx-deck-grid[data-right='true'] {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+
+  .ndx-deck-grid[data-left='true'][data-right='true'] {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+  }
+
+  .ndx-deck-grid-right {
+    display: block;
+  }
+}
+
+@media (min-width: 2560px) {
+  .ndx-deck-grid[data-left='true'] {
+    grid-template-columns: 18rem minmax(0, 1fr);
+  }
+
+  .ndx-deck-grid[data-left='true'][data-right='true'] {
+    grid-template-columns: 18rem minmax(0, 1fr) 18rem;
+  }
+
+  .ndx-deck-grid-left {
+    display: block;
+  }
+}
+
 .ndx-console-ruler {
   background: linear-gradient(
     90deg,
@@ -241,7 +349,9 @@
   --color-text-secondary: rgb(208 212 222 / 0.9);
   --color-text-tertiary: rgb(208 212 222 / 0.7);
   --ndx-workbench-border: #5a6070;
+  --ndx-workbench-border-muted: #5a6070;
   --ndx-workbench-border-active: #c8d6ff;
+  --ndx-workbench-row-hover-bg: rgb(255 255 255 / 0.1);
 }
 
 [data-text-size='large'] {
@@ -255,7 +365,7 @@
 .ndx-focus-surface {
   border: 1px solid var(--ndx-workbench-border);
   background: linear-gradient(180deg, rgb(255 255 255 / 0.025), transparent 40%),
-    var(--color-surface);
+    var(--ndx-workbench-panel-bg);
   color: var(--color-text-primary);
   transition:
     transform var(--ndx-motion-fast) var(--ndx-motion-easing),

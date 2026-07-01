@@ -29,9 +29,12 @@ export function WorkspaceHub(): React.JSX.Element {
   }
 
   return (
-    <div className="flex h-full flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <p className="text-title font-semibold text-text-primary">Workspaces</p>
+    <div className="flex h-full min-w-0 flex-col gap-3 overflow-auto p-1">
+      <div className="ndx-os-panel flex items-center justify-between gap-3 p-3">
+        <div className="min-w-0">
+          <p className="text-meta uppercase tracking-wide text-text-tertiary">Workspace hub</p>
+          <h1 className="truncate text-title font-semibold text-text-primary">Workspaces</h1>
+        </div>
         <ControllerButton ref={addRef} variant="primary" onClick={() => void addFromPicker()}>
           Add workspace
         </ControllerButton>
@@ -46,7 +49,7 @@ export function WorkspaceHub(): React.JSX.Element {
           description="Add a folder to get started — NeuroDeck will remember it for next time."
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-2 deck:grid-cols-2 docked:grid-cols-3">
           {workspaces.map((workspace) => (
             <WorkspaceCard
               key={workspace.id}

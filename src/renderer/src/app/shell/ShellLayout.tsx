@@ -146,7 +146,7 @@ export function ShellLayout({
       titleBar={<NdxTitleBar status={systemRailStatus} activeProfileName={activeProfileName} />}
       activityBar={<NdxActivityBar hidden={collapsesRails} />}
       primaryToolWindow={
-        <NdxToolWindow title="Command Deck" subtitle={routeGroup}>
+        <NdxToolWindow title="Command Deck" ariaLabel="Primary Tool Window" subtitle={routeGroup}>
           <div className="flex flex-col gap-3">
             <div className="ndx-console-ruler" aria-hidden="true" />
             <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">

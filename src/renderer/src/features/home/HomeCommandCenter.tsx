@@ -155,8 +155,8 @@ export function HomeCommandCenter(): React.JSX.Element {
     <div className="flex min-h-full flex-col gap-3 p-2">
       <section className="ndx-os-panel shrink-0 overflow-hidden">
         <div className="ndx-console-ruler" aria-hidden="true" />
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-stretch gap-0">
-          <div className="min-w-0 border-r border-[var(--ndx-workbench-border)] px-4 py-3">
+        <div className="grid grid-cols-1 items-stretch gap-0 deck:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="min-w-0 border-b border-[var(--ndx-workbench-border)] px-4 py-3 deck:border-b-0 deck:border-r">
             <p className="text-meta uppercase tracking-wide text-text-tertiary">Command center</p>
             <h1 className="mt-1 truncate text-display font-semibold text-text-primary">
               {targetWorkspace?.name ?? 'Home'}
@@ -167,7 +167,7 @@ export function HomeCommandCenter(): React.JSX.Element {
                 : `${workspaces.length} workspaces available`}
             </p>
           </div>
-          <div className="grid min-w-[224px] grid-cols-2">
+          <div className="grid min-w-0 grid-cols-2 deck:min-w-[224px]">
             <Metric label="Workflows" value={summary.workflows.length} />
             <Metric label="Agents" value={summary.agentCount} />
             <Metric label="Workflow runs" value={runningWorkflows.length} />
@@ -184,7 +184,7 @@ export function HomeCommandCenter(): React.JSX.Element {
       )}
 
       {targetWorkspace && (
-        <section className="grid shrink-0 grid-cols-[minmax(0,1fr)_220px] gap-3">
+        <section className="grid shrink-0 grid-cols-1 gap-3 deck:grid-cols-[minmax(0,1fr)_220px]">
           <div className="ndx-os-panel p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

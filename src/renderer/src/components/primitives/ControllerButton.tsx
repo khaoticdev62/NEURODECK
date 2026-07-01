@@ -9,10 +9,13 @@ export interface ControllerButtonProps extends ButtonHTMLAttributes<HTMLButtonEl
 }
 
 const VARIANT_CLASSES: Record<ControllerButtonVariant, string> = {
-  primary: 'bg-status-info text-canvas hover:brightness-110',
-  secondary: 'bg-surface-raised text-text-primary border border-border hover:border-border-strong',
-  ghost: 'bg-transparent text-text-primary hover:bg-surface-raised',
-  destructive: 'bg-status-error text-canvas hover:brightness-110'
+  primary:
+    'border border-[var(--ndx-workbench-control-bg-active)] bg-[var(--ndx-workbench-control-bg-active)] text-[var(--ndx-workbench-control-text-active)] hover:brightness-110',
+  secondary:
+    'border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-control-bg)] text-text-primary hover:border-[var(--ndx-workbench-border-active)] hover:bg-[var(--ndx-workbench-control-bg-hover)]',
+  ghost:
+    'border border-transparent bg-transparent text-text-primary hover:border-[var(--ndx-workbench-border-muted)] hover:bg-[var(--ndx-workbench-row-hover-bg)]',
+  destructive: 'border border-status-error bg-status-error text-canvas hover:brightness-110'
 }
 
 /**
@@ -29,7 +32,7 @@ export const ControllerButton = forwardRef<HTMLButtonElement, ControllerButtonPr
         className={cn(
           'inline-flex items-center justify-center gap-2 rounded-sm px-4 text-base font-medium transition-colors',
           'min-h-[var(--ndx-target-min)] [height:var(--ndx-button-height)]',
-          'focus-visible:shadow-focus-bloom focus-visible:ring-2 focus-visible:ring-border-focus',
+          'focus-visible:shadow-[var(--ndx-workbench-focus-ring)] focus-visible:outline-none',
           'disabled:cursor-not-allowed disabled:opacity-40',
           VARIANT_CLASSES[variant],
           className

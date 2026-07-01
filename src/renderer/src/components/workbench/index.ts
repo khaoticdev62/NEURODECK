@@ -1,6 +1,7 @@
 export { NdxActivityBar } from './NdxActivityBar'
 export { NdxBottomPanel } from './NdxBottomPanel'
 export { NdxDenseRow } from './NdxDenseRow'
+export { NdxDeckLayout } from './NdxDeckLayout'
 export { NdxEditorShell } from './NdxEditorShell'
 export { NdxEditorTabs } from './NdxEditorTabs'
 export { NdxEditorTab } from './NdxEditorTab'

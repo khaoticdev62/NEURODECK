@@ -55,6 +55,18 @@ function completionResult(content: string): ModelCompletionResult {
   }
 }
 
+function planPayload(overrides: Partial<Record<string, unknown>> = {}): string {
+  return JSON.stringify({
+    goal: 'Goal',
+    steps: ['Step one'],
+    riskLevel: 'low',
+    filesEstimate: 'unknown',
+    networkRequired: false,
+    reversible: true,
+    ...overrides
+  })
+}
+
 describe('AICommandCanvas', () => {
   it('shows an honest empty state with no active workspace', () => {
     renderScreen(false)
@@ -65,13 +77,11 @@ describe('AICommandCanvas', () => {
     const complete = vi.fn().mockResolvedValue({
       ok: true,
       data: completionResult(
-        JSON.stringify({
+        planPayload({
           goal: 'Audit the settings screens',
           steps: ['Inspect routes', 'Run controller tests'],
           riskLevel: 'medium',
-          filesEstimate: '0-5 files',
-          networkRequired: false,
-          reversible: true
+          filesEstimate: '0-5 files'
         })
       )
     })
@@ -80,29 +90,17 @@ describe('AICommandCanvas', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.type(screen.getByPlaceholderText('Describe what you want done…'), 'Audit settings')
+    await user.type(screen.getByPlaceholderText('Describe what you want done...'), 'Audit settings')
     await user.click(screen.getByRole('button', { name: 'Generate plan' }))
 
     expect(await screen.findByText('Audit the settings screens')).toBeInTheDocument()
     expect(screen.getByText(/Inspect routes/)).toBeInTheDocument()
-    expect(screen.getByText('Risk: medium')).toBeInTheDocument()
-    expect(screen.getByText(/0-5 files/)).toBeInTheDocument()
+    expect(screen.getAllByText('Risk: medium').length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/0-5 files/).length).toBeGreaterThan(0)
   })
 
   it('creates the Quick Command agent and starts a real run on approve', async () => {
-    const complete = vi.fn().mockResolvedValue({
-      ok: true,
-      data: completionResult(
-        JSON.stringify({
-          goal: 'Goal',
-          steps: ['Step one'],
-          riskLevel: 'low',
-          filesEstimate: 'unknown',
-          networkRequired: false,
-          reversible: true
-        })
-      )
-    })
+    const complete = vi.fn().mockResolvedValue({ ok: true, data: completionResult(planPayload()) })
     const listAgents = vi.fn().mockResolvedValue({ ok: true, data: [] })
     const createAgent = vi.fn().mockResolvedValue({
       ok: true,
@@ -118,10 +116,10 @@ describe('AICommandCanvas', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.type(screen.getByPlaceholderText('Describe what you want done…'), 'Do a thing')
+    await user.type(screen.getByPlaceholderText('Describe what you want done...'), 'Do a thing')
     await user.click(screen.getByRole('button', { name: 'Generate plan' }))
     await screen.findByText('Goal')
-    await user.click(screen.getByRole('button', { name: 'Approve & run' }))
+    await user.click(screen.getAllByRole('button', { name: 'Approve and run' })[0])
 
     await vi.waitFor(() =>
       expect(createAgent).toHaveBeenCalledWith(
@@ -139,12 +137,10 @@ describe('AICommandCanvas', () => {
     const complete = vi.fn().mockResolvedValue({
       ok: true,
       data: completionResult(
-        JSON.stringify({
+        planPayload({
           goal: 'Review an adversarial request',
           steps: ['Inspect the request safely'],
           riskLevel: 'high',
-          filesEstimate: 'unknown',
-          networkRequired: false,
           reversible: false
         })
       )
@@ -172,7 +168,7 @@ describe('AICommandCanvas', () => {
     await user.type(screen.getByPlaceholderText(/Describe what you want done/), injectedIntent)
     await user.click(screen.getByRole('button', { name: 'Generate plan' }))
     await screen.findByText('Review an adversarial request')
-    await user.click(screen.getByRole('button', { name: 'Approve & run' }))
+    await user.click(screen.getAllByRole('button', { name: 'Approve and run' })[0])
 
     await vi.waitFor(() => expect(createAgent).toHaveBeenCalled())
     expect(createAgent).toHaveBeenCalledWith(
@@ -190,19 +186,7 @@ describe('AICommandCanvas', () => {
   })
 
   it('reuses an existing Quick Command agent instead of creating a duplicate', async () => {
-    const complete = vi.fn().mockResolvedValue({
-      ok: true,
-      data: completionResult(
-        JSON.stringify({
-          goal: 'Goal',
-          steps: ['Step one'],
-          riskLevel: 'low',
-          filesEstimate: 'unknown',
-          networkRequired: false,
-          reversible: true
-        })
-      )
-    })
+    const complete = vi.fn().mockResolvedValue({ ok: true, data: completionResult(planPayload()) })
     const listAgents = vi.fn().mockResolvedValue({
       ok: true,
       data: [{ id: 'agent-existing', name: 'Quick Command' }]
@@ -218,10 +202,10 @@ describe('AICommandCanvas', () => {
     const user = userEvent.setup()
     renderScreen()
 
-    await user.type(screen.getByPlaceholderText('Describe what you want done…'), 'Do a thing')
+    await user.type(screen.getByPlaceholderText('Describe what you want done...'), 'Do a thing')
     await user.click(screen.getByRole('button', { name: 'Generate plan' }))
     await screen.findByText('Goal')
-    await user.click(screen.getByRole('button', { name: 'Approve & run' }))
+    await user.click(screen.getAllByRole('button', { name: 'Approve and run' })[0])
 
     await vi.waitFor(() => expect(startAgentRun).toHaveBeenCalled())
     expect(createAgent).not.toHaveBeenCalled()

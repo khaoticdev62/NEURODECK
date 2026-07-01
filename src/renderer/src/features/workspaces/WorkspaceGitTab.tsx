@@ -367,7 +367,7 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
   )
 
   return (
-    <div className="grid h-full min-w-[58rem] grid-cols-[18rem_minmax(24rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-2 overflow-auto docked:grid-cols-[18rem_minmax(0,1fr)_18rem]">
       <NdxToolWindow title="Source Control" subtitle={status.branch ?? 'detached HEAD'}>
         <div className="flex items-center justify-between text-meta text-text-secondary">
           <span>
