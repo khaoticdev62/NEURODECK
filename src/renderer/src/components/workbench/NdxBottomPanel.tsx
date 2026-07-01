@@ -12,13 +12,13 @@ export function NdxBottomPanel(): React.JSX.Element {
       aria-label="Bottom Tool Window"
       className="border-t border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)]"
     >
-      <div className="flex h-9 items-center justify-between px-2">
-        <div className="flex items-center gap-1">
+      <div className="flex h-8 items-center justify-between px-2">
+        <div className="flex min-w-0 items-center gap-1">
           {PANEL_TABS.map((tab) => (
             <button
               key={tab}
               type="button"
-              className={`h-7 rounded-sm px-2 text-meta ${
+              className={`h-6 px-2 text-meta ${
                 activeTab === tab
                   ? 'bg-surface-raised text-text-primary'
                   : 'text-text-secondary hover:bg-surface-raised'
@@ -34,7 +34,7 @@ export function NdxBottomPanel(): React.JSX.Element {
         </div>
         <ControllerButton
           variant="ghost"
-          className="h-7 min-h-0 px-2 text-meta"
+          className="h-6 min-h-0 px-2 text-meta"
           onClick={() => setOpen((current) => !current)}
         >
           {open ? 'Close Panel' : 'Open Panel'}

@@ -22,20 +22,18 @@ export function NdxTitleBar({
       className="flex items-center justify-between border-b border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-titlebar-bg)] px-[var(--ndx-safe-inset)]"
       style={{ zIndex: 'var(--ndx-z-rail)' }}
     >
-      <div className="flex min-w-0 items-center gap-3">
-        <span className="shrink-0 text-body font-semibold tracking-wide text-text-primary">
-          NeuroDeck
-        </span>
-        <span className="rounded-sm border border-border bg-surface px-2 py-1 text-meta text-text-secondary">
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="shrink-0 text-body font-semibold text-text-primary">NeuroDeck</span>
+        <span className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] px-2 py-0.5 text-meta text-text-secondary">
           Command Center
         </span>
-        <RailField label="Project" status={status.workspace} />
+        <RailField className="hidden deck:inline" label="Project" status={status.workspace} />
         <RailField label="Profile" status={profile} />
       </div>
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex shrink-0 items-center gap-2">
         <RailField label="Model" status={status.model} />
         <ConnectionField status={status.connection} />
-        <RailField label="VPN" status={status.vpn} />
+        <RailField className="hidden docked:inline" label="VPN" status={status.vpn} />
         <AgentActivityField status={status.agentActivity} />
         <Clock />
       </div>
@@ -45,13 +43,15 @@ export function NdxTitleBar({
 
 function RailField({
   label,
-  status
+  status,
+  className
 }: {
   label: string
   status: FieldStatus<unknown>
+  className?: string
 }): React.JSX.Element {
   return (
-    <span className="truncate text-meta text-text-secondary">
+    <span className={`truncate text-meta text-text-secondary ${className ?? ''}`}>
       {label}:{' '}
       <span className="text-text-primary">{status.available ? String(status.value) : '-'}</span>
     </span>

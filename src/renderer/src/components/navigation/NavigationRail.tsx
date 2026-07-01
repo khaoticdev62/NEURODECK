@@ -37,7 +37,7 @@ export function NavigationRail({
   return (
     <nav
       aria-label="Primary"
-      className="flex flex-col gap-1 overflow-y-auto border-r border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-activitybar-bg)] py-2"
+      className="flex flex-col gap-1 overflow-y-auto border-r border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-activitybar-bg)] px-1 py-2"
       style={{
         width: expanded
           ? 'var(--ndx-rail-primary-expanded)'

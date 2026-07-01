@@ -152,10 +152,11 @@ export function HomeCommandCenter(): React.JSX.Element {
   }
 
   return (
-    <div className="flex min-h-full flex-col gap-3 p-3">
-      <section className="shrink-0 border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)]">
+    <div className="flex min-h-full flex-col gap-3 p-2">
+      <section className="ndx-os-panel shrink-0 overflow-hidden">
+        <div className="ndx-console-ruler" aria-hidden="true" />
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-stretch gap-0">
-          <div className="min-w-0 border-r border-[var(--ndx-workbench-border)] p-4">
+          <div className="min-w-0 border-r border-[var(--ndx-workbench-border)] px-4 py-3">
             <p className="text-meta uppercase tracking-wide text-text-tertiary">Command center</p>
             <h1 className="mt-1 truncate text-display font-semibold text-text-primary">
               {targetWorkspace?.name ?? 'Home'}
@@ -166,7 +167,7 @@ export function HomeCommandCenter(): React.JSX.Element {
                 : `${workspaces.length} workspaces available`}
             </p>
           </div>
-          <div className="grid min-w-[260px] grid-cols-2">
+          <div className="grid min-w-[224px] grid-cols-2">
             <Metric label="Workflows" value={summary.workflows.length} />
             <Metric label="Agents" value={summary.agentCount} />
             <Metric label="Workflow runs" value={runningWorkflows.length} />
@@ -183,9 +184,9 @@ export function HomeCommandCenter(): React.JSX.Element {
       )}
 
       {targetWorkspace && (
-        <section className="grid shrink-0 grid-cols-[minmax(0,1fr)_280px] gap-3">
-          <div className="border border-[var(--ndx-workbench-border)] bg-surface p-4">
-            <div className="flex items-start justify-between gap-4">
+        <section className="grid shrink-0 grid-cols-[minmax(0,1fr)_220px] gap-3">
+          <div className="ndx-os-panel p-3">
+            <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-meta uppercase tracking-wide text-text-tertiary">Resume</p>
                 <p className="mt-1 truncate text-title font-semibold text-text-primary">
@@ -204,7 +205,7 @@ export function HomeCommandCenter(): React.JSX.Element {
                 Continue
               </ControllerButton>
             </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            <div className="mt-3 grid grid-cols-3 gap-2">
               <ControllerButton variant="secondary" onClick={() => navigate('/files')}>
                 Files
               </ControllerButton>
@@ -217,9 +218,9 @@ export function HomeCommandCenter(): React.JSX.Element {
             </div>
           </div>
 
-          <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">
+          <div className="ndx-os-panel p-3">
             <p className="text-meta uppercase tracking-wide text-text-tertiary">Jump</p>
-            <div className="mt-3 grid gap-2">
+            <div className="mt-2 grid gap-2">
               <ControllerButton variant="secondary" onClick={() => navigate('/search')}>
                 Search
               </ControllerButton>
@@ -290,7 +291,7 @@ export function HomeCommandCenter(): React.JSX.Element {
 function Metric({ label, value }: { label: string; value: number }): React.JSX.Element {
   return (
     <NdxFocusSurface density="spatial" selected={value > 0}>
-      <div className="p-3">
+      <div className="p-2.5">
         <p className="truncate text-meta text-text-secondary">{label}</p>
         <p className="mt-1 text-title font-semibold tabular-nums text-text-primary">{value}</p>
       </div>
@@ -309,7 +310,7 @@ function WorkspaceCard({
 }): React.JSX.Element {
   return (
     <NdxFocusSurface density="spatial" selected={active}>
-      <button type="button" onClick={onOpen} className="block min-h-[88px] w-full p-3 text-left">
+      <button type="button" onClick={onOpen} className="block min-h-[82px] w-full p-3 text-left">
         <span className="mb-2 inline-flex border border-[var(--ndx-workbench-border)] px-2 py-0.5 text-meta text-text-tertiary">
           {active ? 'Active' : 'Workspace'}
         </span>
@@ -337,7 +338,7 @@ function Recommendation({
       <button
         type="button"
         onClick={() => navigate(path)}
-        className="block min-h-[88px] w-full p-3 text-left"
+        className="block min-h-[82px] w-full p-3 text-left"
       >
         <p className="text-body font-semibold text-text-primary">{title}</p>
         <p className="mt-1 text-meta text-text-secondary">{detail}</p>

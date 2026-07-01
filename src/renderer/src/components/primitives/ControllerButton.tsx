@@ -27,7 +27,7 @@ export const ControllerButton = forwardRef<HTMLButtonElement, ControllerButtonPr
         ref={ref}
         type="button"
         className={cn(
-          'inline-flex items-center justify-center gap-2 rounded-md px-4 text-base font-medium transition-colors',
+          'inline-flex items-center justify-center gap-2 rounded-sm px-4 text-base font-medium transition-colors',
           'min-h-[var(--ndx-target-min)] [height:var(--ndx-button-height)]',
           'focus-visible:shadow-focus-bloom focus-visible:ring-2 focus-visible:ring-border-focus',
           'disabled:cursor-not-allowed disabled:opacity-40',

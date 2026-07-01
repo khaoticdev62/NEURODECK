@@ -20,13 +20,13 @@ export function NdxStatusBar({
       className="flex items-center justify-between border-t border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-statusbar-bg)] px-[var(--ndx-safe-inset)]"
       style={{ zIndex: 'var(--ndx-z-rail)' }}
     >
-      <div className="flex min-w-0 items-center gap-3 text-meta text-text-secondary">
-        <span className="text-text-primary">{routeTitle}</span>
-        {screenId && <span>{screenId}</span>}
-        <span>Layer: {controllerLayer}</span>
+      <div className="flex min-w-0 items-center gap-2 text-meta text-text-secondary">
+        <span className="truncate text-text-primary">{routeTitle}</span>
+        {screenId && <span className="hidden deck:inline">{screenId}</span>}
+        <span className="hidden deck:inline">Layer: {controllerLayer}</span>
       </div>
-      <div className="flex shrink-0 items-center gap-4">
-        {primaryHints.slice(0, 6).map((hint) => (
+      <div className="flex shrink-0 items-center gap-3">
+        {primaryHints.slice(0, 4).map((hint) => (
           <ControllerHint key={hint.glyph} {...hint} />
         ))}
       </div>

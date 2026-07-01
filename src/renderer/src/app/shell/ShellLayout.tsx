@@ -130,9 +130,9 @@ export function ShellLayout({
       title: routeLabel,
       status: routeGroup,
       metadata: [
-        { label: 'Layer', value: 'Workbench' },
-        { label: 'Input', value: 'Controller' },
-        { label: 'Review gate', value: 'Enabled' }
+        { label: 'Layer', value: 'Deck' },
+        { label: 'Input', value: 'Pad' },
+        { label: 'Review gate', value: 'On' }
       ]
     } satisfies ContextPanelItem)
 
@@ -148,23 +148,38 @@ export function ShellLayout({
       primaryToolWindow={
         <NdxToolWindow title="Command Deck" subtitle={routeGroup}>
           <div className="flex flex-col gap-3">
-            <div className="rounded-sm border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">
+            <div className="ndx-console-ruler" aria-hidden="true" />
+            <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">
               <p className="text-meta uppercase tracking-wide text-text-tertiary">Current screen</p>
-              <p className="mt-1 text-title font-semibold text-text-primary">{routeLabel}</p>
+              <p className="mt-1 truncate text-title font-semibold text-text-primary">
+                {routeLabel}
+              </p>
             </div>
-            <div className="flex flex-col gap-2">
-              <NdxDenseRow selected>Active layer: workbench</NdxDenseRow>
-              <NdxDenseRow>Focus model: controller grid</NdxDenseRow>
-              <NdxDenseRow>Review gate: enabled</NdxDenseRow>
+            <div className="flex flex-col gap-1.5">
+              <NdxDenseRow selected>Layer: workbench</NdxDenseRow>
+              <NdxDenseRow>Focus: controller grid</NdxDenseRow>
+              <NdxDenseRow>Review: enabled</NdxDenseRow>
             </div>
             <div className="grid grid-cols-1 gap-2">
-              <ControllerButton variant="secondary" onClick={() => navigate('/search')}>
+              <ControllerButton
+                className="justify-start px-3"
+                variant="secondary"
+                onClick={() => navigate('/search')}
+              >
                 Search workspace
               </ControllerButton>
-              <ControllerButton variant="secondary" onClick={() => navigate('/ai')}>
+              <ControllerButton
+                className="justify-start px-3"
+                variant="secondary"
+                onClick={() => navigate('/ai')}
+              >
                 Ask AI
               </ControllerButton>
-              <ControllerButton variant="ghost" onClick={() => navigate('/system')}>
+              <ControllerButton
+                className="justify-start px-3"
+                variant="ghost"
+                onClick={() => navigate('/system')}
+              >
                 System status
               </ControllerButton>
             </div>
