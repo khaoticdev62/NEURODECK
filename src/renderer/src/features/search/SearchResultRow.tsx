@@ -7,38 +7,38 @@ interface SearchResultRowProps {
   onSelect: (result: SearchResult) => void
 }
 
-function sourceIcon(source: SearchResult['source']): string {
+function sourceBadge(source: SearchResult['source']): string {
   switch (source) {
     case 'route':
-      return '↗'
+      return 'RT'
     case 'workspace':
-      return '📁'
+      return 'WS'
     case 'file':
-      return '📄'
+      return 'FL'
     case 'git-change':
-      return '🔄'
+      return 'GC'
     case 'git-commit':
-      return '🔀'
+      return 'GH'
     case 'terminal':
-      return '💻'
+      return 'TM'
     case 'workflow':
-      return '⚙️'
+      return 'WF'
     case 'workflow-run':
-      return '▶️'
+      return 'WR'
     case 'agent':
-      return '🤖'
+      return 'AG'
     case 'agent-run':
-      return '🚀'
+      return 'AR'
     case 'model':
-      return '🧠'
+      return 'MD'
     case 'recovery':
-      return '🛡️'
+      return 'RC'
     case 'browser-tab':
-      return '🌐'
+      return 'BR'
     case 'remote-host':
-      return '🔌'
+      return 'RH'
     default:
-      return '•'
+      return 'ND'
   }
 }
 
@@ -54,18 +54,18 @@ export function SearchResultRow({
       aria-selected={selected}
       onClick={() => onSelect(result)}
       className={clsx(
-        'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors',
+        'flex min-h-[56px] w-full items-center gap-3 border px-3 py-2 text-left transition-colors',
         selected
-          ? 'bg-cyber-500/20 text-white ring-1 ring-cyber-500'
-          : 'text-neutral-200 hover:bg-cyber-900/40 hover:text-white'
+          ? 'border-[var(--ndx-workbench-border-active)] bg-[var(--ndx-workbench-row-selected-bg)] text-text-primary'
+          : 'border-transparent text-text-secondary hover:border-[var(--ndx-workbench-border)] hover:bg-[var(--ndx-workbench-panel-bg)] hover:text-text-primary'
       )}
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-neutral-800 text-sm">
-        {sourceIcon(result.source)}
+      <span className="flex h-8 w-9 shrink-0 items-center justify-center border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] text-meta font-semibold text-text-tertiary">
+        {sourceBadge(result.source)}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="truncate font-medium">{result.title}</div>
-        <div className="truncate text-xs text-neutral-400">{result.subtitle}</div>
+        <div className="truncate text-body font-medium text-text-primary">{result.title}</div>
+        <div className="truncate text-meta text-text-tertiary">{result.subtitle}</div>
       </div>
     </button>
   )

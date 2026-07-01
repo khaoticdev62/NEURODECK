@@ -97,116 +97,172 @@ export function GlobalSearch(): React.JSX.Element {
   }, [selectedIndex])
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[15rem_minmax(0,1fr)_18rem]">
-      <NdxToolWindow title="Search Scope" subtitle={activeWorkspace?.name ?? 'No workspace'}>
-        <div role="tablist" aria-label="Search category" className="flex flex-col gap-1">
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              role="tab"
-              aria-selected={category === cat.id}
-              onClick={() => setCategory(cat.id)}
-              className={clsx(
-                'rounded-md px-3 py-2 text-left text-meta font-medium transition-colors',
-                category === cat.id
-                  ? 'bg-[var(--ndx-workbench-row-selected-bg)] text-text-primary'
-                  : 'text-text-secondary hover:bg-surface-raised'
-              )}
-            >
-              {cat.label}
-            </button>
-          ))}
-        </div>
-      </NdxToolWindow>
+    <div className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-hidden docked:grid-cols-[minmax(0,1fr)_18rem] docked-2k:grid-cols-[15rem_minmax(0,1fr)_18rem]">
+      <div className="hidden min-h-0 docked-2k:block">
+        <NdxToolWindow title="Search Scope" subtitle={activeWorkspace?.name ?? 'No workspace'}>
+          <SearchCategories category={category} onSelect={setCategory} vertical />
+        </NdxToolWindow>
+      </div>
 
       <NdxEditorShell title="Global Results">
-        <div className="flex h-full min-h-0 flex-col gap-4 p-4">
-          <header>
-            <h1 className="text-title font-semibold text-text-primary">Search</h1>
-            <p className="text-meta text-text-secondary">
-              Files, code, tasks, logs, browser tabs, remote hosts, and destinations.
-            </p>
+        <div className="flex h-full min-h-0 min-w-0 flex-col gap-3 p-3 deck:p-4">
+          <header className="ndx-os-panel overflow-hidden">
+            <div className="ndx-console-ruler" aria-hidden="true" />
+            <div className="p-3">
+              <p className="text-meta uppercase tracking-wide text-text-tertiary">Command index</p>
+              <h1 className="mt-1 text-title font-semibold text-text-primary">Search</h1>
+              <p className="mt-1 text-meta text-text-secondary">
+                Files, code, tasks, logs, browser tabs, remote hosts, and destinations.
+              </p>
+            </div>
           </header>
 
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Type to search..."
-              aria-label="Search query"
-              className="w-full rounded-lg border border-border bg-surface px-4 py-3 pl-10 text-text-primary outline-none ring-border-focus focus:ring-2"
-            />
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary">
-              Search
-            </span>
+          <div className="docked-2k:hidden">
+            <SearchCategories category={category} onSelect={setCategory} />
           </div>
+
+          <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)]">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2">
+              <span className="text-meta font-semibold uppercase tracking-wide text-text-tertiary">
+                Query
+              </span>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Type to search..."
+                aria-label="Search query"
+                className="min-h-[44px] min-w-0 bg-transparent text-body text-text-primary outline-none placeholder:text-text-tertiary focus-visible:ring-0"
+              />
+              <span className="hidden text-meta text-text-tertiary deck:inline">
+                {activeWorkspace?.name ?? 'All sources'}
+              </span>
+            </div>
+          </div>
+
+          {errors.length > 0 && (
+            <div className="border border-status-error/60 bg-status-error/10 p-3 text-meta text-status-error">
+              <p className="font-medium">Some sources could not be searched.</p>
+              <ul className="mt-1 list-inside list-disc">
+                {errors.map((error) => (
+                  <li key={error.source}>
+                    {error.source}: {error.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div
             ref={listRef}
             role="listbox"
             aria-label="Search results"
-            className="min-h-0 flex-1 space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-2"
+            className="min-h-0 flex-1 overflow-y-auto border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)] p-2"
           >
             {query.trim().length === 0 && !loading && (
-              <p className="p-4 text-center text-sm text-text-secondary">
+              <p className="p-4 text-center text-meta text-text-secondary">
                 Start typing to search across the deck.
               </p>
             )}
 
             {query.trim().length > 0 && results.length === 0 && !loading && (
-              <p className="p-4 text-center text-sm text-text-secondary">
+              <p className="p-4 text-center text-meta text-text-secondary">
                 No results found for &quot;{query}&quot;.
               </p>
             )}
 
-            {results.map((result, index) => (
-              <SearchResultRow
-                key={result.id}
-                result={result}
-                selected={index === selectedIndex}
-                onSelect={() => {
-                  setSelectedIndex(index)
-                  executeResult(result)
-                }}
-              />
-            ))}
+            <div className="flex flex-col gap-1">
+              {results.map((result, index) => (
+                <SearchResultRow
+                  key={result.id}
+                  result={result}
+                  selected={index === selectedIndex}
+                  onSelect={() => {
+                    setSelectedIndex(index)
+                    executeResult(result)
+                  }}
+                />
+              ))}
+            </div>
 
-            {loading && <p className="p-4 text-center text-sm text-text-secondary">Searching...</p>}
+            {loading && (
+              <p className="p-4 text-center text-meta text-text-secondary">Searching...</p>
+            )}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-text-secondary">
+          <div className="flex items-center justify-between text-meta text-text-secondary">
             <span>
               {results.length} result{results.length === 1 ? '' : 's'}
             </span>
-            <span className="hidden sm:inline">
+            <span className="hidden deck:inline">
               Up/Down to navigate - Enter to open - Esc to close
             </span>
           </div>
         </div>
       </NdxEditorShell>
 
-      <NdxToolWindow title="Search Health" subtitle={loading ? 'Searching' : 'Ready'} side="right">
-        {errors.length > 0 ? (
-          <div className="rounded-lg border border-error bg-error/10 p-3 text-sm text-error">
-            <p className="font-medium">Some sources could not be searched:</p>
-            <ul className="mt-1 list-inside list-disc">
-              {errors.map((error) => (
-                <li key={error.source}>
-                  {error.source}: {error.message}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : (
-          <p className="text-meta text-text-secondary">
-            Search runs against available local renderer sources and reports unavailable providers
-            here.
-          </p>
-        )}
-      </NdxToolWindow>
+      <div className="hidden min-h-0 docked:block">
+        <NdxToolWindow
+          title="Search Health"
+          subtitle={loading ? 'Searching' : 'Ready'}
+          side="right"
+        >
+          {errors.length > 0 ? (
+            <div className="border border-status-error/60 bg-status-error/10 p-3 text-meta text-status-error">
+              <p className="font-medium">Some sources could not be searched:</p>
+              <ul className="mt-1 list-inside list-disc">
+                {errors.map((error) => (
+                  <li key={error.source}>
+                    {error.source}: {error.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-meta text-text-secondary">
+              Search runs against available local renderer sources and reports unavailable providers
+              here.
+            </p>
+          )}
+        </NdxToolWindow>
+      </div>
+    </div>
+  )
+}
+
+function SearchCategories({
+  category,
+  onSelect,
+  vertical = false
+}: {
+  category: SearchCategory
+  onSelect: (category: SearchCategory) => void
+  vertical?: boolean
+}): React.JSX.Element {
+  return (
+    <div
+      role={vertical ? undefined : 'tablist'}
+      aria-label="Search category"
+      className={clsx(vertical ? 'flex flex-col gap-1' : 'flex gap-1 overflow-x-auto pb-1')}
+    >
+      {CATEGORIES.map((cat) => (
+        <button
+          key={cat.id}
+          type="button"
+          role={vertical ? undefined : 'tab'}
+          aria-selected={category === cat.id}
+          onClick={() => onSelect(cat.id)}
+          className={clsx(
+            'min-h-[40px] shrink-0 border px-3 text-left text-meta font-medium transition-colors',
+            category === cat.id
+              ? 'border-[var(--ndx-workbench-border-active)] bg-[var(--ndx-workbench-row-selected-bg)] text-text-primary'
+              : 'border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] text-text-secondary hover:text-text-primary'
+          )}
+        >
+          {cat.label}
+        </button>
+      ))}
     </div>
   )
 }
