@@ -325,6 +325,10 @@ const ClipboardSnippetCenter = lazy(async () => {
   const module = await import('../../features/clipboard/ClipboardSnippetCenter')
   return { default: module.ClipboardSnippetCenter }
 })
+const PromptPersonaLibrary = lazy(async () => {
+  const module = await import('../../features/promptLibrary/PromptPersonaLibrary')
+  return { default: module.PromptPersonaLibrary }
+})
 
 function withSuspense(label: string, element: React.JSX.Element): React.JSX.Element {
   return (
@@ -1056,6 +1060,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('clipboard and snippet center', <ClipboardSnippetCenter />)
+  },
+  {
+    routeId: 'prompt-persona-library',
+    screenId: 'ND-X016',
+    path: '/prompt-library',
+    title: 'Prompt and Persona Library',
+    owningEpic: 'Epic X4',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('prompt and persona library', <PromptPersonaLibrary />)
   },
   {
     routeId: 'screenshot-center',

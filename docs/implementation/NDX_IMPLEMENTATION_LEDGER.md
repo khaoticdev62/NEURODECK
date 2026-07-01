@@ -3353,3 +3353,20 @@ npm run build -> passed (ClipboardSnippetCenter bundled as its own lazy chunk)
 ## ND-044 Theme Builder closeout note (2026-07-01)
 
 See the "Addendum — ND-044 Structured CSS Theme Customization Engine" earlier in this document for the full design writeup. That work landed in the working tree with one incomplete piece — `DisplaySettingsStore.test.ts` had already been updated with correct new-field expectations, but `tsc` was failing; re-verified after review and no code change was actually needed (the fixture was already correct). Also re-ran and confirmed real: `npx playwright test e2e/app.spec.ts` → 2/2 passed, including the new `data-ndx-*` theme-attribute assertion against a real launched app.
+
+## Epic X4 closeout — Prompt and Persona Library (2026-07-01)
+
+**Closed the second "backend real, no renderer screen" gap of this pass.** `PromptTemplateStore`/`PersonaStore` (`core/promptLibrary/`), their Zod contracts (`shared/contracts/promptLibrary.ts`), and typed IPC (`registerPromptLibraryHandlers.ts`, `promptLibraryClient.ts`) were already real and tested — nothing in `src/renderer/src/features/` ever imported the client. `/prompt-library` (ND-X016) closes it: full CRUD for prompt templates (name/purpose/inputs/required tools/workspace scope/model requirements/output schema/risk class/version/author/test cases, matching spec §14.1's exact field list) and personas (communication style/explanation depth/default model profile/suggested tools/review strictness, matching §14.2). Personas render only fields the schema structurally allows — there is no code path in this screen that could construct a persona that expands permissions, bypasses policy, hides impact, or auto-confirms a destructive action, since no such field exists on `personaSchema` to begin with (enforced by the schema's own shape, not a UI convention this screen could violate). Test cases use a real add/remove list rather than a single free-text blob, since the spec lists them as a distinct field. Reachable from System Dashboard ("AI & Automation") and Command Palette.
+
+**Real finding, ruled out rather than built**: initially considered wiring "pre/post-launch workflows" for Application Launcher (Epic X2's other named gap) as this pass's target instead — ruled out on inspection because `WorkflowEngine.ts` lives in `src/renderer/src/workflows/`, not `core/`, so invoking a workflow from the main-process `ApplicationLauncher` would need a real cross-process renderer↔main round trip that doesn't exist yet; a bigger, differently-shaped task than this closeout, not attempted here.
+
+**New files**: `src/renderer/src/features/promptLibrary/PromptPersonaLibrary.tsx` + `__tests__/PromptPersonaLibrary.test.tsx` (8 tests). **Changed**: `src/renderer/src/app/routing/routes.tsx` (new `/prompt-library` route), `src/renderer/src/features/system/SystemDashboard.tsx` and `src/renderer/src/features/command-palette/CommandPalette.tsx` (new links/entries).
+
+**Validation evidence (run 2026-07-01):**
+
+```text
+npm run typecheck -> passed (node + web)
+npm run lint -> 0 errors on all touched files (repo-wide CRLF warnings unrelated, as above)
+npm run test -> PromptPersonaLibrary.test.tsx: 8/8 passed
+npm run build -> passed
+```

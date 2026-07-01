@@ -134,6 +134,12 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     label: 'Clipboard and Snippet Center',
     path: '/clipboard',
     subtitle: 'ND-X022 - Epic X6'
+  },
+  {
+    id: 'prompt-persona-library',
+    label: 'Prompt and Persona Library',
+    path: '/prompt-library',
+    subtitle: 'ND-X016 - Epic X4'
   }
 ]
 
