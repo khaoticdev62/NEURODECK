@@ -11,17 +11,6 @@ interface SystemLink {
   path: string
 }
 
-/**
- * The Primary Navigation Rail (wireframe §6.2) has exactly 11 destinations,
- * and "System" is the only one of them that owns this whole area — every
- * other real System/Settings screen (Controller Settings, Display and
- * Theme, Privacy and Permissions, Power Menu, About and Diagnostics,
- * Recovery, Storage) and Agent Operations Center (no primary-rail
- * destination of its own; grouped with Workflows per the spec's staging
- * plan) had no navigation path to them at all before this — real, built,
- * working screens that were simply unreachable through the UI. This list
- * is that missing entry point.
- */
 const SYSTEM_LINKS: SystemLink[] = [
   { label: 'Controller Settings', path: '/settings/controller' },
   { label: 'Display and Theme Settings', path: '/settings/display' },
@@ -64,14 +53,10 @@ const SYSTEM_LINKS: SystemLink[] = [
 ]
 
 /**
- * ND-042 System Dashboard. Real, capability-detected metrics from
- * `SystemMetricsService` — CPU/memory/swap/storage/network/process always
- * attempt collection; battery/thermal/fan/GPU are Linux-only and report
- * honestly as unavailable elsewhere (a desktop with no battery, a non-Linux
- * host) rather than showing a fabricated value. No auto-refresh polling in
- * this slice — a manual Refresh keeps the no-background-surprises rule
- * simple to reason about; revisit if a live-updating view becomes a real
- * requirement.
+ * ND-042 System Dashboard. Uses real, capability-detected metrics from
+ * SystemMetricsService and keeps unavailable hardware explicit instead of
+ * fabricating values. The layout is Deck-first: inline shortcuts on 1280px
+ * screens, docked tool windows only when there is room for them.
  */
 export function SystemDashboard(): React.JSX.Element {
   const navigate = useNavigate()
@@ -108,37 +93,53 @@ export function SystemDashboard(): React.JSX.Element {
     }
   }
 
-  if (loading && !snapshot)
-    return <p className="p-4 text-meta text-text-secondary">Collecting metrics…</p>
+  if (loading && !snapshot) {
+    return <p className="p-4 text-meta text-text-secondary">Collecting metrics...</p>
+  }
 
   return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[22rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
-      <NdxToolWindow title="System Tools" subtitle={`${SYSTEM_LINKS.length} destinations`}>
-        <div className="flex flex-col gap-2">
-          {SYSTEM_LINKS.map((link) => (
-            <ControllerButton
-              key={link.path}
-              variant="secondary"
-              onClick={() => navigate(link.path)}
-            >
-              {link.label}
-            </ControllerButton>
-          ))}
-        </div>
-      </NdxToolWindow>
+    <div className="grid h-full min-w-0 grid-cols-1 gap-2 overflow-auto docked:grid-cols-[minmax(0,1fr)_18rem] docked-2k:grid-cols-[18rem_minmax(0,1fr)_18rem]">
+      <div className="hidden min-h-0 docked-2k:block">
+        <NdxToolWindow title="System Tools" subtitle={`${SYSTEM_LINKS.length} destinations`}>
+          <SystemLinks onNavigate={navigate} />
+        </NdxToolWindow>
+      </div>
 
       <NdxEditorShell title="Metrics">
-        <div className="flex min-h-full flex-col gap-4 p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-title font-semibold text-text-primary">System Dashboard</p>
-            <ControllerButton
-              variant="primary"
-              disabled={loading}
-              onClick={() => void handleRefresh()}
-            >
-              {loading ? 'Refreshing…' : 'Refresh'}
-            </ControllerButton>
+        <div className="flex min-h-full min-w-0 flex-col gap-4 p-3 deck:p-4">
+          <div className="ndx-os-panel overflow-hidden">
+            <div className="ndx-console-ruler" aria-hidden="true" />
+            <div className="flex items-center justify-between gap-3 p-3">
+              <div className="min-w-0">
+                <p className="text-meta uppercase tracking-wide text-text-tertiary">
+                  System cockpit
+                </p>
+                <h1 className="mt-1 truncate text-title font-semibold text-text-primary">
+                  System Dashboard
+                </h1>
+              </div>
+              <ControllerButton
+                variant="primary"
+                disabled={loading}
+                onClick={() => void handleRefresh()}
+              >
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </ControllerButton>
+            </div>
           </div>
+
+          <section className="grid gap-2 deck:grid-cols-2 docked-2k:hidden">
+            {SYSTEM_LINKS.slice(0, 8).map((link) => (
+              <ControllerButton
+                key={link.path}
+                className="justify-start px-3"
+                variant="secondary"
+                onClick={() => navigate(link.path)}
+              >
+                {link.label}
+              </ControllerButton>
+            ))}
+          </section>
 
           {error && <ErrorState title="System metrics error" description={error} />}
 
@@ -146,11 +147,11 @@ export function SystemDashboard(): React.JSX.Element {
             <>
               <p className="text-meta text-text-tertiary">
                 Collected {new Date(snapshot.collectedAt).toLocaleTimeString()} on{' '}
-                {snapshot.hostPlatform} · core uptime {Math.round(snapshot.core.uptimeSeconds / 60)}{' '}
+                {snapshot.hostPlatform} - core uptime {Math.round(snapshot.core.uptimeSeconds / 60)}{' '}
                 min
               </p>
 
-              <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-2 deck:grid-cols-2 docked:grid-cols-3">
                 <MetricCard title="CPU" metric={snapshot.cpu}>
                   {(cpu) => (
                     <>
@@ -200,7 +201,7 @@ export function SystemDashboard(): React.JSX.Element {
                         <div key={battery.name} className="mb-1">
                           <Stat
                             label={battery.name}
-                            value={`${battery.capacityPercent ?? '?'}% · ${battery.status ?? 'unknown'}`}
+                            value={`${battery.capacityPercent ?? '?'}% - ${battery.status ?? 'unknown'}`}
                           />
                         </div>
                       ))
@@ -217,7 +218,7 @@ export function SystemDashboard(): React.JSX.Element {
                         <Stat
                           key={sensor.name}
                           label={sensor.name}
-                          value={`${sensor.celsius.toFixed(1)}°C`}
+                          value={`${sensor.celsius.toFixed(1)} C`}
                         />
                       ))
                     )
@@ -258,7 +259,7 @@ export function SystemDashboard(): React.JSX.Element {
                       <Stat
                         key={iface.name}
                         label={iface.name}
-                        value={`${iface.addressCount} address${iface.addressCount === 1 ? '' : 'es'}${iface.internal ? ' · internal' : ''}`}
+                        value={`${iface.addressCount} address${iface.addressCount === 1 ? '' : 'es'}${iface.internal ? ' - internal' : ''}`}
                       />
                     ))
                   }
@@ -273,35 +274,57 @@ export function SystemDashboard(): React.JSX.Element {
         </div>
       </NdxEditorShell>
 
-      <NdxToolWindow
-        title="Metrics Scope"
-        subtitle={snapshot ? snapshot.hostPlatform : 'Awaiting collection'}
-        side="right"
-      >
-        <div>
-          <p className="text-meta font-semibold text-text-primary">Collection mode</p>
-          <p className="text-meta text-text-tertiary">
-            Manual refresh only. No background polling is started by this screen.
-          </p>
-        </div>
-        {snapshot && (
-          <div className="border-t border-border pt-3">
-            <p className="text-meta font-semibold text-text-primary">Core process</p>
-            <p className="text-meta text-text-secondary">PID {snapshot.core.pid}</p>
-            <p className="text-meta text-text-tertiary">
-              Uptime {Math.round(snapshot.core.uptimeSeconds / 60)} min
-            </p>
-          </div>
-        )}
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Sensor policy</p>
-          <p className="text-meta text-text-tertiary">
-            Unavailable battery, thermal, fan, and GPU sensors stay explicit rather than using
-            fabricated values.
-          </p>
-        </div>
-      </NdxToolWindow>
+      <div className="hidden min-h-0 docked:block">
+        <NdxToolWindow
+          title="Metrics Scope"
+          subtitle={snapshot ? snapshot.hostPlatform : 'Awaiting collection'}
+          side="right"
+        >
+          <MetricsScope snapshot={snapshot} />
+        </NdxToolWindow>
+      </div>
     </div>
+  )
+}
+
+function SystemLinks({ onNavigate }: { onNavigate: (path: string) => void }): React.JSX.Element {
+  return (
+    <div className="flex flex-col gap-2">
+      {SYSTEM_LINKS.map((link) => (
+        <ControllerButton key={link.path} variant="secondary" onClick={() => onNavigate(link.path)}>
+          {link.label}
+        </ControllerButton>
+      ))}
+    </div>
+  )
+}
+
+function MetricsScope({ snapshot }: { snapshot: SystemMetricsSnapshot | null }): React.JSX.Element {
+  return (
+    <>
+      <div>
+        <p className="text-meta font-semibold text-text-primary">Collection mode</p>
+        <p className="text-meta text-text-tertiary">
+          Manual refresh only. No background polling is started by this screen.
+        </p>
+      </div>
+      {snapshot && (
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Core process</p>
+          <p className="text-meta text-text-secondary">PID {snapshot.core.pid}</p>
+          <p className="text-meta text-text-tertiary">
+            Uptime {Math.round(snapshot.core.uptimeSeconds / 60)} min
+          </p>
+        </div>
+      )}
+      <div className="border-t border-border pt-3">
+        <p className="text-meta font-semibold text-text-primary">Sensor policy</p>
+        <p className="text-meta text-text-tertiary">
+          Unavailable battery, thermal, fan, and GPU sensors stay explicit rather than using
+          fabricated values.
+        </p>
+      </div>
+    </>
   )
 }
 
@@ -315,7 +338,7 @@ function MetricCard<T>({
   children: (value: T) => React.ReactNode
 }): React.JSX.Element {
   return (
-    <section className="flex flex-col gap-1 border border-border bg-surface p-3">
+    <section className="ndx-os-panel flex min-w-0 flex-col gap-1 p-3">
       <p className="text-body font-semibold text-text-primary">{title}</p>
       {metric.available && metric.value !== undefined ? (
         children(metric.value)
@@ -331,7 +354,7 @@ function MetricCard<T>({
 
 function Stat({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <p className="text-meta text-text-secondary">
+    <p className="truncate text-meta text-text-secondary">
       {label}: <span className="text-text-primary">{value}</span>
     </p>
   )

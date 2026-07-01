@@ -50,22 +50,23 @@ export function NdxWorkbench({
     >
       {titleBar}
       <div
+        data-collapse={collapseToolWindows}
         className={cn(
-          'grid min-h-0',
-          collapseToolWindows
-            ? 'grid-cols-[var(--ndx-workbench-activitybar-width)_minmax(0,1fr)]'
-            : 'grid-cols-[var(--ndx-workbench-activitybar-width)_var(--ndx-workbench-primary-width)_minmax(0,1fr)_var(--ndx-workbench-secondary-width)]'
+          'ndx-workbench-body grid min-h-0',
+          collapseToolWindows && 'ndx-workbench-body-collapsed'
         )}
       >
         {activityBar}
-        {!collapseToolWindows && primaryToolWindow}
+        {!collapseToolWindows && <div className="ndx-workbench-primary">{primaryToolWindow}</div>}
         <main
           className="ndx-workbench-main min-h-0 min-w-0 overflow-auto bg-[var(--ndx-workbench-editor-bg)]"
           style={{ padding: 'var(--ndx-workbench-content-inset)' }}
         >
           {children}
         </main>
-        {!collapseToolWindows && secondaryToolWindow}
+        {!collapseToolWindows && (
+          <div className="ndx-workbench-secondary">{secondaryToolWindow}</div>
+        )}
       </div>
       {bottomPanel}
       {statusBar}
