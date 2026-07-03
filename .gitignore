@@ -13,3 +13,5 @@ playwright/.cache
 *.tsbuildinfo
 page_body.html
 stitch_neurospatial_workbench_design_system.zip
+__pycache__
+*.pyc
