@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { DiagnosticsInfo, NdxBridge } from '@shared/contracts'
@@ -47,7 +48,7 @@ describe('AboutDiagnostics', () => {
     stubBridge({
       diagnostics: diagnosticsBridge as never
     })
-    render(<AboutDiagnostics />)
+    renderWithProviders(<AboutDiagnostics />)
 
     expect(await screen.findByText('0.0.0')).toBeInTheDocument()
     expect(screen.getByText('Local Ollama')).toBeInTheDocument()
@@ -63,7 +64,7 @@ describe('AboutDiagnostics', () => {
         listCrashReports: vi.fn().mockResolvedValue({ ok: true, data: [] })
       } as never
     })
-    render(<AboutDiagnostics />)
+    renderWithProviders(<AboutDiagnostics />)
 
     expect(await screen.findByText('Failed.')).toBeInTheDocument()
   })
@@ -82,7 +83,7 @@ describe('AboutDiagnostics', () => {
     const user = userEvent.setup()
     const writeText = vi.fn().mockResolvedValue(undefined)
     Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
-    render(<AboutDiagnostics />)
+    renderWithProviders(<AboutDiagnostics />)
     await screen.findByText('0.0.0')
 
     await user.click(screen.getByRole('button', { name: 'Copy diagnostics to clipboard' }))
@@ -114,7 +115,7 @@ describe('AboutDiagnostics', () => {
     })
 
     const user = userEvent.setup()
-    render(<AboutDiagnostics />)
+    renderWithProviders(<AboutDiagnostics />)
     await screen.findByText('0.0.0')
 
     await user.click(screen.getByRole('button', { name: 'Create support bundle' }))
@@ -148,7 +149,7 @@ describe('AboutDiagnostics', () => {
       } as never
     })
 
-    render(<AboutDiagnostics />)
+    renderWithProviders(<AboutDiagnostics />)
 
     expect(await screen.findByText('Render failed')).toBeInTheDocument()
     expect(screen.getByText('Correlation: corr-1')).toBeInTheDocument()

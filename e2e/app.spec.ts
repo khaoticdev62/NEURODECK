@@ -93,15 +93,15 @@ test('theme builder controls patch the live data-ndx-* attributes on the workben
 
   const workbenchRoot = window.locator('[data-ndx-theme]')
   await expect(workbenchRoot).toHaveAttribute('data-ndx-accent', 'cyan')
-  await expect(workbenchRoot).toHaveAttribute('data-ndx-radius', 'sharp')
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-radius', 'soft')
   await expect(workbenchRoot).toHaveAttribute('data-ndx-density', 'comfortable')
   await expect(workbenchRoot).toHaveAttribute('data-ndx-focus-style', 'ring')
 
   await window.getByRole('button', { name: /Violet/ }).click()
   await expect(workbenchRoot).toHaveAttribute('data-ndx-accent', 'violet')
 
-  await window.getByRole('button', { name: 'round' }).click()
-  await expect(workbenchRoot).toHaveAttribute('data-ndx-radius', 'round')
+  await window.getByRole('button', { name: 'sharp' }).click()
+  await expect(workbenchRoot).toHaveAttribute('data-ndx-radius', 'sharp')
 
   await window.getByRole('button', { name: 'spacious' }).click()
   await expect(workbenchRoot).toHaveAttribute('data-ndx-density', 'spacious')

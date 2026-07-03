@@ -352,7 +352,7 @@ function ActionItemLesson({
 
 function CommandPaletteLesson(): React.JSX.Element {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
+    <div className="ndx-os-panel rounded-lg p-4">
       <p className="text-body text-text-secondary">
         The Command Palette opens from anywhere in NeuroDeck. Try it now.
       </p>
@@ -376,7 +376,7 @@ function ApproveLesson({
   })
 
   return (
-    <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+    <div className="ndx-os-panel flex flex-col gap-3 rounded-lg p-4">
       <div>
         <p className="text-body font-semibold text-text-primary">Harmless tutorial action</p>
         <p className="text-meta text-text-secondary">

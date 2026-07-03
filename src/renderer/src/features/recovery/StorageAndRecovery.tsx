@@ -68,7 +68,7 @@ export function StorageAndRecovery(): React.JSX.Element {
 
           {error && <ErrorState title="Couldn't load recovery storage" description={error} />}
 
-          <section className="border border-border bg-surface p-3">
+          <section className="ndx-settings-section">
             <p className="mb-1 text-meta font-semibold text-text-primary">Recovery points</p>
             {summary ? (
               <p className="text-meta text-text-secondary">

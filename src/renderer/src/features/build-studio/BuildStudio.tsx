@@ -3,6 +3,7 @@ import type * as monacoEditor from 'monaco-editor'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NeuralPulse } from '../../components/primitives/NeuralPulse'
 import {
   NdxBreadcrumbs,
   NdxEditorShell,
@@ -14,6 +15,7 @@ import { useFocusable } from '../../controller/focus/useFocusable'
 import { getGitStatus } from '../../services/ipc/gitClient'
 import { completeModel } from '../../services/ipc/modelClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 import { CodeEditor } from './CodeEditor'
 import { DiagnosticsPanel, type DiagnosticItem } from './DiagnosticsPanel'
 import { ProjectTree } from './ProjectTree'
@@ -286,8 +288,11 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
 
   const breadcrumbItems = activePath?.split(/[/\\]/).filter(Boolean) ?? []
 
-  return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[15rem_minmax(28rem,1fr)_18rem] gap-2 overflow-auto">
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Project', gitSummary?.branch ?? 'Workspace', (
       <NdxToolWindow title="Project" subtitle={gitSummary?.branch ?? 'Workspace'}>
         <ProjectTree workspaceId={workspaceId} onOpenFile={(path) => void openFile(path)} />
         {gitSummary && (
@@ -297,9 +302,123 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
           </p>
         )}
       </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [gitSummary, workspaceId, openFile, setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Inspector" subtitle="Symbols, problems, AI edits" side="right">
+        <section className="flex flex-col gap-2 border-b border-border pb-3">
+          <p className="px-1 text-meta font-semibold text-text-primary">Structural edits</p>
+          <div className="grid gap-2">
+            <ControllerButton disabled={!activeFile || !isTsOrJs} onClick={handleOrganizeImports}>
+              Organize imports
+            </ControllerButton>
+            <ControllerButton disabled={!activeFile} onClick={handleFormatDocument}>
+              Format file
+            </ControllerButton>
+            <ControllerButton
+              disabled={!activeFile || !selectionActive}
+              onClick={handleWrapSelection}
+            >
+              Wrap selection
+            </ControllerButton>
+          </div>
+          {structuralMessage && (
+            <p className="px-1 text-meta text-text-tertiary">{structuralMessage}</p>
+          )}
+        </section>
+
+        <section className="flex flex-col gap-2 border-b border-border pb-3">
+          <div className="flex items-center gap-2 px-1">
+            <NeuralPulse size={16} state={predictionBusy ? 'analyzing' : 'idle'} />
+            <p className="text-meta font-semibold text-text-primary">Predictive edit</p>
+          </div>
+          <textarea
+            value={predictionPrompt}
+            onChange={(event) => setPredictionPrompt(event.target.value)}
+            disabled={!activeFile || predictionBusy}
+            className="min-h-20 resize-none border border-border bg-canvas px-2 py-1 text-body text-text-primary"
+            placeholder="Describe the edit to propose"
+          />
+          <ControllerButton
+            variant="primary"
+            disabled={!activeFile || predictionBusy}
+            onClick={() => void handleRequestPrediction()}
+          >
+            {predictionBusy ? 'Requesting…' : 'Propose edit'}
+          </ControllerButton>
+          {predictionError && <p className="text-meta text-status-error">{predictionError}</p>}
+          {predictionProposal && (
+            <div className="ndx-hairline-top grid gap-2 rounded-[var(--radius-md)] border border-[var(--ndx-workbench-border)] border-l-[3px] border-l-[var(--ndx-accent)] bg-canvas p-2">
+              <p className="text-meta text-text-tertiary">
+                {predictionProposal.provider} · {predictionProposal.rangeLabel}
+              </p>
+              <p className="text-body text-text-primary">{predictionProposal.explanation}</p>
+              <pre className="max-h-36 overflow-auto whitespace-pre-wrap border border-border bg-surface p-2 text-meta text-text-secondary">
+                {predictionProposal.replacement}
+              </pre>
+              <div className="flex gap-2">
+                <ControllerButton variant="primary" onClick={handleApplyPrediction}>
+                  Apply
+                </ControllerButton>
+                <ControllerButton variant="secondary" onClick={() => setPredictionProposal(null)}>
+                  Discard
+                </ControllerButton>
+              </div>
+            </div>
+          )}
+        </section>
+
+        <section className="min-h-0 flex-1 overflow-auto">
+          <p className="mb-1 px-1 text-meta font-semibold text-text-primary">Symbols</p>
+          <SymbolNavigator
+            symbols={activePath ? (symbolsByPath[activePath] ?? []) : []}
+            supported={isTsOrJs}
+            onJump={(line) =>
+              activePath && setPendingReveal({ path: activePath, line, nonce: Date.now() })
+            }
+          />
+        </section>
+        <section className="min-h-0 flex-1 overflow-auto">
+          <p className="mb-1 px-1 text-meta font-semibold text-text-primary">Problems</p>
+          <DiagnosticsPanel
+            diagnostics={Object.values(diagnosticsByPath).flat()}
+            onSelect={(diagnostic) =>
+              setPendingReveal({ path: diagnostic.path, line: diagnostic.line, nonce: Date.now() })
+            }
+          />
+        </section>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [
+    activeFile,
+    isTsOrJs,
+    structuralMessage,
+    predictionPrompt,
+    predictionBusy,
+    predictionError,
+    predictionProposal,
+    symbolsByPath,
+    activePath,
+    diagnosticsByPath,
+    handleOrganizeImports,
+    handleFormatDocument,
+    handleWrapSelection,
+    handleRequestPrediction,
+    handleApplyPrediction,
+    setPredictionPrompt,
+    setPredictionProposal,
+    setPendingReveal,
+    setSecondary
+  ])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title={activePath ?? 'Build Studio'}>
-        <div className="flex items-center justify-between border-b border-border px-2 py-1">
+        <div className="ndx-hairline-top flex items-center justify-between border-b border-border px-2 py-1">
           <NdxEditorTabs>
             {openFiles.map((file) => (
               <Tab
@@ -348,87 +467,6 @@ function BuildStudioWorkspace({ workspaceId }: { workspaceId: string }): React.J
           )}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Inspector" subtitle="Symbols, problems, AI edits" side="right">
-        <section className="flex flex-col gap-2 border-b border-border pb-3">
-          <p className="px-1 text-meta font-semibold text-text-primary">Structural edits</p>
-          <div className="grid gap-2">
-            <ControllerButton disabled={!activeFile || !isTsOrJs} onClick={handleOrganizeImports}>
-              Organize imports
-            </ControllerButton>
-            <ControllerButton disabled={!activeFile} onClick={handleFormatDocument}>
-              Format file
-            </ControllerButton>
-            <ControllerButton
-              disabled={!activeFile || !selectionActive}
-              onClick={handleWrapSelection}
-            >
-              Wrap selection
-            </ControllerButton>
-          </div>
-          {structuralMessage && (
-            <p className="px-1 text-meta text-text-tertiary">{structuralMessage}</p>
-          )}
-        </section>
-
-        <section className="flex flex-col gap-2 border-b border-border pb-3">
-          <p className="px-1 text-meta font-semibold text-text-primary">Predictive edit</p>
-          <textarea
-            value={predictionPrompt}
-            onChange={(event) => setPredictionPrompt(event.target.value)}
-            disabled={!activeFile || predictionBusy}
-            className="min-h-20 resize-none border border-border bg-canvas px-2 py-1 text-body text-text-primary"
-            placeholder="Describe the edit to propose"
-          />
-          <ControllerButton
-            variant="primary"
-            disabled={!activeFile || predictionBusy}
-            onClick={() => void handleRequestPrediction()}
-          >
-            {predictionBusy ? 'Requesting…' : 'Propose edit'}
-          </ControllerButton>
-          {predictionError && <p className="text-meta text-status-error">{predictionError}</p>}
-          {predictionProposal && (
-            <div className="grid gap-2 border border-border bg-canvas p-2">
-              <p className="text-meta text-text-tertiary">
-                {predictionProposal.provider} · {predictionProposal.rangeLabel}
-              </p>
-              <p className="text-body text-text-primary">{predictionProposal.explanation}</p>
-              <pre className="max-h-36 overflow-auto whitespace-pre-wrap border border-border bg-surface p-2 text-meta text-text-secondary">
-                {predictionProposal.replacement}
-              </pre>
-              <div className="flex gap-2">
-                <ControllerButton variant="primary" onClick={handleApplyPrediction}>
-                  Apply
-                </ControllerButton>
-                <ControllerButton variant="secondary" onClick={() => setPredictionProposal(null)}>
-                  Discard
-                </ControllerButton>
-              </div>
-            </div>
-          )}
-        </section>
-
-        <section className="min-h-0 flex-1 overflow-auto">
-          <p className="mb-1 px-1 text-meta font-semibold text-text-primary">Symbols</p>
-          <SymbolNavigator
-            symbols={activePath ? (symbolsByPath[activePath] ?? []) : []}
-            supported={isTsOrJs}
-            onJump={(line) =>
-              activePath && setPendingReveal({ path: activePath, line, nonce: Date.now() })
-            }
-          />
-        </section>
-        <section className="min-h-0 flex-1 overflow-auto">
-          <p className="mb-1 px-1 text-meta font-semibold text-text-primary">Problems</p>
-          <DiagnosticsPanel
-            diagnostics={Object.values(diagnosticsByPath).flat()}
-            onSelect={(diagnostic) =>
-              setPendingReveal({ path: diagnostic.path, line: diagnostic.line, nonce: Date.now() })
-            }
-          />
-        </section>
-      </NdxToolWindow>
     </div>
   )
 }

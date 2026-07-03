@@ -67,7 +67,7 @@ export function FilePreview({ workspaceId, relativePath }: FilePreviewProps): Re
           Showing the first part of this file — it&apos;s too large to preview in full.
         </p>
       )}
-      <pre className="flex-1 overflow-auto whitespace-pre-wrap rounded-md border border-border bg-surface p-3 text-meta text-text-primary">
+      <pre className="flex-1 overflow-auto whitespace-pre-wrap rounded-md ndx-settings-section text-meta text-text-primary">
         {content}
       </pre>
     </div>

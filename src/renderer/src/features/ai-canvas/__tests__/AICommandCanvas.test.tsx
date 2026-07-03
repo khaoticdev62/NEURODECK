@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelCompletionResult, NdxBridge } from '@shared/contracts'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
@@ -32,12 +32,10 @@ function workspaceValue(active: boolean): WorkspaceContextValue {
   }
 }
 
-function renderScreen(active = true): ReturnType<typeof render> {
-  return render(
+function renderScreen(active = true): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(
     <WorkspaceContext.Provider value={workspaceValue(active)}>
-      <MemoryRouter>
-        <AICommandCanvas />
-      </MemoryRouter>
+      <AICommandCanvas />
     </WorkspaceContext.Provider>
   )
 }

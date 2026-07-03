@@ -9,6 +9,7 @@ import type {
 } from '@shared/contracts'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { HermesNodeIcon } from '../../components/primitives/brandIcons'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
@@ -141,7 +142,7 @@ function InstallPreviewPanel({
   const requested = preview.requestedCapabilities
 
   return (
-    <section className="flex flex-col gap-3 rounded-md border border-border bg-surface p-3">
+    <section className="flex flex-col gap-3 rounded-md ndx-settings-section">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-body font-semibold text-text-primary">{preview.manifest.name}</p>
@@ -243,7 +244,7 @@ function ExtensionDetail({
   const canDisable = record.state === 'enabled'
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto rounded-md border border-border bg-surface p-4">
+    <section className="ndx-hairline-top flex min-h-0 flex-1 flex-col gap-4 overflow-auto rounded-md border border-border bg-surface p-4">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-title font-semibold text-text-primary">{record.manifest.name}</p>
@@ -497,7 +498,7 @@ export function ExtensionManager(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow title="Extension Sources" subtitle="Local runtime">
         <div className="space-y-3 text-meta text-text-secondary">
           <p>
@@ -512,7 +513,10 @@ export function ExtensionManager(): React.JSX.Element {
         <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-title font-semibold text-text-primary">Extension Manager</p>
+              <div className="flex items-center gap-2">
+                <HermesNodeIcon className="size-6 text-[var(--ndx-accent)]" />
+                <p className="text-title font-semibold text-text-primary">Extension Manager</p>
+              </div>
               <p className="text-body text-text-secondary">
                 Local unpacked extensions only. Marketplace, SDK, and CLI surfaces remain deferred
                 until their real trust and API foundations exist.
@@ -534,7 +538,7 @@ export function ExtensionManager(): React.JSX.Element {
 
           {error && <ErrorState title="Extension error" description={error} className="py-3" />}
 
-          <section className="flex flex-wrap gap-2 rounded-md border border-border bg-surface p-3">
+          <section className="flex flex-wrap gap-2 rounded-md ndx-settings-section">
             <input
               value={directoryPath}
               onChange={(event) => handleDirectoryChange(event.target.value)}

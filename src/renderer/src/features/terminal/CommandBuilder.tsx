@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { TerminalSession } from '@shared/contracts'
 import type { PermissionCapability } from '../../ai-safety/contracts/permission'
@@ -12,6 +12,7 @@ import { useFocusable } from '../../controller/focus/useFocusable'
 import { completeModel } from '../../services/ipc/modelClient'
 import { listTerminalSessions, onTerminalExit } from '../../services/ipc/terminalClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 import {
   classifyCommand,
   COMMAND_BLOCK_TYPES,
@@ -128,6 +129,268 @@ export function CommandBuilder({
   )
   const risk = useMemo(() => classifyCommand(command), [command])
 
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  // ── stable callbacks (useCallback so the secondary-panel useEffect doesn't
+  //    run on every render) ──────────────────────────────────────────────────
+
+  const copyCommand = useCallback(async (): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(command)
+      setError(null)
+    } catch {
+      setError('Clipboard access is unavailable. The exact command remains visible below.')
+    }
+  }, [command])
+
+  const saveCurrentAction = useCallback((): void => {
+    if (!activeWorkspace) return
+    if (!command) {
+      setError('Complete a command before saving it as an action.')
+      return
+    }
+    const next: SavedCommandAction = {
+      id: `saved-${Date.now()}`,
+      name: command,
+      command,
+      blocks,
+      createdAt: Date.now()
+    }
+    setSavedActions((current) => {
+      const updated = [next, ...current].slice(0, 20)
+      saveSavedActions(activeWorkspace.id, updated)
+      return updated
+    })
+    setError(null)
+  }, [activeWorkspace, command, blocks])
+
+  const useCommandProposal = useCallback((): void => {
+    setProposal((p) => {
+      if (!p) return p
+      setBlocks(p.blocks.map((block) => ({ ...block, id: nextBlockId() })))
+      setError(null)
+      return null
+    })
+  }, [])
+
+  const requestCommandProposal = useCallback(async (): Promise<void> => {
+    if (!activeWorkspace) return
+    if (!intent.trim() || proposalBusy) return
+    setProposalBusy(true)
+    setProposal(null)
+    setError(null)
+    const shell = selectedSession?.shell ?? 'sh'
+    const result = await completeModel({
+      profileId: 'fast-coding',
+      workspacePrivate: true,
+      temperature: 0.1,
+      maxTokens: 1200,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You propose terminal commands as structured blocks. Return only JSON with fields "blocks" and "explanation". Blocks must use these types only: program, subcommand, flag, value, path, pipe, redirect, conditional, environment. Do not include markdown.'
+        },
+        {
+          role: 'user',
+          content: [
+            `Shell: ${shell}`,
+            `Workspace: ${activeWorkspace.name}`,
+            `Intent: ${intent.trim()}`,
+            'Return a safe, minimal command proposal. The host will review it before running.'
+          ].join('\n')
+        }
+      ]
+    })
+    setProposalBusy(false)
+    if (!result.ok) {
+      setError(result.error.userMessage)
+      return
+    }
+    try {
+      const parsed = parseCommandProposal(result.data.content)
+      const proposedCommand = serializeCommand(
+        parsed.blocks.map((block) => ({ ...block, id: nextBlockId() })),
+        shell
+      )
+      setProposal({
+        ...parsed,
+        command: proposedCommand,
+        provider: `${result.data.providerName} / ${result.data.modelId}`
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not parse command proposal.')
+    }
+  }, [activeWorkspace, intent, proposalBusy, selectedSession?.shell])
+
+  const submitForReview = useCallback((): void => {
+    if (!selectedSession || !command) {
+      setError('Choose a running session and complete the command before review.')
+      return
+    }
+    const capability: PermissionCapability = risk.privileged
+      ? 'terminal.privileged'
+      : 'terminal.execute'
+    broker.revoke(capability)
+    const result = queue.submit(
+      toolIdForRisk(risk),
+      {
+        sessionId: selectedSession.id,
+        command,
+        target: `${selectedSession.shell} · ${selectedSession.cwd}`
+      },
+      `Run exact command: ${command}`
+    )
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    navigate('/ai/approvals')
+  }, [selectedSession, command, risk, broker, queue, navigate])
+
+  const runHeadless = useCallback((): void => {
+    if (!activeWorkspace || !command) {
+      setError('Complete a command before running it headlessly.')
+      return
+    }
+    const capability: PermissionCapability = risk.privileged
+      ? 'terminal.privileged'
+      : 'terminal.execute'
+    broker.revoke(capability)
+    const result = queue.submit(
+      headlessToolIdForRisk(risk),
+      { workspaceId: activeWorkspace.id, command },
+      `Run headless (no terminal): ${command}`
+    )
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    navigate('/ai/approvals')
+  }, [activeWorkspace, command, risk, broker, queue, navigate])
+
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Review" subtitle={`${risk.label} risk`} side="right">
+        <StatusBadge tone={RISK_TONES[risk.level]} label={`${risk.label} risk`} />
+        <label className="text-meta font-semibold text-text-primary" htmlFor="builder-session">
+          Target session
+        </label>
+        <FocusableSelect
+          id="builder-session"
+          value={sessionId}
+          onChange={setSessionId}
+          options={sessions.map((session) => ({
+            value: session.id,
+            label: `${session.shell} · PID ${session.pid}`
+          }))}
+        />
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Risk analysis</p>
+          <p className="mt-1 text-meta text-text-secondary">{risk.reason}</p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <label className="text-meta font-semibold text-text-primary" htmlFor="builder-intent">
+            AI proposal
+          </label>
+          <textarea
+            id="builder-intent"
+            value={intent}
+            onChange={(event) => setIntent(event.target.value)}
+            placeholder="Describe the command to propose"
+            className="mt-2 min-h-20 w-full resize-none border border-border bg-canvas px-2 py-1 text-meta text-text-primary"
+          />
+          <FocusableButton
+            id="builder-propose"
+            variant="secondary"
+            disabled={!intent.trim() || proposalBusy}
+            onClick={() => void requestCommandProposal()}
+          >
+            {proposalBusy ? 'Proposing…' : 'Propose blocks'}
+          </FocusableButton>
+        </div>
+        {proposal && (
+          <div className="border border-border bg-canvas p-2">
+            <p className="text-meta text-text-tertiary">{proposal.provider}</p>
+            <p className="mt-1 text-meta text-text-secondary">{proposal.explanation}</p>
+            <code className="mt-2 block truncate font-mono text-meta text-text-primary">
+              {proposal.command}
+            </code>
+            <div className="mt-2 flex gap-2">
+              <FocusableButton
+                id="builder-use-proposal"
+                variant="primary"
+                onClick={useCommandProposal}
+              >
+                Use proposal
+              </FocusableButton>
+              <FocusableButton
+                id="builder-discard-proposal"
+                variant="ghost"
+                onClick={() => setProposal(null)}
+              >
+                Discard
+              </FocusableButton>
+            </div>
+          </div>
+        )}
+        <div className="mt-auto flex flex-col gap-2">
+          <FocusableButton
+            id="builder-copy"
+            variant="secondary"
+            disabled={!command}
+            onClick={() => void copyCommand()}
+          >
+            Copy without running
+          </FocusableButton>
+          <FocusableButton
+            id="builder-save-action"
+            variant="secondary"
+            disabled={!command}
+            onClick={saveCurrentAction}
+          >
+            Save action
+          </FocusableButton>
+          <FocusableButton
+            id="builder-run-headless"
+            variant="secondary"
+            disabled={!command}
+            onClick={runHeadless}
+          >
+            Run headless (capture output)
+          </FocusableButton>
+          <FocusableButton
+            id="builder-review"
+            variant="primary"
+            disabled={!command || !selectedSession}
+            onClick={submitForReview}
+          >
+            Send to approval review
+          </FocusableButton>
+        </div>
+      </NdxToolWindow>
+    )
+
+    return () => setSecondary(null)
+  }, [
+    risk,
+    sessionId,
+    setSessionId,
+    sessions,
+    intent,
+    proposalBusy,
+    proposal,
+    requestCommandProposal,
+    useCommandProposal,
+    command,
+    copyCommand,
+    saveCurrentAction,
+    runHeadless,
+    selectedSession,
+    submitForReview,
+    setSecondary
+  ])
+
   if (!activeWorkspace) {
     return (
       <EmptyState
@@ -179,34 +442,6 @@ export function CommandBuilder({
     setBlocks((current) => current.filter((block) => block.id !== id))
   }
 
-  async function copyCommand(): Promise<void> {
-    try {
-      await navigator.clipboard.writeText(command)
-      setError(null)
-    } catch {
-      setError('Clipboard access is unavailable. The exact command remains visible below.')
-    }
-  }
-
-  function saveCurrentAction(): void {
-    if (!activeWorkspace) return
-    if (!command) {
-      setError('Complete a command before saving it as an action.')
-      return
-    }
-    const next: SavedCommandAction = {
-      id: `saved-${Date.now()}`,
-      name: command,
-      command,
-      blocks,
-      createdAt: Date.now()
-    }
-    const updated = [next, ...savedActions].slice(0, 20)
-    setSavedActions(updated)
-    saveSavedActions(activeWorkspace.id, updated)
-    setError(null)
-  }
-
   function loadSavedAction(action: SavedCommandAction): void {
     setBlocks(action.blocks.map((block) => ({ ...block, id: nextBlockId() })))
     setError(null)
@@ -219,108 +454,6 @@ export function CommandBuilder({
     saveSavedActions(activeWorkspace.id, updated)
   }
 
-  async function requestCommandProposal(): Promise<void> {
-    if (!activeWorkspace) return
-    if (!intent.trim() || proposalBusy) return
-    setProposalBusy(true)
-    setProposal(null)
-    setError(null)
-    const shell = selectedSession?.shell ?? 'sh'
-    const result = await completeModel({
-      profileId: 'fast-coding',
-      workspacePrivate: true,
-      temperature: 0.1,
-      maxTokens: 1200,
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You propose terminal commands as structured blocks. Return only JSON with fields "blocks" and "explanation". Blocks must use these types only: program, subcommand, flag, value, path, pipe, redirect, conditional, environment. Do not include markdown.'
-        },
-        {
-          role: 'user',
-          content: [
-            `Shell: ${shell}`,
-            `Workspace: ${activeWorkspace.name}`,
-            `Intent: ${intent.trim()}`,
-            'Return a safe, minimal command proposal. The host will review it before running.'
-          ].join('\n')
-        }
-      ]
-    })
-    setProposalBusy(false)
-    if (!result.ok) {
-      setError(result.error.userMessage)
-      return
-    }
-    try {
-      const parsed = parseCommandProposal(result.data.content)
-      const command = serializeCommand(
-        parsed.blocks.map((block) => ({ ...block, id: nextBlockId() })),
-        shell
-      )
-      setProposal({
-        ...parsed,
-        command,
-        provider: `${result.data.providerName} / ${result.data.modelId}`
-      })
-    } catch (error) {
-      setError(error instanceof Error ? error.message : 'Could not parse command proposal.')
-    }
-  }
-
-  function useCommandProposal(): void {
-    if (!proposal) return
-    setBlocks(proposal.blocks.map((block) => ({ ...block, id: nextBlockId() })))
-    setProposal(null)
-    setError(null)
-  }
-
-  function submitForReview(): void {
-    if (!selectedSession || !command) {
-      setError('Choose a running session and complete the command before review.')
-      return
-    }
-    const capability: PermissionCapability = risk.privileged
-      ? 'terminal.privileged'
-      : 'terminal.execute'
-    broker.revoke(capability)
-    const result = queue.submit(
-      toolIdForRisk(risk),
-      {
-        sessionId: selectedSession.id,
-        command,
-        target: `${selectedSession.shell} · ${selectedSession.cwd}`
-      },
-      `Run exact command: ${command}`
-    )
-    if (!result.ok) {
-      setError(result.error)
-      return
-    }
-    navigate('/ai/approvals')
-  }
-
-  function runHeadless(): void {
-    if (!activeWorkspace || !command) {
-      setError('Complete a command before running it headlessly.')
-      return
-    }
-    const capability: PermissionCapability = risk.privileged
-      ? 'terminal.privileged'
-      : 'terminal.execute'
-    broker.revoke(capability)
-    const result = queue.submit(
-      headlessToolIdForRisk(risk),
-      { workspaceId: activeWorkspace.id, command },
-      `Run headless (no terminal): ${command}`
-    )
-    if (!result.ok) {
-      setError(result.error)
-      return
-    }
-    navigate('/ai/approvals')
-  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
@@ -340,7 +473,7 @@ export function CommandBuilder({
         </div>
       )}
 
-      <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_18rem] gap-3">
+      <div className="min-h-0 flex-1">
         <NdxEditorShell title="Command Blocks">
           <div className="min-h-full p-3">
             <div className="mb-3 flex items-center justify-between">
@@ -363,109 +496,10 @@ export function CommandBuilder({
             </ol>
           </div>
         </NdxEditorShell>
-
-        <NdxToolWindow title="Review" subtitle={`${risk.label} risk`} side="right">
-          <StatusBadge tone={RISK_TONES[risk.level]} label={`${risk.label} risk`} />
-          <label className="text-meta font-semibold text-text-primary" htmlFor="builder-session">
-            Target session
-          </label>
-          <FocusableSelect
-            id="builder-session"
-            value={sessionId}
-            onChange={setSessionId}
-            options={sessions.map((session) => ({
-              value: session.id,
-              label: `${session.shell} · PID ${session.pid}`
-            }))}
-          />
-          <div className="border-t border-border pt-3">
-            <p className="text-meta font-semibold text-text-primary">Risk analysis</p>
-            <p className="mt-1 text-meta text-text-secondary">{risk.reason}</p>
-          </div>
-          <div className="border-t border-border pt-3">
-            <label className="text-meta font-semibold text-text-primary" htmlFor="builder-intent">
-              AI proposal
-            </label>
-            <textarea
-              id="builder-intent"
-              value={intent}
-              onChange={(event) => setIntent(event.target.value)}
-              placeholder="Describe the command to propose"
-              className="mt-2 min-h-20 w-full resize-none border border-border bg-canvas px-2 py-1 text-meta text-text-primary"
-            />
-            <FocusableButton
-              id="builder-propose"
-              variant="secondary"
-              disabled={!intent.trim() || proposalBusy}
-              onClick={() => void requestCommandProposal()}
-            >
-              {proposalBusy ? 'Proposing…' : 'Propose blocks'}
-            </FocusableButton>
-          </div>
-          {proposal && (
-            <div className="border border-border bg-canvas p-2">
-              <p className="text-meta text-text-tertiary">{proposal.provider}</p>
-              <p className="mt-1 text-meta text-text-secondary">{proposal.explanation}</p>
-              <code className="mt-2 block truncate font-mono text-meta text-text-primary">
-                {proposal.command}
-              </code>
-              <div className="mt-2 flex gap-2">
-                <FocusableButton
-                  id="builder-use-proposal"
-                  variant="primary"
-                  onClick={useCommandProposal}
-                >
-                  Use proposal
-                </FocusableButton>
-                <FocusableButton
-                  id="builder-discard-proposal"
-                  variant="ghost"
-                  onClick={() => setProposal(null)}
-                >
-                  Discard
-                </FocusableButton>
-              </div>
-            </div>
-          )}
-          <div className="mt-auto flex flex-col gap-2">
-            <FocusableButton
-              id="builder-copy"
-              variant="secondary"
-              disabled={!command}
-              onClick={() => void copyCommand()}
-            >
-              Copy without running
-            </FocusableButton>
-            <FocusableButton
-              id="builder-save-action"
-              variant="secondary"
-              disabled={!command}
-              onClick={saveCurrentAction}
-            >
-              Save action
-            </FocusableButton>
-            <FocusableButton
-              id="builder-run-headless"
-              variant="secondary"
-              disabled={!command}
-              onClick={runHeadless}
-            >
-              Run headless (capture output)
-            </FocusableButton>
-            <FocusableButton
-              id="builder-review"
-              variant="primary"
-              disabled={!command || !selectedSession}
-              onClick={submitForReview}
-            >
-              Send to approval review
-            </FocusableButton>
-          </div>
-        </NdxToolWindow>
       </div>
 
       {savedActions.length > 0 && (
-        <section className="border border-border bg-surface p-3">
+        <section className="ndx-settings-section">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-meta uppercase tracking-[0.16em] text-text-tertiary">
               Saved actions

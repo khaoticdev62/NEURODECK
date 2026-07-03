@@ -15,6 +15,7 @@ import {
 } from '../../services/ipc/diagnosticsClient'
 import { getLanShareHealth, getLanShareServiceStatus } from '../../services/ipc/lanShareClient'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 /**
  * ND-056 About and Diagnostics. Every field is a real runtime value
@@ -97,11 +98,12 @@ export function AboutDiagnostics(): React.JSX.Element {
     }
   }
 
-  if (error) return <ErrorState title="Diagnostics error" description={error} />
-  if (!info) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
-  return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(28rem,1fr)_20rem] gap-2 overflow-auto">
+  useEffect(() => {
+    if (!info) return
+    setPrimary('Runtime', `${info.platform} / ${info.arch}`, (
       <NdxToolWindow title="Runtime" subtitle={`${info.platform} / ${info.arch}`}>
         <div className="flex flex-col gap-1">
           <Field label="App version" value={info.appVersion} />
@@ -138,42 +140,12 @@ export function AboutDiagnostics(): React.JSX.Element {
           </div>
         )}
       </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [info, lanShareStatus, lanShareHealth, setPrimary])
 
-      <NdxEditorShell title="About and Diagnostics">
-        <div className="flex min-h-full flex-col gap-3 p-3">
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Diagnostic export</p>
-            <p className="text-meta text-text-tertiary">
-              Copies the above plus a live system metrics snapshot to the clipboard. Contains no API
-              keys or other secrets.
-            </p>
-            <ControllerButton variant="primary" onClick={() => void handleExport()}>
-              Copy diagnostics to clipboard
-            </ControllerButton>
-            {copyStatus && <p className="text-meta text-status-success">{copyStatus}</p>}
-          </section>
-
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
-            <p className="text-body font-semibold text-text-primary">Support bundle</p>
-            <p className="text-meta text-text-tertiary">
-              Writes a local JSON support bundle with diagnostics, system metrics, network
-              diagnostics, collector errors, and explicit redaction notes. It excludes vault
-              secrets, provider keys, clipboard entries, memory content, workspace files, and
-              environment variables.
-            </p>
-            <ControllerButton
-              variant="secondary"
-              disabled={creatingBundle}
-              onClick={() => void handleCreateSupportBundle()}
-            >
-              {creatingBundle ? 'Creating support bundle...' : 'Create support bundle'}
-            </ControllerButton>
-            {bundleStatus && <p className="text-meta text-status-success">{bundleStatus}</p>}
-            {bundleError && <p className="text-meta text-status-error">{bundleError}</p>}
-          </section>
-        </div>
-      </NdxEditorShell>
-
+  useEffect(() => {
+    setSecondary(
       <NdxToolWindow title="Crash Reports" subtitle="Local only" side="right">
         <p className="text-meta text-text-tertiary">
           Local-only renderer and process crash reports. Nothing is uploaded or sent to telemetry.
@@ -199,6 +171,49 @@ export function AboutDiagnostics(): React.JSX.Element {
             </NdxDenseRow>
           ))}
       </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [crashReports, crashReportError, setSecondary])
+
+  if (error) return <ErrorState title="Diagnostics error" description={error} />
+  if (!info) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
+
+  return (
+    <div className="h-full flex-1">
+      <NdxEditorShell title="About and Diagnostics">
+        <div className="flex min-h-full flex-col gap-3 p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
+            <p className="text-body font-semibold text-text-primary">Diagnostic export</p>
+            <p className="text-meta text-text-tertiary">
+              Copies the above plus a live system metrics snapshot to the clipboard. Contains no API
+              keys or other secrets.
+            </p>
+            <ControllerButton variant="primary" onClick={() => void handleExport()}>
+              Copy diagnostics to clipboard
+            </ControllerButton>
+            {copyStatus && <p className="text-meta text-status-success">{copyStatus}</p>}
+          </section>
+
+          <section className="flex flex-col gap-2 ndx-settings-section">
+            <p className="text-body font-semibold text-text-primary">Support bundle</p>
+            <p className="text-meta text-text-tertiary">
+              Writes a local JSON support bundle with diagnostics, system metrics, network
+              diagnostics, collector errors, and explicit redaction notes. It excludes vault
+              secrets, provider keys, clipboard entries, memory content, workspace files, and
+              environment variables.
+            </p>
+            <ControllerButton
+              variant="secondary"
+              disabled={creatingBundle}
+              onClick={() => void handleCreateSupportBundle()}
+            >
+              {creatingBundle ? 'Creating support bundle...' : 'Create support bundle'}
+            </ControllerButton>
+            {bundleStatus && <p className="text-meta text-status-success">{bundleStatus}</p>}
+            {bundleError && <p className="text-meta text-status-error">{bundleError}</p>}
+          </section>
+        </div>
+      </NdxEditorShell>
     </div>
   )
 }

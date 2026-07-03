@@ -195,20 +195,14 @@ export function registerBrowserHandlers(
     }
   })
 
-  ipcMain.handle(
-    IPC_CHANNELS.browserTabGoBack,
-    (_event, payload: unknown): NdxResult<null> =>
-      runTabAction(payload, (tabId) => session.goBack(tabId))
+  ipcMain.handle(IPC_CHANNELS.browserTabGoBack, (_event, payload: unknown): NdxResult<null> =>
+    runTabAction(payload, (tabId) => session.goBack(tabId))
   )
-  ipcMain.handle(
-    IPC_CHANNELS.browserTabGoForward,
-    (_event, payload: unknown): NdxResult<null> =>
-      runTabAction(payload, (tabId) => session.goForward(tabId))
+  ipcMain.handle(IPC_CHANNELS.browserTabGoForward, (_event, payload: unknown): NdxResult<null> =>
+    runTabAction(payload, (tabId) => session.goForward(tabId))
   )
-  ipcMain.handle(
-    IPC_CHANNELS.browserTabReload,
-    (_event, payload: unknown): NdxResult<null> =>
-      runTabAction(payload, (tabId) => session.reload(tabId))
+  ipcMain.handle(IPC_CHANNELS.browserTabReload, (_event, payload: unknown): NdxResult<null> =>
+    runTabAction(payload, (tabId) => session.reload(tabId))
   )
 
   ipcMain.handle(IPC_CHANNELS.browserTabSetBounds, (_event, payload: unknown): NdxResult<null> => {

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxSpatialLockup } from '../../components/workbench'
+import { NdxTvShelf, TvCategoryIcon } from '../../components/tvos'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { useWorkspaces } from './useWorkspaces'
 
@@ -49,7 +50,11 @@ export function WorkspaceHub(): React.JSX.Element {
           description="Add a folder to get started — NeuroDeck will remember it for next time."
         />
       ) : (
-        <ul className="grid grid-cols-1 gap-2 deck:grid-cols-2 docked:grid-cols-3">
+        <NdxTvShelf
+          title="All workspaces"
+          subtitle={`${workspaces.length} persisted`}
+          icon={<TvCategoryIcon category="Workspaces" />}
+        >
           {workspaces.map((workspace) => (
             <WorkspaceCard
               key={workspace.id}
@@ -64,7 +69,7 @@ export function WorkspaceHub(): React.JSX.Element {
               onRemove={() => void remove(workspace.id)}
             />
           ))}
-        </ul>
+        </NdxTvShelf>
       )}
     </div>
   )
@@ -85,14 +90,14 @@ function WorkspaceCard({
   onOpen: () => void
   onRemove: () => void
 }): React.JSX.Element {
-  const { ref, isFocused } = useFocusable<HTMLLIElement>({
+  const { ref, isFocused } = useFocusable<HTMLDivElement>({
     id: `workspace-card:${id}`,
     groupId: 'workspace-hub',
     onActivate: onOpen
   })
 
   return (
-    <li ref={ref} tabIndex={-1}>
+    <div ref={ref} tabIndex={-1} className="ndx-tv-card shrink-0">
       <NdxSpatialLockup selected={isFocused}>
         <section className="flex min-h-40 flex-col">
           <p className="text-body font-semibold text-text-primary">{name}</p>
@@ -110,6 +115,6 @@ function WorkspaceCard({
           </div>
         </section>
       </NdxSpatialLockup>
-    </li>
+    </div>
   )
 }

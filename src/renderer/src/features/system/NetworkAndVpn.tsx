@@ -4,6 +4,7 @@ import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { getNetworkDiagnostics } from '../../services/ipc/networkClient'
 import type { NetworkDiagnostics } from '@shared/contracts'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 function NetworkSection({
   title,
@@ -17,7 +18,7 @@ function NetworkSection({
   children: React.ReactNode
 }): React.JSX.Element {
   return (
-    <section className="space-y-2 border border-border bg-surface p-3">
+    <section className="space-y-2 ndx-settings-section">
       <div className="flex items-center justify-between">
         <p className="text-meta font-semibold text-text-primary">{title}</p>
         {!available && <span className="text-meta text-text-tertiary">Unavailable</span>}
@@ -72,16 +73,11 @@ export function NetworkAndVpn(): React.JSX.Element {
     }
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p className="text-meta text-text-secondary">Collecting network diagnostics…</p>
-      </div>
-    )
-  }
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
-  return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+  useEffect(() => {
+    setPrimary('Network Tools', 'Diagnostics', (
       <NdxToolWindow title="Network Tools" subtitle="Diagnostics">
         <p className="text-meta text-text-secondary">
           Read-only diagnostics are shown. Management actions stay disabled until OS adapters exist.
@@ -94,7 +90,35 @@ export function NetworkAndVpn(): React.JSX.Element {
           </p>
         </div>
       </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Network Scope" subtitle="Read only" side="right">
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Management policy</p>
+          <p className="text-meta text-text-tertiary">
+            Wi-Fi, Ethernet, VPN, firewall, and remote-access controls remain disabled until real
+            platform adapters are implemented.
+          </p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [setSecondary])
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <p className="text-meta text-text-secondary">Collecting network diagnostics…</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Diagnostics">
         <div className="flex min-h-full flex-col gap-4 p-4">
           <header>
@@ -186,7 +210,7 @@ export function NetworkAndVpn(): React.JSX.Element {
                 )}
               </NetworkSection>
 
-              <section className="space-y-2 border border-border bg-surface p-3">
+              <section className="space-y-2 ndx-settings-section">
                 <p className="text-meta font-semibold text-text-primary">Management</p>
                 <DisabledAction label="Wi-Fi" reason="No Wi-Fi adapter integration exists yet." />
                 <DisabledAction
@@ -207,16 +231,6 @@ export function NetworkAndVpn(): React.JSX.Element {
           )}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Network Scope" subtitle="Read only" side="right">
-        <div>
-          <p className="text-meta font-semibold text-text-primary">Management policy</p>
-          <p className="text-meta text-text-tertiary">
-            Wi-Fi, Ethernet, VPN, firewall, and remote-access controls remain disabled until real
-            platform adapters are implemented.
-          </p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

@@ -45,6 +45,10 @@ const AICommandCanvas = lazy(async () => {
   const module = await import('../../features/ai-canvas/AICommandCanvas')
   return { default: module.AICommandCanvas }
 })
+const AIChat = lazy(async () => {
+  const module = await import('../../features/ai-chat/AIChat')
+  return { default: module.AIChat }
+})
 const ExecutionTimeline = lazy(async () => {
   const module = await import('../../features/ai-canvas/ExecutionTimeline')
   return { default: module.ExecutionTimeline }
@@ -297,6 +301,10 @@ const ApplicationPolicyCenter = lazy(async () => {
   const module = await import('../../features/applications/ApplicationPolicyCenter')
   return { default: module.ApplicationPolicyCenter }
 })
+const ApplicationCenter = lazy(async () => {
+  const module = await import('../../features/applications/ApplicationCenter')
+  return { default: module.ApplicationCenter }
+})
 const KioskModeSettings = lazy(async () => {
   const module = await import('../../features/kiosk/KioskModeSettings')
   return { default: module.KioskModeSettings }
@@ -455,6 +463,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('AI Command Canvas', <AICommandCanvas />)
+  },
+  {
+    routeId: 'ai-chat',
+    screenId: 'ND-X071',
+    path: '/ai/chat',
+    title: 'AI Chat',
+    owningEpic: 'Phase 3 (VS Code/tvOS hybrid UI roadmap)',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('AI chat', <AIChat />)
   },
   {
     routeId: 'ai-timeline',
@@ -1134,6 +1152,16 @@ export const ROUTE_DEFINITIONS: RouteDefinition[] = [
     controllerHints: DEFAULT_PRIMARY_HINTS,
     restoreOnRevisit: true,
     element: withSuspense('recording center', <RecordingCenter />)
+  },
+  {
+    routeId: 'application-center',
+    screenId: 'ND-X001',
+    path: '/applications',
+    title: 'Application Center',
+    owningEpic: 'Epic X2',
+    controllerHints: DEFAULT_PRIMARY_HINTS,
+    restoreOnRevisit: true,
+    element: withSuspense('application center', <ApplicationCenter />)
   },
   {
     routeId: 'application-policy-center',

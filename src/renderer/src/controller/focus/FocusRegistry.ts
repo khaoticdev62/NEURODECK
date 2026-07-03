@@ -18,6 +18,7 @@ import type { Direction, FocusNodeRegistration } from './focusTypes'
  * skipped.
  */
 export class FocusRegistry {
+  public instanceId = Math.random().toString(36).substring(2, 9)
   private nodes = new Map<string, FocusNodeRegistration>()
   private currentId: string | null = null
   private lastFocusedByGroup = new Map<string, string>()
@@ -36,6 +37,14 @@ export class FocusRegistry {
   }
 
   register(node: FocusNodeRegistration): void {
+    console.log(
+      '[DIAG] FocusRegistry:',
+      this.instanceId,
+      'registering node:',
+      node.id,
+      'current nodes:',
+      Array.from(this.nodes.keys())
+    )
     this.nodes.set(node.id, node)
   }
 
@@ -51,16 +60,73 @@ export class FocusRegistry {
    * cancel the removal before it has any effect.
    */
   unregister(id: string): void {
+    console.log(
+      '[DIAG] FocusRegistry:',
+      this.instanceId,
+      'unregistering node:',
+      id,
+      'current nodes before delete:',
+      Array.from(this.nodes.keys())
+    )
     this.nodes.delete(id)
-    if (this.currentId !== id) return
+    console.log(
+      '[DIAG] FocusRegistry:',
+      this.instanceId,
+      'unregistering node:',
+      id,
+      'current nodes after delete:',
+      Array.from(this.nodes.keys())
+    )
+    if (this.currentId !== id) {
+      console.log(
+        '[DIAG] FocusRegistry:',
+        this.instanceId,
+        'unregister node:',
+        id,
+        'early return because currentId is:',
+        this.currentId
+      )
+      return
+    }
 
+    console.log(
+      '[DIAG] FocusRegistry:',
+      this.instanceId,
+      'unregister node:',
+      id,
+      'queuing microtask'
+    )
     queueMicrotask(() => {
-      if (this.nodes.has(id)) return // re-registered before the microtask ran — just ref churn.
-      if (this.currentId !== id) return // focus already moved on for an unrelated reason.
+      if (this.nodes.has(id)) {
+        console.log(
+          '[DIAG] FocusRegistry:',
+          this.instanceId,
+          'unregister microtask skipped because node was re-registered:',
+          id
+        )
+        return // re-registered before the microtask ran — just ref churn.
+      }
+      if (this.currentId !== id) {
+        console.log(
+          '[DIAG] FocusRegistry:',
+          this.instanceId,
+          'unregister microtask skipped because currentId changed from:',
+          id,
+          'to:',
+          this.currentId
+        )
+        return // focus already moved on for an unrelated reason.
+      }
 
       // Rule: removing a focused element transfers focus to the nearest valid sibling.
       this.currentId = null
       const next = this.resolveInitial()
+      console.log(
+        '[DIAG] FocusRegistry:',
+        this.instanceId,
+        'unregister microtask, resolved next node to focus:',
+        next
+      )
       if (next) {
         this.focus(next)
       } else {
@@ -94,8 +160,19 @@ export class FocusRegistry {
 
   /** Focus never lands on document.body — callers get null if nothing focusable exists. */
   focus(id: string): boolean {
+    console.log(
+      '[DIAG] FocusRegistry:',
+      this.instanceId,
+      'focus called with:',
+      id,
+      'currentId:',
+      this.currentId
+    )
     const node = this.nodes.get(id)
-    if (!node || !this.isFocusable(node)) return false
+    if (!node || !this.isFocusable(node)) {
+      console.log('[DIAG] FocusRegistry:', this.instanceId, 'focus rejected node:', id)
+      return false
+    }
     this.currentId = id
     this.lastFocusedByGroup.set(node.groupId, id)
     node.focusElement()

@@ -163,7 +163,7 @@ export function BackupAndRestore(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[minmax(44rem,1fr)_20rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[minmax(44rem,1fr)_20rem]">
       <NdxEditorShell title="Backup Review">
         <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
           <header className="flex items-start justify-between gap-3">
@@ -189,7 +189,7 @@ export function BackupAndRestore(): React.JSX.Element {
           {error && <ErrorState title="Backup request failed" description={error} />}
 
           {schedule && (
-            <section className="flex flex-wrap items-center gap-3 border border-border bg-surface p-3">
+            <section className="flex flex-wrap items-center gap-3 ndx-settings-section">
               <ControllerButton
                 variant={schedule.enabled ? 'primary' : 'secondary'}
                 onClick={() => void handleToggleScheduled()}
@@ -219,7 +219,7 @@ export function BackupAndRestore(): React.JSX.Element {
           )}
 
           {verification && (
-            <section className="border border-border bg-surface p-3">
+            <section className="ndx-settings-section">
               <p className="text-meta font-semibold text-text-primary">
                 Verification {verification.ok ? 'passed' : 'failed'}
               </p>
@@ -253,7 +253,7 @@ export function BackupAndRestore(): React.JSX.Element {
           )}
 
           {migrationReport && (
-            <section className="border border-border bg-surface p-3">
+            <section className="ndx-settings-section">
               <p className="text-meta font-semibold text-text-primary">Migration report</p>
               <p className="text-meta text-text-secondary">
                 Checked {migrationReport.total} backup{migrationReport.total === 1 ? '' : 's'}:{' '}

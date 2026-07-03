@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState } from '../../components/feedback/UXState'
-import { NdxDeckLayout, NdxEditorShell, NdxToolWindow } from '../../components/workbench'
+import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { FileManager } from './FileManager'
 import { WorkspaceGitTab } from './WorkspaceGitTab'
 import { useWorkspaces } from './useWorkspaces'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 type Tab = 'overview' | 'files' | 'git'
 
@@ -16,6 +17,18 @@ type Tab = 'overview' | 'files' | 'git'
 export function WorkspaceDetail(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
   const [tab, setTab] = useState<Tab>('overview')
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Workspace Scope" subtitle={tab} side="right">
+        <p className="text-meta text-text-secondary">
+          Detail panes preserve the real file manager and Git integrations for this workspace.
+        </p>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [setSecondary, tab])
 
   if (!activeWorkspace) {
     return (
@@ -50,15 +63,7 @@ export function WorkspaceDetail(): React.JSX.Element {
   )
 
   return (
-    <NdxDeckLayout
-      right={
-        <NdxToolWindow title="Workspace Scope" subtitle={tab} side="right">
-          <p className="text-meta text-text-secondary">
-            Detail panes preserve the real file manager and Git integrations for this workspace.
-          </p>
-        </NdxToolWindow>
-      }
-    >
+    <div className="h-full bg-[var(--ndx-workbench-editor-bg)]">
       <NdxEditorShell title="Workspace Detail">
         <div className="flex h-full min-h-0 flex-col gap-4 p-4">
           <div>
@@ -90,6 +95,6 @@ export function WorkspaceDetail(): React.JSX.Element {
           </div>
         </div>
       </NdxEditorShell>
-    </NdxDeckLayout>
+    </div>
   )
 }

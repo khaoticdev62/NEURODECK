@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>12 — IDE - Git Diff</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&amp;family=Inter:wght@400..700&amp;family=JetBrains+Mono:wght@400..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-container": "#003f4e",
+                        "surface-container-highest": "#35343c",
+                        "inverse-primary": "#5e49c8",
+                        "surface-variant": "#35343c",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-tertiary-container": "#003127",
+                        "error-container": "#93000a",
+                        "tertiary-container": "#00a488",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed-dim": "#c8bfff",
+                        "on-background": "#e5e0ec",
+                        "primary": "#c8bfff",
+                        "surface-container": "#201f27",
+                        "on-secondary-fixed": "#001f28",
+                        "surface-dim": "#14121a",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-container-low": "#1c1b22",
+                        "on-surface-variant": "#c9c4d6",
+                        "inverse-on-surface": "#312f38",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "secondary-fixed": "#b5ebff",
+                        "outline-variant": "#484553",
+                        "on-primary-fixed-variant": "#452daf",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "tertiary": "#59dbbd",
+                        "on-tertiary-fixed": "#002019",
+                        "surface": "#14121a",
+                        "on-tertiary": "#00382d",
+                        "on-secondary": "#003543",
+                        "primary-container": "#917eff",
+                        "error": "#ffb4ab",
+                        "outline": "#928e9f",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "tertiary-fixed": "#79f8d8",
+                        "surface-tint": "#c8bfff",
+                        "primary-fixed": "#e5deff",
+                        "surface-bright": "#3a3841",
+                        "secondary-container": "#00b2d7",
+                        "inverse-surface": "#e5e0ec",
+                        "on-primary-container": "#28008a",
+                        "on-error": "#690005",
+                        "secondary": "#4dd6fd",
+                        "on-primary-fixed": "#1a0063",
+                        "on-primary": "#2e0599",
+                        "surface-container-high": "#2b2931",
+                        "background": "#14121a",
+                        "on-surface": "#e5e0ec",
+                        "diff-removed-bg": "rgba(147, 0, 10, 0.2)",
+                        "diff-removed-text": "#ffb4ab",
+                        "diff-added-bg": "rgba(0, 164, 136, 0.2)",
+                        "diff-added-text": "#59dbbd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "hit-target": "44px",
+                        "sm": "12px",
+                        "safe-margin": "40px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "display": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-surface'); }
+        .inner-glow { box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12); }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 4px 3px theme('colors.primary'); transform: scale(1.05); }
+        .code-line { display: flex; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 20px; }
+        .code-num { width: 40px; text-align: right; padding-right: 8px; color: theme('colors.on-surface-variant'); opacity: 0.5; user-select: none; }
+        .code-content { padding-left: 16px; white-space: pre; }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex font-body-md">
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-50 bg-surface-dim dark:bg-surface-dim w-[52px] border-r border-outline-variant/20 bg-surface-container-lowest justify-between shadow-none">
+<div class="flex flex-col items-center pt-md gap-sm w-full">
+<button aria-label="Explorer" class="w-[44px] h-[44px] flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-highest transition-all scale-105-focus-halo">
+<span class="material-symbols-outlined text-[24px]" data-icon="folder">folder</span>
+</button>
+<button aria-label="Search" class="w-[44px] h-[44px] flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-highest transition-all scale-105-focus-halo">
+<span class="material-symbols-outlined text-[24px]" data-icon="search">search</span>
+</button>
+<button aria-label="Source Control" class="w-[44px] h-[44px] flex items-center justify-center rounded text-primary border-l-4 border-primary bg-surface-container-high scale-105">
+<span class="material-symbols-outlined text-[24px]" data-icon="account_tree">account_tree</span>
+</button>
+<button aria-label="Run &amp; Debug" class="w-[44px] h-[44px] flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-highest transition-all scale-105-focus-halo">
+<span class="material-symbols-outlined text-[24px]" data-icon="play_arrow">play_arrow</span>
+</button>
+<button aria-label="Extensions" class="w-[44px] h-[44px] flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-highest transition-all scale-105-focus-halo">
+<span class="material-symbols-outlined text-[24px]" data-icon="extension">extension</span>
+</button>
+</div>
+<div class="flex flex-col items-center pb-md gap-sm w-full">
+<button aria-label="Settings" class="w-[44px] h-[44px] flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-highest transition-all scale-105-focus-halo">
+<span class="material-symbols-outlined text-[24px]" data-icon="settings">settings</span>
+</button>
+<button aria-label="Account" class="w-[44px] h-[44px] flex items-center justify-center rounded text-on-surface-variant hover:bg-surface-container-highest transition-all scale-105-focus-halo">
+<span class="material-symbols-outlined text-[24px]" data-icon="person">person</span>
+</button>
+</div>
+</nav>
+<!-- TopAppBar -->
+<header class="fixed top-0 left-[52px] right-0 flex items-center justify-between px-md z-40 bg-surface-container dark:bg-surface-container h-xl w-full border-b border-outline-variant/10 shadow-none inner-glow">
+<div class="flex items-center gap-lg">
+<span class="font-headline-md text-headline-md font-bold text-primary">NEURODECK_WORKBENCH</span>
+<nav class="hidden md:flex gap-md">
+<button class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-sm py-xs rounded">File</button>
+<button class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-sm py-xs rounded">Edit</button>
+<button class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-sm py-xs rounded">Selection</button>
+<button class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-sm py-xs rounded">View</button>
+<button class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-sm py-xs rounded">Go</button>
+<button class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-sm py-xs rounded">Run</button>
+<button class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-sm py-xs rounded">Terminal</button>
+<button class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-sm py-xs rounded">Help</button>
+</nav>
+</div>
+<div class="flex items-center gap-sm">
+<button class="bg-surface-container-highest text-primary font-label-md text-label-md px-md py-xs rounded-full border border-primary/30 inner-glow flex items-center gap-xs focus-ring">
+<div class="w-2 h-2 rounded-full bg-primary animate-pulse"></div>
+                Neural Pulse
+            </button>
+<button class="w-[44px] h-[44px] flex items-center justify-center text-on-surface hover:bg-surface-variant rounded">
+<span class="material-symbols-outlined" data-icon="split_screen">splitscreen</span>
+</button>
+<button class="w-[44px] h-[44px] flex items-center justify-center text-on-surface hover:bg-surface-variant rounded">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex-1 ml-[52px] mt-xl flex h-[calc(100vh-32px)] overflow-hidden">
+<!-- Source Control Panel -->
+<aside class="w-[280px] bg-surface-container-low border-r border-outline-variant/10 flex flex-col shrink-0 inner-glow">
+<div class="h-xl flex items-center px-md justify-between border-b border-outline-variant/10 shrink-0">
+<span class="font-label-md text-label-md text-on-surface uppercase tracking-wider">Source Control</span>
+<div class="flex gap-xs">
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">check</span></button>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-[16px]">refresh</span></button>
+</div>
+</div>
+<div class="p-md flex-1 overflow-y-auto">
+<div class="mb-sm">
+<textarea class="w-full bg-surface-container-lowest border border-outline-variant/20 rounded p-xs font-body-md text-body-md text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary/50 focus:ring-1 focus:ring-primary/50 resize-none h-[80px]" placeholder="Message (Press Ctrl+Enter to commit)"></textarea>
+<button class="w-full mt-xs bg-primary-container text-on-primary-container font-label-md text-label-md py-xs rounded inner-glow focus-ring transition-transform">Commit</button>
+</div>
+<div class="mt-md">
+<div class="flex items-center gap-xs mb-xs text-on-surface-variant hover:text-on-surface cursor-pointer">
+<span class="material-symbols-outlined text-[16px]">keyboard_arrow_down</span>
+<span class="font-label-sm text-label-sm uppercase font-bold">Staged Changes</span>
+<span class="bg-surface-container-high text-[10px] px-1.5 rounded-full ml-auto">1</span>
+</div>
+<div class="flex items-center gap-sm px-md py-xs hover:bg-surface-variant cursor-pointer rounded text-primary">
+<span class="material-symbols-outlined text-[16px] text-tertiary">description</span>
+<span class="font-body-md text-body-md truncate">core_engine.rs</span>
+<span class="text-[10px] text-tertiary ml-auto font-code-md">M</span>
+</div>
+</div>
+<div class="mt-md">
+<div class="flex items-center gap-xs mb-xs text-on-surface-variant hover:text-on-surface cursor-pointer">
+<span class="material-symbols-outlined text-[16px]">keyboard_arrow_down</span>
+<span class="font-label-sm text-label-sm uppercase font-bold">Changes</span>
+<span class="bg-surface-container-high text-[10px] px-1.5 rounded-full ml-auto">2</span>
+</div>
+<div class="flex items-center gap-sm px-md py-xs hover:bg-surface-variant cursor-pointer rounded text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-secondary">data_object</span>
+<span class="font-body-md text-body-md truncate">types.d.ts</span>
+<span class="text-[10px] text-secondary ml-auto font-code-md">M</span>
+</div>
+<div class="flex items-center gap-sm px-md py-xs hover:bg-surface-variant cursor-pointer rounded text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px] text-error">delete</span>
+<span class="font-body-md text-body-md truncate line-through">legacy_utils.js</span>
+<span class="text-[10px] text-error ml-auto font-code-md">D</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Diff Editor -->
+<section class="flex-1 flex flex-col min-w-0 bg-background relative">
+<!-- Editor Tabs / Toolbar -->
+<div class="h-xl flex bg-surface-container-low border-b border-outline-variant/10 inner-glow shrink-0">
+<div class="flex items-center px-md border-r border-outline-variant/10 bg-surface-container border-t-2 border-t-primary">
+<span class="material-symbols-outlined text-[16px] text-tertiary mr-xs">description</span>
+<span class="font-body-md text-body-md text-primary">core_engine.rs (Working Tree)</span>
+<button class="ml-sm text-on-surface-variant hover:text-on-surface"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</div>
+<div class="flex-1 flex items-center justify-end px-md gap-sm">
+<button class="h-[28px] px-sm bg-surface-container-high hover:bg-surface-variant rounded text-on-surface border border-outline-variant/20 flex items-center gap-xs font-label-sm text-label-sm inner-glow">
+<span class="material-symbols-outlined text-[14px]">undo</span>
+                        Discard Changes
+                    </button>
+<div class="flex gap-xs bg-surface-container-lowest p-0.5 rounded border border-outline-variant/20">
+<button class="w-[24px] h-[24px] rounded bg-surface-variant text-on-surface flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">keyboard_arrow_up</span></button>
+<button class="w-[24px] h-[24px] rounded hover:bg-surface-variant text-on-surface-variant flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">keyboard_arrow_down</span></button>
+</div>
+</div>
+</div>
+<!-- Split Pane Diff View -->
+<div class="flex-1 flex overflow-hidden font-code-md text-code-md">
+<!-- Left Pane (Original) -->
+<div class="flex-1 flex flex-col border-r border-outline-variant/10 overflow-y-auto overflow-x-auto relative group">
+<div class="sticky top-0 bg-surface-container-low/90 backdrop-blur border-b border-outline-variant/10 px-md py-1 text-on-surface-variant text-xs uppercase z-10 flex justify-between">
+<span>Original</span>
+<span class="text-error font-code-md">-42</span>
+</div>
+<div class="min-w-max pb-lg pt-sm text-on-surface/80">
+<!-- Unchanged code -->
+<div class="code-line"><div class="code-num">104</div><div class="code-content">    pub fn process_neural_stream(&amp;mut self, data: &amp;[u8]) -&gt; Result&lt;(), Error&gt; {</div></div>
+<div class="code-line"><div class="code-num">105</div><div class="code-content">        let buffer = self.allocator.acquire(data.len());</div></div>
+<!-- Removed code (Red tint) -->
+<div class="code-line bg-diff-removed-bg text-diff-removed-text border-l-2 border-error">
+<div class="code-num text-error/50">106</div>
+<div class="code-content">-       // Legacy sync approach</div>
+</div>
+<div class="code-line bg-diff-removed-bg text-diff-removed-text border-l-2 border-error">
+<div class="code-num text-error/50">107</div>
+<div class="code-content">-       if let Err(e) = self.sync_processor.handle(buffer) {</div>
+</div>
+<div class="code-line bg-diff-removed-bg text-diff-removed-text border-l-2 border-error">
+<div class="code-num text-error/50">108</div>
+<div class="code-content">-           log::error!("Sync failure: {}", e);</div>
+</div>
+<div class="code-line bg-diff-removed-bg text-diff-removed-text border-l-2 border-error">
+<div class="code-num text-error/50">109</div>
+<div class="code-content">-           return Err(Error::SyncFailed);</div>
+</div>
+<div class="code-line bg-diff-removed-bg text-diff-removed-text border-l-2 border-error">
+<div class="code-num text-error/50">110</div>
+<div class="code-content">-       }</div>
+</div>
+<!-- Spacer to align with right pane -->
+<div class="code-line bg-surface-container-lowest/50 h-[80px]">
+<div class="code-num"></div>
+<div class="code-content text-on-surface-variant/30 italic">/* lines added in new version */</div>
+</div>
+<!-- Unchanged code -->
+<div class="code-line"><div class="code-num">111</div><div class="code-content"> </div></div>
+<div class="code-line"><div class="code-num">112</div><div class="code-content">        self.metrics.increment_packets();</div></div>
+<div class="code-line"><div class="code-num">113</div><div class="code-content">        Ok(())</div></div>
+<div class="code-line"><div class="code-num">114</div><div class="code-content">    }</div></div>
+</div>
+</div>
+<!-- Right Pane (Modified) -->
+<div class="flex-1 flex flex-col overflow-y-auto overflow-x-auto relative group">
+<div class="sticky top-0 bg-surface-container-low/90 backdrop-blur border-b border-outline-variant/10 px-md py-1 text-on-surface-variant text-xs uppercase z-10 flex justify-between">
+<span>Modified</span>
+<span class="text-tertiary font-code-md">+128</span>
+</div>
+<div class="min-w-max pb-lg pt-sm text-on-surface">
+<!-- Unchanged code -->
+<div class="code-line"><div class="code-num">104</div><div class="code-content text-on-surface/80">    pub fn process_neural_stream(&amp;mut self, data: &amp;[u8]) -&gt; Result&lt;(), Error&gt; {</div></div>
+<div class="code-line"><div class="code-num">105</div><div class="code-content text-on-surface/80">        let buffer = self.allocator.acquire(data.len());</div></div>
+<!-- Spacer to align with left pane -->
+<div class="code-line bg-surface-container-lowest/50 h-[100px]">
+<div class="code-num"></div>
+<div class="code-content text-on-surface-variant/30 italic">/* lines removed in new version */</div>
+</div>
+<!-- Added code (Green tint) -->
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">106</div>
+<div class="code-content">+       // Async pipeline integration v2</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">107</div>
+<div class="code-content">+       tokio::spawn(async move {</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">108</div>
+<div class="code-content">+           match AsyncProcessor::global().dispatch(buffer).await {</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">109</div>
+<div class="code-content">+               Ok(res) =&gt; tracing::info!("Async stream dispatched: ID {}", res.id),</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">110</div>
+<div class="code-content">+               Err(e) =&gt; {</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">111</div>
+<div class="code-content">+                   tracing::error!(error = %e, "Async dispatch failed");</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">112</div>
+<div class="code-content">+                   Telemetry::record_failure(e.into());</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">113</div>
+<div class="code-content">+               }</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">114</div>
+<div class="code-content">+           }</div>
+</div>
+<div class="code-line bg-diff-added-bg text-diff-added-text border-l-2 border-tertiary">
+<div class="code-num text-tertiary/50">115</div>
+<div class="code-content">+       });</div>
+</div>
+<!-- Unchanged code -->
+<div class="code-line"><div class="code-num">116</div><div class="code-content text-on-surface/80"> </div></div>
+<div class="code-line"><div class="code-num">117</div><div class="code-content text-on-surface/80">        self.metrics.increment_packets();</div></div>
+<div class="code-line"><div class="code-num">118</div><div class="code-content text-on-surface/80">        Ok(())</div></div>
+<div class="code-line"><div class="code-num">119</div><div class="code-content text-on-surface/80">    }</div></div>
+</div>
+</div>
+</div>
+<!-- Status Bar -->
+<footer class="h-[28px] bg-primary text-on-primary flex items-center px-sm text-[12px] font-label-md justify-between shrink-0">
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs hover:bg-primary-container/20 px-1 rounded cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">account_tree</span>
+<span>main*</span>
+</div>
+<div class="flex items-center gap-xs hover:bg-primary-container/20 px-1 rounded cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">sync</span>
+<span>2↓ 0↑</span>
+</div>
+<div class="flex items-center gap-xs hover:bg-primary-container/20 px-1 rounded cursor-pointer">
+<span class="material-symbols-outlined text-[14px]">error</span>
+<span>0</span>
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span>3</span>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<span class="font-code-md">Ln 106, Col 1</span>
+<span>UTF-8</span>
+<span>Rust</span>
+</div>
+</footer>
+</section>
+</main>
+</body></html>

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { DataSovereigntyIcon } from '../../components/primitives/brandIcons'
 import { NdxEditorShell, NdxSettingsTree, NdxToolWindow } from '../../components/workbench'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { useAuditEntries } from '../../ai-safety/useAuditEntries'
@@ -10,6 +11,7 @@ import { listBrowserPermissions, revokeBrowserPermission } from '../../services/
 import { removeLockPin, setLockPin } from '../../services/ipc/lockClient'
 import { useLockState } from '../../state/useLockState'
 import type { BrowserPermission } from '@shared/contracts'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 interface DeferredView {
   title: string
@@ -123,8 +125,11 @@ export function PrivacyPermissions(): React.JSX.Element {
     await refreshStatus()
   }
 
-  return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(44rem,1fr)_20rem] gap-2 overflow-auto">
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Privacy', undefined, (
       <NdxSettingsTree>
         <div className="space-y-2 text-meta text-text-secondary">
           <p className="text-text-primary">Privacy</p>
@@ -134,12 +139,36 @@ export function PrivacyPermissions(): React.JSX.Element {
           <p>Lock PIN</p>
         </div>
       </NdxSettingsTree>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow
+        title="Security Scope"
+        subtitle={pinConfigured ? 'PIN configured' : 'PIN missing'}
+        side="right"
+      >
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Capability grants are broker-wide and revoked through the real PermissionBroker.</p>
+          <p>Browser permission decisions come from the Browser System permission store.</p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [pinConfigured, setSecondary])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Permission Matrix">
         <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
-          <p className="text-title font-semibold text-text-primary">Privacy and Permissions</p>
+          <div className="flex items-center gap-2">
+            <DataSovereigntyIcon className="size-6 text-[var(--ndx-accent)]" />
+            <p className="text-title font-semibold text-text-primary">Privacy and Permissions</p>
+          </div>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <div className="flex items-center justify-between gap-2">
               <p className="text-body font-semibold text-text-primary">Effective access by tool</p>
               <ControllerButton variant="ghost" onClick={() => navigate('/tools')}>
@@ -185,7 +214,7 @@ export function PrivacyPermissions(): React.JSX.Element {
             )}
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Audit history</p>
             {entries.length === 0 ? (
               <p className="text-meta text-text-tertiary">
@@ -208,7 +237,7 @@ export function PrivacyPermissions(): React.JSX.Element {
             )}
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Browser permissions</p>
             {browserError && <p className="text-meta text-status-error">{browserError}</p>}
             {browserPermissions.length === 0 ? (
@@ -260,7 +289,7 @@ export function PrivacyPermissions(): React.JSX.Element {
             )}
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Lock Screen PIN (ND-002)</p>
             <p className="text-meta text-text-tertiary">
               {pinConfigured
@@ -325,24 +354,13 @@ export function PrivacyPermissions(): React.JSX.Element {
           </section>
 
           {DEFERRED_VIEWS.map((view) => (
-            <section key={view.title} className="border border-border bg-surface p-3 opacity-60">
+            <section key={view.title} className="ndx-settings-section opacity-60">
               <p className="text-body font-semibold text-text-primary">{view.title}</p>
               <p className="text-meta text-text-tertiary">Not available: {view.reason}</p>
             </section>
           ))}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow
-        title="Security Scope"
-        subtitle={pinConfigured ? 'PIN configured' : 'PIN missing'}
-        side="right"
-      >
-        <div className="space-y-3 text-meta text-text-secondary">
-          <p>Capability grants are broker-wide and revoked through the real PermissionBroker.</p>
-          <p>Browser permission decisions come from the Browser System permission store.</p>
-        </div>
-      </NdxToolWindow>
 
       <ConfirmationDialog
         open={revokeTarget !== null}

@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hermes Lua Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "tertiary": "#59dbbd",
+                        "on-surface": "#e5e0ec",
+                        "surface-variant": "#35343c",
+                        "surface-tint": "#c8bfff",
+                        "surface-dim": "#14121a",
+                        "on-tertiary-fixed": "#002019",
+                        "on-tertiary": "#00382d",
+                        "inverse-surface": "#e5e0ec",
+                        "secondary-container": "#00b2d7",
+                        "surface-container": "#201f27",
+                        "surface-container-lowest": "#0e0d15",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "surface": "#14121a",
+                        "surface-container-high": "#2b2931",
+                        "on-tertiary-container": "#003127",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1c1b22",
+                        "primary-fixed-dim": "#c8bfff",
+                        "secondary-fixed": "#b5ebff",
+                        "primary-fixed": "#e5deff",
+                        "on-secondary": "#003543",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-surface-variant": "#c9c4d6",
+                        "primary": "#c8bfff",
+                        "tertiary-container": "#00a488",
+                        "on-error": "#690005",
+                        "outline": "#928e9f",
+                        "error-container": "#93000a",
+                        "primary-container": "#917eff",
+                        "on-secondary-container": "#003f4e",
+                        "on-secondary-fixed": "#001f28",
+                        "secondary": "#4dd6fd",
+                        "on-primary-container": "#28008a",
+                        "on-primary-fixed-variant": "#452daf",
+                        "tertiary-fixed": "#79f8d8",
+                        "on-background": "#e5e0ec",
+                        "inverse-primary": "#5e49c8",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-primary-fixed": "#1a0063",
+                        "background": "#14121a",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-bright": "#3a3841",
+                        "outline-variant": "#484553",
+                        "surface-container-highest": "#35343c",
+                        "inverse-on-surface": "#312f38",
+                        "on-primary": "#2e0599"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "lg": "24px",
+                        "hit-target": "44px",
+                        "xs": "8px",
+                        "safe-margin": "40px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "base": "4px"
+                    },
+                    fontFamily: {
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Geist"]
+                    },
+                    fontSize: {
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-lg": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+                        "display": ["28px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "code-md": ["13px", { lineHeight: "20px", fontWeight: "400" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-sm": ["11px", { lineHeight: "14px", fontWeight: "500" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }],
+                        "headline-md": ["18px", { lineHeight: "24px", fontWeight: "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(20, 18, 26, 0.5); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(201, 196, 214, 0.2); 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(201, 196, 214, 0.4); 
+        }
+        
+        /* Pulse Animation */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.05); opacity: 0.6; }
+        }
+        .neural-pulse-idle {
+            animation: breathe 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface h-screen overflow-hidden flex flex-col font-body-md selection:bg-primary selection:text-on-primary">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 border-b border-white/10 bg-surface dark:bg-surface-dim shadow-2xl shadow-background-deepest bg-surface-dim/80 backdrop-blur-xl border-t-[1px] border-white/12 flex justify-between items-center px-lg py-md">
+<div class="flex items-center gap-xl">
+<div class="font-display text-display text-primary uppercase tracking-tighter">
+                HERMES OS
+            </div>
+<div class="hidden md:flex gap-lg">
+<!-- Assuming Scripts is the intent based on Lua Dashboard -->
+<a class="text-on-surface-variant font-medium hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform px-md py-sm rounded-DEFAULT" href="#">Dashboard</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform px-md py-sm rounded-DEFAULT" href="#">Flow Builder</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform px-md py-sm rounded-DEFAULT" href="#">Marketplace</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-2 hover:bg-surface-variant/50 transition-all duration-300 focus:scale-105 active:scale-95 transition-transform px-md pt-sm" href="#">Editor</a>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<button class="w-hit-target h-hit-target flex items-center justify-center rounded-full hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+<button class="w-hit-target h-hit-target flex items-center justify-center rounded-full hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">terminal</span>
+</button>
+<img alt="User profile" class="w-10 h-10 rounded-full border border-outline-variant object-cover ml-sm" data-alt="A macro shot of a sleek, abstract metallic orb glowing with subtle neon purple light, representing a futuristic user profile avatar against a deep space black background. Highly detailed." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsCQCNo55y2PjaGIG3v6ZOYcCoCobr6SUxLNCcOswrolfohRhiVLPDbn-5eGUc6xuem5GzChpshy6Zrtep6NUbQakpNnakKDoPPJ51w4XcfjrX3rCH8VbZDldSIKbUK6MROC8ycVyxhukGvRRVHshvTi6sUIpe6KnnED3MzSkoIEmypNqUnU7o6IfPpNhUHWXvOKrOr0nWxrbcBIrsdeH3KN4nSvEhrS0F9EXNzfJ2kZa2sMvKnFG1UJKizQpPWBTHFkTrNmuAFygG"/>
+</div>
+</nav>
+<div class="flex h-full pt-[80px]"> <!-- pt offsets navbar -->
+<!-- SideNavBar -->
+<aside class="fixed left-0 h-screen w-64 z-40 bg-surface-container-lowest dark:bg-surface-container-lowest border-r border-white/10 flex flex-col h-full py-xl mt-[80px] shadow-none">
+<div class="px-lg mb-xl">
+<div class="flex items-center gap-md mb-lg">
+<div class="w-12 h-12 rounded-lg bg-surface-container border border-white/10 flex items-center justify-center overflow-hidden relative">
+<img alt="System Status" class="absolute inset-0 w-full h-full object-cover opacity-50" data-alt="Abstract geometric representation of a server cluster, glowing with a soft cyan hue in a dark, high-contrast environment. Minimalist and technical." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcqNyJF4SG3CVAHGkOG9hSaXwaF1hXkB21XygUgl1bQAj3REolJCNRsRBCo9pXpRekGB_Je1WcpnSJMEwWgbZipfdt25xGRazWydf4HvsJ8o7uf_tERjw_l__QexBa1bTGm14onjpzZMyEgNJAP-FIeqj_YR5dagyuEBpxVJgi2tOCgKBW8OgAMicip7RWo6jUSSF1RED-08OZCyOXYKoXxLknVXwA9ygPWVcWnqBxkoy6zuEjD4Ausqs4HYaFZx3Qil0A9yLt8Y1D"/>
+<span class="material-symbols-outlined text-secondary z-10" style="font-variation-settings: 'FILL' 1;">dns</span>
+</div>
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary-fixed">HERMES CORE</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">v4.2.0-STABLE</p>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md h-hit-target rounded-DEFAULT flex items-center justify-center gap-sm bg-gradient-to-b from-white/10 to-transparent hover:opacity-90 focus:scale-105 active:scale-95 transition-transform focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    New Script
+                </button>
+</div>
+<div class="flex-1 overflow-y-auto flex flex-col gap-xs px-sm">
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-DEFAULT hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">extension</span>
+<span class="font-label-md text-label-md">Extensions</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-DEFAULT hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">insights</span>
+<span class="font-label-md text-label-md">Telemetry</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-DEFAULT hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_tree</span>
+<span class="font-label-md text-label-md">Nodes</span>
+</a>
+<a class="bg-surface-container-high border-l-4 border-tertiary text-on-surface flex items-center gap-md px-md py-sm rounded-r-DEFAULT hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">code</span>
+<span class="font-label-md text-label-md">Scripts</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-DEFAULT hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">terminal</span>
+<span class="font-label-md text-label-md">Logs</span>
+</a>
+</div>
+<div class="mt-auto px-sm pb-safe-margin pt-lg border-t border-white/5 flex flex-col gap-xs">
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-DEFAULT hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+<span class="font-label-md text-label-md">Docs</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-DEFAULT hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">forum</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 ml-64 p-safe-margin overflow-y-auto bg-background">
+<div class="max-w-7xl mx-auto flex flex-col gap-xl">
+<!-- Header & Actions -->
+<div class="flex justify-between items-end">
+<div>
+<h1 class="font-display text-display text-on-surface">Lua Dashboard</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Mission control for system extensions.</p>
+</div>
+<div class="flex gap-md">
+<button class="bg-error text-on-error font-label-md text-label-md h-hit-target px-lg rounded-DEFAULT flex items-center justify-center gap-sm bg-gradient-to-b from-white/10 to-transparent hover:opacity-90 focus:scale-105 active:scale-95 transition-transform shadow-lg shadow-background border-t border-white/12">
+<span class="material-symbols-outlined text-[18px]">stop_circle</span>
+                            Stop All
+                        </button>
+</div>
+</div>
+<!-- Bento Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-lg">
+<!-- Scripts List (Span 2 cols) -->
+<div class="lg:col-span-2 bg-surface-container rounded-xl border-t border-white/12 shadow-2xl shadow-background flex flex-col relative overflow-hidden">
+<div class="p-md border-b border-white/5 flex justify-between items-center bg-surface-container-lowest/50">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">list_alt</span>
+                                Active Scripts
+                            </h3>
+<div class="text-label-sm font-label-sm text-on-surface-variant">3 Running, 1 Idle</div>
+</div>
+<div class="flex-1 p-sm flex flex-col gap-xs overflow-y-auto max-h-[400px]">
+<!-- Item 1 RUNNING -->
+<div class="group relative bg-surface p-md rounded-lg border-t border-white/5 hover:bg-surface-container-high transition-colors cursor-pointer flex justify-between items-center outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface-container">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary rounded-l-lg transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-dim border border-tertiary/30 flex items-center justify-center">
+<div class="w-3 h-3 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(89,219,189,0.6)]"></div>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface">DataIngest_v2.lua</div>
+<div class="font-code-md text-code-md text-on-surface-variant text-[11px] mt-1">PID: 8492 • Uptime: 4h 12m</div>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="text-right">
+<div class="font-label-sm text-label-sm text-tertiary mb-1">RUNNING</div>
+<div class="font-code-md text-code-md text-on-surface text-[12px]">CPU: 12% | RAM: 45MB</div>
+</div>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">stop</span>
+</button>
+</div>
+</div>
+<!-- Item 2 ERROR -->
+<div class="group relative bg-surface p-md rounded-lg border-t border-white/5 hover:bg-surface-container-high transition-colors cursor-pointer flex justify-between items-center">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-error rounded-l-lg transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-dim border border-error/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-error text-[18px]">error</span>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface">LegacyAuth_Sync.lua</div>
+<div class="font-code-md text-code-md text-error/80 text-[11px] mt-1">SIGSEGV caught at line 142</div>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="text-right">
+<div class="font-label-sm text-label-sm text-error mb-1">ERROR</div>
+<div class="font-code-md text-code-md text-on-surface-variant text-[12px]">CPU: 0% | RAM: 0MB</div>
+</div>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+</div>
+</div>
+<!-- Item 3 IDLE -->
+<div class="group relative bg-surface p-md rounded-lg border-t border-white/5 hover:bg-surface-container-high transition-colors cursor-pointer flex justify-between items-center">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-outline rounded-l-lg transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-dim border border-outline/30 flex items-center justify-center">
+<span class="material-symbols-outlined text-outline text-[18px]">pause</span>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface">DailyReportGen.lua</div>
+<div class="font-code-md text-code-md text-on-surface-variant text-[11px] mt-1">Scheduled for 00:00 UTC</div>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="text-right">
+<div class="font-label-sm text-label-sm text-outline mb-1">IDLE</div>
+<div class="font-code-md text-code-md text-on-surface-variant text-[12px]">CPU: 0% | RAM: 12MB</div>
+</div>
+<button class="w-8 h-8 rounded flex items-center justify-center text-on-surface-variant hover:text-tertiary hover:bg-tertiary/10 transition-colors">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Telemetry & Pulse Column -->
+<div class="flex flex-col gap-lg">
+<!-- Neural Pulse Status -->
+<div class="bg-surface-container rounded-xl border-t border-white/12 shadow-2xl shadow-background p-lg flex flex-col items-center justify-center relative overflow-hidden h-48">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none"></div>
+<!-- The Pulse Component -->
+<div class="w-[120px] h-[120px] rounded-full border-2 border-primary/30 neural-pulse-idle flex items-center justify-center relative">
+<div class="w-[80px] h-[80px] rounded-full bg-primary/10 backdrop-blur-sm flex items-center justify-center border border-primary/20 shadow-[0_0_20px_rgba(200,191,255,0.2)]">
+<span class="material-symbols-outlined text-primary text-[32px]">memory</span>
+</div>
+</div>
+<div class="mt-md font-label-md text-label-md text-primary tracking-widest uppercase">System Nominal</div>
+</div>
+<!-- Telemetry Stats -->
+<div class="grid grid-cols-2 gap-md h-full">
+<div class="bg-surface-container rounded-xl border-t border-white/12 shadow-lg shadow-background p-md flex flex-col justify-between hover:bg-surface-container-high transition-colors cursor-default">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-secondary text-[20px]">speed</span>
+</div>
+<div>
+<div class="font-display text-display text-on-surface">24%</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-1">Global CPU</div>
+</div>
+<!-- Micro sparkline placeholder -->
+<div class="h-8 mt-2 w-full flex items-end gap-1 opacity-70">
+<div class="w-full bg-secondary/20 h-[30%] rounded-t-sm"></div>
+<div class="w-full bg-secondary/40 h-[50%] rounded-t-sm"></div>
+<div class="w-full bg-secondary/60 h-[80%] rounded-t-sm"></div>
+<div class="w-full bg-secondary h-[40%] rounded-t-sm"></div>
+<div class="w-full bg-secondary/50 h-[60%] rounded-t-sm"></div>
+</div>
+</div>
+<div class="bg-surface-container rounded-xl border-t border-white/12 shadow-lg shadow-background p-md flex flex-col justify-between hover:bg-surface-container-high transition-colors cursor-default">
+<div class="flex justify-between items-start">
+<span class="material-symbols-outlined text-tertiary text-[20px]">memory_alt</span>
+</div>
+<div>
+<div class="font-display text-display text-on-surface">1.2<span class="text-headline-md text-on-surface-variant">GB</span></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-1">Lua Heap</div>
+</div>
+<div class="h-8 mt-2 w-full flex items-center opacity-70">
+<div class="w-full bg-surface-dim h-2 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full w-[65%] rounded-full shadow-[0_0_8px_rgba(89,219,189,0.8)]"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Console Output -->
+<div class="bg-[#0e0d15] rounded-xl border-t border-white/12 shadow-2xl shadow-background flex flex-col h-64 overflow-hidden mt-md relative group">
+<div class="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent h-12 pointer-events-none"></div>
+<div class="px-md py-sm border-b border-white/5 flex justify-between items-center bg-[#14121a]/80 backdrop-blur-md z-10">
+<div class="font-label-md text-label-md text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">terminal</span>
+                            System stdout
+                        </div>
+<div class="flex gap-sm">
+<button class="text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">filter_list</span></button>
+<button class="text-on-surface-variant hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[16px]">clear_all</span></button>
+</div>
+</div>
+<div class="p-md font-code-md text-code-md text-on-surface-variant overflow-y-auto flex-1 flex flex-col gap-1">
+<div class="flex"><span class="text-outline w-24 flex-shrink-0">14:02:41.112</span><span class="text-secondary">[INFO]</span><span class="ml-2 text-on-surface">Hermes Core v4.2.0 initialized.</span></div>
+<div class="flex"><span class="text-outline w-24 flex-shrink-0">14:02:42.005</span><span class="text-tertiary">[LUA] </span><span class="ml-2 text-on-surface">Loading DataIngest_v2.lua... OK.</span></div>
+<div class="flex"><span class="text-outline w-24 flex-shrink-0">14:02:45.331</span><span class="text-tertiary">[LUA] </span><span class="ml-2 text-on-surface">Connected to Redis buffer at 10.0.0.5:6379</span></div>
+<div class="flex"><span class="text-outline w-24 flex-shrink-0">14:05:12.990</span><span class="text-error">[ERR] </span><span class="ml-2 text-error-container bg-error/10 px-1 rounded">LegacyAuth_Sync.lua:142: attempt to index global 'auth_token' (a nil value)</span></div>
+<div class="flex"><span class="text-outline w-24 flex-shrink-0">14:05:13.001</span><span class="text-secondary">[INFO]</span><span class="ml-2 text-on-surface">Supervisor restarted LegacyAuth_Sync (attempt 1/3)</span></div>
+<div class="flex"><span class="text-outline w-24 flex-shrink-0">14:06:00.000</span><span class="text-tertiary">[LUA] </span><span class="ml-2 text-on-surface">DailyReportGen scheduled task verified.</span></div>
+<div class="flex opacity-50 animate-pulse mt-2"><span class="text-outline w-24 flex-shrink-0">14:08:10...</span><span class="ml-2">Awaiting stream data_</span></div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

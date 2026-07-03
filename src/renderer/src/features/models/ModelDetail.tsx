@@ -18,6 +18,7 @@ import {
   testModelProviderConnection,
   unloadLocalModel
 } from '../../services/ipc/modelClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 export function ModelDetail(): React.JSX.Element {
   const { providerId } = useParams<{ providerId: string }>()
@@ -89,12 +90,16 @@ export function ModelDetail(): React.JSX.Element {
     else setError(result.error.userMessage)
   }
 
-  if (loading) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
-  if (!provider)
-    return <ErrorState title="Provider not found" description={error ?? 'Unknown provider.'} />
 
-  return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
+
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    if (!provider) return
+    setPrimary(
+      'Provider',
+      provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local',
       <NdxToolWindow
         title="Provider"
         subtitle={provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local'}
@@ -108,7 +113,50 @@ export function ModelDetail(): React.JSX.Element {
           Remove provider
         </ControllerButton>
       </NdxToolWindow>
+    )
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [provider, navigate, setPrimary])
 
+  useEffect(() => {
+    if (!provider) return
+    setSecondary(
+      <NdxToolWindow
+        title="Provider Policy"
+        subtitle={provider.enabled ? 'Enabled' : 'Disabled'}
+        side="right"
+      >
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Credential</p>
+          <p className="text-meta text-text-tertiary">
+            {provider.hasApiKey
+              ? 'API key stored with OS-backed encryption'
+              : 'No API key configured'}
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Created</p>
+          <p className="text-meta text-text-tertiary">
+            {new Date(provider.createdAt).toLocaleString()}
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Runtime controls</p>
+          <p className="text-meta text-text-tertiary">
+            Load, unload, and benchmark actions are shown only for managed Ollama runtimes that
+            report support.
+          </p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [provider, setSecondary])
+
+  if (loading) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
+  if (!provider)
+    return <ErrorState title="Provider not found" description={error ?? 'Unknown provider.'} />
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Model Provider Detail">
         <div className="flex min-h-full flex-col gap-3 p-3">
           {error && <ErrorState title="Model provider error" description={error} />}
@@ -132,7 +180,7 @@ export function ModelDetail(): React.JSX.Element {
           {testResult?.models.map((model) => (
             <div
               key={model.id}
-              className="flex flex-wrap items-center justify-between gap-2 border border-border bg-surface p-3"
+              className="flex flex-wrap items-center justify-between gap-2 ndx-settings-section"
             >
               <span className="text-meta text-text-primary">
                 {model.id}
@@ -171,7 +219,7 @@ export function ModelDetail(): React.JSX.Element {
             </p>
           )}
           {benchmark && (
-            <section className="border border-border bg-surface p-3 text-meta text-text-secondary">
+            <section className="ndx-settings-section text-meta text-text-secondary">
               Measured benchmark for {benchmark.modelId}: {benchmark.durationMs} ms
               {benchmark.tokensPerSecond !== undefined
                 ? ` - ${benchmark.tokensPerSecond.toFixed(1)} tok/s`
@@ -180,34 +228,6 @@ export function ModelDetail(): React.JSX.Element {
           )}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow
-        title="Provider Policy"
-        subtitle={provider.enabled ? 'Enabled' : 'Disabled'}
-        side="right"
-      >
-        <div>
-          <p className="text-meta font-semibold text-text-primary">Credential</p>
-          <p className="text-meta text-text-tertiary">
-            {provider.hasApiKey
-              ? 'API key stored with OS-backed encryption'
-              : 'No API key configured'}
-          </p>
-        </div>
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Created</p>
-          <p className="text-meta text-text-tertiary">
-            {new Date(provider.createdAt).toLocaleString()}
-          </p>
-        </div>
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Runtime controls</p>
-          <p className="text-meta text-text-tertiary">
-            Load, unload, and benchmark actions are shown only for managed Ollama runtimes that
-            report support.
-          </p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

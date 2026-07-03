@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
@@ -115,7 +116,7 @@ describe('PlatformHealthOverview', () => {
   it('shows aggregate health from real platform sources', async () => {
     stubBridge(healthyBridge())
 
-    render(<PlatformHealthOverview />)
+    renderWithProviders(<PlatformHealthOverview />)
 
     expect(await screen.findByText('Platform Health Overview')).toBeInTheDocument()
     expect(screen.getByText('Feature Registry')).toBeInTheDocument()
@@ -134,7 +135,7 @@ describe('PlatformHealthOverview', () => {
     } as never
     stubBridge(bridge)
 
-    render(<PlatformHealthOverview />)
+    renderWithProviders(<PlatformHealthOverview />)
 
     expect(await screen.findByText('Network failed.')).toBeInTheDocument()
     expect(screen.getByText('Feature Registry')).toBeInTheDocument()
@@ -145,7 +146,7 @@ describe('PlatformHealthOverview', () => {
     stubBridge(bridge)
     const user = userEvent.setup()
 
-    render(<PlatformHealthOverview />)
+    renderWithProviders(<PlatformHealthOverview />)
     await screen.findByText('Platform Health Overview')
 
     await user.click(screen.getByRole('button', { name: 'Refresh' }))

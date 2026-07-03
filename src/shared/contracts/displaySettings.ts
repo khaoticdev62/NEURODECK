@@ -35,7 +35,7 @@ export const displaySettingsSchema = z.object({
   highContrast: z.boolean(),
   textScale: textScaleSchema,
   accent: accentSchema.default('cyan'),
-  radiusStyle: radiusStyleSchema.default('sharp'),
+  radiusStyle: radiusStyleSchema.default('soft'),
   density: densitySchema.default('comfortable'),
   surfaceStyle: surfaceStyleSchema.default('solid'),
   focusStyle: focusStyleSchema.default('ring')

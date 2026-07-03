@@ -90,7 +90,7 @@ export function LanShareHome(): React.JSX.Element {
   const isRunning = status?.state === 'running'
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow title="LAN Share Service" subtitle={status?.state ?? 'Loading'}>
         <div className="space-y-3 text-meta text-text-secondary">
           <p>
@@ -115,7 +115,7 @@ export function LanShareHome(): React.JSX.Element {
 
           {error && <ErrorState title="LAN Share error" description={error} />}
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Service status</p>
             <p className="text-meta text-text-secondary">
               {status ? `${status.state} — ${status.reason}` : 'Loading…'}

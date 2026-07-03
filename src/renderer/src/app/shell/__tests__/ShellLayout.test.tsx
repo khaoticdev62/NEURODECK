@@ -49,6 +49,17 @@ function stubBridge(): void {
       resume: vi.fn(),
       onUpdate: vi.fn(() => () => undefined),
       onToolRequest: vi.fn(() => () => undefined)
+    },
+    // TopNavBar's real active-model-provider lookup (ShellLayout).
+    modelProviders: {
+      list: vi.fn().mockResolvedValue({ ok: true, data: [] })
+    },
+    // Footer's real telemetry poll (useCoreTelemetry).
+    system: {
+      collectMetrics: vi.fn().mockResolvedValue({
+        ok: false,
+        error: { userMessage: 'System metrics unavailable in test', code: 'unavailable' }
+      })
     }
   } as unknown as NdxBridge
 }

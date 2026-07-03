@@ -56,7 +56,7 @@ test('builds a command, approves it in the real Approval Queue, and sees it run 
     await window.evaluate(() => {
       window.location.hash = '/terminal'
     })
-    await expect(window.getByText(marker)).toBeVisible({ timeout: 10000 })
+    await expect(window.getByText(marker, { exact: true })).toBeVisible({ timeout: 10000 })
   } finally {
     await close()
     rmSync(tempDir, { recursive: true, force: true })

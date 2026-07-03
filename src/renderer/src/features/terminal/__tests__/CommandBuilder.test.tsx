@@ -11,6 +11,7 @@ import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { ApprovalQueue } from '../../approvals/ApprovalQueue'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { CommandBuilder } from '../CommandBuilder'
+import { TestWorkbenchStoreRenderer } from '../../../__tests__/testUtils'
 
 const workspace = {
   id: 'w1',
@@ -76,6 +77,7 @@ describe('CommandBuilder', () => {
                   <Route path="/terminal/builder" element={<CommandBuilder />} />
                   <Route path="/ai/approvals" element={<ApprovalQueue />} />
                 </Routes>
+                <TestWorkbenchStoreRenderer />
               </MemoryRouter>
             </WorkspaceContext.Provider>
           </AiSafetyProvider>
@@ -162,6 +164,7 @@ describe('CommandBuilder', () => {
                   <Route path="/terminal/builder" element={<CommandBuilder />} />
                   <Route path="/ai/approvals" element={<ApprovalQueue />} />
                 </Routes>
+                <TestWorkbenchStoreRenderer />
               </MemoryRouter>
             </WorkspaceContext.Provider>
           </AiSafetyProvider>
@@ -238,6 +241,7 @@ describe('CommandBuilder', () => {
                   <Route path="/terminal/builder" element={<CommandBuilder />} />
                   <Route path="/ai/approvals" element={<ApprovalQueue />} />
                 </Routes>
+                <TestWorkbenchStoreRenderer />
               </MemoryRouter>
             </WorkspaceContext.Provider>
           </AiSafetyProvider>
@@ -304,6 +308,7 @@ describe('CommandBuilder', () => {
                   <Route path="/terminal/builder" element={<CommandBuilder />} />
                   <Route path="/ai/approvals" element={<ApprovalQueue />} />
                 </Routes>
+                <TestWorkbenchStoreRenderer />
               </MemoryRouter>
             </WorkspaceContext.Provider>
           </AiSafetyProvider>
@@ -341,6 +346,7 @@ describe('CommandBuilder', () => {
             <WorkspaceContext.Provider value={workspaceValue}>
               <MemoryRouter>
                 <CommandBuilder embedded onSwitchToDirect={onSwitchToDirect} />
+                <TestWorkbenchStoreRenderer />
               </MemoryRouter>
             </WorkspaceContext.Provider>
           </AiSafetyProvider>

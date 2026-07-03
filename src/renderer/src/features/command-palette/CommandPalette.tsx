@@ -43,6 +43,18 @@ const EMPTY_LOADED_STATE: LoadedDomainState = {
 const SECONDARY_SCREENS: PaletteDomainResult[] = [
   { id: 'global-search', label: 'Global Search', path: '/search', subtitle: 'ND-010 - Epic 3' },
   {
+    id: 'ai-command-canvas',
+    label: 'AI Command Canvas',
+    path: '/ai',
+    subtitle: 'ND-013 - Epic 4'
+  },
+  {
+    id: 'ai-chat',
+    label: 'AI Chat',
+    path: '/ai/chat',
+    subtitle: 'ND-X071 - Phase 3'
+  },
+  {
     id: 'ai-timeline',
     label: 'AI Execution Timeline',
     path: '/ai/timeline',
@@ -128,6 +140,12 @@ const SECONDARY_SCREENS: PaletteDomainResult[] = [
     label: 'Voice Notes',
     path: '/voice-notes',
     subtitle: 'ND-X059 - Epic X14'
+  },
+  {
+    id: 'application-center',
+    label: 'Application Center',
+    path: '/applications',
+    subtitle: 'ND-X001 - Epic X2'
   },
   {
     id: 'clipboard-snippet-center',
@@ -407,7 +425,7 @@ export function CommandPalette(): React.JSX.Element {
         value={query}
         onChange={(event) => setQuery(event.target.value)}
         placeholder="Search commands, files, workspaces, and actions..."
-        className="rounded-sm border border-border bg-surface-raised px-3 py-2 text-body text-text-primary outline-none focus-visible:border-border-focus"
+        className="ndx-input rounded-md px-3 py-2 text-title"
       />
       <div className="flex flex-col gap-3">
         {loaded.errors.length > 0 && (

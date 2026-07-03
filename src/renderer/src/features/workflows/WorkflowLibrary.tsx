@@ -8,6 +8,7 @@ import { useFocusable } from '../../controller/focus/useFocusable'
 import { listWorkflows, removeWorkflow } from '../../services/ipc/workflowClient'
 import { useWorkflowRunner } from '../../workflows/useWorkflowRunner'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 /**
  * ND-032 Workflow Library. Real: workflows are persisted definitions
@@ -71,9 +72,12 @@ function WorkflowLibraryWorkspace({ workspaceId }: { workspaceId: string }): Rea
   const runnableCount = workflows.filter((workflow) => workflow.steps.length > 0).length
   const stepCount = workflows.reduce((total, workflow) => total + workflow.steps.length, 0)
 
-  return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
-      <NdxToolWindow title="Workflow Tools" subtitle={`${workflows.length} definitions`}>
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Workflow Tools', `${workflows.length} definitions`, (
+      <div className="flex flex-col gap-3">
         <p className="text-meta text-text-secondary">
           Workflows are persisted per active workspace and run through the real Workflow Engine and
           ActionQueue review path.
@@ -90,8 +94,38 @@ function WorkflowLibraryWorkspace({ workspaceId }: { workspaceId: string }): Rea
           Categories and pre-shipped templates remain deferred until real authored workflow
           templates exist.
         </p>
-      </NdxToolWindow>
+      </div>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [workflows.length, navigate, setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Run Context" subtitle={`${runnableCount} runnable`} side="right">
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Workspace</p>
+          <p className="text-meta text-text-tertiary">{workspaceId}</p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Step inventory</p>
+          <p className="text-meta text-text-tertiary">
+            {stepCount} persisted step{stepCount === 1 ? '' : 's'} across this library.
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Execution path</p>
+          <p className="text-meta text-text-tertiary">
+            Runs still execute through the existing WorkflowRunnerProvider, Workflow Engine, and
+            reviewed tool-action pipeline.
+          </p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [runnableCount, workspaceId, stepCount, setSecondary])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Workflow Library">
         <div className="flex min-h-full flex-col gap-3 p-3">
           {error && <ErrorState title="Workflow error" description={error} />}
@@ -117,26 +151,6 @@ function WorkflowLibraryWorkspace({ workspaceId }: { workspaceId: string }): Rea
           )}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Run Context" subtitle={`${runnableCount} runnable`} side="right">
-        <div>
-          <p className="text-meta font-semibold text-text-primary">Workspace</p>
-          <p className="text-meta text-text-tertiary">{workspaceId}</p>
-        </div>
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Step inventory</p>
-          <p className="text-meta text-text-tertiary">
-            {stepCount} persisted step{stepCount === 1 ? '' : 's'} across this library.
-          </p>
-        </div>
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Execution path</p>
-          <p className="text-meta text-text-tertiary">
-            Runs still execute through the existing WorkflowRunnerProvider, Workflow Engine, and
-            reviewed tool-action pipeline.
-          </p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

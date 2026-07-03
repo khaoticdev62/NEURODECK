@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK OS - Storage Explorer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;800;900&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#c8bfff",
+                      "outline": "#928e9f",
+                      "inverse-primary": "#5e49c8",
+                      "surface-tint": "#c8bfff",
+                      "on-error-container": "#ffdad6",
+                      "primary-container": "#917eff",
+                      "on-primary-fixed-variant": "#452daf",
+                      "inverse-on-surface": "#312f38",
+                      "on-secondary-container": "#003f4e",
+                      "surface-container-highest": "#35343c",
+                      "tertiary-container": "#00a488",
+                      "on-secondary": "#003543",
+                      "on-error": "#690005",
+                      "outline-variant": "#484553",
+                      "on-tertiary-fixed": "#002019",
+                      "surface-variant": "#35343c",
+                      "error-container": "#93000a",
+                      "on-surface": "#e5e0ec",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "on-primary-fixed": "#1a0063",
+                      "on-background": "#e5e0ec",
+                      "on-secondary-fixed": "#001f28",
+                      "on-primary": "#2e0599",
+                      "surface-container-lowest": "#0e0d15",
+                      "error": "#ffb4ab",
+                      "secondary-fixed": "#b5ebff",
+                      "surface-container-high": "#2b2931",
+                      "secondary": "#4dd6fd",
+                      "surface-container": "#201f27",
+                      "on-tertiary-container": "#003127",
+                      "on-primary-container": "#28008a",
+                      "background": "#14121a",
+                      "primary-fixed-dim": "#c8bfff",
+                      "on-tertiary": "#00382d",
+                      "tertiary-fixed": "#79f8d8",
+                      "surface-container-low": "#1c1b22",
+                      "secondary-container": "#00b2d7",
+                      "inverse-surface": "#e5e0ec",
+                      "surface-dim": "#14121a",
+                      "tertiary": "#59dbbd",
+                      "surface": "#14121a",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "surface-bright": "#3a3841",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "primary-fixed": "#e5deff",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "on-surface-variant": "#c9c4d6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "xs": "8px",
+                      "sm": "12px",
+                      "hit-target": "44px",
+                      "safe-margin": "40px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "display": ["Geist"],
+                      "body-md": ["Inter"],
+                      "code-md": ["JetBrains Mono"],
+                      "label-md": ["Inter"],
+                      "headline-lg": ["Geist"],
+                      "headline-md": ["Geist"],
+                      "body-lg": ["Inter"],
+                      "label-sm": ["Inter"]
+              },
+              "fontSize": {
+                      "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                      "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                      "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                      "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                      "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                      "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                      "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                      "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom UI behaviors */
+        .hairline-top {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+        }
+        
+        .bento-card {
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease-out;
+        }
+        .bento-card:hover, .bento-card:focus-within {
+            transform: scale(1.02);
+            box-shadow: 0 12px 40px -10px rgba(0,0,0,0.6), inset 0 1px 0 0 rgba(255, 255, 255, 0.2);
+            z-index: 10;
+            outline: none;
+        }
+        .bento-card:focus-within::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            border: 2px solid theme('colors.primary');
+            filter: drop-shadow(0 0 4px theme('colors.primary'));
+            pointer-events: none;
+        }
+
+        /* Donut Chart Animation */
+        @keyframes fillDonut {
+            from { --val: 0; }
+            to { --val: 78; }
+        }
+        @property --val {
+            syntax: '<integer>';
+            initial-value: 0;
+            inherits: false;
+        }
+        .donut-chart {
+            background: conic-gradient(
+                theme('colors.primary') calc(var(--val) * 1%), 
+                theme('colors.surface-bright') calc(var(--val) * 1%)
+            );
+            animation: fillDonut 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        /* Neural Pulse specific */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.1; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+        .neural-pulse-idle {
+            animation: pulse-ring 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface h-screen w-screen overflow-hidden flex font-body-md select-none antialiased selection:bg-primary/30">
+<!-- JSON: SideNavBar -->
+<nav class="h-screen w-64 left-0 sticky border-r border-white/10 bg-surface-container-lowest flex flex-col h-full py-lg gap-sm shadow-xl z-40 shrink-0">
+<!-- Header -->
+<div class="px-md mb-lg flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center hairline-top shrink-0">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="terminal">terminal</span>
+</div>
+<div class="flex flex-col">
+<span class="font-display text-headline-md font-black text-primary leading-tight tracking-tight">Neurodeck</span>
+<span class="font-label-sm text-on-surface-variant leading-none">v4.2.0-stable</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 flex flex-col gap-base px-sm overflow-y-auto">
+<!-- Inactive -->
+<button class="flex items-center gap-md text-on-surface-variant px-md py-sm opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 rounded-lg group text-left min-h-[44px]">
+<span class="material-symbols-outlined group-hover:text-on-surface transition-colors">folder_open</span>
+<span class="font-label-md">File Browser</span>
+</button>
+<button class="flex items-center gap-md text-on-surface-variant px-md py-sm opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 rounded-lg group text-left min-h-[44px]">
+<span class="material-symbols-outlined group-hover:text-on-surface transition-colors">neurology</span>
+<span class="font-label-md">Model Manager</span>
+</button>
+<!-- Active (Storage Explorer) -->
+<button class="flex items-center gap-md bg-primary/10 text-primary border-l-4 border-primary px-md py-sm scale-105 rounded-r-lg min-h-[44px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)]">
+<span class="material-symbols-outlined filled">storage</span>
+<span class="font-label-md font-bold">Storage Explorer</span>
+</button>
+<button class="flex items-center gap-md text-on-surface-variant px-md py-sm opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 rounded-lg group text-left min-h-[44px]">
+<span class="material-symbols-outlined group-hover:text-on-surface transition-colors">analytics</span>
+<span class="font-label-md">Telemetry</span>
+</button>
+<button class="flex items-center gap-md text-on-surface-variant px-md py-sm opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 rounded-lg group text-left min-h-[44px]">
+<span class="material-symbols-outlined group-hover:text-on-surface transition-colors">terminal</span>
+<span class="font-label-md">Kernel Settings</span>
+</button>
+</div>
+<!-- CTA & Footer -->
+<div class="px-sm mt-auto flex flex-col gap-sm">
+<button class="w-full bg-primary-container text-on-primary-container font-label-md py-sm rounded-lg hairline-top hover:bg-primary transition-colors min-h-[44px]">
+                Optimize Disk
+            </button>
+<div class="flex flex-col gap-base border-t border-white/5 pt-sm">
+<button class="flex items-center gap-md text-on-surface-variant px-md py-xs opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 rounded-lg min-h-[44px]">
+<span class="material-symbols-outlined text-[18px]">code</span>
+<span class="font-label-md">Terminal</span>
+</button>
+<button class="flex items-center gap-md text-on-surface-variant px-md py-xs opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 rounded-lg min-h-[44px]">
+<span class="material-symbols-outlined text-[18px]">description</span>
+<span class="font-label-md">Logs</span>
+</button>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col h-full bg-background relative overflow-hidden">
+<!-- JSON: TopNavBar -->
+<header class="w-full h-16 top-0 sticky border-b border-white/10 bg-surface/80 backdrop-blur-md flex justify-between items-center px-lg z-50 shrink-0 shadow-lg">
+<div class="font-display text-headline-lg font-bold text-primary tracking-tighter">Neurodeck OS</div>
+<div class="flex items-center gap-sm">
+<button class="w-10 h-10 rounded-full hover:bg-surface-variant/50 transition-colors duration-200 flex items-center justify-center text-on-surface-variant hover:text-on-surface min-h-[44px] min-w-[44px]">
+<span class="material-symbols-outlined">memory</span>
+</button>
+<button class="w-10 h-10 rounded-full hover:bg-surface-variant/50 transition-colors duration-200 flex items-center justify-center text-on-surface-variant hover:text-on-surface min-h-[44px] min-w-[44px]">
+<span class="material-symbols-outlined">sensors</span>
+</button>
+<button class="w-10 h-10 rounded-full hover:bg-surface-variant/50 transition-colors duration-200 flex items-center justify-center text-on-surface-variant hover:text-on-surface min-h-[44px] min-w-[44px]">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<!-- Neural Pulse Indicator -->
+<div class="ml-sm pl-sm border-l border-white/10 flex items-center gap-sm">
+<span class="font-label-md text-on-surface-variant">Neural Pulse</span>
+<div class="relative w-6 h-6 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border-2 border-primary/30 neural-pulse-idle"></div>
+<div class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_theme('colors.primary')]"></div>
+</div>
+</div>
+</div>
+</header>
+<!-- Dashboard Canvas (Bento Grid) -->
+<div class="flex-1 overflow-y-auto p-safe-margin">
+<div class="grid grid-cols-12 gap-lg h-full auto-rows-min max-w-[1600px] mx-auto">
+<!-- Main Disk Usage Radial (Spans 8 cols) -->
+<article class="col-span-12 lg:col-span-8 bg-surface-container-high rounded-xl hairline-top p-lg bento-card relative overflow-hidden min-h-[320px] flex items-center justify-between" tabindex="0">
+<div class="flex flex-col z-10 w-1/2">
+<h2 class="font-headline-md text-on-surface mb-xs flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">hard_drive</span>
+                            NVMe Core Storage
+                        </h2>
+<p class="font-body-md text-on-surface-variant mb-xl">High-speed volume mounted at /dev/nvme0n1. Optimal performance for tensor operations.</p>
+<div class="flex gap-xl mt-auto">
+<div>
+<div class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-base">Total Capacity</div>
+<div class="font-display text-display text-on-surface">2.0 TB</div>
+</div>
+<div>
+<div class="font-label-sm text-on-surface-variant uppercase tracking-wider mb-base">Available</div>
+<div class="font-display text-display text-tertiary">440 GB</div>
+</div>
+</div>
+</div>
+<!-- Radial Chart -->
+<div class="relative w-[240px] h-[240px] flex items-center justify-center shrink-0 z-10 mr-xl">
+<div class="absolute inset-0 rounded-full donut-chart shadow-[0_0_30px_rgba(200,191,255,0.15)]"></div>
+<div class="absolute inset-[24px] rounded-full bg-surface-container-high flex flex-col items-center justify-center hairline-top shadow-inner">
+<span class="font-display text-display font-bold text-primary">78%</span>
+<span class="font-label-sm text-on-surface-variant">USED</span>
+</div>
+</div>
+<!-- Decorative Background elements -->
+<div class="absolute right-0 top-0 w-1/2 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none"></div>
+</article>
+<!-- Health & Quick Stats (Spans 4 cols) -->
+<article class="col-span-12 lg:col-span-4 flex flex-col gap-lg">
+<!-- Drive Health -->
+<div class="bg-surface-container-high rounded-xl hairline-top p-lg bento-card flex-1 flex flex-col justify-center" tabindex="0">
+<div class="flex items-center justify-between mb-md">
+<span class="font-label-md text-on-surface-variant">Drive Health</span>
+<span class="material-symbols-outlined text-tertiary">verified</span>
+</div>
+<div class="font-display text-[32px] leading-tight font-black text-tertiary mb-xs">Optimal</div>
+<div class="font-body-md text-on-surface-variant flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_6px_theme('colors.tertiary')]"></div>
+                            SMART Status Passed
+                        </div>
+</div>
+<!-- IOPS -->
+<div class="bg-surface-container-high rounded-xl hairline-top p-lg bento-card flex-1 flex flex-col justify-center relative overflow-hidden" tabindex="0">
+<div class="font-label-md text-on-surface-variant mb-md">Active IOPS</div>
+<div class="font-display text-[32px] leading-tight font-bold text-on-surface flex items-baseline gap-sm">
+                            42.5k <span class="font-label-sm text-on-surface-variant font-normal">req/s</span>
+</div>
+<!-- Abstract sparkline background -->
+<svg class="absolute bottom-0 left-0 w-full h-16 opacity-20 pointer-events-none" preserveaspectratio="none" viewbox="0 0 100 30">
+<path d="M0,30 L0,15 L10,25 L20,10 L30,20 L40,5 L50,15 L60,10 L70,25 L80,15 L90,20 L100,5 L100,30 Z" fill="theme('colors.primary')"></path>
+</svg>
+</div>
+</article>
+<!-- Partition Breakdown (Spans 12 cols) -->
+<article class="col-span-12 bg-surface-container-low border border-white/5 rounded-xl p-lg bento-card relative" tabindex="0">
+<h3 class="font-headline-md text-on-surface mb-lg">Partition Topology</h3>
+<!-- Stacked Bar -->
+<div class="h-6 w-full rounded-full bg-surface-bright flex overflow-hidden shadow-inner mb-lg hairline-top">
+<div class="h-full bg-primary" style="width: 55%" title="Model Weights"></div>
+<div class="h-full bg-secondary border-l border-surface-container-low" style="width: 25%" title="Dataset Fragments"></div>
+<div class="h-full bg-surface-variant border-l border-surface-container-low" style="width: 20%" title="System Files"></div>
+</div>
+<!-- Legend -->
+<div class="grid grid-cols-3 gap-md">
+<div class="flex items-start gap-sm">
+<div class="w-3 h-3 rounded-sm bg-primary mt-1 shadow-[0_0_8px_theme('colors.primary')]"></div>
+<div>
+<div class="font-label-md text-on-surface">Model Weights</div>
+<div class="font-code-md text-primary mt-xs">1.1 TB</div>
+<div class="font-label-sm text-on-surface-variant mt-1">LLMs &amp; Safetensors</div>
+</div>
+</div>
+<div class="flex items-start gap-sm">
+<div class="w-3 h-3 rounded-sm bg-secondary mt-1 shadow-[0_0_8px_theme('colors.secondary')]"></div>
+<div>
+<div class="font-label-md text-on-surface">Dataset Fragments</div>
+<div class="font-code-md text-secondary mt-xs">500 GB</div>
+<div class="font-label-sm text-on-surface-variant mt-1">Parquet &amp; JSONL pools</div>
+</div>
+</div>
+<div class="flex items-start gap-sm">
+<div class="w-3 h-3 rounded-sm bg-surface-variant border border-white/20 mt-1"></div>
+<div>
+<div class="font-label-md text-on-surface">System &amp; Swap</div>
+<div class="font-code-md text-on-surface-variant mt-xs">400 GB</div>
+<div class="font-label-sm text-on-surface-variant mt-1">OS, Kernel, Paging</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Telemetry Cards (3 cols each) -->
+<article class="col-span-12 lg:col-span-4 bg-surface-container-highest rounded-xl hairline-top p-lg bento-card flex flex-col" tabindex="0">
+<div class="flex items-center gap-sm text-on-surface-variant mb-md">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span class="font-label-md uppercase tracking-wider">Read Speed</span>
+</div>
+<div class="font-code-md text-[28px] text-secondary">3,450 <span class="text-sm text-on-surface-variant">MB/s</span></div>
+<div class="mt-auto pt-md border-t border-white/5 font-label-sm text-on-surface-variant flex justify-between">
+<span>Peak: 3,500 MB/s</span>
+<span class="text-secondary">Seq Q8T1</span>
+</div>
+</article>
+<article class="col-span-12 lg:col-span-4 bg-surface-container-highest rounded-xl hairline-top p-lg bento-card flex flex-col" tabindex="0">
+<div class="flex items-center gap-sm text-on-surface-variant mb-md">
+<span class="material-symbols-outlined text-[18px]">upload</span>
+<span class="font-label-md uppercase tracking-wider">Write Speed</span>
+</div>
+<div class="font-code-md text-[28px] text-primary">2,890 <span class="text-sm text-on-surface-variant">MB/s</span></div>
+<div class="mt-auto pt-md border-t border-white/5 font-label-sm text-on-surface-variant flex justify-between">
+<span>Peak: 3,100 MB/s</span>
+<span class="text-primary">Seq Q8T1</span>
+</div>
+</article>
+<article class="col-span-12 lg:col-span-4 bg-surface-container-highest rounded-xl hairline-top p-lg bento-card flex flex-col relative overflow-hidden" tabindex="0">
+<div class="flex items-center gap-sm text-on-surface-variant mb-md z-10">
+<span class="material-symbols-outlined text-[18px]">thermostat</span>
+<span class="font-label-md uppercase tracking-wider">Drive Temp</span>
+</div>
+<div class="font-code-md text-[28px] text-on-surface z-10 flex items-center gap-sm">
+                        42°C
+                        <span class="px-2 py-0.5 rounded-sm bg-tertiary/20 text-tertiary text-[10px] font-bold border border-tertiary/30">NOMINAL</span>
+</div>
+<div class="mt-auto pt-md border-t border-white/5 font-label-sm text-on-surface-variant flex justify-between z-10">
+<span>Threshold: 70°C</span>
+</div>
+<!-- Temperature Gradient Hint -->
+<div class="absolute bottom-0 right-0 w-32 h-32 bg-tertiary/10 blur-3xl rounded-full pointer-events-none"></div>
+</article>
+</div>
+</div>
+</main>
+</body></html>

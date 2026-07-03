@@ -14,6 +14,7 @@ import {
 } from '../../services/ipc/vaultClient'
 import { useKioskMode } from '../../state/useKioskMode'
 import { usePresentationMode } from '../../state/usePresentationMode'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 const ITEM_TYPE_LABELS: Record<VaultItemType, string> = {
   'api-credential': 'API credential',
@@ -139,20 +140,35 @@ export function Vault(): React.JSX.Element {
     }
   }
 
-  return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
-      <NdxToolWindow
-        title="Vault Guardrails"
-        subtitle={
-          presentationModeEnabled || kioskModeEnabled ? 'Reveal restricted' : 'Reveal enabled'
-        }
-      >
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Vault Guardrails', presentationModeEnabled || kioskModeEnabled ? 'Reveal restricted' : 'Reveal enabled', (
+      <div className="flex flex-col gap-3">
         <div className="space-y-3 text-meta text-text-secondary">
           <p>Secrets are listed without values. Reveal and copy remain separate audited actions.</p>
           <p>{items.length} encrypted vault items are currently indexed.</p>
         </div>
-      </NdxToolWindow>
+      </div>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [presentationModeEnabled, kioskModeEnabled, items.length, setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Reveal Policy" subtitle="Audited actions" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Presentation Mode and Kiosk Mode disable reveal actions before values are fetched.</p>
+          <p>Copied secrets are cleared from the clipboard after the existing timeout.</p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [setSecondary])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Secret Inventory">
         <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
           <header className="flex items-start justify-between gap-3">
@@ -205,7 +221,7 @@ export function Vault(): React.JSX.Element {
           </section>
 
           {accessLog.length > 0 && (
-            <section className="border border-border bg-surface p-3">
+            <section className="ndx-settings-section">
               <p className="text-meta font-semibold text-text-primary">Access log</p>
               <ul className="mt-2 grid gap-1 text-caption text-text-tertiary">
                 {accessLog
@@ -222,13 +238,6 @@ export function Vault(): React.JSX.Element {
           )}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Reveal Policy" subtitle="Audited actions" side="right">
-        <div className="space-y-3 text-meta text-text-secondary">
-          <p>Presentation Mode and Kiosk Mode disable reveal actions before values are fetched.</p>
-          <p>Copied secrets are cleared from the clipboard after the existing timeout.</p>
-        </div>
-      </NdxToolWindow>
 
       <ConfirmationDialog
         open={deleteReview !== null}
@@ -259,7 +268,7 @@ function CreateItemForm({
   const [notes, setNotes] = useState('')
 
   return (
-    <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <section className="flex flex-col gap-2 ndx-settings-section">
       <p className="text-meta font-semibold text-text-primary">Add a new secret</p>
       <select
         value={type}
@@ -328,7 +337,7 @@ function VaultItemCard({
   const [newSecret, setNewSecret] = useState('')
 
   return (
-    <article className="border border-border bg-surface p-3">
+    <article className="ndx-settings-section">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-meta font-semibold text-text-primary">{item.label}</p>

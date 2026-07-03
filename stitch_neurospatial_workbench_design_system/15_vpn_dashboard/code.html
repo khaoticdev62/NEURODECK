@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK - VPN Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:wght@400..700&amp;family=JetBrains+Mono:wght@400..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#b5ebff",
+                        "surface-variant": "#35343c",
+                        "secondary-container": "#00b2d7",
+                        "secondary": "#4dd6fd",
+                        "outline": "#928e9f",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002019",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-tertiary": "#00382d",
+                        "surface": "#14121a",
+                        "on-tertiary-container": "#003127",
+                        "on-primary": "#2e0599",
+                        "outline-variant": "#484553",
+                        "on-primary-fixed-variant": "#452daf",
+                        "on-primary-fixed": "#1a0063",
+                        "surface-bright": "#3a3841",
+                        "inverse-primary": "#5e49c8",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "inverse-on-surface": "#312f38",
+                        "surface-tint": "#c8bfff",
+                        "primary-fixed": "#e5deff",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-container-high": "#2b2931",
+                        "error-container": "#93000a",
+                        "surface-dim": "#14121a",
+                        "inverse-surface": "#e5e0ec",
+                        "tertiary-fixed": "#79f8d8",
+                        "surface-container-highest": "#35343c",
+                        "on-secondary": "#003543",
+                        "on-error-container": "#ffdad6",
+                        "background": "#14121a",
+                        "primary-container": "#917eff",
+                        "on-secondary-fixed": "#001f28",
+                        "surface-container": "#201f27",
+                        "on-surface": "#e5e0ec",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-secondary-container": "#003f4e",
+                        "on-primary-container": "#28008a",
+                        "on-surface-variant": "#c9c4d6",
+                        "surface-container-lowest": "#0e0d15",
+                        "tertiary-container": "#00a488",
+                        "on-background": "#e5e0ec",
+                        "primary-fixed-dim": "#c8bfff",
+                        "tertiary": "#59dbbd",
+                        "surface-container-low": "#1c1b22",
+                        "on-error": "#690005",
+                        "primary": "#c8bfff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "sm": "12px",
+                        "safe-margin": "40px",
+                        "base": "4px",
+                        "hit-target": "44px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "label-md": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display": ["Geist"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* NeuroSpatial Edge Highlights */
+        .edge-highlight {
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        
+        /* Inner Button Gradient */
+        .btn-surface {
+            background-image: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+        }
+        
+        /* Pulse Animations */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.05); opacity: 0.6; }
+        }
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .pulse-idle {
+            animation: breathe 2s ease-in-out infinite;
+            border: 2px solid theme('colors.primary');
+        }
+        .pulse-active {
+            border: 2px solid theme('colors.tertiary');
+            box-shadow: 0 0 15px rgba(89, 219, 189, 0.4);
+        }
+        .pulse-active::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 2px solid theme('colors.tertiary');
+            animation: ripple 1.5s linear infinite;
+        }
+
+        /* Focus States */
+        .focusable:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(200,191,255,0.4);
+            transform: scale(1.02);
+            transition: all 0.2s ease;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: theme('colors.surface-container-lowest');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-variant');
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen w-screen overflow-hidden flex flex-col font-body-md select-none">
+<!-- TopNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-lowest font-label-md text-label-md docked full-width top-0 h-[36px] border-b border-white/12 flex justify-between items-center px-sm w-full z-50">
+<div class="flex items-center gap-md h-full">
+<span class="font-display text-display text-primary uppercase tracking-tighter text-[20px] leading-none">NEURAL_OS</span>
+<div class="flex items-center h-full gap-sm ml-lg">
+<button class="h-full px-sm text-on-surface-variant hover:bg-surface-container-highest transition-colors flex items-center focusable">GPT-4o</button>
+<button class="h-full px-sm text-on-surface-variant hover:bg-surface-container-highest transition-colors flex items-center focusable">CLAUDE-3.5</button>
+<button class="h-full px-sm text-on-surface-variant hover:bg-surface-container-highest transition-colors flex items-center focusable">SONNET</button>
+</div>
+</div>
+<div class="flex items-center gap-xs">
+<button class="w-[28px] h-[28px] flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest rounded focusable transition-colors scale-95 duration-100">
+<span class="material-symbols-outlined text-[16px]">minimize</span>
+</button>
+<button class="w-[28px] h-[28px] flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest rounded focusable transition-colors scale-95 duration-100">
+<span class="material-symbols-outlined text-[16px]">fullscreen</span>
+</button>
+<button class="w-[28px] h-[28px] flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest rounded focusable transition-colors scale-95 duration-100">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</nav>
+<!-- Main Workspace Area -->
+<div class="flex-1 flex overflow-hidden relative">
+<!-- SideNavBar -->
+<aside class="bg-surface-container-low dark:bg-surface-container-low text-secondary dark:text-secondary font-label-sm text-label-sm w-[52px] border-r border-white/12 h-full flex flex-col justify-between py-md z-40 shrink-0">
+<div class="flex flex-col gap-sm items-center">
+<!-- Avatar / Logo Area -->
+<div class="mb-md relative group cursor-pointer focusable rounded-full" tabindex="0">
+<div class="w-[36px] h-[36px] rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center overflow-hidden">
+<span class="font-headline-md text-headline-md text-on-surface text-[14px]">S</span>
+</div>
+<div class="absolute w-2 h-2 rounded-full bg-tertiary bottom-0 right-0 border border-surface-container-low"></div>
+</div>
+<!-- Tabs -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-[44px] h-[44px] rounded-lg focusable group">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-[44px] h-[44px] rounded-lg focusable group">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">hub</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-[44px] h-[44px] rounded-lg focusable group">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">code</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-lg p-2 scale-105 shadow-[0_0_15px_rgba(200,191,255,0.4)] focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-[44px] h-[44px] focusable relative">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+<span class="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-4 bg-primary rounded-l-full"></span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-[44px] h-[44px] rounded-lg focusable group">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">language</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-[44px] h-[44px] rounded-lg focusable group">
+<span class="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">settings</span>
+</button>
+</div>
+<div class="flex flex-col gap-sm items-center">
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-[44px] h-[44px] rounded-lg focusable group">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-[44px] h-[44px] rounded-lg focusable group">
+<span class="material-symbols-outlined text-[20px]">sensors</span>
+</button>
+</div>
+</aside>
+<!-- Inspector Pane (Left) -->
+<div class="w-[280px] bg-surface-container border-r border-white/12 flex flex-col edge-highlight shrink-0">
+<div class="px-md py-sm border-b border-white/12 h-[48px] flex items-center justify-between shrink-0 bg-surface-container-lowest">
+<h2 class="font-headline-md text-headline-md text-on-surface">Connections</h2>
+<button class="w-[28px] h-[28px] flex items-center justify-center text-on-surface-variant hover:text-primary focusable rounded">
+<span class="material-symbols-outlined text-[18px]">add</span>
+</button>
+</div>
+<div class="p-sm flex flex-col gap-xs overflow-y-auto flex-1">
+<div class="text-label-sm font-label-sm text-outline-variant px-2 uppercase tracking-wider mb-1 mt-2">Saved Profiles</div>
+<button class="w-full bg-surface-container-high rounded border border-outline/20 p-2 flex items-center gap-3 focusable group text-left relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary"></div>
+<div class="w-8 h-8 rounded bg-surface-container-lowest flex items-center justify-center shrink-0 border border-white/5">
+<span class="material-symbols-outlined text-tertiary text-[18px]">shield_lock</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="font-label-md text-label-md text-on-surface truncate">Zurich Quantum-1</div>
+<div class="text-[10px] text-tertiary truncate">Connected • WireGuard</div>
+</div>
+</button>
+<button class="w-full hover:bg-surface-container-high rounded p-2 flex items-center gap-3 focusable group text-left border border-transparent hover:border-outline/10 transition-colors">
+<div class="w-8 h-8 rounded bg-surface-container-lowest flex items-center justify-center shrink-0 border border-white/5">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">public</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="font-label-md text-label-md text-on-surface-variant group-hover:text-on-surface truncate">Tokyo Nexus-Prime</div>
+<div class="text-[10px] text-outline truncate">Offline • OpenVPN</div>
+</div>
+</button>
+<button class="w-full hover:bg-surface-container-high rounded p-2 flex items-center gap-3 focusable group text-left border border-transparent hover:border-outline/10 transition-colors">
+<div class="w-8 h-8 rounded bg-surface-container-lowest flex items-center justify-center shrink-0 border border-white/5">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">public</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="font-label-md text-label-md text-on-surface-variant group-hover:text-on-surface truncate">NY Alpha-Relay</div>
+<div class="text-[10px] text-outline truncate">Offline • IKEv2</div>
+</div>
+</button>
+<div class="text-label-sm font-label-sm text-outline-variant px-2 uppercase tracking-wider mb-1 mt-4">Providers</div>
+<button class="w-full hover:bg-surface-container-high rounded p-2 flex items-center gap-3 focusable group text-left border border-transparent hover:border-outline/10 transition-colors">
+<div class="w-6 h-6 rounded-full bg-surface-container-lowest flex items-center justify-center shrink-0 border border-white/5">
+<span class="font-code-md text-[10px] text-primary">MN</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="font-label-md text-label-md text-on-surface-variant group-hover:text-on-surface truncate">Mullvad Network</div>
+</div>
+</button>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="flex-1 bg-background relative overflow-hidden flex flex-col z-0 p-safe-margin pb-[66px]">
+<!-- Decorative Background Map -->
+<div class="absolute inset-0 opacity-[0.03] pointer-events-none" data-alt="A highly stylized, minimalist vector map of the world in dark mode. The map uses deep charcoal and black tones with subtle, glowing cyan nodes representing server locations. High contrast, precise geometric lines, conveying a sense of global secure networking and data routing in a cyberpunk-adjacent tech interface." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCKQk2oG4hrUtvdDv-DoM9QvYy91Dj5Bgs1o0rLSLqO2UYnGXesfkhBNAjPyzi8vHQUW5RF8iYrzyaRKZyoMVjl_yvQdsqAsGLaWy-_rBTBF94aC_TquyjNu4s-5GaZODtEomM0qQRfms5uLjvza2Uaike9Ux4OiHEJ8Ao_H_9Azp_7o-pclbnDL9AuhhPIKMqOQ7NsZhi5fHovljkBTh7CXfxlooOPl1o1u4t9GrklTZ5YCmDFj7WQfSPMgrlRzoAjiellSQ8D3Fwj'); background-size: cover; background-position: center;"></div>
+<div class="max-w-[800px] w-full mx-auto grid grid-cols-12 gap-lg h-full relative z-10">
+<!-- Central Status Card -->
+<div class="col-span-8 flex flex-col gap-lg h-full">
+<!-- Main Pulse / Action Card -->
+<div class="bg-surface-container rounded-xl border border-white/12 edge-highlight p-lg flex flex-col items-center justify-center relative overflow-hidden shadow-[0_10px_32px_-10px_rgba(0,0,0,0.4)] min-h-[300px]">
+<!-- Subtle mesh background -->
+<div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 2px 2px, rgba(255,255,255,0.2) 1px, transparent 0); background-size: 24px 24px;"></div>
+<div class="relative w-[140px] h-[140px] flex items-center justify-center mb-6 z-10">
+<div class="absolute inset-0 rounded-full pulse-active bg-surface-container-lowest flex items-center justify-center">
+<span class="material-symbols-outlined text-[48px] text-tertiary drop-shadow-[0_0_8px_rgba(89,219,189,0.8)]" style="font-variation-settings: 'FILL' 1;">shield_locked</span>
+</div>
+</div>
+<div class="text-center z-10">
+<h1 class="font-display text-display text-on-surface mb-1">SECURED</h1>
+<p class="font-body-md text-body-md text-tertiary flex items-center justify-center gap-1">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                                 Tunnel Active
+                             </p>
+</div>
+<div class="mt-8 z-10 flex gap-4">
+<button class="bg-surface-container-highest border border-outline-variant rounded-lg px-6 h-[44px] flex items-center justify-center gap-2 focusable text-on-surface-variant hover:text-on-surface hover:bg-surface-bright transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+                                 CONFIGURE
+                             </button>
+<button class="bg-primary/10 border border-primary text-primary rounded-lg px-6 h-[44px] flex items-center justify-center gap-2 focusable hover:bg-primary/20 transition-colors font-label-md text-label-md btn-surface shadow-[0_0_15px_rgba(200,191,255,0.2)]">
+<span class="material-symbols-outlined text-[18px]">power_settings_new</span>
+                                 DISCONNECT
+                             </button>
+</div>
+</div>
+<!-- Active Profile Details (Bento Row) -->
+<div class="grid grid-cols-3 gap-md flex-1">
+<div class="bg-surface-container rounded-lg border border-white/5 edge-highlight p-md flex flex-col justify-between focusable group" tabindex="0">
+<div class="flex items-center gap-2 text-outline-variant mb-2">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Node</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface">ZUR-Q1</div>
+<div class="font-code-md text-[11px] text-outline mt-1 truncate">Zurich, Switzerland</div>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg border border-white/5 edge-highlight p-md flex flex-col justify-between focusable group" tabindex="0">
+<div class="flex items-center gap-2 text-outline-variant mb-2">
+<span class="material-symbols-outlined text-[16px]">router</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Address</span>
+</div>
+<div>
+<div class="font-code-md text-[14px] text-secondary">185.12.34.88</div>
+<div class="font-code-md text-[11px] text-outline mt-1 truncate">Virtual IPv4</div>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg border border-white/5 edge-highlight p-md flex flex-col justify-between focusable group" tabindex="0">
+<div class="flex items-center gap-2 text-outline-variant mb-2">
+<span class="material-symbols-outlined text-[16px]">timer</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Uptime</span>
+</div>
+<div>
+<div class="font-code-md text-[14px] text-on-surface">04:12:55</div>
+<div class="font-code-md text-[11px] text-tertiary mt-1 truncate">WireGuard UDP</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Traffic & Diagnostics -->
+<div class="col-span-4 flex flex-col gap-lg h-full">
+<!-- Traffic Monitor -->
+<div class="bg-surface-container rounded-lg border border-white/12 edge-highlight p-md flex flex-col focusable h-[200px]" tabindex="0">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-outline-variant uppercase tracking-wider">I/O Traffic</span>
+<span class="material-symbols-outlined text-[16px] text-outline">monitoring</span>
+</div>
+<div class="flex-1 flex items-end gap-1 mb-4 opacity-70">
+<!-- Simulated sparkline bars -->
+<div class="w-full bg-secondary-container/20 rounded-t h-[20%]"></div>
+<div class="w-full bg-secondary-container/30 rounded-t h-[40%]"></div>
+<div class="w-full bg-secondary-container/20 rounded-t h-[30%]"></div>
+<div class="w-full bg-secondary-container/40 rounded-t h-[60%]"></div>
+<div class="w-full bg-secondary-container/30 rounded-t h-[45%]"></div>
+<div class="w-full bg-secondary-container/50 rounded-t h-[75%]"></div>
+<div class="w-full bg-secondary-container/40 rounded-t h-[50%]"></div>
+<div class="w-full bg-tertiary/60 rounded-t h-[85%] shadow-[0_0_8px_rgba(89,219,189,0.4)]"></div>
+</div>
+<div class="flex justify-between items-center bg-surface-container-lowest p-2 rounded border border-white/5">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-tertiary">arrow_downward</span>
+<span class="font-code-md text-[12px] text-on-surface">45.2 <span class="text-outline">Mb/s</span></span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-secondary">arrow_upward</span>
+<span class="font-code-md text-[12px] text-on-surface">12.8 <span class="text-outline">Mb/s</span></span>
+</div>
+</div>
+</div>
+<!-- Diagnostics Panel -->
+<div class="bg-surface-container rounded-lg border border-white/12 edge-highlight p-md flex flex-col flex-1">
+<div class="flex items-center justify-between mb-4">
+<span class="font-label-sm text-label-sm text-outline-variant uppercase tracking-wider">Security Posture</span>
+<span class="material-symbols-outlined text-[16px] text-outline">verified_user</span>
+</div>
+<div class="flex flex-col gap-3">
+<label class="flex items-center justify-between p-2 rounded hover:bg-surface-container-high transition-colors cursor-pointer group focusable" tabindex="0">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-tertiary/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">Kill Switch</span>
+</div>
+<div class="w-8 h-4 bg-tertiary rounded-full relative shadow-[0_0_8px_rgba(89,219,189,0.3)]">
+<div class="absolute right-[2px] top-[2px] w-3 h-3 bg-on-tertiary rounded-full"></div>
+</div>
+</label>
+<label class="flex items-center justify-between p-2 rounded hover:bg-surface-container-high transition-colors cursor-pointer group focusable" tabindex="0">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-tertiary/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[14px]">dns</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface">DNS Leak Guard</span>
+</div>
+<div class="w-8 h-4 bg-tertiary rounded-full relative shadow-[0_0_8px_rgba(89,219,189,0.3)]">
+<div class="absolute right-[2px] top-[2px] w-3 h-3 bg-on-tertiary rounded-full"></div>
+</div>
+</label>
+<label class="flex items-center justify-between p-2 rounded hover:bg-surface-container-high transition-colors cursor-pointer group focusable" tabindex="0">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded bg-surface-container-highest flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-[14px]">call_split</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface-variant">Split Tunneling</span>
+</div>
+<div class="w-8 h-4 bg-surface-container-highest rounded-full border border-outline/30 relative">
+<div class="absolute left-[2px] top-[1px] w-3 h-3 bg-outline rounded-full"></div>
+</div>
+</label>
+</div>
+<!-- Mini Log -->
+<div class="mt-auto bg-surface-container-lowest rounded border border-white/5 p-2 h-[80px] overflow-hidden flex flex-col gap-1 focusable" tabindex="0">
+<div class="font-code-md text-[10px] text-tertiary-fixed-dim">
+<span class="opacity-50">[14:12:55]</span> Handshake successful
+                            </div>
+<div class="font-code-md text-[10px] text-outline">
+<span class="opacity-50">[14:12:54]</span> Key exchange complete (curve25519)
+                            </div>
+<div class="font-code-md text-[10px] text-outline">
+<span class="opacity-50">[14:12:54]</span> Initiating peer connection to 185.12.34.88:51820
+                            </div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest text-tertiary-fixed-dim dark:text-tertiary-fixed-dim font-code-md text-code-md docked full-width bottom-0 h-[26px] border-t border-white/12 fixed left-0 w-full flex justify-between items-center px-sm z-50">
+<div class="flex items-center gap-md">
+<span class="text-on-surface-variant opacity-70">v2.4.0-STABLE</span>
+<div class="h-3 w-px bg-white/10"></div>
+<div class="flex items-center gap-1 text-tertiary font-bold focusable cursor-pointer hover:bg-surface-container-highest rounded px-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span>
+                connected
+            </div>
+</div>
+<div class="flex items-center gap-md">
+<span class="text-on-surface-variant opacity-70 cursor-pointer hover:bg-surface-container-highest focusable rounded px-1">main</span>
+<span class="text-on-surface-variant opacity-70 cursor-pointer hover:bg-surface-container-highest focusable rounded px-1">model_ready</span>
+</div>
+</footer>
+</body></html>

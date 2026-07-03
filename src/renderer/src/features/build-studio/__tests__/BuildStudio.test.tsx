@@ -1,12 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { Monaco } from '@monaco-editor/react'
 import type * as monacoEditor from 'monaco-editor'
 import { useEffect } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge, Workspace } from '@shared/contracts'
-import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
-import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { BuildStudio } from '../BuildStudio'
 
@@ -85,7 +84,7 @@ const workspace: Workspace = {
   createdAt: 1
 }
 
-function renderStudio(): ReturnType<typeof render> {
+function renderStudio(): ReturnType<typeof renderWithProviders> {
   const context: WorkspaceContextValue = {
     workspaces: [workspace],
     activeWorkspaceId: workspace.id,
@@ -98,12 +97,10 @@ function renderStudio(): ReturnType<typeof render> {
     setActive: vi.fn()
   }
 
-  return render(
-    <FocusEngineProvider adapters={[new TestAdapter()]}>
-      <WorkspaceContext.Provider value={context}>
-        <BuildStudio />
-      </WorkspaceContext.Provider>
-    </FocusEngineProvider>
+  return renderWithProviders(
+    <WorkspaceContext.Provider value={context}>
+      <BuildStudio />
+    </WorkspaceContext.Provider>
   )
 }
 

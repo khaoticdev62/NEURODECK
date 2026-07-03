@@ -4,8 +4,10 @@ import { StatusBadge, type StatusTone } from '../../components/primitives/Status
 import { EmptyState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
+import { getDeckyStatus, setDeckySettings } from '../../services/ipc/deckyClient'
 import { listModelProviders } from '../../services/ipc/modelClient'
 import { listRemoteHosts } from '../../services/ipc/remoteClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 type IntegrationStatus =
   | 'connected'
@@ -83,9 +85,9 @@ const UNSUPPORTED_CATEGORIES = [
     reason: 'No notification-provider integration exists yet.'
   },
   {
-    id: 'steam-deck',
-    name: 'Steam/Deck integrations',
-    reason: 'Steam Input and Decky adapter are not implemented yet.'
+    id: 'steam-input',
+    name: 'Steam Input (rear buttons)',
+    reason: 'No native Steam Deck input driver is implemented yet — a documented platform gap.'
   }
 ]
 
@@ -130,6 +132,39 @@ function IntegrationRow({
 export function Integrations(): React.JSX.Element {
   const [groups, setGroups] = useState<IntegrationGroup[]>([])
   const [loading, setLoading] = useState(true)
+  const [deckyEnabled, setDeckyEnabled] = useState(false)
+  const [deckyListening, setDeckyListening] = useState(false)
+  const [deckyBusy, setDeckyBusy] = useState(false)
+
+  async function refreshDeckyStatus(): Promise<void> {
+    const result = await getDeckyStatus()
+    if (result.ok) {
+      setDeckyEnabled(result.data.enabled)
+      setDeckyListening(result.data.listening)
+    }
+  }
+
+  async function handleToggleDecky(): Promise<void> {
+    setDeckyBusy(true)
+    const result = await setDeckySettings({ enabled: !deckyEnabled })
+    setDeckyBusy(false)
+    if (result.ok) {
+      setDeckyEnabled(result.data.enabled)
+      await refreshDeckyStatus()
+    }
+  }
+
+  useEffect(() => {
+    let active = true
+    void getDeckyStatus().then((result) => {
+      if (!active || !result.ok) return
+      setDeckyEnabled(result.data.enabled)
+      setDeckyListening(result.data.listening)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -204,6 +239,55 @@ export function Integrations(): React.JSX.Element {
     }
   }, [])
 
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Integration Groups', `${groups.length} groups`, (
+      <NdxToolWindow title="Integration Groups" subtitle={`${groups.length} groups`}>
+        <p className="text-meta text-text-secondary">
+          Model providers and remote systems are backed by real services. Unsupported categories are
+          explicit.
+        </p>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Focus source</p>
+          <p className="text-meta text-text-tertiary">
+            The first real integration row keeps the existing controller initial-focus behavior.
+          </p>
+        </div>
+      </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [groups.length, setPrimary])
+
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Integration Scope" subtitle="Local only" side="right">
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Data policy</p>
+          <p className="text-meta text-text-tertiary">
+            Integrations run entirely locally unless explicit opt-in happens.
+          </p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [setSecondary])
+
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Integration Scope" subtitle="No fake state" side="right">
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Status policy</p>
+          <p className="text-meta text-text-tertiary">
+            Categories without backend services are marked unsupported instead of simulated.
+          </p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [setSecondary])
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -223,21 +307,10 @@ export function Integrations(): React.JSX.Element {
     )
   }
 
-  return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
-      <NdxToolWindow title="Integration Groups" subtitle={`${groups.length} groups`}>
-        <p className="text-meta text-text-secondary">
-          Model providers and remote systems are backed by real services. Unsupported categories are
-          explicit.
-        </p>
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Focus source</p>
-          <p className="text-meta text-text-tertiary">
-            The first real integration row keeps the existing controller initial-focus behavior.
-          </p>
-        </div>
-      </NdxToolWindow>
 
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Integration Inventory">
         <div className="flex min-h-full flex-col gap-4 p-4">
           <header>
@@ -246,6 +319,31 @@ export function Integrations(): React.JSX.Element {
               Real integrations are shown as-is; unsupported categories are labeled honestly.
             </p>
           </header>
+
+          <section>
+            <p className="mb-1 text-meta font-semibold text-text-primary">
+              Steam/Deck integrations
+            </p>
+            <div className="flex flex-col gap-1">
+              <IntegrationRow
+                item={{
+                  id: 'decky-bridge',
+                  name: deckyBusy
+                    ? 'Decky Loader bridge (working...)'
+                    : 'Decky Loader bridge — activate to toggle',
+                  category: 'Steam/Deck integrations',
+                  status: deckyEnabled ? (deckyListening ? 'connected' : 'error') : 'disconnected',
+                  detail: deckyEnabled
+                    ? deckyListening
+                      ? 'Loopback bridge is listening for the separate Decky plugin.'
+                      : 'Enabled, but the loopback listener failed to start — check logs.'
+                    : 'Off by default. Activate to start the real, loopback-only, token-authenticated bridge a separate Decky Loader plugin can call into.'
+                }}
+                index={1}
+                onActivate={() => void handleToggleDecky()}
+              />
+            </div>
+          </section>
 
           {groups.map((group, groupIndex) => (
             <section key={group.category}>
@@ -264,15 +362,6 @@ export function Integrations(): React.JSX.Element {
           ))}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Integration Scope" subtitle="No fake state" side="right">
-        <div>
-          <p className="text-meta font-semibold text-text-primary">Status policy</p>
-          <p className="text-meta text-text-tertiary">
-            Categories without backend services are marked unsupported instead of simulated.
-          </p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

@@ -66,7 +66,7 @@ export function PrivacyDataMap(): React.JSX.Element {
   if (loading) return <p className="p-4 text-meta text-text-secondary">Loading data map…</p>
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[minmax(44rem,1fr)_20rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[minmax(44rem,1fr)_20rem]">
       <NdxEditorShell title="Privacy Data Map">
         <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
           <p className="text-title font-semibold text-text-primary">Privacy and Data Map</p>

@@ -81,7 +81,7 @@ export function Modal({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'flex max-h-full flex-col gap-4 overflow-auto rounded-lg border border-border bg-surface p-6 shadow-elevated',
+          'ndx-hairline-top flex max-h-full flex-col gap-4 overflow-auto rounded-lg border border-border bg-surface p-6 shadow-elevated',
           fullscreen
             ? 'w-[var(--ndx-dialog-safe-width)]'
             : 'w-full max-w-[var(--ndx-modal-max-width)]',

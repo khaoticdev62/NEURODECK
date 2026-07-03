@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK OS - Sandbox Browser</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed-variant": "#452daf",
+                      "on-primary-container": "#28008a",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "on-secondary-container": "#003f4e",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "tertiary": "#59dbbd",
+                      "tertiary-container": "#00a488",
+                      "on-surface-variant": "#c9c4d6",
+                      "surface-container-low": "#1c1b22",
+                      "surface-bright": "#3a3841",
+                      "surface": "#14121a",
+                      "surface-container-highest": "#35343c",
+                      "surface-dim": "#14121a",
+                      "secondary": "#4dd6fd",
+                      "on-secondary": "#003543",
+                      "surface-container": "#201f27",
+                      "inverse-on-surface": "#312f38",
+                      "surface-tint": "#c8bfff",
+                      "on-tertiary": "#00382d",
+                      "error-container": "#93000a",
+                      "secondary-fixed": "#b5ebff",
+                      "outline-variant": "#484553",
+                      "on-tertiary-container": "#003127",
+                      "primary-fixed-dim": "#c8bfff",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "on-background": "#e5e0ec",
+                      "surface-container-high": "#2b2931",
+                      "on-error": "#690005",
+                      "tertiary-fixed": "#79f8d8",
+                      "secondary-container": "#00b2d7",
+                      "surface-container-lowest": "#0e0d15",
+                      "on-tertiary-fixed": "#002019",
+                      "on-secondary-fixed": "#001f28",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "primary": "#c8bfff",
+                      "error": "#ffb4ab",
+                      "on-error-container": "#ffdad6",
+                      "background": "#14121a",
+                      "on-primary": "#2e0599",
+                      "inverse-primary": "#5e49c8",
+                      "outline": "#928e9f",
+                      "inverse-surface": "#e5e0ec",
+                      "on-surface": "#e5e0ec",
+                      "primary-fixed": "#e5deff",
+                      "primary-container": "#917eff",
+                      "on-primary-fixed": "#1a0063",
+                      "surface-variant": "#35343c"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "12px",
+                      "hit-target": "44px",
+                      "lg": "24px",
+                      "base": "4px",
+                      "xs": "8px",
+                      "md": "16px",
+                      "xl": "32px",
+                      "safe-margin": "40px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "display": [
+                              "Geist"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "code-md": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "code-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        /* NeuroSpatial Workbench Custom Styles */
+        body {
+            background-color: #0e0d15; /* surface-container-lowest / background_deepest */
+            color: #e5e0ec; /* on-surface */
+        }
+        
+        /* Hairline Edges */
+        .hairline-t {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+        .hairline-b {
+            box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.12);
+        }
+        .hairline-all {
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        }
+
+        /* Focus Rings - Apple tvOS inspired */
+        .focus-ring:focus-within, .focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(200, 191, 255, 0.4), 0 0 15px rgba(200, 191, 255, 0.2); /* primary color halo */
+            transform: scale(1.02);
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            z-index: 10;
+        }
+
+        /* Button Inner Gradient */
+        .btn-gradient {
+            background-image: linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #14121a; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #35343c; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484553; 
+        }
+
+        /* Neural Pulse Animation */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.05); opacity: 0.6; }
+        }
+        .neural-pulse-idle {
+            animation: breathe 4s ease-in-out infinite;
+        }
+        
+        /* Glowing text accents */
+        .text-glow-primary {
+            text-shadow: 0 0 8px rgba(200, 191, 255, 0.4);
+        }
+        .text-glow-secondary {
+            text-shadow: 0 0 8px rgba(77, 214, 253, 0.4);
+        }
+        .text-glow-tertiary {
+            text-shadow: 0 0 8px rgba(89, 219, 189, 0.4);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col font-body-md bg-surface-container-lowest text-on-surface">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary font-headline-md text-headline-md w-full top-0 border-b border-outline-variant bg-surface-container-low flex items-center justify-between px-lg h-hit-target w-full z-40 shrink-0">
+<div class="flex items-center gap-lg">
+<div class="font-display text-display text-primary uppercase tracking-tighter">NEURODECK OS</div>
+<!-- Browser Controls -->
+<div class="flex items-center gap-xs ml-xl">
+<button class="h-hit-target w-hit-target flex items-center justify-center rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-colors scale-95 active:duration-100 focus-ring">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<button class="h-hit-target w-hit-target flex items-center justify-center rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-colors scale-95 active:duration-100 focus-ring opacity-50 cursor-not-allowed">
+<span class="material-symbols-outlined" data-icon="arrow_forward">arrow_forward</span>
+</button>
+<button class="h-hit-target w-hit-target flex items-center justify-center rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-highest transition-colors scale-95 active:duration-100 focus-ring">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+</button>
+</div>
+<!-- Address Bar -->
+<div class="flex-1 max-w-2xl flex items-center bg-surface-container-lowest border border-outline-variant/40 rounded-DEFAULT h-10 px-md focus-ring hairline-t relative ml-md group">
+<span class="material-symbols-outlined text-secondary text-[18px] mr-sm" data-icon="lock">lock</span>
+<span class="font-code-md text-code-md text-secondary tracking-widest mr-md">SANDBOX_ACTIVE //</span>
+<input class="bg-transparent border-none outline-none w-full text-on-surface font-body-md text-body-md placeholder-on-surface-variant/50 focus:ring-0 p-0" readonly="" type="text" value="sandbox://start"/>
+<div class="absolute right-md top-1/2 -translate-y-1/2 flex items-center gap-xs opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] cursor-pointer hover:text-primary transition-colors" data-icon="content_copy">content_copy</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<nav class="hidden md:flex items-center gap-lg mr-lg">
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors px-md py-xs rounded-DEFAULT" href="#">GPT-4o</a>
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors px-md py-xs rounded-DEFAULT" href="#">Claude-3.5</a>
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors px-md py-xs rounded-DEFAULT" href="#">Research</a>
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors px-md py-xs rounded-DEFAULT" href="#">Docs</a>
+</nav>
+<button class="flex items-center gap-xs bg-primary text-on-primary font-label-md text-label-md px-md h-hit-target rounded-DEFAULT btn-gradient focus-ring scale-95 active:duration-100 hover:opacity-90 transition-opacity">
+                Extract to Memory
+            </button>
+<div class="flex items-center gap-xs border-l border-outline-variant/50 pl-md">
+<button class="w-hit-target h-hit-target flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors focus-ring rounded-full">
+<span class="material-symbols-outlined" data-icon="refresh">refresh</span>
+</button>
+<button class="w-hit-target h-hit-target flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors focus-ring rounded-full">
+<span class="material-symbols-outlined" data-icon="shield">shield</span>
+</button>
+<button class="w-hit-target h-hit-target flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors focus-ring rounded-full">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<div class="flex-1 flex overflow-hidden">
+<!-- SideNavBar -->
+<aside class="bg-surface-container-low dark:bg-surface-container-low text-secondary dark:text-secondary font-label-md text-label-md h-full w-64 left-0 border-r border-outline-variant flex flex-col h-full py-lg z-30 shrink-0">
+<div class="px-md mb-xl flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center relative hairline-t">
+<span class="material-symbols-outlined text-primary" data-icon="terminal">terminal</span>
+<div class="absolute -bottom-1 -right-1 w-3 h-3 bg-tertiary rounded-full border-2 border-surface-container-low"></div>
+</div>
+<div>
+<div class="font-display text-headline-lg text-primary tracking-tight">NEURODECK</div>
+<div class="font-code-md text-[10px] text-on-surface-variant opacity-70">v2.4.0-stable</div>
+</div>
+</div>
+<nav class="flex-1 px-sm space-y-xs overflow-y-auto">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+                    Terminal
+                </a>
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container rounded-lg px-md py-xs border-l-4 border-secondary focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+                    Neural Pulse
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="vitals">vitals</span>
+                    Sandbox
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="database">database</span>
+                    Memory
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+                    Network
+                </a>
+</nav>
+<div class="mt-auto px-sm pt-md border-t border-outline-variant/30 space-y-xs">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="help">help</span>
+                    Help
+                </a>
+<a class="flex items-center gap-md text-error px-md py-xs rounded-lg hover:bg-error-container hover:text-on-error-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="power_settings_new">power_settings_new</span>
+                    Power
+                </a>
+</div>
+</aside>
+<!-- Main Content Area (Start Page) -->
+<main class="flex-1 bg-surface-dim relative overflow-hidden flex flex-col p-safe-margin z-10">
+<!-- Background Elements -->
+<div class="absolute inset-0 pointer-events-none opacity-20" style="background-image: radial-gradient(circle at 50% 0%, #28008a 0%, transparent 70%);"></div>
+<div class="max-w-6xl w-full mx-auto flex-1 flex flex-col relative z-10">
+<!-- Welcome Header -->
+<div class="flex justify-between items-end mb-xl pb-md border-b border-outline-variant/30">
+<div>
+<h1 class="font-display text-[42px] leading-tight text-on-surface text-glow-primary tracking-tighter mb-xs">Sandbox Environment</h1>
+<p class="font-code-md text-code-md text-tertiary">Secure isolated session established. Neural monitoring active.</p>
+</div>
+<div class="flex items-center gap-sm bg-surface-container px-md py-xs rounded-full border border-outline-variant/50 hairline-t">
+<span class="material-symbols-outlined text-secondary text-[16px]" data-icon="verified_user">verified_user</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">End-to-End Encrypted</span>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-lg flex-1 overflow-y-auto pb-safe-margin pr-sm">
+<!-- Quick Actions -->
+<div class="col-span-12 md:col-span-4 flex flex-col gap-sm">
+<button class="bg-surface-container-highest border border-outline-variant/50 rounded-xl p-md flex items-center gap-md hairline-t focus-ring hover:bg-surface-bright transition-colors group text-left">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface mb-1">New Tab</div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Open a fresh sandbox instance</div>
+</div>
+</button>
+<button class="bg-surface-container-highest border border-outline-variant/50 rounded-xl p-md flex items-center gap-md hairline-t focus-ring hover:bg-surface-bright transition-colors group text-left">
+<div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-on-surface mb-1">Launch Terminal</div>
+<div class="font-body-md text-[13px] text-on-surface-variant">Connect to underlying node</div>
+</div>
+</button>
+</div>
+<!-- Bookmarks / Resources -->
+<div class="col-span-12 md:col-span-8 grid grid-cols-2 gap-lg">
+<!-- Documentation Category -->
+<div class="bg-surface-container border border-outline-variant/40 rounded-xl p-lg hairline-t flex flex-col">
+<div class="flex items-center gap-sm mb-md text-primary">
+<span class="material-symbols-outlined" data-icon="menu_book">menu_book</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Documentation</h2>
+</div>
+<div class="space-y-sm flex-1">
+<a class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-high focus-ring transition-colors group" href="#">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-bright flex items-center justify-center text-on-surface-variant border border-outline-variant/30">
+<span class="material-symbols-outlined text-[16px]" data-icon="javascript">javascript</span>
+</div>
+<span class="font-body-md text-on-surface">MDN Web Docs</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" data-icon="open_in_new">open_in_new</span>
+</a>
+<a class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-high focus-ring transition-colors group" href="#">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-bright flex items-center justify-center text-on-surface-variant border border-outline-variant/30">
+<span class="material-symbols-outlined text-[16px]" data-icon="code">code</span>
+</div>
+<span class="font-body-md text-on-surface">Rust Standard Library</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" data-icon="open_in_new">open_in_new</span>
+</a>
+<a class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-high focus-ring transition-colors group" href="#">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-bright flex items-center justify-center text-secondary border border-outline-variant/30">
+<span class="material-symbols-outlined text-[16px]" data-icon="water_drop">water_drop</span>
+</div>
+<span class="font-body-md text-on-surface">Tailwind CSS</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" data-icon="open_in_new">open_in_new</span>
+</a>
+</div>
+</div>
+<!-- Research Category -->
+<div class="bg-surface-container border border-outline-variant/40 rounded-xl p-lg hairline-t flex flex-col">
+<div class="flex items-center gap-sm mb-md text-tertiary">
+<span class="material-symbols-outlined" data-icon="science">science</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Research</h2>
+</div>
+<div class="space-y-sm flex-1">
+<a class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-high focus-ring transition-colors group" href="#">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-bright flex items-center justify-center text-on-surface-variant border border-outline-variant/30">
+<span class="material-symbols-outlined text-[16px]" data-icon="article">article</span>
+</div>
+<span class="font-body-md text-on-surface">ArXiv Preprints</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" data-icon="open_in_new">open_in_new</span>
+</a>
+<a class="flex items-center justify-between p-sm rounded-lg hover:bg-surface-container-high focus-ring transition-colors group" href="#">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-bright flex items-center justify-center text-on-surface-variant border border-outline-variant/30">
+<span class="material-symbols-outlined text-[16px]" data-icon="folder_code">folder_code</span>
+</div>
+<span class="font-body-md text-on-surface">GitHub Repositories</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[16px] opacity-0 group-hover:opacity-100 transition-opacity" data-icon="open_in_new">open_in_new</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Sidebar (Session & Memory) -->
+<aside class="w-80 bg-surface-container-low border-l border-outline-variant flex flex-col z-20 shrink-0">
+<div class="p-md border-b border-outline-variant/30 flex items-center justify-between">
+<div class="font-headline-md text-headline-md text-on-surface">Session Context</div>
+<div class="w-3 h-3 rounded-full bg-tertiary shadow-[0_0_8px_rgba(89,219,189,0.6)] animate-pulse"></div>
+</div>
+<div class="flex-1 overflow-y-auto p-md space-y-lg">
+<!-- Neural Memory Ingestion -->
+<div>
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="memory">memory</span>
+                        Neural Ingestion
+                    </h3>
+<div class="bg-surface-container rounded-lg p-md border border-outline-variant/40 hairline-t relative overflow-hidden">
+<!-- Progress Background -->
+<div class="absolute inset-0 bg-primary/5 w-[65%] border-r border-primary/20"></div>
+<div class="relative z-10">
+<div class="flex justify-between items-center mb-sm">
+<span class="font-body-md text-on-surface text-[13px]">Current Session Data</span>
+<span class="font-code-md text-primary text-[12px]">65%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-bright rounded-full overflow-hidden mb-xs">
+<div class="h-full bg-primary w-[65%] shadow-[0_0_10px_rgba(200,191,255,0.5)]"></div>
+</div>
+<div class="font-code-md text-[10px] text-on-surface-variant text-right">24 fragments processed</div>
+</div>
+</div>
+</div>
+<!-- Active Fragments -->
+<div>
+<h3 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="grid_view">grid_view</span>
+                        Active Fragments
+                    </h3>
+<div class="space-y-sm">
+<!-- Fragment Item -->
+<div class="bg-surface rounded-lg p-sm border border-outline-variant/30 flex gap-sm items-start focus-ring relative group cursor-pointer">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-secondary transition-all group-hover:h-3/4 rounded-r-full"></div>
+<div class="w-6 h-6 rounded bg-surface-bright flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-secondary" data-icon="description">description</span>
+</div>
+<div>
+<div class="font-label-md text-on-surface mb-0.5 line-clamp-1">Rust Async/Await Patterns</div>
+<div class="font-code-md text-[10px] text-on-surface-variant">Extracted 2m ago</div>
+</div>
+</div>
+<!-- Fragment Item -->
+<div class="bg-surface rounded-lg p-sm border border-outline-variant/30 flex gap-sm items-start focus-ring relative group cursor-pointer">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-0 bg-primary transition-all group-hover:h-3/4 rounded-r-full"></div>
+<div class="w-6 h-6 rounded bg-surface-bright flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[14px] text-primary" data-icon="image">image</span>
+</div>
+<div>
+<div class="font-label-md text-on-surface mb-0.5 line-clamp-1">UI Component Reference</div>
+<div class="font-code-md text-[10px] text-on-surface-variant">Extracted 15m ago</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Neural Pulse Indicator -->
+<div class="p-md border-t border-outline-variant/30 flex justify-center items-center h-32 bg-surface-container-low/50">
+<div class="relative w-16 h-16 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border-2 border-primary/30 neural-pulse-idle"></div>
+<div class="absolute inset-2 rounded-full border border-primary/20"></div>
+<span class="material-symbols-outlined text-primary text-glow-primary z-10" data-icon="psychology">psychology</span>
+</div>
+</div>
+</aside>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest text-tertiary dark:text-tertiary font-code-md text-code-md w-full bottom-0 border-t border-outline-variant bg-surface-container-lowest flex justify-between items-center px-safe-margin py-xs w-full fixed bottom-0 z-50">
+<div class="font-code-md text-primary opacity-80 hover:opacity-100">NEURODECK OS // SANDBOX_ACTIVE</div>
+<div class="flex items-center gap-lg">
+<a class="text-outline hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Kernel</a>
+<a class="text-outline hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Latency: 12ms</a>
+<a class="text-outline hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Uptime: 99.9%</a>
+</div>
+</footer>
+</body></html>

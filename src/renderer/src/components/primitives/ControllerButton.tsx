@@ -10,12 +10,12 @@ export interface ControllerButtonProps extends ButtonHTMLAttributes<HTMLButtonEl
 
 const VARIANT_CLASSES: Record<ControllerButtonVariant, string> = {
   primary:
-    'border border-[var(--ndx-workbench-control-bg-active)] bg-[var(--ndx-workbench-control-bg-active)] text-[var(--ndx-workbench-control-text-active)] hover:brightness-110',
+    'ndx-inner-glow ndx-primary-glow border border-[var(--ndx-workbench-control-bg-active)] bg-[var(--ndx-workbench-control-bg-active)] text-[var(--ndx-workbench-control-text-active)] hover:brightness-110',
   secondary:
-    'border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-control-bg)] text-text-primary hover:border-[var(--ndx-workbench-border-active)] hover:bg-[var(--ndx-workbench-control-bg-hover)]',
+    'ndx-inner-glow border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-control-bg)] text-text-primary hover:border-[var(--ndx-workbench-border-active)] hover:bg-[var(--ndx-workbench-control-bg-hover)]',
   ghost:
     'border border-transparent bg-transparent text-text-primary hover:border-[var(--ndx-workbench-border-muted)] hover:bg-[var(--ndx-workbench-row-hover-bg)]',
-  destructive: 'border border-status-error bg-status-error text-canvas hover:brightness-110'
+  destructive: 'ndx-inner-glow border border-status-error bg-status-error text-canvas hover:brightness-110 hover:shadow-[0_0_24px_0_rgb(255_180_171_/_0.45)]'
 }
 
 /**

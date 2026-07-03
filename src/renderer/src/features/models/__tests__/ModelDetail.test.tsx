@@ -1,6 +1,7 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelProvider, NdxBridge } from '@shared/contracts'
 import { ModelDetail } from '../ModelDetail'
@@ -14,13 +15,12 @@ afterEach(() => {
   delete window.ndx
 })
 
-function renderScreen(providerId = 'p1'): ReturnType<typeof render> {
-  return render(
-    <MemoryRouter initialEntries={[`/models/${providerId}`]}>
-      <Routes>
-        <Route path="/models/:providerId" element={<ModelDetail />} />
-      </Routes>
-    </MemoryRouter>
+function renderScreen(providerId = 'p1'): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/models/:providerId" element={<ModelDetail />} />
+    </Routes>,
+    { initialEntries: [`/models/${providerId}`] }
   )
 }
 

@@ -13,6 +13,10 @@ import { hostname, homedir } from 'node:os'
 import { join } from 'node:path'
 import { AgentRuntime } from '../../core/agents/AgentRuntime'
 import { AgentStore } from '../../core/agents/AgentStore'
+import { ChatRuntime } from '../../core/chat/ChatRuntime'
+import { ConversationStore } from '../../core/chat/ConversationStore'
+import { DeckyBridgeService } from '../../core/decky/DeckyBridgeService'
+import { DeckySettingsStore } from '../../core/decky/DeckySettingsStore'
 import { BackupScheduleStore } from '../../core/backup/BackupScheduleStore'
 import { BackupScheduler } from '../../core/backup/BackupScheduler'
 import { BackupService } from '../../core/backup/BackupService'
@@ -102,6 +106,8 @@ import { electronSecretCipher } from '../security/electronSecretCipher'
 import { FEATURE_CATALOG } from '../../shared/features/featureCatalog'
 import { IPC_CHANNELS } from '@shared/contracts'
 import { registerAgentHandlers } from './registerAgentHandlers'
+import { registerConversationHandlers } from './registerConversationHandlers'
+import { registerDeckyHandlers } from './registerDeckyHandlers'
 import { registerApplicationHandlers } from './registerApplicationHandlers'
 import { registerApplicationPolicyHandlers } from './registerApplicationPolicyHandlers'
 import { registerKioskModeHandlers } from './registerKioskModeHandlers'
@@ -222,7 +228,44 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
     systemMetricsService
   )
   const ollamaRuntime = new OllamaRuntimeService()
-  const capabilityRegistry = new CapabilityRegistry(electronCapabilityDetectors)
+  const deckySettingsStore = new DeckySettingsStore(
+    join(app.getPath('userData'), 'decky-settings.json')
+  )
+  const deckyBridgeService = new DeckyBridgeService(
+    join(app.getPath('userData'), 'decky-bridge.json'),
+    {
+      focusWindow: () => {
+        const window = getWindow()
+        if (!window || window.isDestroyed()) return
+        if (window.isMinimized()) window.restore()
+        window.show()
+        window.focus()
+      },
+      navigate: (path) => {
+        const window = getWindow()
+        if (window && !window.webContents.isDestroyed()) {
+          window.webContents.send(IPC_CHANNELS.deckyNavigate, { path })
+        }
+      },
+      getAppVersion: () => app.getVersion()
+    }
+  )
+  const capabilityRegistry = new CapabilityRegistry({
+    ...electronCapabilityDetectors,
+    'decky-integration': () =>
+      deckyBridgeService.isListening()
+        ? {
+            status: 'available',
+            provider: 'core/decky/DeckyBridgeService',
+            reason:
+              "A real, loopback-only, token-authenticated bridge is listening for the separate Decky Loader plugin. This confirms NeuroDeck's side is up — it cannot confirm the Decky plugin itself is installed or running until that plugin makes a real request."
+          }
+        : {
+            status: 'unsupported',
+            reason:
+              'The Decky Loader bridge is disabled. Enable it from Integrations to start the real loopback listener.'
+          }
+  })
   const continuityStore = new ContinuityStore(join(app.getPath('userData'), 'continuity.json'))
   const featureRegistry = new FeatureRegistry(FEATURE_CATALOG)
   const applicationStore = new ApplicationStore(join(app.getPath('userData'), 'applications.json'))
@@ -453,6 +496,8 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
       }
     }
   )
+  const conversationStore = new ConversationStore(join(app.getPath('userData'), 'conversations'))
+  const chatRuntime = new ChatRuntime(conversationStore, modelRouter)
 
   registerWorkspaceHandlers(workspaceStore, getWindow, gitService, remoteHostStore)
   registerFileHandlers(fileService, recoveryService, workspaceStore)
@@ -463,6 +508,17 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow | null): () =
   registerWorkflowHandlers(workflowStore, workflowRunStore)
   registerModelHandlers(modelProviderStore, modelProviderService, modelRouter, ollamaRuntime)
   registerAgentHandlers(agentStore, agentRuntime)
+  registerConversationHandlers(conversationStore, chatRuntime)
+  registerDeckyHandlers(deckySettingsStore, deckyBridgeService)
+  // Never auto-started against the user's real preference by default (it's
+  // `enabled: false` unless the user has explicitly turned it on from
+  // Integrations) — this only restores that already-explicit choice across
+  // restarts, matching the same "never auto-start past the user's own
+  // configuration" precedent LanShareService already follows.
+  void deckySettingsStore
+    .get()
+    .then((settings) => (settings.enabled ? deckyBridgeService.start() : undefined))
+    .catch(() => undefined)
   registerSystemHandlers(systemMetricsService)
   registerNetworkHandlers(networkService)
   registerUpdateHandlers(updateService)

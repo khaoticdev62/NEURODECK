@@ -6,6 +6,7 @@ import type { NdxBridge, Workspace } from '@shared/contracts'
 import { ToastProvider } from '../../../components/overlays/Toast'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { DisplaySettingsProvider } from '../../../state/displaySettings'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { HomeCommandCenter } from '../HomeCommandCenter'
 
@@ -131,17 +132,19 @@ function renderHome(workspaceValue = makeWorkspaceValue()): ReturnType<typeof re
   return render(
     <ToastProvider>
       <FocusEngineProvider adapters={[new TestAdapter()]}>
-        <WorkspaceContext.Provider value={workspaceValue}>
-          <MemoryRouter initialEntries={['/']}>
-            <Routes>
-              <Route path="/" element={<HomeCommandCenter />} />
-              <Route path="/workspaces" element={<p>Workspaces placeholder</p>} />
-              <Route path="/workspaces/detail" element={<p>Workspace detail placeholder</p>} />
-              <Route path="/learn" element={<p>Learn placeholder</p>} />
-              <Route path="/agents" element={<p>Agents placeholder</p>} />
-            </Routes>
-          </MemoryRouter>
-        </WorkspaceContext.Provider>
+        <DisplaySettingsProvider>
+          <WorkspaceContext.Provider value={workspaceValue}>
+            <MemoryRouter initialEntries={['/']}>
+              <Routes>
+                <Route path="/" element={<HomeCommandCenter />} />
+                <Route path="/workspaces" element={<p>Workspaces placeholder</p>} />
+                <Route path="/workspaces/detail" element={<p>Workspace detail placeholder</p>} />
+                <Route path="/learn" element={<p>Learn placeholder</p>} />
+                <Route path="/agents" element={<p>Agents placeholder</p>} />
+              </Routes>
+            </MemoryRouter>
+          </WorkspaceContext.Provider>
+        </DisplaySettingsProvider>
       </FocusEngineProvider>
     </ToastProvider>
   )

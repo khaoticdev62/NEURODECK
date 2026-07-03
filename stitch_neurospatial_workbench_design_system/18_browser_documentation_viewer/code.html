@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Rust Language Documentation - NEURODECK OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-fixed-variant": "#452daf",
+                        "on-primary-container": "#28008a",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "on-secondary-container": "#003f4e",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "tertiary": "#59dbbd",
+                        "tertiary-container": "#00a488",
+                        "on-surface-variant": "#c9c4d6",
+                        "surface-container-low": "#1c1b22",
+                        "surface-bright": "#3a3841",
+                        "surface": "#14121a",
+                        "surface-container-highest": "#35343c",
+                        "surface-dim": "#14121a",
+                        "secondary": "#4dd6fd",
+                        "on-secondary": "#003543",
+                        "surface-container": "#201f27",
+                        "inverse-on-surface": "#312f38",
+                        "surface-tint": "#c8bfff",
+                        "on-tertiary": "#00382d",
+                        "error-container": "#93000a",
+                        "secondary-fixed": "#b5ebff",
+                        "outline-variant": "#484553",
+                        "on-tertiary-container": "#003127",
+                        "primary-fixed-dim": "#c8bfff",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-background": "#e5e0ec",
+                        "surface-container-high": "#2b2931",
+                        "on-error": "#690005",
+                        "tertiary-fixed": "#79f8d8",
+                        "secondary-container": "#00b2d7",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-tertiary-fixed": "#002019",
+                        "on-secondary-fixed": "#001f28",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "primary": "#c8bfff",
+                        "error": "#ffb4ab",
+                        "on-error-container": "#ffdad6",
+                        "background": "#14121a",
+                        "on-primary": "#2e0599",
+                        "inverse-primary": "#5e49c8",
+                        "outline": "#928e9f",
+                        "inverse-surface": "#e5e0ec",
+                        "on-surface": "#e5e0ec",
+                        "primary-fixed": "#e5deff",
+                        "primary-container": "#917eff",
+                        "on-primary-fixed": "#1a0063",
+                        "surface-variant": "#35343c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "hit-target": "44px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "md": "16px",
+                        "xl": "32px",
+                        "safe-margin": "40px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "display": ["Geist"],
+                        "label-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "code-md": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .inner-glow-top {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+        }
+        .focus-halo:focus-within, .focus-halo:focus {
+            box-shadow: 0 0 0 3px rgba(200, 191, 255, 0.4);
+            transform: scale(1.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+        }
+        .hero-shadow {
+            box-shadow: 0 16px 32px -12px rgba(14, 13, 21, 0.4);
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #484553;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #928e9f;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md h-screen flex flex-col overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="w-full top-0 border-b border-outline-variant bg-surface-container-low flex items-center justify-between px-lg h-hit-target shrink-0 inner-glow-top z-40">
+<div class="flex items-center gap-lg h-full">
+<span class="font-display text-display text-primary uppercase tracking-tighter shrink-0 flex items-center">NEURODECK OS</span>
+<nav class="hidden md:flex items-center gap-md h-full ml-xl">
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors h-full flex items-center px-sm rounded-DEFAULT scale-95 active:duration-100 focus-halo" href="#">GPT-4o</a>
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors h-full flex items-center px-sm rounded-DEFAULT scale-95 active:duration-100 focus-halo" href="#">Claude-3.5</a>
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors h-full flex items-center px-sm rounded-DEFAULT scale-95 active:duration-100 focus-halo" href="#">Research</a>
+<a aria-current="page" class="text-primary font-bold border-b-2 border-primary pb-1 h-full flex items-center px-sm hover:bg-surface-container-highest transition-colors scale-95 active:duration-100 focus-halo" href="#">Docs</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<!-- Address Bar / Verified Sandbox -->
+<div class="hidden lg:flex items-center bg-surface-container-highest border border-outline-variant rounded-full px-md py-1 mr-md max-w-sm w-full">
+<span class="material-symbols-outlined text-tertiary text-sm mr-xs" style="font-variation-settings: 'FILL' 1;">lock</span>
+<span class="font-code-md text-code-md text-tertiary mr-sm shrink-0">Verified Sandbox</span>
+<span class="font-code-md text-code-md text-on-surface-variant truncate border-l border-outline-variant pl-sm opacity-70">docs.rust-lang.org/book/</span>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-md py-xs rounded-lg hover:bg-primary-fixed transition-colors flex items-center gap-xs focus-halo inner-glow-top scale-95 active:duration-100 h-hit-target min-w-[max-content]">
+                Extract to Memory
+            </button>
+<div class="flex items-center gap-xs">
+<button class="text-primary hover:bg-surface-container-highest transition-colors rounded-full p-xs focus-halo scale-95 active:duration-100 w-hit-target h-hit-target flex items-center justify-center">
+<span class="material-symbols-outlined">refresh</span>
+</button>
+<button class="text-primary hover:bg-surface-container-highest transition-colors rounded-full p-xs focus-halo scale-95 active:duration-100 w-hit-target h-hit-target flex items-center justify-center">
+<span class="material-symbols-outlined">shield</span>
+</button>
+<button class="text-primary hover:bg-surface-container-highest transition-colors rounded-full p-xs focus-halo scale-95 active:duration-100 w-hit-target h-hit-target flex items-center justify-center">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden relative">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full w-64 left-0 bg-surface-container-low border-r border-outline-variant py-lg shrink-0 z-30">
+<div class="px-md mb-xl flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant inner-glow-top overflow-hidden shrink-0">
+<span class="material-symbols-outlined text-primary">psychology</span>
+</div>
+<div>
+<h2 class="font-display text-headline-lg text-primary leading-tight">NEURODECK</h2>
+<p class="font-code-md text-code-md text-on-surface-variant opacity-70">v2.4.0-stable</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-xs px-sm overflow-y-auto">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs hover:bg-surface-container-high hover:text-on-surface rounded-lg focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all min-h-[44px]" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-md text-label-md">Terminal</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs hover:bg-surface-container-high hover:text-on-surface rounded-lg focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all min-h-[44px]" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-md text-label-md">Neural Pulse</span>
+</a>
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container rounded-lg px-md py-xs border-l-4 border-secondary hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all min-h-[44px]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">vitals</span>
+<span class="font-label-md text-label-md">Sandbox</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs hover:bg-surface-container-high hover:text-on-surface rounded-lg focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all min-h-[44px]" href="#">
+<span class="material-symbols-outlined">database</span>
+<span class="font-label-md text-label-md">Memory</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs hover:bg-surface-container-high hover:text-on-surface rounded-lg focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all min-h-[44px]" href="#">
+<span class="material-symbols-outlined">hub</span>
+<span class="font-label-md text-label-md">Network</span>
+</a>
+</nav>
+<div class="mt-auto px-sm flex flex-col gap-xs pt-lg border-t border-outline-variant/30">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs hover:bg-surface-container-high hover:text-on-surface rounded-lg focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all min-h-[44px]" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Help</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs hover:bg-surface-container-high hover:text-on-surface rounded-lg focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-error">power_settings_new</span>
+<span class="font-label-md text-label-md">Power</span>
+</a>
+</div>
+</aside>
+<!-- Main Workspace (Bento Layout) -->
+<main class="flex-1 flex flex-col lg:flex-row p-md lg:p-safe-margin gap-lg overflow-hidden bg-background relative pb-[60px]">
+<!-- Left: Highlight & Ingest Toolbar + Mini Nav -->
+<div class="w-full lg:w-16 flex flex-row lg:flex-col gap-sm shrink-0 order-2 lg:order-1">
+<div class="bg-surface-container rounded-xl p-xs flex lg:flex-col gap-xs border border-outline-variant inner-glow-top hero-shadow">
+<button class="w-10 h-10 rounded-lg bg-surface-container-highest hover:bg-primary/20 text-on-surface-variant hover:text-primary flex items-center justify-center transition-colors focus-halo group" title="Select Text">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">format_ink_highlighter</span>
+</button>
+<button class="w-10 h-10 rounded-lg bg-surface-container-highest hover:bg-secondary/20 text-on-surface-variant hover:text-secondary flex items-center justify-center transition-colors focus-halo group" title="Extract Block">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">content_copy</span>
+</button>
+<div class="w-8 h-[1px] lg:w-[1px] lg:h-8 bg-outline-variant/50 self-center my-xs"></div>
+<button class="w-10 h-10 rounded-lg bg-surface-container-highest hover:bg-tertiary/20 text-on-surface-variant hover:text-tertiary flex items-center justify-center transition-colors focus-halo group" title="Add to Context">
+<span class="material-symbols-outlined group-hover:scale-110 transition-transform">library_add</span>
+</button>
+</div>
+</div>
+<!-- Center: Browser View Canvas (Glassmorphism) -->
+<div class="flex-1 bg-surface-container-low rounded-xl border border-outline-variant inner-glow-top flex flex-col overflow-hidden hero-shadow order-1 lg:order-2 relative group min-w-0">
+<!-- Browser Content Header -->
+<div class="h-12 bg-surface-container-highest border-b border-outline-variant flex items-center px-md justify-between shrink-0">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md text-on-surface">Ownership and Functions</span>
+</div>
+<div class="flex items-center gap-xs opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="font-code-md text-code-md text-on-surface-variant bg-surface px-2 py-0.5 rounded">Ctrl+S to save selection</span>
+</div>
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto p-lg lg:p-xl font-body-lg text-body-lg text-on-surface-variant bg-[#1a1820]">
+<article class="prose prose-invert max-w-3xl mx-auto">
+<h1 class="font-display text-display text-on-surface mb-lg">Ownership and Functions</h1>
+<p class="mb-md">The semantics for passing a value to a function are similar to those for assigning a value to a variable. Passing a variable to a function will move or copy, just as assignment does.</p>
+<div class="bg-surface-container rounded-lg p-md border border-outline-variant mb-lg font-code-md text-code-md relative group/code">
+<button class="absolute top-sm right-sm bg-surface-container-highest p-1 rounded opacity-0 group-hover/code:opacity-100 transition-opacity focus-halo">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+<pre class="text-primary-fixed-dim"><code><span class="text-tertiary">fn</span> <span class="text-secondary-fixed">main</span>() {
+    <span class="text-tertiary">let</span> s = String::from(<span class="text-tertiary-container">"hello"</span>);  <span class="text-outline-variant">// s comes into scope</span>
+
+    takes_ownership(s);             <span class="text-outline-variant">// s's value moves into the function...</span>
+                                    <span class="text-outline-variant">// ... and so is no longer valid here</span>
+
+    <span class="text-tertiary">let</span> x = <span class="text-secondary">5</span>;                      <span class="text-outline-variant">// x comes into scope</span>
+
+    makes_copy(x);                  <span class="text-outline-variant">// x would move into the function,</span>
+                                    <span class="text-outline-variant">// but i32 is Copy, so it's okay to still</span>
+                                    <span class="text-outline-variant">// use x afterward</span>
+}</code></pre>
+</div>
+<p class="mb-md bg-secondary/10 border-l-4 border-secondary p-md rounded-r-lg text-on-surface">
+                            If we tried to use <code class="bg-surface px-1 py-0.5 rounded text-secondary-fixed">s</code> after the call to <code class="bg-surface px-1 py-0.5 rounded text-secondary-fixed">takes_ownership</code>, Rust would throw a compile-time error. These static checks protect us from mistakes.
+                        </p>
+</article>
+</div>
+</div>
+<!-- Right: Schema Explorer & Telemetry -->
+<div class="w-full lg:w-80 flex flex-col gap-lg shrink-0 order-3 z-10 overflow-y-auto">
+<!-- Neural Relevance (AI State) -->
+<div class="bg-surface-container-low rounded-xl p-md border border-outline-variant inner-glow-top hero-shadow flex items-center justify-between">
+<div>
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-1">Neural Relevance</h3>
+<div class="font-headline-md text-headline-md text-secondary flex items-center gap-xs">
+                            High <span class="text-sm text-secondary/70">89%</span>
+</div>
+</div>
+<!-- Neural Pulse Simulation -->
+<div class="relative w-12 h-12 flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border-2 border-secondary/30 animate-[pulse_2s_ease-in-out_infinite]"></div>
+<div class="absolute inset-2 rounded-full border border-secondary/60 animate-[spin_4s_linear_infinite]"></div>
+<div class="w-4 h-4 bg-secondary rounded-full shadow-[0_0_10px_#4dd6fd]"></div>
+</div>
+</div>
+<!-- Schema Explorer -->
+<div class="bg-surface-container-low rounded-xl border border-outline-variant inner-glow-top hero-shadow flex-1 flex flex-col overflow-hidden">
+<div class="p-md border-b border-outline-variant bg-surface-container-highest flex items-center justify-between">
+<h3 class="font-label-md text-label-md text-on-surface uppercase tracking-wider flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm">account_tree</span>
+                             Schema Explorer
+                         </h3>
+<span class="bg-primary/20 text-primary font-code-md text-[10px] px-2 py-0.5 rounded">Auto-Extract</span>
+</div>
+<div class="flex-1 overflow-y-auto p-sm flex flex-col gap-xs">
+<!-- Entity Card -->
+<div class="bg-surface-container p-sm rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors cursor-pointer group focus-halo" tabindex="0">
+<div class="flex items-center justify-between mb-xs">
+<span class="font-code-md text-code-md text-secondary-fixed">String</span>
+<span class="material-symbols-outlined text-outline-variant text-sm group-hover:text-secondary">add_circle</span>
+</div>
+<p class="font-body-md text-[12px] text-on-surface-variant line-clamp-2">A UTF-8–encoded, growable string. Moved, not copied by default.</p>
+</div>
+<!-- Entity Card -->
+<div class="bg-surface-container p-sm rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors cursor-pointer group focus-halo border-l-4 border-l-primary" tabindex="0">
+<div class="flex items-center justify-between mb-xs">
+<span class="font-code-md text-code-md text-primary-fixed">Ownership</span>
+<span class="material-symbols-outlined text-outline-variant text-sm group-hover:text-primary">add_circle</span>
+</div>
+<p class="font-body-md text-[12px] text-on-surface-variant line-clamp-2">Rules governing memory management. Verified at compile time.</p>
+</div>
+<!-- Entity Card -->
+<div class="bg-surface-container p-sm rounded-lg border border-outline-variant hover:bg-surface-container-highest transition-colors cursor-pointer group focus-halo" tabindex="0">
+<div class="flex items-center justify-between mb-xs">
+<span class="font-code-md text-code-md text-tertiary-fixed">Copy Trait</span>
+<span class="material-symbols-outlined text-outline-variant text-sm group-hover:text-tertiary">add_circle</span>
+</div>
+<p class="font-body-md text-[12px] text-on-surface-variant line-clamp-2">Types stored entirely on the stack (e.g., i32) implement Copy.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="w-full bottom-0 border-t border-outline-variant bg-surface-container-lowest flex justify-between items-center px-safe-margin py-xs fixed z-50 inner-glow-top">
+<div class="font-code-md text-code-md text-primary opacity-80 hover:opacity-100">
+            NEURODECK OS // SANDBOX_ACTIVE
+        </div>
+<div class="flex items-center gap-md">
+<a class="font-code-md text-code-md text-outline hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Kernel</a>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<a class="font-code-md text-code-md text-outline hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Latency: 12ms</a>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<a class="font-code-md text-code-md text-outline hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Uptime: 99.9%</a>
+</div>
+</footer>
+</body></html>

@@ -5,13 +5,14 @@ import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { cn } from '../../components/primitives/cn'
-import { NdxDeckLayout, NdxEditorShell } from '../../components/workbench'
+import { NdxEditorShell } from '../../components/workbench'
 import {
   addRemoteHost,
   listRemoteHosts,
   removeRemoteHost,
   testRemoteHostConnection
 } from '../../services/ipc/remoteClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 /**
  * ND-040 Remote Systems, scoped to SSH hosts. The Deck layout keeps host
@@ -56,43 +57,47 @@ export function RemoteSystems(): React.JSX.Element {
     setHosts((current) => current.filter((host) => host.id !== hostId))
   }
 
-  const hostList = (
-    <HostList
-      hosts={hosts}
-      error={error}
-      loading={loading}
-      showAddForm={showAddForm}
-      onToggleAdd={() => setShowAddForm((current) => !current)}
-      onOpen={(host) => navigate(`/remote/${host.id}`)}
-      onRemove={(host) => void handleRemove(host.id)}
-    />
-  )
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+
+  useEffect(() => {
+    setPrimary('Remote Hosts', undefined, (
+      <div className="flex h-full flex-col p-3">
+        <HostList
+          hosts={hosts}
+          error={error}
+          loading={loading}
+          showAddForm={showAddForm}
+          onToggleAdd={() => setShowAddForm((current) => !current)}
+          onOpen={(host) => navigate(`/remote/${host.id}`)}
+          onRemove={(host) => void handleRemove(host.id)}
+        />
+      </div>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [hosts, error, loading, showAddForm, navigate, setPrimary])
 
   return (
-    <NdxDeckLayout>
-      <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-2 overflow-hidden docked:grid-cols-[22rem_minmax(0,1fr)]">
-        <section className="ndx-workbench-surface min-h-0 overflow-hidden p-3">{hostList}</section>
-        <NdxEditorShell title={showAddForm ? 'Add SSH Host' : 'Remote Session Launcher'}>
-          {showAddForm ? (
-            <div className="p-3">
-              <AddHostForm
-                onAdded={() => {
-                  setShowAddForm(false)
-                  void refresh()
-                }}
-                onError={setError}
-              />
-            </div>
-          ) : (
-            <EmptyState
-              className="h-full"
-              title="Select a remote host"
-              description="Open a host to start a remote terminal session."
+    <div className="h-full bg-[var(--ndx-workbench-editor-bg)]">
+      <NdxEditorShell title={showAddForm ? 'Add SSH Host' : 'Remote Session Launcher'}>
+        {showAddForm ? (
+          <div className="p-3">
+            <AddHostForm
+              onAdded={() => {
+                setShowAddForm(false)
+                void refresh()
+              }}
+              onError={setError}
             />
-          )}
-        </NdxEditorShell>
-      </div>
-    </NdxDeckLayout>
+          </div>
+        ) : (
+          <EmptyState
+            className="h-full"
+            title="Select a remote host"
+            description="Open a host to start a remote terminal session."
+          />
+        )}
+      </NdxEditorShell>
+    </div>
   )
 }
 

@@ -1,12 +1,7 @@
 import { createContext } from 'react'
 
 export type ToastCategory =
-  | 'information'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'approval-required'
-  | 'background-task-complete'
+  'information' | 'success' | 'warning' | 'error' | 'approval-required' | 'background-task-complete'
 
 export interface ToastInput {
   category: ToastCategory

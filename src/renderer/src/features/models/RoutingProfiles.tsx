@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { ModelRouteDecision, RoutingProfileId } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import { routeModel } from '../../services/ipc/modelClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 const PROFILES: Array<{ id: RoutingProfileId; label: string; description: string }> = [
   {
@@ -62,8 +63,11 @@ export function RoutingProfiles(): React.JSX.Element {
 
   const selectedProfile = PROFILES.find((profile) => profile.id === profileId) ?? PROFILES[0]
 
-  return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Profiles', `${PROFILES.length} routing modes`, (
       <NdxToolWindow title="Profiles" subtitle={`${PROFILES.length} routing modes`}>
         <p className="text-meta text-text-secondary">
           Profiles route against real provider availability and current device measurements.
@@ -83,7 +87,33 @@ export function RoutingProfiles(): React.JSX.Element {
           ))}
         </div>
       </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [profileId, setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Decision Context" subtitle={profileId} side="right">
+        <div>
+          <p className="text-meta font-semibold text-text-primary">Preview input</p>
+          <p className="text-meta text-text-tertiary">
+            Temperature 0.2, max 2048 tokens, private workspace only for private profile.
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Routing source</p>
+          <p className="text-meta text-text-tertiary">
+            The preview uses the existing typed model router IPC. No provider availability or
+            measurements are mocked here.
+          </p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [profileId, setSecondary])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Routing Profiles">
         <div className="flex min-h-full flex-col gap-3 p-3">
           <NdxFocusSurface active density="comfortable" className="p-4">
@@ -96,7 +126,7 @@ export function RoutingProfiles(): React.JSX.Element {
 
           {error && <ErrorState title="No route available" description={error} />}
           {decision && (
-            <section className="border border-border bg-surface p-3">
+            <section className="ndx-settings-section">
               <p className="text-body font-semibold text-text-primary">{decision.modelId}</p>
               <p className="text-meta text-text-secondary">
                 {decision.providerName} - {decision.local ? 'Local' : 'Cloud'}
@@ -115,22 +145,6 @@ export function RoutingProfiles(): React.JSX.Element {
           )}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Decision Context" subtitle={profileId} side="right">
-        <div>
-          <p className="text-meta font-semibold text-text-primary">Preview input</p>
-          <p className="text-meta text-text-tertiary">
-            Temperature 0.2, max 2048 tokens, private workspace only for private profile.
-          </p>
-        </div>
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Routing source</p>
-          <p className="text-meta text-text-tertiary">
-            The preview uses the existing typed model router IPC. No provider availability or
-            measurements are mocked here.
-          </p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

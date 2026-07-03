@@ -9,6 +9,12 @@ function stubBridge(partial: Partial<NdxBridge>): void {
     workspaces: {
       list: vi.fn().mockResolvedValue({ ok: true, data: [] })
     },
+    system: {
+      checkFeatureAvailability: vi.fn().mockResolvedValue({ ok: true, data: { isAvailable: false } })
+    },
+    decky: {
+      getStatus: vi.fn().mockResolvedValue({ ok: true, data: { available: true } })
+    },
     ...partial
   } as NdxBridge
 }
@@ -49,6 +55,12 @@ describe('Integrations', () => {
       } as never,
       remoteHosts: {
         list: vi.fn().mockResolvedValue({ ok: true, data: [sampleHost] })
+      } as never,
+      system: {
+        checkFeatureAvailability: vi.fn().mockResolvedValue({ ok: true, data: { isAvailable: false } })
+      } as never,
+      decky: {
+        getStatus: vi.fn().mockResolvedValue({ ok: true, data: { available: true } })
       } as never
     })
 
@@ -75,12 +87,11 @@ describe('Integrations', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText('Steam Input and Decky adapter are not implemented yet.')
+        screen.getByText(
+          'No native Steam Deck input driver is implemented yet — a documented platform gap.'
+        )
       ).toBeInTheDocument()
     })
-    expect(
-      screen.getByText('Steam Input and Decky adapter are not implemented yet.')
-    ).toBeInTheDocument()
     expect(screen.getByText('No cloud-storage adapter exists yet.')).toBeInTheDocument()
   })
 

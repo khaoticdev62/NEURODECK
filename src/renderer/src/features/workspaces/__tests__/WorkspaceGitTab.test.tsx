@@ -1,4 +1,5 @@
-import { render, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GitStatus, NdxBridge } from '@shared/contracts'
@@ -57,7 +58,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
     stubGitBridge({ restore } as never)
 
     const user = userEvent.setup()
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     await user.click(await screen.findByRole('button', { name: 'Discard' }))
     const dialog = screen.getByRole('dialog')
@@ -82,7 +83,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
       } as never
     })
 
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     await screen.findByText('new.txt')
     expect(screen.queryByRole('button', { name: 'Discard' })).not.toBeInTheDocument()
@@ -93,7 +94,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
     stubGitBridge({ createBranch } as never)
 
     const user = userEvent.setup()
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     await user.type(await screen.findByPlaceholderText('New branch name'), 'feature/x')
     await user.click(screen.getByRole('button', { name: 'Create' }))
@@ -122,7 +123,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
     })
 
     const user = userEvent.setup()
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     await user.click(await screen.findByRole('button', { name: 'Delete' }))
     const dialog = screen.getByRole('dialog')
@@ -140,7 +141,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
     stubGitBridge({ forcePush } as never)
 
     const user = userEvent.setup()
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     await user.click(await screen.findByRole('button', { name: 'Force push' }))
     const dialog = screen.getByRole('dialog')
@@ -155,7 +156,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
     stubGitBridge({ createBranch } as never)
 
     const user = userEvent.setup()
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     await user.click(await screen.findByRole('button', { name: 'Create recovery point' }))
 
@@ -183,7 +184,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
       } as never
     })
 
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     const recoverySection = (await screen.findByText('Recovery branches')).closest('section')
     expect(recoverySection).not.toBeNull()
@@ -217,7 +218,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
     })
     const user = userEvent.setup()
 
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
     await user.click(await screen.findByRole('button', { name: 'Suggest message' }))
 
     expect(diff).toHaveBeenCalledWith({ workspaceId: 'w1', path: 'tracked.txt', staged: true })
@@ -244,7 +245,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
     })
     const user = userEvent.setup()
 
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     expect(await screen.findByText('Conflicts (1)')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Keep ours' }))
@@ -272,7 +273,7 @@ describe('WorkspaceGitTab — restore/branch/force-push controls', () => {
       } as never
     })
 
-    render(<WorkspaceGitTab workspaceId="w1" />)
+    renderWithProviders(<WorkspaceGitTab workspaceId="w1" />)
 
     await screen.findByText('Conflicts (1)')
     expect(screen.getByText('Nothing staged.')).toBeInTheDocument()

@@ -25,7 +25,8 @@ export function FocusDebugOverlay(): React.JSX.Element | null {
       style={{ zIndex: 'var(--ndx-z-toast)' }}
     >
       <p className="text-text-primary">
-        Focus: <span className="text-status-info">{snapshot.currentId ?? '(none)'}</span>
+        Focus: <span className="text-status-info">{snapshot.currentId ?? '(none)'}</span> (Reg:{' '}
+        {registry.instanceId})
       </p>
       <p>
         Controller: {controllerKind} · Trap depth: {snapshot.trapDepth}

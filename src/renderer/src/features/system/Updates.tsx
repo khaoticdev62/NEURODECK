@@ -4,6 +4,7 @@ import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxSettingsTree, NdxToolWindow } from '../../components/workbench'
 import { checkForUpdates, getUpdateStatus } from '../../services/ipc/updateClient'
 import type { UpdateStatus } from '@shared/contracts'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 interface UpdateSection {
   id: string
@@ -89,8 +90,11 @@ export function Updates(): React.JSX.Element {
     }
   }
 
-  return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(44rem,1fr)_20rem] gap-2 overflow-auto">
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Release checks', undefined, (
       <NdxSettingsTree>
         <div className="space-y-2 text-meta text-text-secondary">
           <p className="text-text-primary">Release checks</p>
@@ -98,7 +102,28 @@ export function Updates(): React.JSX.Element {
           <p>Components</p>
         </div>
       </NdxSettingsTree>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow
+        title="Release Policy"
+        subtitle={status?.checkEnabled ? 'Checks enabled' : 'Checks disabled'}
+        side="right"
+      >
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Download, apply, and rollback stay disabled until signed releases are configured.</p>
+          <p>Version information is sourced through the typed update IPC service.</p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [status?.checkEnabled, setSecondary])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Update Review">
         <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
           <header>
@@ -112,7 +137,7 @@ export function Updates(): React.JSX.Element {
           {error && <ErrorState title="Update check error" description={error} />}
 
           {status && (
-            <section className="space-y-2 border border-border bg-surface p-3">
+            <section className="space-y-2 ndx-settings-section">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-body font-semibold text-text-primary">NeuroDeck app</p>
@@ -155,7 +180,7 @@ export function Updates(): React.JSX.Element {
 
           <section className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {SECTIONS.map((section) => (
-              <div key={section.id} className="space-y-1 border border-border bg-surface p-3">
+              <div key={section.id} className="space-y-1 ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">{section.name}</p>
                 <p className="text-meta text-text-secondary">{section.note}</p>
                 <p className="text-meta text-text-tertiary">
@@ -166,17 +191,6 @@ export function Updates(): React.JSX.Element {
           </section>
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow
-        title="Release Policy"
-        subtitle={status?.checkEnabled ? 'Checks enabled' : 'Checks disabled'}
-        side="right"
-      >
-        <div className="space-y-3 text-meta text-text-secondary">
-          <p>Download, apply, and rollback stay disabled until signed releases are configured.</p>
-          <p>Version information is sourced through the typed update IPC service.</p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

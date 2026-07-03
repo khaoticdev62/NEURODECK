@@ -228,7 +228,6 @@ A real bug surfaced after Epic 10 (see the implementation ledger's "A real, prod
 - **Regression guard**: `e2e/app.spec.ts` asserts `typeof window.ndx === 'object'` as its first check, before any UI assertion — verified to genuinely fail without the fix (reverted the config, re-ran the test, confirmed the failure, restored the fix).
 - **Going forward**: any new npm dependency imported into `src/preload/index.ts` or anything it transitively imports (all of `shared/contracts/`) must be added to the same `exclude` list. This is the one place in the codebase where "it built successfully" does not mean "it works" — the failure is silent at the React-rendering layer and only visible in the renderer's own console.
 
-
 ## 24. Git destructive operations security (Epic 6 addendum)
 
 - **Discard never bypasses Recovery.** `registerGitHandlers.ts`'s `gitRestore` channel reads each path's current working-tree content and calls `RecoveryService.recordCheckpoint()` (kind: `git-restore`) before calling `GitService.restore()` — there is no code path from the renderer to a real discard that skips the checkpoint, mirroring `fileWrite`'s orchestration exactly.

@@ -70,7 +70,7 @@ export function ActivityCenter(): React.JSX.Element {
       </div>
 
       {hasLanShareActivity ? (
-        <section className="flex flex-col gap-2 rounded-sm border border-border bg-surface p-3">
+        <section className="flex flex-col gap-2 rounded-sm ndx-settings-section">
           <p className="text-body font-semibold text-text-primary">LAN Share</p>
           <p className="text-meta text-text-secondary">
             {activeTransfers} active · {completedTransfers} completed · {failedTransfers} failed or

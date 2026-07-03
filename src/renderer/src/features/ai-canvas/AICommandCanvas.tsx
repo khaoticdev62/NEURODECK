@@ -4,10 +4,12 @@ import type { RoutingProfileId } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
-import { NdxDeckLayout, NdxEditorShell, NdxToolWindow } from '../../components/workbench'
+import { NdxEditorShell } from '../../components/workbench'
 import { createAgent, listAgents, startAgentRun } from '../../services/ipc/agentClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { requestPlanPreview, type PlanPreview } from './planPreview'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
+import { useEffect } from 'react'
 
 const QUICK_COMMAND_AGENT_NAME = 'Quick Command'
 const ROUTING_PROFILES: RoutingProfileId[] = [
@@ -50,6 +52,9 @@ function CommandCanvasWorkspace({ workspaceId }: { workspaceId: string }): React
   const [generating, setGenerating] = useState(false)
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
   async function handleGeneratePlan(): Promise<void> {
     if (!intent.trim()) return
@@ -109,35 +114,11 @@ function CommandCanvasWorkspace({ workspaceId }: { workspaceId: string }): React
     navigate(`/agents/${agent.id}`)
   }
 
-  const impactPanel = (
-    <ImpactPanel
-      plan={plan}
-      profileId={profileId}
-      starting={starting}
-      onCancel={() => {
-        setPlan(null)
-        setIntent('')
-        setError(null)
-      }}
-      onApprove={() => void handleApproveAndRun()}
-    />
-  )
-
-  return (
-    <NdxDeckLayout
-      right={
-        <NdxToolWindow
-          title="Impact"
-          subtitle={plan ? `Risk ${plan.riskLevel}` : 'No plan'}
-          side="right"
-        >
-          {impactPanel}
-        </NdxToolWindow>
-      }
-    >
-      <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-2 overflow-auto docked:grid-cols-[20rem_minmax(0,1fr)]">
-        <section className="ndx-workbench-surface flex min-h-0 flex-col gap-3 p-3">
-          {error && <ErrorState title="Command Canvas error" description={error} />}
+  useEffect(() => {
+    setPrimary('Intent & Control', 'Command Canvas', (
+      <div className="flex flex-col gap-3">
+        {error && <ErrorState title="Command Canvas error" description={error} />}
+        <div className="flex items-start justify-between gap-2">
           <div>
             <p className="text-meta font-semibold uppercase tracking-wide text-text-tertiary">
               Intent
@@ -146,76 +127,103 @@ function CommandCanvasWorkspace({ workspaceId }: { workspaceId: string }): React
               Describe the job, generate a reviewable plan, then approve a real agent run.
             </p>
           </div>
-          <textarea
-            value={intent}
-            onChange={(event) => setIntent(event.target.value)}
-            placeholder="Describe what you want done..."
-            rows={7}
-            className="ndx-input resize-none p-3 text-body"
-          />
-          <select
-            value={profileId}
-            onChange={(event) => setProfileId(event.target.value as RoutingProfileId)}
-            className="ndx-input px-3 text-meta"
-          >
-            {ROUTING_PROFILES.map((id) => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-          </select>
-          <ControllerButton
-            variant="primary"
-            disabled={!intent.trim() || generating}
-            onClick={() => void handleGeneratePlan()}
-          >
-            {generating ? 'Generating plan...' : 'Generate plan'}
+          <ControllerButton variant="ghost" onClick={() => navigate('/ai/chat')}>
+            Open Chat
           </ControllerButton>
-          <div className="docked:hidden">{impactPanel}</div>
-        </section>
-
-        <NdxEditorShell title="Plan Preview">
-          <div className="flex min-h-full min-w-0 flex-col gap-3 p-3">
-            <p className="text-meta font-semibold uppercase tracking-wide text-text-tertiary">
-              Plan
-            </p>
-            {plan ? (
-              <>
-                <p className="text-body text-text-primary">{plan.goal}</p>
-                <ol className="flex flex-col gap-1">
-                  {plan.steps.map((step, index) => (
-                    <li
-                      key={`${index}-${step}`}
-                      className="ndx-workbench-row flex items-start justify-between gap-2 p-2 text-meta text-text-secondary"
-                    >
-                      <span>
-                        {index + 1}. {step}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveStep(index)}
-                        className="text-text-tertiary hover:text-status-error"
-                        aria-label={`Remove step ${index + 1}`}
-                      >
-                        Remove
-                      </button>
-                    </li>
-                  ))}
-                </ol>
-                <p className="text-meta text-text-tertiary">
-                  This is a preview for review, not a fixed script. The run re-plans from your
-                  intent independently.
-                </p>
-              </>
-            ) : (
-              <p className="text-meta text-text-secondary">
-                Generate a plan to see a real model-produced preview before running anything.
-              </p>
-            )}
-          </div>
-        </NdxEditorShell>
+        </div>
+        <textarea
+          value={intent}
+          onChange={(event) => setIntent(event.target.value)}
+          placeholder="Describe what you want done..."
+          rows={7}
+          className="ndx-input resize-none p-3 text-body w-full"
+        />
+        <select
+          value={profileId}
+          onChange={(event) => setProfileId(event.target.value as RoutingProfileId)}
+          className="ndx-input px-3 text-meta w-full"
+        >
+          {ROUTING_PROFILES.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+        </select>
+        <ControllerButton
+          variant="primary"
+          disabled={!intent.trim() || generating}
+          onClick={() => void handleGeneratePlan()}
+        >
+          {generating ? 'Generating plan...' : 'Generate plan'}
+        </ControllerButton>
       </div>
-    </NdxDeckLayout>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [error, intent, profileId, generating, navigate, setPrimary])
+
+  useEffect(() => {
+    setSecondary(
+      <div className="p-3">
+        <ImpactPanel
+          plan={plan}
+          profileId={profileId}
+          starting={starting}
+          onCancel={() => {
+            setPlan(null)
+            setIntent('')
+            setError(null)
+          }}
+          onApprove={() => void handleApproveAndRun()}
+        />
+      </div>
+    )
+    return () => setSecondary(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [plan, profileId, starting, setSecondary])
+
+  return (
+    <div className="h-full bg-[var(--ndx-workbench-editor-bg)]">
+      <NdxEditorShell title="Plan Preview">
+        <div className="flex min-h-full min-w-0 flex-col gap-3 p-3">
+          <p className="text-meta font-semibold uppercase tracking-wide text-text-tertiary">
+            Plan
+          </p>
+          {plan ? (
+            <>
+              <p className="text-body text-text-primary">{plan.goal}</p>
+              <ol className="flex flex-col gap-1">
+                {plan.steps.map((step, index) => (
+                  <li
+                    key={`${index}-${step}`}
+                    className="ndx-workbench-row flex items-start justify-between gap-2 p-2 text-meta text-text-secondary"
+                  >
+                    <span>
+                      {index + 1}. {step}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveStep(index)}
+                      className="text-text-tertiary hover:text-status-error"
+                      aria-label={`Remove step ${index + 1}`}
+                    >
+                      Remove
+                    </button>
+                  </li>
+                ))}
+              </ol>
+              <p className="text-meta text-text-tertiary">
+                This is a preview for review, not a fixed script. The run re-plans from your
+                intent independently.
+              </p>
+            </>
+          ) : (
+            <p className="text-meta text-text-secondary">
+              Generate a plan to see a real model-produced preview before running anything.
+            </p>
+          )}
+        </div>
+      </NdxEditorShell>
+    </div>
   )
 }
 

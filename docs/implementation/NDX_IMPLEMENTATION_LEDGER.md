@@ -976,6 +976,28 @@ npm run test:e2e      → 15 of 17 passed (2 pre-existing failures in terminal.s
 
 This completes the four-phase VS Code/tvOS hybrid UI + theming + AI chat + Decky roadmap. Real remaining risk, named rather than hidden: the Decky plugin has not been sideloaded and clicked through on real or emulated SteamOS hardware — the manual checklist in `decky-plugin/README.md` needs to be run before relying on it.
 
+### Addendum — Post-roadmap visual polish pass (responsive-overflow fix + tvOS visual weight + default theme + settings-section styling)
+
+Triggered by a user report that the UI "still looks incredibly stale" after the four-phase roadmap — resolved by first launching the real built app (via a throwaway Playwright `_electron` script reusing `e2e/helpers/launchApp.ts`'s exact launch pattern, since this is the first genuinely visual look-and-report pass this session rather than automated-only validation) and screenshotting Home, Display and Theme Settings, System Dashboard, and Controller Settings at 1280×800. Two concrete, real findings came out of that look, not just a subjective impression:
+
+**A real functional bug, not just aesthetics:** `DisplayThemeSettings.tsx` and `ControllerSettings.tsx` (and, it turned out, 31 other screens sharing the identical hand-copied layout idiom) rendered with a hard `min-w-[64–76rem]` 2–3-column grid that exceeds the ~992px actually available inside the workbench chrome at the primary 1280×800 Steam Deck resolution — the right-hand tool window visibly clipped, with text like "Corners:"/"Density:" cut off mid-word and an internal horizontal scrollbar. `e2e/hybrid-visual-qa.spec.ts`'s overflow check never caught this because it only measures `document.documentElement.scrollWidth`/`document.body.scrollWidth` against the viewport — an inner `overflow-auto` container can still force its own scrollbar and clipped content without the outer document ever growing, a real gap in that suite's coverage worth knowing about even though fixing the suite itself was out of scope here. Fix: a scripted, mechanical transform (Node, not 33 hand-edits) across all 33 affected files replacing the unconditional `grid h-full min-w-[Xrem] grid-cols-[...]` with `grid h-full grid-cols-1 ... docked:min-w-[Xrem] docked:grid-cols-[...]` — same column values preserved, just re-flowed to only apply at the `docked:` (1920px+) breakpoint where they actually fit; below that, sections stack into a single scrollable column instead of clipping. Re-verified visually (screenshots) and confirmed via a full `hybrid-visual-qa.spec.ts` run (all 8 checks, all 69 routes, all 3 viewports) that the docked/2K breakpoints still render the original layout unchanged.
+
+**The "stale" look itself was real, not just missing data:** the tvOS shelves built in the earlier reskin pass were genuinely running (System Dashboard's categorized shelves proved it), but `.ndx-tv-card` had never gotten real visual weight — cards rendered as literally empty 1px-bordered boxes on a near-black background, no fill differentiation, no shadow, no icons, and the corner-radius default (`'sharp'`, effectively 6–8px) read as flat/dated even before considering content. Three real, scoped changes: (1) `.ndx-tv-card` now has a real accent-tinted gradient fill, a resting-state shadow (`--shadow-elevated`, previously defined but unused anywhere), and `border-radius: var(--radius-lg)` so it actually reads as a tile; (2) a new hand-authored SVG icon set (`components/tvos/tvCategoryIcons.tsx`) — following `navigationIcons.tsx`'s exact existing convention (`stroke="currentColor"`, no fill) rather than adopting the already-installed-but-unused `lucide-react` dependency, since this codebase has an explicit, documented "hand-authored SVGs over an icon library, zero-bloat stance" precedent that takes priority over an unused dependency merely being present — wired into every `NdxTvShelf` header across System Dashboard's 10 categories, Home's two shelves, and Workspace Hub; (3) the default `radiusStyle` changed from `'sharp'` to `'soft'` (in the schema default, both hardcoded `DEFAULT_SETTINGS` objects, and the three tests that asserted the old default) — the single highest-leverage, zero-risk fix for "even the defaults look dated," since it's a pure CSS value with no performance cost, unlike flipping `surfaceStyle` to `'glass'` by default would have been on the actual target hardware (deliberately left alone).
+
+**Dense/settings screens got the same shared-primitive-leverage treatment** as the overflow fix, per the user's explicit choice to extend real polish there too (while keeping them information-dense, not tvOS-card-style): the identical `border border-border bg-surface p-3` section box — used, copy-pasted, across 46 files spanning nearly every settings/device/LAN-Share/agent screen in the app — became one shared `.ndx-settings-section` CSS class (same 0.75rem padding, so zero layout reflow) adding a rounded corner (respects `radiusStyle`), the same subtle fill gradient `.ndx-os-panel` already uses, and a colored left accent stripe tied to the user's chosen accent color, giving every section real visual rhythm without requiring a hand-drawn icon at each of the 46 call sites. Applied via the same scripted substring-replace approach as the overflow fix (safe here specifically because the border/background/padding trio was byte-identical everywhere it appeared, even though the surrounding flex/gap/space-y utility classes varied) rather than 46 manual edits.
+
+`e2e/app.spec.ts`'s existing Phase 1 theme-builder test needed a real update, not a new test: it asserted `'sharp'` as the default `data-ndx-radius` and clicked a `'round'` button to change it — both now `'soft'`/`'sharp'` respectively, since the default itself changed. No other existing test needed to change; the 33-file and 46-file transforms only touched `className` strings, not element structure, roles, or text content.
+
+```text
+npm run typecheck    → 0 errors
+npm run lint          → 0 errors (warning count rose only from touched-line CRLF reformatting on the same pre-existing repo-wide prettier/prettier noise, not new issues)
+npm run test          → 258 files, 1269 of 1269 tests passed
+npm run build         → succeeded
+npm run test:e2e      → 15 of 17 passed (2 pre-existing failures in terminal.spec.ts/command-builder.spec.ts — real-PTY timing issues, unrelated to this change); the previously-failing theme-builder test now passes with the updated default assertion; full hybrid-visual-qa.spec.ts run (8 checks, 69 routes × 3 viewports) confirmed no regression at the docked/2K breakpoints
+```
+
+Remaining, named honestly: this pass covered the highest-traffic screens visually verified by hand (Home, System Dashboard, Display and Theme Settings, Controller Settings) plus every screen sharing the two mechanically-fixed patterns — it did not do a bespoke visual pass on every one of the ~69 routes individually. A future pass should visually spot-check the remaining screens (particularly ones with unique, non-shared layouts) rather than assuming the shared-primitive uplift alone reached every corner.
+
 ### Addendum — ND-046 Privacy and Permissions
 
 Built directly on the real Epic 4 safety pipeline rather than inventing a separate privacy model: "Effective access by tool" reads `ToolRegistry.list()` for each tool's real `requiredCapability` and calls the live `PermissionBroker.evaluate()` to show its real current decision (`granted`/`requires-approval`); Revoke calls the real `broker.revoke()`, which is immediately visible — the next render's `evaluate()` call for that capability returns `requires-approval`, satisfying the spec's "revocation applies immediately where technically possible" requirement for real, not by convention. Audit history is the real, live `AuditLog.list()` via a new `useAuditEntries()` hook (mirrors `useActionQueueRecords()`'s `onChange`-subscription shape exactly).
@@ -3512,3 +3534,23 @@ npm run test -- GuidedControllerTutorial.test.tsx -> 6/6 passed
 ```
 
 **Known test-suite caveat**: the full parallel `npm run test` run after the Vitest migration reached 1228/1230 passing tests. The two failures were `GlobalSearch.test.tsx` and `GuidedControllerTutorial.test.tsx` timing queries under full-suite load; both pass cleanly when run in isolation, and no production code path was changed for either feature in this dependency pass.
+
+## Epic 4 closeout — ND-013 AI Command Canvas (2026-07-01)
+
+Completed the integration of `AICommandCanvas` (ND-013), making it a reachable, production-ready route in the system.
+
+**What was built / finalized**:
+- `AICommandCanvas` (ND-013) is now fully wired into the navigation system.
+- Added to `CommandPalette.tsx` under `SECONDARY_SCREENS` so it is easily searchable and accessible globally via the command palette.
+- Added to `SystemDashboard.tsx` under the `AI & Automation` category.
+- Cleaned up leftover debugger files (`dump_focus.js`, `find_boot.js`, `inspect_react_state*.js`) which were polluting the root workspace and triggering strict lint failures.
+- Verified that `AICommandCanvas.test.tsx` passes its test suite (`npm run test AICommandCanvas`) covering the model completion bridge, agent creation, and adversarial intent prevention.
+
+**Reachability**: Reached via `/ai`, available directly in the primary rail (as "AI"), in the Command Palette (as "AI Command Canvas"), and System Dashboard (under "AI & Automation").
+
+**Validation evidence (run 2026-07-01):**
+
+```text
+npm run test AICommandCanvas -> 5/5 passed
+npm run lint -> 0 errors (after removing temp JS files)
+```

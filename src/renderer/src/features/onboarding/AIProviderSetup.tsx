@@ -341,13 +341,13 @@ function AddProviderForm({
         value={name}
         onChange={(event) => setName(event.target.value)}
         placeholder="Provider name"
-        className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+        className="ndx-input p-2 text-body"
       />
       <input
         value={baseUrl}
         onChange={(event) => setBaseUrl(event.target.value)}
         placeholder={placeholder}
-        className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+        className="ndx-input p-2 text-body"
       />
       {isCloud && (
         <>
@@ -359,7 +359,7 @@ function AddProviderForm({
             onChange={(event) => setApiKey(event.target.value)}
             placeholder="API key (stored encrypted, never shown again)"
             type="password"
-            className="rounded-md border border-border bg-canvas p-2 text-body text-text-primary"
+            className="ndx-input p-2 text-body"
           />
         </>
       )}

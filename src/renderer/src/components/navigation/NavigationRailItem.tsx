@@ -30,10 +30,10 @@ export function NavigationRailItem({
       aria-label={destination.label}
       className={({ isActive }) =>
         cn(
-          'flex items-center rounded-md px-3 text-meta font-medium text-text-secondary transition-colors',
+          'flex items-center rounded-md px-3 text-meta font-medium text-primary transition-colors',
           'min-h-[var(--ndx-target-min)]',
           expanded ? 'justify-start gap-3' : 'justify-center',
-          isActive ? 'bg-surface-raised text-text-primary' : 'hover:bg-surface-raised/60',
+          isActive ? 'ndx-nav-active' : 'hover:bg-surface-raised/60',
           isFocused && 'ring-2 ring-border-focus',
           'focus-visible:ring-2 focus-visible:ring-border-focus'
         )

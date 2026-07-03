@@ -52,8 +52,10 @@ export function CommandPaletteToolRow({
       type="button"
       onClick={runTool}
       className={cn(
-        'flex w-full min-h-[var(--ndx-target-min)] items-center rounded-md px-3 text-left text-body text-text-primary',
-        isFocused ? 'bg-surface-raised' : 'hover:bg-surface-raised/60'
+        'flex min-h-[var(--ndx-target-min)] w-full items-center rounded-md border-l-4 px-3 text-left text-body text-text-primary transition-colors',
+        isFocused
+          ? 'border-l-[var(--ndx-accent)] bg-[var(--ndx-workbench-row-selected-bg)]'
+          : 'border-l-transparent hover:bg-surface-raised/60'
       )}
     >
       Run: {tool.title}

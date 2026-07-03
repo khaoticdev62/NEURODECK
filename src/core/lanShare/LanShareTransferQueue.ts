@@ -59,7 +59,7 @@ export class LanShareTransferQueue {
   }
 
   private pump(): void {
-    for (let i = 0; i < this.pending.length; ) {
+    for (let i = 0; i < this.pending.length;) {
       const job = this.pending[i]
       if (!this.hasCapacity(job.peerId)) {
         i += 1

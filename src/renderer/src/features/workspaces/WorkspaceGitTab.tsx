@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { isUnmergedStatus } from '@shared/contracts'
 import type {
   GitBranch,
@@ -13,6 +13,7 @@ import { cn } from '../../components/primitives/cn'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 import { GitDiffViewer } from '../git/GitDiffViewer'
 import {
   checkoutGitBranch,
@@ -335,39 +336,30 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
     setError(null)
   }
 
-  if (!status && error) {
-    return <ErrorState title="Git status unavailable" description={error} />
-  }
-
-  if (!status) {
-    return <p className="p-4 text-meta text-text-secondary">Loading…</p>
-  }
-
-  if (!status.isRepository) {
-    return (
-      <EmptyState
-        title="Not a Git repository"
-        description="This workspace's folder has no .git directory."
-      />
-    )
-  }
-
-  const conflicted = status.changes.filter((change) => isUnmergedStatus(change.status))
-  const staged = status.changes.filter(
-    (change) => change.staged && !isUnmergedStatus(change.status)
-  )
-  const unstaged = status.changes.filter(
-    (change) => !change.staged && !isUnmergedStatus(change.status)
-  )
-  const regularBranches = branches.filter(
+  const conflicted = useMemo(() => status?.isRepository
+    ? status.changes.filter((change) => isUnmergedStatus(change.status))
+    : [], [status])
+  const staged = useMemo(() => status?.isRepository
+    ? status.changes.filter((change) => change.staged && !isUnmergedStatus(change.status))
+    : [], [status])
+  const unstaged = useMemo(() => status?.isRepository
+    ? status.changes.filter((change) => !change.staged && !isUnmergedStatus(change.status))
+    : [], [status])
+  const regularBranches = useMemo(() => branches.filter(
     (branch) => !branch.name.startsWith(RECOVERY_BRANCH_PREFIX)
-  )
-  const recoveryBranches = branches.filter((branch) =>
+  ), [branches])
+  const recoveryBranches = useMemo(() => branches.filter((branch) =>
     branch.name.startsWith(RECOVERY_BRANCH_PREFIX)
-  )
+  ), [branches])
 
-  return (
-    <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-2 overflow-auto docked:grid-cols-[18rem_minmax(0,1fr)_18rem]">
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+
+
+  useEffect(() => {
+    if (!status || !status.isRepository) return
+    setPrimary('Source Control', status.branch ?? 'detached HEAD', (
       <NdxToolWindow title="Source Control" subtitle={status.branch ?? 'detached HEAD'}>
         <div className="flex items-center justify-between text-meta text-text-secondary">
           <span>
@@ -484,11 +476,24 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
           </div>
         </section>
       </NdxToolWindow>
+    ))
 
-      <NdxEditorShell title={selectedChange?.path ?? 'Diff Viewer'}>
-        <GitDiffViewer path={selectedChange?.path ?? null} diff={diff} loading={diffLoading} />
-      </NdxEditorShell>
+    return () => setPrimary('Command Deck', undefined, null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    status,
+    error,
+    conflicted,
+    staged,
+    unstaged,
+    message,
+    suggestingMessage,
+    selectedChange
+  ])
 
+  useEffect(() => {
+    if (!status || !status.isRepository) return
+    setSecondary(
       <NdxToolWindow title="Repository" subtitle={remotes[0]?.name ?? 'Local'} side="right">
         <section>
           <p className="mb-1 text-meta font-semibold text-text-primary">Remote</p>
@@ -663,6 +668,43 @@ export function WorkspaceGitTab({ workspaceId }: WorkspaceGitTabProps): React.JS
           )}
         </section>
       </NdxToolWindow>
+    )
+
+    return () => setSecondary(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    remotes,
+    status,
+    regularBranches,
+    recoveryBranches,
+    log,
+    stashes,
+    newBranchName
+  ])
+
+  if (!status && error) {
+    return <ErrorState title="Git status unavailable" description={error} />
+  }
+
+  if (!status) {
+    return <p className="p-4 text-meta text-text-secondary">Loading…</p>
+  }
+
+  if (!status.isRepository) {
+    return (
+      <EmptyState
+        title="Not a Git repository"
+        description="This workspace's folder has no .git directory."
+      />
+    )
+  }
+
+  return (
+    <div className="h-full flex-1">
+
+      <NdxEditorShell title={selectedChange?.path ?? 'Diff Viewer'}>
+        <GitDiffViewer path={selectedChange?.path ?? null} diff={diff} loading={diffLoading} />
+      </NdxEditorShell>
       <ConfirmationDialog
         open={commitReviewOpen}
         title="Review local commit"

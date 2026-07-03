@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK OS - Command Palette</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#312f38",
+                        "on-primary-fixed-variant": "#452daf",
+                        "on-secondary-fixed": "#001f28",
+                        "primary-container": "#917eff",
+                        "on-tertiary-container": "#003127",
+                        "tertiary-container": "#00a488",
+                        "surface-variant": "#35343c",
+                        "secondary-fixed": "#b5ebff",
+                        "background": "#14121a",
+                        "on-tertiary": "#00382d",
+                        "on-primary-container": "#28008a",
+                        "secondary": "#4dd6fd",
+                        "surface-container-high": "#2b2931",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "error": "#ffb4ab",
+                        "outline": "#928e9f",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "outline-variant": "#484553",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "primary-fixed-dim": "#c8bfff",
+                        "inverse-primary": "#5e49c8",
+                        "primary": "#c8bfff",
+                        "primary-fixed": "#e5deff",
+                        "on-surface-variant": "#c9c4d6",
+                        "on-tertiary-fixed": "#002019",
+                        "surface-dim": "#14121a",
+                        "surface-container-highest": "#35343c",
+                        "surface-container": "#201f27",
+                        "on-secondary": "#003543",
+                        "surface": "#14121a",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-secondary-container": "#003f4e",
+                        "on-surface": "#e5e0ec",
+                        "surface-container-low": "#1c1b22",
+                        "inverse-surface": "#e5e0ec",
+                        "surface-tint": "#c8bfff",
+                        "on-background": "#e5e0ec",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-primary-fixed": "#1a0063",
+                        "on-primary": "#2e0599",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#00b2d7",
+                        "tertiary-fixed": "#79f8d8",
+                        "tertiary": "#59dbbd",
+                        "surface-bright": "#3a3841",
+                        "error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "safe-margin": "40px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "hit-target": "44px",
+                        "xs": "8px",
+                        "lg": "24px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "display": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "headline-lg": ["Geist"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.surface-container-lowest');
+            color: theme('colors.on-surface');
+            /* Fake background to show blur effect */
+            background-image: radial-gradient(circle at 50% 50%, rgba(200, 191, 255, 0.05) 0%, transparent 50%),
+                              linear-gradient(to bottom right, #0e0d15, #14121a);
+            min-height: 100vh;
+        }
+
+        /* Sovereign Dark Aesthetic Utilities */
+        .glass-panel {
+            background: rgba(20, 18, 26, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.5);
+            box-shadow: 0 32px 64px -16px rgba(14, 13, 21, 0.8),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .focus-item {
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .focus-item[data-focused="true"] {
+            background-color: theme('colors.surface-variant');
+            transform: scale(1.02);
+            box-shadow: 0 0 0 2px theme('colors.primary');
+        }
+
+        .focus-item[data-focused="true"] .focus-indicator {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .focus-indicator {
+            width: 4px;
+            height: 60%;
+            background-color: theme('colors.primary');
+            border-radius: 0 4px 4px 0;
+            position: absolute;
+            left: 0;
+            top: 20%;
+            opacity: 0;
+            transform: translateX(-4px);
+            transition: all 0.2s ease-out;
+            box-shadow: 0 0 8px theme('colors.primary');
+        }
+
+        /* Custom Scrollbar for list */
+        .cmd-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .cmd-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .cmd-scroll::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: 4px;
+        }
+
+        /* Neural Pulse Animation (Simplified for context) */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { opacity: 0.3; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center p-safe-margin overflow-hidden relative">
+<!-- Ambient Background Elements to simulate workbench -->
+<div class="absolute inset-0 z-0 opacity-20 pointer-events-none">
+<div class="grid grid-cols-12 gap-md h-full p-safe-margin">
+<div class="col-span-3 border border-outline-variant/30 rounded-lg"></div>
+<div class="col-span-6 border border-outline-variant/30 rounded-lg flex flex-col gap-sm p-md">
+<div class="h-8 bg-surface-variant/30 w-1/3 rounded"></div>
+<div class="h-32 bg-surface-variant/30 rounded"></div>
+<div class="h-64 bg-surface-variant/30 rounded"></div>
+</div>
+<div class="col-span-3 border border-outline-variant/30 rounded-lg"></div>
+</div>
+</div>
+<!-- Command Palette Overlay Container -->
+<div aria-label="Command Palette" aria-modal="true" class="w-full max-w-[720px] glass-panel rounded-xl flex flex-col z-50 relative overflow-hidden shadow-[0_0_120px_rgba(14,13,21,0.9)]" role="dialog">
+<!-- Search Header -->
+<div class="relative flex items-center px-lg py-md border-b border-white/5 bg-surface-container/50">
+<span class="material-symbols-outlined text-primary text-[24px] mr-sm">search</span>
+<input autofocus="" class="w-full bg-transparent border-none outline-none font-display text-headline-lg text-on-surface placeholder:text-on-surface-variant/50 focus:ring-0" placeholder="Search files, agents, commands..." type="text" value="sys.core"/>
+<div class="flex items-center gap-xs ml-auto shrink-0">
+<div class="bg-surface-variant px-2 py-1 rounded text-label-sm font-code-md text-on-surface-variant border border-outline-variant/50">ESC</div>
+<div class="text-label-sm text-on-surface-variant font-body-md">to close</div>
+</div>
+</div>
+<!-- Results Area -->
+<div class="cmd-scroll max-h-[512px] overflow-y-auto py-sm px-sm flex flex-col gap-xs">
+<!-- Category: Files -->
+<div class="px-md pt-sm pb-xs">
+<h3 class="font-label-md text-label-md text-outline tracking-wider uppercase">Files</h3>
+</div>
+<div class="focus-item relative rounded-lg bg-surface flex items-center p-sm min-h-hit-target cursor-pointer group hover:bg-surface-variant/50" data-focused="true">
+<div class="focus-indicator"></div>
+<div class="w-10 h-10 rounded-md bg-secondary/10 flex items-center justify-center mr-md shrink-0 border border-secondary/20">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div class="flex-grow min-w-0 mr-md">
+<div class="font-body-md text-body-md text-on-surface truncate font-medium">sys.core_config.yaml</div>
+<div class="font-code-md text-code-md text-on-surface-variant truncate opacity-70">/root/system/config/sys.core_config.yaml</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="bg-surface-container-high px-2 py-1 rounded text-label-sm font-code-md text-on-surface-variant border border-outline-variant/50 group-hover:border-primary/50 transition-colors">↵</span>
+</div>
+</div>
+<!-- Category: Agents -->
+<div class="px-md pt-sm pb-xs mt-xs">
+<h3 class="font-label-md text-label-md text-outline tracking-wider uppercase">Agents</h3>
+</div>
+<div class="focus-item relative rounded-lg bg-surface flex items-center p-sm min-h-hit-target cursor-pointer group hover:bg-surface-variant/50" data-focused="false">
+<div class="focus-indicator"></div>
+<div class="w-10 h-10 rounded-md bg-primary/10 flex items-center justify-center mr-md shrink-0 border border-primary/20 relative overflow-hidden">
+<span class="material-symbols-outlined text-primary relative z-10" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+<!-- Tiny pulse effect simulation for Active agent -->
+<div class="absolute inset-0 border border-primary rounded-md animate-[pulse-ring_2s_infinite]"></div>
+</div>
+<div class="flex-grow min-w-0 mr-md">
+<div class="flex items-center gap-sm">
+<span class="font-body-md text-body-md text-on-surface truncate font-medium">Data_Synthesizer_04</span>
+<span class="px-2 py-0.5 rounded-full bg-tertiary/10 text-tertiary font-label-sm text-label-sm border border-tertiary/30">Active</span>
+</div>
+<div class="font-body-md text-label-sm text-on-surface-variant truncate opacity-70 mt-0.5">Currently indexing /root/logs</div>
+</div>
+<div class="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="bg-surface-container-high px-2 py-1 rounded text-label-sm font-code-md text-on-surface-variant border border-outline-variant/50">⌘ + ⇧ + A</span>
+</div>
+</div>
+<!-- Category: Knowledge Fragments -->
+<div class="px-md pt-sm pb-xs mt-xs">
+<h3 class="font-label-md text-label-md text-outline tracking-wider uppercase">Knowledge Fragments</h3>
+</div>
+<div class="focus-item relative rounded-lg bg-surface flex items-center p-sm min-h-hit-target cursor-pointer group hover:bg-surface-variant/50" data-focused="false">
+<div class="focus-indicator"></div>
+<div class="w-10 h-10 rounded-md bg-surface-container-high flex items-center justify-center mr-md shrink-0 border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">psychology</span>
+</div>
+<div class="flex-grow min-w-0 mr-md">
+<div class="font-body-md text-body-md text-on-surface truncate font-medium">Core Architecture Definitions</div>
+<div class="font-body-md text-label-sm text-on-surface-variant truncate opacity-70 mt-0.5">Contains references to 'sys.core' implementation protocols.</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="text-tertiary font-code-md text-label-sm">98% Match</span>
+</div>
+</div>
+<div class="focus-item relative rounded-lg bg-surface flex items-center p-sm min-h-hit-target cursor-pointer group hover:bg-surface-variant/50" data-focused="false">
+<div class="focus-indicator"></div>
+<div class="w-10 h-10 rounded-md bg-surface-container-high flex items-center justify-center mr-md shrink-0 border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant" style="font-variation-settings: 'FILL' 0;">psychology</span>
+</div>
+<div class="flex-grow min-w-0 mr-md">
+<div class="font-body-md text-body-md text-on-surface truncate font-medium">Legacy System Logs (Q2)</div>
+<div class="font-body-md text-label-sm text-on-surface-variant truncate opacity-70 mt-0.5">Historical data mentioning 'sys.core' deprecation warnings.</div>
+</div>
+<div class="flex items-center gap-2 shrink-0">
+<span class="text-outline font-code-md text-label-sm">45% Match</span>
+</div>
+</div>
+</div>
+<!-- Footer / Context Actions -->
+<div class="border-t border-white/5 bg-surface-container-lowest/50 p-sm flex items-center justify-between">
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs text-on-surface-variant font-label-sm text-label-sm">
+<span class="bg-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/30 font-code-md text-xs">↑</span>
+<span class="bg-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/30 font-code-md text-xs">↓</span>
+<span>Navigate</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-sm text-label-sm">
+<span class="bg-surface-variant px-1.5 py-0.5 rounded border border-outline-variant/30 font-code-md text-xs">↵</span>
+<span>Select</span>
+</div>
+</div>
+<div class="text-primary font-code-md text-label-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">info</span>
+<span>Type '/' for commands</span>
+</div>
+</div>
+</div>
+<script>
+        // Simple logic to simulate keyboard navigation for the focus state
+        const items = document.querySelectorAll('.focus-item');
+        let currentIndex = 0;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                items[currentIndex].setAttribute('data-focused', 'false');
+                currentIndex = (currentIndex + 1) % items.length;
+                items[currentIndex].setAttribute('data-focused', 'true');
+                items[currentIndex].scrollIntoView({ block: 'nearest' });
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                items[currentIndex].setAttribute('data-focused', 'false');
+                currentIndex = (currentIndex - 1 + items.length) % items.length;
+                items[currentIndex].setAttribute('data-focused', 'true');
+                items[currentIndex].scrollIntoView({ block: 'nearest' });
+            }
+        });
+    </script>
+</body></html>

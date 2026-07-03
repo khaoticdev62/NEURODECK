@@ -9,6 +9,8 @@ import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvid
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { UniversalTerminal } from '../UniversalTerminal'
+import { TestWorkbenchStoreRenderer } from '../../../__tests__/testUtils'
+import { resetWorkbenchStore } from '../../../state/useWorkbenchStore'
 
 vi.mock('../TerminalViewport', () => ({
   TerminalViewport: ({ session }: { session: { id: string } }) => (
@@ -55,6 +57,7 @@ function renderTerminal(active = true): ReturnType<typeof render> {
           <WorkspaceContext.Provider value={workspaceValue(active)}>
             <MemoryRouter>
               <UniversalTerminal />
+              <TestWorkbenchStoreRenderer />
             </MemoryRouter>
           </WorkspaceContext.Provider>
         </AiSafetyProvider>
@@ -66,6 +69,7 @@ function renderTerminal(active = true): ReturnType<typeof render> {
 afterEach(() => {
   // @ts-expect-error test-only cleanup of a global the real preload injects
   delete window.ndx
+  resetWorkbenchStore()
 })
 
 describe('UniversalTerminal', () => {

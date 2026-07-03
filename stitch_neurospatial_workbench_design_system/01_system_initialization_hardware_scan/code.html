@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK - System Initialization</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "outline-variant": "#484553", "on-secondary-fixed": "#001f28", "on-surface": "#e5e0ec", "on-tertiary": "#00382d", "tertiary-fixed-dim": "#59dbbd", "surface-bright": "#3a3841", "on-tertiary-fixed-variant": "#005142", "primary": "#c8bfff", "surface-dim": "#14121a", "on-primary-fixed-variant": "#452daf", "tertiary-fixed": "#79f8d8", "error": "#ffb4ab", "inverse-surface": "#e5e0ec", "error-container": "#93000a", "on-surface-variant": "#c9c4d6", "on-secondary-container": "#003f4e", "primary-fixed": "#e5deff", "surface": "#14121a", "outline": "#928e9f", "tertiary-container": "#00a488", "secondary-container": "#00b2d7", "on-primary-container": "#28008a", "surface-container-low": "#1c1b22", "surface-container": "#201f27", "surface-tint": "#c8bfff", "surface-container-highest": "#35343c", "secondary-fixed-dim": "#4dd6fd", "on-background": "#e5e0ec", "on-error": "#690005", "secondary": "#4dd6fd", "on-primary-fixed": "#1a0063", "surface-container-high": "#2b2931", "surface-container-lowest": "#0e0d15", "background": "#14121a", "on-error-container": "#ffdad6", "inverse-primary": "#5e49c8", "on-tertiary-fixed": "#002019", "secondary-fixed": "#b5ebff", "on-secondary": "#003543", "inverse-on-surface": "#312f38", "primary-container": "#917eff", "on-primary": "#2e0599", "surface-variant": "#35343c", "on-tertiary-container": "#003127", "on-secondary-fixed-variant": "#004e5f", "primary-fixed-dim": "#c8bfff", "tertiary": "#59dbbd"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"
+                    },
+                    spacing: {
+                        "xs": "8px", "base": "4px", "lg": "24px", "hit-target": "44px", "xl": "32px", "safe-margin": "40px", "md": "16px", "sm": "12px"
+                    },
+                    fontFamily: {
+                        "label-sm": ["Inter"], "body-lg": ["Inter"], "code-md": ["JetBrains Mono"], "body-md": ["Inter"], "headline-md": ["Geist"], "display": ["Geist"], "label-md": ["Inter"], "headline-lg": ["Geist"]
+                    },
+                    fontSize: {
+                        "label-sm": ["11px", { lineHeight: "14px", fontWeight: "500" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "code-md": ["13px", { lineHeight: "20px", fontWeight: "400" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "headline-md": ["18px", { lineHeight: "24px", fontWeight: "500" }],
+                        "display": ["28px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }],
+                        "headline-lg": ["22px", { lineHeight: "28px", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .inner-glow-top { border-top: 1px solid rgba(255, 255, 255, 0.12); }
+        .focus-ring:focus-within {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 3px rgba(200, 191, 255, 0.4); /* primary color halo */
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        /* Neural Pulse Animations */
+        @keyframes breathe {
+            0%, 100% { transform: scale(0.95); opacity: 0.3; }
+            50% { transform: scale(1.05); opacity: 0.6; }
+        }
+        @keyframes expand {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        @keyframes spin-slow {
+            100% { transform: rotate(360deg); }
+        }
+        .pulse-idle { animation: breathe 2s ease-in-out infinite; }
+        .pulse-ring { animation: expand 1.5s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+        .spin-layer { animation: spin-slow 8s linear infinite; }
+
+        /* Telemetry Scanline Effect */
+        .scanline {
+            background: linear-gradient(to bottom, transparent, rgba(77, 214, 253, 0.1) 50%, transparent);
+            background-size: 100% 4px;
+            animation: scan 4s linear infinite;
+        }
+        @keyframes scan {
+            0% { background-position: 0 -100vh; }
+            100% { background-position: 0 100vh; }
+        }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #484553; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen w-screen p-safe-margin flex gap-lg overflow-hidden selection:bg-primary selection:text-on-primary">
+<!-- Hardware Specs Sidebar -->
+<aside class="w-[320px] bg-surface-container-low rounded-xl inner-glow-top shadow-[0_32px_64px_-12px_rgba(20,18,26,0.6)] flex flex-col relative z-10 transition-transform focus-ring" tabindex="0">
+<div class="p-lg border-b border-white/[0.05]">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-xs flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[20px]" style="font-variation-settings: 'FILL' 1;">developer_board</span>
+                HARDWARE MAP
+            </h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest opacity-80">Local Core Initialization</p>
+</div>
+<div class="flex-1 overflow-y-auto p-lg flex flex-col gap-xs">
+<!-- Spec Item: APU -->
+<div class="bg-surface p-md rounded-lg inner-glow-top flex flex-col gap-base border border-outline-variant/30 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-r from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Compute Unit</span>
+<div class="flex items-center gap-base">
+<div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(77,214,253,0.8)]"></div>
+<span class="font-code-md text-code-md text-secondary">PASS</span>
+</div>
+</div>
+<div class="font-body-md text-body-md text-on-surface flex justify-between">
+<span>AMD Van Gogh APU</span>
+<span class="font-code-md text-code-md text-on-surface-variant">2.4GHz</span>
+</div>
+</div>
+<!-- Spec Item: Memory -->
+<div class="bg-surface p-md rounded-lg inner-glow-top flex flex-col gap-base border border-outline-variant/30">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Volatile Memory</span>
+<div class="flex items-center gap-base">
+<div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(77,214,253,0.8)]"></div>
+<span class="font-code-md text-code-md text-secondary">PASS</span>
+</div>
+</div>
+<div class="font-body-md text-body-md text-on-surface flex justify-between">
+<span>16GB LPDDR5</span>
+<span class="font-code-md text-code-md text-on-surface-variant">5500MT/s</span>
+</div>
+<div class="w-full bg-surface-bright h-1 rounded-full mt-1 overflow-hidden">
+<div class="bg-primary h-full w-[15%]" style="box-shadow: 0 0 10px var(--color-primary)"></div>
+</div>
+</div>
+<!-- Spec Item: Storage -->
+<div class="bg-surface p-md rounded-lg inner-glow-top flex flex-col gap-base border border-outline-variant/30">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Primary Volume</span>
+<div class="flex items-center gap-base">
+<div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(77,214,253,0.8)] animate-pulse"></div>
+<span class="font-code-md text-code-md text-secondary">SCANNING</span>
+</div>
+</div>
+<div class="font-body-md text-body-md text-on-surface flex justify-between">
+<span>NVMe PCIe Gen3 x4</span>
+<span class="font-code-md text-code-md text-on-surface-variant">/dev/nvme0n1</span>
+</div>
+</div>
+<!-- Spec Item: Thermal -->
+<div class="bg-surface p-md rounded-lg inner-glow-top flex flex-col gap-base border border-outline-variant/30 mt-auto">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">Thermal State</span>
+<span class="font-code-md text-code-md text-tertiary">42°C</span>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Diagnostic Canvas -->
+<main class="flex-1 bg-surface-container rounded-xl inner-glow-top shadow-[0_32px_64px_-12px_rgba(20,18,26,0.8)] relative flex flex-col overflow-hidden">
+<!-- Background Grid / Scanline -->
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(28,27,34,0.8)_0%,rgba(20,18,26,1)_100%)] z-0 pointer-events-none"></div>
+<div class="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none opacity-20"></div>
+<div class="absolute inset-0 scanline pointer-events-none z-0"></div>
+<!-- Top Header -->
+<header class="p-xl relative z-10 flex justify-between items-start">
+<div>
+<h1 class="font-display text-display text-primary uppercase tracking-widest mb-xs">NEURODECK</h1>
+<p class="font-code-md text-code-md text-on-surface-variant">SYS_SEQ: BOOT_DIAGNOSTICS_V1.4.2</p>
+</div>
+<!-- Neural Pulse (Listening State) -->
+<div class="relative w-[120px] h-[120px] flex items-center justify-center">
+<div class="absolute inset-0 rounded-full border-2 border-secondary pulse-ring delay-75"></div>
+<div class="absolute inset-2 rounded-full border border-secondary pulse-ring delay-150"></div>
+<div class="absolute inset-4 rounded-full border border-primary/50 pulse-idle"></div>
+<div class="w-12 h-12 bg-surface-container-highest rounded-full border-2 border-secondary flex items-center justify-center z-10 shadow-[0_0_20px_rgba(77,214,253,0.3)]">
+<span class="material-symbols-outlined text-secondary text-[24px]">troubleshoot</span>
+</div>
+</div>
+</header>
+<!-- Central Dimensional Gauge -->
+<div class="flex-1 relative z-10 flex items-center justify-center">
+<div class="relative w-[300px] h-[300px]">
+<!-- Outer Spin -->
+<svg class="absolute inset-0 w-full h-full spin-layer text-outline-variant/30" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="none" r="48" stroke="currentColor" stroke-dasharray="2 4" stroke-width="1"></circle>
+<circle cx="50" cy="50" fill="none" r="44" stroke="currentColor" stroke-dasharray="1 8" stroke-width="0.5"></circle>
+</svg>
+<!-- Inner Tech Details -->
+<div class="absolute inset-0 m-6 rounded-full border border-secondary/20 bg-surface/50 backdrop-blur-md flex flex-col items-center justify-center gap-xs shadow-[inset_0_0_40px_rgba(77,214,253,0.1)]">
+<span class="font-label-sm text-label-sm text-secondary uppercase tracking-widest">System Integrity</span>
+<span class="font-display text-display text-on-surface">98.4%</span>
+<span class="font-code-md text-code-md text-primary mt-sm">V-CORE ALIGNED</span>
+</div>
+<!-- Data Points around gauge -->
+<div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 font-code-md text-code-md text-on-surface-variant text-[10px]">N-001</div>
+<div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-4 font-code-md text-code-md text-on-surface-variant text-[10px]">S-004</div>
+</div>
+</div>
+<!-- Telemetry Log & Action -->
+<div class="p-xl relative z-10 grid grid-cols-12 gap-lg items-end">
+<!-- Live Log -->
+<div class="col-span-8 bg-surface-dim/80 backdrop-blur-sm border border-outline-variant/30 rounded-lg p-md h-[120px] overflow-hidden relative">
+<div class="absolute top-0 left-0 w-full h-4 bg-gradient-to-b from-surface-dim/80 to-transparent z-10"></div>
+<div class="font-code-md text-code-md text-on-surface-variant/70 flex flex-col gap-1 absolute bottom-md w-full pr-md">
+<div class="flex gap-sm"><span class="text-tertiary opacity-50">[00:00:12]</span> <span>Allocating tensor buffers... [DONE]</span></div>
+<div class="flex gap-sm"><span class="text-tertiary opacity-50">[00:00:13]</span> <span>Verifying VRAM integrity... [PASS]</span></div>
+<div class="flex gap-sm"><span class="text-tertiary opacity-50">[00:00:14]</span> <span>Mounting secure local volumes...</span></div>
+<div class="flex gap-sm"><span class="text-tertiary opacity-50">[00:00:15]</span> <span class="text-secondary shadow-[0_0_8px_rgba(77,214,253,0.4)]">Awaiting manual initiation sequence.</span></div>
+</div>
+</div>
+<!-- Primary Action -->
+<div class="col-span-4">
+<button class="w-full h-hit-target bg-primary text-on-primary font-label-md text-label-md uppercase tracking-wider rounded-lg relative overflow-hidden group shadow-[0_0_20px_rgba(200,191,255,0.2)] focus:outline-none focus-ring">
+<!-- Inner Gradient -->
+<div class="absolute inset-0 bg-gradient-to-b from-white/20 to-transparent pointer-events-none"></div>
+<!-- Hover Effect -->
+<div class="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors pointer-events-none"></div>
+<div class="relative z-10 flex items-center justify-center gap-sm h-full w-full">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+                        Initiate Model Scan
+                    </div>
+</button>
+</div>
+</div>
+</main>
+</body></html>

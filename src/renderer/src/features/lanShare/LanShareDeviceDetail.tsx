@@ -93,7 +93,7 @@ export function LanShareDeviceDetail(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow title="Peer Identity" subtitle={peer.status}>
         <div className="space-y-3 text-meta text-text-secondary">
           <p>{peer.addresses[0] ?? 'unknown address'}</p>
@@ -106,7 +106,7 @@ export function LanShareDeviceDetail(): React.JSX.Element {
           <p className="text-title font-semibold text-text-primary">{peer.displayName}</p>
           {error && <ErrorState title="Device action error" description={error} />}
 
-          <section className="flex flex-col gap-1 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-1 ndx-settings-section">
             <p className="text-meta text-text-secondary">
               Address {peer.addresses[0] ?? 'unknown'} · transfer port {peer.transferPort} ·
               registration port {peer.authPort}

@@ -1,3 +1,13 @@
+/* NeuroSpatial Workbench — Self-hosted fonts (strict CSP prevents CDN loading).
+   Geist for headlines, Inter for body/labels, JetBrains Mono for code.
+   `geist` (the Next.js font-loader package) ships no standalone CSS file —
+   only `next/font`-style JS modules — so headings use the Fontsource build
+   instead, at the two weights the type scale actually calls for (500/600). */
+@import '@fontsource/geist-sans/500.css';
+@import '@fontsource/geist-sans/600.css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/jetbrains-mono';
+
 @import './tokens.css';
 
 *,
@@ -25,6 +35,7 @@ body {
   color: var(--color-text-primary);
   line-height: 1.6;
   font-family:
+    'Inter Variable',
     Inter,
     -apple-system,
     BlinkMacSystemFont,

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK - Security &amp; Permissions</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#b5ebff",
+                        "surface-variant": "#35343c",
+                        "secondary-container": "#00b2d7",
+                        "secondary": "#4dd6fd",
+                        "outline": "#928e9f",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002019",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-tertiary": "#00382d",
+                        "surface": "#14121a",
+                        "on-tertiary-container": "#003127",
+                        "on-primary": "#2e0599",
+                        "outline-variant": "#484553",
+                        "on-primary-fixed-variant": "#452daf",
+                        "on-primary-fixed": "#1a0063",
+                        "surface-bright": "#3a3841",
+                        "inverse-primary": "#5e49c8",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "inverse-on-surface": "#312f38",
+                        "surface-tint": "#c8bfff",
+                        "primary-fixed": "#e5deff",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-container-high": "#2b2931",
+                        "error-container": "#93000a",
+                        "surface-dim": "#14121a",
+                        "inverse-surface": "#e5e0ec",
+                        "tertiary-fixed": "#79f8d8",
+                        "surface-container-highest": "#35343c",
+                        "on-secondary": "#003543",
+                        "on-error-container": "#ffdad6",
+                        "background": "#14121a",
+                        "primary-container": "#917eff",
+                        "on-secondary-fixed": "#001f28",
+                        "surface-container": "#201f27",
+                        "on-surface": "#e5e0ec",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-secondary-container": "#003f4e",
+                        "on-primary-container": "#28008a",
+                        "on-surface-variant": "#c9c4d6",
+                        "surface-container-lowest": "#0e0d15",
+                        "tertiary-container": "#00a488",
+                        "on-background": "#e5e0ec",
+                        "primary-fixed-dim": "#c8bfff",
+                        "tertiary": "#59dbbd",
+                        "surface-container-low": "#1c1b22",
+                        "on-error": "#690005",
+                        "primary": "#c8bfff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "sm": "12px",
+                        "safe-margin": "40px",
+                        "base": "4px",
+                        "hit-target": "44px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "label-md": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display": ["Geist"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .inner-glow { border-top: 1px solid rgba(255, 255, 255, 0.12); }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 0 3px rgba(200, 191, 255, 0.4); transform: scale(1.05); }
+        
+        /* Neural Pulse Animation */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.6; }
+        }
+        .neural-pulse-idle {
+            animation: breathe 2s infinite ease-in-out;
+            border: 2px solid #917eff; /* Neural Violet approximation */
+            border-radius: 50%;
+        }
+        
+        /* Progress Circle */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #484553; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #928e9f; }
+    </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface h-screen w-screen overflow-hidden flex flex-col font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-sm w-full z-50 docked full-width top-0 h-[36px] bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-white/12">
+<div class="flex items-center gap-md">
+<span class="font-display text-display text-primary uppercase tracking-tighter">NEURAL_OS</span>
+<nav class="hidden md:flex gap-sm">
+<a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-highest transition-colors px-xs py-base rounded scale-95 duration-100 flex items-center min-h-[44px]" href="#">GPT-4o</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-highest transition-colors px-xs py-base rounded scale-95 duration-100 flex items-center min-h-[44px]" href="#">CLAUDE-3.5</a>
+<a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-highest transition-colors px-xs py-base rounded scale-95 duration-100 flex items-center min-h-[44px]" href="#">SONNET</a>
+</nav>
+</div>
+<div class="flex items-center gap-xs">
+<button aria-label="Minimize" class="text-on-surface-variant hover:bg-surface-container-highest transition-colors p-base rounded scale-95 duration-100 flex items-center justify-center min-h-[44px] min-w-[44px]">
+<span class="material-symbols-outlined text-[18px]">minimize</span>
+</button>
+<button aria-label="Fullscreen" class="text-on-surface-variant hover:bg-surface-container-highest transition-colors p-base rounded scale-95 duration-100 flex items-center justify-center min-h-[44px] min-w-[44px]">
+<span class="material-symbols-outlined text-[18px]">fullscreen</span>
+</button>
+<button aria-label="Close" class="text-on-surface-variant hover:bg-surface-container-highest transition-colors p-base rounded scale-95 duration-100 flex items-center justify-center min-h-[44px] min-w-[44px]">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full flex flex-col justify-between py-md z-40 docked w-[52px] bg-surface-container-low dark:bg-surface-container-low border-r border-white/12 pt-[48px]">
+<nav class="flex flex-col gap-sm px-xs mt-sm">
+<a aria-label="Command" class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-label-sm text-label-sm hidden">Command</span>
+</a>
+<a aria-label="Workspace" class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+<span class="font-label-sm text-label-sm hidden">Workspace</span>
+</a>
+<a aria-label="IDE" class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-[20px]">code</span>
+<span class="font-label-sm text-label-sm hidden">IDE</span>
+</a>
+<a aria-label="Terminal" class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+<span class="font-label-sm text-label-sm hidden">Terminal</span>
+</a>
+<a aria-label="Browser" class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-[20px]">language</span>
+<span class="font-label-sm text-label-sm hidden">Browser</span>
+</a>
+<a aria-label="Settings" class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-lg p-2 scale-105 shadow-[0_0_15px_rgba(200,191,255,0.4)] min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+<span class="font-label-sm text-label-sm hidden">Settings</span>
+</a>
+</nav>
+<div class="flex flex-col gap-sm px-xs pb-sm">
+<a aria-label="Git" class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+</a>
+<a aria-label="Status" class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded min-h-[44px]" href="#">
+<span class="material-symbols-outlined text-[20px]">sensors</span>
+</a>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="flex-1 ml-[52px] bg-background overflow-y-auto p-safe-margin relative">
+<!-- Neural Pulse Header -->
+<div class="flex justify-between items-start mb-lg">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-xs tracking-tight">Security &amp; Permissions</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">System integrity diagnostics and access control</p>
+</div>
+<div class="w-[60px] h-[60px] relative flex items-center justify-center">
+<div class="absolute inset-0 neural-pulse-idle"></div>
+<span class="material-symbols-outlined text-primary text-[24px]">shield_person</span>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-md auto-rows-[minmax(120px,auto)]">
+<!-- Security Health Score (Hero Card) -->
+<div class="col-span-12 md:col-span-4 row-span-2 bg-surface-container rounded-xl p-lg inner-glow flex flex-col items-center justify-center relative overflow-hidden shadow-[0_32px_40px_-15px_rgba(14,13,21,0.4)]">
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest absolute top-lg left-lg">System Health</h2>
+<div class="relative w-[180px] h-[180px] mt-md flex items-center justify-center">
+<svg class="w-full h-full" viewbox="0 0 100 100">
+<circle class="text-surface-variant stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
+<circle class="text-tertiary stroke-current progress-ring__circle drop-shadow-[0_0_8px_rgba(89,219,189,0.6)]" cx="50" cy="50" fill="transparent" r="40" stroke-dasharray="251.2" stroke-dashoffset="30" stroke-linecap="round" stroke-width="8"></circle>
+</svg>
+<div class="absolute flex flex-col items-center">
+<span class="font-display text-display text-tertiary">92%</span>
+<span class="font-label-sm text-label-sm text-tertiary-fixed-dim mt-xs">OPTIMAL</span>
+</div>
+</div>
+<div class="w-full mt-lg pt-sm border-t border-white/5 flex justify-between items-center px-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Core Secure</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px] text-[#facc15]">warning</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2 Notices</span>
+</div>
+</div>
+</div>
+<!-- Active Permissions Review -->
+<div class="col-span-12 md:col-span-8 row-span-2 bg-surface-container rounded-xl p-md inner-glow flex flex-col">
+<div class="flex justify-between items-center mb-md">
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Active Tool Permissions</h2>
+<button class="font-label-sm text-label-sm text-primary hover:text-primary-fixed-dim transition-colors min-h-[44px] px-sm focus-ring rounded">Review All</button>
+</div>
+<div class="flex-1 flex flex-col gap-xs overflow-y-auto">
+<!-- Permission Item 1 -->
+<div class="bg-surface p-sm rounded-lg flex items-center justify-between group hover:bg-surface-bright transition-colors border border-transparent hover:border-white/5 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+<div class="flex items-center gap-md pl-xs">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface">folder</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface text-[14px]">Filesystem Access</h3>
+<p class="font-code-md text-code-md text-on-surface-variant text-[11px]">/workspace/neurodeck/src</p>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<span class="bg-surface-container-high px-2 py-1 rounded font-code-md text-code-md text-[10px] text-on-surface-variant border border-white/10">GPT-4o</span>
+<span class="font-label-sm text-label-sm text-tertiary flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary"></span> Active</span>
+<button class="min-h-[44px] min-w-[44px] flex items-center justify-center text-on-surface-variant hover:text-error transition-colors focus-ring rounded-full ml-sm">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- Permission Item 2 -->
+<div class="bg-surface p-sm rounded-lg flex items-center justify-between group hover:bg-surface-bright transition-colors border border-transparent hover:border-white/5 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-[#facc15] transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+<div class="flex items-center gap-md pl-xs">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface">terminal</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface text-[14px]">Shell Execution</h3>
+<p class="font-code-md text-code-md text-on-surface-variant text-[11px]">npm run build, git status</p>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<span class="bg-surface-container-high px-2 py-1 rounded font-code-md text-code-md text-[10px] text-on-surface-variant border border-white/10">CLAUDE-3.5</span>
+<span class="font-label-sm text-label-sm text-[#facc15] flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#facc15] animate-pulse"></span> Pending</span>
+<button class="min-h-[44px] min-w-[44px] flex items-center justify-center text-on-surface-variant hover:text-error transition-colors focus-ring rounded-full ml-sm">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+<!-- Permission Item 3 -->
+<div class="bg-surface p-sm rounded-lg flex items-center justify-between group hover:bg-surface-bright transition-colors border border-transparent hover:border-white/5 relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-tertiary transform -translate-x-full group-hover:translate-x-0 transition-transform"></div>
+<div class="flex items-center gap-md pl-xs">
+<div class="w-8 h-8 rounded bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px] text-on-surface">public</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface text-[14px]">Network Requests</h3>
+<p class="font-code-md text-code-md text-on-surface-variant text-[11px]">api.github.com, npmjs.org</p>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<span class="bg-surface-container-high px-2 py-1 rounded font-code-md text-code-md text-[10px] text-on-surface-variant border border-white/10">SONNET</span>
+<span class="font-label-sm text-label-sm text-tertiary flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-tertiary"></span> Active</span>
+<button class="min-h-[44px] min-w-[44px] flex items-center justify-center text-on-surface-variant hover:text-error transition-colors focus-ring rounded-full ml-sm">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Credential Status Cards -->
+<div class="col-span-12 md:col-span-3 bg-surface-container rounded-xl p-md inner-glow flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-xs mb-sm">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">key</span>
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">OpenAI API</h3>
+</div>
+<div class="font-code-md text-code-md text-on-surface bg-background p-xs rounded border border-outline-variant/30 text-[12px] truncate">
+                            sk-proj-...8x2b
+                        </div>
+</div>
+<div class="flex justify-between items-end mt-md">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Last Used</p>
+<p class="font-body-md text-body-md text-on-surface text-[13px]">2 mins ago</p>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary bg-tertiary/10 px-2 py-1 rounded">Valid</span>
+</div>
+</div>
+<div class="col-span-12 md:col-span-3 bg-surface-container rounded-xl p-md inner-glow flex flex-col justify-between">
+<div>
+<div class="flex items-center gap-xs mb-sm">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">key</span>
+<h3 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Anthropic API</h3>
+</div>
+<div class="font-code-md text-code-md text-error bg-error-container/20 p-xs rounded border border-error/30 text-[12px] truncate">
+                            sk-ant-...v9a1
+                        </div>
+</div>
+<div class="flex justify-between items-end mt-md">
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Expires</p>
+<p class="font-body-md text-body-md text-on-surface text-[13px]">Today</p>
+</div>
+<span class="font-label-sm text-label-sm text-error bg-error/10 px-2 py-1 rounded">Expiring</span>
+</div>
+</div>
+<!-- Trusted Locations -->
+<div class="col-span-12 md:col-span-6 bg-surface-container rounded-xl p-md inner-glow">
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest mb-md">Trusted Boundaries</h2>
+<div class="grid grid-cols-2 gap-sm">
+<div class="bg-surface p-sm rounded border border-white/5 flex items-start gap-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary mt-1">dns</span>
+<div>
+<p class="font-headline-md text-headline-md text-[13px] text-on-surface">Localhost Subnet</p>
+<p class="font-code-md text-code-md text-[11px] text-on-surface-variant">127.0.0.1, ::1</p>
+</div>
+</div>
+<div class="bg-surface p-sm rounded border border-white/5 flex items-start gap-sm">
+<span class="material-symbols-outlined text-[16px] text-tertiary mt-1">folder_special</span>
+<div>
+<p class="font-headline-md text-headline-md text-[13px] text-on-surface">Project Root</p>
+<p class="font-code-md text-code-md text-[11px] text-on-surface-variant">~/dev/neurodeck/*</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Actions & Event Log -->
+<div class="col-span-12 grid grid-cols-12 gap-md h-[200px]">
+<div class="col-span-4 bg-surface-container-low rounded-xl p-md flex flex-col justify-center gap-sm border border-white/5">
+<button class="w-full bg-error-container/20 text-error hover:bg-error-container/40 border border-error/30 py-sm px-md rounded font-label-md text-label-md transition-colors focus-ring min-h-[44px] flex justify-center items-center gap-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]">
+<span class="material-symbols-outlined text-[16px]">block</span>
+                            Revoke All Access
+                        </button>
+<button class="w-full bg-surface text-on-surface hover:bg-surface-bright border border-white/10 py-sm px-md rounded font-label-md text-label-md transition-colors focus-ring min-h-[44px] flex justify-center items-center gap-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+                            Rotate API Keys
+                        </button>
+<button class="w-full bg-primary text-on-primary hover:bg-primary-fixed border border-transparent py-sm px-md rounded font-label-md text-label-md transition-colors focus-ring min-h-[44px] flex justify-center items-center gap-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]">
+<span class="material-symbols-outlined text-[16px]">fact_check</span>
+                            Run Security Audit
+                        </button>
+</div>
+<div class="col-span-8 bg-surface-container rounded-xl p-md inner-glow flex flex-col">
+<div class="flex justify-between items-center mb-xs">
+<h2 class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">Recent Events</h2>
+<span class="font-code-md text-code-md text-[10px] text-on-surface-variant">Live</span>
+</div>
+<div class="flex-1 overflow-y-auto pr-xs">
+<table class="w-full text-left font-code-md text-code-md text-[12px]">
+<tbody>
+<tr class="border-b border-white/5">
+<td class="py-xs text-on-surface-variant w-24">14:02:11</td>
+<td class="py-xs text-tertiary">GRANTED</td>
+<td class="py-xs text-on-surface">GPT-4o accessed /src/utils.js</td>
+</tr>
+<tr class="border-b border-white/5 bg-surface-bright/30">
+<td class="py-xs text-on-surface-variant pl-xs">13:58:45</td>
+<td class="py-xs text-[#facc15]">PROMPTED</td>
+<td class="py-xs text-on-surface">CLAUDE-3.5 requested shell execution (npm install)</td>
+</tr>
+<tr class="border-b border-white/5">
+<td class="py-xs text-on-surface-variant">13:45:00</td>
+<td class="py-xs text-error">DENIED</td>
+<td class="py-xs text-on-surface">SONNET attempt to access outside project root (~/.ssh)</td>
+</tr>
+<tr class="border-b border-white/5">
+<td class="py-xs text-on-surface-variant">12:30:22</td>
+<td class="py-xs text-tertiary">GRANTED</td>
+<td class="py-xs text-on-surface">SONNET made GET request to api.github.com</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 w-full flex justify-between items-center px-sm z-50 docked full-width h-[26px] bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-white/12">
+<div class="flex items-center gap-xs">
+<span class="text-label-sm font-label-sm text-outline">v2.4.0-STABLE</span>
+</div>
+<div class="flex gap-md font-code-md text-code-md text-[11px]">
+<a class="text-on-surface-variant opacity-70 hover:bg-surface-container-highest px-xs rounded transition-colors" href="#">main</a>
+<a class="text-tertiary font-bold hover:bg-surface-container-highest px-xs rounded transition-colors" href="#">model_ready</a>
+<a class="text-on-surface-variant opacity-70 hover:bg-surface-container-highest px-xs rounded transition-colors" href="#">connected</a>
+</div>
+</footer>
+</body></html>

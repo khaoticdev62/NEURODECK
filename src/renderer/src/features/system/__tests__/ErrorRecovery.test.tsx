@@ -4,10 +4,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactElement } from 'react'
 import type { DiagnosticsInfo, NdxBridge } from '@shared/contracts'
 import { ErrorRecovery, ErrorRecoveryContent } from '../ErrorRecovery'
-import { renderWithProviders } from '../../../__tests__/testUtils'
+import { renderWithProviders, TestWorkbenchStoreRenderer } from '../../../__tests__/testUtils'
+import { resetWorkbenchStore } from '../../../state/useWorkbenchStore'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { ToastProvider } from '../../../components/overlays/Toast'
+import { MemoryRouter } from 'react-router-dom'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
@@ -16,7 +18,12 @@ function stubBridge(partial: Partial<NdxBridge>): void {
 function renderContent(element: ReactElement): ReturnType<typeof render> {
   return render(
     <ToastProvider>
-      <FocusEngineProvider adapters={[new TestAdapter()]}>{element}</FocusEngineProvider>
+      <FocusEngineProvider adapters={[new TestAdapter()]}>
+        <MemoryRouter>
+          {element}
+          <TestWorkbenchStoreRenderer />
+        </MemoryRouter>
+      </FocusEngineProvider>
     </ToastProvider>
   )
 }
@@ -57,6 +64,7 @@ beforeEach(() => {
 afterEach(() => {
   // @ts-expect-error test-only cleanup of a global the real preload script injects
   delete window.ndx
+  resetWorkbenchStore()
 })
 
 describe('ErrorRecovery', () => {

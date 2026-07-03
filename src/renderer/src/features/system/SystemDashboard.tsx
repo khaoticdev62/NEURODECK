@@ -2,62 +2,87 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { MetricValue, SystemMetricsSnapshot } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NdxMeter } from '../../components/primitives/NdxMeter'
 import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
+import { NdxTvCard, NdxTvShelf, TvCategoryIcon } from '../../components/tvos'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 interface SystemLink {
   label: string
   path: string
+  category: string
 }
 
+/**
+ * Phase 2 tvOS condensation (see plan): the flat list this screen used to
+ * render as two special-cased views (an 8-item deck slice and a
+ * docked-2k-only tool window) is grouped into named categories and shown as
+ * horizontally scrolling shelves instead, on every breakpoint. Every link
+ * below is unchanged — none were dropped — only their presentation and
+ * grouping changed.
+ */
 const SYSTEM_LINKS: SystemLink[] = [
-  { label: 'Controller Settings', path: '/settings/controller' },
-  { label: 'Display and Theme Settings', path: '/settings/display' },
-  { label: 'Network and VPN', path: '/settings/network' },
-  { label: 'Device and Peripheral Center', path: '/devices' },
-  { label: 'Bluetooth Devices', path: '/devices/bluetooth' },
-  { label: 'Audio and Microphone Center', path: '/devices/audio' },
-  { label: 'Display and Dock Center', path: '/devices/display' },
-  { label: 'Removable Storage Center', path: '/devices/storage' },
-  { label: 'Resource Governor', path: '/resource-governor' },
-  { label: 'AI Workload Scheduler', path: '/ai-workloads' },
-  { label: 'Scheduler and Triggers', path: '/scheduler' },
-  { label: 'Privacy and Permissions', path: '/settings/privacy' },
-  { label: 'Integrations', path: '/integrations' },
-  { label: 'Updates', path: '/settings/updates' },
-  { label: 'Power Menu', path: '/power' },
-  { label: 'About and Diagnostics', path: '/about' },
-  { label: 'Recovery Timeline', path: '/recovery' },
-  { label: 'Storage and Recovery', path: '/storage' },
-  { label: 'Agent Operations Center', path: '/agents' },
-  { label: 'Remote Systems', path: '/remote' },
-  { label: 'LAN Share', path: '/lan-share' },
-  { label: 'Profiles and Identity', path: '/profiles' },
-  { label: 'Continuity and Offline', path: '/continuity' },
-  { label: 'Secrets Vault', path: '/vault' },
-  { label: 'Privacy and Data Map', path: '/privacy' },
-  { label: 'Help Hub', path: '/help' },
-  { label: 'Guided Troubleshooter', path: '/troubleshooter' },
-  { label: 'Platform Health Overview', path: '/platform-health' },
-  { label: 'Screenshot Center', path: '/screenshots' },
-  { label: 'Voice Notes', path: '/voice-notes' },
-  { label: 'Presentation Mode', path: '/presentation' },
-  { label: 'Notification Policy', path: '/notifications' },
-  { label: 'Recording Center', path: '/recording' },
-  { label: 'Application Sandbox and Policy', path: '/app-policies' },
-  { label: 'Kiosk Mode', path: '/kiosk' },
-  { label: 'Trusted Publishers', path: '/trusted-publishers' },
-  { label: 'Tool Library', path: '/tools' },
-  { label: 'Steam Shortcut Manager', path: '/steam-shortcuts' },
-  { label: 'Clipboard and Snippet Center', path: '/clipboard' }
+  { label: 'Controller Settings', path: '/settings/controller', category: 'Display & Controller' },
+  {
+    label: 'Display and Theme Settings',
+    path: '/settings/display',
+    category: 'Display & Controller'
+  },
+  { label: 'Device and Peripheral Center', path: '/devices', category: 'Devices' },
+  { label: 'Bluetooth Devices', path: '/devices/bluetooth', category: 'Devices' },
+  { label: 'Audio and Microphone Center', path: '/devices/audio', category: 'Devices' },
+  { label: 'Display and Dock Center', path: '/devices/display', category: 'Devices' },
+  { label: 'Removable Storage Center', path: '/devices/storage', category: 'Devices' },
+  { label: 'Resource Governor', path: '/resource-governor', category: 'AI & Automation' },
+  { label: 'AI Workload Scheduler', path: '/ai-workloads', category: 'AI & Automation' },
+  { label: 'Scheduler and Triggers', path: '/scheduler', category: 'AI & Automation' },
+  { label: 'Agent Operations Center', path: '/agents', category: 'AI & Automation' },
+  { label: 'AI Command Canvas', path: '/ai', category: 'AI & Automation' },
+  { label: 'Tool Library', path: '/tools', category: 'AI & Automation' },
+  { label: 'Prompt and Persona Library', path: '/prompt-library', category: 'AI & Automation' },
+  { label: 'AI Memory Control Center', path: '/memory', category: 'AI & Automation' },
+  { label: 'Network and VPN', path: '/settings/network', category: 'Network & Sharing' },
+  { label: 'Integrations', path: '/integrations', category: 'Network & Sharing' },
+  { label: 'Remote Systems', path: '/remote', category: 'Network & Sharing' },
+  { label: 'LAN Share', path: '/lan-share', category: 'Network & Sharing' },
+  { label: 'Privacy and Permissions', path: '/settings/privacy', category: 'Privacy & Security' },
+  { label: 'Secrets Vault', path: '/vault', category: 'Privacy & Security' },
+  { label: 'Privacy and Data Map', path: '/privacy', category: 'Privacy & Security' },
+  { label: 'Kiosk Mode', path: '/kiosk', category: 'Privacy & Security' },
+  { label: 'Trusted Publishers', path: '/trusted-publishers', category: 'Privacy & Security' },
+  { label: 'Updates', path: '/settings/updates', category: 'System Health' },
+  { label: 'About and Diagnostics', path: '/about', category: 'System Health' },
+  { label: 'Recovery Timeline', path: '/recovery', category: 'System Health' },
+  { label: 'Storage and Recovery', path: '/storage', category: 'System Health' },
+  { label: 'Platform Health Overview', path: '/platform-health', category: 'System Health' },
+  { label: 'Power Menu', path: '/power', category: 'Session & Power' },
+  { label: 'Profiles and Identity', path: '/profiles', category: 'Session & Power' },
+  { label: 'Continuity and Offline', path: '/continuity', category: 'Session & Power' },
+  { label: 'Notification Policy', path: '/notifications', category: 'Session & Power' },
+  { label: 'Help Hub', path: '/help', category: 'Help & Support' },
+  { label: 'Guided Troubleshooter', path: '/troubleshooter', category: 'Help & Support' },
+  { label: 'Screenshot Center', path: '/screenshots', category: 'Media & Capture' },
+  { label: 'Voice Notes', path: '/voice-notes', category: 'Media & Capture' },
+  { label: 'Presentation Mode', path: '/presentation', category: 'Media & Capture' },
+  { label: 'Recording Center', path: '/recording', category: 'Media & Capture' },
+  { label: 'Application Center', path: '/applications', category: 'Apps & Extensions' },
+  { label: 'Application Sandbox and Policy', path: '/app-policies', category: 'Apps & Extensions' },
+  { label: 'Steam Shortcut Manager', path: '/steam-shortcuts', category: 'Apps & Extensions' },
+  { label: 'Clipboard and Snippet Center', path: '/clipboard', category: 'Apps & Extensions' }
 ]
+
+const SYSTEM_LINK_CATEGORIES: string[] = [...new Set(SYSTEM_LINKS.map((link) => link.category))]
 
 /**
  * ND-042 System Dashboard. Uses real, capability-detected metrics from
  * SystemMetricsService and keeps unavailable hardware explicit instead of
- * fabricating values. The layout is Deck-first: inline shortcuts on 1280px
- * screens, docked tool windows only when there is room for them.
+ * fabricating values. Navigation to the other system/settings screens is
+ * grouped into categorized tvOS-style shelves (Phase 2), rendered the same
+ * way at every breakpoint; the docked "Metrics Scope" tool window is
+ * unrelated real content (collection-mode/sensor-policy notes), not a
+ * navigation list, so it keeps its own docked-only treatment.
  */
 export function SystemDashboard(): React.JSX.Element {
   const navigate = useNavigate()
@@ -94,24 +119,33 @@ export function SystemDashboard(): React.JSX.Element {
     }
   }
 
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow
+        title="Metrics Scope"
+        subtitle={snapshot ? snapshot.hostPlatform : 'Awaiting collection'}
+        side="right"
+      >
+        <MetricsScope snapshot={snapshot} />
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [snapshot, setSecondary])
+
   if (loading && !snapshot) {
     return <p className="p-4 text-meta text-text-secondary">Collecting metrics...</p>
   }
 
   return (
-    <div className="grid h-full min-w-0 grid-cols-1 gap-2 overflow-auto docked:grid-cols-[minmax(0,1fr)_18rem] docked-2k:grid-cols-[18rem_minmax(0,1fr)_18rem]">
-      <div className="hidden min-h-0 docked-2k:block">
-        <NdxToolWindow title="System Tools" subtitle={`${SYSTEM_LINKS.length} destinations`}>
-          <SystemLinks onNavigate={navigate} />
-        </NdxToolWindow>
-      </div>
-
+    <div className="h-full flex-1">
       <NdxEditorShell title="Metrics">
         <div className="flex min-h-full min-w-0 flex-col gap-4 p-3 deck:p-4">
           <div className="ndx-os-panel overflow-hidden">
             <div className="ndx-console-ruler" aria-hidden="true" />
             <div className="flex items-center justify-between gap-3 p-3">
-              <div className="min-w-0">
+               <div className="min-w-0">
                 <p className="text-meta uppercase tracking-wide text-text-tertiary">
                   System cockpit
                 </p>
@@ -129,18 +163,25 @@ export function SystemDashboard(): React.JSX.Element {
             </div>
           </div>
 
-          <section className="grid gap-2 deck:grid-cols-2 docked-2k:hidden">
-            {SYSTEM_LINKS.slice(0, 8).map((link) => (
-              <ControllerButton
-                key={link.path}
-                className="justify-start px-3"
-                variant="secondary"
-                onClick={() => navigate(link.path)}
+          <div className="flex flex-col gap-4">
+            {SYSTEM_LINK_CATEGORIES.map((category) => (
+              <NdxTvShelf
+                key={category}
+                title={category}
+                icon={<TvCategoryIcon category={category} />}
               >
-                {link.label}
-              </ControllerButton>
+                {SYSTEM_LINKS.filter((link) => link.category === category).map((link) => (
+                  <NdxTvCard
+                    key={link.path}
+                    id={`system-link:${link.path}`}
+                    groupId="system-dashboard-links"
+                    title={link.label}
+                    onActivate={() => navigate(link.path)}
+                  />
+                ))}
+              </NdxTvShelf>
             ))}
-          </section>
+          </div>
 
           {error && <ErrorState title="System metrics error" description={error} />}
 
@@ -156,7 +197,7 @@ export function SystemDashboard(): React.JSX.Element {
                 <MetricCard title="CPU" metric={snapshot.cpu}>
                   {(cpu) => (
                     <>
-                      <Stat label="Usage" value={`${cpu.usagePercent.toFixed(1)}%`} />
+                      <NdxMeter label="Usage" percent={cpu.usagePercent} />
                       <Stat label="Logical cores" value={String(cpu.logicalCores)} />
                       <Stat label="Model" value={cpu.model} />
                     </>
@@ -166,9 +207,11 @@ export function SystemDashboard(): React.JSX.Element {
                 <MetricCard title="Memory" metric={snapshot.memory}>
                   {(memory) => (
                     <>
-                      <Stat label="Usage" value={`${memory.usagePercent.toFixed(1)}%`} />
-                      <Stat label="Used" value={formatBytes(memory.usedBytes)} />
-                      <Stat label="Total" value={formatBytes(memory.totalBytes)} />
+                      <NdxMeter
+                        label="Usage"
+                        percent={memory.usagePercent}
+                        displayValue={`${formatBytes(memory.usedBytes)} / ${formatBytes(memory.totalBytes)}`}
+                      />
                     </>
                   )}
                 </MetricCard>
@@ -176,9 +219,11 @@ export function SystemDashboard(): React.JSX.Element {
                 <MetricCard title="Swap" metric={snapshot.swap}>
                   {(swap) => (
                     <>
-                      <Stat label="Usage" value={`${swap.usagePercent.toFixed(1)}%`} />
-                      <Stat label="Used" value={formatBytes(swap.usedBytes)} />
-                      <Stat label="Total" value={formatBytes(swap.totalBytes)} />
+                      <NdxMeter
+                        label="Usage"
+                        percent={swap.usagePercent}
+                        displayValue={`${formatBytes(swap.usedBytes)} / ${formatBytes(swap.totalBytes)}`}
+                      />
                     </>
                   )}
                 </MetricCard>
@@ -187,8 +232,11 @@ export function SystemDashboard(): React.JSX.Element {
                   {(storage) => (
                     <>
                       <Stat label="Path" value={storage.path} />
-                      <Stat label="Usage" value={`${storage.usagePercent.toFixed(1)}%`} />
-                      <Stat label="Available" value={formatBytes(storage.availableBytes)} />
+                      <NdxMeter
+                        label="Usage"
+                        percent={storage.usagePercent}
+                        displayValue={`${storage.usagePercent.toFixed(1)}% - ${formatBytes(storage.availableBytes)} free`}
+                      />
                     </>
                   )}
                 </MetricCard>
@@ -244,10 +292,10 @@ export function SystemDashboard(): React.JSX.Element {
                       <p className="text-meta text-text-tertiary">No supported GPU usage sensor.</p>
                     ) : (
                       devices.map((device) => (
-                        <Stat
+                        <NdxMeter
                           key={device.device}
                           label={device.device}
-                          value={`${device.usagePercent.toFixed(1)}%`}
+                          percent={device.usagePercent}
                         />
                       ))
                     )
@@ -274,28 +322,6 @@ export function SystemDashboard(): React.JSX.Element {
           )}
         </div>
       </NdxEditorShell>
-
-      <div className="hidden min-h-0 docked:block">
-        <NdxToolWindow
-          title="Metrics Scope"
-          subtitle={snapshot ? snapshot.hostPlatform : 'Awaiting collection'}
-          side="right"
-        >
-          <MetricsScope snapshot={snapshot} />
-        </NdxToolWindow>
-      </div>
-    </div>
-  )
-}
-
-function SystemLinks({ onNavigate }: { onNavigate: (path: string) => void }): React.JSX.Element {
-  return (
-    <div className="flex flex-col gap-2">
-      {SYSTEM_LINKS.map((link) => (
-        <ControllerButton key={link.path} variant="secondary" onClick={() => onNavigate(link.path)}>
-          {link.label}
-        </ControllerButton>
-      ))}
     </div>
   )
 }

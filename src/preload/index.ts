@@ -4,6 +4,7 @@ import {
   agentToolExecutionRequestSchema,
   browserPermissionRequestSchema,
   browserTabSchema,
+  deckyNavigateEventSchema,
   extensionHealthEventSchema,
   IPC_CHANNELS,
   lanShareServiceStatusSchema,
@@ -168,6 +169,25 @@ const ndx: NdxBridge = {
       return () => ipcRenderer.removeListener(IPC_CHANNELS.agentToolRequest, handler)
     },
     reportToolResult: (result) => ipcRenderer.invoke(IPC_CHANNELS.agentToolResult, result)
+  },
+  conversations: {
+    list: (request) => ipcRenderer.invoke(IPC_CHANNELS.conversationList, request),
+    create: (request) => ipcRenderer.invoke(IPC_CHANNELS.conversationCreate, request),
+    sendMessage: (request) => ipcRenderer.invoke(IPC_CHANNELS.conversationSendMessage, request),
+    remove: (request) => ipcRenderer.invoke(IPC_CHANNELS.conversationRemove, request)
+  },
+  decky: {
+    getSettings: () => ipcRenderer.invoke(IPC_CHANNELS.deckyGetSettings),
+    setSettings: (request) => ipcRenderer.invoke(IPC_CHANNELS.deckySetSettings, request),
+    getStatus: () => ipcRenderer.invoke(IPC_CHANNELS.deckyGetStatus),
+    onNavigate: (listener) => {
+      const handler = (_event: Electron.IpcRendererEvent, payload: unknown): void => {
+        const parsed = deckyNavigateEventSchema.safeParse(payload)
+        if (parsed.success) listener(parsed.data)
+      }
+      ipcRenderer.on(IPC_CHANNELS.deckyNavigate, handler)
+      return () => ipcRenderer.removeListener(IPC_CHANNELS.deckyNavigate, handler)
+    }
   },
   system: {
     collectMetrics: () => ipcRenderer.invoke(IPC_CHANNELS.systemMetricsCollect)

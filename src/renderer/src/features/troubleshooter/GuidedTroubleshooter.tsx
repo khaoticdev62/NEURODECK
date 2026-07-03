@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type {
   TroubleshooterCheckStatus,
   TroubleshooterIssueId,
@@ -7,6 +7,7 @@ import type {
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxSpatialLockup, NdxToolWindow } from '../../components/workbench'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 import { runTroubleshooterCheck } from '../../services/ipc/troubleshooterClient'
 
 const ISSUE_LABELS: Record<TroubleshooterIssueId, string> = {
@@ -46,6 +47,20 @@ export function GuidedTroubleshooter(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null)
   const [controllerCheck, setControllerCheck] = useState<string | null>(null)
 
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Fix Policy" subtitle="Diagnostics only" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Checks never report a fix unless the real diagnostic passes.</p>
+          <p>Unsupported issue types are intentionally absent until real probes exist.</p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [setSecondary])
+
   async function handleRun(issueId: TroubleshooterIssueId): Promise<void> {
     setRunning(issueId)
     setError(null)
@@ -71,7 +86,7 @@ export function GuidedTroubleshooter(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[minmax(44rem,1fr)_20rem] gap-2 overflow-auto">
+    <div className="h-full flex-1">
       <NdxEditorShell title="Guided Diagnostics">
         <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
           <p className="text-title font-semibold text-text-primary">Guided Troubleshooter</p>
@@ -141,13 +156,6 @@ export function GuidedTroubleshooter(): React.JSX.Element {
           })}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Fix Policy" subtitle="Diagnostics only" side="right">
-        <div className="space-y-3 text-meta text-text-secondary">
-          <p>Checks never report a fix unless the real diagnostic passes.</p>
-          <p>Unsupported issue types are intentionally absent until real probes exist.</p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

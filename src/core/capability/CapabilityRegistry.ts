@@ -9,8 +9,7 @@ export interface CapabilityDetectionResult {
 }
 
 export type CapabilityDetector = () =>
-  | CapabilityDetectionResult
-  | Promise<CapabilityDetectionResult>
+  CapabilityDetectionResult | Promise<CapabilityDetectionResult>
 
 /**
  * Epic X1 Capability Registry (supplemental spec §33) — the one real

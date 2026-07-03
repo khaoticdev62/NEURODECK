@@ -5,6 +5,7 @@ import { AiSafetyProvider } from '../ai-safety/AiSafetyProvider'
 import { FocusEngineProvider } from '../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../controller/testing/testAdapter'
 import { ToastProvider } from '../components/overlays/Toast'
+import { DisplaySettingsProvider } from '../state/displaySettings'
 import { WorkspaceProvider } from '../features/workspaces/WorkspaceProvider'
 import { WorkflowRunnerProvider } from '../workflows/WorkflowRunnerProvider'
 
@@ -18,6 +19,24 @@ import { WorkflowRunnerProvider } from '../workflows/WorkflowRunnerProvider'
  * reset between those two mounts) was caught; use it for any effect whose
  * cleanup sets a ref/flag a later run depends on.
  */
+import { afterEach } from 'vitest'
+import { useWorkbenchStore, resetWorkbenchStore } from '../state/useWorkbenchStore'
+
+export function TestWorkbenchStoreRenderer(): React.JSX.Element {
+  const primary = useWorkbenchStore((state) => state.primaryContent)
+  const secondary = useWorkbenchStore((state) => state.secondaryContent)
+  return (
+    <>
+      {primary}
+      {secondary}
+    </>
+  )
+}
+
+afterEach(() => {
+  resetWorkbenchStore()
+})
+
 export function renderWithProviders(
   element: ReactElement,
   options: { initialEntries?: InitialEntry[]; strict?: boolean } = {}
@@ -26,13 +45,16 @@ export function renderWithProviders(
     <ToastProvider>
       <FocusEngineProvider adapters={[new TestAdapter()]}>
         <AiSafetyProvider>
-          <WorkspaceProvider>
-            <WorkflowRunnerProvider>
-              <MemoryRouter initialEntries={options.initialEntries ?? ['/']}>
-                {element}
-              </MemoryRouter>
-            </WorkflowRunnerProvider>
-          </WorkspaceProvider>
+          <DisplaySettingsProvider>
+            <WorkspaceProvider>
+              <WorkflowRunnerProvider>
+                <MemoryRouter initialEntries={options.initialEntries ?? ['/']}>
+                  {element}
+                  <TestWorkbenchStoreRenderer />
+                </MemoryRouter>
+              </WorkflowRunnerProvider>
+            </WorkspaceProvider>
+          </DisplaySettingsProvider>
         </AiSafetyProvider>
       </FocusEngineProvider>
     </ToastProvider>

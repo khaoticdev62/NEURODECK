@@ -1,0 +1,11 @@
+{
+  "name": "NeuroDeck Bridge",
+  "author": "NeuroDeck OS",
+  "flags": [],
+  "api_version": 1,
+  "publish": {
+    "tags": ["utility"],
+    "description": "Quick access to NeuroDeck OS from Steam's Quick Access Menu: real connection status, bring-to-front, and a small set of allowlisted quick actions.",
+    "image": ""
+  }
+}

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Privacy &amp; Data Sovereignty</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#003127",
+                        "surface-bright": "#3a3841",
+                        "surface-container-low": "#1c1b22",
+                        "surface-dim": "#14121a",
+                        "on-secondary": "#003543",
+                        "on-error": "#690005",
+                        "primary-container": "#917eff",
+                        "secondary-container": "#00b2d7",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#003f4e",
+                        "primary": "#c8bfff",
+                        "outline": "#928e9f",
+                        "on-primary-fixed": "#1a0063",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "primary-fixed-dim": "#c8bfff",
+                        "on-tertiary-fixed": "#002019",
+                        "on-primary-container": "#28008a",
+                        "on-tertiary": "#00382d",
+                        "inverse-surface": "#e5e0ec",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-surface": "#e5e0ec",
+                        "on-surface-variant": "#c9c4d6",
+                        "on-primary-fixed-variant": "#452daf",
+                        "inverse-primary": "#5e49c8",
+                        "tertiary-fixed": "#79f8d8",
+                        "background": "#14121a",
+                        "surface-container-high": "#2b2931",
+                        "on-background": "#e5e0ec",
+                        "error-container": "#93000a",
+                        "tertiary-container": "#00a488",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "primary-fixed": "#e5deff",
+                        "on-secondary-fixed": "#001f28",
+                        "surface-container-highest": "#35343c",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-variant": "#35343c",
+                        "on-primary": "#2e0599",
+                        "secondary": "#4dd6fd",
+                        "secondary-fixed": "#b5ebff",
+                        "surface": "#14121a",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#c8bfff",
+                        "outline-variant": "#484553",
+                        "surface-container": "#201f27",
+                        "tertiary": "#59dbbd",
+                        "inverse-on-surface": "#312f38"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "hit-target": "44px",
+                        "md": "16px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "lg": "24px",
+                        "safe-margin": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "display": ["Geist"]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-6 md:px-40 flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col w-full max-w-[960px] flex-1">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-outline-variant px-4 md:px-10 py-4 mb-6">
+<div class="flex items-center gap-4 text-on-surface">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-variant transition-colors group">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface">arrow_back</span>
+</button>
+<h2 class="text-on-surface font-headline-md leading-tight tracking-[-0.015em]">Privacy &amp; Data Sovereignty</h2>
+</div>
+<div class="size-6 text-primary">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M44 11.2727C44 14.0109 39.8386 16.3957 33.69 17.6364C39.8386 18.877 44 21.2618 44 24C44 26.7382 39.8386 29.123 33.69 30.3636C39.8386 31.6043 44 33.9891 44 36.7273C44 40.7439 35.0457 44 24 44C12.9543 44 4 40.7439 4 36.7273C4 33.9891 8.16144 31.6043 14.31 30.3636C8.16144 29.123 4 26.7382 4 24C4 21.2618 8.16144 18.877 14.31 17.6364C8.16144 16.3957 4 14.0109 4 11.2727C4 7.25611 12.9543 4 24 4C35.0457 4 44 7.25611 44 11.2727Z" fill="currentColor"></path>
+</svg>
+</div>
+</header>
+<main class="flex flex-col flex-1">
+<div class="flex flex-col gap-3 p-4 mb-4">
+<div class="flex gap-6 justify-between items-end">
+<p class="text-on-surface font-headline-md leading-normal">Security Posture</p>
+<p class="text-primary font-code-md leading-normal">100%</p>
+</div>
+<div class="rounded-full bg-surface-variant overflow-hidden h-2 w-full">
+<div class="h-full rounded-full bg-primary" style="width: 100%;"></div>
+</div>
+<p class="text-tertiary text-sm font-medium leading-normal flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                                Maximum protection
+                            </p>
+</div>
+<div class="px-4 mb-8">
+<p class="text-on-surface-variant text-base font-normal leading-relaxed max-w-2xl">Weights and logs never leave the device. Complete data sovereignty guaranteed. Configure your node's operational boundaries below to ensure compliance with your local security directives.</p>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Card 1 -->
+<div class="flex gap-4 bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl px-5 py-4 justify-between items-center border border-outline-variant/20">
+<div class="flex items-start gap-4">
+<div class="text-primary flex items-center justify-center rounded-lg bg-surface-container-high shrink-0 size-12" data-icon="ShieldCheck" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">shield_lock</span>
+</div>
+<div class="flex flex-1 flex-col justify-center">
+<p class="text-on-surface text-base font-medium leading-normal mb-1">Local-Only Mode</p>
+<p class="text-on-surface-variant text-sm font-normal leading-tight">No external connections allowed.</p>
+<p class="text-primary/80 text-xs font-medium leading-tight mt-1 uppercase tracking-wide">Active by default</p>
+</div>
+</div>
+<div class="shrink-0">
+<label class="relative flex h-[32px] w-[52px] cursor-pointer items-center rounded-full border-2 border-primary bg-primary p-0.5 justify-end transition-all">
+<div class="h-[24px] w-[24px] rounded-full bg-surface-container-lowest shadow-sm" style="box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 4px;"></div>
+<input checked="" class="invisible absolute" disabled="" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="flex gap-4 bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl px-5 py-4 justify-between items-center border border-outline-variant/20">
+<div class="flex items-start gap-4">
+<div class="text-on-surface-variant flex items-center justify-center rounded-lg bg-surface-container-high shrink-0 size-12" data-icon="ChartBar" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">avatar</span>
+</div>
+<div class="flex flex-1 flex-col justify-center">
+<p class="text-on-surface text-base font-medium leading-normal mb-1">Anonymized Telemetry</p>
+<p class="text-on-surface-variant text-sm font-normal leading-tight">Help improve performance safely.</p>
+<p class="text-on-surface-variant/70 text-xs font-normal leading-tight mt-1">Share completely anonymized metadata.</p>
+</div>
+</div>
+<div class="shrink-0">
+<label class="relative flex h-[32px] w-[52px] cursor-pointer items-center rounded-full border-2 border-outline-variant bg-surface-container-high p-0.5 justify-start has-[:checked]:justify-end has-[:checked]:bg-primary has-[:checked]:border-primary transition-all">
+<div class="h-[24px] w-[24px] rounded-full bg-outline shadow-sm transition-colors group-has-[:checked]:bg-surface-container-lowest" style="box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 4px;"></div>
+<input class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="flex gap-4 bg-surface-container-low hover:bg-surface-container transition-colors rounded-xl px-5 py-4 justify-between items-center border border-outline-variant/20">
+<div class="flex items-start gap-4">
+<div class="text-on-surface-variant flex items-center justify-center rounded-lg bg-surface-container-high shrink-0 size-12" data-icon="memory" data-size="24px" data-weight="regular">
+<span class="material-symbols-outlined">memory</span>
+</div>
+<div class="flex flex-1 flex-col justify-center">
+<p class="text-on-surface text-base font-medium leading-normal mb-1">Encrypted Memory</p>
+<p class="text-on-surface-variant text-sm font-normal leading-tight">Secure active states.</p>
+<p class="text-on-surface-variant/70 text-xs font-normal leading-tight mt-1">All volatile RAM usage is hardware encrypted.</p>
+</div>
+</div>
+<div class="shrink-0">
+<label class="relative flex h-[32px] w-[52px] cursor-pointer items-center rounded-full border-2 border-outline-variant bg-surface-container-high p-0.5 justify-start has-[:checked]:justify-end has-[:checked]:bg-primary has-[:checked]:border-primary transition-all">
+<div class="h-[24px] w-[24px] rounded-full bg-outline shadow-sm transition-colors group-has-[:checked]:bg-surface-container-lowest" style="box-shadow: rgba(0, 0, 0, 0.2) 0px 2px 4px;"></div>
+<input class="invisible absolute" type="checkbox"/>
+</label>
+</div>
+</div>
+</div>
+<div class="mt-auto pt-12 pb-8 flex justify-end">
+<button class="bg-primary hover:bg-primary-fixed text-on-primary font-label-md px-8 h-12 rounded-full flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(200,191,255,0.3)] hover:shadow-[0_0_25px_rgba(200,191,255,0.5)]">
+                                Finalize Neural Link
+                                <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</main>
+</div>
+</div>
+</div>
+</div>
+</body></html>

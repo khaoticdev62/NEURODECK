@@ -7,6 +7,7 @@ import { NdxDenseRow, NdxEditorShell, NdxToolWindow } from '../../components/wor
 import { listWorkflowRuns } from '../../services/ipc/workflowClient'
 import { useWorkflowRunner } from '../../workflows/useWorkflowRunner'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 const STATUS_LABEL: Record<WorkflowStepRun['status'], string> = {
   pending: 'Pending',
@@ -82,15 +83,16 @@ function WorkflowRunDetailWorkspace({
 
   const run = liveRuns[runId] ?? persistedRun
 
-  if (error) return <ErrorState title="Couldn't load this run" description={error} />
-  if (!run) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
+  const pendingApproval = run?.steps.find((step) => step.status === 'waiting-for-approval')
+  const completedSteps = run?.steps.filter((step) => step.status === 'passed').length ?? 0
+  const failedSteps = run?.steps.filter((step) => step.status === 'failed').length ?? 0
 
-  const pendingApproval = run.steps.find((step) => step.status === 'waiting-for-approval')
-  const completedSteps = run.steps.filter((step) => step.status === 'passed').length
-  const failedSteps = run.steps.filter((step) => step.status === 'failed').length
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
-  return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
+  useEffect(() => {
+    if (!run) return
+    setPrimary('Run Summary', run.status, (
       <NdxToolWindow title="Run Summary" subtitle={run.status}>
         <p className="text-body font-semibold text-text-primary">Run {run.id.slice(0, 8)}</p>
         <p className="text-meta text-text-secondary">Status: {run.status}</p>
@@ -99,15 +101,59 @@ function WorkflowRunDetailWorkspace({
         <div className="border-t border-border pt-3">
           <p className="text-meta font-semibold text-text-primary">Progress</p>
           <p className="text-meta text-text-tertiary">
-            {completedSteps} passed, {failedSteps} failed, {run.steps.length} total.
+            {completedSteps} passed, {failedSteps} failed, {run?.steps.length ?? 0} total.
           </p>
         </div>
       </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [run, workspaceId, completedSteps, failedSteps, setPrimary])
 
+  useEffect(() => {
+    if (!run) return
+    setSecondary(
+      <NdxToolWindow
+        title="Run Actions"
+        subtitle={pendingApproval ? 'Approval pending' : 'No approval'}
+        side="right"
+      >
+        {run.status === 'running' ? (
+          <ControllerButton variant="ghost" onClick={() => cancelRun(run.id)}>
+            Cancel
+          </ControllerButton>
+        ) : (
+          <p className="text-meta text-text-tertiary">
+            Cancel is available only while a run is active.
+          </p>
+        )}
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Real data scope</p>
+          <p className="text-meta text-text-tertiary">
+            Timeline and approvals come from live WorkflowRunner state first, then persisted
+            workflow runs through typed IPC.
+          </p>
+        </div>
+        <div className="border-t border-border pt-3">
+          <p className="text-meta font-semibold text-text-primary">Deferred tabs</p>
+          <p className="text-meta text-text-tertiary">
+            Rich logs, recovery checkpoints, metrics, retry, and export remain deferred until real
+            backing data exists.
+          </p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [run, pendingApproval, cancelRun, setSecondary])
+
+  if (error) return <ErrorState title="Couldn't load this run" description={error} />
+  if (!run) return <p className="p-4 text-meta text-text-secondary">Loading...</p>
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Workflow Run Detail">
         <div className="flex min-h-full flex-col gap-3 p-3">
           {pendingApproval && (
-            <div className="flex items-center justify-between border border-border bg-surface p-3">
+            <div className="flex items-center justify-between ndx-settings-section">
               <p className="text-meta text-text-primary">A step is waiting for your approval.</p>
               <div className="flex gap-2">
                 <ControllerButton variant="primary" onClick={() => resolveApproval(run.id, true)}>
@@ -143,36 +189,6 @@ function WorkflowRunDetailWorkspace({
           </section>
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow
-        title="Run Actions"
-        subtitle={pendingApproval ? 'Approval pending' : 'No approval'}
-        side="right"
-      >
-        {run.status === 'running' ? (
-          <ControllerButton variant="ghost" onClick={() => cancelRun(run.id)}>
-            Cancel
-          </ControllerButton>
-        ) : (
-          <p className="text-meta text-text-tertiary">
-            Cancel is available only while a run is active.
-          </p>
-        )}
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Real data scope</p>
-          <p className="text-meta text-text-tertiary">
-            Timeline and approvals come from live WorkflowRunner state first, then persisted
-            workflow runs through typed IPC.
-          </p>
-        </div>
-        <div className="border-t border-border pt-3">
-          <p className="text-meta font-semibold text-text-primary">Deferred tabs</p>
-          <p className="text-meta text-text-tertiary">
-            Rich logs, recovery checkpoints, metrics, retry, and export remain deferred until real
-            backing data exists.
-          </p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

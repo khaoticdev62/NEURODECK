@@ -17,6 +17,7 @@ import { listFeatures } from '../../services/ipc/featureClient'
 import { getLanShareHealth, getLanShareServiceStatus } from '../../services/ipc/lanShareClient'
 import { getNetworkDiagnostics } from '../../services/ipc/networkClient'
 import { getUpdateStatus } from '../../services/ipc/updateClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 interface HealthState {
   features: SectionResult<FeatureState[]>
@@ -67,12 +68,11 @@ export function PlatformHealthOverview(): React.JSX.Element {
   const attentionCount = cards.filter((card) => card.level === 'attention').length
   const degradedCount = cards.filter((card) => card.level === 'degraded').length
 
-  if (!state && loading) {
-    return <p className="p-4 text-meta text-text-secondary">Checking platform health...</p>
-  }
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
-  return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+  useEffect(() => {
+    setPrimary('Health Sources', 'Aggregated', (
       <NdxToolWindow title="Health Sources" subtitle="Aggregated">
         <p className="text-meta text-text-secondary">
           Feature registry, capabilities, network, LAN Share, updates, and crash reports are checked
@@ -87,7 +87,28 @@ export function PlatformHealthOverview(): React.JSX.Element {
           </div>
         )}
       </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [state, setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Health Policy" subtitle="No remediation" side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>This overview consolidates data from existing services to report current health.</p>
+          <p>Automated remediation and threshold alerts are not yet implemented.</p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [setSecondary])
+
+  if (!state && loading) {
+    return <p className="p-4 text-meta text-text-secondary">Checking platform health...</p>
+  }
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Platform Health">
         <div className="flex min-h-full flex-col gap-4 p-4">
           <div className="flex items-center justify-between gap-3">
@@ -119,10 +140,7 @@ export function PlatformHealthOverview(): React.JSX.Element {
 
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
             {cards.map((card) => (
-              <section
-                key={card.title}
-                className="flex flex-col gap-2 border border-border bg-surface p-3"
-              >
+              <section key={card.title} className="flex flex-col gap-2 ndx-settings-section">
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-body font-semibold text-text-primary">{card.title}</p>
                   <span className={`text-caption font-semibold ${levelClass(card.level)}`}>
@@ -144,13 +162,6 @@ export function PlatformHealthOverview(): React.JSX.Element {
           </div>
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Health Policy" subtitle="No remediation" side="right">
-        <p className="text-meta text-text-tertiary">
-          This overview reports health from real sources only. Repair actions remain in their owning
-          screens.
-        </p>
-      </NdxToolWindow>
     </div>
   )
 }
@@ -342,7 +353,7 @@ function SummaryTile({
   tone?: HealthLevel
 }): React.JSX.Element {
   return (
-    <section className="border border-border bg-surface p-3">
+    <section className="ndx-settings-section">
       <p className="text-caption text-text-tertiary">{label}</p>
       <p className={`text-title font-semibold ${levelClass(tone)}`}>{value}</p>
     </section>

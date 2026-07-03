@@ -9,6 +9,7 @@ import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvid
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { WorkflowForge } from '../WorkflowForge'
+import { TestWorkbenchStoreRenderer } from '../../../__tests__/testUtils'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
@@ -52,6 +53,7 @@ function renderForge(initialEntry = '/automations/forge'): ReturnType<typeof ren
                 <Route path="/automations/forge/:workflowId" element={<WorkflowForge />} />
                 <Route path="/automations" element={<p>Library</p>} />
               </Routes>
+              <TestWorkbenchStoreRenderer />
             </MemoryRouter>
           </WorkspaceContext.Provider>
         </AiSafetyProvider>

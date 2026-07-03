@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>VPN Connection Diagnostics</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#b5ebff",
+                        "surface-variant": "#35343c",
+                        "secondary-container": "#00b2d7",
+                        "secondary": "#4dd6fd",
+                        "outline": "#928e9f",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#002019",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-tertiary": "#00382d",
+                        "surface": "#14121a",
+                        "on-tertiary-container": "#003127",
+                        "on-primary": "#2e0599",
+                        "outline-variant": "#484553",
+                        "on-primary-fixed-variant": "#452daf",
+                        "on-primary-fixed": "#1a0063",
+                        "surface-bright": "#3a3841",
+                        "inverse-primary": "#5e49c8",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "inverse-on-surface": "#312f38",
+                        "surface-tint": "#c8bfff",
+                        "primary-fixed": "#e5deff",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-container-high": "#2b2931",
+                        "error-container": "#93000a",
+                        "surface-dim": "#14121a",
+                        "inverse-surface": "#e5e0ec",
+                        "tertiary-fixed": "#79f8d8",
+                        "surface-container-highest": "#35343c",
+                        "on-secondary": "#003543",
+                        "on-error-container": "#ffdad6",
+                        "background": "#14121a",
+                        "primary-container": "#917eff",
+                        "on-secondary-fixed": "#001f28",
+                        "surface-container": "#201f27",
+                        "on-surface": "#e5e0ec",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-secondary-container": "#003f4e",
+                        "on-primary-container": "#28008a",
+                        "on-surface-variant": "#c9c4d6",
+                        "surface-container-lowest": "#0e0d15",
+                        "tertiary-container": "#00a488",
+                        "on-background": "#e5e0ec",
+                        "primary-fixed-dim": "#c8bfff",
+                        "tertiary": "#59dbbd",
+                        "surface-container-low": "#1c1b22",
+                        "on-error": "#690005",
+                        "primary": "#c8bfff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "32px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "sm": "12px",
+                        "safe-margin": "40px",
+                        "base": "4px",
+                        "hit-target": "44px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "label-md": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display": ["Geist"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: theme('colors.surface-variant');
+            border-radius: 4px;
+        }
+        .hairline-top {
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .focus-ring:focus-within {
+            box-shadow: 0 0 0 3px theme('colors.primary/30'), 0 0 4px 0 theme('colors.primary');
+            outline: none;
+        }
+        .active-list-indicator {
+            position: relative;
+        }
+        .active-list-indicator::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 70%;
+            width: 4px;
+            background-color: theme('colors.primary');
+            border-radius: 0 4px 4px 0;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen w-screen overflow-hidden flex flex-col font-body-md select-none">
+<!-- TopNavBar -->
+<nav class="flex justify-between items-center px-sm w-full z-50 bg-surface-container-lowest dark:bg-surface-container-lowest border-b border-white/12 h-[36px] shrink-0">
+<div class="flex items-center gap-md h-full">
+<span class="font-display text-display text-primary uppercase tracking-tighter ml-xs" style="font-size: 16px; line-height: 1;">NEURAL_OS</span>
+<div class="flex h-full items-center gap-xs ml-lg">
+<button class="h-full px-sm flex items-center text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-highest transition-colors rounded-sm focus:outline-none focus:ring-2 focus:ring-primary/40">GPT-4o</button>
+<button class="h-full px-sm flex items-center text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-highest transition-colors rounded-sm focus:outline-none focus:ring-2 focus:ring-primary/40">CLAUDE-3.5</button>
+<button class="h-full px-sm flex items-center text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-highest transition-colors rounded-sm focus:outline-none focus:ring-2 focus:ring-primary/40">SONNET</button>
+</div>
+</div>
+<div class="flex items-center h-full gap-xs">
+<button class="h-full w-8 flex justify-center items-center text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-sm text-primary dark:text-primary"><span class="material-symbols-outlined text-[18px]">minimize</span></button>
+<button class="h-full w-8 flex justify-center items-center text-on-surface-variant hover:bg-surface-container-highest transition-colors rounded-sm text-primary dark:text-primary"><span class="material-symbols-outlined text-[18px]">fullscreen</span></button>
+<button class="h-full w-8 flex justify-center items-center text-on-surface-variant hover:bg-error/20 hover:text-error transition-colors rounded-sm text-primary dark:text-primary"><span class="material-symbols-outlined text-[18px]">close</span></button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex flex-1 overflow-hidden relative">
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-[36px] bottom-[26px] w-[52px] flex flex-col justify-between py-md z-40 bg-surface-container-low dark:bg-surface-container-low border-r border-white/12">
+<div class="flex flex-col gap-sm items-center w-full">
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all w-10 h-10 rounded-lg focus:outline-none focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200" title="Command">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all w-10 h-10 rounded-lg focus:outline-none focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200" title="Workspace">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all w-10 h-10 rounded-lg focus:outline-none focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200" title="IDE">
+<span class="material-symbols-outlined text-[20px]">code</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-lg p-2 scale-105 shadow-[0_0_15px_rgba(200,191,255,0.4)] w-10 h-10 focus:outline-none focus:ring-3 focus:ring-primary/40" title="Terminal">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all w-10 h-10 rounded-lg focus:outline-none focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200" title="Browser">
+<span class="material-symbols-outlined text-[20px]">language</span>
+</button>
+</div>
+<div class="flex flex-col gap-sm items-center w-full">
+<button class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all w-10 h-10 rounded-lg focus:outline-none focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200" title="Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+</div>
+</aside>
+<!-- Workspace View (Padded for navbars) -->
+<main class="flex-1 ml-[52px] bg-background p-sm flex gap-sm overflow-hidden z-10">
+<!-- Left Pane: Configuration & Servers -->
+<div class="w-1/3 flex flex-col gap-sm overflow-hidden">
+<!-- Server Selector -->
+<section class="bg-surface-container rounded-lg hairline-top flex flex-col flex-shrink min-h-[40%]">
+<div class="p-sm border-b border-white/10 flex justify-between items-center bg-surface-container-high rounded-t-lg">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-tertiary text-[18px]">dns</span>
+<h2 class="font-label-md text-label-md text-on-surface">Global Nodes</h2>
+</div>
+<span class="font-code-md text-code-md text-on-surface-variant text-[10px] uppercase">Latency</span>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-xs flex flex-col gap-xs">
+<!-- Server Items -->
+<button class="w-full flex justify-between items-center p-sm bg-surface-container-high rounded-md hover:bg-surface-container-highest focus:ring-2 focus:ring-primary focus:outline-none transition-colors group">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-tertiary shadow-[0_0_8px_rgba(89,219,189,0.5)]"></div>
+<div class="text-left">
+<div class="font-label-md text-label-md text-on-surface">Frankfurt-01</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">10 Gbps • WireGuard</div>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<div class="flex gap-1 h-3 items-end">
+<div class="w-1 h-1 bg-tertiary rounded-sm"></div>
+<div class="w-1 h-2 bg-tertiary rounded-sm"></div>
+<div class="w-1 h-3 bg-tertiary rounded-sm"></div>
+<div class="w-1 h-1 bg-surface-variant rounded-sm"></div>
+</div>
+<span class="font-code-md text-code-md text-tertiary w-8 text-right">12ms</span>
+</div>
+</button>
+<button class="w-full flex justify-between items-center p-sm bg-surface-container-highest rounded-md border border-primary/20 active-list-indicator focus:ring-2 focus:ring-primary focus:outline-none transition-colors group">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_rgba(77,214,253,0.5)]"></div>
+<div class="text-left">
+<div class="font-label-md text-label-md text-primary">Zurich-SEC</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Multi-hop • OpenVPN</div>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<div class="flex gap-1 h-3 items-end">
+<div class="w-1 h-2 bg-secondary rounded-sm"></div>
+<div class="w-1 h-3 bg-secondary rounded-sm"></div>
+<div class="w-1 h-1 bg-surface-variant rounded-sm"></div>
+<div class="w-1 h-1 bg-surface-variant rounded-sm"></div>
+</div>
+<span class="font-code-md text-code-md text-secondary w-8 text-right">45ms</span>
+</div>
+</button>
+<button class="w-full flex justify-between items-center p-sm bg-surface-container-high rounded-md hover:bg-surface-container-highest focus:ring-2 focus:ring-primary focus:outline-none transition-colors group">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.5)]"></div>
+<div class="text-left">
+<div class="font-label-md text-label-md text-on-surface">Singapore-04</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Heavy Load • WireGuard</div>
+</div>
+</div>
+<div class="flex items-center gap-sm">
+<div class="flex gap-1 h-3 items-end">
+<div class="w-1 h-2 bg-error rounded-sm"></div>
+<div class="w-1 h-1 bg-surface-variant rounded-sm"></div>
+<div class="w-1 h-1 bg-surface-variant rounded-sm"></div>
+<div class="w-1 h-1 bg-surface-variant rounded-sm"></div>
+</div>
+<span class="font-code-md text-code-md text-error w-8 text-right">180ms</span>
+</div>
+</button>
+</div>
+</section>
+<!-- Kill-switch & DNS -->
+<section class="bg-surface-container rounded-lg hairline-top flex flex-col p-sm gap-md">
+<div class="flex items-center gap-xs border-b border-white/10 pb-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">security</span>
+<h2 class="font-label-md text-label-md text-on-surface">Security Overrides</h2>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="flex justify-between items-center">
+<div>
+<div class="font-label-md text-label-md text-on-surface">Network Kill-Switch</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Block traffic if connection drops</div>
+</div>
+<button class="w-10 h-5 bg-primary rounded-full relative focus:outline-none focus:ring-2 focus:ring-primary/50">
+<div class="w-4 h-4 bg-on-primary rounded-full absolute right-0.5 top-0.5 shadow-sm"></div>
+</button>
+</div>
+<div class="flex justify-between items-center">
+<div>
+<div class="font-label-md text-label-md text-on-surface">Obfuscation (Stealth)</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Bypass DPI filtering</div>
+</div>
+<button class="w-10 h-5 bg-surface-variant rounded-full relative focus:outline-none focus:ring-2 focus:ring-primary/50">
+<div class="w-4 h-4 bg-on-surface-variant rounded-full absolute left-0.5 top-0.5"></div>
+</button>
+</div>
+<div class="focus-ring bg-background rounded-md border border-white/10 p-xs mt-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant block mb-1">Custom DNS Server</label>
+<input class="w-full bg-transparent border-none text-code-md font-code-md text-on-surface p-0 focus:ring-0" type="text" value="1.1.1.1, 1.0.0.1"/>
+</div>
+</div>
+</section>
+</div>
+<!-- Middle Pane: Configuration Editor -->
+<div class="w-1/3 flex flex-col bg-surface-container-lowest border border-white/10 rounded-lg hairline-top overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+<div class="p-sm border-b border-white/10 flex justify-between items-center bg-surface-container">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">data_object</span>
+<h2 class="font-label-md text-label-md text-on-surface">zurich-sec.ovpn</h2>
+</div>
+<div class="flex gap-xs">
+<button class="text-on-surface-variant hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[16px]">save</span></button>
+<button class="text-on-surface-variant hover:text-primary transition-colors focus:outline-none"><span class="material-symbols-outlined text-[16px]">history</span></button>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-sm font-code-md text-code-md bg-[#0a0a0f] text-on-surface-variant relative group">
+<div class="absolute left-0 top-0 bottom-0 w-8 bg-surface-container-lowest border-r border-white/5 flex flex-col items-center py-sm text-[#484553] select-none text-[10px] leading-5">
+<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span>
+</div>
+<div class="pl-8 leading-5 whitespace-pre">
+<span class="text-primary">client</span>
+<span class="text-primary">dev</span> tun
+<span class="text-primary">proto</span> udp
+<span class="text-primary">remote</span> ch-zrh.secure-node.net 1194
+<span class="text-primary">resolv-retry</span> infinite
+<span class="text-primary">nobind</span>
+<span class="text-primary">persist-key</span>
+<span class="text-primary">persist-tun</span>
+<span class="text-primary">cipher</span> AES-256-GCM
+<span class="text-primary">auth</span> SHA512
+<span class="text-primary">tls-client</span>
+<span class="text-primary">remote-cert-tls</span> server
+<span class="text-outline">&lt;ca&gt;</span>
+-----BEGIN CERTIFICATE-----
+MIIBozCCAUqgAwIBAgIQT...
+                    </div>
+</div>
+</div>
+<!-- Right Pane: Diagnostics & Telemetry -->
+<div class="w-1/3 flex flex-col gap-sm overflow-hidden">
+<!-- Interface Stats -->
+<section class="bg-surface-container rounded-lg hairline-top flex flex-col p-sm gap-sm">
+<div class="flex items-center gap-xs border-b border-white/10 pb-xs">
+<span class="material-symbols-outlined text-secondary text-[18px]">router</span>
+<h2 class="font-label-md text-label-md text-on-surface">Interface (tun0)</h2>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<div class="bg-surface-container-lowest p-xs rounded-md border border-white/5">
+<div class="font-label-sm text-label-sm text-on-surface-variant">Local IP</div>
+<div class="font-code-md text-code-md text-secondary">10.8.0.4</div>
+</div>
+<div class="bg-surface-container-lowest p-xs rounded-md border border-white/5">
+<div class="font-label-sm text-label-sm text-on-surface-variant">Gateway</div>
+<div class="font-code-md text-code-md text-on-surface">10.8.0.1</div>
+</div>
+<div class="bg-surface-container-lowest p-xs rounded-md border border-white/5">
+<div class="font-label-sm text-label-sm text-on-surface-variant">Rx/Tx</div>
+<div class="font-code-md text-code-md text-tertiary">42.1M / 8.4M</div>
+</div>
+<div class="bg-surface-container-lowest p-xs rounded-md border border-white/5">
+<div class="font-label-sm text-label-sm text-on-surface-variant">MTU</div>
+<div class="font-code-md text-code-md text-on-surface">1500</div>
+</div>
+</div>
+</section>
+<!-- Diagnostic Logs -->
+<section class="bg-surface-container rounded-lg hairline-top flex flex-col flex-1 overflow-hidden">
+<div class="p-sm border-b border-white/10 flex justify-between items-center bg-surface-container-high">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">receipt_long</span>
+<h2 class="font-label-md text-label-md text-on-surface">Handshake Telemetry</h2>
+</div>
+<div class="w-2 h-2 rounded-full bg-tertiary animate-pulse shadow-[0_0_8px_rgba(89,219,189,0.5)]"></div>
+</div>
+<div class="flex-1 overflow-y-auto custom-scrollbar p-xs bg-surface-container-lowest font-code-md text-[11px] leading-relaxed text-outline-variant flex flex-col gap-1">
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:01]</span>
+<span>OpenVPN 2.5.1 x86_64-pc-linux-gnu [SSL (OpenSSL)]</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:01]</span>
+<span>library versions: OpenSSL 1.1.1f, LZO 2.10</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:02]</span>
+<span class="text-secondary">TCP/UDP: Preserving recently used remote address: [AF_INET]198.51.100.23:1194</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:02]</span>
+<span>UDP link local: (not bound)</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:02]</span>
+<span>UDP link remote: [AF_INET]198.51.100.23:1194</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:03]</span>
+<span class="text-primary">[server] Peer Connection Initiated with [AF_INET]198.51.100.23:1194</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:04]</span>
+<span>TUN/TAP device tun0 opened</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:04]</span>
+<span>/sbin/ip link set dev tun0 up mtu 1500</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:04]</span>
+<span>/sbin/ip addr add dev tun0 10.8.0.4/24 broadcast 10.8.0.255</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm bg-tertiary/10 border-l-2 border-tertiary">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:05]</span>
+<span class="text-tertiary font-bold">Initialization Sequence Completed</span>
+</div>
+<div class="flex gap-2 hover:bg-white/5 px-1 rounded-sm">
+<span class="text-on-surface-variant opacity-50 shrink-0">[14:32:10]</span>
+<span>Route addition: 0.0.0.0/1 via 10.8.0.1</span>
+</div>
+</div>
+</section>
+<!-- Connect Action -->
+<button class="w-full h-[44px] bg-primary-container text-on-primary-container rounded-lg font-label-md text-label-md flex justify-center items-center gap-sm hover:bg-primary transition-colors shadow-[0_4px_12px_rgba(145,126,255,0.2)] focus:outline-none focus:ring-4 focus:ring-primary/40 mt-auto shrink-0">
+<span class="material-symbols-outlined text-[18px]">vpn_key</span>
+<span>DISCONNECT</span>
+</button>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="fixed bottom-0 left-0 w-full flex justify-between items-center px-sm z-50 bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-white/12 h-[26px]">
+<div class="text-label-sm font-label-sm text-outline flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">shield</span>
+<span>SECURE TUNNEL</span>
+</div>
+<div class="flex gap-md h-full items-center font-code-md text-code-md text-tertiary-fixed-dim dark:text-tertiary-fixed-dim">
+<span class="text-on-surface-variant opacity-70">main</span>
+<span class="text-on-surface-variant opacity-70">model_ready</span>
+<span class="text-tertiary font-bold">connected</span>
+</div>
+<div class="font-code-md text-[10px] text-outline">v2.4.0-STABLE</div>
+</footer>
+</body></html>

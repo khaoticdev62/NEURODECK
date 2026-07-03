@@ -68,7 +68,7 @@ export function LanShareTransfers(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow title="Transfer Queues" subtitle={`${active.length} active`}>
         <div className="space-y-3 text-meta text-text-secondary">
           <p>Active, approval, and terminal jobs come from the real LAN Share transfer queue.</p>

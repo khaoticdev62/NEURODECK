@@ -8,6 +8,7 @@ import { DisplaySettingsProvider } from '../../../state/displaySettings'
 import { KioskModeProvider } from '../../../state/kioskMode'
 import { PresentationModeProvider } from '../../../state/presentationMode'
 import { Vault } from '../Vault'
+import { TestWorkbenchStoreRenderer } from '../../../__tests__/testUtils'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
@@ -21,6 +22,7 @@ function renderVault(): ReturnType<typeof render> {
           <KioskModeProvider>
             <MemoryRouter>
               <Vault />
+              <TestWorkbenchStoreRenderer />
             </MemoryRouter>
           </KioskModeProvider>
         </PresentationModeProvider>

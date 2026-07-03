@@ -54,7 +54,7 @@ export function ToolLibrary(): React.JSX.Element {
 
   return (
     <div className="grid h-full min-h-0 grid-cols-[20rem_minmax(28rem,1fr)] gap-2 overflow-auto p-4">
-      <section className="flex flex-col gap-2 overflow-auto border border-border bg-surface p-3">
+      <section className="flex flex-col gap-2 overflow-auto ndx-settings-section">
         <p className="text-title font-semibold text-text-primary">Tool Library</p>
         <p className="text-meta text-text-secondary">
           Every tool NeuroDeck&rsquo;s AI safety pipeline can invoke.
@@ -73,7 +73,7 @@ export function ToolLibrary(): React.JSX.Element {
         </ul>
       </section>
 
-      <section className="flex flex-col gap-3 overflow-auto border border-border bg-surface p-3">
+      <section className="flex flex-col gap-3 overflow-auto ndx-settings-section">
         {selected ? (
           <>
             <div>

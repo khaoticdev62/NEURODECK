@@ -1,18 +1,15 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge, WorkflowRun } from '@shared/contracts'
-import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
-import { ToastProvider } from '../../../components/overlays/Toast'
-import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
-import { TestAdapter } from '../../../controller/testing/testAdapter'
 import {
   WorkflowRunnerContext,
   type WorkflowRunnerContextValue
 } from '../../../workflows/WorkflowRunnerContext'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { WorkflowRunDetail } from '../WorkflowRunDetail'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
@@ -58,23 +55,16 @@ function runnerValue(
 
 function renderDetail(
   runnerOverrides: Partial<WorkflowRunnerContextValue> = {}
-): ReturnType<typeof render> {
-  return render(
-    <ToastProvider>
-      <FocusEngineProvider adapters={[new TestAdapter()]}>
-        <AiSafetyProvider>
-          <WorkspaceContext.Provider value={workspaceValue()}>
-            <WorkflowRunnerContext.Provider value={runnerValue(runnerOverrides)}>
-              <MemoryRouter initialEntries={['/automations/runs/run-1']}>
-                <Routes>
-                  <Route path="/automations/runs/:runId" element={<WorkflowRunDetail />} />
-                </Routes>
-              </MemoryRouter>
-            </WorkflowRunnerContext.Provider>
-          </WorkspaceContext.Provider>
-        </AiSafetyProvider>
-      </FocusEngineProvider>
-    </ToastProvider>
+): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(
+    <WorkspaceContext.Provider value={workspaceValue()}>
+      <WorkflowRunnerContext.Provider value={runnerValue(runnerOverrides)}>
+        <Routes>
+          <Route path="/automations/runs/:runId" element={<WorkflowRunDetail />} />
+        </Routes>
+      </WorkflowRunnerContext.Provider>
+    </WorkspaceContext.Provider>,
+    { initialEntries: ['/automations/runs/run-1'] }
   )
 }
 

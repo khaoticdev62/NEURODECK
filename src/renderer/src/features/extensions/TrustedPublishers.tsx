@@ -80,7 +80,7 @@ export function TrustedPublishers(): React.JSX.Element {
 
       {error && <ErrorState title="Trusted publisher error" description={error} />}
 
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+      <section className="flex flex-col gap-2 ndx-settings-section">
         <label className="text-meta font-semibold text-text-primary" htmlFor="publisher-name">
           Publisher name
         </label>
@@ -119,7 +119,7 @@ export function TrustedPublishers(): React.JSX.Element {
           {publishers.map((publisher) => (
             <li
               key={publisher.fingerprint}
-              className="flex items-center justify-between gap-3 border border-border bg-surface p-3"
+              className="flex items-center justify-between gap-3 ndx-settings-section"
             >
               <div className="min-w-0">
                 <p className="truncate text-body font-semibold text-text-primary">

@@ -84,7 +84,7 @@ export function LanShareSettings(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow
         title="Settings Scope"
         subtitle={settings.groupCodeConfigured ? 'Secure mode' : 'Default code'}
@@ -101,7 +101,7 @@ export function LanShareSettings(): React.JSX.Element {
           {error && <ErrorState title="Settings error" description={error} />}
           {message && <p className="text-meta text-status-success">{message}</p>}
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Group code (secure mode)</p>
             <p className="text-meta text-text-secondary">
               {settings.groupCodeConfigured
@@ -126,7 +126,7 @@ export function LanShareSettings(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Device name</p>
             <div className="flex gap-2">
               <input
@@ -142,7 +142,7 @@ export function LanShareSettings(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Network</p>
             <label className="flex items-center gap-2 text-meta text-text-secondary">
               Transfer port
@@ -180,7 +180,7 @@ export function LanShareSettings(): React.JSX.Element {
             )}
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Receive directory</p>
             <input
               defaultValue={settings.receiveDirectory}
@@ -194,7 +194,7 @@ export function LanShareSettings(): React.JSX.Element {
             />
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Compression</p>
             <select
               value={settings.compressionMode}
@@ -211,7 +211,7 @@ export function LanShareSettings(): React.JSX.Element {
             </select>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Auto-start</p>
             <p className="text-meta text-text-secondary">
               Requires secure mode (a real, non-default group code) — enforced by the backend, not

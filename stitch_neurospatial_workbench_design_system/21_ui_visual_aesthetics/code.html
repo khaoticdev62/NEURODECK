@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK OS - UI Customization</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-surface": "#e5e0ec",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#c8bfff",
+                        "outline-variant": "#484553",
+                        "tertiary": "#59dbbd",
+                        "on-error": "#690005",
+                        "surface-container": "#201f27",
+                        "on-tertiary": "#00382d",
+                        "on-tertiary-container": "#003127",
+                        "surface-bright": "#3a3841",
+                        "error-container": "#93000a",
+                        "primary-container": "#917eff",
+                        "secondary": "#4dd6fd",
+                        "on-secondary-container": "#003f4e",
+                        "tertiary-container": "#00a488",
+                        "surface-container-low": "#1c1b22",
+                        "surface-container-high": "#2b2931",
+                        "on-primary-container": "#28008a",
+                        "primary": "#c8bfff",
+                        "surface": "#14121a",
+                        "on-tertiary-fixed": "#002019",
+                        "tertiary-fixed": "#79f8d8",
+                        "on-secondary-fixed": "#001f28",
+                        "on-primary": "#2e0599",
+                        "outline": "#928e9f",
+                        "on-primary-fixed": "#1a0063",
+                        "inverse-primary": "#5e49c8",
+                        "background": "#14121a",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed-dim": "#c8bfff",
+                        "secondary-container": "#00b2d7",
+                        "surface-variant": "#35343c",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "surface-container-highest": "#35343c",
+                        "on-background": "#e5e0ec",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "on-primary-fixed-variant": "#452daf",
+                        "surface-dim": "#14121a",
+                        "secondary-fixed": "#b5ebff",
+                        "inverse-on-surface": "#312f38",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "primary-fixed": "#e5deff",
+                        "on-surface": "#e5e0ec",
+                        "on-secondary": "#003543",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-surface-variant": "#c9c4d6"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "md": "16px",
+                        "base": "4px",
+                        "sm": "12px",
+                        "hit-target": "44px",
+                        "xs": "8px",
+                        "xl": "32px",
+                        "safe-margin": "40px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Geist"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "display": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+        
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-400-normal.woff2') format('woff2');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-500-normal.woff2') format('woff2');
+            font-weight: 500;
+        }
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-600-normal.woff2') format('woff2');
+            font-weight: 600;
+        }
+
+        body {
+            background-color: #0e0d15; /* surface-container-lowest */
+            color: #e5e0ec; /* on-surface */
+            overflow-x: hidden;
+        }
+
+        /* Sovereign Dark Aesthetic & Solid Dimensionality */
+        .glass-panel {
+            background: rgba(32, 31, 39, 0.6); /* surface-container with opacity */
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 32px rgba(14, 13, 21, 0.4);
+        }
+
+        .elevated-card {
+            background: #201f27; /* surface-container */
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* Focus Scale & Halo */
+        .interactive-element {
+            transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s ease;
+        }
+        .interactive-element:focus-visible, .interactive-element:hover {
+            outline: none;
+            transform: scale(1.02);
+            box-shadow: 0 0 0 3px rgba(200, 191, 255, 0.5); /* primary color halo */
+            z-index: 10;
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #c8bfff; /* primary */
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 0 10px rgba(200, 191, 255, 0.6);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #484553; /* outline-variant */
+            border-radius: 2px;
+        }
+
+        /* Custom Toggle */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #c8bfff;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #c8bfff;
+        }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Scrollbar styling for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #484553;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #928e9f;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col md:flex-row">
+<!-- Mobile Top App Bar (Hidden on md and up) -->
+<header class="md:hidden flex justify-between items-center px-safe-margin h-16 w-full max-w-[1280px] mx-auto bg-surface-container-low dark:bg-surface-container-low text-secondary dark:text-secondary-fixed-dim font-headline-lg text-headline-lg font-bold w-full h-16 top-0 sticky shadow-sm z-40" style="backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);">
+<div class="font-display text-display font-black text-secondary uppercase tracking-wider">NEURODECK</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-secondary hover:text-secondary-container transition-colors duration-200 cursor-pointer scale-95 active:scale-90 transition-transform">settings_input_component</span>
+<span class="material-symbols-outlined text-secondary hover:text-secondary-container transition-colors duration-200 cursor-pointer scale-95 active:scale-90 transition-transform">memory</span>
+<span class="material-symbols-outlined text-secondary hover:text-secondary-container transition-colors duration-200 cursor-pointer scale-95 active:scale-90 transition-transform">graphic_eq</span>
+</div>
+</header>
+<!-- Side Navigation (Web) -->
+<nav class="hidden md:flex fixed left-0 top-0 bottom-0 w-64 flex-col py-xl shadow-2xl z-30 bg-surface-container dark:bg-surface-container border-r border-white/5">
+<div class="px-lg mb-xl">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-xs">NEURODECK OS</h1>
+<p class="font-body-md text-body-md text-on-surface-variant/60">Build 2.4.0-Neural</p>
+</div>
+<div class="flex-1 overflow-y-auto px-sm flex flex-col gap-xs">
+<!-- Active Tab: UI Customization -->
+<a class="interactive-element flex items-center gap-3 bg-secondary-container/20 text-secondary border-l-4 border-primary rounded-r-lg px-4 py-3 font-label-md text-label-md uppercase tracking-widest relative group overflow-hidden focus:ring-2 focus:ring-secondary/50 focus:scale-105 duration-300" href="#">
+<!-- Slide-in highlight bar (already handled by border-l-4, but reinforcing intent) -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary transform scale-y-100 transition-transform origin-left"></div>
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">palette</span>
+<span>UI Customization</span>
+</a>
+<a class="interactive-element flex items-center gap-3 text-on-surface-variant px-4 py-3 opacity-60 hover:bg-surface-variant hover:opacity-100 transition-all font-label-md text-label-md uppercase tracking-widest rounded-r-lg focus:ring-2 focus:ring-secondary/50 focus:scale-105 duration-300 relative group" href="#">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary transform scale-y-0 group-hover:scale-y-100 transition-transform origin-left"></div>
+<span class="material-symbols-outlined">settings_voice</span>
+<span>Audio Telemetry</span>
+</a>
+<a class="interactive-element flex items-center gap-3 text-on-surface-variant px-4 py-3 opacity-60 hover:bg-surface-variant hover:opacity-100 transition-all font-label-md text-label-md uppercase tracking-widest rounded-r-lg focus:ring-2 focus:ring-secondary/50 focus:scale-105 duration-300 relative group" href="#">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary transform scale-y-0 group-hover:scale-y-100 transition-transform origin-left"></div>
+<span class="material-symbols-outlined">gamepad</span>
+<span>Input Mapping</span>
+</a>
+<a class="interactive-element flex items-center gap-3 text-on-surface-variant px-4 py-3 opacity-60 hover:bg-surface-variant hover:opacity-100 transition-all font-label-md text-label-md uppercase tracking-widest rounded-r-lg focus:ring-2 focus:ring-secondary/50 focus:scale-105 duration-300 relative group" href="#">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary transform scale-y-0 group-hover:scale-y-100 transition-transform origin-left"></div>
+<span class="material-symbols-outlined">speed</span>
+<span>Performance</span>
+</a>
+</div>
+<div class="p-lg mt-auto">
+<button class="interactive-element w-full py-3 px-4 bg-surface rounded-lg font-label-md text-label-md uppercase tracking-widest text-error hover:bg-error-container/20 border-t border-white/10 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">power_settings_new</span>
+                REBOOT SYSTEM
+            </button>
+</div>
+</nav>
+<!-- Main Workspace (VS Code style layout) -->
+<main class="flex-1 md:ml-64 flex flex-col md:flex-row h-screen pt-16 md:pt-0 overflow-hidden relative z-10">
+<!-- Central Canvas (Main Settings Area) -->
+<div class="flex-1 flex flex-col h-full overflow-y-auto custom-scrollbar p-safe-margin bg-background relative z-10">
+<header class="mb-xl flex justify-between items-end">
+<div>
+<h2 class="font-display text-display text-on-surface mb-base">Visual Aesthetics</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Configure neural interface styling and hardware display scaling.</p>
+</div>
+<!-- Neural Pulse Indicator (Idle) -->
+<div class="w-12 h-12 rounded-full border-2 border-primary/30 relative flex items-center justify-center animate-pulse" style="animation-duration: 2s;">
+<div class="w-6 h-6 rounded-full bg-primary/20"></div>
+</div>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg flex-1">
+<!-- Left Column (Controls) -->
+<div class="lg:col-span-7 flex flex-col gap-lg">
+<!-- Section: Theme Selection (Bento Grid Style) -->
+<section class="elevated-card rounded-xl p-lg flex flex-col gap-md">
+<h3 class="font-headline-md text-headline-md text-on-surface border-b border-white/5 pb-sm">Neural Themes</h3>
+<div class="grid grid-cols-2 gap-sm">
+<!-- Theme Option 1 (Active) -->
+<button class="interactive-element text-left p-md rounded-lg bg-surface-variant border-2 border-primary relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-50"></div>
+<div class="relative z-10 flex justify-between items-start mb-xl">
+<span class="font-label-md text-label-md uppercase tracking-widest text-primary">Neural Violet</span>
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex gap-2 relative z-10">
+<div class="w-4 h-4 rounded-full bg-primary"></div>
+<div class="w-4 h-4 rounded-full bg-surface-container-low"></div>
+<div class="w-4 h-4 rounded-full bg-inverse-primary"></div>
+</div>
+</button>
+<!-- Theme Option 2 -->
+<button class="interactive-element text-left p-md rounded-lg bg-surface border-2 border-transparent hover:border-outline-variant relative overflow-hidden group">
+<div class="relative z-10 flex justify-between items-start mb-xl">
+<span class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Signal Cyan</span>
+</div>
+<div class="flex gap-2 relative z-10">
+<div class="w-4 h-4 rounded-full bg-secondary"></div>
+<div class="w-4 h-4 rounded-full bg-[#1a2b3c]"></div>
+<div class="w-4 h-4 rounded-full bg-secondary-container"></div>
+</div>
+</button>
+<!-- Theme Option 3 -->
+<button class="interactive-element text-left p-md rounded-lg bg-surface border-2 border-transparent hover:border-outline-variant relative overflow-hidden group">
+<div class="relative z-10 flex justify-between items-start mb-xl">
+<span class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Carbon</span>
+</div>
+<div class="flex gap-2 relative z-10">
+<div class="w-4 h-4 rounded-full bg-[#8a8d91]"></div>
+<div class="w-4 h-4 rounded-full bg-[#0a0a0c]"></div>
+<div class="w-4 h-4 rounded-full bg-[#2a2d31]"></div>
+</div>
+</button>
+<!-- Theme Option 4 -->
+<button class="interactive-element text-left p-md rounded-lg bg-surface border-2 border-transparent hover:border-outline-variant relative overflow-hidden group">
+<div class="relative z-10 flex justify-between items-start mb-xl">
+<span class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Ember</span>
+</div>
+<div class="flex gap-2 relative z-10">
+<div class="w-4 h-4 rounded-full bg-[#ff7b54]"></div>
+<div class="w-4 h-4 rounded-full bg-[#2d1109]"></div>
+<div class="w-4 h-4 rounded-full bg-[#ffb26b]"></div>
+</div>
+</button>
+</div>
+</section>
+<!-- Section: Typography -->
+<section class="elevated-card rounded-xl p-lg flex flex-col gap-md">
+<h3 class="font-headline-md text-headline-md text-on-surface border-b border-white/5 pb-sm">Typography Engine</h3>
+<div class="flex flex-col gap-lg mt-sm">
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Global Scaling</label>
+<span class="font-code-md text-code-md text-primary">1.0x</span>
+</div>
+<input class="interactive-element h-hit-target" max="1.5" min="0.8" step="0.1" type="range" value="1.0"/>
+<div class="flex justify-between text-xs text-outline font-code-md">
+<span>Small</span>
+<span>Standard</span>
+<span>Large</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-sm bg-surface rounded-lg border-t border-white/5">
+<div>
+<p class="font-body-md text-body-md text-on-surface">High-Contrast Weights</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">Force bolder fonts for readability</p>
+</div>
+<!-- Toggle Switch -->
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in interactive-element">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-surface-container-low border-4 border-outline-variant appearance-none cursor-pointer z-10" id="font-toggle" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-primary cursor-pointer border border-outline-variant/30" for="font-toggle"></label>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column (Inspector / Secondary Controls) -->
+<div class="lg:col-span-5 flex flex-col gap-lg">
+<!-- Preview Pane (Glassmorphism) -->
+<section class="glass-panel rounded-xl p-md flex flex-col gap-sm relative overflow-hidden min-h-[240px]">
+<div class="absolute inset-0 z-0 opacity-20">
+<!-- Abstract texture/pattern suggestion for the theme preview -->
+<div class="w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary via-surface to-background"></div>
+</div>
+<div class="relative z-10 flex justify-between items-center mb-sm">
+<h3 class="font-label-md text-label-md uppercase tracking-widest text-primary/80">Live Preview</h3>
+<span class="material-symbols-outlined text-outline-variant text-sm">visibility</span>
+</div>
+<!-- Mock UI elements for preview -->
+<div class="relative z-10 flex-1 flex flex-col gap-sm">
+<div class="p-sm bg-surface/80 rounded-md border border-white/5 flex items-center gap-3 backdrop-blur-md">
+<div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">analytics</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Data Stream Active</span>
+<span class="font-label-sm text-label-sm text-primary">Latency: 12ms</span>
+</div>
+</div>
+<div class="flex gap-2">
+<div class="h-2 flex-1 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-3/4"></div>
+</div>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-auto text-sm opacity-80 line-clamp-2">
+                                System diagnostics indicate nominal performance parameters across all sensory clusters.
+                            </p>
+</div>
+</section>
+<!-- Section: Edge-Lighting -->
+<section class="elevated-card rounded-xl p-lg flex flex-col gap-md">
+<h3 class="font-headline-md text-headline-md text-on-surface border-b border-white/5 pb-sm">Edge-Lighting</h3>
+<div class="flex flex-col gap-lg mt-sm">
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Intensity</label>
+<span class="font-code-md text-code-md text-primary">75%</span>
+</div>
+<input class="interactive-element h-hit-target" max="100" min="0" type="range" value="75"/>
+</div>
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant">Pulse Frequency</label>
+<span class="font-code-md text-code-md text-secondary">Adaptive</span>
+</div>
+<div class="grid grid-cols-3 gap-2 mt-2">
+<button class="interactive-element py-2 bg-surface rounded-md font-label-sm text-label-sm text-on-surface-variant border border-transparent hover:border-outline-variant">Static</button>
+<button class="interactive-element py-2 bg-primary/20 border-primary rounded-md font-label-sm text-label-sm text-primary border border-primary/50 shadow-[0_0_10px_rgba(200,191,255,0.2)]">Adaptive</button>
+<button class="interactive-element py-2 bg-surface rounded-md font-label-sm text-label-sm text-on-surface-variant border border-transparent hover:border-outline-variant">Reactive</button>
+</div>
+</div>
+</div>
+</section>
+</div>
+</div>
+<!-- Bottom Spacer for mobile nav -->
+<div class="h-24 md:h-0 w-full shrink-0"></div>
+</div>
+</main>
+<!-- Mobile Bottom Navigation (Hidden on md and up) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe h-[64px] bg-surface-container-highest dark:bg-surface-container-highest border-t border-white/15 bg-surface-container-highest/95 backdrop-blur-xl rounded-t-xl shadow-[0_-8px_24px_rgba(0,0,0,0.5)]">
+<!-- Active Tab: Theme -->
+<a class="flex flex-col items-center justify-center bg-secondary text-on-secondary rounded-xl px-6 py-1 shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all active:scale-95 duration-150 relative" href="#">
+<span class="material-symbols-outlined text-lg mb-0.5" style="font-variation-settings: 'FILL' 1;">brush</span>
+<span class="font-label-sm text-label-sm font-semibold">Theme</span>
+</a>
+<!-- Inactive Tabs -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1 hover:text-secondary transition-all active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined text-lg mb-0.5">equalizer</span>
+<span class="font-label-sm text-label-sm font-semibold">Audio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1 hover:text-secondary transition-all active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined text-lg mb-0.5">videogame_asset</span>
+<span class="font-label-sm text-label-sm font-semibold">Inputs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1 hover:text-secondary transition-all active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined text-lg mb-0.5">memory</span>
+<span class="font-label-sm text-label-sm font-semibold">System</span>
+</a>
+</nav>
+<!-- Interactive script for demo purposes -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sliders = document.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                slider.addEventListener('input', (e) => {
+                    const displayElement = e.target.parentElement.querySelector('.font-code-md');
+                    if (displayElement) {
+                        if (e.target.max === "1.5") {
+                            displayElement.textContent = parseFloat(e.target.value).toFixed(1) + 'x';
+                        } else {
+                            displayElement.textContent = e.target.value + '%';
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body></html>

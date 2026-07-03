@@ -95,7 +95,7 @@ export function Profiles(): React.JSX.Element {
   )
 
   return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[72rem] docked:grid-cols-[20rem_minmax(36rem,1fr)_18rem]">
       <NdxToolWindow title="Profile Session" subtitle={activeProfile?.mode ?? 'No active profile'}>
         <p className="text-meta text-text-secondary">
           Real persisted profile metadata and guest/private session state.
@@ -133,7 +133,7 @@ export function Profiles(): React.JSX.Element {
           {error && <ErrorState title="Profile request failed" description={error} />}
 
           {activeProfile && state && (
-            <section className="border border-border bg-surface p-3">
+            <section className="ndx-settings-section">
               <p className="text-body font-semibold text-text-primary">Active session</p>
               <p className="text-meta text-text-secondary">
                 {activeProfile.name} / {activeProfile.mode}
@@ -223,7 +223,7 @@ function CreateProfileForm({
   const [color, setColor] = useState(PROFILE_COLORS[0])
 
   return (
-    <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <section className="flex flex-col gap-2 ndx-settings-section">
       <p className="text-body font-semibold text-text-primary">New profile</p>
       <input
         value={name}
@@ -283,7 +283,7 @@ function ProfileCard({
   onDelete: () => void
 }): React.JSX.Element {
   return (
-    <article className="flex items-center justify-between gap-3 border border-border bg-surface p-3">
+    <article className="flex items-center justify-between gap-3 ndx-settings-section">
       <div>
         <p className="text-body font-semibold text-text-primary">
           {profile.name} {active ? '(active)' : ''}

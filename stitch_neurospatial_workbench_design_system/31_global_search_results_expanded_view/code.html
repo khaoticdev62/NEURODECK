@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK - Search Results</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "inverse-on-surface": "#312f38",
+                    "on-primary-fixed-variant": "#452daf",
+                    "on-secondary-fixed": "#001f28",
+                    "primary-container": "#917eff",
+                    "on-tertiary-container": "#003127",
+                    "tertiary-container": "#00a488",
+                    "surface-variant": "#35343c",
+                    "secondary-fixed": "#b5ebff",
+                    "background": "#14121a",
+                    "on-tertiary": "#00382d",
+                    "on-primary-container": "#28008a",
+                    "secondary": "#4dd6fd",
+                    "surface-container-high": "#2b2931",
+                    "on-error": "#690005",
+                    "tertiary-fixed-dim": "#59dbbd",
+                    "error": "#ffb4ab",
+                    "outline": "#928e9f",
+                    "on-secondary-fixed-variant": "#004e5f",
+                    "outline-variant": "#484553",
+                    "secondary-fixed-dim": "#4dd6fd",
+                    "primary-fixed-dim": "#c8bfff",
+                    "inverse-primary": "#5e49c8",
+                    "primary": "#c8bfff",
+                    "primary-fixed": "#e5deff",
+                    "on-surface-variant": "#c9c4d6",
+                    "on-tertiary-fixed": "#002019",
+                    "surface-dim": "#14121a",
+                    "surface-container-highest": "#35343c",
+                    "surface-container": "#201f27",
+                    "on-secondary": "#003543",
+                    "surface": "#14121a",
+                    "on-tertiary-fixed-variant": "#005142",
+                    "on-secondary-container": "#003f4e",
+                    "on-surface": "#e5e0ec",
+                    "surface-container-low": "#1c1b22",
+                    "inverse-surface": "#e5e0ec",
+                    "surface-tint": "#c8bfff",
+                    "on-background": "#e5e0ec",
+                    "surface-container-lowest": "#0e0d15",
+                    "on-primary-fixed": "#1a0063",
+                    "on-primary": "#2e0599",
+                    "on-error-container": "#ffdad6",
+                    "secondary-container": "#00b2d7",
+                    "tertiary-fixed": "#79f8d8",
+                    "tertiary": "#59dbbd",
+                    "surface-bright": "#3a3841",
+                    "error-container": "#93000a"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "safe-margin": "40px",
+                    "xl": "32px",
+                    "base": "4px",
+                    "hit-target": "44px",
+                    "xs": "8px",
+                    "lg": "24px",
+                    "md": "16px"
+            },
+            "fontFamily": {
+                    "display": [
+                            "Geist"
+                    ],
+                    "code-md": [
+                            "JetBrains Mono"
+                    ],
+                    "headline-lg": [
+                            "Geist"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "label-sm": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Geist"
+                    ],
+                    "label-md": [
+                            "Inter"
+                    ],
+                    "body-lg": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "display": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "code-md": [
+                            "13px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "22px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "11px",
+                            {
+                                    "lineHeight": "14px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-md": [
+                            "18px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "label-md": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        /* Hairline Edges */
+        .panel-edge {
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* Focus Scale & Glow */
+        .focus-target:focus-visible, .focus-target:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(200, 191, 255, 0.3);
+            outline: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-variant');
+            border-radius: theme('borderRadius.full');
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.outline');
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex font-body-md text-body-md">
+<!-- JSON: SideNavBar - SUPPRESSED based on semantic rules (Search is a transactional/focused intent) -->
+<!-- However, the prompt specifically requests a sidebar for filtering. We will build a custom contextual filter sidebar, NOT the global nav shell -->
+<!-- Contextual Search Filter Sidebar -->
+<aside class="w-64 h-full bg-surface-container-lowest border-r border-white/12 flex flex-col pt-safe-margin pb-safe-margin z-40 panel-edge">
+<!-- Header -->
+<div class="px-md mb-xl flex items-center gap-xs text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">manage_search</span>
+<span class="font-display text-headline-md font-bold">Search Context</span>
+</div>
+<!-- Filters -->
+<div class="flex-1 overflow-y-auto px-md space-y-lg">
+<!-- Source Filter -->
+<div>
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-xs uppercase tracking-wider">Source</h3>
+<ul class="space-y-xs">
+<li>
+<button class="w-full flex items-center gap-sm bg-primary-container text-on-primary-container rounded-lg px-sm py-sm border-l-4 border-primary focus-target min-h-hit-target">
+<span class="material-symbols-outlined text-sm">globe</span>
+<span class="font-body-md text-body-md">All Sources</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center gap-sm text-on-surface hover:bg-white/5 rounded-lg px-sm py-sm focus-target min-h-hit-target">
+<span class="material-symbols-outlined text-sm">folder_open</span>
+<span class="font-body-md text-body-md">FileSystem</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center gap-sm text-on-surface hover:bg-white/5 rounded-lg px-sm py-sm focus-target min-h-hit-target">
+<span class="material-symbols-outlined text-sm">psychology</span>
+<span class="font-body-md text-body-md">Neural Link</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center gap-sm text-on-surface hover:bg-white/5 rounded-lg px-sm py-sm focus-target min-h-hit-target">
+<span class="material-symbols-outlined text-sm">smart_toy</span>
+<span class="font-body-md text-body-md">Agents</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center gap-sm text-on-surface hover:bg-white/5 rounded-lg px-sm py-sm focus-target min-h-hit-target">
+<span class="material-symbols-outlined text-sm">description</span>
+<span class="font-body-md text-body-md">Documentation</span>
+</button>
+</li>
+</ul>
+</div>
+<!-- Time Filter -->
+<div>
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-xs uppercase tracking-wider">Timeframe</h3>
+<ul class="space-y-xs">
+<li>
+<button class="w-full flex items-center gap-sm text-on-surface hover:bg-white/5 rounded-lg px-sm py-sm focus-target min-h-hit-target">
+<span class="material-symbols-outlined text-sm">schedule</span>
+<span class="font-body-md text-body-md">Any Time</span>
+</button>
+</li>
+<li>
+<button class="w-full flex items-center justify-between text-on-surface hover:bg-white/5 rounded-lg px-sm py-sm focus-target min-h-hit-target">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-sm">today</span>
+<span class="font-body-md text-body-md">Last 24 Hours</span>
+</div>
+</button>
+</li>
+</ul>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full bg-background relative overflow-hidden">
+<!-- Search Header (Replaces global TopNavBar for this specific focused view) -->
+<header class="w-full flex flex-col px-safe-margin pt-safe-margin pb-md border-b border-white/12 bg-background/80 backdrop-blur-xl z-30 shrink-0">
+<div class="flex justify-between items-center h-hit-target mb-md">
+<div class="flex-1 max-w-3xl relative focus-within:scale-[1.01] transition-transform">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full h-full bg-surface-container-high border border-outline-variant/30 rounded-xl pl-[52px] pr-md py-sm font-display text-headline-md text-on-surface focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary shadow-inner" placeholder="Query data..." type="text" value="quantum protocol optimization"/>
+<button class="absolute right-sm top-1/2 -translate-y-1/2 bg-surface hover:bg-surface-bright text-on-surface-variant p-sm rounded-lg flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined text-[18px]">mic</span>
+</button>
+</div>
+<!-- Quick Actions -->
+<div class="flex items-center gap-md ml-xl">
+<button class="bg-surface-container flex items-center justify-center w-[44px] h-[44px] rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright transition-colors focus-target panel-edge">
+<span class="material-symbols-outlined">tune</span>
+</button>
+<button class="bg-surface-container flex items-center justify-center w-[44px] h-[44px] rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-bright transition-colors focus-target panel-edge">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+</div>
+<!-- Suggested Actions / Badges -->
+<div class="flex flex-wrap gap-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant self-center mr-xs">Suggested:</span>
+<button class="px-md py-xs rounded-full bg-surface-container border border-white/5 text-secondary hover:bg-surface-bright transition-colors font-label-md text-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">bolt</span>
+                    Optimize routine
+                </button>
+<button class="px-md py-xs rounded-full bg-surface-container border border-white/5 text-on-surface hover:bg-surface-bright transition-colors font-label-md text-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">compare_arrows</span>
+                    Compare versions
+                </button>
+<button class="px-md py-xs rounded-full bg-surface-container border border-white/5 text-on-surface hover:bg-surface-bright transition-colors font-label-md text-label-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">share</span>
+                    Export dataset
+                </button>
+</div>
+</header>
+<!-- Results Grid Canvas -->
+<div class="flex-1 overflow-y-auto px-safe-margin py-xl pb-[80px]">
+<h2 class="font-display text-headline-md font-bold text-on-surface mb-lg">Results for "quantum protocol optimization"</h2>
+<!-- Bento Grid Layout for Results -->
+<div class="grid grid-cols-12 gap-md auto-rows-[minmax(180px,auto)]">
+<!-- High Priority Match (Agent Status) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-high rounded-xl p-lg flex flex-col justify-between panel-edge focus-target relative overflow-hidden group">
+<div class="absolute top-0 right-0 p-md opacity-20 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-4xl text-secondary">smart_toy</span>
+</div>
+<div>
+<div class="flex items-center gap-xs mb-sm text-secondary">
+<span class="material-symbols-outlined text-[16px]">smart_toy</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Agent Process</span>
+</div>
+<h3 class="font-display text-headline-lg font-bold text-on-surface mb-xs">Quantum Optimizer Daemon</h3>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl">Currently analyzing parallel routines in sector 7G. Expected completion in 4.2 minutes. Optimization confidence score is at 89%.</p>
+</div>
+<div class="mt-md flex items-center gap-md">
+<div class="flex-1 h-2 bg-surface-container-lowest rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[72%] rounded-full relative">
+<!-- Simulated pulse -->
+<div class="absolute top-0 right-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-white/50 animate-pulse"></div>
+</div>
+</div>
+<span class="font-code-md text-code-md text-secondary">72%</span>
+<button class="bg-primary/20 text-primary px-md py-sm rounded-lg font-label-md text-label-md hover:bg-primary/30 transition-colors">Intervene</button>
+</div>
+</div>
+<!-- Code Snippet Result -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container rounded-xl p-md flex flex-col panel-edge focus-target border border-transparent hover:border-primary/30">
+<div class="flex items-center justify-between mb-sm text-primary">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">code</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">FileSystem / Source</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">2h ago</span>
+</div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface mb-sm truncate">q_protocol_v2.rs</h3>
+<div class="flex-1 bg-surface-container-lowest rounded-lg p-sm font-code-md text-code-md text-on-surface-variant overflow-hidden relative">
+<pre><code>fn optimize_pulse(
+    matrix: &amp;Matrix,
+    target: f64
+) -&gt; Result&lt;State, Error&gt; {
+    // Injecting protocol...
+    let mut state = matrix.init();
+    state.apply_gate(H);
+    Ok(state)
+}</code></pre>
+<div class="absolute bottom-0 left-0 w-full h-8 bg-gradient-to-t from-surface-container-lowest to-transparent"></div>
+</div>
+</div>
+<!-- Documentation Result -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container rounded-xl p-md flex flex-col panel-edge focus-target border border-transparent hover:border-primary/30">
+<div class="flex items-center justify-between mb-sm text-tertiary">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">description</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Documentation</span>
+</div>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">open_in_new</span>
+</div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface mb-xs">Protocol Implementation Guide</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-4 mt-sm">
+                        Standard operational procedures for integrating the quantum protocol optimization algorithms into legacy systems. Requires root access and level 9 clearance. Ensure neural link stability before initiating the sequence to avoid data corruption in the primary databank.
+                    </p>
+</div>
+<!-- Captured Fragment (Image/Preview) -->
+<div class="col-span-12 md:col-span-6 lg:col-span-4 bg-surface-container rounded-xl flex flex-col panel-edge focus-target overflow-hidden border border-transparent hover:border-primary/30">
+<div class="h-32 w-full relative">
+<img class="w-full h-full object-cover" data-alt="A highly detailed, futuristic abstract data visualization showing glowing geometric nodes and intersecting light rays against a deep dark void. The primary colors are vibrant cyans and deep violets, creating a high-tech, cinematic cyberpunk aesthetic typical of advanced UI systems. Soft bloom lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-SDeymiSs-aCVp1tn9TepGAKg1Pr32Un0iuM20K5WSrdVFJVwyZGot8bYrX6yCiaNVsKvFcSgzvQe0BlI5tqpP1nnnPcgpAVjGjuQc64aDHDA4buEC0u8REUSsx8oN_nbfopQSqgIO5NRmr-fqDvvaWvVdaW1ZFgL2WaKz0_xR1misT4gs3YZ5YXiOP6bhRsp21MPSwOeNJpx01bUM4H5lvpY871cbuHSzDBj_xHSbFaj2G0oZWoOEE6x6GyqPJxEFi-TmSnwL7pl"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container to-transparent"></div>
+<div class="absolute bottom-sm left-md flex items-center gap-xs text-white">
+<span class="material-symbols-outlined text-[16px]">image</span>
+<span class="font-label-md text-label-md uppercase tracking-wider text-white/80">Fragment</span>
+</div>
+</div>
+<div class="p-md pt-xs">
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface mb-xs truncate">Data Visualization State</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Captured during the last optimization run showing node saturation.</p>
+</div>
+</div>
+<!-- Log Data -->
+<div class="col-span-12 md:col-span-6 lg:col-span-4 bg-surface-container rounded-xl p-md flex flex-col panel-edge focus-target border border-transparent hover:border-primary/30">
+<div class="flex items-center justify-between mb-sm text-error">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">warning</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">System Logs</span>
+</div>
+</div>
+<h3 class="font-body-lg text-body-lg font-semibold text-on-surface mb-xs">Optimization Fault</h3>
+<ul class="space-y-xs font-code-md text-code-md text-on-surface-variant mt-sm">
+<li class="flex gap-xs"><span class="text-error-container">[WARN]</span> <span>Buffer overflow in sector 4.</span></li>
+<li class="flex gap-xs"><span class="text-outline">[INFO]</span> <span>Rerouting protocol data.</span></li>
+<li class="flex gap-xs"><span class="text-error-container">[WARN]</span> <span>Latency spike detected.</span></li>
+</ul>
+</div>
+</div>
+<!-- Recent Searches -->
+<div class="mt-xl">
+<h3 class="font-label-md text-label-md text-on-surface-variant mb-md uppercase tracking-wider">Recent Searches</h3>
+<div class="flex flex-wrap gap-sm">
+<button class="px-md py-sm rounded-lg bg-surface hover:bg-surface-bright border border-white/5 text-on-surface font-body-md text-body-md flex items-center gap-sm transition-colors">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">history</span>
+                        neural link calibration
+                    </button>
+<button class="px-md py-sm rounded-lg bg-surface hover:bg-surface-bright border border-white/5 text-on-surface font-body-md text-body-md flex items-center gap-sm transition-colors">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">history</span>
+                        agent logs root
+                    </button>
+<button class="px-md py-sm rounded-lg bg-surface hover:bg-surface-bright border border-white/5 text-on-surface font-body-md text-body-md flex items-center gap-sm transition-colors">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">history</span>
+                        terminal alias config
+                    </button>
+</div>
+</div>
+</div>
+<!-- Technical Footer Overlay -->
+<footer class="absolute bottom-0 left-0 w-full bg-surface-container-lowest/90 backdrop-blur-md border-t border-white/12 px-safe-margin py-sm flex justify-between items-center z-30 font-code-md text-label-sm text-on-surface-variant">
+<div class="flex items-center gap-lg">
+<div class="flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span>Indexing Status: Live</span>
+</div>
+<div>
+<span>Total Nodes: 1,048,576</span>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div>
+<span>Search Latency: 14ms</span>
+</div>
+<div>
+<span>Query Cache: Hit</span>
+</div>
+</div>
+</footer>
+</main>
+</body></html>

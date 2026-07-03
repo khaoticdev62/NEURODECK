@@ -35,7 +35,7 @@ export function KioskExitOverlay(): React.JSX.Element | null {
       className="pointer-events-auto fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2"
     >
       {open ? (
-        <div className="flex flex-col gap-2 rounded-md border border-border bg-surface p-3 shadow-lg">
+        <div className="flex flex-col gap-2 rounded-md ndx-settings-section shadow-lg">
           <p className="text-meta font-semibold text-text-primary">Enter PIN to exit Kiosk Mode</p>
           <input
             type="password"

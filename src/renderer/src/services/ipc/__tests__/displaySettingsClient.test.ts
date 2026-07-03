@@ -7,7 +7,7 @@ const BASE_SETTINGS: DisplaySettings = {
   highContrast: false,
   textScale: 'normal',
   accent: 'cyan',
-  radiusStyle: 'sharp',
+  radiusStyle: 'soft',
   density: 'comfortable',
   surfaceStyle: 'solid',
   focusStyle: 'ring'

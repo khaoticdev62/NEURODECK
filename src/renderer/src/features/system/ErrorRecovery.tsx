@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { NdxError } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
@@ -10,6 +10,7 @@ import { NdxDenseRow, NdxEditorShell, NdxToolWindow } from '../../components/wor
 import { getDiagnosticsInfo } from '../../services/ipc/diagnosticsClient'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
 import { quitApp } from '../../services/ipc/powerClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 export interface ErrorRecoveryError {
   code: string
@@ -129,22 +130,64 @@ export function ErrorRecoveryContent({
     }
   }
 
-  function activateAction(action: RecoveryAction): void {
-    switch (action.kind) {
-      case 'retry':
-        action.run()
-        break
-      case 'navigate':
-        onNavigate(action.to)
-        break
-      case 'export-diagnostics':
-        void handleExportDiagnostics()
-        break
-      case 'quit':
-        onQuit()
-        break
-    }
-  }
+  const activateAction = useCallback(
+    (action: RecoveryAction): void => {
+      switch (action.kind) {
+        case 'retry':
+          action.run()
+          break
+        case 'navigate':
+          onNavigate(action.to)
+          break
+        case 'export-diagnostics':
+          void handleExportDiagnostics()
+          break
+        case 'quit':
+          onQuit()
+          break
+      }
+    },
+    // handleExportDiagnostics references error/toast/exporting which all change;
+    // use stable onNavigate/onQuit from props and capture the handler by ref.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [onNavigate, onQuit, exporting]
+  )
+
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    if (!error) return
+    setPrimary('Error Details', error.category, (
+      <NdxToolWindow title="Error Details" subtitle={error.category}>
+        <Field label="Technical code" value={error.code} />
+        <Field label="Category" value={error.category} />
+        <Field label="Affected feature" value={error.affectedFeature} />
+        {error.correlationId && <Field label="Correlation ID" value={error.correlationId} />}
+      </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [error, setPrimary])
+
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Recovery Actions" subtitle={`${actions.length} available`} side="right">
+        {actions.length > 0 && (
+          <ul className="flex flex-col gap-2">
+            {actions.map((action, index) => (
+              <ActionRow
+                key={`${action.kind}:${action.label}`}
+                action={action}
+                index={index}
+                onActivate={() => activateAction(action)}
+              />
+            ))}
+          </ul>
+        )}
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [actions, activateAction, setSecondary])
 
   if (!error) {
     return (
@@ -163,14 +206,7 @@ export function ErrorRecoveryContent({
   }
 
   return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(28rem,1fr)_20rem] gap-2 overflow-auto">
-      <NdxToolWindow title="Error Details" subtitle={error.category}>
-        <Field label="Technical code" value={error.code} />
-        <Field label="Category" value={error.category} />
-        <Field label="Affected feature" value={error.affectedFeature} />
-        {error.correlationId && <Field label="Correlation ID" value={error.correlationId} />}
-      </NdxToolWindow>
-
+    <div className="h-full flex-1">
       <NdxEditorShell title="Recovery">
         <div className="flex min-h-full flex-col gap-4 p-3">
           <header>
@@ -178,13 +214,13 @@ export function ErrorRecoveryContent({
             <p className="max-w-3xl text-body text-text-secondary">{error.userMessage}</p>
           </header>
 
-          <section className="space-y-2 border border-border bg-surface p-3">
+          <section className="space-y-2 ndx-settings-section">
             <p className="text-meta font-semibold text-text-primary">What still works</p>
             <p className="text-meta text-text-secondary">{error.whatStillWorks}</p>
           </section>
 
           {error.details && Object.keys(error.details).length > 0 && (
-            <details className="border border-border bg-surface p-3">
+            <details className="ndx-settings-section">
               <summary className="cursor-pointer text-meta font-semibold text-text-primary">
                 Diagnostic details
               </summary>
@@ -206,21 +242,6 @@ export function ErrorRecoveryContent({
           {exporting && <p className="text-meta text-text-secondary">Copying diagnostics…</p>}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Recovery Actions" subtitle={`${actions.length} available`} side="right">
-        {actions.length > 0 && (
-          <ul className="flex flex-col gap-2">
-            {actions.map((action, index) => (
-              <ActionRow
-                key={`${action.kind}:${action.label}`}
-                action={action}
-                index={index}
-                onActivate={() => activateAction(action)}
-              />
-            ))}
-          </ul>
-        )}
-      </NdxToolWindow>
     </div>
   )
 }

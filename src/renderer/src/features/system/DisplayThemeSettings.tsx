@@ -2,15 +2,17 @@ import type { Accent, Density, FocusStyle, RadiusStyle, TextScale } from '@share
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { NdxEditorShell, NdxSettingsTree, NdxToolWindow } from '../../components/workbench'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
+import { useEffect } from 'react'
 
 const TEXT_SCALES: TextScale[] = ['normal', 'large', 'larger']
 
 const ACCENTS: { value: Accent; label: string; swatch: string }[] = [
-  { value: 'cyan', label: 'Cyan', swatch: '#78dce8' },
-  { value: 'violet', label: 'Violet', swatch: '#a78bfa' },
+  { value: 'cyan', label: 'Cyan', swatch: '#4dd6fd' },
+  { value: 'violet', label: 'Violet', swatch: '#917eff' },
   { value: 'amber', label: 'Amber', swatch: '#f4c95d' },
-  { value: 'green', label: 'Green', swatch: '#58d68d' },
-  { value: 'rose', label: 'Rose', swatch: '#ff6b7a' }
+  { value: 'green', label: 'Green', swatch: '#59dbbd' },
+  { value: 'rose', label: 'Rose', swatch: '#ffb4ab' }
 ]
 
 const RADIUS_STYLES: RadiusStyle[] = ['sharp', 'soft', 'round']
@@ -25,7 +27,8 @@ interface DeferredSection {
 const DEFERRED_SECTIONS: DeferredSection[] = [
   {
     title: 'Appearance',
-    reason: 'No light theme exists yet — accent/radius/density/surface/focus style are real, but the base is still a single, fixed dark theme.'
+    reason:
+      'No light theme exists yet — accent/radius/density/surface/focus style are real, but the base is still a single, fixed dark theme.'
   },
   { title: 'Wallpaper', reason: 'No wallpaper system exists yet.' },
   {
@@ -66,8 +69,11 @@ export function DisplayThemeSettings(): React.JSX.Element {
   } = useDisplaySettings()
   const glassDisabled = highContrast
 
-  return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Settings', undefined, (
       <NdxSettingsTree>
         <div className="space-y-2 text-meta text-text-secondary">
           <p className="text-text-primary">Display</p>
@@ -82,12 +88,56 @@ export function DisplayThemeSettings(): React.JSX.Element {
           <p>Deferred visuals</p>
         </div>
       </NdxSettingsTree>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Theme Preview" subtitle={textScale} side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <div
+            className="ndx-hairline-top flex items-center gap-2 rounded-[var(--radius-md)] border border-border bg-surface p-2"
+            style={{ boxShadow: `0 0 16px 0 ${ACCENTS.find((option) => option.value === accent)?.swatch}66` }}
+          >
+            <span
+              aria-hidden="true"
+              className="inline-block h-4 w-4 rounded-full border border-border-strong"
+              style={{
+                backgroundColor: ACCENTS.find((option) => option.value === accent)?.swatch,
+                boxShadow: `0 0 8px 1px ${ACCENTS.find((option) => option.value === accent)?.swatch}`
+              }}
+            />
+            <p className="text-text-primary">
+              {ACCENTS.find((option) => option.value === accent)?.label}
+            </p>
+          </div>
+          <p>
+            Corners: <span className="text-text-primary">{radiusStyle}</span>
+          </p>
+          <p>
+            Density: <span className="text-text-primary">{density}</span>
+          </p>
+          <p>
+            Surface: <span className="text-text-primary">{surfaceStyle}</span>
+          </p>
+          <p>
+            Focus style: <span className="text-text-primary">{focusStyle}</span>
+          </p>
+          <p>Wallpaper, light theme, and OLED-specific modes need a separate visual system.</p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [textScale, accent, radiusStyle, density, surfaceStyle, focusStyle, setSecondary])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Display Preferences">
         <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
           <p className="text-title font-semibold text-text-primary">Display and Theme Settings</p>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Motion</p>
             <p className="text-meta text-text-tertiary">
               The OS-level &quot;reduce motion&quot; preference is already honored automatically.
@@ -101,7 +151,7 @@ export function DisplayThemeSettings(): React.JSX.Element {
             </ControllerButton>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Contrast</p>
             <p className="text-meta text-text-tertiary">
               The OS-level &quot;increase contrast&quot; preference is already honored
@@ -115,7 +165,7 @@ export function DisplayThemeSettings(): React.JSX.Element {
             </ControllerButton>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Text size</p>
             <div className="flex gap-2">
               {TEXT_SCALES.map((scale) => (
@@ -130,7 +180,7 @@ export function DisplayThemeSettings(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Accent color</p>
             <p className="text-meta text-text-tertiary">
               Colors focus rings, selected rows, and active controls throughout the workbench.
@@ -154,7 +204,7 @@ export function DisplayThemeSettings(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Corner style</p>
             <div className="flex gap-2">
               {RADIUS_STYLES.map((style) => (
@@ -169,7 +219,7 @@ export function DisplayThemeSettings(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Density</p>
             <p className="text-meta text-text-tertiary">
               Adjusts spacing and list row height. Button and touch-target sizes stay fixed to keep
@@ -189,7 +239,7 @@ export function DisplayThemeSettings(): React.JSX.Element {
           </section>
 
           <section
-            className={`flex flex-col gap-2 border border-border bg-surface p-3 ${glassDisabled ? 'opacity-60' : ''}`}
+            className={`flex flex-col gap-2 ndx-settings-section ${glassDisabled ? 'opacity-60' : ''}`}
           >
             <p className="text-body font-semibold text-text-primary">Surface style</p>
             <p className="text-meta text-text-tertiary">
@@ -214,7 +264,7 @@ export function DisplayThemeSettings(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Focus style</p>
             <div className="flex gap-2">
               {FOCUS_STYLES.map((style) => (
@@ -230,39 +280,13 @@ export function DisplayThemeSettings(): React.JSX.Element {
           </section>
 
           {DEFERRED_SECTIONS.map((section) => (
-            <section key={section.title} className="border border-border bg-surface p-3 opacity-60">
+            <section key={section.title} className="ndx-settings-section opacity-60">
               <p className="text-body font-semibold text-text-primary">{section.title}</p>
               <p className="text-meta text-text-tertiary">Not available: {section.reason}</p>
             </section>
           ))}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Theme Preview" subtitle={textScale} side="right">
-        <div className="space-y-3 text-meta text-text-secondary">
-          <div className="flex items-center gap-2 border border-border bg-surface p-2">
-            <span
-              aria-hidden="true"
-              className="inline-block h-4 w-4 rounded-full border border-border-strong"
-              style={{ backgroundColor: ACCENTS.find((option) => option.value === accent)?.swatch }}
-            />
-            <p className="text-text-primary">{ACCENTS.find((option) => option.value === accent)?.label}</p>
-          </div>
-          <p>
-            Corners: <span className="text-text-primary">{radiusStyle}</span>
-          </p>
-          <p>
-            Density: <span className="text-text-primary">{density}</span>
-          </p>
-          <p>
-            Surface: <span className="text-text-primary">{surfaceStyle}</span>
-          </p>
-          <p>
-            Focus style: <span className="text-text-primary">{focusStyle}</span>
-          </p>
-          <p>Wallpaper, light theme, and OLED-specific modes need a separate visual system.</p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

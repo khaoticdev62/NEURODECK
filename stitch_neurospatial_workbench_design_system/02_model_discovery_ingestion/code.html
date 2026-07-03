@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Model Discovery</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-fixed": "#e5deff",
+                        "on-primary-fixed-variant": "#452daf",
+                        "on-surface": "#e5e0ec",
+                        "surface-container-highest": "#35343c",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-secondary-container": "#003f4e",
+                        "outline-variant": "#484553",
+                        "background": "#14121a",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-container-high": "#2b2931",
+                        "on-tertiary": "#00382d",
+                        "on-error": "#690005",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-container": "#00a488",
+                        "inverse-surface": "#e5e0ec",
+                        "on-primary": "#2e0599",
+                        "secondary-container": "#00b2d7",
+                        "surface-variant": "#35343c",
+                        "tertiary": "#59dbbd",
+                        "surface-tint": "#c8bfff",
+                        "on-tertiary-fixed": "#002019",
+                        "on-secondary": "#003543",
+                        "primary-fixed-dim": "#c8bfff",
+                        "on-primary-container": "#28008a",
+                        "surface-container": "#201f27",
+                        "surface-dim": "#14121a",
+                        "surface-container-lowest": "#0e0d15",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "tertiary-fixed": "#79f8d8",
+                        "surface-bright": "#3a3841",
+                        "surface": "#14121a",
+                        "outline": "#928e9f",
+                        "on-tertiary-container": "#003127",
+                        "surface-container-low": "#1c1b22",
+                        "primary": "#c8bfff",
+                        "on-surface-variant": "#c9c4d6",
+                        "error-container": "#93000a",
+                        "primary-container": "#917eff",
+                        "inverse-on-surface": "#312f38",
+                        "error": "#ffb4ab",
+                        "secondary-fixed": "#b5ebff",
+                        "inverse-primary": "#5e49c8",
+                        "on-secondary-fixed": "#001f28",
+                        "secondary": "#4dd6fd",
+                        "on-background": "#e5e0ec",
+                        "on-primary-fixed": "#1a0063"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "base": "4px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "safe-margin": "40px",
+                        "hit-target": "44px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "xs": "8px"
+                    },
+                    fontFamily: {
+                        "body-lg": ["Inter", "sans-serif"],
+                        "display": ["Geist", "sans-serif"],
+                        "headline-md": ["Geist", "sans-serif"],
+                        "label-sm": ["Inter", "sans-serif"],
+                        "headline-lg": ["Geist", "sans-serif"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "code-md": ["JetBrains Mono", "monospace"],
+                        "label-md": ["Inter", "sans-serif"]
+                    },
+                    fontSize: {
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "display": ["28px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "headline-md": ["18px", { lineHeight: "24px", fontWeight: "500" }],
+                        "label-sm": ["11px", { lineHeight: "14px", fontWeight: "500" }],
+                        "headline-lg": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "code-md": ["13px", { lineHeight: "20px", fontWeight: "400" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .neural-bg {
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(145, 126, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 10% 20%, rgba(77, 214, 253, 0.03) 0%, transparent 30%),
+                linear-gradient(rgba(20, 18, 26, 0.9), rgba(20, 18, 26, 0.9)),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23917eff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            background-attachment: fixed;
+        }
+        .pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .dimensional-btn {
+            box-shadow: 0 4px 0 0 theme('colors.on-primary-container'), 0 10px 20px -5px rgba(145, 126, 255, 0.4);
+            transition: all 0.1s ease;
+        }
+        .dimensional-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 0 theme('colors.on-primary-container'), 0 5px 10px -5px rgba(145, 126, 255, 0.4);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: theme('colors.surface-container-lowest');
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: theme('colors.surface-container-highest');
+            border-radius: theme('borderRadius.full');
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col overflow-hidden neural-bg">
+<!-- Focused View Header (Navigation excluded due to task-flow rule) -->
+<header class="flex items-center justify-between px-lg py-md border-b border-surface-container-highest bg-surface/80 backdrop-blur-md z-20 shrink-0">
+<div class="flex items-center gap-md">
+<button class="flex items-center justify-center w-hit-target h-hit-target rounded-full hover:bg-surface-container-highest transition-colors text-on-surface">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-lg text-on-surface">Model Ingestion</h1>
+</div>
+<div class="flex items-center gap-sm text-surface-tint">
+<span class="material-symbols-outlined pulse-slow text-sm" data-icon="radar">radar</span>
+<span class="font-label-md">Scanning Local</span>
+</div>
+</header>
+<!-- Main Scrollable Content -->
+<main class="flex-1 overflow-y-auto custom-scrollbar p-lg z-10 relative">
+<div class="max-w-4xl mx-auto w-full flex flex-col gap-xl pb-[120px]">
+<!-- Abstract Hero Banner -->
+<div class="relative w-full h-48 rounded-xl overflow-hidden border border-surface-container-highest">
+<div class="absolute inset-0 bg-cover bg-center opacity-40 mix-blend-screen" data-alt="An abstract, high-tech digital art visualization of a deep neural network, featuring glowing violet and cyan nodes connected by thin energy lines against a very dark, nearly black background. The lighting is cinematic, highlighting the central nodes with a soft, neon luminescence, conveying a sense of advanced artificial intelligence and complex computation in a sleek, modern, dark-mode aesthetic." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC8_Rff4Of8_tg5Vnhe-6Ya9PXGtwrlzrnfk9M7xsP7AqYEPDF3zi7ybGac1BLY2sQAxQo3AE3syhGU86E4kfX_Wz9aW6879zdhk1DeVUxNSIi0Ia_Z9fTnPbSZkVZaTl0lEd_eXb-8Rbf09j4RSV_W0e02wqLra_kqXFarDh0MYFWqYmXS22VIvsKg_A4U5JKxp-4oV7Txofr4e_vKuf-Pk-HEUqgVM83dmkn_2mzvNEFpq2ozdCULfAQKtJ6CkuIxr6z5veLIIw2l')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-lg w-full flex justify-between items-end">
+<div>
+<h2 class="font-display text-primary">Discovery Results</h2>
+<p class="text-on-surface-variant mt-1">Found 3 compatible weights in default directories.</p>
+</div>
+</div>
+</div>
+<!-- Discovered Models List -->
+<section class="flex flex-col gap-md">
+<!-- Card 1 -->
+<label class="group relative flex items-center p-md rounded-xl bg-surface-container border border-surface-container-highest hover:border-primary-fixed-dim hover:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex items-center gap-lg flex-1">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary shrink-0 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-headline-md text-on-surface">Llama-3-8B-Instruct</span>
+<div class="flex items-center gap-sm mt-1 text-on-surface-variant font-code-md text-code-md">
+<span class="bg-surface-container-lowest px-2 py-0.5 rounded text-secondary">Q4_K_M</span>
+<span>•</span>
+<span>4.8 GB</span>
+<span>•</span>
+<span class="truncate opacity-75">~/.ollama/models/blobs/...</span>
+</div>
+</div>
+</div>
+<div class="ml-4 shrink-0">
+<input checked="" class="w-6 h-6 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-background checked:border-primary cursor-pointer" type="checkbox"/>
+</div>
+</label>
+<!-- Card 2 -->
+<label class="group relative flex items-center p-md rounded-xl bg-surface-container border border-surface-container-highest hover:border-primary-fixed-dim hover:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex items-center gap-lg flex-1">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-secondary shrink-0 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-headline-md text-on-surface">Mistral-7B-v0.2</span>
+<div class="flex items-center gap-sm mt-1 text-on-surface-variant font-code-md text-code-md">
+<span class="bg-surface-container-lowest px-2 py-0.5 rounded text-secondary">Q4_0</span>
+<span>•</span>
+<span>4.1 GB</span>
+<span>•</span>
+<span class="truncate opacity-75">~/.ollama/models/blobs/...</span>
+</div>
+</div>
+</div>
+<div class="ml-4 shrink-0">
+<input class="w-6 h-6 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-background checked:border-primary cursor-pointer" type="checkbox"/>
+</div>
+</label>
+<!-- Card 3 -->
+<label class="group relative flex items-center p-md rounded-xl bg-surface-container border border-surface-container-highest hover:border-primary-fixed-dim hover:bg-surface-container-high transition-all cursor-pointer">
+<div class="flex items-center gap-lg flex-1">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-tertiary shrink-0 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+</div>
+<div class="flex flex-col flex-1">
+<span class="font-headline-md text-on-surface">Phi-3-Mini-4k</span>
+<div class="flex items-center gap-sm mt-1 text-on-surface-variant font-code-md text-code-md">
+<span class="bg-surface-container-lowest px-2 py-0.5 rounded text-tertiary">F16</span>
+<span>•</span>
+<span>7.6 GB</span>
+<span>•</span>
+<span class="truncate opacity-75">/models/local/...</span>
+</div>
+</div>
+</div>
+<div class="ml-4 shrink-0">
+<input class="w-6 h-6 rounded border-outline-variant bg-surface-container-lowest text-primary focus:ring-primary focus:ring-offset-background checked:border-primary cursor-pointer" type="checkbox"/>
+</div>
+</label>
+</section>
+<!-- Custom Path Section -->
+<section class="mt-4">
+<div class="flex items-center justify-between p-md rounded-xl border border-dashed border-outline-variant bg-surface-container-lowest/50 hover:bg-surface-container-lowest transition-colors">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="folder_open">folder_open</span>
+</div>
+<div>
+<h3 class="font-headline-md text-on-surface">Custom Path</h3>
+<p class="text-on-surface-variant text-sm mt-0.5">Browse manually for .gguf or .safetensors files</p>
+</div>
+</div>
+<button class="px-lg py-sm rounded-lg border border-outline-variant text-on-surface hover:bg-surface-container-highest hover:border-outline transition-colors font-label-md">
+                        Browse
+                    </button>
+</div>
+</section>
+</div>
+</main>
+<!-- Sticky Action Footer -->
+<footer class="absolute bottom-0 left-0 w-full p-lg bg-gradient-to-t from-background via-background to-transparent z-30 pb-safe-margin pt-xl pointer-events-none">
+<div class="max-w-4xl mx-auto flex justify-end pointer-events-auto">
+<button class="dimensional-btn bg-primary-container text-on-primary-container font-headline-lg px-xl py-md rounded-xl flex items-center gap-sm group">
+<span>Import Selected</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</footer>
+</body></html>

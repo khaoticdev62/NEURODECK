@@ -5,6 +5,8 @@ import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { quitApp, restartApp } from '../../services/ipc/powerClient'
 import { useLockState } from '../../state/useLockState'
+import { useEffect } from 'react'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 type PendingAction = 'restart' | 'quit' | null
 
@@ -51,8 +53,26 @@ export function PowerMenu(): React.JSX.Element {
     setPending(null)
   }
 
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow
+        title="Host Safety"
+        subtitle={pinConfigured ? 'Lock enabled' : 'PIN missing'}
+        side="right"
+      >
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Only app restart, app quit, and PIN-backed lock are wired.</p>
+          <p>Host suspend, reboot, and shutdown remain unavailable without native integration.</p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [pinConfigured, setSecondary])
+
   return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[minmax(40rem,1fr)_20rem] gap-2 overflow-auto">
+    <div className="h-full flex-1">
       <NdxEditorShell title="Power Actions">
         <div className="flex min-h-full min-w-0 flex-col gap-4 p-4">
           <p className="text-title font-semibold text-text-primary">Power Menu</p>
@@ -66,7 +86,7 @@ export function PowerMenu(): React.JSX.Element {
             {pinConfigured ? (
               <PowerOption label="Lock NeuroDeck" onActivate={lock} />
             ) : (
-              <li className="border border-border bg-surface p-3 opacity-60">
+              <li className="ndx-settings-section opacity-60">
                 <p className="text-body font-semibold text-text-primary">Lock NeuroDeck</p>
                 <p className="text-meta text-text-tertiary">
                   Not available: set a PIN in Privacy and Permissions first.
@@ -74,7 +94,7 @@ export function PowerMenu(): React.JSX.Element {
               </li>
             )}
             {DEFERRED_OPTIONS.map((option) => (
-              <li key={option.label} className="border border-border bg-surface p-3 opacity-60">
+              <li key={option.label} className="ndx-settings-section opacity-60">
                 <p className="text-body font-semibold text-text-primary">{option.label}</p>
                 <p className="text-meta text-text-tertiary">Not available: {option.reason}</p>
               </li>
@@ -82,17 +102,6 @@ export function PowerMenu(): React.JSX.Element {
           </ul>
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow
-        title="Host Safety"
-        subtitle={pinConfigured ? 'Lock enabled' : 'PIN missing'}
-        side="right"
-      >
-        <div className="space-y-3 text-meta text-text-secondary">
-          <p>Only app restart, app quit, and PIN-backed lock are wired.</p>
-          <p>Host suspend, reboot, and shutdown remain unavailable without native integration.</p>
-        </div>
-      </NdxToolWindow>
 
       <ConfirmationDialog
         open={pending !== null}

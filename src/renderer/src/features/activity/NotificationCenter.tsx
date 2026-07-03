@@ -62,10 +62,7 @@ export function NotificationCenter(): React.JSX.Element {
           .slice()
           .reverse()
           .map((entry) => (
-            <li
-              key={entry.id}
-              className="flex items-start gap-3 rounded-md border border-border bg-surface p-3"
-            >
+            <li key={entry.id} className="flex items-start gap-3 rounded-md ndx-settings-section">
               <StatusBadge
                 tone={CATEGORY_TONE[entry.category]}
                 label={CATEGORY_LABEL[entry.category]}

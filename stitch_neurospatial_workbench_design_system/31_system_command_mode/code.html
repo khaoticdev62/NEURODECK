@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sovereign OS - Quick Actions</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#312f38",
+                        "on-primary-fixed-variant": "#452daf",
+                        "on-secondary-fixed": "#001f28",
+                        "primary-container": "#917eff",
+                        "on-tertiary-container": "#003127",
+                        "tertiary-container": "#00a488",
+                        "surface-variant": "#35343c",
+                        "secondary-fixed": "#b5ebff",
+                        "background": "#14121a",
+                        "on-tertiary": "#00382d",
+                        "on-primary-container": "#28008a",
+                        "secondary": "#4dd6fd",
+                        "surface-container-high": "#2b2931",
+                        "on-error": "#690005",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "error": "#ffb4ab",
+                        "outline": "#928e9f",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "outline-variant": "#484553",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "primary-fixed-dim": "#c8bfff",
+                        "inverse-primary": "#5e49c8",
+                        "primary": "#c8bfff",
+                        "primary-fixed": "#e5deff",
+                        "on-surface-variant": "#c9c4d6",
+                        "on-tertiary-fixed": "#002019",
+                        "surface-dim": "#14121a",
+                        "surface-container-highest": "#35343c",
+                        "surface-container": "#201f27",
+                        "on-secondary": "#003543",
+                        "surface": "#14121a",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-secondary-container": "#003f4e",
+                        "on-surface": "#e5e0ec",
+                        "surface-container-low": "#1c1b22",
+                        "inverse-surface": "#e5e0ec",
+                        "surface-tint": "#c8bfff",
+                        "on-background": "#e5e0ec",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-primary-fixed": "#1a0063",
+                        "on-primary": "#2e0599",
+                        "on-error-container": "#ffdad6",
+                        "secondary-container": "#00b2d7",
+                        "tertiary-fixed": "#79f8d8",
+                        "tertiary": "#59dbbd",
+                        "surface-bright": "#3a3841",
+                        "error-container": "#93000a"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "safe-margin": "40px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "hit-target": "44px",
+                        "xs": "8px",
+                        "lg": "24px",
+                        "md": "16px"
+                    },
+                    "fontFamily": {
+                        "display": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "headline-lg": ["Geist"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0a090d; /* Slightly darker than lowest container for depth */
+            color: #e5e0ec;
+        }
+        
+        .glow-active {
+            box-shadow: 0 0 15px rgba(77, 214, 253, 0.3); /* Signal Cyan glow */
+            border: 1px solid rgba(77, 214, 253, 0.5);
+        }
+        
+        .hairline-top {
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        
+        /* Subtle scanline effect for terminal feel */
+        .scanlines::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 100;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* Focus scaling tvOS style */
+        .focusable-item {
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .focusable-item:hover, .focusable-item:focus {
+            transform: scale(1.02);
+            z-index: 10;
+        }
+        
+        .kbd-key {
+            background: linear-gradient(to bottom, #35343c, #201f27);
+            border-top: 1px solid rgba(255,255,255,0.2);
+            border-bottom: 2px solid #0e0d15;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md h-screen w-screen overflow-hidden flex items-center justify-center relative">
+<!-- Dimmed Background Overlay -->
+<div class="absolute inset-0 bg-background/80 backdrop-blur-sm z-0"></div>
+<!-- Quick Action Palette Modal -->
+<div class="relative z-10 w-[800px] max-w-full bg-surface-container-lowest rounded-xl overflow-hidden flex flex-col shadow-[0_32px_64px_rgba(0,0,0,0.6)] hairline-top border border-white/5 mx-safe-margin">
+<!-- Search/Input Header -->
+<div class="flex items-center px-lg py-md border-b border-white/12 bg-surface-container-low">
+<span class="material-symbols-outlined text-secondary text-2xl mr-sm" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<input autofocus="" class="flex-1 bg-transparent border-none text-headline-lg font-headline-lg text-on-surface focus:outline-none focus:ring-0 placeholder-on-surface-variant/50" placeholder="Type a command or quick action..." type="text"/>
+<div class="flex items-center gap-2">
+<span class="kbd-key px-2 py-1 rounded text-label-sm font-label-sm text-on-surface-variant">ESC</span>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex flex-1 overflow-hidden h-[500px]">
+<!-- Command List -->
+<div class="flex-1 overflow-y-auto p-sm custom-scrollbar">
+<!-- Section: Suggested -->
+<div class="mb-lg">
+<h3 class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider mb-xs px-sm">Suggested Actions</h3>
+<ul class="space-y-2">
+<!-- Active Command -->
+<li class="focusable-item group flex items-center p-md bg-surface-container rounded-lg cursor-pointer glow-active hairline-top relative overflow-hidden">
+<!-- Selection bar -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary transform scale-y-100 transition-transform"></div>
+<div class="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center mr-md shrink-0">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">power_settings_new</span>
+</div>
+<div class="flex-1 min-w-0 mr-md">
+<div class="text-body-lg font-body-lg text-on-surface font-medium truncate">Restart Kernel</div>
+<div class="text-body-md font-body-md text-on-surface-variant truncate">Reinitializes the core processing engine. Drops current session.</div>
+</div>
+<div class="flex gap-1 shrink-0">
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">⌘</kbd>
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">⇧</kbd>
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">R</kbd>
+</div>
+</li>
+<!-- Inactive Command -->
+<li class="focusable-item group flex items-center p-md bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer hairline-top relative overflow-hidden transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary transform scale-y-0 group-hover:scale-y-100 transition-transform origin-left"></div>
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center mr-md shrink-0 group-hover:bg-secondary/10 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary transition-colors" style="font-variation-settings: 'FILL' 1;">sync</span>
+</div>
+<div class="flex-1 min-w-0 mr-md">
+<div class="text-body-lg font-body-lg text-on-surface truncate">Sync Fragments</div>
+<div class="text-body-md font-body-md text-on-surface-variant truncate">Pushes local memory fragments to the global repository.</div>
+</div>
+<div class="flex gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">⌘</kbd>
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">S</kbd>
+</div>
+</li>
+<!-- Inactive Command -->
+<li class="focusable-item group flex items-center p-md bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer hairline-top relative overflow-hidden transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary transform scale-y-0 group-hover:scale-y-100 transition-transform origin-left"></div>
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center mr-md shrink-0 group-hover:bg-secondary/10 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary transition-colors" style="font-variation-settings: 'FILL' 1;">smart_toy</span>
+</div>
+<div class="flex-1 min-w-0 mr-md">
+<div class="text-body-lg font-body-lg text-on-surface truncate">Deploy Agent Team</div>
+<div class="text-body-md font-body-md text-on-surface-variant truncate">Initializes a cluster of autonomous agents for the current workspace.</div>
+</div>
+<div class="flex gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">⌘</kbd>
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">D</kbd>
+</div>
+</li>
+</ul>
+</div>
+<!-- Section: System -->
+<div>
+<h3 class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider mb-xs px-sm">System</h3>
+<ul class="space-y-2">
+<!-- Inactive Command -->
+<li class="focusable-item group flex items-center p-md bg-surface-container-low hover:bg-surface-container rounded-lg cursor-pointer hairline-top relative overflow-hidden transition-colors">
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-secondary transform scale-y-0 group-hover:scale-y-100 transition-transform origin-left"></div>
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center mr-md shrink-0 group-hover:bg-secondary/10 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-secondary transition-colors" style="font-variation-settings: 'FILL' 1;">vpn_lock</span>
+</div>
+<div class="flex-1 min-w-0 mr-md">
+<div class="text-body-lg font-body-lg text-on-surface truncate">Toggle VPN Tunnel</div>
+<div class="text-body-md font-body-md text-on-surface-variant truncate">Routes all traffic through the secure external relay.</div>
+</div>
+<div class="flex gap-1 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">⌥</kbd>
+<kbd class="kbd-key px-2 py-1 rounded text-code-md font-code-md text-on-surface-variant">V</kbd>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<!-- Context / History Pane (VS Code style side pane) -->
+<div class="w-64 bg-surface-container-lowest border-l border-white/5 p-lg flex flex-col justify-between hidden md:flex">
+<div>
+<h4 class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider mb-sm">Recent History</h4>
+<div class="space-y-3 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-surface-variant">
+<!-- History Item -->
+<div class="flex items-start gap-3 relative z-10">
+<div class="w-6 h-6 rounded-full bg-surface-container border-2 border-surface-container-lowest flex items-center justify-center mt-0.5 shrink-0">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">terminal</span>
+</div>
+<div>
+<div class="text-label-md font-label-md text-on-surface">Compile Shaders</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">2 mins ago</div>
+</div>
+</div>
+<!-- History Item -->
+<div class="flex items-start gap-3 relative z-10">
+<div class="w-6 h-6 rounded-full bg-surface-container border-2 border-surface-container-lowest flex items-center justify-center mt-0.5 shrink-0">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">dataset</span>
+</div>
+<div>
+<div class="text-label-md font-label-md text-on-surface">Purge Cache</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">15 mins ago</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Neural Status -->
+<div class="pt-lg border-t border-white/5">
+<div class="flex items-center gap-3">
+<!-- Idle Neural Pulse -->
+<div class="w-10 h-10 rounded-full border-2 border-primary-container/30 relative flex items-center justify-center before:absolute before:inset-0 before:rounded-full before:border-2 before:border-primary-container/50 before:animate-[ping_3s_cubic-bezier(0,0,0.2,1)_infinite]">
+<span class="w-2 h-2 rounded-full bg-primary-container"></span>
+</div>
+<div>
+<div class="text-label-md font-label-md text-primary">System Idle</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">Awaiting command</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer / Legend -->
+<div class="bg-surface-container-low border-t border-white/5 px-lg py-sm flex items-center justify-between">
+<div class="flex items-center gap-4 text-label-sm font-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">keyboard_return</span> Select</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[16px]">arrow_upward</span><span class="material-symbols-outlined text-[16px] -ml-1">arrow_downward</span> Navigate</span>
+</div>
+<div class="text-label-sm font-label-sm text-on-surface-variant">
+                Sovereign OS v9.2
+            </div>
+</div>
+</div>
+</body></html>

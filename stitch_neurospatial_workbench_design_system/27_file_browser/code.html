@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Neurodeck - File Browser</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary": "#c8bfff",
+                      "outline": "#928e9f",
+                      "inverse-primary": "#5e49c8",
+                      "surface-tint": "#c8bfff",
+                      "on-error-container": "#ffdad6",
+                      "primary-container": "#917eff",
+                      "on-primary-fixed-variant": "#452daf",
+                      "inverse-on-surface": "#312f38",
+                      "on-secondary-container": "#003f4e",
+                      "surface-container-highest": "#35343c",
+                      "tertiary-container": "#00a488",
+                      "on-secondary": "#003543",
+                      "on-error": "#690005",
+                      "outline-variant": "#484553",
+                      "on-tertiary-fixed": "#002019",
+                      "surface-variant": "#35343c",
+                      "error-container": "#93000a",
+                      "on-surface": "#e5e0ec",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "on-primary-fixed": "#1a0063",
+                      "on-background": "#e5e0ec",
+                      "on-secondary-fixed": "#001f28",
+                      "on-primary": "#2e0599",
+                      "surface-container-lowest": "#0e0d15",
+                      "error": "#ffb4ab",
+                      "secondary-fixed": "#b5ebff",
+                      "surface-container-high": "#2b2931",
+                      "secondary": "#4dd6fd",
+                      "surface-container": "#201f27",
+                      "on-tertiary-container": "#003127",
+                      "on-primary-container": "#28008a",
+                      "background": "#14121a",
+                      "primary-fixed-dim": "#c8bfff",
+                      "on-tertiary": "#00382d",
+                      "tertiary-fixed": "#79f8d8",
+                      "surface-container-low": "#1c1b22",
+                      "secondary-container": "#00b2d7",
+                      "inverse-surface": "#e5e0ec",
+                      "surface-dim": "#14121a",
+                      "tertiary": "#59dbbd",
+                      "surface": "#14121a",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "surface-bright": "#3a3841",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "primary-fixed": "#e5deff",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "on-surface-variant": "#c9c4d6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "base": "4px",
+                      "lg": "24px",
+                      "xl": "32px",
+                      "xs": "8px",
+                      "sm": "12px",
+                      "hit-target": "44px",
+                      "safe-margin": "40px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "display": [
+                              "Geist"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "code-md": [
+                              "JetBrains Mono"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "code-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        /* Hairline edges and inner glow */
+        .hairline-top {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+        }
+        .hairline-all {
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+        }
+        
+        /* Focus Scale & Halo */
+        .focus-scale {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .focus-scale:focus-visible {
+            transform: scale(1.05);
+            outline: none;
+            box-shadow: 0 0 0 3px #c8bfff, 0 0 8px 4px rgba(200, 191, 255, 0.3);
+            z-index: 10;
+        }
+
+        /* Neural Pulse Animation */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.6; }
+        }
+        .neural-pulse-idle {
+            animation: breathe 2s ease-in-out infinite;
+        }
+
+        /* Custom Scrollbar for inner panes */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.2);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #484553;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #928e9f;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen w-screen overflow-hidden flex font-body-md selection:bg-primary/30">
+<!-- SideNavBar (from JSON) -->
+<nav class="hidden md:flex flex-col h-screen w-64 left-0 sticky border-r border-white/10 bg-surface-container-lowest shadow-xl py-lg gap-sm z-40">
+<!-- Header -->
+<div class="px-lg mb-md flex items-center gap-md">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center hairline-all">
+<span class="material-symbols-outlined text-primary text-xl" data-icon="terminal">terminal</span>
+</div>
+<div>
+<h1 class="font-display text-headline-md font-black text-primary tracking-tighter">Neurodeck</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">v4.2.0-stable</p>
+</div>
+</div>
+<!-- Main Tabs -->
+<div class="flex-1 overflow-y-auto px-sm flex flex-col gap-xs">
+<!-- Active Tab: File Browser -->
+<button class="w-full flex items-center gap-md bg-primary/10 text-primary border-l-4 border-primary px-md py-sm scale-105 font-label-md text-label-md rounded-r-DEFAULT focus-scale text-left">
+<span class="material-symbols-outlined text-lg" data-icon="folder_open" style="font-variation-settings: 'FILL' 1;">folder_open</span>
+<span>File Browser</span>
+</button>
+<button class="w-full flex items-center gap-md text-on-surface-variant px-md py-sm opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 font-label-md text-label-md rounded-DEFAULT focus-scale text-left">
+<span class="material-symbols-outlined text-lg" data-icon="neurology">neurology</span>
+<span>Model Manager</span>
+</button>
+<button class="w-full flex items-center gap-md text-on-surface-variant px-md py-sm opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 font-label-md text-label-md rounded-DEFAULT focus-scale text-left">
+<span class="material-symbols-outlined text-lg" data-icon="storage">storage</span>
+<span>Storage Explorer</span>
+</button>
+<button class="w-full flex items-center gap-md text-on-surface-variant px-md py-sm opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 font-label-md text-label-md rounded-DEFAULT focus-scale text-left">
+<span class="material-symbols-outlined text-lg" data-icon="analytics">analytics</span>
+<span>Telemetry</span>
+</button>
+<button class="w-full flex items-center gap-md text-on-surface-variant px-md py-sm opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 font-label-md text-label-md rounded-DEFAULT focus-scale text-left">
+<span class="material-symbols-outlined text-lg" data-icon="terminal">terminal</span>
+<span>Kernel Settings</span>
+</button>
+</div>
+<!-- CTA & Footer -->
+<div class="px-md mt-auto flex flex-col gap-sm">
+<button class="w-full h-hit-target bg-surface flex items-center justify-center gap-sm rounded-DEFAULT hairline-top text-primary font-label-md text-label-md focus-scale active:scale-95 transition-transform bg-gradient-to-b from-white/10 to-transparent">
+                Optimize Disk
+            </button>
+<div class="h-px bg-white/10 my-xs"></div>
+<button class="w-full flex items-center gap-md text-on-surface-variant px-md py-xs opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 font-label-sm text-label-sm rounded-DEFAULT focus-scale text-left">
+<span class="material-symbols-outlined text-base" data-icon="code">code</span>
+<span>Terminal</span>
+</button>
+<button class="w-full flex items-center gap-md text-on-surface-variant px-md py-xs opacity-70 hover:bg-surface-variant hover:opacity-100 transition-all duration-300 font-label-sm text-label-sm rounded-DEFAULT focus-scale text-left">
+<span class="material-symbols-outlined text-base" data-icon="description">description</span>
+<span>Logs</span>
+</button>
+</div>
+</nav>
+<!-- Main Workspace -->
+<main class="flex-1 flex flex-col min-w-0 bg-background relative">
+<!-- TopNavBar (from JSON) -->
+<header class="w-full h-16 top-0 sticky border-b border-white/10 bg-surface/80 backdrop-blur-md flex justify-between items-center px-lg z-30">
+<!-- Left: Search/Breadcrumb area -->
+<div class="flex items-center gap-md flex-1">
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-xs font-code-md text-code-md text-on-surface-variant bg-surface-container-highest px-sm py-xs rounded-DEFAULT hairline-all">
+<span class="material-symbols-outlined text-base" data-icon="hard_drive">hard_drive</span>
+<span>/</span>
+<button class="hover:text-primary transition-colors focus-scale rounded px-1">mnt</button>
+<span>/</span>
+<button class="hover:text-primary transition-colors focus-scale rounded px-1">neuro_storage</button>
+<span>/</span>
+<button class="hover:text-primary transition-colors focus-scale rounded px-1">models</button>
+<span>/</span>
+<span class="text-primary font-medium">bin</span>
+</div>
+</div>
+<!-- Right: Actions & Profile -->
+<div class="flex items-center gap-sm">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors duration-200 focus-scale active:scale-95">
+<span class="material-symbols-outlined" data-icon="memory">memory</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors duration-200 focus-scale active:scale-95">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors duration-200 focus-scale active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-px h-6 bg-white/10 mx-xs"></div>
+<!-- Neural Pulse CTA -->
+<button class="h-10 px-md rounded-full bg-primary/10 text-primary font-label-md text-label-md flex items-center gap-sm border border-primary/30 hover:bg-primary/20 focus-scale">
+<div class="w-3 h-3 rounded-full border-2 border-[#c8bfff]/30 neural-pulse-idle"></div>
+                    Neural Pulse
+                </button>
+<!-- Profile Avatar -->
+<button class="w-10 h-10 rounded-full overflow-hidden hairline-all focus-scale ml-xs bg-surface-container-highest">
+<span class="material-symbols-outlined text-on-surface-variant mt-2" data-icon="person">person</span>
+</button>
+</div>
+</header>
+<!-- Content Area: Split Pane -->
+<div class="flex-1 flex overflow-hidden">
+<!-- Left: File Grid/List -->
+<div class="flex-1 flex flex-col min-w-0 p-lg gap-md">
+<!-- Toolbar -->
+<div class="flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">Directory Contents</h2>
+<div class="flex gap-xs bg-surface-container-highest p-1 rounded-lg hairline-all">
+<button class="w-8 h-8 flex items-center justify-center rounded bg-surface text-primary shadow-sm focus-scale">
+<span class="material-symbols-outlined text-base" data-icon="grid_view" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded text-on-surface-variant hover:bg-surface/50 focus-scale">
+<span class="material-symbols-outlined text-base" data-icon="list">list</span>
+</button>
+</div>
+</div>
+<!-- Grid View -->
+<div class="flex-1 overflow-y-auto pr-sm pb-safe-margin grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-md content-start">
+<!-- File Item (Selected) -->
+<button class="flex flex-col items-center gap-sm p-md rounded-xl bg-primary/10 border border-primary/30 focus-scale text-center relative group">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r"></div>
+<div class="w-16 h-16 flex items-center justify-center bg-surface rounded-lg hairline-top mb-xs">
+<span class="material-symbols-outlined text-4xl text-primary" data-icon="neurology">neurology</span>
+</div>
+<span class="font-label-md text-label-md text-primary break-all line-clamp-2 w-full">v4_language_model.bin</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">4.2 GB</span>
+</button>
+<!-- Folder Item -->
+<button class="flex flex-col items-center gap-sm p-md rounded-xl bg-surface hover:bg-surface-bright hairline-top focus-scale text-center transition-colors">
+<div class="w-16 h-16 flex items-center justify-center bg-surface-container-lowest rounded-lg hairline-all mb-xs">
+<span class="material-symbols-outlined text-4xl text-secondary" data-icon="folder" style="font-variation-settings: 'FILL' 1;">folder</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface break-all line-clamp-2 w-full">checkpoints</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">12 items</span>
+</button>
+<!-- File Item -->
+<button class="flex flex-col items-center gap-sm p-md rounded-xl bg-surface hover:bg-surface-bright hairline-top focus-scale text-center transition-colors">
+<div class="w-16 h-16 flex items-center justify-center bg-surface-container-lowest rounded-lg hairline-all mb-xs">
+<span class="material-symbols-outlined text-4xl text-tertiary" data-icon="description">description</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface break-all line-clamp-2 w-full">config.yaml</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">12 KB</span>
+</button>
+<!-- File Item -->
+<button class="flex flex-col items-center gap-sm p-md rounded-xl bg-surface hover:bg-surface-bright hairline-top focus-scale text-center transition-colors">
+<div class="w-16 h-16 flex items-center justify-center bg-surface-container-lowest rounded-lg hairline-all mb-xs">
+<span class="material-symbols-outlined text-4xl text-outline" data-icon="code_blocks">code_blocks</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface break-all line-clamp-2 w-full">tokenizer.json</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1.1 MB</span>
+</button>
+<!-- File Item -->
+<button class="flex flex-col items-center gap-sm p-md rounded-xl bg-surface hover:bg-surface-bright hairline-top focus-scale text-center transition-colors">
+<div class="w-16 h-16 flex items-center justify-center bg-surface-container-lowest rounded-lg hairline-all mb-xs">
+<span class="material-symbols-outlined text-4xl text-error" data-icon="lock">lock</span>
+</div>
+<span class="font-label-md text-label-md text-on-surface break-all line-clamp-2 w-full">secure_keys.pem</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">4 KB</span>
+</button>
+</div>
+</div>
+<!-- Right: Inspector Panel -->
+<aside class="w-80 bg-surface-container border-l border-white/10 flex flex-col z-20 shadow-xl">
+<!-- Inspector Header -->
+<div class="h-16 px-md flex items-center border-b border-white/10 bg-surface-container-highest">
+<h3 class="font-headline-md text-headline-md text-on-surface">File Details</h3>
+</div>
+<!-- Inspector Content -->
+<div class="flex-1 overflow-y-auto p-md flex flex-col gap-lg">
+<!-- Preview Graphic -->
+<div class="w-full aspect-square rounded-xl bg-surface-container-lowest hairline-all flex items-center justify-center relative overflow-hidden group">
+<!-- Abstract placeholder for model file visual -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
+<span class="material-symbols-outlined text-6xl text-primary relative z-10 drop-shadow-[0_0_15px_rgba(200,191,255,0.5)]" data-icon="neurology">neurology</span>
+</div>
+<!-- Core Info -->
+<div>
+<h4 class="font-headline-md text-headline-md text-primary break-all mb-1">v4_language_model.bin</h4>
+<p class="font-body-md text-body-md text-on-surface-variant">Compiled Neural Network Weights</p>
+</div>
+<!-- Telemetry Data Grid -->
+<div class="flex flex-col gap-sm">
+<!-- Stat Row -->
+<div class="flex flex-col bg-surface-container-highest p-sm rounded-lg hairline-all">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-1">Size</span>
+<span class="font-code-md text-code-md text-on-surface">4.20 GB (4,509,715,660 bytes)</span>
+</div>
+<!-- Stat Row -->
+<div class="flex flex-col bg-surface-container-highest p-sm rounded-lg hairline-all">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-1">Created</span>
+<span class="font-code-md text-code-md text-on-surface">2023-10-24 14:32:01 UTC</span>
+</div>
+<!-- Stat Row -->
+<div class="flex flex-col bg-surface-container-highest p-sm rounded-lg hairline-all">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-1">Permissions</span>
+<div class="flex items-center gap-2">
+<span class="font-code-md text-code-md text-tertiary">rwx</span>
+<span class="font-code-md text-code-md text-outline">r-x</span>
+<span class="font-code-md text-code-md text-outline">r--</span>
+<span class="font-label-sm text-label-sm bg-surface px-2 py-0.5 rounded ml-auto">0754</span>
+</div>
+</div>
+<!-- Stat Row (Hash) -->
+<div class="flex flex-col bg-surface-container-highest p-sm rounded-lg hairline-all">
+<span class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-1">SHA-256 Hash</span>
+<div class="flex items-center gap-2 bg-surface p-1.5 rounded border border-white/5">
+<span class="font-code-md text-code-md text-on-surface-variant text-[10px] break-all">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+<button class="ml-auto text-primary hover:text-primary-container p-1 rounded focus-scale" title="Copy Hash">
+<span class="material-symbols-outlined text-sm" data-icon="content_copy">content_copy</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Inspector Footer Actions -->
+<div class="p-md border-t border-white/10 bg-surface-container-highest flex gap-sm">
+<button class="flex-1 h-hit-target bg-primary text-on-primary font-label-md text-label-md rounded-lg flex items-center justify-center gap-xs focus-scale bg-gradient-to-b from-white/20 to-transparent">
+<span class="material-symbols-outlined text-base" data-icon="play_arrow" style="font-variation-settings: 'FILL' 1;">play_arrow</span>
+                        Load Model
+                    </button>
+</div>
+</aside>
+</div>
+</main>
+</body></html>

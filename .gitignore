@@ -9,3 +9,7 @@ playwright-report
 blob-report
 playwright/.cache
 .vitest-cache
+.serena
+*.tsbuildinfo
+page_body.html
+stitch_neurospatial_workbench_design_system.zip

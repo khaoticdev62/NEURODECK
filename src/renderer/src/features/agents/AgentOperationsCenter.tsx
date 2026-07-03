@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { AgentDefinition, RoutingProfileId } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
@@ -288,9 +289,12 @@ function AgentCard({
   return (
     <li ref={ref} tabIndex={-1} className="outline-none">
       <NdxFocusSurface active={isFocused} density="comfortable" className="p-4">
-        <p className="text-body font-semibold text-text-primary">{agent.name}</p>
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-body font-semibold text-text-primary">{agent.name}</p>
+          <StatusBadge tone={agent.enabled ? 'success' : 'neutral'} label={agent.enabled ? 'Enabled' : 'Disabled'} />
+        </div>
         <p className="text-meta text-text-secondary">
-          {agent.role} · {agent.modelProfile} · {agent.enabled ? 'Enabled' : 'Disabled'}
+          {agent.role} · {agent.modelProfile}
         </p>
         <p className="text-meta text-text-tertiary">{agent.goal}</p>
         <p className="text-meta text-text-tertiary">

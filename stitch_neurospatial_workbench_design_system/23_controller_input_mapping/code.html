@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Controller &amp; Input Mapping</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#14121a",
+                        "on-primary-fixed-variant": "#452daf",
+                        "primary-fixed-dim": "#c8bfff",
+                        "surface": "#14121a",
+                        "primary-container": "#917eff",
+                        "on-secondary-fixed": "#001f28",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "on-primary": "#2e0599",
+                        "on-tertiary-container": "#003127",
+                        "surface-variant": "#35343c",
+                        "secondary-container": "#00b2d7",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "on-error-container": "#ffdad6",
+                        "secondary-fixed": "#b5ebff",
+                        "on-background": "#e5e0ec",
+                        "on-tertiary-fixed": "#002019",
+                        "on-surface-variant": "#c9c4d6",
+                        "error-container": "#93000a",
+                        "on-tertiary": "#00382d",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e0ec",
+                        "tertiary": "#59dbbd",
+                        "on-primary-fixed": "#1a0063",
+                        "background": "#14121a",
+                        "surface-tint": "#c8bfff",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "surface-bright": "#3a3841",
+                        "surface-container-highest": "#35343c",
+                        "primary-fixed": "#e5deff",
+                        "tertiary-container": "#00a488",
+                        "primary": "#c8bfff",
+                        "error": "#ffb4ab",
+                        "outline-variant": "#484553",
+                        "on-surface": "#e5e0ec",
+                        "inverse-primary": "#5e49c8",
+                        "surface-container-low": "#1c1b22",
+                        "secondary": "#4dd6fd",
+                        "on-secondary-container": "#003f4e",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-secondary": "#003543",
+                        "outline": "#928e9f",
+                        "inverse-on-surface": "#312f38",
+                        "tertiary-fixed": "#79f8d8",
+                        "on-primary-container": "#28008a",
+                        "surface-container-high": "#2b2931",
+                        "surface-container": "#201f27"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "4px",
+                        "md": "16px",
+                        "sm": "12px",
+                        "lg": "24px",
+                        "xs": "8px",
+                        "safe-margin": "40px",
+                        "hit-target": "44px",
+                        "xl": "32px"
+                    },
+                    "fontFamily": {
+                        "code-md": ["JetBrains Mono", "monospace"],
+                        "body-md": ["Inter", "sans-serif"],
+                        "headline-md": ["Geist", "sans-serif"],
+                        "label-sm": ["Inter", "sans-serif"],
+                        "label-md": ["Inter", "sans-serif"],
+                        "body-lg": ["Inter", "sans-serif"],
+                        "headline-lg": ["Geist", "sans-serif"],
+                        "display": ["Geist", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        h1, h2, h3, h4, h5, h6, .display, .headline-lg, .headline-md {
+            font-family: 'Geist', sans-serif;
+        }
+        .code, pre {
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background min-h-screen antialiased selection:bg-primary-container selection:text-on-primary-container">
+<div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-40 flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-outline-variant px-10 py-3">
+<div class="flex items-center gap-4 text-on-surface">
+<div class="size-4">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path d="M24 45.8096C19.6865 45.8096 15.4698 44.5305 11.8832 42.134C8.29667 39.7376 5.50128 36.3314 3.85056 32.3462C2.19985 28.361 1.76794 23.9758 2.60947 19.7452C3.451 15.5145 5.52816 11.6284 8.57829 8.5783C11.6284 5.52817 15.5145 3.45101 19.7452 2.60948C23.9758 1.76795 28.361 2.19986 32.3462 3.85057C36.3314 5.50129 39.7376 8.29668 42.134 11.8833C44.5305 15.4698 45.8096 19.6865 45.8096 24L24 24L24 45.8096Z" fill="currentColor"></path>
+</svg>
+</div>
+<h2 class="text-on-surface headline-lg">Input Mapping</h2>
+</div>
+<div class="flex gap-2">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 px-4 bg-primary text-on-primary label-md">
+<span class="truncate">Save Profile</span>
+</button>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-10 bg-surface-container-high text-on-surface gap-2 label-md min-w-0 px-2.5 hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</button>
+</div>
+</header>
+<div class="pb-3">
+<div class="flex border-b border-surface-container-highest px-4 justify-between">
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-primary text-on-surface pb-[13px] pt-4 flex-1" href="#">
+<p class="label-md">Calibration</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-on-surface-variant hover:text-on-surface transition-colors pb-[13px] pt-4 flex-1" href="#">
+<p class="label-md">Trackpads</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-on-surface-variant hover:text-on-surface transition-colors pb-[13px] pt-4 flex-1" href="#">
+<p class="label-md">Keybindings</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-on-surface-variant hover:text-on-surface transition-colors pb-[13px] pt-4 flex-1" href="#">
+<p class="label-md">Telemetry</p>
+</a>
+</div>
+</div>
+<h3 class="text-on-surface headline-md px-4 pb-2 pt-4">Controller Calibration</h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+<div class="bg-surface-container rounded-xl border border-outline-variant p-6 flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: radial-gradient(theme('colors.primary') 1px, transparent 1px); background-size: 20px 20px;"></div>
+<img class="w-full h-auto object-contain z-10" data-alt="A schematic blueprint-style wireframe illustration of a modern handheld gaming console controller like a Steam Deck, drawn in precise neon purple and cyan lines on a very dark, near-black grid background. The drawing highlights the analog sticks and triggers with technical callouts and dimensional lines. The overall aesthetic is high-tech, precise, and analytical." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvPLc9t_m-ib_DiJtAPptft8pPPX_ACSnmil1aAnrPXmxrjlCbEiIfWoNa-tBuNwwD-MrJ6szc435sqzJo1ixgXPdkBWv54rZyZ4KzdJaHUPrAfSIH_atJdhJ5gzL8aV5HR1ItaMapgkUZfxxmNH_Ztmdgr7iCOG1opkCctHTZXs72DHoC6ZmKwBd4M8F7I9X3vB0mPww3ajPwB-s6wAQzFYabo1Ts9DuXs5sO5_00_vho8cIIKrGSh6bhmpAEtNNgT5NbV6-ueDkX"/>
+</div>
+<div class="flex flex-col gap-6">
+<div class="bg-surface-container rounded-xl border border-outline-variant p-4">
+<h4 class="text-on-surface label-md mb-4 uppercase tracking-wider">Left Joystick Deadzone</h4>
+<div class="relative flex w-full flex-col items-start gap-4">
+<div class="flex justify-between w-full text-on-surface-variant code-md">
+<span>Inner: 5%</span>
+<span>Outer: 90%</span>
+</div>
+<div class="flex h-[38px] w-full pt-1.5 relative">
+<div class="flex h-1.5 w-full rounded-full bg-surface-container-highest">
+<div class="absolute left-[5%] top-1/2 -translate-y-1/2 flex items-center justify-center cursor-ew-resize group">
+<div class="size-4 rounded-full bg-primary shadow-[0_0_10px_rgba(200,191,255,0.5)] group-hover:scale-125 transition-transform"></div>
+</div>
+<div class="h-1.5 absolute left-[5%] right-[10%] rounded-full bg-primary opacity-80"></div>
+<div class="absolute right-[10%] top-1/2 -translate-y-1/2 flex items-center justify-center cursor-ew-resize group">
+<div class="size-4 rounded-full bg-primary shadow-[0_0_10px_rgba(200,191,255,0.5)] group-hover:scale-125 transition-transform"></div>
+</div>
+</div>
+</div>
+<p class="text-on-surface-variant text-xs mt-2">Adjust the inner and outer boundaries to ignore slight stick drift or limit maximum travel.</p>
+</div>
+</div>
+<div class="bg-surface-container rounded-xl border border-outline-variant p-4">
+<h4 class="text-on-surface label-md mb-4 uppercase tracking-wider">Haptic Feedback Intensity</h4>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant">vibration</span>
+<div class="flex-1 h-2 bg-surface-container-highest rounded-full overflow-hidden">
+<div class="w-2/3 h-full bg-tertiary"></div>
+</div>
+<span class="text-on-surface code-md">66%</span>
+</div>
+<div class="flex gap-2 mt-4">
+<button class="flex-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface py-2 rounded-lg label-sm transition-colors border border-outline-variant">Low</button>
+<button class="flex-1 bg-tertiary text-on-tertiary py-2 rounded-lg label-sm transition-colors border border-tertiary font-bold">Medium</button>
+<button class="flex-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface py-2 rounded-lg label-sm transition-colors border border-outline-variant">High</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</body></html>

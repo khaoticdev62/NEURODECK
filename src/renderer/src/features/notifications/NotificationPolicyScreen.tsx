@@ -30,7 +30,7 @@ export function NotificationPolicyScreen(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[16rem_minmax(40rem,1fr)_18rem]">
       <NdxSettingsTree>
         <div className="space-y-2 text-meta text-text-secondary">
           <p className="text-text-primary">Notification settings</p>
@@ -47,7 +47,7 @@ export function NotificationPolicyScreen(): React.JSX.Element {
             hours are active.
           </p>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-meta font-semibold text-text-primary">Muted categories</p>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((category) => (
@@ -62,7 +62,7 @@ export function NotificationPolicyScreen(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-3 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-3 ndx-settings-section">
             <div className="flex items-center justify-between">
               <p className="text-meta font-semibold text-text-primary">Quiet hours</p>
               <ControllerButton

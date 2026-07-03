@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { TerminalSession, Workspace } from '@shared/contracts'
 import { EmptyState } from '../../components/feedback/UXState'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
-import { NdxTerminalFrame } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { getGitStatus } from '../../services/ipc/gitClient'
 import {
@@ -13,6 +12,7 @@ import {
   onTerminalExit,
   terminateTerminal
 } from '../../services/ipc/terminalClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { CommandBuilderPanel } from './CommandBuilderPanel'
 import { RemoteModePanel } from './RemoteModePanel'
@@ -117,63 +117,72 @@ function WorkspaceTerminal({
     setTerminateReviewSessionId(null)
   }
 
-  const activeSession = sessions.find((session) => session.id === activeSessionId) ?? null
-  const modeBar = (['direct', 'intent', 'split', 'remote'] as TerminalMode[]).map((candidate) => (
-    <ModeButton
-      key={candidate}
-      id={candidate}
-      active={mode === candidate}
-      onSelect={() => setMode(candidate)}
-    />
-  ))
-  const sessionList = (
-    <aside className="flex min-h-0 flex-col border-r border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)]">
-      <header className="border-b border-[var(--ndx-workbench-border)] p-3">
-        <p className="text-meta uppercase tracking-[0.18em] text-text-tertiary">ND-028</p>
-        <h1 className="text-title font-semibold text-text-primary">Universal Terminal</h1>
-        <p className="truncate text-meta text-text-secondary">{activeWorkspace.name}</p>
-        <p className="truncate text-meta text-text-tertiary">
-          {branch ? `Branch ${branch}` : 'Local workspace'}
-        </p>
-      </header>
-      <div className="p-2">
-        <NewSessionButton onCreate={() => void handleCreate()} />
-        <BuilderButton onOpen={() => setMode('intent')} />
-      </div>
-      <div className="min-h-0 flex-1 overflow-auto px-2 pb-2">
-        {sessions.map((session) => (
-          <SessionButton
-            key={session.id}
-            session={session}
-            active={session.id === activeSessionId}
-            onSelect={() => setActiveSessionId(session.id)}
-          />
-        ))}
-      </div>
-    </aside>
+  const modeBar = useMemo(
+    () =>
+      (['direct', 'intent', 'split', 'remote'] as TerminalMode[]).map((candidate) => (
+        <ModeButton
+          key={candidate}
+          id={candidate}
+          active={mode === candidate}
+          onSelect={() => setMode(candidate)}
+        />
+      )),
+    [mode]
   )
+  const sessionList = useMemo(
+    () => (
+      <aside className="flex min-h-0 flex-col border-r border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-tool-bg)]">
+        <header className="ndx-hairline-top border-b border-[var(--ndx-workbench-border)] p-3">
+          <p className="ndx-type-label-sm uppercase text-text-tertiary">ND-028</p>
+          <h1 className="text-title font-semibold text-text-primary">Universal Terminal</h1>
+          <p className="truncate text-meta text-text-secondary">{activeWorkspace.name}</p>
+          <p className="truncate text-meta text-text-tertiary">
+            {branch ? `Branch ${branch}` : 'Local workspace'}
+          </p>
+        </header>
+        <div className="p-2">
+          <NewSessionButton onCreate={() => void handleCreate()} />
+          <BuilderButton onOpen={() => setMode('intent')} />
+        </div>
+        <div className="min-h-0 flex-1 overflow-auto px-2 pb-2">
+          {sessions.map((session) => (
+            <SessionButton
+              key={session.id}
+              session={session}
+              active={session.id === activeSessionId}
+              onSelect={() => setActiveSessionId(session.id)}
+            />
+          ))}
+        </div>
+      </aside>
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeWorkspace.name, branch, sessions, activeSessionId]
+  )
+
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+
+  useEffect(() => {
+    setPrimary('Terminal Sessions', activeWorkspace.name, sessionList)
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [sessionList, activeWorkspace.name, setPrimary])
+
+  const activeSession = sessions.find((session) => session.id === activeSessionId) ?? null
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)]">
-      <div className="flex items-center gap-2 overflow-x-auto border-b border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-glass-bg)] px-3 py-2">
+      <div className="ndx-hairline-top flex items-center gap-2 overflow-x-auto border-b border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-glass-bg)] px-3 py-2">
         {modeBar}
       </div>
       <div className="min-h-0 flex-1">
         {mode === 'intent' ? (
-          <NdxTerminalFrame modeBar={null} sessionList={sessionList} toolbar={null}>
-            <CommandBuilderPanel onSwitchToDirect={() => setMode('direct')} />
-          </NdxTerminalFrame>
+          <CommandBuilderPanel onSwitchToDirect={() => setMode('direct')} />
         ) : mode === 'split' ? (
-          <NdxTerminalFrame modeBar={null} sessionList={sessionList} toolbar={null}>
-            <SplitTerminalPanel workspace={activeWorkspace} />
-          </NdxTerminalFrame>
+          <SplitTerminalPanel workspace={activeWorkspace} />
         ) : mode === 'remote' ? (
-          <NdxTerminalFrame modeBar={null} sessionList={sessionList} toolbar={null}>
-            <RemoteModePanel />
-          </NdxTerminalFrame>
+          <RemoteModePanel />
         ) : (
-          <NdxTerminalFrame modeBar={null} sessionList={sessionList} toolbar={null}>
-            <section className="flex h-full min-h-0 min-w-0 flex-col">
+          <section className="flex h-full min-h-0 min-w-0 flex-col">
               {error && (
                 <div
                   role="alert"
@@ -266,7 +275,6 @@ function WorkspaceTerminal({
                 />
               )}
             </section>
-          </NdxTerminalFrame>
         )}
       </div>
       <ConfirmationDialog

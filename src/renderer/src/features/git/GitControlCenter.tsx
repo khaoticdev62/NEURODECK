@@ -17,7 +17,7 @@ export function GitControlCenter(): React.JSX.Element {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <header className="flex items-end justify-between border-b border-border pb-3">
+      <header className="ndx-hairline-top flex items-end justify-between border-b border-border pb-3">
         <div>
           <p className="text-meta uppercase tracking-[0.18em] text-text-tertiary">ND-025</p>
           <h1 className="text-title font-semibold text-text-primary">Git Control Center</h1>

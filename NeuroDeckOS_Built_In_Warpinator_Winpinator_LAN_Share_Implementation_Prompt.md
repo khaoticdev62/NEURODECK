@@ -1,4 +1,5 @@
 # NeuroDeckOS Built-In Warpinator / Winpinator-Compatible LAN Share
+
 ## Production Implementation Mega-Prompt
 
 Use this prompt with a repository-aware coding agent. It extends the existing NeuroDeckOS shell, controller runtime, spatial focus engine, typed IPC, permission broker, File Manager, Universal Share Sheet, Transfer Center, Activity Center, Notification Center, workflow engine, capability registry, diagnostics, and SteamOS packaging.
@@ -336,21 +337,21 @@ Peer contract:
 
 ```ts
 interface LanSharePeer {
-  id: string;
-  displayName: string;
-  addresses: string[];
-  interfaceId: string;
-  transferPort: number;
-  authPort: number;
-  registrationVersion: 1 | 2 | "unknown";
-  platform: "linux" | "windows" | "android" | "ndx" | "unknown";
-  capabilities: string[];
-  trustState: string;
-  fingerprint?: string;
-  groupMatch: boolean;
-  lastSeenAt: string;
-  discoverySource: "mdns" | "manual" | "history";
-  status: "online" | "connecting" | "busy" | "offline" | "incompatible";
+  id: string
+  displayName: string
+  addresses: string[]
+  interfaceId: string
+  transferPort: number
+  authPort: number
+  registrationVersion: 1 | 2 | 'unknown'
+  platform: 'linux' | 'windows' | 'android' | 'ndx' | 'unknown'
+  capabilities: string[]
+  trustState: string
+  fingerprint?: string
+  groupMatch: boolean
+  lastSeenAt: string
+  discoverySource: 'mdns' | 'manual' | 'history'
+  status: 'online' | 'connecting' | 'busy' | 'offline' | 'incompatible'
 }
 ```
 

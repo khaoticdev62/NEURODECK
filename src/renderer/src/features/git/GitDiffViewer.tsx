@@ -19,7 +19,7 @@ export function GitDiffViewer({ path, diff, loading }: GitDiffViewerProps): Reac
       aria-label={`Diff for ${path}`}
       className="flex min-h-0 flex-1 flex-col overflow-hidden border border-border bg-canvas"
     >
-      <header className="flex min-h-10 items-center justify-between border-b border-border bg-surface px-3">
+      <header className="ndx-hairline-top flex min-h-10 items-center justify-between border-b border-border bg-surface px-3">
         <span className="truncate font-mono text-meta text-text-primary">{path}</span>
         <span className="text-meta uppercase tracking-[0.16em] text-text-tertiary">
           Unified diff
@@ -45,12 +45,12 @@ function DiffLine({ line, lineNumber }: { line: string; lineNumber: number }): R
     line.startsWith('+++') || line.startsWith('---')
       ? 'text-text-secondary'
       : line.startsWith('+')
-        ? 'bg-status-success/10 text-status-success'
+        ? 'border-l-2 border-l-status-success bg-status-success/15 text-status-success'
         : line.startsWith('-')
-          ? 'bg-status-error/10 text-status-error'
+          ? 'border-l-2 border-l-status-error bg-status-error/15 text-status-error'
           : line.startsWith('@@')
-            ? 'bg-status-info/10 text-status-info'
-            : 'text-text-secondary'
+            ? 'border-l-2 border-l-status-info bg-status-info/15 text-status-info'
+            : 'border-l-2 border-l-transparent text-text-secondary'
 
   return (
     <span className={`grid grid-cols-[3rem_1fr] px-2 ${tone}`}>

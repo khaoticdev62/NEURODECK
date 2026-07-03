@@ -19,8 +19,7 @@ const MAX_DIFF_CHARS_PER_FILE = 2000
 const SYSTEM_PROMPT = `You write a single, conventional Git commit message (a short imperative summary line, optionally a blank line and 1-3 body bullet points for non-trivial changes) describing the real staged diff you are shown. Respond with ONLY the commit message text — no markdown fences, no explanation, no quotes around it.`
 
 export type CommitMessageSuggestionResult =
-  | { ok: true; data: string }
-  | { ok: false; error: string }
+  { ok: true; data: string } | { ok: false; error: string }
 
 export async function requestCommitMessageSuggestion(
   workspaceId: string,

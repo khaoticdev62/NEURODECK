@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import { ControllerButton } from '../primitives/ControllerButton'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 const PANEL_TABS = ['Problems', 'Terminal', 'Output', 'Tasks', 'Agents']
 
 export function NdxBottomPanel(): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [activeTab, setActiveTab] = useState(PANEL_TABS[0])
+  const bottomContent = useWorkbenchStore((state) => state.bottomContent)
 
   return (
     <section
@@ -41,8 +43,8 @@ export function NdxBottomPanel(): React.JSX.Element {
         </ControllerButton>
       </div>
       {open && (
-        <div className="h-[var(--ndx-workbench-bottom-panel-height)] border-t border-[var(--ndx-workbench-border)] p-3 text-meta text-text-secondary">
-          No active {activeTab.toLowerCase()} items.
+        <div className="h-[var(--ndx-workbench-bottom-panel-height)] border-t border-[var(--ndx-workbench-border)] p-3 text-meta text-text-secondary overflow-auto">
+          {bottomContent ?? `No active ${activeTab.toLowerCase()} items.`}
         </div>
       )}
     </section>

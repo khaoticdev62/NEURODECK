@@ -141,7 +141,7 @@ export function AgentDetail(): React.JSX.Element {
   if (!agent) return <ErrorState title="Agent not found" description={error ?? 'Unknown agent.'} />
 
   return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(34rem,1fr)_19rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[72rem] docked:grid-cols-[20rem_minmax(34rem,1fr)_19rem]">
       <NdxToolWindow title="Agent Profile" subtitle={agent.enabled ? 'Enabled' : 'Disabled'}>
         <div className="flex items-center justify-between">
           <div>
@@ -188,7 +188,7 @@ export function AgentDetail(): React.JSX.Element {
 
           {tab === 'overview' ? (
             <>
-              <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+              <section className="flex flex-col gap-2 ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Overview</p>
                 <p className="text-meta text-text-secondary">Goal: {agent.goal}</p>
                 <p className="text-meta text-text-secondary">
@@ -208,7 +208,7 @@ export function AgentDetail(): React.JSX.Element {
                 </p>
               </section>
 
-              <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+              <section className="flex flex-col gap-2 ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Start a run</p>
                 <input
                   value={objective}
@@ -238,7 +238,7 @@ export function AgentDetail(): React.JSX.Element {
                 </ControllerButton>
               </section>
 
-              <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+              <section className="flex flex-col gap-2 ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Runs</p>
                 {runs.length === 0 ? (
                   <p className="text-meta text-text-tertiary">No runs yet.</p>
@@ -330,7 +330,7 @@ function ToolsTab({ run }: { run: AgentRun | null }): React.JSX.Element {
   }
   if (run.toolExecutions.length === 0) {
     return (
-      <section className="border border-border bg-surface p-3">
+      <section className="ndx-settings-section">
         <p className="text-meta text-text-tertiary">
           This run has not submitted any tool calls yet.
         </p>
@@ -338,7 +338,7 @@ function ToolsTab({ run }: { run: AgentRun | null }): React.JSX.Element {
     )
   }
   return (
-    <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <section className="flex flex-col gap-2 ndx-settings-section">
       <p className="text-body font-semibold text-text-primary">Tool calls — {run.objective}</p>
       <ul className="flex flex-col gap-2">
         {run.toolExecutions.map((execution) => (
@@ -380,7 +380,7 @@ function LogsTab({
     (entry) => entry.agentId === agentId && (!runId || entry.runId === runId)
   )
   return (
-    <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <section className="flex flex-col gap-2 ndx-settings-section">
       <p className="text-body font-semibold text-text-primary">Audit log for this run</p>
       {filtered.length === 0 ? (
         <p className="text-meta text-text-tertiary">
@@ -409,7 +409,7 @@ function FilesTab({ run }: { run: AgentRun | null }): React.JSX.Element {
     (execution) => execution.toolId === 'files-write' || execution.toolId === 'files-delete'
   )
   return (
-    <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <section className="flex flex-col gap-2 ndx-settings-section">
       <p className="text-body font-semibold text-text-primary">Files touched by this run</p>
       <p className="text-meta text-text-tertiary">
         File content diffs are not shown here — that needs Recovery Service checkpoint data this tab
@@ -450,7 +450,7 @@ function PermissionsTab({
   const denied = (run?.toolExecutions ?? []).filter((execution) => execution.status === 'denied')
   return (
     <div className="flex flex-col gap-3">
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+      <section className="flex flex-col gap-2 ndx-settings-section">
         <p className="text-body font-semibold text-text-primary">Permission ceiling</p>
         {agent.permissionCeiling.length === 0 ? (
           <p className="text-meta text-text-tertiary">No capabilities granted to this agent.</p>
@@ -464,7 +464,7 @@ function PermissionsTab({
           </ul>
         )}
       </section>
-      <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+      <section className="flex flex-col gap-2 ndx-settings-section">
         <p className="text-body font-semibold text-text-primary">Denied tool calls this run</p>
         {!run ? (
           <p className="text-meta text-text-tertiary">No run selected.</p>

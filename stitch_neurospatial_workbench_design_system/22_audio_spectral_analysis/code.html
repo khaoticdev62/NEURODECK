@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audio Telemetry - NEURODECK</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..900&amp;family=Inter:wght@400..700&amp;family=JetBrains+Mono:wght@400..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-surface": "#e5e0ec",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "error": "#ffb4ab",
+                      "surface-tint": "#c8bfff",
+                      "outline-variant": "#484553",
+                      "tertiary": "#59dbbd",
+                      "on-error": "#690005",
+                      "surface-container": "#201f27",
+                      "on-tertiary": "#00382d",
+                      "on-tertiary-container": "#003127",
+                      "surface-bright": "#3a3841",
+                      "error-container": "#93000a",
+                      "primary-container": "#917eff",
+                      "secondary": "#4dd6fd",
+                      "on-secondary-container": "#003f4e",
+                      "tertiary-container": "#00a488",
+                      "surface-container-low": "#1c1b22",
+                      "surface-container-high": "#2b2931",
+                      "on-primary-container": "#28008a",
+                      "primary": "#c8bfff",
+                      "surface": "#14121a",
+                      "on-tertiary-fixed": "#002019",
+                      "tertiary-fixed": "#79f8d8",
+                      "on-secondary-fixed": "#001f28",
+                      "on-primary": "#2e0599",
+                      "outline": "#928e9f",
+                      "on-primary-fixed": "#1a0063",
+                      "inverse-primary": "#5e49c8",
+                      "background": "#14121a",
+                      "on-error-container": "#ffdad6",
+                      "primary-fixed-dim": "#c8bfff",
+                      "secondary-container": "#00b2d7",
+                      "surface-variant": "#35343c",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "surface-container-highest": "#35343c",
+                      "on-background": "#e5e0ec",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "on-primary-fixed-variant": "#452daf",
+                      "surface-dim": "#14121a",
+                      "secondary-fixed": "#b5ebff",
+                      "inverse-on-surface": "#312f38",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "primary-fixed": "#e5deff",
+                      "on-surface": "#e5e0ec",
+                      "on-secondary": "#003543",
+                      "surface-container-lowest": "#0e0d15",
+                      "on-surface-variant": "#c9c4d6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "lg": "24px",
+                      "md": "16px",
+                      "base": "4px",
+                      "sm": "12px",
+                      "hit-target": "44px",
+                      "xs": "8px",
+                      "xl": "32px",
+                      "safe-margin": "40px"
+              },
+              "fontFamily": {
+                      "headline-lg": ["Geist"],
+                      "body-md": ["Inter"],
+                      "label-sm": ["Inter"],
+                      "headline-md": ["Geist"],
+                      "display": ["Geist"],
+                      "code-md": ["JetBrains Mono"],
+                      "body-lg": ["Inter"],
+                      "label-md": ["Inter"]
+              },
+              "fontSize": {
+                      "headline-lg": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                      "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                      "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                      "display": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                      "code-md": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}]
+              }
+            }
+          }
+        }
+    </script>
+<style>
+        .inner-glow { border-top: 1px solid rgba(255, 255, 255, 0.12); }
+        .focus-ring:focus { outline: none; box-shadow: 0 0 4px 3px rgba(200, 191, 255, 0.5); transform: scale(1.05); }
+        .audio-wave { background: repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(77, 214, 253, 0.2) 2px, rgba(77, 214, 253, 0.2) 4px); }
+        .slider-thumb::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 32px; background: #c8bfff; cursor: pointer; border-radius: 2px; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased h-screen flex flex-col md:flex-row overflow-hidden">
+<!-- SideNavBar (Hidden on Mobile) -->
+<nav class="hidden md:flex flex-col py-xl border-r border-white/10 bg-surface-container shadow-2xl w-64 h-full left-0 fixed z-20">
+<div class="px-safe-margin mb-8">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-1">NEURODECK OS</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant opacity-70">Build 2.4.0-Neural</p>
+</div>
+<div class="flex-1 flex flex-col gap-xs px-2">
+<!-- UI Customization -->
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 opacity-60 hover:bg-surface-variant hover:opacity-100 transition-all focus-ring rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="palette">palette</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">UI Customization</span>
+</a>
+<!-- Audio Telemetry (ACTIVE) -->
+<a class="flex items-center gap-3 bg-secondary-container/20 text-secondary border-l-4 border-primary rounded-r-lg px-4 py-3 scale-105 focus-ring" href="#">
+<span class="material-symbols-outlined" data-icon="settings_voice" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings_voice</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Audio Telemetry</span>
+</a>
+<!-- Input Mapping -->
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 opacity-60 hover:bg-surface-variant hover:opacity-100 transition-all focus-ring rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="gamepad">gamepad</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Input Mapping</span>
+</a>
+<!-- Performance -->
+<a class="flex items-center gap-3 text-on-surface-variant px-4 py-3 opacity-60 hover:bg-surface-variant hover:opacity-100 transition-all focus-ring rounded-lg" href="#">
+<span class="material-symbols-outlined" data-icon="speed">speed</span>
+<span class="font-label-md text-label-md uppercase tracking-widest">Performance</span>
+</a>
+</div>
+<div class="px-safe-margin mt-auto">
+<button class="w-full bg-surface-variant text-on-surface font-label-md text-label-md py-3 rounded border border-white/5 hover:bg-error-container hover:text-on-error-container transition-colors focus-ring">REBOOT SYSTEM</button>
+</div>
+</nav>
+<!-- TopAppBar (Visible on Mobile) -->
+<header class="md:hidden flex justify-between items-center px-safe-margin h-16 w-full max-w-[1280px] mx-auto bg-surface-container-low/80 backdrop-blur-md shadow-sm z-30 sticky top-0 border-b border-white/10">
+<h1 class="font-display text-display font-black text-secondary uppercase tracking-wider">NEURODECK</h1>
+<div class="flex gap-4">
+<button class="text-secondary hover:text-secondary-container transition-colors duration-200 scale-95 active:scale-90"><span class="material-symbols-outlined">settings_input_component</span></button>
+<button class="text-secondary hover:text-secondary-container transition-colors duration-200 scale-95 active:scale-90"><span class="material-symbols-outlined">memory</span></button>
+<button class="text-secondary hover:text-secondary-container transition-colors duration-200 scale-95 active:scale-90"><span class="material-symbols-outlined">graphic_eq</span></button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 bg-background h-full overflow-y-auto p-safe-margin pb-[80px] md:pb-safe-margin">
+<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Header Section -->
+<div class="col-span-1 lg:col-span-12 mb-4">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Audio &amp; Spectral Analysis</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 max-w-2xl">Manage system-wide acoustic telemetry, signal routing, and synthesis parameters.</p>
+</div>
+<!-- Left Column: Master Output & Profiles -->
+<div class="col-span-1 lg:col-span-5 flex flex-col gap-lg">
+<!-- Master Output -->
+<div class="bg-surface-container inner-glow rounded-xl p-md shadow-2xl border border-white/5">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-headline-md text-headline-md text-secondary flex items-center gap-2">
+<span class="material-symbols-outlined">volume_up</span> Master Output
+                        </h3>
+<span class="font-code-md text-code-md text-tertiary">0.0 dB</span>
+</div>
+<div class="space-y-6">
+<div>
+<div class="flex justify-between mb-2 font-label-sm text-label-sm text-on-surface-variant">
+<span>Gain</span>
+<span class="font-code-md text-tertiary">75%</span>
+</div>
+<input class="w-full h-2 bg-background rounded-lg appearance-none slider-thumb focus-ring outline-none" max="100" min="0" style="background: linear-gradient(to right, #4dd6fd 75%, #14121a 75%);" type="range" value="75"/>
+</div>
+<div>
+<div class="flex justify-between mb-2 font-label-sm text-label-sm text-on-surface-variant">
+<span>Limiter Threshold</span>
+<span class="font-code-md text-tertiary">-3.0 dB</span>
+</div>
+<input class="w-full h-2 bg-background rounded-lg appearance-none slider-thumb focus-ring outline-none" max="0" min="-20" style="background: linear-gradient(to right, #4dd6fd 85%, #14121a 85%);" type="range" value="-3"/>
+</div>
+</div>
+</div>
+<!-- Notification Profiles -->
+<div class="bg-surface-container inner-glow rounded-xl p-md shadow-2xl border border-white/5">
+<h3 class="font-headline-md text-headline-md text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">notifications</span> Notification Profiles
+                    </h3>
+<div class="grid grid-cols-1 gap-xs">
+<button class="bg-surface flex items-center justify-between p-sm rounded-lg border border-white/10 hover:border-primary/50 focus-ring transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">visibility_off</span>
+<div class="text-left">
+<div class="font-label-md text-label-md text-on-surface">Stealth</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Haptic only, minimal UI sound</div>
+</div>
+</div>
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-white/20"></div>
+</button>
+<button class="bg-primary-container/20 flex items-center justify-between p-sm rounded-lg border-l-4 border-primary focus-ring transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">warning</span>
+<div class="text-left">
+<div class="font-label-md text-label-md text-primary">Alert</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">High visibility, prominent audio cues</div>
+</div>
+</div>
+<div class="w-3 h-3 rounded-full bg-primary shadow-[0_0_8px_rgba(200,191,255,0.6)]"></div>
+</button>
+<button class="bg-surface flex items-center justify-between p-sm rounded-lg border border-white/10 hover:border-primary/50 focus-ring transition-colors">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">psychology</span>
+<div class="text-left">
+<div class="font-label-md text-label-md text-on-surface">Neural</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Dynamic ambient synthesis</div>
+</div>
+</div>
+<div class="w-3 h-3 rounded-full bg-surface-variant border border-white/20"></div>
+</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Spectral & Synthesis -->
+<div class="col-span-1 lg:col-span-7 flex flex-col gap-lg">
+<!-- Real-time Spectral Visualizer -->
+<div class="bg-surface-container inner-glow rounded-xl p-md shadow-2xl border border-white/5 flex flex-col h-[320px]">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-headline-md text-headline-md text-tertiary flex items-center gap-2">
+<span class="material-symbols-outlined">waves</span> Spectral Analysis
+                        </h3>
+<div class="flex gap-4">
+<div class="font-code-md text-code-md text-on-surface-variant">48kHz</div>
+<div class="font-code-md text-code-md text-on-surface-variant">FFT: 2048</div>
+</div>
+</div>
+<div class="flex-1 bg-background rounded-lg border border-white/5 relative overflow-hidden group">
+<!-- Simulated Waveform Background -->
+<div class="absolute inset-0 audio-wave opacity-50"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background"></div>
+<!-- Overlay Metrics -->
+<div class="absolute bottom-2 left-2 right-2 flex justify-between font-code-md text-[10px] text-tertiary-fixed-dim/60">
+<span>20Hz</span>
+<span>1kHz</span>
+<span>5kHz</span>
+<span>10kHz</span>
+<span>20kHz</span>
+</div>
+<!-- Animated Scanner Line -->
+<div class="absolute top-0 bottom-0 left-1/3 w-[2px] bg-tertiary shadow-[0_0_10px_rgba(89,219,189,0.8)] animate-pulse"></div>
+</div>
+<div class="mt-4 flex gap-4">
+<button class="flex-1 h-hit-target bg-surface border border-white/10 rounded font-label-md text-label-md hover:bg-surface-variant focus-ring transition-colors">HOLD PEAKS</button>
+<button class="flex-1 h-hit-target bg-tertiary/20 text-tertiary border border-tertiary/30 rounded font-label-md text-label-md hover:bg-tertiary/30 focus-ring transition-colors">START CALIBRATION</button>
+</div>
+</div>
+<!-- Voice Feedback Engine -->
+<div class="bg-surface-container inner-glow rounded-xl p-md shadow-2xl border border-white/5">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined">record_voice_over</span> Synthesis Engine
+                    </h3>
+<div class="grid grid-cols-2 gap-4">
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Voice Model</label>
+<select class="w-full bg-background border border-white/10 text-on-surface font-body-md rounded p-2 focus-ring focus:border-primary outline-none">
+<option>Astra (Default)</option>
+<option>Gideon</option>
+<option>V-7 Raw</option>
+</select>
+</div>
+<div class="space-y-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Pitch Shift</label>
+<div class="flex items-center gap-2 bg-background border border-white/10 rounded p-2 focus-ring">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">remove</span>
+<input class="bg-transparent border-none text-center font-code-md text-code-md w-full outline-none text-on-surface" readonly="" type="text" value="+0.00"/>
+<span class="material-symbols-outlined text-on-surface-variant text-sm">add</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Visible on Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-safe h-[64px] bg-surface-container-highest/95 backdrop-blur-xl shadow-[0_-8px_24px_rgba(0,0,0,0.5)] border-t border-white/15 rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1 hover:text-secondary transition-all active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">brush</span>
+<span class="font-label-sm text-label-sm font-semibold mt-1">Theme</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-secondary text-on-secondary rounded-xl px-6 py-1 shadow-[0_0_15px_rgba(77,214,253,0.4)] active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">equalizer</span>
+<span class="font-label-sm text-label-sm font-semibold mt-1">Audio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1 hover:text-secondary transition-all active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">videogame_asset</span>
+<span class="font-label-sm text-label-sm font-semibold mt-1">Inputs</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant/70 px-4 py-1 hover:text-secondary transition-all active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined">memory</span>
+<span class="font-label-sm text-label-sm font-semibold mt-1">System</span>
+</a>
+</nav>
+</body></html>

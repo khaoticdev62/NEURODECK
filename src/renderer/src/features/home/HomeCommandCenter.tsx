@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import type { AgentRun, WorkflowDefinition, WorkflowRun, Workspace } from '@shared/contracts'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { TechCard } from '../../components/primitives/TechCard'
 import { NdxFocusSurface } from '../../components/workbench'
+import { NdxTvShelf, TvCategoryIcon } from '../../components/tvos'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { listAgents, listAgentRuns } from '../../services/ipc/agentClient'
 import { listWorkflows, listWorkflowRuns } from '../../services/ipc/workflowClient'
+import { useDisplaySettings } from '../../state/useDisplaySettings'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
 interface HomeSummary {
@@ -41,6 +44,7 @@ function isRunningAgent(run: AgentRun): boolean {
  */
 export function HomeCommandCenter(): React.JSX.Element {
   const navigate = useNavigate()
+  const { reduceMotion } = useDisplaySettings()
   const { workspaces, activeWorkspace, loading, error, setActive } = useWorkspaces()
   const targetWorkspace = activeWorkspace ?? workspaces[0] ?? null
   const [summary, setSummary] = useState<HomeSummary>(EMPTY_SUMMARY)
@@ -184,8 +188,8 @@ export function HomeCommandCenter(): React.JSX.Element {
       )}
 
       {targetWorkspace && (
-        <section className="grid shrink-0 grid-cols-1 gap-3 deck:grid-cols-[minmax(0,1fr)_220px]">
-          <div className="ndx-os-panel p-3">
+        <section className="ndx-bento-grid shrink-0">
+          <TechCard reduceMotion={reduceMotion} className="ndx-bento-primary p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-meta uppercase tracking-wide text-text-tertiary">Resume</p>
@@ -216,9 +220,9 @@ export function HomeCommandCenter(): React.JSX.Element {
                 Git
               </ControllerButton>
             </div>
-          </div>
+          </TechCard>
 
-          <div className="ndx-os-panel p-3">
+          <TechCard reduceMotion={reduceMotion} className="ndx-bento-telemetry p-3">
             <p className="text-meta uppercase tracking-wide text-text-tertiary">Jump</p>
             <div className="mt-2 grid gap-2">
               <ControllerButton variant="secondary" onClick={() => navigate('/search')}>
@@ -231,59 +235,51 @@ export function HomeCommandCenter(): React.JSX.Element {
                 Open workflows
               </ControllerButton>
             </div>
-          </div>
+          </TechCard>
         </section>
       )}
 
-      <section className="shrink-0">
-        <div className="mb-2 flex items-center justify-between border-b border-[var(--ndx-workbench-border)] pb-2">
-          <div>
-            <p className="text-body font-semibold text-text-primary">Workspaces</p>
-            <p className="text-meta text-text-tertiary">Controller-ready project targets</p>
-          </div>
+      <NdxTvShelf
+        title="Workspaces"
+        subtitle="Controller-ready project targets"
+        icon={<TvCategoryIcon category="Workspaces" />}
+        action={
           <ControllerButton variant="ghost" onClick={() => navigate('/workspaces')}>
             Manage
           </ControllerButton>
-        </div>
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {workspaces.slice(0, 6).map((workspace) => (
-            <WorkspaceCard
-              key={workspace.id}
-              workspace={workspace}
-              active={workspace.id === targetWorkspace?.id}
-              onOpen={() => {
-                setActive(workspace.id)
-                navigate('/workspaces/detail')
-              }}
-            />
-          ))}
-        </div>
-      </section>
+        }
+      >
+        {workspaces.slice(0, 6).map((workspace) => (
+          <WorkspaceCard
+            key={workspace.id}
+            workspace={workspace}
+            active={workspace.id === targetWorkspace?.id}
+            onOpen={() => {
+              setActive(workspace.id)
+              navigate('/workspaces/detail')
+            }}
+          />
+        ))}
+      </NdxTvShelf>
 
-      <section className="shrink-0">
-        <div className="mb-2 border-b border-[var(--ndx-workbench-border)] pb-2">
-          <p className="text-body font-semibold text-text-primary">Next actions</p>
-          <p className="text-meta text-text-tertiary">Common routes for the active workspace</p>
-        </div>
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-4">
-          <Recommendation
-            title="Create workflow"
-            detail="Automate real tool steps"
-            path="/automations/forge"
-          />
-          <Recommendation title="Create agent" detail="Plan with a routed model" path="/agents" />
-          <Recommendation
-            title="Review approvals"
-            detail="Inspect queued actions"
-            path="/ai/approvals"
-          />
-          <Recommendation
-            title="Open learning lab"
-            detail="Continue guided practice"
-            path="/learn"
-          />
-        </div>
-      </section>
+      <NdxTvShelf
+        title="Next actions"
+        subtitle="Common routes for the active workspace"
+        icon={<TvCategoryIcon category="Next actions" />}
+      >
+        <Recommendation
+          title="Create workflow"
+          detail="Automate real tool steps"
+          path="/automations/forge"
+        />
+        <Recommendation title="Create agent" detail="Plan with a routed model" path="/agents" />
+        <Recommendation
+          title="Review approvals"
+          detail="Inspect queued actions"
+          path="/ai/approvals"
+        />
+        <Recommendation title="Open learning lab" detail="Continue guided practice" path="/learn" />
+      </NdxTvShelf>
     </div>
   )
 }
@@ -309,8 +305,8 @@ function WorkspaceCard({
   onOpen: () => void
 }): React.JSX.Element {
   return (
-    <NdxFocusSurface density="spatial" selected={active}>
-      <button type="button" onClick={onOpen} className="block min-h-[82px] w-full p-3 text-left">
+    <NdxFocusSurface density="spatial" selected={active} className="ndx-tv-card shrink-0">
+      <button type="button" onClick={onOpen} className="block h-full w-full p-3 text-left">
         <span className="mb-2 inline-flex border border-[var(--ndx-workbench-border)] px-2 py-0.5 text-meta text-text-tertiary">
           {active ? 'Active' : 'Workspace'}
         </span>
@@ -334,11 +330,11 @@ function Recommendation({
 }): React.JSX.Element {
   const navigate = useNavigate()
   return (
-    <NdxFocusSurface density="spatial">
+    <NdxFocusSurface density="spatial" className="ndx-tv-card shrink-0">
       <button
         type="button"
         onClick={() => navigate(path)}
-        className="block min-h-[82px] w-full p-3 text-left"
+        className="block h-full w-full p-3 text-left"
       >
         <p className="text-body font-semibold text-text-primary">{title}</p>
         <p className="mt-1 text-meta text-text-secondary">{detail}</p>

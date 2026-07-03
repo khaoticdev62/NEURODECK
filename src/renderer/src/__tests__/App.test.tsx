@@ -20,13 +20,18 @@ beforeEach(() => {
       get: vi.fn().mockResolvedValue({ ok: true, data: { hapticsIntensity: 'medium' } })
     } as never,
     system: {
-      collectMetrics: vi.fn().mockResolvedValue({ ok: true, data: {} })
+      collectMetrics: vi
+        .fn()
+        .mockResolvedValue({ ok: true, data: { core: { pid: 1, uptimeSeconds: 12 } } })
     } as never,
     power: {
       quitApp: vi.fn().mockResolvedValue({ ok: true, data: null })
     } as never,
     agentRuns: {
       onToolRequest: vi.fn().mockReturnValue(() => {})
+    } as never,
+    decky: {
+      getStatus: vi.fn().mockResolvedValue({ ok: true, data: { available: true } })
     } as never
   })
 })

@@ -1,11 +1,5 @@
 export type FocusRole =
-  | 'button'
-  | 'listitem'
-  | 'tab'
-  | 'field'
-  | 'treeitem'
-  | 'slider'
-  | 'canvas-node'
+  'button' | 'listitem' | 'tab' | 'field' | 'treeitem' | 'slider' | 'canvas-node'
 
 export type Direction = 'up' | 'down' | 'left' | 'right'
 

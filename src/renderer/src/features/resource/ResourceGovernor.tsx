@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { MetricValue, SystemMetricsSnapshot } from '@shared/contracts'
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NdxMeter } from '../../components/primitives/NdxMeter'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
@@ -65,7 +66,7 @@ export function ResourceGovernor(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Measuring resource state...</p>
 
   return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[72rem] docked:grid-cols-[20rem_minmax(36rem,1fr)_18rem]">
       <NdxToolWindow title="Governor Profiles" subtitle="Observed only">
         <p className="text-meta text-text-secondary">
           Profiles are reported from live metrics. No resource policy engine is enforcing them yet.
@@ -103,16 +104,19 @@ export function ResourceGovernor(): React.JSX.Element {
                   title="CPU"
                   metric={snapshot.cpu}
                   value={(cpu) => `${cpu.usagePercent.toFixed(1)}%`}
+                  percent={(cpu) => cpu.usagePercent}
                 />
                 <MetricSummary
                   title="Memory"
                   metric={snapshot.memory}
                   value={(memory) => `${memory.usagePercent.toFixed(1)}%`}
+                  percent={(memory) => memory.usagePercent}
                 />
                 <MetricSummary
                   title="Storage"
                   metric={snapshot.storage}
                   value={(storage) => `${storage.usagePercent.toFixed(1)}%`}
+                  percent={(storage) => storage.usagePercent}
                 />
                 <MetricSummary
                   title="Battery"
@@ -139,7 +143,7 @@ export function ResourceGovernor(): React.JSX.Element {
                 />
               </section>
 
-              <section className="border border-border bg-surface p-3">
+              <section className="ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Profiles</p>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
                   {GOVERNOR_PROFILES.map((profile) => (
@@ -160,7 +164,7 @@ export function ResourceGovernor(): React.JSX.Element {
                 </div>
               </section>
 
-              <section className="border border-border bg-surface p-3">
+              <section className="ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Policy actions</p>
                 <p className="text-meta text-text-secondary">
                   Delay model load, reduce context, pause downloads, suspend browser tabs, delay
@@ -186,14 +190,17 @@ export function ResourceGovernor(): React.JSX.Element {
 function MetricSummary<T>({
   title,
   metric,
-  value
+  value,
+  percent
 }: {
   title: string
   metric: MetricValue<T>
   value: (input: T) => string
+  percent?: (input: T) => number
 }): React.JSX.Element {
+  const available = metric.available && metric.value !== undefined
   return (
-    <section className="border border-border bg-surface p-3">
+    <section className="ndx-settings-section">
       <div className="flex items-center justify-between gap-2">
         <p className="text-caption uppercase text-text-tertiary">{title}</p>
         <StatusBadge
@@ -201,9 +208,15 @@ function MetricSummary<T>({
           label={metric.available ? 'observed' : 'unavailable'}
         />
       </div>
-      <p className="mt-1 text-title font-semibold text-text-primary">
-        {metric.available && metric.value !== undefined ? value(metric.value) : 'Unavailable'}
-      </p>
+      {available && percent ? (
+        <div className="mt-2">
+          <NdxMeter label={title} percent={percent(metric.value as T)} displayValue={value(metric.value as T)} />
+        </div>
+      ) : (
+        <p className="mt-1 text-title font-semibold text-text-primary">
+          {available ? value(metric.value as T) : 'Unavailable'}
+        </p>
+      )}
       {!metric.available && (
         <p className="text-caption text-text-tertiary">{metric.reason ?? 'No reason reported.'}</p>
       )}

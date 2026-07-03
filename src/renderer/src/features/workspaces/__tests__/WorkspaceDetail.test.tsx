@@ -1,15 +1,11 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
-import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
-import { ToastProvider } from '../../../components/overlays/Toast'
-import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
-import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { ShareSheetProvider } from '../../../state/shareSheet'
 import { WorkspaceContext, type WorkspaceContextValue } from '../WorkspaceContext'
 import { WorkspaceDetail } from '../WorkspaceDetail'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
@@ -35,21 +31,13 @@ function makeValue(overrides: Partial<WorkspaceContextValue> = {}): WorkspaceCon
   }
 }
 
-function renderDetail(value: WorkspaceContextValue): ReturnType<typeof render> {
-  return render(
-    <ToastProvider>
-      <FocusEngineProvider adapters={[new TestAdapter()]}>
-        <AiSafetyProvider>
-          <MemoryRouter>
-            <ShareSheetProvider>
-              <WorkspaceContext.Provider value={value}>
-                <WorkspaceDetail />
-              </WorkspaceContext.Provider>
-            </ShareSheetProvider>
-          </MemoryRouter>
-        </AiSafetyProvider>
-      </FocusEngineProvider>
-    </ToastProvider>
+function renderDetail(value: WorkspaceContextValue): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(
+    <ShareSheetProvider>
+      <WorkspaceContext.Provider value={value}>
+        <WorkspaceDetail />
+      </WorkspaceContext.Provider>
+    </ShareSheetProvider>
   )
 }
 

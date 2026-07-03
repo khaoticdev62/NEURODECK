@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK - Knowledge Explorer</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&amp;family=Inter:wght@100..900&amp;family=JetBrains+Mono:wght@100..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#1c1b22",
+                      "on-surface": "#e5e0ec",
+                      "inverse-surface": "#e5e0ec",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "on-secondary-container": "#003f4e",
+                      "secondary-container": "#00b2d7",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed": "#79f8d8",
+                      "tertiary": "#59dbbd",
+                      "surface-bright": "#3a3841",
+                      "error-container": "#93000a",
+                      "surface-tint": "#c8bfff",
+                      "on-background": "#e5e0ec",
+                      "surface-container-lowest": "#0e0d15",
+                      "on-primary-fixed": "#1a0063",
+                      "on-primary": "#2e0599",
+                      "primary": "#c8bfff",
+                      "primary-fixed": "#e5deff",
+                      "on-surface-variant": "#c9c4d6",
+                      "inverse-primary": "#5e49c8",
+                      "primary-fixed-dim": "#c8bfff",
+                      "surface-container": "#201f27",
+                      "on-secondary": "#003543",
+                      "surface": "#14121a",
+                      "on-tertiary-fixed": "#002019",
+                      "surface-container-highest": "#35343c",
+                      "surface-dim": "#14121a",
+                      "secondary": "#4dd6fd",
+                      "on-error": "#690005",
+                      "surface-container-high": "#2b2931",
+                      "on-tertiary": "#00382d",
+                      "background": "#14121a",
+                      "on-primary-container": "#28008a",
+                      "outline-variant": "#484553",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "outline": "#928e9f",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "error": "#ffb4ab",
+                      "on-primary-fixed-variant": "#452daf",
+                      "inverse-on-surface": "#312f38",
+                      "surface-variant": "#35343c",
+                      "secondary-fixed": "#b5ebff",
+                      "tertiary-container": "#00a488",
+                      "primary-container": "#917eff",
+                      "on-tertiary-container": "#003127",
+                      "on-secondary-fixed": "#001f28"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "hit-target": "44px",
+                      "xl": "32px",
+                      "base": "4px",
+                      "sm": "12px",
+                      "safe-margin": "40px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "xs": "8px"
+              },
+              "fontFamily": {
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "display": [
+                              "Geist"
+                      ],
+                      "code-md": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #0e0d15; /* background_deepest */
+            color: #e5e0ec; /* on-background */
+            overflow: hidden;
+        }
+        
+        .panel-edge {
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        
+        .tvos-focus:focus-within, .tvos-focus:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 0 2px rgba(200, 191, 255, 0.5), 0 10px 30px -10px rgba(0,0,0,0.8);
+            z-index: 10;
+        }
+        
+        .inner-gradient {
+            background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 100%);
+        }
+        
+        /* Custom Scrollbar for Workbench */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #35343c;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484553;
+        }
+
+        .pulse-ring {
+            animation: pulse-breath 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-breath {
+            0% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.6; }
+            100% { transform: scale(1); opacity: 0.3; }
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen w-screen selection:bg-primary/30 selection:text-primary">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 flex items-center justify-between px-safe-margin h-hit-target bg-surface dark:bg-surface font-headline-md text-headline-md font-label-md text-label-md docked full-width top-0 border-b border-white/10 bg-surface/80 backdrop-blur-xl flat no shadows">
+<div class="flex items-center gap-lg">
+<span class="font-display text-display text-primary uppercase tracking-widest scale-95 active:scale-90 transition-transform select-none">NEURODECK</span>
+<div class="flex items-center gap-md ml-lg">
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 h-hit-target flex items-center scale-95 active:scale-90 transition-transform" href="#">Memory</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 h-hit-target flex items-center scale-95 active:scale-90 transition-transform" href="#">Knowledge</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 h-hit-target flex items-center scale-95 active:scale-90 transition-transform" href="#">Fragments</a>
+<a class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 h-hit-target flex items-center scale-95 active:scale-90 transition-transform" href="#">Analysis</a>
+</div>
+</div>
+<div class="flex items-center gap-md">
+<!-- Search Bar (on_left relative to actions) -->
+<div class="relative flex items-center bg-surface-container-lowest border border-outline-variant/30 rounded-full px-sm h-10 w-64 focus-within:border-primary/50 transition-colors">
+<span class="material-symbols-outlined text-on-surface-variant text-[18px] mr-xs">search</span>
+<input class="bg-transparent border-none outline-none text-body-md font-body-md text-on-surface w-full placeholder:text-on-surface-variant/50 focus:ring-0 p-0" placeholder="Search knowledge base..." type="text"/>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md rounded-full px-lg h-10 inner-gradient hover:bg-primary-fixed transition-colors flex items-center gap-xs shadow-[0_0_15px_rgba(200,191,255,0.2)]">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                Sync Sources
+            </button>
+<div class="flex items-center gap-xs ml-sm">
+<button class="h-10 w-10 rounded-full flex items-center justify-center hover:bg-white/5 transition-colors text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="h-10 w-10 rounded-full flex items-center justify-center hover:bg-white/5 transition-colors text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">account_tree</span>
+</button>
+</div>
+<div class="ml-sm w-10 h-10 rounded-full overflow-hidden border border-outline-variant/30">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A stylized, low-poly 3D render of an avatar face in dark, moody cinematic lighting with neon violet highlights, conveying a professional and high-tech cyberpunk aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC8z3hjbP3p2OFRFgqvo0btzjAO4WcXki-zFkN5JplAudyuegXgXiJr3zb81J09EvxS8jxOwyiNfdmg_JOnYAVWMQhPeA2KVqJOjXg97790qqQ8O26cbHMVAvrmNI-YExAtf1Pt-sUNSqtg8b35Z4fwl3iKfNf7Ti1bT5J0Zn-L2meNgo6IOWwBbrEgnWDI-c-_B9u-jDUAm_KIfy9zgjydI1NTUSLido-bSogrh0Wfpw1xub9ScIYfpxhvKkyehJNZfTsFwncQrr5A"/>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex flex-1 pt-hit-target h-full overflow-hidden relative">
+<!-- SideNavBar (Storage/Sources context) -->
+<aside class="fixed left-0 top-0 h-full z-40 flex flex-col pt-24 pb-8 bg-surface-container-low dark:bg-surface-container-low text-primary dark:text-primary font-label-md text-label-md docked left-0 h-full w-64 bg-surface-container-low border-r border-white/5 shadow-xl">
+<div class="px-lg mb-xl flex items-center gap-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-container overflow-hidden border border-primary/20 relative flex items-center justify-center">
+<div class="absolute inset-0 rounded-lg border border-primary/40 pulse-ring"></div>
+<span class="material-symbols-outlined text-primary text-[24px]">memory</span>
+</div>
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface leading-tight">NEURO-CORE</h2>
+<p class="text-tertiary text-label-sm font-label-sm">V-Storage Active</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-xs px-sm">
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm hover:bg-white/5 transition-all focus:scale-105 focus:shadow-[0_0_15px_rgba(200,191,255,0.4)] rounded-lg" href="#">
+<span class="material-symbols-outlined text-[18px]">dashboard</span>
+                    Dashboard
+                </a>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm hover:bg-white/5 transition-all focus:scale-105 focus:shadow-[0_0_15px_rgba(200,191,255,0.4)] rounded-lg" href="#">
+<span class="material-symbols-outlined text-[18px]">database</span>
+                    Storage
+                </a>
+<a class="bg-primary/10 text-primary border-l-4 border-primary px-lg py-sm flex items-center gap-sm hover:bg-white/5 transition-all focus:scale-105 focus:shadow-[0_0_15px_rgba(200,191,255,0.4)] rounded-r-lg" href="#">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+                    Sources
+                </a>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm hover:bg-white/5 transition-all focus:scale-105 focus:shadow-[0_0_15px_rgba(200,191,255,0.4)] rounded-lg" href="#">
+<span class="material-symbols-outlined text-[18px]">sync_alt</span>
+                    Indexing
+                </a>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm hover:bg-white/5 transition-all focus:scale-105 focus:shadow-[0_0_15px_rgba(200,191,255,0.4)] rounded-lg" href="#">
+<span class="material-symbols-outlined text-[18px]">settings</span>
+                    Settings
+                </a>
+</nav>
+<div class="px-lg mt-auto">
+<button class="w-full bg-surface text-on-surface font-label-md text-label-md rounded-lg py-sm border border-outline-variant/30 hover:border-primary/50 hover:text-primary transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">download</span>
+                    Ingest New Data
+                </button>
+</div>
+<div class="flex flex-col gap-xs px-sm mt-md pt-md border-t border-white/5">
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-xs flex items-center gap-sm hover:bg-white/5 transition-all rounded-lg opacity-70" href="#">
+<span class="material-symbols-outlined text-[16px]">help</span>
+                    Help
+                </a>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-xs flex items-center gap-sm hover:bg-white/5 transition-all rounded-lg opacity-70" href="#">
+<span class="material-symbols-outlined text-[16px]">terminal</span>
+                    Logs
+                </a>
+</div>
+</aside>
+<!-- Canvas / Workbench -->
+<main class="flex-1 ml-64 p-safe-margin overflow-y-auto bg-surface-dim relative">
+<!-- Background Glow -->
+<div class="absolute top-[-20%] right-[-10%] w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none"></div>
+<header class="mb-xl flex items-end justify-between">
+<div>
+<h1 class="font-display text-display text-on-surface mb-xs">Knowledge Explorer</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Manage and index connected data streams into the neural core.</p>
+</div>
+<!-- Filter Pills -->
+<div class="flex gap-sm">
+<button class="px-md py-xs rounded-full bg-primary/10 text-primary font-label-md text-label-md border border-primary/30 flex items-center gap-xs">
+                        All Sources
+                    </button>
+<button class="px-md py-xs rounded-full bg-surface-container text-on-surface-variant font-label-md text-label-md border border-outline-variant/30 hover:bg-surface-container-high transition-colors flex items-center gap-xs">
+                        Local Files
+                    </button>
+<button class="px-md py-xs rounded-full bg-surface-container text-on-surface-variant font-label-md text-label-md border border-outline-variant/30 hover:bg-surface-container-high transition-colors flex items-center gap-xs">
+                        Remote Repos
+                    </button>
+<button class="px-md py-xs rounded-full bg-surface-container text-on-surface-variant font-label-md text-label-md border border-outline-variant/30 hover:bg-surface-container-high transition-colors flex items-center gap-xs">
+                        Web Fragments
+                    </button>
+</div>
+</header>
+<!-- Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md">
+<!-- Card 1: Core Engine Repo -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 panel-edge p-lg flex flex-col gap-md relative overflow-hidden tvos-focus transition-all duration-300 group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-bl-full blur-2xl group-hover:bg-primary/20 transition-colors"></div>
+<div class="flex justify-between items-start z-10">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/20 shadow-lg">
+<span class="material-symbols-outlined text-secondary text-[24px]">code_blocks</span>
+</div>
+<div class="flex items-center gap-xs bg-tertiary/10 px-sm py-1 rounded-full border border-tertiary/20">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div>
+<span class="text-tertiary font-label-sm text-label-sm">Synced</span>
+</div>
+</div>
+<div class="z-10 mt-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface">Core Engine Repo</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs line-clamp-2">Main codebase containing the neural routing logic and primary API endpoints. Last sync 2m ago.</p>
+</div>
+<div class="flex items-center gap-sm mt-auto pt-md z-10">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full bg-surface border border-outline-variant/30 flex items-center justify-center">
+<span class="text-[10px] text-on-surface-variant">JS</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-surface border border-outline-variant/30 flex items-center justify-center">
+<span class="text-[10px] text-on-surface-variant">TS</span>
+</div>
+</div>
+<span class="text-on-surface-variant text-label-sm font-label-sm ml-xs">4,201 Nodes</span>
+<div class="flex-1"></div>
+<button class="bg-surface-container-highest hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md px-md py-xs rounded-lg transition-colors border border-outline-variant/30 hover:border-transparent">
+                            Manage
+                        </button>
+</div>
+</div>
+<!-- Card 2: PDF Knowledge Base -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 panel-edge p-lg flex flex-col gap-md relative overflow-hidden tvos-focus transition-all duration-300 group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary/10 rounded-bl-full blur-2xl group-hover:bg-secondary/20 transition-colors"></div>
+<div class="flex justify-between items-start z-10">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/20 shadow-lg">
+<span class="material-symbols-outlined text-secondary-container text-[24px]">picture_as_pdf</span>
+</div>
+<div class="flex items-center gap-xs bg-secondary/10 px-sm py-1 rounded-full border border-secondary/20">
+<span class="material-symbols-outlined text-secondary text-[12px] animate-spin">progress_activity</span>
+<span class="text-secondary font-label-sm text-label-sm">Indexing (45%)</span>
+</div>
+</div>
+<div class="z-10 mt-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface">System Architecture PDFs</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs line-clamp-2">Historical design documents, hardware specifications, and legacy API manuals.</p>
+</div>
+<!-- Progress bar -->
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden mt-2 z-10">
+<div class="bg-secondary h-full w-[45%] rounded-full relative">
+<div class="absolute inset-0 bg-white/20 animate-pulse"></div>
+</div>
+</div>
+<div class="flex items-center gap-sm mt-auto pt-sm z-10">
+<span class="text-on-surface-variant text-label-sm font-label-sm">12 Files • 45MB</span>
+<div class="flex-1"></div>
+<button class="bg-surface-container-highest hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md px-md py-xs rounded-lg transition-colors border border-outline-variant/30 hover:border-transparent">
+                            Manage
+                        </button>
+</div>
+</div>
+<!-- Card 3: Web Crawl -->
+<div class="bg-surface-container-low rounded-xl border border-white/5 panel-edge p-lg flex flex-col gap-md relative overflow-hidden tvos-focus transition-all duration-300 group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-error/10 rounded-bl-full blur-2xl group-hover:bg-error/20 transition-colors"></div>
+<div class="flex justify-between items-start z-10">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center border border-outline-variant/20 shadow-lg">
+<span class="material-symbols-outlined text-on-surface text-[24px]">travel_explore</span>
+</div>
+<div class="flex items-center gap-xs bg-error-container px-sm py-1 rounded-full border border-error/20">
+<span class="material-symbols-outlined text-error text-[12px]">warning</span>
+<span class="text-error font-label-sm text-label-sm">Failed</span>
+</div>
+</div>
+<div class="z-10 mt-sm">
+<h3 class="font-headline-md text-headline-md text-on-surface">Web Crawl - Antigravity Docs</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs line-clamp-2">Targeted scrape of public physics simulation documentation. Auth token expired.</p>
+</div>
+<div class="flex items-center gap-sm mt-auto pt-md z-10">
+<span class="text-error text-label-sm font-label-sm bg-error/10 px-2 py-0.5 rounded">ERR_AUTH_401</span>
+<div class="flex-1"></div>
+<button class="bg-surface-container-highest hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md px-md py-xs rounded-lg transition-colors border border-outline-variant/30 hover:border-transparent flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">refresh</span>
+                            Retry
+                        </button>
+</div>
+</div>
+<!-- Add New Placeholder Card -->
+<div class="bg-surface-container-low/50 rounded-xl border border-dashed border-outline-variant/50 p-lg flex flex-col items-center justify-center gap-md tvos-focus transition-all duration-300 cursor-pointer hover:bg-surface-container-low hover:border-primary/50 group h-[220px]">
+<div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center group-hover:scale-110 transition-transform group-hover:bg-primary/20">
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-primary text-[24px]">add</span>
+</div>
+<span class="font-headline-md text-headline-md text-on-surface-variant group-hover:text-primary">Connect Data Source</span>
+</div>
+</div>
+</main>
+</div>
+</body></html>

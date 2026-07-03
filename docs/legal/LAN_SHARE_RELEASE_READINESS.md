@@ -32,23 +32,23 @@ Real, current documentation that exists for LAN Share as of this phase:
 
 Concrete, checkable conditions — not a restatement of "it builds." Each is marked from this phase's actual validation run.
 
-| Gate | Status | Evidence |
-|---|---|---|
-| `npm run lint` | Pass | This phase's validation run |
-| `npm run typecheck` | Pass | This phase's validation run |
-| `npm run test` (full suite) | Pass | 972/972 tests, 196 files (LAN-10 ledger entry) |
-| `npm run test -- src/core/lanShare` | Pass | 91/91 tests, 19 files |
-| `npm run build` (renderer+main) | Pass | This phase's validation run |
-| `npm run build:linux` (AppImage/snap/deb) | **Not run** | Needs a real Linux host; cannot be exercised from this Windows dev environment |
-| Real two-process-equivalent transfer test | Pass | `LanShareService.test.ts`'s real two-`LanShareService`-instance loopback gRPC test (LAN-6, still passing after LAN-9/10 changes) |
-| Decompression-bomb guard | Pass | New LAN-10 test |
-| Receive-side disk-fill guard | Pass | LAN-10 fix, covered by the same real two-service test (legitimate transfers still complete) |
-| No WAN exposure by default | Pass | LAN-9 `lanBoundary.ts` enforcement + test |
-| No native dependency / packaging blocker | Pass | This phase's SBOM review |
-| Project license declared | **Open** | Carried forward from LAN-0 §2 — a maintainer decision, not an engineering task |
-| Live Warpinator/Winpinator binary interop | **Open** | No such client available in this dev environment (LAN-10) |
-| Firewall Assistant / VPN detection / systemd unit / Resource Governor integration | **Open, named** | LAN-9 — each needs either a real SteamOS host or a not-yet-built shared subsystem |
-| Code signing | **Open** | Needs the project's actual signing keys, which do not exist in this session |
+| Gate                                                                              | Status          | Evidence                                                                                                                         |
+| --------------------------------------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run lint`                                                                    | Pass            | This phase's validation run                                                                                                      |
+| `npm run typecheck`                                                               | Pass            | This phase's validation run                                                                                                      |
+| `npm run test` (full suite)                                                       | Pass            | 972/972 tests, 196 files (LAN-10 ledger entry)                                                                                   |
+| `npm run test -- src/core/lanShare`                                               | Pass            | 91/91 tests, 19 files                                                                                                            |
+| `npm run build` (renderer+main)                                                   | Pass            | This phase's validation run                                                                                                      |
+| `npm run build:linux` (AppImage/snap/deb)                                         | **Not run**     | Needs a real Linux host; cannot be exercised from this Windows dev environment                                                   |
+| Real two-process-equivalent transfer test                                         | Pass            | `LanShareService.test.ts`'s real two-`LanShareService`-instance loopback gRPC test (LAN-6, still passing after LAN-9/10 changes) |
+| Decompression-bomb guard                                                          | Pass            | New LAN-10 test                                                                                                                  |
+| Receive-side disk-fill guard                                                      | Pass            | LAN-10 fix, covered by the same real two-service test (legitimate transfers still complete)                                      |
+| No WAN exposure by default                                                        | Pass            | LAN-9 `lanBoundary.ts` enforcement + test                                                                                        |
+| No native dependency / packaging blocker                                          | Pass            | This phase's SBOM review                                                                                                         |
+| Project license declared                                                          | **Open**        | Carried forward from LAN-0 §2 — a maintainer decision, not an engineering task                                                   |
+| Live Warpinator/Winpinator binary interop                                         | **Open**        | No such client available in this dev environment (LAN-10)                                                                        |
+| Firewall Assistant / VPN detection / systemd unit / Resource Governor integration | **Open, named** | LAN-9 — each needs either a real SteamOS host or a not-yet-built shared subsystem                                                |
+| Code signing                                                                      | **Open**        | Needs the project's actual signing keys, which do not exist in this session                                                      |
 
 ## 5. Outcome
 

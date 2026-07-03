@@ -54,7 +54,7 @@ export function DevicePeripheralCenter(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Collecting device inventory...</p>
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow title="Device Classes" subtitle="Inventory">
         <div className="space-y-3 text-meta text-text-secondary">
           <p>Bluetooth, audio, display, and storage routes share this inventory source.</p>
@@ -110,7 +110,7 @@ export function DevicePeripheralCenter(): React.JSX.Element {
                 />
               </section>
 
-              <section className="border border-border bg-surface p-3">
+              <section className="ndx-settings-section">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-body font-semibold text-text-primary">Hot-plug behavior</p>
@@ -125,7 +125,7 @@ export function DevicePeripheralCenter(): React.JSX.Element {
 
               <section className="grid gap-3 lg:grid-cols-2">
                 {report.devices.length === 0 ? (
-                  <div className="border border-border bg-surface p-3">
+                  <div className="ndx-settings-section">
                     <p className="text-body font-semibold text-text-primary">No devices detected</p>
                     <p className="text-meta text-text-secondary">
                       No persisted device records or metric-derived network/storage devices were
@@ -134,7 +134,7 @@ export function DevicePeripheralCenter(): React.JSX.Element {
                   </div>
                 ) : (
                   report.devices.map((device) => (
-                    <article key={device.id} className="border border-border bg-surface p-3">
+                    <article key={device.id} className="ndx-settings-section">
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-body font-semibold text-text-primary">{device.name}</p>
@@ -168,7 +168,7 @@ export function DevicePeripheralCenter(): React.JSX.Element {
                 )}
               </section>
 
-              <section className="border border-border bg-surface p-3">
+              <section className="ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Capability detection</p>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
                   {report.capabilities.map((capability) => (
@@ -205,7 +205,7 @@ export function DevicePeripheralCenter(): React.JSX.Element {
 
 function SummaryStat({ label, value }: { label: string; value: string }): React.JSX.Element {
   return (
-    <section className="border border-border bg-surface p-3">
+    <section className="ndx-settings-section">
       <p className="text-caption uppercase text-text-tertiary">{label}</p>
       <p className="text-title font-semibold text-text-primary">{value}</p>
     </section>

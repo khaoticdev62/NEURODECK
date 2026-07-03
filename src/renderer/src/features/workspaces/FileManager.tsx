@@ -6,11 +6,12 @@ import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { cn } from '../../components/primitives/cn'
-import { NdxDeckLayout, NdxEditorShell } from '../../components/workbench'
+import { NdxEditorShell } from '../../components/workbench'
 import { deleteFile, listFiles } from '../../services/ipc/fileClient'
 import { useShareSheet } from '../../state/useShareSheet'
 import { FilePreview } from './FilePreview'
 import { useWorkspaces } from './useWorkspaces'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 function resolveAbsolutePath(rootPath: string, relativePath: string): string {
   const separator = rootPath.includes('\\') && !rootPath.includes('/') ? '\\' : '/'
@@ -69,6 +70,52 @@ export function FileManager(): React.JSX.Element {
     }
   }, [activeWorkspace, relativePath])
 
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+
+  useEffect(() => {
+    if (!activeWorkspace) {
+      setPrimary('Command Deck', undefined, null)
+      return
+    }
+    setPrimary('Explorer', activeWorkspace.name, (
+      <div className="flex h-full flex-col p-3">
+        <ExplorerPanel
+          workspaceName={activeWorkspace.name}
+          relativePath={relativePath}
+          entries={entries}
+          error={error}
+          loading={loading}
+          onNavigate={setRelativePath}
+          onOpen={openEntry}
+          onDelete={(entry) => setDeleteReview(entry)}
+          onSendViaLanShare={(entry) =>
+            navigate('/lan-share/send', {
+              state: {
+                sourcePaths: [resolveAbsolutePath(activeWorkspace.rootPath, entry.path)]
+              }
+            })
+          }
+          onShare={(entry) =>
+            openShareSheet({
+              filePaths: [resolveAbsolutePath(activeWorkspace.rootPath, entry.path)],
+              sourceLabel: entry.name
+            })
+          }
+        />
+      </div>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [
+    activeWorkspace,
+    relativePath,
+    entries,
+    error,
+    loading,
+    navigate,
+    openShareSheet,
+    setPrimary
+  ])
+
   if (!activeWorkspace) {
     return (
       <EmptyState
@@ -99,40 +146,11 @@ export function FileManager(): React.JSX.Element {
     refresh()
   }
 
-  const explorer = (
-    <ExplorerPanel
-      workspaceName={activeWorkspace.name}
-      relativePath={relativePath}
-      entries={entries}
-      error={error}
-      loading={loading}
-      onNavigate={setRelativePath}
-      onOpen={openEntry}
-      onDelete={(entry) => setDeleteReview(entry)}
-      onSendViaLanShare={(entry) =>
-        navigate('/lan-share/send', {
-          state: {
-            sourcePaths: [resolveAbsolutePath(activeWorkspace.rootPath, entry.path)]
-          }
-        })
-      }
-      onShare={(entry) =>
-        openShareSheet({
-          filePaths: [resolveAbsolutePath(activeWorkspace.rootPath, entry.path)],
-          sourceLabel: entry.name
-        })
-      }
-    />
-  )
-
   return (
-    <NdxDeckLayout>
-      <div className="grid h-full min-h-0 min-w-0 grid-cols-1 gap-2 overflow-hidden docked:grid-cols-[20rem_minmax(0,1fr)]">
-        <section className="ndx-workbench-surface min-h-0 overflow-hidden p-3">{explorer}</section>
-        <NdxEditorShell title={selectedFile ?? 'File Preview'}>
-          <FilePreview workspaceId={activeWorkspace.id} relativePath={selectedFile} />
-        </NdxEditorShell>
-      </div>
+    <div className="h-full bg-[var(--ndx-workbench-editor-bg)]">
+      <NdxEditorShell title={selectedFile ?? 'File Preview'}>
+        <FilePreview workspaceId={activeWorkspace.id} relativePath={selectedFile} />
+      </NdxEditorShell>
       <ConfirmationDialog
         open={deleteReview !== null}
         title="Delete file"
@@ -145,7 +163,7 @@ export function FileManager(): React.JSX.Element {
         }}
         onCancel={() => setDeleteReview(null)}
       />
-    </NdxDeckLayout>
+    </div>
   )
 }
 
@@ -236,6 +254,30 @@ function Breadcrumbs({
   )
 }
 
+function EntryIcon({ isDirectory }: { isDirectory: boolean }): React.JSX.Element {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={cn('size-4 shrink-0', isDirectory ? 'text-[var(--ndx-accent)]' : 'text-text-tertiary')}
+    >
+      {isDirectory ? (
+        <path d="M4 5a1 1 0 0 1 1-1h4.5l2 2H19a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" />
+      ) : (
+        <>
+          <path d="M6 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
+          <path d="M14 3v4h4" />
+        </>
+      )}
+    </svg>
+  )
+}
+
 function FileRow({
   entry,
   onOpen,
@@ -267,7 +309,10 @@ function FileRow({
           isFocused && 'border-[var(--ndx-workbench-border-active)]'
         )}
       >
-        <span className="truncate">{entry.isDirectory ? `[DIR] ${entry.name}` : entry.name}</span>
+        <span className="flex min-w-0 items-center gap-2">
+          <EntryIcon isDirectory={entry.isDirectory} />
+          <span className="truncate">{entry.name}</span>
+        </span>
         {!entry.isDirectory && (
           <span className="shrink-0 pl-2 text-meta text-text-tertiary">
             {formatBytes(entry.sizeBytes)}

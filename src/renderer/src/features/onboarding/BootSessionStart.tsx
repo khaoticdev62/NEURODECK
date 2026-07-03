@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NeuroDeckLogomark } from '../../components/primitives/brandIcons'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { ErrorState } from '../../components/feedback/UXState'
 import { NdxFocusSurface, NdxSpatialLockup } from '../../components/workbench'
@@ -136,8 +137,7 @@ export function BootSessionStart(): React.JSX.Element {
       // "running" until the unrelated 15s global timeout finally fired.
       // Treat a rejection exactly like a structured failure result instead.
       let result:
-        | { ok: true; data: T }
-        | { ok: false; error: { userMessage: string }; timedOut?: boolean }
+        { ok: true; data: T } | { ok: false; error: { userMessage: string }; timedOut?: boolean }
       try {
         result = await Promise.race([
           promise,
@@ -291,9 +291,12 @@ export function BootSessionStart(): React.JSX.Element {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-8 p-8 text-center">
       <NdxSpatialLockup selected>
-        <div className="min-w-80">
-          <p className="text-display font-semibold text-text-primary">NeuroDeck</p>
-          <p className="text-body text-text-secondary">Controller-native AI operating harness</p>
+        <div className="flex min-w-80 items-center gap-4">
+          <NeuroDeckLogomark className="size-12 shrink-0 text-[var(--ndx-accent)]" />
+          <div>
+            <p className="text-display font-semibold text-text-primary">NeuroDeck</p>
+            <p className="text-body text-text-secondary">Controller-native AI operating harness</p>
+          </div>
         </div>
       </NdxSpatialLockup>
 
@@ -332,7 +335,7 @@ export function BootSessionStart(): React.JSX.Element {
       </div>
 
       {showDetails && (
-        <div className="max-w-md rounded-md border border-border bg-surface p-4 text-left">
+        <div className="ndx-os-panel max-w-md rounded-md p-4 text-left">
           <p className="text-meta font-semibold uppercase tracking-[0.18em] text-text-tertiary">
             Details
           </p>

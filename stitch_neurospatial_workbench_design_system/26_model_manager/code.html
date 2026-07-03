@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK - Model Manager</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "outline-variant": "#484553",
+                    "on-tertiary-fixed-variant": "#005142",
+                    "on-secondary-fixed-variant": "#004e5f",
+                    "on-tertiary-container": "#003127",
+                    "secondary-fixed-dim": "#4dd6fd",
+                    "surface-bright": "#3a3841",
+                    "secondary-container": "#00b2d7",
+                    "error": "#ffb4ab",
+                    "secondary": "#4dd6fd",
+                    "inverse-on-surface": "#312f38",
+                    "surface-container-low": "#1c1b22",
+                    "tertiary-fixed": "#79f8d8",
+                    "on-secondary-fixed": "#001f28",
+                    "primary": "#c8bfff",
+                    "surface-container-highest": "#35343c",
+                    "surface-container": "#201f27",
+                    "on-surface-variant": "#c9c4d6",
+                    "primary-container": "#917eff",
+                    "tertiary-fixed-dim": "#59dbbd",
+                    "surface-variant": "#35343c",
+                    "tertiary": "#59dbbd",
+                    "surface-container-high": "#2b2931",
+                    "on-primary-fixed": "#1a0063",
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed": "#002019",
+                    "background": "#14121a",
+                    "on-tertiary": "#00382d",
+                    "on-secondary-container": "#003f4e",
+                    "primary-fixed-dim": "#c8bfff",
+                    "on-error": "#690005",
+                    "on-primary-fixed-variant": "#452daf",
+                    "on-surface": "#e5e0ec",
+                    "surface-dim": "#14121a",
+                    "on-secondary": "#003543",
+                    "outline": "#928e9f",
+                    "on-primary-container": "#28008a",
+                    "surface": "#14121a",
+                    "primary-fixed": "#e5deff",
+                    "inverse-primary": "#5e49c8",
+                    "surface-tint": "#c8bfff",
+                    "inverse-surface": "#e5e0ec",
+                    "surface-container-lowest": "#0e0d15",
+                    "on-background": "#e5e0ec",
+                    "secondary-fixed": "#b5ebff",
+                    "tertiary-container": "#00a488",
+                    "on-primary": "#2e0599",
+                    "on-error-container": "#ffdad6"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "label-sm": ["Inter"],
+                    "headline-md": ["Geist"],
+                    "body-lg": ["Inter"],
+                    "headline-lg": ["Geist"],
+                    "display": ["Geist"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "code-md": ["JetBrains Mono"]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Specific sizing for Steam Deck target */
+        body { width: 1280px; height: 800px; margin: 0 auto; overflow: hidden; }
+        .hairline-border { border: 1px solid theme('colors.outline-variant'); }
+        .hairline-b { border-bottom: 1px solid theme('colors.outline-variant'); }
+        .hairline-r { border-right: 1px solid theme('colors.outline-variant'); }
+        .hairline-t { border-top: 1px solid theme('colors.outline-variant'); }
+        
+        /* Custom scrollbar for inner areas */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: theme('colors.surface-variant'); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: theme('colors.outline'); }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md flex">
+<!-- Immutable Shared Component: SideNavBar (Adapted shell for layout, content exact) -->
+<div class="flex flex-col w-[260px] h-full bg-[#120f24] shrink-0 hairline-r z-10" style='font-family: "Be Vietnam Pro", "Noto Sans", sans-serif;'>
+<div class="flex h-full flex-col justify-between p-4">
+<div class="flex flex-col gap-4">
+<div class="flex gap-3 items-center">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA52QtrzVsc4Ycgfu9vqZNhIzCn3gSNnm5sSk4pZNyUSp-eay7RRvJJcmaTmXZGrgC-j9VXxcb7E877uG37k1-aNlswRf0bpdpvxGvkN2t47wqeUayD0izo1Vu_m3fOXXlDFOLn-HrH_Mfg03FPAs1kEP9s_GzajrjCPiact1dBe_7UOmlqsb8Ih3iTF5zJLP_nYuv3oP_aGxu1NH9M1QUr6GL7DqJ_cF4wzgBEdOZqH8rYGV_F2HpAoKKFO4_dJ3aB-n_kws_rDA6B");'></div>
+<div class="flex flex-col">
+<h1 class="text-white text-base font-medium leading-normal">NEURODECK</h1>
+<p class="text-[#978dce] text-sm font-normal leading-normal">Local LLM Node</p>
+</div>
+</div>
+<div class="flex flex-col gap-2 mt-4">
+<div class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[#27204b]/50 rounded-lg transition-colors">
+<div class="text-white flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+</div>
+<p class="text-white text-sm font-medium leading-normal">Dashboard</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 rounded-lg bg-[#27204b] cursor-default">
+<div class="text-white flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">database</span>
+</div>
+<p class="text-white text-sm font-medium leading-normal">Model Manager</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[#27204b]/50 rounded-lg transition-colors">
+<div class="text-white flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">terminal</span>
+</div>
+<p class="text-white text-sm font-medium leading-normal">Inference</p>
+</div>
+<div class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-[#27204b]/50 rounded-lg transition-colors">
+<div class="text-white flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+</div>
+<p class="text-white text-sm font-medium leading-normal">Settings</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Content Area -->
+<div class="flex flex-col flex-1 h-full bg-surface-container-lowest overflow-hidden">
+<!-- Immutable Shared Component: TopAppBar -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#27204b] bg-[#120f24] px-6 py-3 shrink-0 h-[64px]">
+<div class="flex items-center gap-4 text-white">
+<div class="size-4 flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">memory</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">Model Manager</h2>
+</div>
+<div class="flex items-center gap-6">
+<label class="flex flex-col w-64 h-9">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-[#372e6b] bg-[#27204b]/50 focus-within:border-[#978dce] transition-colors">
+<div class="text-[#978dce] flex items-center justify-center pl-3">
+<span class="material-symbols-outlined text-[18px]">search</span>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-white focus:outline-0 focus:ring-0 border-none bg-transparent h-full placeholder:text-[#978dce] px-3 text-sm font-normal leading-normal" placeholder="Search models..." value=""/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex size-9 cursor-pointer items-center justify-center rounded-lg bg-[#27204b] text-white hover:bg-[#372e6b] transition-colors">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="flex size-9 cursor-pointer items-center justify-center rounded-lg bg-[#27204b] text-white hover:bg-[#372e6b] transition-colors">
+<span class="material-symbols-outlined text-[20px]">person</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-6 overflow-y-auto flex flex-col gap-6">
+<!-- Page Header -->
+<div class="flex items-center justify-between">
+<div class="flex flex-col gap-1">
+<h1 class="text-on-surface font-headline-lg text-2xl">Installed Models</h1>
+<p class="text-on-surface-variant font-body-md">Manage local weights, view memory footprints, and perform maintenance tasks.</p>
+</div>
+<button class="flex items-center gap-2 h-10 px-4 rounded-lg bg-primary text-on-primary font-label-md hover:bg-primary/90 transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                    Import Model
+                </button>
+</div>
+<!-- Main Data Table Container (Layered UI) -->
+<div class="flex flex-col rounded-lg bg-surface-container hairline-border overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.4)]">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high hairline-b">
+<th class="px-5 py-4 text-on-surface-variant font-label-md uppercase tracking-wider">Model</th>
+<th class="px-5 py-4 text-on-surface-variant font-label-md uppercase tracking-wider">Specs</th>
+<th class="px-5 py-4 text-on-surface-variant font-label-md uppercase tracking-wider">Footprint</th>
+<th class="px-5 py-4 text-on-surface-variant font-label-md uppercase tracking-wider">Last Accessed</th>
+<th class="px-5 py-4 text-on-surface-variant font-label-md uppercase tracking-wider">Status</th>
+<th class="px-5 py-4 text-right text-on-surface-variant font-label-md uppercase tracking-wider">Quick Actions</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-on-surface">
+<!-- Row 1: Active Model -->
+<tr class="hairline-b hover:bg-surface-container-highest transition-colors group">
+<td class="px-5 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded bg-surface-bright flex items-center justify-center border border-outline-variant/50">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">psychology</span>
+</div>
+<span class="font-headline-md text-base">Llama-3-8B</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<div class="flex flex-col gap-1">
+<span class="font-code-md text-on-surface-variant text-xs bg-surface-container-low px-2 py-0.5 rounded w-fit">Q4_K_M</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<div class="flex flex-col gap-1 text-sm">
+<span class="flex justify-between w-24"><span class="text-on-surface-variant">Disk:</span> 4.7 GB</span>
+<span class="flex justify-between w-24"><span class="text-on-surface-variant">VRAM:</span> <span class="text-tertiary font-medium">5.2 GB</span></span>
+</div>
+</td>
+<td class="px-5 py-4 text-on-surface-variant text-sm">
+                                    Just now
+                                </td>
+<td class="px-5 py-4">
+<div class="flex items-center gap-2">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-tertiary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-tertiary"></span>
+</span>
+<span class="text-tertiary text-sm font-medium">Active in VRAM</span>
+</div>
+</td>
+<td class="px-5 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-100 transition-opacity">
+<button class="size-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="h-8 px-3 rounded flex items-center gap-1 bg-surface-variant hover:bg-surface-bright text-on-surface transition-colors font-label-md">
+                                            Unload
+                                        </button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Standby Model -->
+<tr class="hover:bg-surface-container-highest transition-colors group">
+<td class="px-5 py-4">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded bg-surface-bright flex items-center justify-center border border-outline-variant/50">
+<span class="material-symbols-outlined text-on-surface-variant">model_training</span>
+</div>
+<span class="font-headline-md text-base text-on-surface-variant">Mistral-7B</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<div class="flex flex-col gap-1">
+<span class="font-code-md text-on-surface-variant text-xs bg-surface-container-low px-2 py-0.5 rounded w-fit">Q8_0</span>
+</div>
+</td>
+<td class="px-5 py-4">
+<div class="flex flex-col gap-1 text-sm text-on-surface-variant">
+<span class="flex justify-between w-24"><span>Disk:</span> 7.2 GB</span>
+<span class="flex justify-between w-24"><span>Req:</span> 7.8 GB</span>
+</div>
+</td>
+<td class="px-5 py-4 text-on-surface-variant text-sm">
+                                    5 days ago
+                                </td>
+<td class="px-5 py-4">
+<div class="flex items-center gap-2">
+<span class="size-2.5 rounded-full bg-outline"></span>
+<span class="text-on-surface-variant text-sm">Standby</span>
+</div>
+</td>
+<td class="px-5 py-4 text-right">
+<div class="flex justify-end gap-2 opacity-40 group-hover:opacity-100 transition-opacity">
+<button class="size-8 rounded flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-variant transition-colors" title="Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="h-8 px-3 rounded flex items-center gap-1 bg-surface-variant hover:bg-surface-bright text-on-surface transition-colors font-label-md">
+                                            Load
+                                        </button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Expanded Action Panel for Selected Model (Simulated for Llama-3-8B) -->
+<div class="bg-surface-container-low hairline-t p-5 flex flex-col gap-4">
+<h3 class="text-sm font-label-md text-on-surface uppercase tracking-wider flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">build</span>
+                        Maintenance Tasks: Llama-3-8B
+                    </h3>
+<div class="grid grid-cols-4 gap-4">
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border border-outline-variant bg-surface-container hover:bg-surface-bright hover:border-primary/50 transition-all text-on-surface group">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant group-hover:text-primary transition-colors">content_cut</span>
+<span class="font-label-md text-xs">Prune Weights</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border border-outline-variant bg-surface-container hover:bg-surface-bright hover:border-primary/50 transition-all text-on-surface group">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant group-hover:text-primary transition-colors">verified_user</span>
+<span class="font-label-md text-xs">Verify Integrity</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border border-outline-variant bg-surface-container hover:bg-surface-bright hover:border-error/50 transition-all text-on-surface group">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant group-hover:text-error transition-colors">cleaning_services</span>
+<span class="font-label-md text-xs">Purge Cache</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-2 p-3 rounded-lg border border-outline-variant bg-surface-container hover:bg-surface-bright hover:border-secondary/50 transition-all text-on-surface group">
+<span class="material-symbols-outlined text-[24px] text-on-surface-variant group-hover:text-secondary transition-colors">sd_card</span>
+<span class="font-label-md text-xs text-center leading-tight">Offload to SD</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

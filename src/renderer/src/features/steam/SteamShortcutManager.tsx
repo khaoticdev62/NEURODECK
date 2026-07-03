@@ -219,7 +219,7 @@ export function SteamShortcutManager(): React.JSX.Element {
       {error && <ErrorState title="Steam shortcut error" description={error} />}
       {status && <p className="text-meta text-status-success">{status}</p>}
 
-      <section className="border border-border bg-surface p-3">
+      <section className="ndx-settings-section">
         <div className="flex items-center justify-between">
           <p className="text-body font-semibold text-text-primary">Shortcuts</p>
           <ControllerButton variant="primary" disabled={creating} onClick={() => setCreating(true)}>
@@ -308,7 +308,7 @@ export function SteamShortcutManager(): React.JSX.Element {
         )}
       </section>
 
-      <section className="border border-border bg-surface p-3">
+      <section className="ndx-settings-section">
         <p className="text-body font-semibold text-text-primary">Backups ({backups.length})</p>
         <p className="text-meta text-text-tertiary">
           A real backup of shortcuts.vdf is saved before every change here.

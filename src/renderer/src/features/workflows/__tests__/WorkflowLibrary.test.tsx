@@ -10,6 +10,7 @@ import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { WorkflowRunnerProvider } from '../../../workflows/WorkflowRunnerProvider'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { WorkflowLibrary } from '../WorkflowLibrary'
+import { TestWorkbenchStoreRenderer } from '../../../__tests__/testUtils'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
@@ -46,6 +47,7 @@ function renderLibrary(active = true): ReturnType<typeof render> {
             <WorkflowRunnerProvider>
               <MemoryRouter>
                 <WorkflowLibrary />
+                <TestWorkbenchStoreRenderer />
               </MemoryRouter>
             </WorkflowRunnerProvider>
           </WorkspaceContext.Provider>

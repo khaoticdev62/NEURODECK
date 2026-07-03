@@ -1,12 +1,9 @@
 import { render, screen } from '@testing-library/react'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, useLocation } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
-import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
-import { ToastProvider } from '../../../components/overlays/Toast'
-import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
-import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { ShareSheetProvider } from '../../../state/shareSheet'
 import { FileManager } from '../FileManager'
 import { WorkspaceContext, type WorkspaceContextValue } from '../WorkspaceContext'
@@ -40,42 +37,26 @@ const activeWorkspaceValue: WorkspaceContextValue = {
 }
 
 function renderFileManager(): ReturnType<typeof render> {
-  return render(
-    <ToastProvider>
-      <FocusEngineProvider adapters={[new TestAdapter()]}>
-        <AiSafetyProvider>
-          <MemoryRouter>
-            <ShareSheetProvider>
-              <WorkspaceContext.Provider value={activeWorkspaceValue}>
-                <FileManager />
-              </WorkspaceContext.Provider>
-            </ShareSheetProvider>
-          </MemoryRouter>
-        </AiSafetyProvider>
-      </FocusEngineProvider>
-    </ToastProvider>
+  return renderWithProviders(
+    <ShareSheetProvider>
+      <WorkspaceContext.Provider value={activeWorkspaceValue}>
+        <FileManager />
+      </WorkspaceContext.Provider>
+    </ShareSheetProvider>
   )
 }
 
 describe('FileManager', () => {
   it('shows the "no active workspace" empty state when nothing is active', async () => {
     stubBridge({})
-    render(
-      <ToastProvider>
-        <FocusEngineProvider adapters={[new TestAdapter()]}>
-          <AiSafetyProvider>
-            <MemoryRouter>
-              <ShareSheetProvider>
-                <WorkspaceContext.Provider
-                  value={{ ...activeWorkspaceValue, activeWorkspace: null }}
-                >
-                  <FileManager />
-                </WorkspaceContext.Provider>
-              </ShareSheetProvider>
-            </MemoryRouter>
-          </AiSafetyProvider>
-        </FocusEngineProvider>
-      </ToastProvider>
+    renderWithProviders(
+      <ShareSheetProvider>
+        <WorkspaceContext.Provider
+          value={{ ...activeWorkspaceValue, activeWorkspace: null }}
+        >
+          <FileManager />
+        </WorkspaceContext.Provider>
+      </ShareSheetProvider>
     )
 
     expect(await screen.findByText('No active workspace')).toBeInTheDocument()
@@ -220,21 +201,13 @@ describe('FileManager', () => {
     }
 
     const user = userEvent.setup()
-    render(
-      <ToastProvider>
-        <FocusEngineProvider adapters={[new TestAdapter()]}>
-          <AiSafetyProvider>
-            <MemoryRouter>
-              <ShareSheetProvider>
-                <WorkspaceContext.Provider value={activeWorkspaceValue}>
-                  <FileManager />
-                </WorkspaceContext.Provider>
-                <LocationProbe />
-              </ShareSheetProvider>
-            </MemoryRouter>
-          </AiSafetyProvider>
-        </FocusEngineProvider>
-      </ToastProvider>
+    renderWithProviders(
+      <ShareSheetProvider>
+        <WorkspaceContext.Provider value={activeWorkspaceValue}>
+          <FileManager />
+        </WorkspaceContext.Provider>
+        <LocationProbe />
+      </ShareSheetProvider>
     )
     await screen.findByText('readme.md')
 

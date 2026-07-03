@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { SystemMetricsSnapshot } from '@shared/contracts'
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { NdxMeter } from '../../components/primitives/NdxMeter'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
@@ -72,7 +73,7 @@ export function AIWorkloadScheduler(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Checking workload capacity...</p>
 
   return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[72rem] docked:grid-cols-[20rem_minmax(36rem,1fr)_18rem]">
       <NdxToolWindow title="Workload Classes" subtitle={`${JOB_CLASSES.length} classes`}>
         <p className="text-meta text-text-secondary">
           Job classes are inventory only. Queue admission is not enforced by this screen.
@@ -114,6 +115,7 @@ export function AIWorkloadScheduler(): React.JSX.Element {
                   healthy={
                     snapshot.memory.available && (snapshot.memory.value?.usagePercent ?? 100) < 85
                   }
+                  percent={snapshot.memory.value?.usagePercent}
                 />
                 <CapacityCard
                   label="Thermal"
@@ -141,7 +143,7 @@ export function AIWorkloadScheduler(): React.JSX.Element {
                 />
               </section>
 
-              <section className="border border-border bg-surface p-3">
+              <section className="ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Job classes</p>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
                   {JOB_CLASSES.map((jobClass) => (
@@ -156,7 +158,7 @@ export function AIWorkloadScheduler(): React.JSX.Element {
                 </div>
               </section>
 
-              <section className="border border-border bg-surface p-3">
+              <section className="ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Scheduling factors</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {SCHEDULING_FACTORS.map((factor) => (
@@ -186,14 +188,16 @@ export function AIWorkloadScheduler(): React.JSX.Element {
 function CapacityCard({
   label,
   value,
-  healthy
+  healthy,
+  percent
 }: {
   label: string
   value: string
   healthy: boolean
+  percent?: number
 }): React.JSX.Element {
   return (
-    <section className="border border-border bg-surface p-3">
+    <section className="ndx-settings-section">
       <div className="flex items-center justify-between gap-2">
         <p className="text-caption uppercase text-text-tertiary">{label}</p>
         <StatusBadge
@@ -201,7 +205,13 @@ function CapacityCard({
           label={healthy ? 'ok' : 'constrained'}
         />
       </div>
-      <p className="mt-1 text-title font-semibold text-text-primary">{value}</p>
+      {percent === undefined ? (
+        <p className="mt-1 text-title font-semibold text-text-primary">{value}</p>
+      ) : (
+        <div className="mt-2">
+          <NdxMeter label={label} percent={percent} displayValue={value} />
+        </div>
+      )}
     </section>
   )
 }

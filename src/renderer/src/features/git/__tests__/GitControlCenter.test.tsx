@@ -1,25 +1,16 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
-import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
-import { ToastProvider } from '../../../components/overlays/Toast'
-import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
-import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { GitControlCenter } from '../GitControlCenter'
 
-function renderControlCenter(value: WorkspaceContextValue): ReturnType<typeof render> {
-  return render(
-    <ToastProvider>
-      <FocusEngineProvider adapters={[new TestAdapter()]}>
-        <AiSafetyProvider>
-          <WorkspaceContext.Provider value={value}>
-            <GitControlCenter />
-          </WorkspaceContext.Provider>
-        </AiSafetyProvider>
-      </FocusEngineProvider>
-    </ToastProvider>
+function renderControlCenter(value: WorkspaceContextValue): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(
+    <WorkspaceContext.Provider value={value}>
+      <GitControlCenter />
+    </WorkspaceContext.Provider>
   )
 }
 

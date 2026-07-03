@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK - File Transfer Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "primary": "#c8bfff",
+                        "surface-container": "#201f27",
+                        "on-secondary-fixed": "#001f28",
+                        "surface-dim": "#14121a",
+                        "tertiary-container": "#00a488",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed-dim": "#c8bfff",
+                        "on-background": "#e5e0ec",
+                        "on-secondary-container": "#003f4e",
+                        "surface-container-highest": "#35343c",
+                        "inverse-primary": "#5e49c8",
+                        "surface-variant": "#35343c",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-tertiary-container": "#003127",
+                        "error-container": "#93000a",
+                        "tertiary": "#59dbbd",
+                        "on-tertiary-fixed": "#002019",
+                        "surface": "#14121a",
+                        "on-tertiary": "#00382d",
+                        "on-secondary": "#003543",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "secondary-fixed": "#b5ebff",
+                        "outline-variant": "#484553",
+                        "on-primary-fixed-variant": "#452daf",
+                        "surface-container-low": "#1c1b22",
+                        "on-surface-variant": "#c9c4d6",
+                        "inverse-on-surface": "#312f38",
+                        "outline": "#928e9f",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "tertiary-fixed": "#79f8d8",
+                        "primary-container": "#917eff",
+                        "error": "#ffb4ab",
+                        "secondary": "#4dd6fd",
+                        "on-primary-fixed": "#1a0063",
+                        "on-primary": "#2e0599",
+                        "surface-container-high": "#2b2931",
+                        "background": "#14121a",
+                        "on-surface": "#e5e0ec",
+                        "on-error": "#690005",
+                        "secondary-container": "#00b2d7",
+                        "inverse-surface": "#e5e0ec",
+                        "on-primary-container": "#28008a",
+                        "surface-tint": "#c8bfff",
+                        "primary-fixed": "#e5deff",
+                        "surface-bright": "#3a3841"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "safe-margin": "40px",
+                        "sm": "12px",
+                        "xl": "32px",
+                        "lg": "24px",
+                        "base": "4px",
+                        "xs": "8px",
+                        "hit-target": "44px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "display": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "headline-md": ["Geist"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-surface'); font-family: theme('fontFamily.body-md'); }
+        .hairline-edge { border-top: 1px solid rgba(255,255,255,0.12); }
+        .panel-shadow { box-shadow: 0 32px 64px -12px rgba(14,13,21,0.4); }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: theme('colors.surface-variant'); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: theme('colors.outline'); }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col bg-background selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<header class="bg-surface-container-lowest dark:bg-surface-container-lowest text-primary dark:text-primary font-label-md text-label-md docked full-width top-0 h-[36px] border-b border-white/12 flex justify-between items-center px-sm w-full z-50 shrink-0">
+<div class="flex items-center gap-4">
+<span class="font-display text-display text-primary uppercase tracking-tighter text-lg leading-none">NEURAL_OS</span>
+<nav class="hidden md:flex gap-4">
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded scale-95 duration-100" href="#">GPT-4o</a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded scale-95 duration-100" href="#">CLAUDE-3.5</a>
+<a class="text-on-surface-variant hover:bg-surface-container-highest transition-colors px-2 py-1 rounded scale-95 duration-100" href="#">SONNET</a>
+</nav>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant">
+<button class="hover:text-primary transition-colors p-1 rounded hover:bg-surface-container-highest scale-95 duration-100"><span class="material-symbols-outlined text-[18px]">minimize</span></button>
+<button class="hover:text-primary transition-colors p-1 rounded hover:bg-surface-container-highest scale-95 duration-100"><span class="material-symbols-outlined text-[18px]">fullscreen</span></button>
+<button class="hover:text-error transition-colors p-1 rounded hover:bg-surface-container-highest scale-95 duration-100"><span class="material-symbols-outlined text-[18px]">close</span></button>
+</div>
+</header>
+<div class="flex flex-1 overflow-hidden relative">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-low dark:bg-surface-container-low text-secondary dark:text-secondary font-label-sm text-label-sm docked left-0 h-full w-[52px] bg-surface-container-low border-r border-white/12 flex flex-col justify-between py-md z-40 shrink-0 hidden md:flex pt-[36px]">
+<div class="flex flex-col gap-2 px-1 items-center w-full mt-4">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-full rounded" href="#" title="Command">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-full rounded" href="#" title="Workspace">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-lg p-2 scale-105 shadow-[0_0_15px_rgba(200,191,255,0.4)] hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-full" href="#" title="IDE / Transfer">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">code</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-full rounded" href="#" title="Terminal">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-full rounded" href="#" title="Browser">
+<span class="material-symbols-outlined text-[20px]">language</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-full rounded" href="#" title="Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</a>
+</div>
+<div class="flex flex-col gap-2 px-1 items-center w-full mb-[26px]">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-full rounded" href="#" title="Git">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 w-full rounded" href="#" title="Status">
+<span class="material-symbols-outlined text-[20px]">sensors</span>
+</a>
+</div>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-1 overflow-y-auto p-safe-margin pl-[calc(theme(spacing.safe-margin)+52px)] pb-[calc(theme(spacing.safe-margin)+26px)]">
+<div class="flex justify-between items-end mb-lg">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">File Transfer</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Local Network &amp; Remote Connect</p>
+</div>
+<button class="bg-primary-container text-on-primary-container px-4 py-2 rounded-lg font-label-md text-label-md flex items-center gap-2 hover:bg-primary-fixed transition-colors shadow-[0_0_15px_rgba(200,191,255,0.2)] h-hit-target">
+<span class="material-symbols-outlined text-[18px]">send</span>
+                    Send Files
+                </button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-lg">
+<!-- Active Transfers (Center/Main) -->
+<div class="lg:col-span-8 flex flex-col gap-md">
+<h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                        Active Transfers
+                    </h2>
+<div class="flex flex-col gap-xs">
+<!-- Transfer Item 1 -->
+<div class="bg-surface-container rounded-xl p-md hairline-edge flex flex-col gap-3 relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-r from-secondary/5 to-transparent w-full pointer-events-none"></div>
+<div class="flex justify-between items-center z-10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">download</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface truncate max-w-[200px]">system_image_v2.4.tar.gz</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">From: Workstation-Alpha</p>
+</div>
+</div>
+<div class="text-right flex flex-col items-end">
+<span class="font-code-md text-code-md text-secondary">42.5 MB/s</span>
+<span class="font-code-md text-code-md text-on-surface-variant text-[11px]">~ 2m 14s remaining</span>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden z-10">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 65%;"></div>
+</div>
+<div class="flex justify-between items-center z-10 mt-1">
+<span class="font-code-md text-code-md text-on-surface-variant text-[11px]">3.2 GB / 5.0 GB</span>
+<div class="flex gap-2">
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded"><span class="material-symbols-outlined text-[16px]">pause</span></button>
+<button class="text-on-surface-variant hover:text-error p-1 rounded"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</div>
+</div>
+</div>
+<!-- Transfer Item 2 -->
+<div class="bg-surface-container rounded-xl p-md hairline-edge flex flex-col gap-3 relative overflow-hidden">
+<div class="flex justify-between items-center z-10">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-surface-container-highest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">upload</span>
+</div>
+<div>
+<h3 class="font-body-lg text-body-lg text-on-surface truncate max-w-[200px]">project_assets_final.zip</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">To: SteamDeck-Primary</p>
+</div>
+</div>
+<div class="text-right flex flex-col items-end">
+<span class="font-code-md text-code-md text-primary">12.1 MB/s</span>
+<span class="font-code-md text-code-md text-on-surface-variant text-[11px]">~ 45s remaining</span>
+</div>
+</div>
+<div class="w-full bg-surface-container-highest rounded-full h-1.5 overflow-hidden z-10">
+<div class="bg-primary h-1.5 rounded-full" style="width: 88%;"></div>
+</div>
+<div class="flex justify-between items-center z-10 mt-1">
+<span class="font-code-md text-code-md text-on-surface-variant text-[11px]">880 MB / 1.0 GB</span>
+<div class="flex gap-2">
+<button class="text-on-surface-variant hover:text-on-surface p-1 rounded"><span class="material-symbols-outlined text-[16px]">pause</span></button>
+<button class="text-on-surface-variant hover:text-error p-1 rounded"><span class="material-symbols-outlined text-[16px]">close</span></button>
+</div>
+</div>
+</div>
+</div>
+<!-- Transfer History -->
+<h2 class="font-headline-md text-headline-md text-on-surface mt-4">History</h2>
+<div class="bg-surface-container rounded-xl hairline-edge overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-white/5 text-on-surface-variant font-label-sm text-label-sm">
+<th class="p-3 font-medium">File</th>
+<th class="p-3 font-medium">Target</th>
+<th class="p-3 font-medium">Size</th>
+<th class="p-3 font-medium">Status</th>
+</tr>
+</thead>
+<tbody class="font-code-md text-code-md">
+<tr class="border-b border-white/5 hover:bg-surface-container-highest transition-colors">
+<td class="p-3 text-on-surface truncate max-w-[150px]">config_backup.json</td>
+<td class="p-3 text-on-surface-variant">Cloud-Sync</td>
+<td class="p-3 text-on-surface-variant">24 KB</td>
+<td class="p-3 text-tertiary">Success</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-surface-container-highest transition-colors">
+<td class="p-3 text-on-surface truncate max-w-[150px]">dataset_2023.csv</td>
+<td class="p-3 text-on-surface-variant">NAS-Storage</td>
+<td class="p-3 text-on-surface-variant">4.2 GB</td>
+<td class="p-3 text-tertiary">Success</td>
+</tr>
+<tr class="hover:bg-surface-container-highest transition-colors">
+<td class="p-3 text-on-surface truncate max-w-[150px]">video_render_01.mp4</td>
+<td class="p-3 text-on-surface-variant">Unknown-Dev</td>
+<td class="p-3 text-on-surface-variant">800 MB</td>
+<td class="p-3 text-error">Failed</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Nearby Devices (Sidebar) -->
+<div class="lg:col-span-4 flex flex-col gap-md">
+<div class="flex justify-between items-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">Nearby Devices</h2>
+<button class="text-secondary hover:text-secondary-fixed transition-colors"><span class="material-symbols-outlined text-[18px]">refresh</span></button>
+</div>
+<div class="grid grid-cols-1 gap-xs">
+<!-- Device 1 -->
+<div class="bg-surface-container-high rounded-xl p-3 hairline-edge flex items-center justify-between hover:bg-surface-container-highest transition-colors cursor-pointer group">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-surface flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors border border-white/5">
+<span class="material-symbols-outlined">desktop_windows</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface">Workstation-Alpha</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1 mt-0.5">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> Trusted LAN
+                                    </span>
+</div>
+</div>
+<button class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface transition-all">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Device 2 -->
+<div class="bg-surface-container-high rounded-xl p-3 hairline-edge flex items-center justify-between hover:bg-surface-container-highest transition-colors cursor-pointer group border border-primary/20 bg-primary/5">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-surface flex items-center justify-center text-primary border border-primary/20">
+<span class="material-symbols-outlined">videogame_asset</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-primary">SteamDeck-Primary</span>
+<span class="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[10px]">wifi</span> 120ms (VPN)
+                                    </span>
+</div>
+</div>
+<button class="w-8 h-8 rounded bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface transition-all">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Device 3 (Untrusted) -->
+<div class="bg-surface-container-low rounded-xl p-3 hairline-edge flex items-center justify-between border border-dashed border-outline-variant opacity-70 hover:opacity-100 transition-opacity">
+<div class="flex items-center gap-3">
+<div class="w-12 h-12 rounded-lg bg-surface-container flex items-center justify-center text-outline">
+<span class="material-symbols-outlined">smartphone</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface-variant">Unknown Phone</span>
+<span class="font-label-sm text-label-sm text-outline mt-0.5">Discovered via BT</span>
+</div>
+</div>
+<button class="px-3 py-1 rounded bg-surface-container text-on-surface-variant font-label-sm text-label-sm hover:bg-surface-variant transition-colors border border-outline-variant">
+                                Pair
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest text-tertiary-fixed-dim dark:text-tertiary-fixed-dim font-code-md text-code-md text-label-sm font-label-sm text-outline docked full-width bottom-0 h-[26px] border-t border-white/12 flex justify-between items-center px-sm z-50 fixed w-full">
+<span class="text-on-surface-variant opacity-70">v2.4.0-STABLE</span>
+<div class="flex gap-4">
+<a class="text-on-surface-variant opacity-70 hover:bg-surface-container-highest px-2 rounded" href="#">main</a>
+<a class="text-on-surface-variant opacity-70 hover:bg-surface-container-highest px-2 rounded" href="#">model_ready</a>
+<a class="text-tertiary font-bold hover:bg-surface-container-highest px-2 rounded flex items-center gap-1" href="#"><span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span> connected</a>
+</div>
+</footer>
+</body></html>

@@ -48,7 +48,7 @@ export function SchedulerTriggers(): React.JSX.Element {
   const [lastCheckedAt, setLastCheckedAt] = useState(() => Date.now())
 
   return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[72rem] docked:grid-cols-[20rem_minmax(36rem,1fr)_18rem]">
       <NdxToolWindow title="Trigger Inventory" subtitle={`${TRIGGER_TYPES.length} types`}>
         <p className="text-meta text-text-secondary">
           Trigger types are listed as capability inventory. Execution is not implemented yet.
@@ -75,7 +75,7 @@ export function SchedulerTriggers(): React.JSX.Element {
             </ControllerButton>
           </div>
 
-          <section className="border border-border bg-surface p-3">
+          <section className="ndx-settings-section">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-body font-semibold text-text-primary">Scheduler health</p>
@@ -91,7 +91,7 @@ export function SchedulerTriggers(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="border border-border bg-surface p-3">
+          <section className="ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Trigger types</p>
             <div className="mt-2 grid gap-2 md:grid-cols-3">
               {TRIGGER_TYPES.map((trigger) => (
@@ -106,7 +106,7 @@ export function SchedulerTriggers(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="border border-border bg-surface p-3">
+          <section className="ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Requirements</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {REQUIREMENTS.map((requirement) => (

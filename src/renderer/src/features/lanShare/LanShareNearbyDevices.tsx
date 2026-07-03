@@ -48,7 +48,7 @@ export function LanShareNearbyDevices(): React.JSX.Element {
   }, [])
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow title="Discovery Sources" subtitle="mDNS + manual">
         <div className="space-y-3 text-meta text-text-secondary">
           <p>
@@ -150,7 +150,7 @@ function AddPeerForm({
   }
 
   return (
-    <div className="flex flex-col gap-2 border border-border bg-surface p-3">
+    <div className="flex flex-col gap-2 ndx-settings-section">
       <input
         value={address}
         onChange={(event) => setAddress(event.target.value)}

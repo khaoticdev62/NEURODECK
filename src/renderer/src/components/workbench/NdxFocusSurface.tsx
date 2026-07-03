@@ -21,7 +21,11 @@ export function NdxFocusSurface({
       data-focus-density={density}
       data-selected={selected}
       data-active={active}
-      className={cn('ndx-focus-surface', className)}
+      className={cn(
+        'ndx-focus-surface',
+        density !== 'dense' && 'ndx-hairline-top rounded-[var(--radius-md)]',
+        className
+      )}
     >
       {children}
     </div>

@@ -1,10 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge, RemoteHost } from '@shared/contracts'
-import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
-import { TestAdapter } from '../../../controller/testing/testAdapter'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import { RemoteSystems } from '../RemoteSystems'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
@@ -16,14 +14,8 @@ afterEach(() => {
   delete window.ndx
 })
 
-function renderScreen(): ReturnType<typeof render> {
-  return render(
-    <FocusEngineProvider adapters={[new TestAdapter()]}>
-      <MemoryRouter>
-        <RemoteSystems />
-      </MemoryRouter>
-    </FocusEngineProvider>
-  )
+function renderScreen(): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(<RemoteSystems />)
 }
 
 const sampleHost: RemoteHost = {

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>13 — Terminal - Multi-Session | NEURODECK Workspace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-container": "#003f4e",
+                      "surface-container-highest": "#35343c",
+                      "inverse-primary": "#5e49c8",
+                      "surface-variant": "#35343c",
+                      "surface-container-lowest": "#0e0d15",
+                      "on-tertiary-container": "#003127",
+                      "error-container": "#93000a",
+                      "tertiary-container": "#00a488",
+                      "on-error-container": "#ffdad6",
+                      "primary-fixed-dim": "#c8bfff",
+                      "on-background": "#e5e0ec",
+                      "primary": "#c8bfff",
+                      "surface-container": "#201f27",
+                      "on-secondary-fixed": "#001f28",
+                      "surface-dim": "#14121a",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "surface-container-low": "#1c1b22",
+                      "on-surface-variant": "#c9c4d6",
+                      "inverse-on-surface": "#312f38",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "secondary-fixed": "#b5ebff",
+                      "outline-variant": "#484553",
+                      "on-primary-fixed-variant": "#452daf",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "tertiary": "#59dbbd",
+                      "on-tertiary-fixed": "#002019",
+                      "surface": "#14121a",
+                      "on-tertiary": "#00382d",
+                      "on-secondary": "#003543",
+                      "primary-container": "#917eff",
+                      "error": "#ffb4ab",
+                      "outline": "#928e9f",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "tertiary-fixed": "#79f8d8",
+                      "surface-tint": "#c8bfff",
+                      "primary-fixed": "#e5deff",
+                      "surface-bright": "#3a3841",
+                      "secondary-container": "#00b2d7",
+                      "inverse-surface": "#e5e0ec",
+                      "on-primary-container": "#28008a",
+                      "on-error": "#690005",
+                      "secondary": "#4dd6fd",
+                      "on-primary-fixed": "#1a0063",
+                      "on-primary": "#2e0599",
+                      "surface-container-high": "#2b2931",
+                      "background": "#14121a",
+                      "on-surface": "#e5e0ec"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "lg": "24px",
+                      "base": "4px",
+                      "xs": "8px",
+                      "hit-target": "44px",
+                      "sm": "12px",
+                      "safe-margin": "40px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "display": [
+                              "Geist"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "code-md": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/npm/geist@1.0.0/dist/fonts/geist-sans/Geist-Medium.woff2') format('woff2');
+            font-weight: 500;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/npm/geist@1.0.0/dist/fonts/geist-sans/Geist-SemiBold.woff2') format('woff2');
+            font-weight: 600;
+            font-style: normal;
+        }
+        
+        body {
+            background-color: #0e0d15; /* surface-container-lowest */
+            color: #e5e0ec; /* on-surface */
+            overflow: hidden; /* For fixed 1280x800 layout */
+            width: 1280px;
+            height: 800px;
+            margin: 0;
+            position: relative;
+        }
+
+        /* Elevation Inner Glow */
+        .inner-glow-top {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+
+        /* Focus Halo */
+        .focus-halo:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(200, 191, 255, 0.4); /* primary with opacity */
+            transform: scale(1.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #35343c; /* surface-variant */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484553; /* outline-variant */
+        }
+    </style>
+</head>
+<body class="flex flex-col antialiased">
+<!-- TopAppBar -->
+<nav aria-label="Top Navigation" class="fixed top-0 left-[52px] right-0 flex items-center justify-between px-md z-40 bg-surface-container dark:bg-surface-container h-xl w-full border-b border-outline-variant/10 shadow-sm">
+<div class="flex items-center gap-lg">
+<span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">NEURODECK_WORKBENCH</span>
+<ul class="flex items-center gap-sm">
+<li><a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-xs py-base rounded transition-colors block hit-target flex items-center justify-center" href="#">File</a></li>
+<li><a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-xs py-base rounded transition-colors block hit-target flex items-center justify-center" href="#">Edit</a></li>
+<li><a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-xs py-base rounded transition-colors block hit-target flex items-center justify-center" href="#">Selection</a></li>
+<li><a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-xs py-base rounded transition-colors block hit-target flex items-center justify-center" href="#">View</a></li>
+<li><a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-xs py-base rounded transition-colors block hit-target flex items-center justify-center" href="#">Go</a></li>
+<li><a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-xs py-base rounded transition-colors block hit-target flex items-center justify-center" href="#">Run</a></li>
+<!-- Active Item for Terminal Intent -->
+<li><a aria-current="page" class="font-label-md text-label-md text-on-surface font-bold px-xs py-base rounded block hit-target flex items-center justify-center" href="#">Terminal</a></li>
+<li><a class="font-label-md text-label-md text-on-surface-variant hover:bg-surface-variant px-xs py-base rounded transition-colors block hit-target flex items-center justify-center" href="#">Help</a></li>
+</ul>
+</div>
+<div class="flex items-center gap-sm">
+<!-- Search Bar placeholder -->
+<div class="w-64 h-8 bg-surface-container-lowest rounded border border-outline-variant/20 flex items-center px-sm">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant mr-sm">search</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant opacity-50">Search...</span>
+</div>
+<button class="font-label-md text-label-md text-primary bg-primary/10 hover:bg-primary/20 px-sm py-base rounded-full transition-colors flex items-center gap-base hit-target">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                Neural Pulse
+            </button>
+<button aria-label="Split Screen" class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant rounded hit-target flex items-center justify-center transition-colors">
+<span class="material-symbols-outlined">splitscreen</span>
+</button>
+<button aria-label="More Options" class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant rounded hit-target flex items-center justify-center transition-colors mr-sm">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-outline-variant/30 flex-shrink-0">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="A futuristic avatar portrait of a user in a dark sci-fi setting, wearing a sleek neural interface headset. The lighting is cinematic, highlighting the facial features with a cool blue hue. The background is a blurred server room." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtdG5h2xFb3rOxyBCk3vNqMZRrTq0sJud4qJVTsL9idE7HWPHnzqThuYYv3GyofR4xiHm5wxvsLvkKXCukeM2sYdHgNjf-SjaexOYrCILgdBhwtYofr32hVMBvzUB6Ljgp-tj3U-MgUn2DB_NSoX6UYzBzbjYhYe71WGJaBiv8Lces2L03_QfMx0C9pvOSaIOivLh246L50jIXhqR3i0zvl9a2mfZdW8gvdyOefv5HFvBBHgX4E18hoAuIa1QUUnjoGH2_ZNTLBl_w"/>
+</div>
+</div>
+</nav>
+<!-- Main Layout Container -->
+<div class="flex flex-1 pt-[32px] h-full relative">
+<!-- SideNavBar (Activity Rail) -->
+<nav aria-label="Activity Bar" class="fixed left-0 top-0 h-full flex flex-col z-50 bg-surface-dim dark:bg-surface-dim w-[52px] bg-surface-container-lowest border-r border-outline-variant/20 pt-[32px]">
+<div class="flex flex-col items-center mt-md gap-xs flex-1">
+<button aria-label="Explorer" class="w-[44px] h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all focus-halo">
+<span class="material-symbols-outlined text-[24px]">folder</span>
+</button>
+<button aria-label="Search" class="w-[44px] h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all focus-halo">
+<span class="material-symbols-outlined text-[24px]">search</span>
+</button>
+<button aria-label="Source Control" class="w-[44px] h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all focus-halo">
+<span class="material-symbols-outlined text-[24px]">account_tree</span>
+</button>
+<button aria-label="Run &amp; Debug" class="w-[44px] h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all focus-halo">
+<span class="material-symbols-outlined text-[24px]">play_arrow</span>
+</button>
+<!-- Active state based on Intent (Terminal context implies extensions/terminal area) -->
+<button aria-current="page" aria-label="Extensions / Tools" class="w-[44px] h-[44px] flex items-center justify-center rounded-lg text-primary border-l-4 border-primary bg-surface-container-high scale-105 transition-all focus-halo">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">extension</span>
+</button>
+</div>
+<div class="flex flex-col items-center mb-md gap-xs">
+<button aria-label="Settings" class="w-[44px] h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all focus-halo">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</button>
+<button aria-label="Account" class="w-[44px] h-[44px] flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-all focus-halo">
+<span class="material-symbols-outlined text-[24px]">person</span>
+</button>
+</div>
+</nav>
+<!-- Sidebar (Session List) -->
+<aside class="ml-[52px] w-[220px] bg-surface-container-low border-r border-outline-variant/10 flex flex-col h-full inner-glow-top shrink-0">
+<div class="p-sm pb-xs flex items-center justify-between">
+<h2 class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Terminal Sessions</h2>
+<button aria-label="New Session" class="text-on-surface-variant hover:text-on-surface w-[24px] h-[24px] flex items-center justify-center rounded hover:bg-surface-variant">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-xs pb-sm space-y-2 mt-xs">
+<!-- Active Session -->
+<button class="w-full text-left flex items-center gap-sm p-sm rounded bg-primary-fixed-dim/10 text-primary border border-primary/20 relative group hit-target inner-glow-top">
+<div class="absolute left-0 top-1/2 -translate-y-1/2 w-[4px] h-[60%] bg-[#c8bfff] rounded-r transition-all"></div>
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<div class="flex flex-col overflow-hidden">
+<span class="font-label-md text-label-md truncate">Local Shell</span>
+<span class="font-label-sm text-label-sm text-primary/70 truncate">zsh - ~/workspace</span>
+</div>
+</button>
+<!-- Inactive Sessions -->
+<button class="w-full text-left flex items-center gap-sm p-sm rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors hit-target group">
+<span class="material-symbols-outlined text-[18px] group-hover:text-secondary">dns</span>
+<div class="flex flex-col overflow-hidden">
+<span class="font-label-md text-label-md truncate">Remote SSH: EU-West</span>
+<span class="font-label-sm text-label-sm opacity-60 truncate">ubuntu@192.168.1.10</span>
+</div>
+</button>
+<button class="w-full text-left flex items-center gap-sm p-sm rounded text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors hit-target group">
+<span class="material-symbols-outlined text-[18px] group-hover:text-tertiary">memory</span>
+<div class="flex flex-col overflow-hidden">
+<span class="font-label-md text-label-md truncate">Build Engine</span>
+<span class="font-label-sm text-label-sm opacity-60 truncate">docker-compose up</span>
+</div>
+</button>
+</div>
+</aside>
+<!-- Central Workbench (Terminal Viewport) -->
+<main class="flex-1 bg-background flex flex-col min-w-0 relative h-full">
+<!-- Terminal Tabs -->
+<div class="flex items-center bg-surface-container border-b border-outline-variant/10 h-10 px-xs shrink-0 inner-glow-top">
+<div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
+<div class="flex items-center gap-2 bg-surface-dim border border-outline-variant/20 border-b-0 rounded-t-md px-sm h-9 mt-1 relative min-w-[120px]">
+<div class="absolute top-0 left-0 right-0 h-[2px] bg-primary rounded-t-md"></div>
+<span class="material-symbols-outlined text-[14px] text-primary">terminal</span>
+<span class="font-label-sm text-label-sm text-on-surface">zsh</span>
+<button class="ml-auto text-on-surface-variant hover:text-on-surface rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[12px]">close</span>
+</button>
+</div>
+<div class="flex items-center gap-2 px-sm h-9 mt-1 rounded-t-md hover:bg-surface-variant/50 cursor-pointer text-on-surface-variant min-w-[120px] transition-colors">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+<span class="font-label-sm text-label-sm">bash - top</span>
+</div>
+</div>
+</div>
+<!-- Terminal Area -->
+<div class="flex-1 overflow-auto p-md font-code-md text-code-md text-on-surface relative inner-glow-top" style="line-height: 1.6;">
+<!-- Ambient Glow effect -->
+<div class="absolute inset-0 pointer-events-none opacity-20" style="background: radial-gradient(circle at 50% 50%, rgba(200, 191, 255, 0.05) 0%, transparent 70%);"></div>
+<div class="max-w-4xl mx-auto w-full">
+<!-- ASCII Splash -->
+<pre class="text-primary-fixed-dim opacity-80 mb-lg font-bold select-none text-[12px] leading-[14px]">    _   _ _____ _   _ ____   ___  ____  _____ ____ _  __
+   | \ | | ____| | | |  _ \ / _ \|  _ \| ____/ ___| |/ /
+   |  \| |  _| | | | | |_) | | | | | | |  _|| |   | ' / 
+   | |\  | |___| |_| |  _ &lt;| |_| | |_| | |__| |___| . \ 
+   |_| \_|_____|\___/|_| \_\\___/|____/|_____\____|_|\_\
+   
+   Version 1.0.4-stable // Neural Link: STANDBY
+                    </pre>
+<!-- Terminal Output -->
+<div class="space-y-1 mb-sm opacity-90">
+<div><span class="text-tertiary">user@neurodeck</span>:<span class="text-secondary">~/workspace/core</span>$ ls -la</div>
+<div class="text-on-surface-variant">
+                            drwxr-xr-x  10 user user 4096 Oct 24 10:30 .<br/>
+                            drwxr-xr-x   5 user user 4096 Oct 24 09:15 ..<br/>
+                            -rw-r--r--   1 user user 1024 Oct 24 10:28 config.json<br/>
+                            drwxr-xr-x   3 user user 4096 Oct 24 10:29 src<br/>
+                            -rwxr-xr-x   1 user user 8192 Oct 24 10:30 build.sh
+                        </div>
+</div>
+<div class="space-y-1 mb-md opacity-90">
+<div><span class="text-tertiary">user@neurodeck</span>:<span class="text-secondary">~/workspace/core</span>$ ./build.sh</div>
+<div class="text-on-surface-variant">
+                            [INFO] Initializing neuro-compiler v2.4...<br/>
+                            [INFO] Scanning dependencies...<br/>
+<span class="text-tertiary">[OK]</span> Dependencies resolved.<br/>
+                            [INFO] Compiling neural network weights... [=====&gt;    ] 50%
+                        </div>
+</div>
+<!-- Active Prompt -->
+<div class="flex items-center">
+<span class="text-tertiary font-bold">user@neurodeck</span>:<span class="text-secondary">~/workspace/core</span>$ <span class="w-2 h-4 bg-on-surface ml-2 animate-pulse block"></span>
+</div>
+</div>
+</div>
+<!-- Status Bar -->
+<div class="h-8 bg-surface-container-highest border-t border-outline-variant/20 flex items-center justify-between px-md shrink-0 select-none">
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs font-label-sm text-label-sm text-primary">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                        Connected
+                    </div>
+<div class="w-px h-4 bg-outline-variant/30"></div>
+<div class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">
+                        zsh
+                    </div>
+</div>
+<div class="flex items-center gap-md">
+<div class="font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">
+                        UTF-8
+                    </div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">
+                        latency: <span class="text-tertiary">12ms</span>
+</div>
+<div class="flex items-center gap-xs font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface cursor-pointer transition-colors">
+<span class="material-symbols-outlined text-[14px]">notifications</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

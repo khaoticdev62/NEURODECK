@@ -77,7 +77,7 @@ export function LanShareSendComposer(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow title="Send Context" subtitle={`${sourcePaths.length} selected`}>
         <div className="space-y-3 text-meta text-text-secondary">
           <p>File picking and send submission use the LAN Share IPC bridge.</p>
@@ -90,7 +90,7 @@ export function LanShareSendComposer(): React.JSX.Element {
           <p className="text-title font-semibold text-text-primary">Send Files</p>
           {error && <ErrorState title="Send error" description={error} />}
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">1. Choose a device</p>
             {peers.length === 0 ? (
               <p className="text-meta text-text-secondary">
@@ -112,7 +112,7 @@ export function LanShareSendComposer(): React.JSX.Element {
             )}
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">2. Choose files</p>
             <ControllerButton variant="secondary" onClick={() => void handlePickFiles()}>
               Choose files…

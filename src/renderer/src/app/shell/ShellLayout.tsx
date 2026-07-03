@@ -23,6 +23,7 @@ import { AgentToolExecutionBridge } from '../../features/agents/AgentToolExecuti
 import { WorkspaceSwitcherOverlay } from '../../features/workspaces/WorkspaceSwitcherOverlay'
 import { KioskExitOverlay } from '../../features/kiosk/KioskExitOverlay'
 import { ShareSheetOverlay } from '../../features/shareSheet/ShareSheetOverlay'
+import { DeckyNavigationBridge } from '../../features/system/DeckyNavigationBridge'
 import { LockScreen } from '../../features/system/LockScreen'
 import { PowerStateBridge } from '../../features/system/PowerStateBridge'
 import { QuickAccessOverlay } from '../../features/system/QuickAccessOverlay'
@@ -30,12 +31,15 @@ import { ScreenNarrator } from '../../features/system/ScreenNarrator'
 import { LanSharePlatformBridge } from '../../features/lanShare/LanSharePlatformBridge'
 import { ContextHelpOverlay } from '../../features/help/ContextHelpOverlay'
 import { saveSessionSnapshot } from '../../services/ipc/continuityClient'
+import { listModelProviders } from '../../services/ipc/modelClient'
 import { getProfileState } from '../../services/ipc/profileClient'
+import type { ActiveModelProvider } from '../../components/workbench/NdxTitleBar'
 import { useDisplayMode } from '../../state/useDisplayMode'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
 import { useKioskMode } from '../../state/useKioskMode'
 import { useLockState } from '../../state/useLockState'
 import { useEffect, useState } from 'react'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 export interface ShellLayoutProps {
   systemRailStatus?: SystemRailStatus
@@ -62,12 +66,23 @@ export function ShellLayout({
   const navigate = useNavigate()
   const location = useLocation()
   const { baseMode } = useDisplayMode()
-  const { reduceMotion, highContrast, textScale, accent, radiusStyle, density, surfaceStyle, focusStyle } =
-    useDisplaySettings()
+  const {
+    reduceMotion,
+    highContrast,
+    textScale,
+    accent,
+    radiusStyle,
+    density,
+    surfaceStyle,
+    focusStyle
+  } = useDisplaySettings()
   const { isLocked } = useLockState()
   const { enabled: kioskEnabled, startRoutePath, isRouteAllowed } = useKioskMode()
   const [activeProfileName, setActiveProfileName] = useState<string | null>(null)
+  const [activeModelProvider, setActiveModelProvider] = useState<ActiveModelProvider | null>(null)
   const collapsesRails = baseMode === 'focus' || baseMode === 'split'
+
+  const workbenchState = useWorkbenchStore()
 
   useEffect(() => {
     let active = true
@@ -77,6 +92,23 @@ export function ShellLayout({
         (candidate) => candidate.id === result.data.session.activeProfileId
       )
       if (profile) setActiveProfileName(profile.name)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // TopNavBar model status badge: real enabled-provider lookup, never a
+  // fabricated "Connected" claim — no live connection ping (would hit
+  // cloud providers on a timer), just the provider's real configured state.
+  useEffect(() => {
+    let active = true
+    void listModelProviders().then((result) => {
+      if (!active || !result.ok) return
+      const enabledProvider = result.data.find((provider) => provider.enabled)
+      if (enabledProvider) {
+        setActiveModelProvider({ name: enabledProvider.name, enabled: true })
+      }
     })
     return () => {
       active = false
@@ -125,6 +157,7 @@ export function ShellLayout({
 
   const routeLabel = location.pathname === '/' ? 'Home' : location.pathname
   const routeGroup = getRouteGroup(location.pathname)
+  const breadcrumb = buildBreadcrumb(location.pathname)
   const shellContextItem =
     contextItem ??
     ({
@@ -149,56 +182,74 @@ export function ShellLayout({
       surfaceStyle={surfaceStyle}
       focusStyle={focusStyle}
       collapseToolWindows={collapsesRails}
-      titleBar={<NdxTitleBar status={systemRailStatus} activeProfileName={activeProfileName} />}
+      titleBar={
+        <NdxTitleBar
+          status={systemRailStatus}
+          activeProfileName={activeProfileName}
+          breadcrumb={breadcrumb}
+          activeModelProvider={activeModelProvider}
+        />
+      }
       activityBar={<NdxActivityBar hidden={collapsesRails} />}
       primaryToolWindow={
-        <NdxToolWindow title="Command Deck" ariaLabel="Primary Tool Window" subtitle={routeGroup}>
-          <div className="flex flex-col gap-3">
-            <div className="ndx-console-ruler" aria-hidden="true" />
-            <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">
-              <p className="text-meta uppercase tracking-wide text-text-tertiary">Current screen</p>
-              <p className="mt-1 truncate text-title font-semibold text-text-primary">
-                {routeLabel}
-              </p>
+        <NdxToolWindow
+          title={workbenchState.primaryTitle}
+          ariaLabel="Primary Tool Window"
+          subtitle={workbenchState.primarySubtitle ?? routeGroup}
+        >
+          {workbenchState.primaryContent ?? (
+            <div className="flex flex-col gap-3">
+              <div className="ndx-console-ruler" aria-hidden="true" />
+              <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] p-3">
+                <p className="text-meta uppercase tracking-wide text-text-tertiary">
+                  Current screen
+                </p>
+                <p className="mt-1 truncate text-title font-semibold text-text-primary">
+                  {routeLabel}
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <NdxDenseRow selected>Layer: workbench</NdxDenseRow>
+                <NdxDenseRow>Focus: controller grid</NdxDenseRow>
+                <NdxDenseRow>Review: enabled</NdxDenseRow>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                <ControllerButton
+                  className="justify-start px-3"
+                  variant="secondary"
+                  onClick={() => navigate('/search')}
+                >
+                  Search workspace
+                </ControllerButton>
+                <ControllerButton
+                  className="justify-start px-3"
+                  variant="secondary"
+                  onClick={() => navigate('/ai')}
+                >
+                  Ask AI
+                </ControllerButton>
+                <ControllerButton
+                  className="justify-start px-3"
+                  variant="ghost"
+                  onClick={() => navigate('/system')}
+                >
+                  System status
+                </ControllerButton>
+              </div>
             </div>
-            <div className="flex flex-col gap-1.5">
-              <NdxDenseRow selected>Layer: workbench</NdxDenseRow>
-              <NdxDenseRow>Focus: controller grid</NdxDenseRow>
-              <NdxDenseRow>Review: enabled</NdxDenseRow>
-            </div>
-            <div className="grid grid-cols-1 gap-2">
-              <ControllerButton
-                className="justify-start px-3"
-                variant="secondary"
-                onClick={() => navigate('/search')}
-              >
-                Search workspace
-              </ControllerButton>
-              <ControllerButton
-                className="justify-start px-3"
-                variant="secondary"
-                onClick={() => navigate('/ai')}
-              >
-                Ask AI
-              </ControllerButton>
-              <ControllerButton
-                className="justify-start px-3"
-                variant="ghost"
-                onClick={() => navigate('/system')}
-              >
-                System status
-              </ControllerButton>
-            </div>
-          </div>
+          )}
         </NdxToolWindow>
       }
-      secondaryToolWindow={<ContextPanel hidden={false} item={shellContextItem} />}
+      secondaryToolWindow={
+        workbenchState.secondaryContent ?? <ContextPanel hidden={false} item={shellContextItem} />
+      }
       bottomPanel={<NdxBottomPanel />}
       statusBar={<NdxStatusBar routeTitle={routeLabel} controllerLayer="workbench" />}
     >
       <Outlet />
       <CoreToolsBootstrap />
       <PowerStateBridge />
+      <DeckyNavigationBridge />
       <LanSharePlatformBridge />
       <ScreenNarrator />
       <AgentToolExecutionBridge />
@@ -213,6 +264,15 @@ export function ShellLayout({
       <ShareSheetOverlay />
     </NdxWorkbench>
   )
+}
+
+/** TopNavBar breadcrumb: uppercase path segments, e.g. "/system/logs" -> ['SYSTEM', 'LOGS']. */
+function buildBreadcrumb(pathname: string): string[] {
+  if (pathname === '/') return ['HOME']
+  return pathname
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => segment.replaceAll('-', ' ').toUpperCase())
 }
 
 function getRouteGroup(pathname: string): string {

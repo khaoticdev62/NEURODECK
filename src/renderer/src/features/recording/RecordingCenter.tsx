@@ -137,7 +137,7 @@ export function RecordingCenter(): React.JSX.Element {
       )}
 
       {!isRecording ? (
-        <section className="flex flex-col gap-3 border border-border bg-surface p-3">
+        <section className="flex flex-col gap-3 ndx-settings-section">
           <p className="text-meta font-semibold text-text-primary">Choose a source</p>
           <div className="flex flex-wrap gap-2">
             {sources.map((source) => (
@@ -211,7 +211,7 @@ export function RecordingCenter(): React.JSX.Element {
           </ControllerButton>
         </section>
       ) : (
-        <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+        <section className="flex flex-col gap-2 ndx-settings-section">
           <p className="text-meta font-semibold text-text-primary">
             Recording… {Math.floor(elapsedMs / 1000)}s elapsed (press F9 to stop)
           </p>
@@ -231,7 +231,7 @@ export function RecordingCenter(): React.JSX.Element {
           <EmptyState title="No recordings yet" description="Start a recording to see it here." />
         ) : (
           recordings.map((record) => (
-            <article key={record.id} className="border border-border bg-surface p-3">
+            <article key={record.id} className="ndx-settings-section">
               <p className="text-meta font-semibold text-text-primary">
                 {new Date(record.startedAt).toLocaleString()}
               </p>

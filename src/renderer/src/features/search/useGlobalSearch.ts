@@ -14,14 +14,7 @@ import { listWorkspaces } from '../../services/ipc/workspaceClient'
 import { listLanSharePeers, listLanShareTransferJobs } from '../../services/ipc/lanShareClient'
 
 export type SearchCategory =
-  | 'everywhere'
-  | 'currentWorkspace'
-  | 'files'
-  | 'code'
-  | 'tasks'
-  | 'logs'
-  | 'browser'
-  | 'remote'
+  'everywhere' | 'currentWorkspace' | 'files' | 'code' | 'tasks' | 'logs' | 'browser' | 'remote'
 
 export type SearchResultSource =
   | 'route'

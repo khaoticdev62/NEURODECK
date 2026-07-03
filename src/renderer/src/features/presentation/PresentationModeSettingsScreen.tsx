@@ -13,7 +13,7 @@ export function PresentationModeSettingsScreen(): React.JSX.Element {
   const { enabled, keepScreenAwake, setPresentationMode } = usePresentationMode()
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[16rem_minmax(40rem,1fr)_18rem]">
       <NdxSettingsTree>
         <div className="space-y-2 text-meta text-text-secondary">
           <p className="text-text-primary">Presentation</p>
@@ -31,7 +31,7 @@ export function PresentationModeSettingsScreen(): React.JSX.Element {
             and errors always stay visible.
           </p>
 
-          <section className="flex flex-col gap-3 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-3 ndx-settings-section">
             <div className="flex items-center justify-between">
               <p className="text-meta font-semibold text-text-primary">Presentation Mode</p>
               <ControllerButton

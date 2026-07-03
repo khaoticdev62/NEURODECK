@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>12 — IDE - Project Launcher</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&amp;family=Inter:wght@400..700&amp;family=JetBrains+Mono:wght@400..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-secondary-container": "#003f4e",
+                      "surface-container-highest": "#35343c",
+                      "inverse-primary": "#5e49c8",
+                      "surface-variant": "#35343c",
+                      "surface-container-lowest": "#0e0d15",
+                      "on-tertiary-container": "#003127",
+                      "error-container": "#93000a",
+                      "tertiary-container": "#00a488",
+                      "on-error-container": "#ffdad6",
+                      "primary-fixed-dim": "#c8bfff",
+                      "on-background": "#e5e0ec",
+                      "primary": "#c8bfff",
+                      "surface-container": "#201f27",
+                      "on-secondary-fixed": "#001f28",
+                      "surface-dim": "#14121a",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "surface-container-low": "#1c1b22",
+                      "on-surface-variant": "#c9c4d6",
+                      "inverse-on-surface": "#312f38",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "secondary-fixed": "#b5ebff",
+                      "outline-variant": "#484553",
+                      "on-primary-fixed-variant": "#452daf",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "tertiary": "#59dbbd",
+                      "on-tertiary-fixed": "#002019",
+                      "surface": "#14121a",
+                      "on-tertiary": "#00382d",
+                      "on-secondary": "#003543",
+                      "primary-container": "#917eff",
+                      "error": "#ffb4ab",
+                      "outline": "#928e9f",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "tertiary-fixed": "#79f8d8",
+                      "surface-tint": "#c8bfff",
+                      "primary-fixed": "#e5deff",
+                      "surface-bright": "#3a3841",
+                      "secondary-container": "#00b2d7",
+                      "inverse-surface": "#e5e0ec",
+                      "on-primary-container": "#28008a",
+                      "on-error": "#690005",
+                      "secondary": "#4dd6fd",
+                      "on-primary-fixed": "#1a0063",
+                      "on-primary": "#2e0599",
+                      "surface-container-high": "#2b2931",
+                      "background": "#14121a",
+                      "on-surface": "#e5e0ec"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "32px",
+                      "lg": "24px",
+                      "base": "4px",
+                      "xs": "8px",
+                      "hit-target": "44px",
+                      "sm": "12px",
+                      "safe-margin": "40px",
+                      "md": "16px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "display": [
+                              "Geist"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "code-md": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "display": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: theme('colors.surface-container-lowest');
+            color: theme('colors.on-surface');
+            width: 1280px;
+            height: 800px;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        .halo-focus:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 3px theme('colors.primary'), 0 0 8px 4px rgba(200, 191, 255, 0.4);
+            transform: scale(1.02);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+
+        .halo-focus-subtle:focus-visible {
+             outline: none;
+            box-shadow: 0 0 0 2px theme('colors.primary'), 0 0 4px 2px rgba(200, 191, 255, 0.2);
+            transform: scale(1.01);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+
+        .hairline-top {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+        }
+
+        .neural-pulse-idle {
+            box-shadow: 0 0 0 2px rgba(94, 73, 200, 0.3);
+            animation: pulse-idle 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse-idle {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 0.3; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        .env-gradient {
+            background: radial-gradient(circle at top right, rgba(145, 126, 255, 0.08) 0%, rgba(20, 18, 26, 1) 60%);
+        }
+        
+        .list-hover-slide {
+            position: relative;
+        }
+        .list-hover-slide::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: theme('colors.primary');
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.2s ease;
+        }
+        .list-hover-slide:hover::before, .list-hover-slide:focus-visible::before {
+            transform: scaleX(1);
+        }
+
+        .card-elevated {
+            box-shadow: 0 16px 32px rgba(14, 13, 21, 0.4);
+        }
+    </style>
+</head>
+<body class="env-gradient selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-[52px] right-0 flex items-center justify-between px-md z-40 bg-surface-container dark:bg-surface-container h-xl w-full border-b border-outline-variant/10 text-primary dark:text-primary font-label-md text-label-md flat">
+<div class="flex items-center h-full">
+<span class="font-headline-md text-headline-md font-bold text-primary mr-lg tracking-tight">NEURODECK_WORKBENCH</span>
+<nav class="hidden md:flex h-full items-center">
+<ul class="flex space-x-2 h-full items-center">
+<li><button class="px-sm py-xs rounded hover:bg-surface-variant transition-colors text-on-surface-variant halo-focus-subtle">File</button></li>
+<li><button class="px-sm py-xs rounded hover:bg-surface-variant transition-colors text-on-surface-variant halo-focus-subtle">Edit</button></li>
+<li><button class="px-sm py-xs rounded hover:bg-surface-variant transition-colors text-on-surface-variant halo-focus-subtle">Selection</button></li>
+<li><button class="px-sm py-xs rounded hover:bg-surface-variant transition-colors text-on-surface-variant halo-focus-subtle">View</button></li>
+<li><button class="px-sm py-xs rounded hover:bg-surface-variant transition-colors text-on-surface-variant halo-focus-subtle">Go</button></li>
+<li><button class="px-sm py-xs rounded hover:bg-surface-variant transition-colors text-on-surface-variant halo-focus-subtle">Run</button></li>
+<li><button class="px-sm py-xs rounded hover:bg-surface-variant transition-colors text-on-surface-variant halo-focus-subtle">Terminal</button></li>
+<li><button class="px-sm py-xs rounded hover:bg-surface-variant transition-colors text-on-surface-variant halo-focus-subtle">Help</button></li>
+</ul>
+</nav>
+</div>
+<div class="flex items-center space-x-md">
+<div aria-label="Neural Pulse" class="w-8 h-8 rounded-full bg-surface-container-highest neural-pulse-idle flex items-center justify-center relative cursor-pointer group halo-focus-subtle" tabindex="0">
+<span class="material-symbols-outlined text-[16px] text-primary">auto_awesome</span>
+<div class="absolute right-0 top-10 hidden group-hover:block bg-surface-container-high border border-outline-variant/30 rounded p-sm whitespace-nowrap shadow-lg">Neural Pulse: Idle</div>
+</div>
+<div class="flex space-x-xs">
+<button aria-label="split_screen" class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-variant text-on-surface-variant transition-colors halo-focus-subtle">
+<span class="material-symbols-outlined text-[20px]">splitscreen</span>
+</button>
+<button aria-label="more_vert" class="w-8 h-8 rounded flex items-center justify-center hover:bg-surface-variant text-on-surface-variant transition-colors halo-focus-subtle">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<img alt="User Avatar" class="w-8 h-8 rounded-full object-cover border border-outline-variant/30 cursor-pointer halo-focus-subtle" data-alt="A stylized, cyberpunk-inspired minimalist user avatar icon, featuring deep violet and cyan neon accents against a pure dark background, high resolution, flat design aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAowg2RojUV55p3HL9OjWOn6gZINHiaNEK3pgHsR6JPBVB-8yd0CSKS7OEJnwJcmLDxUGrZkqYq8CYWEvrgimFrpM0aTq-UJtW8VWSl7JEFcgDNuT8WCgUtxdlp8RPpCYeOT9ElKrrko8j_sk1vP2QIUh1W2bs0YqHJ6nnxUPvYRVhsIKLKBBTJp875LZC3SCLPFSZysV9frQS21Pmk5g7EOk2LQwTNPgKLW4Dp_r2ahIk5R-Lp1zGtfCPFggAdltkNv-wt4ybHAWDG" tabindex="0"/>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-50 bg-surface-dim dark:bg-surface-dim text-primary dark:text-primary font-label-md text-label-md w-[52px] justify-between bg-surface-container-lowest border-r border-outline-variant/20 flat pt-xl pb-md">
+<div class="flex flex-col items-center mt-md space-y-xs w-full">
+<button aria-label="Explorer" class="w-10 h-10 rounded flex items-center justify-center text-primary border-l-4 border-primary bg-surface-container-high scale-105 halo-focus">
+<span class="material-symbols-outlined text-[24px]">folder</span>
+</button>
+<button aria-label="Search" class="w-10 h-10 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-all halo-focus">
+<span class="material-symbols-outlined text-[24px]">search</span>
+</button>
+<button aria-label="Source Control" class="w-10 h-10 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-all halo-focus">
+<span class="material-symbols-outlined text-[24px]">account_tree</span>
+</button>
+<button aria-label="Run &amp; Debug" class="w-10 h-10 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-all halo-focus">
+<span class="material-symbols-outlined text-[24px]">play_arrow</span>
+</button>
+<button aria-label="Extensions" class="w-10 h-10 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-all halo-focus">
+<span class="material-symbols-outlined text-[24px]">extension</span>
+</button>
+</div>
+<div class="flex flex-col items-center space-y-xs w-full">
+<button aria-label="Settings" class="w-10 h-10 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-all halo-focus">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</button>
+<button aria-label="Account" class="w-10 h-10 rounded flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-all halo-focus">
+<span class="material-symbols-outlined text-[24px]">person</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-[52px] mt-xl p-safe-margin w-full h-[calc(100vh-32px)] overflow-y-auto flex gap-xl relative">
+<!-- Background Decor -->
+<div class="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+<div class="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-primary-container blur-[120px] mix-blend-screen"></div>
+</div>
+<!-- Left Column: Recent Projects -->
+<section class="flex-1 flex flex-col z-10">
+<header class="mb-lg">
+<h1 class="font-display text-display text-on-surface mb-base">Welcome to Workbench</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Select a project to resume your environment.</p>
+</header>
+<!-- Search Input -->
+<div class="relative mb-lg max-w-md w-full">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-lg py-sm pl-xl pr-sm font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all halo-focus-subtle" placeholder="Search recent projects..." type="text"/>
+</div>
+<!-- Project Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md auto-rows-max flex-1 content-start">
+<!-- Card 1 -->
+<button class="group text-left bg-surface-container flex flex-col p-md rounded-xl hairline-top border border-outline-variant/10 hover:bg-surface-container-high hover:border-primary/50 transition-all card-elevated halo-focus">
+<div class="flex justify-between items-start mb-sm w-full">
+<div class="flex items-center space-x-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">terminal</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">core-engine-rust</h3>
+<span class="font-code-md text-code-md text-on-surface-variant opacity-70">~/dev/system/core-engine</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+<div class="mt-auto flex items-center justify-between w-full pt-sm border-t border-outline-variant/10">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">schedule</span> 2 hrs ago</span>
+<div class="flex items-center space-x-xs font-code-md text-[11px] font-medium px-2 py-1 bg-surface-container-lowest rounded text-tertiary">
+<span class="material-symbols-outlined text-[12px]">call_split</span>
+<span>main</span>
+</div>
+</div>
+</button>
+<!-- Card 2 -->
+<button class="group text-left bg-surface-container flex flex-col p-md rounded-xl hairline-top border border-outline-variant/10 hover:bg-surface-container-high hover:border-primary/50 transition-all card-elevated halo-focus">
+<div class="flex justify-between items-start mb-sm w-full">
+<div class="flex items-center space-x-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary-container">
+<span class="material-symbols-outlined">dashboard_customize</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">neurodeck-ui-v2</h3>
+<span class="font-code-md text-code-md text-on-surface-variant opacity-70">~/dev/frontend/neurodeck-ui</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+<div class="mt-auto flex items-center justify-between w-full pt-sm border-t border-outline-variant/10">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">schedule</span> Yesterday</span>
+<div class="flex items-center space-x-xs font-code-md text-[11px] font-medium px-2 py-1 bg-surface-container-lowest rounded text-secondary-fixed">
+<span class="material-symbols-outlined text-[12px]">call_split</span>
+<span>feature/bento-grid</span>
+</div>
+</div>
+</button>
+<!-- Card 3 -->
+<button class="group text-left bg-surface-container flex flex-col p-md rounded-xl hairline-top border border-outline-variant/10 hover:bg-surface-container-high hover:border-primary/50 transition-all card-elevated halo-focus">
+<div class="flex justify-between items-start mb-sm w-full">
+<div class="flex items-center space-x-sm">
+<div class="w-10 h-10 rounded-lg bg-surface-container-highest flex items-center justify-center text-error">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface group-hover:text-primary transition-colors">nexus-bridge</h3>
+<span class="font-code-md text-code-md text-on-surface-variant opacity-70">~/dev/services/nexus</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity">arrow_forward</span>
+</div>
+<div class="mt-auto flex items-center justify-between w-full pt-sm border-t border-outline-variant/10">
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">schedule</span> 3 days ago</span>
+<div class="flex items-center space-x-xs font-code-md text-[11px] font-medium px-2 py-1 bg-surface-container-lowest rounded text-outline">
+<span class="material-symbols-outlined text-[12px]">call_split</span>
+<span>stable-1.4</span>
+</div>
+</div>
+</button>
+</div>
+</section>
+<!-- Right Column: Actions & Context -->
+<aside class="w-80 flex flex-col z-10 shrink-0">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-md">Quick Actions</h2>
+<div class="flex flex-col space-y-xs mb-xl bg-surface-container rounded-xl p-xs hairline-top border border-outline-variant/10">
+<button class="flex items-center space-x-sm p-sm rounded-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors halo-focus min-h-hit-target justify-start relative overflow-hidden group">
+<div class="absolute inset-0 bg-gradient-to-b from-white/10 to-transparent pointer-events-none"></div>
+<span class="material-symbols-outlined text-[20px] z-10">add_box</span>
+<span class="font-label-md text-label-md z-10">New Project</span>
+</button>
+<button class="flex items-center space-x-sm p-sm rounded-lg bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors halo-focus min-h-hit-target justify-start">
+<span class="material-symbols-outlined text-[20px] text-primary">cloud_download</span>
+<span class="font-label-md text-label-md">Clone Repository</span>
+</button>
+<button class="flex items-center space-x-sm p-sm rounded-lg bg-surface-container-highest text-on-surface hover:bg-surface-variant transition-colors halo-focus min-h-hit-target justify-start">
+<span class="material-symbols-outlined text-[20px] text-primary">folder_open</span>
+<span class="font-label-md text-label-md">Open Folder</span>
+</button>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-md border border-outline-variant/10 flex-1 flex flex-col justify-end relative overflow-hidden group hairline-top">
+<div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-surface-variant/40 to-transparent"></div>
+<div class="relative z-10">
+<div class="flex items-center space-x-xs mb-sm">
+<span class="material-symbols-outlined text-tertiary">memory</span>
+<h3 class="font-label-md text-label-md text-on-surface uppercase tracking-wider">System Status</h3>
+</div>
+<div class="space-y-xs font-code-md text-[12px]">
+<div class="flex justify-between items-center text-on-surface-variant">
+<span>Daemon</span>
+<span class="text-tertiary-fixed flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-tertiary-fixed mr-1 inline-block animate-pulse"></span>Online</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<span>Containers</span>
+<span class="text-on-surface">3 Active</span>
+</div>
+<div class="flex justify-between items-center text-on-surface-variant">
+<span>Workspace</span>
+<span class="text-on-surface">Synced</span>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</body></html>

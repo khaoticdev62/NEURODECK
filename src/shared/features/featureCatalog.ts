@@ -38,6 +38,14 @@ export const FEATURE_CATALOG: FeatureDescriptor[] = [
     profileVisibility: []
   },
   {
+    id: 'ai-chat',
+    route: '/ai/chat',
+    name: 'Chat',
+    capabilityDependencies: [],
+    permissionRequirements: [],
+    profileVisibility: []
+  },
+  {
     id: 'workspaces',
     route: '/workspaces',
     name: 'Workspaces',
@@ -105,6 +113,14 @@ export const FEATURE_CATALOG: FeatureDescriptor[] = [
     id: 'learn',
     route: '/learn',
     name: 'Learn',
+    capabilityDependencies: [],
+    permissionRequirements: [],
+    profileVisibility: []
+  },
+  {
+    id: 'applications',
+    route: '/applications',
+    name: 'Apps',
     capabilityDependencies: [],
     permissionRequirements: [],
     profileVisibility: []

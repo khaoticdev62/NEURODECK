@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxSettingsTree, NdxToolWindow } from '../../components/workbench'
 import {
@@ -15,6 +16,7 @@ import {
   getControllerSettings,
   setControllerSettings
 } from '../../services/ipc/controllerSettingsClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 const INTENSITY_LEVELS: HapticIntensity[] = ['off', 'low', 'medium', 'high']
 
@@ -89,8 +91,11 @@ export function ControllerSettings(): React.JSX.Element {
     setTestResult(result)
   }
 
-  return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Settings', undefined, (
       <NdxSettingsTree>
         <div className="space-y-2 text-meta text-text-secondary">
           <p className="text-text-primary">Controller</p>
@@ -99,7 +104,24 @@ export function ControllerSettings(): React.JSX.Element {
           <p>Deferred adapters</p>
         </div>
       </NdxSettingsTree>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [setPrimary])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Controller Scope" subtitle={controllerKind} side="right">
+        <div className="space-y-3 text-meta text-text-secondary">
+          <p>Only haptics intensity is persisted in this slice.</p>
+          <p>Rear buttons, gyro, and trackpads still require Steam Input or a native adapter.</p>
+        </div>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [controllerKind, setSecondary])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Controller Preferences">
         <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
           <div className="flex items-center justify-between">
@@ -111,12 +133,17 @@ export function ControllerSettings(): React.JSX.Element {
 
           {error && <ErrorState title="Controller settings error" description={error} />}
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Detected controller</p>
-            <p className="text-meta text-text-secondary">{controllerKind}</p>
+            <div>
+              <StatusBadge
+                tone={controllerKind === 'generic' ? 'neutral' : 'success'}
+                label={controllerKind}
+              />
+            </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Haptics</p>
             <div className="flex gap-2">
               {INTENSITY_LEVELS.map((level) => (
@@ -136,7 +163,7 @@ export function ControllerSettings(): React.JSX.Element {
             {saveStatus && <p className="text-meta text-status-success">{saveStatus}</p>}
           </section>
 
-          <section className="flex flex-col gap-1 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-1 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Input timing (read-only)</p>
             <p className="text-meta text-text-secondary">Hold duration: {HOLD_THRESHOLD_MS} ms</p>
             <p className="text-meta text-text-secondary">Repeat delay: {REPEAT_DELAY_MS} ms</p>
@@ -148,20 +175,13 @@ export function ControllerSettings(): React.JSX.Element {
           </section>
 
           {DEFERRED_SECTIONS.map((section) => (
-            <section key={section.title} className="border border-border bg-surface p-3 opacity-60">
+            <section key={section.title} className="ndx-settings-section opacity-60">
               <p className="text-body font-semibold text-text-primary">{section.title}</p>
               <p className="text-meta text-text-tertiary">Not available: {section.reason}</p>
             </section>
           ))}
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Controller Scope" subtitle={controllerKind} side="right">
-        <div className="space-y-3 text-meta text-text-secondary">
-          <p>Only haptics intensity is persisted in this slice.</p>
-          <p>Rear buttons, gyro, and trackpads still require Steam Input or a native adapter.</p>
-        </div>
-      </NdxToolWindow>
     </div>
   )
 }

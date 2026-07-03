@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@source "../";
 
 /**
  * NDX design tokens (wireframe spec §3.1, mega-prompt §8.1).
@@ -13,27 +14,59 @@
   --breakpoint-docked-2k: 2560px;
 
   /* Surfaces and backgrounds */
-  --color-canvas: #080a0d;
-  --color-surface: #10141a;
-  --color-surface-raised: #171d25;
-  --color-overlay: rgb(11 12 16 / 0.85);
+  --color-canvas: #14121a;
+  --color-surface: #14121a;
+  --color-surface-raised: #201f27;
+  --color-overlay: rgb(20 18 26 / 0.85);
+
+  /* Material Design 3 surface hierarchy (NeuroSpatial Workbench / Stitch) */
+  --color-surface-dim: #14121a;
+  --color-surface-bright: #3a3841;
+  --color-surface-container-lowest: #0e0d15;
+  --color-surface-container-low: #1c1b22;
+  --color-surface-container: #201f27;
+  --color-surface-container-high: #2b2931;
+  --color-surface-container-highest: #35343c;
+  --color-surface-variant: #35343c;
 
   /* Borders */
-  --color-border: #242b36;
-  --color-border-strong: #3c4656;
+  --color-border: #484553;
+  --color-border-strong: #928e9f;
   --color-border-focus: var(--ndx-accent);
 
   /* Text hierarchy */
-  --color-text-primary: rgb(245 246 250 / 0.95);
-  --color-text-secondary: rgb(208 212 222 / 0.7);
-  --color-text-tertiary: rgb(208 212 222 / 0.45);
+  --color-text-primary: #e5e0ec;
+  --color-text-secondary: #c9c4d6;
+  --color-text-tertiary: rgb(201 196 214 / 0.45);
+
+  /* Material Design 3 on-surface tokens */
+  --color-on-surface: #e5e0ec;
+  --color-on-surface-variant: #c9c4d6;
+
+  /* Primary (Neural Violet) */
+  --color-primary: #c8bfff;
+  --color-primary-container: #917eff;
+  --color-on-primary: #2e0599;
+  --color-on-primary-container: #28008a;
+
+  /* Secondary (Signal Cyan) */
+  --color-secondary: #4dd6fd;
+  --color-secondary-container: #00b2d7;
+
+  /* Tertiary (Intelligence Teal) */
+  --color-tertiary: #59dbbd;
+  --color-tertiary-container: #00a488;
 
   /* Status colors — always paired with text/icon, never color alone (spec §8.3) */
-  --color-status-info: #78dce8;
-  --color-status-success: #58d68d;
+  --color-status-info: #50d8ff;
+  --color-status-success: #62e3c4;
   --color-status-warning: #f4c95d;
-  --color-status-error: #ff6b7a;
-  --color-status-approval: #a78bfa;
+  --color-status-error: #ffb4ab;
+  --color-status-approval: #917eff;
+
+  /* Outline */
+  --color-outline: #928e9f;
+  --color-outline-variant: #484553;
 
   /* Radius */
   --radius-sm: 6px;
@@ -43,6 +76,8 @@
   /* Shadow / elevation */
   --shadow-elevated: 0 8px 24px rgb(0 0 0 / 0.45);
   --shadow-focus-bloom: 0 0 0 4px rgb(var(--ndx-accent-rgb) / 0.35);
+  --shadow-controller-focus: 0 0 22px rgb(200 191 255 / 0.55);
+  --shadow-primary-glow: 0 0 40px 2px rgb(var(--ndx-accent-rgb) / 0.55);
 
   /* Type scale: 16px minimum body text, 14px only for secondary metadata (spec §8.3).
      Each size multiplies by --ndx-text-scale (default 1, real ND-044 override below)
@@ -59,17 +94,17 @@
    Referenced via var(--ndx-*) rather than auto-generated utilities. */
 :root {
   /* Layout (wireframe §3.1) */
-  --ndx-safe-inset: 16px;
+  --ndx-safe-inset: 40px;
   --ndx-spacing-grid: 8px;
   --ndx-rail-top-height: 56px;
   --ndx-rail-bottom-height: 56px;
   --ndx-rail-primary-collapsed: 88px;
   --ndx-rail-primary-expanded: 240px;
   --ndx-context-panel-width: 320px;
-  --ndx-workbench-titlebar-height: 40px;
-  --ndx-workbench-statusbar-height: 34px;
-  --ndx-workbench-activitybar-width: 48px;
-  --ndx-workbench-primary-width: 220px;
+  --ndx-workbench-titlebar-height: 36px;
+  --ndx-workbench-statusbar-height: 26px;
+  --ndx-workbench-activitybar-width: 52px;
+  --ndx-workbench-primary-width: 260px;
   --ndx-workbench-secondary-width: 268px;
   --ndx-workbench-bottom-panel-height: 220px;
   --ndx-workbench-tabbar-height: 36px;
@@ -105,35 +140,38 @@
      preset only ever needs to set these — nothing else references a raw
      accent hex. `--ndx-accent-rgb` is the space-separated triplet form so
      call sites can pick their own alpha via rgb(var(--ndx-accent-rgb) / a). */
-  --ndx-accent: #78dce8;
-  --ndx-accent-rgb: 120 220 232;
+  --ndx-accent: #917eff;
+  --ndx-accent-rgb: 145 126 255;
   --ndx-accent-soft: rgb(var(--ndx-accent-rgb) / 0.18);
 
   /* HYBRID-1 semantic workbench aliases. These keep feature code off raw
      palette values while the full screen migration proceeds route by route. */
   --ndx-workbench-canvas-bg: var(--color-canvas);
-  --ndx-workbench-titlebar-bg: #0c1016;
-  --ndx-workbench-activitybar-bg: #0b0f15;
-  --ndx-workbench-tool-bg: #0d1219;
-  --ndx-workbench-editor-bg: #090c11;
-  --ndx-workbench-panel-bg: #0f151e;
-  --ndx-workbench-statusbar-bg: #111924;
-  --ndx-workbench-border: #27313e;
-  --ndx-workbench-border-muted: rgb(136 154 176 / 0.18);
+  --ndx-workbench-titlebar-bg: #0e0d15;
+  --ndx-workbench-activitybar-bg: #0e0d15;
+  /* SideNavBar (global pivot rail) hairline — white/10, distinct from the
+     heavier --ndx-workbench-border used for structural panel dividers. */
+  --ndx-workbench-activitybar-border: rgb(255 255 255 / 0.1);
+  --ndx-workbench-tool-bg: #1c1b22;
+  --ndx-workbench-editor-bg: #14121a;
+  --ndx-workbench-panel-bg: #201f27;
+  --ndx-workbench-statusbar-bg: #0e0d15;
+  --ndx-workbench-border: #484553;
+  --ndx-workbench-border-muted: rgb(146 142 159 / 0.18);
   --ndx-workbench-border-active: var(--color-border-focus);
-  --ndx-workbench-tab-active-bg: #17212d;
-  --ndx-workbench-tab-inactive-bg: #101720;
-  --ndx-workbench-control-bg: #121a24;
-  --ndx-workbench-control-bg-hover: #182331;
+  --ndx-workbench-tab-active-bg: #201f27;
+  --ndx-workbench-tab-inactive-bg: #1c1b22;
+  --ndx-workbench-control-bg: #1c1b22;
+  --ndx-workbench-control-bg-hover: #2b2931;
   --ndx-workbench-control-bg-active: var(--ndx-accent);
-  --ndx-workbench-control-text-active: #071014;
+  --ndx-workbench-control-text-active: #14121a;
   --ndx-workbench-row-selected-bg: rgb(var(--ndx-accent-rgb) / 0.13);
   --ndx-workbench-row-active-bg: rgb(244 201 93 / 0.12);
   --ndx-workbench-row-hover-bg: rgb(255 255 255 / 0.045);
-  --ndx-workbench-danger-bg: rgb(255 107 122 / 0.12);
+  --ndx-workbench-danger-bg: rgb(255 180 171 / 0.12);
   --ndx-workbench-warning-bg: rgb(244 201 93 / 0.12);
-  --ndx-workbench-success-bg: rgb(88 214 141 / 0.1);
-  --ndx-workbench-glass-bg: rgb(11 16 23 / 0.72);
+  --ndx-workbench-success-bg: rgb(98 227 196 / 0.1);
+  --ndx-workbench-glass-bg: rgb(20 18 26 / 0.72);
   --ndx-workbench-focus-dense-shadow: inset 2px 0 0 var(--color-border-focus);
   --ndx-workbench-focus-spatial-shadow:
     0 0 0 1px rgb(var(--ndx-accent-rgb) / 0.65), 0 8px 18px rgb(0 0 0 / 0.34);
@@ -196,13 +234,13 @@
    matches --color-status-warning, 'green' matches --color-status-success,
    'rose' matches --color-status-error. */
 [data-ndx-accent='cyan'] {
-  --ndx-accent: #78dce8;
-  --ndx-accent-rgb: 120 220 232;
+  --ndx-accent: #4dd6fd;
+  --ndx-accent-rgb: 77 214 253;
 }
 
 [data-ndx-accent='violet'] {
-  --ndx-accent: #a78bfa;
-  --ndx-accent-rgb: 167 139 250;
+  --ndx-accent: #917eff;
+  --ndx-accent-rgb: 145 126 255;
 }
 
 [data-ndx-accent='amber'] {
@@ -211,13 +249,13 @@
 }
 
 [data-ndx-accent='green'] {
-  --ndx-accent: #58d68d;
-  --ndx-accent-rgb: 88 214 141;
+  --ndx-accent: #59dbbd;
+  --ndx-accent-rgb: 89 219 189;
 }
 
 [data-ndx-accent='rose'] {
-  --ndx-accent: #ff6b7a;
-  --ndx-accent-rgb: 255 107 122;
+  --ndx-accent: #ffb4ab;
+  --ndx-accent-rgb: 255 180 171;
 }
 
 /* ND-044 theme builder: corner radius style. 'sharp' matches the existing
@@ -309,7 +347,7 @@
 
 .ndx-workbench-main {
   background:
-    radial-gradient(circle at 12px 12px, rgb(120 220 232 / 0.08) 1px, transparent 1.5px),
+    radial-gradient(circle at 12px 12px, rgb(var(--ndx-accent-rgb) / 0.08) 1px, transparent 1.5px),
     var(--ndx-workbench-editor-bg);
   background-size: 32px 32px;
 }
@@ -343,16 +381,66 @@
 }
 
 .ndx-os-panel {
+  position: relative;
+  overflow: hidden;
   border: 1px solid var(--ndx-workbench-border);
+  border-top-color: rgb(255 255 255 / 0.2);
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.035), transparent 42%),
+    radial-gradient(circle at 100% 0%, rgb(var(--ndx-accent-rgb) / 0.16), transparent 60%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), transparent 42%),
     var(--ndx-workbench-panel-bg);
 }
 
 .ndx-workbench-surface {
   border: 1px solid var(--ndx-workbench-border);
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 48%), var(--ndx-workbench-panel-bg);
+    linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent 48%), var(--ndx-workbench-panel-bg);
+}
+
+/* Context Sidebar (the 260px sub-nav pane under the SideNavBar — file tree,
+   agent list, settings tree, etc., rendered via NdxToolWindow). Surface tone
+   plus a subtle white/5 wash, distinct from --ndx-workbench-tool-bg (which
+   stays lighter than the editor canvas for other standalone tool panels). */
+.ndx-context-sidebar {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent 60%), var(--color-surface);
+}
+
+/* Footer telemetry readout (Latency/Uptime/Kernel) — monospace, muted. */
+.ndx-footer-telemetry {
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 14px;
+  color: rgb(201 196 214 / 0.8);
+}
+
+/* Bento Grid Stage (wireframe workbench content areas): 12-column grid,
+   16px gaps. `.ndx-bento-primary`/`.ndx-bento-telemetry` give the standard
+   8/4-column "Primary Widget" / "Telemetry Sidebar" split; callers needing a
+   different ratio can still use `.ndx-bento-grid` alone with their own
+   `col-span-*` utilities. */
+.ndx-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.ndx-bento-primary {
+  grid-column: span 12 / span 12;
+}
+
+.ndx-bento-telemetry {
+  grid-column: span 12 / span 12;
+}
+
+@media (min-width: 1280px) {
+  .ndx-bento-primary {
+    grid-column: span 8 / span 8;
+  }
+
+  .ndx-bento-telemetry {
+    grid-column: span 4 / span 4;
+  }
 }
 
 .ndx-workbench-row {
@@ -544,6 +632,34 @@
 .ndx-tv-card {
   width: 15rem;
   min-height: 8.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  /* Real resting-state depth — `.ndx-focus-surface`'s own background is a
+     near-invisible 2.5% gradient by design (it's shared with dense list
+     rows where that's correct), so tvOS tiles need their own richer fill
+     and shadow to read as tiles rather than empty outlines. Layered above
+     `.ndx-focus-surface`'s existing background via a higher-specificity
+     rule rather than replacing it, so focus/selected states still compose
+     normally. */
+  background:
+    linear-gradient(160deg, rgb(var(--ndx-accent-rgb) / 0.22), transparent 60%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.06), transparent 60%),
+    var(--ndx-workbench-panel-bg);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.08),
+    var(--shadow-elevated);
+}
+
+.ndx-tv-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  background: rgb(var(--ndx-accent-rgb) / 0.16);
+  color: var(--ndx-accent);
+  flex-shrink: 0;
 }
 
 .ndx-tv-shelf-track {
@@ -603,4 +719,295 @@
     var(--ndx-workbench-glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
+}
+
+/* Visual-polish pass: the shared "settings section" card used across ~46
+   dense workbench/settings screens (Controller Settings, Display Settings,
+   Device centers, LAN Share, etc.) was a plain `border border-border
+   bg-surface p-3` box with zero visual hierarchy between sections — every
+   card on a page looked identical. This single shared class replaces that
+   inline utility combination (same padding, so no layout reflow) with a
+   real, once-defined visual identity: a rounded corner (respects
+   `radiusStyle`), a subtle fill gradient (same treatment `.ndx-os-panel`
+   already uses), and a colored left accent stripe that ties every section
+   header to the user's chosen accent color — real hierarchy without
+   needing a hand-drawn icon in each of the ~46 call sites. */
+.ndx-settings-section {
+  border: 1px solid var(--ndx-workbench-border);
+  border-left: 3px solid var(--ndx-accent);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent 48%),
+    var(--ndx-workbench-panel-bg);
+  box-shadow: inset 3px 0 12px -6px rgb(var(--ndx-accent-rgb) / 0.4);
+  padding: 0.75rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   NeuroSpatial Workbench — Stitch design system utility classes
+   Extracted from Google Stitch project "NeuroSpatial Workbench Design System"
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Hairline top edge: simulates overhead light hitting the top of a panel/card.
+   1px inner glow at 22% white — the core "Solid Dimensionality" depth cue. */
+.ndx-hairline-top {
+  border-top: 1px solid rgb(255 255 255 / 0.22);
+}
+
+.ndx-hairline-inset {
+  box-shadow: inset 0 1px 0 0 rgb(255 255 255 / 0.22);
+}
+
+/* Inner gradient: top-to-bottom 18% white → transparent.
+   Applied to buttons and cards for visible dimensionality. */
+.ndx-inner-glow {
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 0.18) 0%, transparent 100%);
+}
+
+/* Controller focus scale: tvOS-style 5% scale + violet glow halo.
+   Used on cards and interactive surfaces when selected by controller. */
+.ndx-controller-focus {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-controller-focus);
+  border-color: rgb(200 191 255 / 0.8);
+  z-index: 10;
+}
+
+/* Focusable interactive element: transition base for controller focus. */
+.ndx-focusable {
+  transition:
+    transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    box-shadow 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    border-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    background-color 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.ndx-focusable:hover,
+.ndx-focusable:focus-visible {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-controller-focus);
+  outline: none;
+  z-index: 10;
+}
+
+[data-reduce-motion='true'] .ndx-focusable {
+  transition: none;
+}
+
+[data-reduce-motion='true'] .ndx-focusable:hover,
+[data-reduce-motion='true'] .ndx-focusable:focus-visible {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ndx-focusable {
+    transition: none;
+  }
+  .ndx-focusable:hover,
+  .ndx-focusable:focus-visible {
+    transform: none;
+  }
+}
+
+/* Focus halo: keyboard/button-activated ring for form elements. */
+.ndx-focus-halo:focus,
+.ndx-focus-halo:focus-within {
+  outline: none;
+  box-shadow: 0 0 0 3px rgb(200 191 255 / 0.5);
+}
+
+/* Primary CTA glow: saturated violet glow for primary action buttons. */
+.ndx-primary-glow {
+  box-shadow: var(--shadow-primary-glow);
+}
+
+/* Neural Pulse — Idle breathing animation.
+   120×120px ring that breathes slowly at 2s cycle when AI is idle. */
+@keyframes ndx-breathe {
+  0% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 0.3; }
+}
+
+.ndx-neural-pulse-idle {
+  border: 2px solid rgb(200 191 255 / 0.3);
+  animation: ndx-breathe 2s infinite ease-in-out;
+}
+
+/* Neural Pulse — Ping (concentric ring expand for background atmosphere). */
+@keyframes ndx-pulse {
+  0% { box-shadow: 0 0 0 0 rgb(94 73 200 / 0.4); }
+  70% { box-shadow: 0 0 0 6px rgb(94 73 200 / 0); }
+  100% { box-shadow: 0 0 0 0 rgb(94 73 200 / 0); }
+}
+
+.ndx-neural-pulse-ping {
+  animation: ndx-pulse 2s infinite;
+}
+
+/* Neural Pulse — Breathing ring (4s cycle, used on sidebar hub icon). */
+@keyframes ndx-breathe-ring {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+
+.ndx-neural-pulse-ring {
+  animation: ndx-breathe-ring 4s ease-in-out infinite;
+}
+
+[data-reduce-motion='true'] .ndx-neural-pulse-idle,
+[data-reduce-motion='true'] .ndx-neural-pulse-ping,
+[data-reduce-motion='true'] .ndx-neural-pulse-ring {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ndx-neural-pulse-idle,
+  .ndx-neural-pulse-ping,
+  .ndx-neural-pulse-ring {
+    animation: none;
+  }
+}
+
+/* Card accent glow: ambient glow spot in top-right corner of cards. */
+.ndx-card-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.ndx-card-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8rem;
+  height: 8rem;
+  background: rgb(var(--ndx-accent-rgb) / 0.22);
+  border-radius: 9999px;
+  filter: blur(36px);
+  pointer-events: none;
+  transition: background 0.3s ease;
+}
+
+.ndx-card-glow:hover::before {
+  background: rgb(var(--ndx-accent-rgb) / 0.35);
+}
+
+/* Background dot grid decoration (Stitch Command Center pattern). */
+.ndx-bg-dotgrid {
+  background-image: radial-gradient(var(--color-surface-container-highest) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.2;
+}
+
+/* Ambient radial glow overlay for main content areas. */
+.ndx-bg-ambient-glow {
+  position: relative;
+}
+
+.ndx-bg-ambient-glow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 50%;
+  height: 50%;
+  background: rgb(var(--ndx-accent-rgb) / 0.05);
+  border-radius: 9999px;
+  filter: blur(120px);
+  pointer-events: none;
+}
+
+/* NeuroSpatial Workbench typography utilities.
+   Named type scale matching the Stitch design system exactly. */
+.ndx-type-display {
+  font-family: 'Geist', 'Geist Sans', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 36px;
+  letter-spacing: -0.02em;
+}
+
+.ndx-type-headline-lg {
+  font-family: 'Geist', 'Geist Sans', sans-serif;
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.ndx-type-headline-md {
+  font-family: 'Geist', 'Geist Sans', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 24px;
+}
+
+.ndx-type-body-lg {
+  font-family: 'Inter Variable', Inter, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.ndx-type-body-md {
+  font-family: 'Inter Variable', Inter, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.ndx-type-label-md {
+  font-family: 'Inter Variable', Inter, sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  letter-spacing: 0.02em;
+}
+
+.ndx-type-label-sm {
+  font-family: 'Inter Variable', Inter, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 14px;
+}
+
+.ndx-type-code {
+  font-family: 'JetBrains Mono Variable', 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+/* Stitch-style active navigation item (OS shell sidebar). */
+.ndx-nav-active {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-controller-focus);
+}
+
+/* Stitch-style active tab (IDE top border highlight). */
+.ndx-tab-active {
+  background: var(--color-surface);
+  border-top: 1px solid var(--ndx-accent);
+  color: var(--color-primary);
+}
+
+.ndx-tab-inactive {
+  background: var(--color-surface-container);
+  color: var(--color-on-surface-variant);
+  border-bottom: 1px solid rgb(72 69 83 / 0.2);
+}
+
+/* Stitch-style selected file tree item (left accent bar). */
+.ndx-tree-selected {
+  background: var(--color-surface-container-highest);
+  color: var(--color-primary);
+  border-left: 2px solid var(--ndx-accent);
+}
+
+/* Stitch-style IDE status bar (full-width accent-colored strip). */
+.ndx-statusbar-accent {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
 }

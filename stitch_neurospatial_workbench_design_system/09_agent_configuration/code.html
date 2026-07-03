@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Agent Detail — Neuro-Archon</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Geist:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-primary": "#5e49c8",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-secondary-fixed": "#001f28",
+                        "outline": "#928e9f",
+                        "on-surface-variant": "#c9c4d6",
+                        "surface-tint": "#c8bfff",
+                        "on-primary": "#2e0599",
+                        "on-error-container": "#ffdad6",
+                        "surface-dim": "#14121a",
+                        "primary": "#c8bfff",
+                        "secondary-fixed": "#b5ebff",
+                        "on-secondary-container": "#003f4e",
+                        "on-tertiary": "#00382d",
+                        "on-primary-fixed-variant": "#452daf",
+                        "surface-variant": "#35343c",
+                        "tertiary": "#59dbbd",
+                        "on-primary-container": "#28008a",
+                        "on-primary-fixed": "#1a0063",
+                        "on-tertiary-fixed": "#002019",
+                        "inverse-surface": "#e5e0ec",
+                        "surface-container-lowest": "#0e0d15",
+                        "surface-bright": "#3a3841",
+                        "inverse-on-surface": "#312f38",
+                        "primary-fixed-dim": "#c8bfff",
+                        "secondary": "#4dd6fd",
+                        "tertiary-fixed": "#79f8d8",
+                        "on-surface": "#e5e0ec",
+                        "background": "#14121a",
+                        "surface-container-high": "#2b2931",
+                        "surface-container-low": "#1c1b22",
+                        "primary-fixed": "#e5deff",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-tertiary-container": "#003127",
+                        "error": "#ffb4ab",
+                        "primary-container": "#917eff",
+                        "on-error": "#690005",
+                        "tertiary-container": "#00a488",
+                        "outline-variant": "#484553",
+                        "secondary-container": "#00b2d7",
+                        "on-background": "#e5e0ec",
+                        "surface": "#14121a",
+                        "on-secondary": "#003543",
+                        "surface-container-highest": "#35343c",
+                        "surface-container": "#201f27",
+                        "tertiary-fixed-dim": "#59dbbd"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "md": "16px",
+                        "safe-margin": "40px",
+                        "hit-target": "44px",
+                        "xl": "32px",
+                        "xs": "8px",
+                        "lg": "24px",
+                        "sm": "12px",
+                        "base": "4px"
+                    },
+                    fontFamily: {
+                        "body-lg": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "display": ["Geist"]
+                    },
+                    fontSize: {
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "code-md": ["13px", { lineHeight: "20px", fontWeight: "400" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "label-sm": ["11px", { lineHeight: "14px", fontWeight: "500" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "600" }],
+                        "headline-lg": ["22px", { lineHeight: "28px", fontWeight: "600" }],
+                        "headline-md": ["18px", { lineHeight: "24px", fontWeight: "500" }],
+                        "display": ["28px", { lineHeight: "36px", letterSpacing: "-0.02em", fontWeight: "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+            overflow: hidden; /* Steam Deck aspect ratio strictness */
+        }
+        
+        .hairline-top {
+            box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+        }
+        
+        .focus-ring:focus-within {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(200, 191, 255, 0.4);
+            border-color: theme('colors.primary');
+        }
+        
+        .elevated-panel {
+            box-shadow: 0 32px 32px -16px rgba(14, 13, 21, 0.4);
+        }
+        
+        /* Custom Scrollbar for inner panes */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline-variant');
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="w-[1280px] h-[800px] flex flex-col relative text-body-md font-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top NavBar (Shared Component) -->
+<header class="bg-surface-container-lowest dark:bg-surface-container-lowest flex justify-between items-center px-sm w-full z-50 docked full-width top-0 h-[36px] border-b border-white/12 flat no shadows">
+<div class="flex items-center gap-md">
+<span class="font-display text-display text-primary uppercase tracking-tighter">NEURAL_OS</span>
+</div>
+<nav class="hidden md:flex gap-md">
+<a class="text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-highest transition-colors px-sm py-xs rounded-full scale-95 duration-100" href="#">GPT-4o</a>
+<a class="text-on-surface-variant font-label-md text-label-md hover:bg-surface-container-highest transition-colors px-sm py-xs rounded-full scale-95 duration-100" href="#">CLAUDE-3.5</a>
+<a class="text-tertiary font-bold font-label-md text-label-md hover:bg-surface-container-highest transition-colors px-sm py-xs rounded-full scale-95 duration-100" href="#">SONNET</a>
+</nav>
+<div class="flex gap-sm">
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-1 rounded transition-colors scale-95 duration-100"><span class="material-symbols-outlined text-[18px]">minimize</span></button>
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-1 rounded transition-colors scale-95 duration-100"><span class="material-symbols-outlined text-[18px]">fullscreen</span></button>
+<button class="text-on-surface-variant hover:bg-surface-container-highest p-1 rounded transition-colors scale-95 duration-100"><span class="material-symbols-outlined text-[18px]">close</span></button>
+</div>
+</header>
+<div class="flex flex-1 h-[calc(800px-36px-26px)] overflow-hidden">
+<!-- Side NavBar (Shared Component) -->
+<aside class="bg-surface-container-low dark:bg-surface-container-low docked left-0 h-full w-[52px] bg-surface-container-low border-r border-white/12 flat no shadows fixed left-0 top-[36px] h-[calc(100%-36px-26px)] flex flex-col justify-between py-md z-40">
+<div class="flex flex-col gap-sm items-center px-1">
+<!-- Avatar / Logo -->
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mb-xs" title="Neural Pulse AI State">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+</div>
+<nav class="flex flex-col gap-xs w-full">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-lg p-2 scale-105 shadow-[0_0_15px_rgba(200,191,255,0.4)] hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200" href="#">
+<span class="material-symbols-outlined text-[20px]">hub</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">code</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">language</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</a>
+</nav>
+</div>
+<div class="flex flex-col gap-xs items-center px-1">
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">account_tree</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant p-2 hover:text-primary transition-all focus:ring-3 focus:ring-primary/40 focus:scale-110 duration-200 rounded-lg" href="#">
+<span class="material-symbols-outlined text-[20px]">sensors</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[52px] flex-1 flex p-safe-margin gap-lg overflow-hidden bg-surface-container-lowest">
+<!-- Left Config Pane (Scrollable) -->
+<div class="flex-1 flex flex-col gap-lg overflow-y-auto pr-xs">
+<!-- Header -->
+<div class="flex items-start justify-between">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary text-[28px]" style="font-variation-settings: 'FILL' 1;">precision_manufacturing</span>
+                            Neuro-Archon
+                        </h1>
+<p class="text-on-surface-variant mt-1">Autonomous Systems Orchestrator</p>
+</div>
+<div class="flex gap-sm">
+<button class="bg-surface-container-highest text-on-surface px-md h-hit-target rounded-lg font-label-md text-label-md flex items-center gap-xs hover:bg-surface-variant transition-colors hairline-top focus-ring focus:scale-105">
+<span class="material-symbols-outlined text-[18px]">stop</span> Terminate
+                        </button>
+<button class="bg-primary text-on-primary px-lg h-hit-target rounded-lg font-label-md text-label-md flex items-center gap-xs hover:brightness-110 transition-all shadow-[0_4px_12px_rgba(200,191,255,0.2)] bg-gradient-to-b from-white/10 to-transparent hairline-top focus-ring focus:scale-105">
+<span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">play_arrow</span> Deploy Agent
+                        </button>
+</div>
+</div>
+<!-- Bento Grid for Config -->
+<div class="grid grid-cols-2 gap-md">
+<!-- Tooling Matrix -->
+<div class="col-span-2 bg-surface rounded-xl p-md hairline-top elevated-panel border border-white/5">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-tertiary">handyman</span>
+                            Operational Tooling
+                        </h2>
+<div class="grid grid-cols-2 gap-sm">
+<!-- Tool Toggle 1 -->
+<label class="flex items-center justify-between p-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container-highest transition-colors focus-ring focus:scale-[1.02]" tabindex="0">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">folder_open</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md text-on-surface">Filesystem</span>
+<span class="block text-code-md text-on-surface-variant text-[11px]">Read/Write access</span>
+</div>
+</div>
+<!-- Custom Toggle Switch -->
+<div class="relative w-10 h-6 bg-primary rounded-full">
+<div class="absolute right-1 top-1 w-4 h-4 bg-on-primary rounded-full"></div>
+</div>
+</label>
+<!-- Tool Toggle 2 -->
+<label class="flex items-center justify-between p-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container-highest transition-colors focus-ring focus:scale-[1.02]" tabindex="0">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md text-on-surface">Terminal</span>
+<span class="block text-code-md text-on-surface-variant text-[11px]">zsh execution</span>
+</div>
+</div>
+<div class="relative w-10 h-6 bg-primary rounded-full">
+<div class="absolute right-1 top-1 w-4 h-4 bg-on-primary rounded-full"></div>
+</div>
+</label>
+<!-- Tool Toggle 3 -->
+<label class="flex items-center justify-between p-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container-highest transition-colors focus-ring focus:scale-[1.02]" tabindex="0">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">language</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md text-on-surface">Web Search</span>
+<span class="block text-code-md text-on-surface-variant text-[11px]">Brave API</span>
+</div>
+</div>
+<div class="relative w-10 h-6 bg-surface-variant rounded-full border border-outline-variant">
+<div class="absolute left-1 top-1 w-4 h-4 bg-on-surface-variant rounded-full"></div>
+</div>
+</label>
+<!-- Tool Toggle 4 -->
+<label class="flex items-center justify-between p-sm bg-surface-container-low rounded-lg cursor-pointer hover:bg-surface-container-highest transition-colors focus-ring focus:scale-[1.02]" tabindex="0">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">code</span>
+</div>
+<div>
+<span class="block font-label-md text-label-md text-on-surface">Python Interpreter</span>
+<span class="block text-code-md text-on-surface-variant text-[11px]">Sandboxed env</span>
+</div>
+</div>
+<div class="relative w-10 h-6 bg-primary rounded-full">
+<div class="absolute right-1 top-1 w-4 h-4 bg-on-primary rounded-full"></div>
+</div>
+</label>
+</div>
+</div>
+<!-- Memory Persistence -->
+<div class="col-span-1 bg-surface rounded-xl p-md hairline-top elevated-panel border border-white/5 flex flex-col">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary">memory</span>
+                            Memory Persistence
+                        </h2>
+<div class="flex flex-col gap-xs flex-1">
+<div class="flex items-center p-sm bg-surface-container-lowest rounded-lg border border-outline-variant/30 focus-ring" tabindex="0">
+<input class="sr-only" id="mem_ephemeral" name="memory" type="radio"/>
+<label class="flex-1 cursor-pointer flex items-center gap-sm text-on-surface-variant" for="mem_ephemeral">
+<span class="material-symbols-outlined text-[20px]">timer</span> Ephemeral
+                                </label>
+</div>
+<div class="flex items-center p-sm bg-primary/10 rounded-lg border border-primary/40 focus-ring relative overflow-hidden" tabindex="0">
+<!-- Active highlight bar -->
+<div class="absolute left-0 top-0 bottom-0 w-1 bg-primary"></div>
+<input checked="" class="sr-only" id="mem_session" name="memory" type="radio"/>
+<label class="flex-1 cursor-pointer flex items-center gap-sm text-primary font-medium pl-xs" for="mem_session">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">view_timeline</span> Session
+                                </label>
+</div>
+<div class="flex items-center p-sm bg-surface-container-lowest rounded-lg border border-outline-variant/30 focus-ring" tabindex="0">
+<input class="sr-only" id="mem_long" name="memory" type="radio"/>
+<label class="flex-1 cursor-pointer flex items-center gap-sm text-on-surface-variant" for="mem_long">
+<span class="material-symbols-outlined text-[20px]">database</span> Long-term (Vector)
+                                </label>
+</div>
+</div>
+</div>
+<!-- Model Config -->
+<div class="col-span-1 bg-surface rounded-xl p-md hairline-top elevated-panel border border-white/5 flex flex-col">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-inverse-primary">tune</span>
+                            Model Parameters
+                        </h2>
+<div class="flex flex-col gap-md flex-1 justify-center">
+<div>
+<div class="flex justify-between mb-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Temperature</label>
+<span class="font-code-md text-code-md text-on-surface">0.2</span>
+</div>
+<div class="h-2 bg-surface-container-lowest rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-inverse-primary w-1/5 rounded-full"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between mb-xs">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Max Tokens</label>
+<span class="font-code-md text-code-md text-on-surface">8192</span>
+</div>
+<div class="h-2 bg-surface-container-lowest rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-inverse-primary w-full rounded-full"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Pane: Behavior Preview (Chat) -->
+<div class="w-[400px] flex flex-col bg-surface-container-low rounded-xl hairline-top elevated-panel border border-white/10 overflow-hidden relative">
+<!-- Neural Pulse Status Background Effect -->
+<div class="absolute top-0 right-0 w-full h-32 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+<div class="p-md border-b border-white/5 flex justify-between items-center bg-surface-container-high/50 backdrop-blur-sm z-10">
+<h3 class="font-label-md text-label-md text-on-surface flex items-center gap-xs">
+<span class="w-2 h-2 rounded-full bg-tertiary animate-pulse"></span>
+                        Behavior Preview
+                    </h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors focus-ring rounded">
+<span class="material-symbols-outlined text-[18px]">refresh</span>
+</button>
+</div>
+<!-- Chat History -->
+<div class="flex-1 overflow-y-auto p-md flex flex-col gap-md">
+<!-- User Message -->
+<div class="flex gap-sm self-end max-w-[85%]">
+<div class="bg-surface-container-highest rounded-l-xl rounded-tr-xl p-sm hairline-top text-on-surface">
+                            Scan the src directory and list any unused React components.
+                        </div>
+</div>
+<!-- Agent Message (Thinking) -->
+<div class="flex gap-sm max-w-[95%]">
+<div class="w-6 h-6 rounded bg-primary/20 flex-shrink-0 flex items-center justify-center text-primary mt-1">
+<span class="material-symbols-outlined text-[14px]">psychology</span>
+</div>
+<div class="flex flex-col gap-xs">
+<div class="font-code-md text-[11px] text-on-surface-variant flex items-center gap-xs">
+<span class="material-symbols-outlined text-[12px]">terminal</span> Executing: `find src -name "*.tsx"`
+                             </div>
+<div class="bg-surface-dim rounded-r-xl rounded-bl-xl p-sm hairline-top text-on-surface border border-white/5 font-code-md text-code-md">
+<span class="text-secondary opacity-70">1. Analyzing filesystem...</span><br/>
+<span class="text-outline-variant">Found 42 components. Cross-referencing imports...</span>
+</div>
+</div>
+</div>
+<!-- Agent Message (Result) -->
+<div class="flex gap-sm max-w-[95%]">
+<div class="w-6 h-6 rounded bg-primary text-on-primary flex-shrink-0 flex items-center justify-center mt-1">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">precision_manufacturing</span>
+</div>
+<div class="bg-surface rounded-r-xl rounded-bl-xl p-sm hairline-top text-on-surface border border-white/5">
+                            I've identified 3 potentially unused components:<br/>
+<ul class="list-disc pl-4 mt-2 text-on-surface-variant space-y-1">
+<li><code>OldSidebar.tsx</code></li>
+<li><code>TestWidget.tsx</code></li>
+<li><code>LegacyNav.tsx</code></li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Chat Input Area -->
+<div class="p-sm bg-surface-container-highest border-t border-white/5">
+<div class="bg-surface-dim rounded-lg border border-outline-variant/30 flex items-center p-1 focus-ring">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+</button>
+<input class="flex-1 bg-transparent border-none text-on-surface font-body-md focus:ring-0 placeholder:text-on-surface-variant/50" placeholder="Test agent behavior..." type="text"/>
+<button class="p-2 text-primary hover:text-primary-fixed-dim transition-colors">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">send</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer (Shared Component) -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest fixed bottom-0 left-0 w-full flex justify-between items-center px-sm z-50 docked full-width bottom-0 h-[26px] border-t border-white/12 flat no shadows">
+<div class="flex gap-md h-full items-center">
+<span class="text-tertiary-fixed-dim dark:text-tertiary-fixed-dim font-code-md text-code-md">v2.4.0-STABLE</span>
+</div>
+<div class="flex gap-md h-full items-center">
+<a class="text-on-surface-variant opacity-70 hover:bg-surface-container-highest font-code-md text-code-md px-2 h-full flex items-center" href="#">main</a>
+<a class="text-tertiary font-bold hover:bg-surface-container-highest font-code-md text-code-md px-2 h-full flex items-center relative after:absolute after:bottom-0 after:left-1/4 after:w-1/2 after:h-[2px] after:bg-tertiary" href="#">model_ready</a>
+<a class="text-on-surface-variant opacity-70 hover:bg-surface-container-highest font-code-md text-code-md px-2 h-full flex items-center" href="#">connected</a>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hermes Extension Marketplace</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#59dbbd",
+                        "on-surface": "#e5e0ec",
+                        "surface-variant": "#35343c",
+                        "surface-tint": "#c8bfff",
+                        "surface-dim": "#14121a",
+                        "on-tertiary-fixed": "#002019",
+                        "on-tertiary": "#00382d",
+                        "inverse-surface": "#e5e0ec",
+                        "secondary-container": "#00b2d7",
+                        "surface-container": "#201f27",
+                        "surface-container-lowest": "#0e0d15",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "surface": "#14121a",
+                        "surface-container-high": "#2b2931",
+                        "on-tertiary-container": "#003127",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1c1b22",
+                        "primary-fixed-dim": "#c8bfff",
+                        "secondary-fixed": "#b5ebff",
+                        "primary-fixed": "#e5deff",
+                        "on-secondary": "#003543",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-surface-variant": "#c9c4d6",
+                        "primary": "#c8bfff",
+                        "tertiary-container": "#00a488",
+                        "on-error": "#690005",
+                        "outline": "#928e9f",
+                        "error-container": "#93000a",
+                        "primary-container": "#917eff",
+                        "on-secondary-container": "#003f4e",
+                        "on-secondary-fixed": "#001f28",
+                        "secondary": "#4dd6fd",
+                        "on-primary-container": "#28008a",
+                        "on-primary-fixed-variant": "#452daf",
+                        "tertiary-fixed": "#79f8d8",
+                        "on-background": "#e5e0ec",
+                        "inverse-primary": "#5e49c8",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-primary-fixed": "#1a0063",
+                        "background": "#14121a",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-bright": "#3a3841",
+                        "outline-variant": "#484553",
+                        "surface-container-highest": "#35343c",
+                        "inverse-on-surface": "#312f38",
+                        "on-primary": "#2e0599"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "hit-target": "44px",
+                        "xs": "8px",
+                        "safe-margin": "40px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #14121a;
+            color: #e5e0ec;
+        }
+        .hairline-top {
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .focus-ring:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(200, 191, 255, 0.5); /* primary with opacity */
+            transform: scale(1.05);
+            transition: all 0.2s ease-out;
+        }
+        .glass-panel {
+            background: rgba(43, 41, 49, 0.6); /* surface-container-high approx */
+            backdrop-filter: blur(12px);
+        }
+        .hover-scale:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 32px rgba(14, 13, 21, 0.4);
+        }
+        
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(20, 18, 26, 0.5); 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #35343c; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #484553; 
+        }
+    </style>
+</head>
+<body class="antialiased overflow-hidden h-screen w-screen flex font-body-md text-body-md">
+<!-- SideNavBar (JSON Component) -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-lowest fixed left-0 h-screen w-64 z-40 border-r border-white/10 flex flex-col h-full py-xl hidden md:flex">
+<div class="px-md mb-xl flex items-center gap-sm">
+<div class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center border border-primary/30">
+<span class="material-symbols-outlined text-primary text-lg" data-icon="terminal">terminal</span>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary-fixed leading-tight">HERMES CORE</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant">v4.2.0-STABLE</p>
+</div>
+</div>
+<div class="px-md mb-lg">
+<button class="w-full h-hit-target bg-primary text-on-primary-fixed rounded-lg font-label-md text-label-md flex items-center justify-center gap-xs focus-ring hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                New Script
+            </button>
+</div>
+<div class="flex-1 flex flex-col gap-xs overflow-y-auto px-sm">
+<!-- Active Tab -->
+<a class="bg-surface-container-high border-l-4 border-tertiary text-on-surface flex items-center gap-md px-md py-sm rounded-r-lg hover:bg-surface-container-low/50 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="extension">extension</span>
+<span class="font-label-md text-label-md">Extensions</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-lg hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-label-md text-label-md">Telemetry</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-lg hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span class="font-label-md text-label-md">Nodes</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-lg hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="code">code</span>
+<span class="font-label-md text-label-md">Scripts</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-lg hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="font-label-md text-label-md">Logs</span>
+</a>
+</div>
+<div class="mt-auto px-sm flex flex-col gap-xs pt-md border-t border-white/5">
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-lg hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-md text-label-md">Docs</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm rounded-lg hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="forum">forum</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</nav>
+<!-- TopNavBar (JSON Component) -->
+<header class="bg-surface dark:bg-surface-dim fixed top-0 w-full z-50 md:pl-64 flex justify-between items-center px-lg py-sm w-full shadow-2xl shadow-background-deepest hairline-top">
+<div class="flex items-center gap-xl">
+<!-- Mobile Menu Toggle (hidden on md) -->
+<button class="md:hidden text-on-surface-variant focus-ring w-hit-target h-hit-target flex items-center justify-center rounded">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h2 class="font-display text-display text-primary uppercase tracking-tighter hidden md:block">HERMES OS</h2>
+<nav class="hidden md:flex gap-lg">
+<a class="text-on-surface-variant font-medium font-label-md text-label-md hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 px-sm py-xs rounded" href="#">Dashboard</a>
+<a class="text-on-surface-variant font-medium font-label-md text-label-md hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 px-sm py-xs rounded" href="#">Flow Builder</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-label-md text-label-md px-sm py-xs" href="#">Marketplace</a>
+<a class="text-on-surface-variant font-medium font-label-md text-label-md hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 px-sm py-xs rounded" href="#">Editor</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<!-- Search on Right -->
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="bg-surface-container-lowest border border-outline-variant/30 rounded-lg pl-xl pr-sm py-xs h-9 w-64 text-on-surface focus:outline-none focus:border-primary/50 font-code-md text-code-md placeholder:text-on-surface-variant/50" placeholder="Search extensions..." type="text"/>
+</div>
+<button class="text-on-surface-variant focus:scale-105 active:scale-95 transition-transform hover:bg-surface-variant/50 hover:text-primary w-10 h-10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<button class="text-on-surface-variant focus:scale-105 active:scale-95 transition-transform hover:bg-surface-variant/50 hover:text-primary w-10 h-10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border border-outline-variant overflow-hidden ml-sm cursor-pointer hover:border-primary transition-colors">
+<img alt="User profile" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCG7_7g6IekI-ogY-CH2O6r3U6tWyCC8xhcPMx1n2M1bJ1mmNa4-bpBUBXxWMhHXdQmG3QHBy4sw0ypa1-0Wk8ARYyH7GIe4IN32TvRPg5KTxZ3-21dDTTZvdchzuLGlgE7kwl675ol99vdSXCufM-uKorKZC5IWgyRjEtngL-9hGY-rVQE_GVbjjRzmpnf34Orx5qayb-WvRHrXrvAmpHJLvpUHXnRUWnNS0cfCaaZLTtvLdIFmusGH0G40NJkiw4BKW5RaA4qHgsd"/>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<main class="flex-1 w-full h-full pt-[60px] md:pl-64 bg-background overflow-y-auto relative">
+<!-- Header Section -->
+<div class="px-safe-margin py-xl flex flex-col md:flex-row md:items-end justify-between gap-md relative z-10">
+<div>
+<h1 class="font-display text-[32px] text-on-surface leading-tight mb-xs">Extension Marketplace</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Discover and install community-driven Lua plugins to extend Hermes core capabilities. Running in secure sandbox mode.</p>
+</div>
+<div class="flex items-center gap-sm">
+<button class="bg-surface-container text-on-surface font-label-md text-label-md px-md h-hit-target rounded-lg border border-outline-variant/20 flex items-center gap-xs hover:bg-surface-container-high transition-colors focus-ring">
+<span class="material-symbols-outlined text-sm" data-icon="filter_list">filter_list</span>
+                    Filter
+                </button>
+<select class="bg-surface-container text-on-surface font-label-md text-label-md px-md h-hit-target rounded-lg border border-outline-variant/20 focus-ring appearance-none pr-xl relative">
+<option>Most Installed</option>
+<option>Highest Rated</option>
+<option>Recently Added</option>
+</select>
+</div>
+</div>
+<!-- Filters / Categories -->
+<div class="px-safe-margin mb-lg flex gap-sm overflow-x-auto pb-xs">
+<button class="bg-primary/10 text-primary border border-primary/30 font-label-md text-label-md px-sm py-xs rounded-full whitespace-nowrap focus-ring">All Extensions</button>
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md px-sm py-xs rounded-full whitespace-nowrap transition-colors">Data Processing</button>
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md px-sm py-xs rounded-full whitespace-nowrap transition-colors">Machine Learning</button>
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md px-sm py-xs rounded-full whitespace-nowrap transition-colors">Network &amp; Security</button>
+<button class="bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high font-label-md text-label-md px-sm py-xs rounded-full whitespace-nowrap transition-colors">UI Themes</button>
+</div>
+<!-- Grid Layout -->
+<div class="px-safe-margin pb-safe-margin grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Card 1 (Active Download) -->
+<div class="glass-panel rounded-xl p-md hairline-top flex flex-col gap-md relative overflow-hidden group">
+<!-- Inner Glow on hover -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-lg bg-secondary-container/20 flex items-center justify-center border border-secondary-container/30">
+<span class="material-symbols-outlined text-secondary text-2xl" data-icon="language">language</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Web Scraper Pro</h3>
+<p class="font-code-md text-code-md text-on-surface-variant/70 text-[11px]">dev.hermes.crawler</p>
+</div>
+</div>
+<span class="bg-tertiary/10 text-tertiary font-label-sm text-label-sm px-2 py-0.5 rounded border border-tertiary/20">Sandbox</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mt-xs">Advanced DOM parsing and headless browser automation for extracting structured data from dynamic SPA web targets.</p>
+<div class="flex items-center gap-md mt-auto pt-sm">
+<div class="flex items-center gap-xs text-on-surface-variant/60">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+<span class="font-label-sm text-label-sm">142k</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant/60">
+<span class="material-symbols-outlined text-sm" data-icon="star" data-weight="fill">star</span>
+<span class="font-label-sm text-label-sm">4.9</span>
+</div>
+</div>
+<!-- Progress Bar state -->
+<div class="mt-xs bg-surface-container-lowest p-sm rounded-lg border border-outline-variant/10">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-sm text-label-sm text-secondary">Installing... 45%</span>
+<span class="font-code-md text-[10px] text-on-surface-variant/50">2.4 MB / 5.1 MB</span>
+</div>
+<div class="h-1.5 w-full bg-surface-dim rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[45%] rounded-full shadow-[0_0_8px_rgba(77,214,253,0.5)]"></div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container rounded-xl p-md hairline-top flex flex-col gap-md hover-scale transition-transform duration-300 cursor-pointer">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-lg bg-primary-container/20 flex items-center justify-center border border-primary-container/30">
+<span class="material-symbols-outlined text-primary text-2xl" data-icon="memory">memory</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Neural Log Parser</h3>
+<p class="font-code-md text-code-md text-on-surface-variant/70 text-[11px]">sys.ai.log_insight</p>
+</div>
+</div>
+<span class="bg-error/10 text-error font-label-sm text-label-sm px-2 py-0.5 rounded border border-error/20 flex items-center gap-1">
+<span class="material-symbols-outlined text-[10px]" data-icon="warning">warning</span>
+                        Kernel
+                    </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mt-xs">LLM-powered log analysis tool that automatically detects anomalies and suggests remediation scripts for kernel panics.</p>
+<div class="flex justify-between items-end mt-auto pt-sm">
+<div class="flex gap-md">
+<div class="flex items-center gap-xs text-on-surface-variant/60">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+<span class="font-label-sm text-label-sm">89k</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant/60">
+<span class="material-symbols-outlined text-sm" data-icon="star" data-weight="fill">star</span>
+<span class="font-label-sm text-label-sm">4.7</span>
+</div>
+</div>
+<button class="bg-surface-variant hover:bg-primary hover:text-on-primary text-on-surface font-label-sm px-sm py-1.5 rounded transition-colors border border-outline-variant/20 focus-ring">
+                        Install
+                    </button>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container rounded-xl p-md hairline-top flex flex-col gap-md hover-scale transition-transform duration-300 cursor-pointer">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-lg bg-tertiary-container/20 flex items-center justify-center border border-tertiary-container/30">
+<span class="material-symbols-outlined text-tertiary text-2xl" data-icon="hub">hub</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Auto-GPT Bridge</h3>
+<p class="font-code-md text-code-md text-on-surface-variant/70 text-[11px]">ext.ai.bridge</p>
+</div>
+</div>
+<span class="bg-on-surface-variant/10 text-on-surface-variant font-label-sm text-label-sm px-2 py-0.5 rounded border border-on-surface-variant/20">User</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mt-xs">Connects local Hermes scripts to remote GPT instances for autonomous task execution and agentic workflows.</p>
+<div class="flex justify-between items-end mt-auto pt-sm">
+<div class="flex gap-md">
+<div class="flex items-center gap-xs text-on-surface-variant/60">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+<span class="font-label-sm text-label-sm">312k</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant/60">
+<span class="material-symbols-outlined text-sm" data-icon="star" data-weight="fill">star</span>
+<span class="font-label-sm text-label-sm">4.9</span>
+</div>
+</div>
+<button class="bg-surface-variant hover:bg-primary hover:text-on-primary text-on-surface font-label-sm px-sm py-1.5 rounded transition-colors border border-outline-variant/20 focus-ring">
+                        Install
+                    </button>
+</div>
+</div>
+<!-- Card 4 (Installed) -->
+<div class="bg-surface-container-low rounded-xl p-md hairline-top flex flex-col gap-md opacity-80 border border-outline-variant/10">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-sm">
+<div class="w-12 h-12 rounded-lg bg-surface-variant flex items-center justify-center border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant text-2xl" data-icon="database">database</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Redis Cache Sync</h3>
+<p class="font-code-md text-code-md text-on-surface-variant/70 text-[11px]">db.redis.sync</p>
+</div>
+</div>
+<span class="bg-tertiary/10 text-tertiary font-label-sm text-label-sm px-2 py-0.5 rounded border border-tertiary/20">Sandbox</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2 mt-xs">In-memory data structure store connector, used as a database, cache, and message broker for Hermes nodes.</p>
+<div class="flex justify-between items-end mt-auto pt-sm">
+<div class="flex gap-md">
+<div class="flex items-center gap-xs text-on-surface-variant/60">
+<span class="material-symbols-outlined text-sm" data-icon="download">download</span>
+<span class="font-label-sm text-label-sm">45k</span>
+</div>
+</div>
+<button class="bg-transparent text-on-surface-variant font-label-sm px-sm py-1.5 rounded border border-outline-variant/30 flex items-center gap-1 cursor-default">
+<span class="material-symbols-outlined text-[14px]" data-icon="check">check</span>
+                        Installed
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ContinuityState } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { GrowthVectorIcon } from '../../components/primitives/brandIcons'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { getContinuityState, setSafeMode } from '../../services/ipc/continuityClient'
@@ -57,7 +58,7 @@ export function ContinuityCenter(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Loading continuity state...</p>
 
   return (
-    <div className="grid h-full min-w-[72rem] grid-cols-[20rem_minmax(36rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[72rem] docked:grid-cols-[20rem_minmax(36rem,1fr)_18rem]">
       <NdxToolWindow title="Continuity State" subtitle="Renderer signal">
         <p className="text-meta text-text-secondary">
           Reports renderer connectivity, persisted continuity metadata, and the real Safe Mode flag.
@@ -75,7 +76,10 @@ export function ContinuityCenter(): React.JSX.Element {
         <div className="flex min-h-full flex-col gap-4 p-4">
           <header className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-title font-semibold text-text-primary">Continuity and Offline</p>
+              <div className="flex items-center gap-2">
+                <GrowthVectorIcon className="size-6 text-[var(--ndx-accent)]" />
+                <p className="text-title font-semibold text-text-primary">Continuity and Offline</p>
+              </div>
               <p className="text-meta text-text-secondary">
                 Offline, suspend/resume, session restore, crash recovery, and Safe Mode status.
               </p>
@@ -87,7 +91,7 @@ export function ContinuityCenter(): React.JSX.Element {
 
           {error && <ErrorState title="Continuity request failed" description={error} />}
 
-          <section className="grid gap-2 border border-border bg-surface p-3">
+          <section className="grid gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Connectivity</p>
             <Field label="Current network state" value={online ? 'Online' : 'Offline'} />
             <Field
@@ -102,7 +106,7 @@ export function ContinuityCenter(): React.JSX.Element {
             </p>
           </section>
 
-          <section className="grid gap-2 border border-border bg-surface p-3">
+          <section className="grid gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Session restore</p>
             <Field
               label="Last route"
@@ -118,7 +122,7 @@ export function ContinuityCenter(): React.JSX.Element {
             />
           </section>
 
-          <section className="grid gap-2 border border-border bg-surface p-3">
+          <section className="grid gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Safe Mode</p>
             <Field label="Status" value={state?.safeModeActive ? 'Active' : 'Inactive'} />
             <p className="text-caption text-text-tertiary">
@@ -127,7 +131,7 @@ export function ContinuityCenter(): React.JSX.Element {
             </p>
           </section>
 
-          <section className="grid gap-2 border border-border bg-surface p-3">
+          <section className="grid gap-2 ndx-settings-section">
             <p className="text-body font-semibold text-text-primary">Power events</p>
             {state && state.powerEvents.length > 0 ? (
               <ul className="grid gap-1 text-meta text-text-secondary">

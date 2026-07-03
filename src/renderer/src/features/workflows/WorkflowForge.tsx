@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { ConditionOperator, WorkflowStep, WorkflowStepKind } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { HermesNodeIcon } from '../../components/primitives/brandIcons'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { listWorkflows, saveWorkflow } from '../../services/ipc/workflowClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 const STEP_KIND_LABEL: Record<WorkflowStepKind, string> = {
   'tool-action': 'Tool action',
@@ -153,9 +155,12 @@ function WorkflowForgeWorkspace({
 
   const registeredTools = registry.list()
 
-  return (
-    <div className="grid h-full min-h-0 grid-cols-1 lg:grid-cols-[17rem_minmax(0,1fr)_19rem]">
-      <NdxToolWindow title="Workflow Tools" subtitle={`${registeredTools.length} registered`}>
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Workflow Tools', `${registeredTools.length} registered`, (
+      <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <select
             value={newStepKind}
@@ -175,11 +180,31 @@ function WorkflowForgeWorkspace({
             Add step
           </ControllerButton>
         </div>
-      </NdxToolWindow>
+      </div>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [registeredTools.length, newStepKind, setPrimary, setSteps])
 
+  useEffect(() => {
+    setSecondary(
+      <NdxToolWindow title="Run Safety" subtitle={`${steps.length} steps`} side="right">
+        <p className="text-meta text-text-secondary">
+          Saved definitions remain real runnable workflows. Tool execution still flows through the
+          shared AI safety registry and Action Queue.
+        </p>
+      </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [steps.length, setSecondary])
+
+  return (
+    <div className="h-full flex-1">
       <NdxEditorShell title="Workflow Forge">
         <div className="flex h-full min-h-0 flex-col gap-4 p-4">
-          <p className="text-title font-semibold text-text-primary">Workflow Forge</p>
+          <div className="flex items-center gap-2">
+            <HermesNodeIcon className="size-6 text-[var(--ndx-accent)]" />
+            <p className="text-title font-semibold text-text-primary">Workflow Forge</p>
+          </div>
 
           {error && <ErrorState title="Couldn't save workflow" description={error} />}
 
@@ -235,13 +260,6 @@ function WorkflowForgeWorkspace({
           </div>
         </div>
       </NdxEditorShell>
-
-      <NdxToolWindow title="Run Safety" subtitle={`${steps.length} steps`} side="right">
-        <p className="text-meta text-text-secondary">
-          Saved definitions remain real runnable workflows. Tool execution still flows through the
-          shared AI safety registry and Action Queue.
-        </p>
-      </NdxToolWindow>
     </div>
   )
 }

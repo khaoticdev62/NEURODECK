@@ -194,7 +194,7 @@ export function ApplicationPolicyCenter(): React.JSX.Element {
 
       {selectedApplication && (
         <>
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-meta font-semibold text-text-primary">
               Advisory policy for {selectedApplication.name}
             </p>
@@ -212,7 +212,7 @@ export function ApplicationPolicyCenter(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-meta font-semibold text-text-primary">
               Launch environment (real, enforced)
             </p>
@@ -245,7 +245,7 @@ export function ApplicationPolicyCenter(): React.JSX.Element {
             </div>
           </section>
 
-          <section className="flex flex-col gap-2 border border-border bg-surface p-3">
+          <section className="flex flex-col gap-2 ndx-settings-section">
             <p className="text-meta font-semibold text-text-primary">
               Workspace association (real)
             </p>

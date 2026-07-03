@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Hermes Node Builder</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#59dbbd",
+                        "on-surface": "#e5e0ec",
+                        "surface-variant": "#35343c",
+                        "surface-tint": "#c8bfff",
+                        "surface-dim": "#14121a",
+                        "on-tertiary-fixed": "#002019",
+                        "on-tertiary": "#00382d",
+                        "inverse-surface": "#e5e0ec",
+                        "secondary-container": "#00b2d7",
+                        "surface-container": "#201f27",
+                        "surface-container-lowest": "#0e0d15",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "surface": "#14121a",
+                        "surface-container-high": "#2b2931",
+                        "on-tertiary-container": "#003127",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1c1b22",
+                        "primary-fixed-dim": "#c8bfff",
+                        "secondary-fixed": "#b5ebff",
+                        "primary-fixed": "#e5deff",
+                        "on-secondary": "#003543",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "on-surface-variant": "#c9c4d6",
+                        "primary": "#c8bfff",
+                        "tertiary-container": "#00a488",
+                        "on-error": "#690005",
+                        "outline": "#928e9f",
+                        "error-container": "#93000a",
+                        "primary-container": "#917eff",
+                        "on-secondary-container": "#003f4e",
+                        "on-secondary-fixed": "#001f28",
+                        "secondary": "#4dd6fd",
+                        "on-primary-container": "#28008a",
+                        "on-primary-fixed-variant": "#452daf",
+                        "tertiary-fixed": "#79f8d8",
+                        "on-background": "#e5e0ec",
+                        "inverse-primary": "#5e49c8",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-primary-fixed": "#1a0063",
+                        "background": "#14121a",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "surface-bright": "#3a3841",
+                        "outline-variant": "#484553",
+                        "surface-container-highest": "#35343c",
+                        "inverse-on-surface": "#312f38",
+                        "on-primary": "#2e0599"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "lg": "24px",
+                        "hit-target": "44px",
+                        "xs": "8px",
+                        "safe-margin": "40px",
+                        "xl": "32px",
+                        "sm": "12px",
+                        "md": "16px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display": ["Geist"],
+                        "code-md": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "headline-lg": ["22px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "code-md": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["11px", { "lineHeight": "14px", "fontWeight": "500" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "headline-md": ["18px", { "lineHeight": "24px", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .grid-bg {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+        .node-glow {
+            box-shadow: 0 0 15px rgba(200, 191, 255, 0.2);
+        }
+        .node-glow:focus-within {
+            box-shadow: 0 0 20px rgba(200, 191, 255, 0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+            transform: scale(1.02);
+        }
+        .hairline-top {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+    </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface h-screen w-screen overflow-hidden flex flex-col font-body-md text-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<header class="bg-surface dark:bg-surface-dim shadow-2xl shadow-background-deepest fixed top-0 w-full z-50 border-b border-white/10 flex justify-between items-center px-lg py-md w-full bg-surface-dim/80 backdrop-blur-xl border-t-[1px] border-white/12">
+<div class="flex items-center gap-xl">
+<div class="font-display text-display text-primary uppercase tracking-tighter">HERMES OS</div>
+<nav class="hidden md:flex gap-md">
+<a class="text-on-surface-variant font-medium hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform px-sm py-xs rounded-lg" href="#">Dashboard</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-2 hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform px-sm py-xs rounded-lg" href="#">Flow Builder</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform px-sm py-xs rounded-lg" href="#">Marketplace</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-variant/50 hover:text-primary transition-all duration-300 focus:scale-105 active:scale-95 transition-transform px-sm py-xs rounded-lg" href="#">Editor</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="h-hit-target w-hit-target rounded-full hover:bg-surface-variant/50 flex items-center justify-center text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="h-hit-target w-hit-target rounded-full hover:bg-surface-variant/50 flex items-center justify-center text-on-surface-variant transition-colors">
+<span class="material-symbols-outlined">terminal</span>
+</button>
+<img alt="User profile" class="w-hit-target h-hit-target rounded-full object-cover border border-outline-variant" data-alt="A high-tech cinematic macro shot of a sleek robotic eye lens glowing softly in cyan and violet, set against a deep dark background. Studio lighting, shallow depth of field, 8k resolution, photorealistic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_IfF4TcHxhZLJUC-e-_VWJIUnRzOaMfI-WjSbGDrBTY2VEppgpDoiH9XqakdOo7wSOWF-t8qU47NBrhknJkCcZJ9z1Zwp4w1Mc0crTKFhL-r0GVLPAEHuMYmpTahHoFYw5c5e2rDNbyZ-NX7qUKciv48zh0arWYRyu3wCh-Gp1OLbluJUPlCXnxEH0nsU2mllKE7noA2G2qFwngFsgcJvzACs_YbwYwWDN8Zapb_E--pamwKVXvUnCdqNWfI3zamCPrkDtkA8Zs8G"/>
+</div>
+</header>
+<div class="flex flex-1 pt-[76px] h-full overflow-hidden">
+<!-- SideNavBar -->
+<nav class="bg-surface-container-lowest dark:bg-surface-container-lowest fixed left-0 h-[calc(100vh-76px)] w-64 z-40 border-r border-white/10 flex flex-col h-full py-xl hidden md:flex">
+<div class="px-lg mb-xl">
+<h2 class="font-headline-lg text-headline-lg text-primary-fixed">HERMES CORE</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-xs">v4.2.0-STABLE</p>
+<button class="mt-md w-full bg-primary text-on-primary h-hit-target rounded-lg font-label-md text-label-md flex items-center justify-center gap-sm hover:bg-primary-fixed transition-colors hairline-top">
+<span class="material-symbols-outlined">add</span>
+                    New Script
+                </button>
+</div>
+<div class="flex-1 flex flex-col gap-base mt-md">
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined">extension</span>
+<span class="font-label-md text-label-md">Extensions</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-label-md text-label-md">Telemetry</span>
+</a>
+<a class="bg-surface-container-high border-l-4 border-tertiary text-on-surface flex items-center gap-md px-md py-sm hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined">account_tree</span>
+<span class="font-label-md text-label-md">Nodes</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined">code</span>
+<span class="font-label-md text-label-md">Scripts</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-md text-label-md">Logs</span>
+</a>
+</div>
+<div class="mt-auto px-md flex flex-col gap-base border-t border-white/10 pt-md">
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Docs</span>
+</a>
+<a class="text-on-surface-variant flex items-center gap-md px-md py-sm hover:bg-surface-container-low/50 hover:translate-x-1 transition-all" href="#">
+<span class="material-symbols-outlined">forum</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</nav>
+<!-- Main Canvas Area -->
+<main class="flex-1 ml-0 md:ml-64 relative bg-surface-dim grid-bg overflow-hidden cursor-grab active:cursor-grabbing">
+<!-- Nodes Layer -->
+<div class="absolute inset-0 w-full h-full p-xl" id="canvas-container">
+<!-- SVG Connections (Decorative for demo) -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" style="z-index: 10;">
+<!-- Connection 1 -->
+<path class="opacity-60" d="M 250 150 C 350 150, 350 250, 450 250" fill="none" stroke="#59dbbd" stroke-width="2" style="filter: drop-shadow(0 0 4px #59dbbd);"></path>
+<circle cx="450" cy="250" fill="#59dbbd" r="4"></circle>
+<!-- Connection 2 -->
+<path class="opacity-60" d="M 700 250 C 750 250, 750 350, 850 350" fill="none" stroke="#917eff" stroke-width="2" style="filter: drop-shadow(0 0 4px #917eff);"></path>
+<circle cx="850" cy="350" fill="#917eff" r="4"></circle>
+</svg>
+<!-- Trigger Node -->
+<div class="absolute top-[100px] left-[50px] w-64 bg-surface-container-high rounded-xl border border-outline-variant hairline-top node-glow cursor-default transition-all z-20" tabindex="0">
+<div class="p-sm flex items-center gap-sm border-b border-white/10 bg-surface-container/50 rounded-t-xl">
+<div class="w-8 h-8 rounded-lg bg-tertiary/20 flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+</div>
+<span class="font-label-md text-label-md font-semibold">Incoming Webhook</span>
+</div>
+<div class="p-md font-code-md text-code-md text-on-surface-variant bg-surface-container-lowest/50 rounded-b-xl">
+                        POST /api/v1/trigger
+                    </div>
+<!-- Output Port -->
+<div class="absolute right-[-6px] top-1/2 -translate-y-1/2 w-3 h-3 bg-tertiary rounded-full border-2 border-surface-container-high z-30"></div>
+</div>
+<!-- Neural Process Node (Selected) -->
+<div class="absolute top-[150px] left-[450px] w-64 bg-surface-container-high rounded-xl border border-primary hairline-top shadow-[0_0_20px_rgba(200,191,255,0.15)] scale-[1.02] cursor-default transition-all z-20" tabindex="0">
+<!-- Input Port -->
+<div class="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-3 bg-surface rounded-full border-2 border-outline-variant z-30"></div>
+<div class="p-sm flex items-center justify-between border-b border-primary/30 bg-primary/10 rounded-t-xl">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+</div>
+<span class="font-label-md text-label-md font-semibold text-primary">NLP Analysis</span>
+</div>
+<span class="material-symbols-outlined text-primary/50 text-[16px]">more_vert</span>
+</div>
+<div class="p-md font-body-md text-body-md text-on-surface-variant bg-surface-container-lowest/50 rounded-b-xl">
+                        Model: Hermes-v2-Instruct<br/>
+                        Temp: 0.7
+                    </div>
+<!-- Output Port -->
+<div class="absolute right-[-6px] top-1/2 -translate-y-1/2 w-3 h-3 bg-primary rounded-full border-2 border-surface-container-high z-30"></div>
+</div>
+<!-- Storage Node -->
+<div class="absolute top-[280px] left-[850px] w-64 bg-surface-container-high rounded-xl border border-outline-variant hairline-top node-glow cursor-default transition-all z-20" tabindex="0">
+<!-- Input Port -->
+<div class="absolute left-[-6px] top-1/2 -translate-y-1/2 w-3 h-3 bg-surface rounded-full border-2 border-outline-variant z-30"></div>
+<div class="p-sm flex items-center gap-sm border-b border-white/10 bg-surface-container/50 rounded-t-xl">
+<div class="w-8 h-8 rounded-lg bg-secondary/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined text-[18px]">database</span>
+</div>
+<span class="font-label-md text-label-md font-semibold">Postgres Insert</span>
+</div>
+<div class="p-md font-code-md text-code-md text-on-surface-variant bg-surface-container-lowest/50 rounded-b-xl">
+                        Table: sentiment_logs
+                    </div>
+</div>
+</div>
+<!-- Mini-map Overlay -->
+<div class="absolute bottom-xl left-lg w-48 h-32 bg-surface-container-highest/80 backdrop-blur-md rounded-lg border border-outline-variant/30 hairline-top p-sm flex items-center justify-center shadow-lg pointer-events-none z-30">
+<div class="w-full h-full border border-white/5 rounded relative">
+<!-- Mini nodes representations -->
+<div class="absolute top-[20%] left-[10%] w-6 h-4 bg-tertiary/50 rounded-sm"></div>
+<div class="absolute top-[40%] left-[45%] w-6 h-4 bg-primary rounded-sm shadow-[0_0_8px_rgba(200,191,255,0.5)]"></div>
+<div class="absolute top-[60%] left-[75%] w-6 h-4 bg-secondary/50 rounded-sm"></div>
+<!-- Viewport indicator -->
+<div class="absolute top-0 left-0 w-full h-full border-2 border-white/20 rounded"></div>
+</div>
+</div>
+<!-- Canvas Controls Bottom Center -->
+<div class="absolute bottom-xl left-1/2 -translate-x-1/2 bg-surface-container-highest/90 backdrop-blur-xl border border-white/10 rounded-full px-md py-sm flex items-center gap-sm hairline-top shadow-xl z-30">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">remove</span>
+</button>
+<span class="font-code-md text-code-md text-on-surface font-semibold w-12 text-center">100%</span>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">add</span>
+</button>
+<div class="w-px h-6 bg-white/10 mx-sm"></div>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-variant hover:text-on-surface transition-colors">
+<span class="material-symbols-outlined">fit_screen</span>
+</button>
+</div>
+</main>
+<!-- Properties Sidebar (Inspector) -->
+<aside class="w-80 bg-surface border-l border-white/10 flex flex-col z-40 hidden lg:flex">
+<div class="p-md border-b border-white/10 flex items-center justify-between">
+<h3 class="font-headline-md text-headline-md text-on-surface">Properties</h3>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">close</span>
+</div>
+<div class="flex-1 overflow-y-auto p-md flex flex-col gap-lg">
+<!-- Node Header Info -->
+<div class="flex items-start gap-md">
+<div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary mt-1">
+<span class="material-symbols-outlined text-[24px]">psychology</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary font-semibold">NLP Analysis</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1 text-sm">Neural Process Node</p>
+</div>
+</div>
+<!-- Form Controls -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Node Name</label>
+<input class="bg-surface-container-lowest border border-outline-variant/50 rounded-md px-sm py-xs font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-full h-hit-target" type="text" value="NLP Analysis"/>
+</div>
+<div class="flex flex-col gap-sm">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Model Selection</label>
+<select class="bg-surface-container-lowest border border-outline-variant/50 rounded-md px-sm py-xs font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-full h-hit-target appearance-none cursor-pointer">
+<option>Hermes-v2-Instruct</option>
+<option>Hermes-v2-Chat</option>
+<option>Llama-3-70B</option>
+</select>
+</div>
+<div class="flex flex-col gap-sm">
+<div class="flex justify-between items-center">
+<label class="font-label-sm text-label-sm text-on-surface-variant">Temperature</label>
+<span class="font-code-md text-code-md text-primary">0.7</span>
+</div>
+<input class="w-full accent-primary h-2 bg-surface-variant rounded-lg appearance-none cursor-pointer" max="1" min="0" step="0.1" type="range" value="0.7"/>
+</div>
+<div class="flex flex-col gap-sm">
+<label class="font-label-sm text-label-sm text-on-surface-variant">System Prompt</label>
+<textarea class="bg-surface-container-lowest border border-outline-variant/50 rounded-md px-sm py-sm font-code-md text-code-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-full resize-none" rows="4">You are a sentiment analysis engine. Output only JSON containing score and confidence.</textarea>
+</div>
+</div>
+<!-- Actions Footer -->
+<div class="p-md border-t border-white/10 flex flex-col gap-sm bg-surface-container">
+<button class="w-full bg-surface-variant text-on-surface h-hit-target rounded-lg font-label-md text-label-md flex items-center justify-center gap-sm hover:bg-surface-bright transition-colors hairline-top">
+<span class="material-symbols-outlined text-[18px]">save</span>
+                    Save Template
+                </button>
+<button class="w-full bg-primary text-on-primary h-hit-target rounded-lg font-label-md text-label-md flex items-center justify-center gap-sm hover:bg-primary-fixed transition-colors hairline-top shadow-[0_0_15px_rgba(200,191,255,0.2)]">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+                    Execute Flow
+                </button>
+</div>
+</aside>
+</div>
+</body></html>

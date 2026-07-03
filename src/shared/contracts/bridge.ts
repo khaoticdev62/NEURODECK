@@ -318,6 +318,19 @@ import type {
   UpdateAgentRequest,
   WorkspaceAgentRequest
 } from './agent'
+import type {
+  Conversation,
+  ConversationIdRequest,
+  CreateConversationRequest,
+  ListConversationsRequest,
+  SendConversationMessageRequest
+} from './conversation'
+import type {
+  DeckyBridgeStatus,
+  DeckyNavigateEvent,
+  DeckySettings,
+  SetDeckySettingsRequest
+} from './decky'
 
 /**
  * The shape of the real preload bridge (`window.ndx`). Defined here, in
@@ -433,6 +446,18 @@ export interface NdxBridge {
     onUpdate: (listener: (run: AgentRun) => void) => () => void
     onToolRequest: (listener: (request: AgentToolExecutionRequest) => void) => () => void
     reportToolResult: (result: AgentToolExecutionResult) => Promise<NdxResult<null>>
+  }
+  conversations: {
+    list: (request: ListConversationsRequest) => Promise<NdxResult<Conversation[]>>
+    create: (request: CreateConversationRequest) => Promise<NdxResult<Conversation>>
+    sendMessage: (request: SendConversationMessageRequest) => Promise<NdxResult<Conversation>>
+    remove: (request: ConversationIdRequest) => Promise<NdxResult<null>>
+  }
+  decky: {
+    getSettings: () => Promise<NdxResult<DeckySettings>>
+    setSettings: (request: SetDeckySettingsRequest) => Promise<NdxResult<DeckySettings>>
+    getStatus: () => Promise<NdxResult<DeckyBridgeStatus>>
+    onNavigate: (listener: (event: DeckyNavigateEvent) => void) => () => void
   }
   system: {
     collectMetrics: () => Promise<NdxResult<SystemMetricsSnapshot>>

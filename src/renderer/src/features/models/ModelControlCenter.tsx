@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { ModelProvider, ModelProviderKind } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
@@ -12,6 +13,7 @@ import {
   setModelProviderEnabled,
   testModelProviderConnection
 } from '../../services/ipc/modelClient'
+import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 /**
  * ND-035 Model Control Center, scoped to "Connected providers" — the only
@@ -81,8 +83,11 @@ export function ModelControlCenter(): React.JSX.Element {
   ).length
   const cloudCount = providers.length - localCount
 
-  return (
-    <div className="grid h-full min-w-[64rem] grid-cols-[20rem_minmax(30rem,1fr)_18rem] gap-2 overflow-auto">
+  const setPrimary = useWorkbenchStore((state) => state.setPrimary)
+  const setSecondary = useWorkbenchStore((state) => state.setSecondary)
+
+  useEffect(() => {
+    setPrimary('Provider Setup', `${providers.length} configured`, (
       <NdxToolWindow title="Provider Setup" subtitle={`${providers.length} configured`}>
         <p className="text-meta text-text-secondary">
           Providers are stored through the existing model service. Cloud API keys stay encrypted in
@@ -115,33 +120,12 @@ export function ModelControlCenter(): React.JSX.Element {
           </p>
         )}
       </NdxToolWindow>
+    ))
+    return () => setPrimary('Command Deck', undefined, null)
+  }, [providers.length, navigate, showAddForm, setPrimary])
 
-      <NdxEditorShell title="Model Control Center">
-        <div className="flex min-h-full flex-col gap-3 p-3">
-          {error && <ErrorState title="Model provider error" description={error} />}
-
-          {providers.length === 0 ? (
-            <EmptyState
-              className="flex-1"
-              title="No providers connected"
-              description="Add a local (e.g. Ollama) or cloud OpenAI-compatible provider to discover its real models."
-            />
-          ) : (
-            <ul className="flex flex-col gap-2 overflow-auto">
-              {providers.map((provider) => (
-                <ProviderRow
-                  key={provider.id}
-                  provider={provider}
-                  onOpen={() => navigate(`/models/${provider.id}`)}
-                  onRemove={() => void handleRemove(provider.id)}
-                  onToggle={() => void handleToggle(provider)}
-                />
-              ))}
-            </ul>
-          )}
-        </div>
-      </NdxEditorShell>
-
+  useEffect(() => {
+    setSecondary(
       <NdxToolWindow
         title="Routing Context"
         subtitle={`${enabledCount}/${providers.length} enabled`}
@@ -167,6 +151,37 @@ export function ModelControlCenter(): React.JSX.Element {
           </p>
         </div>
       </NdxToolWindow>
+    )
+    return () => setSecondary(null)
+  }, [enabledCount, providers.length, localCount, cloudCount, setSecondary])
+
+  return (
+    <div className="h-full flex-1">
+      <NdxEditorShell title="Model Control Center">
+        <div className="flex min-h-full flex-col gap-3 p-3">
+          {error && <ErrorState title="Model provider error" description={error} />}
+
+          {providers.length === 0 ? (
+            <EmptyState
+              className="flex-1"
+              title="No providers connected"
+              description="Add a local (e.g. Ollama) or cloud OpenAI-compatible provider to discover its real models."
+            />
+          ) : (
+            <ul className="flex flex-col gap-2 overflow-auto">
+              {providers.map((provider) => (
+                <ProviderRow
+                  key={provider.id}
+                  provider={provider}
+                  onOpen={() => navigate(`/models/${provider.id}`)}
+                  onRemove={() => void handleRemove(provider.id)}
+                  onToggle={() => void handleToggle(provider)}
+                />
+              ))}
+            </ul>
+          )}
+        </div>
+      </NdxEditorShell>
     </div>
   )
 }
@@ -278,12 +293,18 @@ function ProviderRow({
   return (
     <li ref={ref} tabIndex={-1} className="outline-none">
       <NdxFocusSurface active={isFocused} density="dense" className="p-3">
-        <p className="text-body font-semibold text-text-primary">{provider.name}</p>
-        <p className="text-meta text-text-secondary">
-          {provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local'} · {provider.baseUrl}
-          {provider.hasApiKey ? ' · API key set' : ''}
-          {provider.enabled ? ' · Enabled' : ' · Disabled'}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-body font-semibold text-text-primary">{provider.name}</p>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <StatusBadge
+              tone={provider.kind === 'cloud-openai-compatible' ? 'info' : 'approval'}
+              label={provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local'}
+            />
+            <StatusBadge tone={provider.enabled ? 'success' : 'neutral'} label={provider.enabled ? 'Enabled' : 'Disabled'} />
+            {provider.hasApiKey && <StatusBadge tone="neutral" label="API key set" />}
+          </div>
+        </div>
+        <p className="text-meta text-text-secondary">{provider.baseUrl}</p>
         {testResult && <p className="text-meta text-text-tertiary">{testResult}</p>}
         <div className="mt-2 flex gap-2">
           <ControllerButton variant="primary" disabled={testing} onClick={() => void handleTest()}>

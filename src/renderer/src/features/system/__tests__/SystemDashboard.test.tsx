@@ -1,20 +1,16 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge, SystemMetricsSnapshot } from '@shared/contracts'
 import { SystemDashboard } from '../SystemDashboard'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
 }
 
-function renderDashboard(): ReturnType<typeof render> {
-  return render(
-    <MemoryRouter>
-      <SystemDashboard />
-    </MemoryRouter>
-  )
+function renderDashboard(): ReturnType<typeof renderWithProviders> {
+  return renderWithProviders(<SystemDashboard />)
 }
 
 afterEach(() => {

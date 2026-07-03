@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK System Guide</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed": "#1a0063",
+                      "surface-variant": "#35343c",
+                      "on-surface": "#e5e0ec",
+                      "inverse-surface": "#e5e0ec",
+                      "primary-container": "#917eff",
+                      "primary-fixed": "#e5deff",
+                      "inverse-primary": "#5e49c8",
+                      "outline": "#928e9f",
+                      "error": "#ffb4ab",
+                      "primary": "#c8bfff",
+                      "on-primary": "#2e0599",
+                      "on-error-container": "#ffdad6",
+                      "background": "#14121a",
+                      "surface-container-lowest": "#0e0d15",
+                      "on-tertiary-fixed": "#002019",
+                      "on-secondary-fixed": "#001f28",
+                      "secondary-container": "#00b2d7",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "surface-container-high": "#2b2931",
+                      "on-error": "#690005",
+                      "tertiary-fixed": "#79f8d8",
+                      "on-tertiary-container": "#003127",
+                      "on-background": "#e5e0ec",
+                      "primary-fixed-dim": "#c8bfff",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "secondary-fixed": "#b5ebff",
+                      "outline-variant": "#484553",
+                      "surface-tint": "#c8bfff",
+                      "on-tertiary": "#00382d",
+                      "error-container": "#93000a",
+                      "surface-dim": "#14121a",
+                      "surface-container": "#201f27",
+                      "inverse-on-surface": "#312f38",
+                      "secondary": "#4dd6fd",
+                      "on-secondary": "#003543",
+                      "surface": "#14121a",
+                      "surface-container-low": "#1c1b22",
+                      "surface-bright": "#3a3841",
+                      "surface-container-highest": "#35343c",
+                      "on-surface-variant": "#c9c4d6",
+                      "tertiary": "#59dbbd",
+                      "tertiary-container": "#00a488",
+                      "on-primary-container": "#28008a",
+                      "on-primary-fixed-variant": "#452daf",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "on-secondary-container": "#003f4e"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "safe-margin": "40px",
+                      "xl": "32px",
+                      "hit-target": "44px",
+                      "sm": "12px",
+                      "xs": "8px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "base": "4px"
+              },
+              "fontFamily": {
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter" /* Fallback to Inter as Geist isn't loaded */
+                      ],
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "display": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "code-md": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "code-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-400-normal.woff2') format('woff2');
+            font-weight: 400;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-500-normal.woff2') format('woff2');
+            font-weight: 500;
+            font-style: normal;
+        }
+        @font-face {
+            font-family: 'Geist';
+            src: url('https://cdn.jsdelivr.net/fontsource/fonts/geist-sans@latest/latin-600-normal.woff2') format('woff2');
+            font-weight: 600;
+            font-style: normal;
+        }
+
+        body {
+            background-color: #0e0d15; /* surface-container-lowest */
+            color: #e5e0ec; /* on-surface */
+            overflow: hidden; /* For 1280x800 fixed UI */
+        }
+
+        .hairline-edge {
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+        }
+
+        .focus-scale {
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .focus-scale:focus-visible, .focus-scale:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 2px #c8bfff, 0 8px 32px rgba(20, 18, 26, 0.4);
+            outline: none;
+            z-index: 10;
+        }
+
+        .glass-panel {
+            background: rgba(28, 27, 34, 0.7); /* surface-container-low slightly transparent */
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #484553;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #928e9f;
+        }
+    </style>
+</head>
+<body class="w-[1280px] h-[800px] flex bg-surface-container-lowest antialiased">
+<!-- Top App Bar - Fixed -->
+<header class="fixed top-0 right-0 w-[calc(100%-16rem)] z-50 h-hit-target px-safe-margin flex justify-between items-center bg-surface-container-lowest/80 backdrop-blur-md shadow-sm">
+<div class="flex items-center gap-xl">
+<h2 class="font-headline-lg text-headline-lg font-bold text-on-surface">NEURODECK OS</h2>
+<nav class="hidden md:flex items-center gap-md">
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20 px-3 py-1 rounded-md transition-all font-label-md text-label-md" href="#">Docs</a>
+<a class="text-secondary font-bold border-b-2 border-secondary pb-1 px-3 py-1 font-label-md text-label-md" href="#">API</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20 px-3 py-1 rounded-md transition-all font-label-md text-label-md" href="#">Changelog</a>
+<a class="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/20 px-3 py-1 rounded-md transition-all font-label-md text-label-md" href="#">Community</a>
+</nav>
+</div>
+<div class="flex items-center gap-sm">
+<button aria-label="Search" class="h-hit-target w-hit-target rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant/20 transition-all focus-scale">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="h-hit-target w-hit-target rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant/20 transition-all focus-scale">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="h-hit-target w-hit-target rounded-full flex items-center justify-center text-on-surface hover:bg-surface-variant/20 transition-all focus-scale">
+<span class="material-symbols-outlined">dynamic_form</span>
+</button>
+<button class="px-md py-sm bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-primary-fixed-dim transition-all focus-scale">
+                Deploy Agent
+            </button>
+<img alt="User Avatar" class="w-10 h-10 rounded-full border border-outline-variant ml-2 object-cover" data-alt="A stylized, high-tech abstract avatar showing a glowing neon polygon structure on a dark background. Corporate cyberpunk aesthetic, professional headshot framing, deep shadows, 8k resolution." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBdmWWDBVuVvbl_bD2fK1liDeSuqklXLSvWVXgwgzd-xJoQr39zRqz2cvzVsraa_Clro9XjdzuDeuth-_bTuBcSAszsaczIf-SVxUYBM1xoEmwuYnV9uiKqTAPusiHQ7ZEZXTqlEHa1ZNa1rkYytkfgpDo9mEGPVbyZgv-upmgVJWAu2QBddck03Q5LQBbdID3hx6AGT58PPY2Yl_CgYRn9LJn0dEyOkKrjjCP7iJ0ZSWuvmBSixSV2vANJc7YhiteIceVu0rwAxZRP"/>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="h-full w-64 fixed left-0 top-0 border-r border-outline-variant bg-surface-container-low flex flex-col py-xl px-md gap-lg z-40">
+<!-- Brand -->
+<div class="mb-lg">
+<h1 class="font-display text-display text-primary tracking-tight">NEURODECK OS</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant mt-1">v2.4.0 Stable</p>
+</div>
+<!-- Search CTA -->
+<button class="w-full flex items-center gap-xs px-md py-sm bg-surface-container-high rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-all focus-scale mb-4 border border-outline-variant">
+<span class="material-symbols-outlined text-sm">search</span>
+<span class="font-label-md text-label-md flex-1 text-left">Search Docs</span>
+<kbd class="font-code-md text-[10px] bg-surface-container-lowest px-1 rounded text-outline">Ctrl K</kbd>
+</button>
+<!-- Main Links -->
+<div class="flex flex-col gap-xs flex-1 overflow-y-auto pr-2">
+<!-- Active Tab: Assuming Architecture/Docs intent based on prompt -->
+<a class="flex items-center gap-md px-md py-sm bg-primary-container text-on-primary-container rounded-lg border-l-4 border-primary scale-[1.05] transition-transform duration-200 hairline-edge" href="#">
+<span class="material-symbols-outlined">architecture</span>
+<span class="font-label-md text-label-md">Architecture</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-all rounded-lg focus-scale focus:ring-2 focus:ring-primary active:scale-95" href="#">
+<span class="material-symbols-outlined">neurology</span>
+<span class="font-label-md text-label-md">Orchestration</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-all rounded-lg focus-scale focus:ring-2 focus:ring-primary active:scale-95" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-md text-label-md">Automation</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-all rounded-lg focus-scale focus:ring-2 focus:ring-primary active:scale-95" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-label-md text-label-md">Security</span>
+</a>
+</div>
+<!-- Footer Links -->
+<div class="flex flex-col gap-xs pt-4 border-t border-outline-variant">
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-all rounded-lg focus-scale" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-highest transition-all rounded-lg focus-scale" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-md text-label-md">Support</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-64 w-[calc(100%-16rem)] h-full overflow-y-auto pt-[80px] pb-safe-margin px-safe-margin bg-background relative z-0">
+<!-- Header -->
+<div class="mb-lg pt-4">
+<h1 class="font-display text-display text-primary-container tracking-tight">SYSTEM_GUIDE_v2.4</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2 max-w-2xl">Complete documentation and tactical overview for the NEURODECK operating environment.</p>
+</div>
+<!-- Hero Section -->
+<div class="relative w-full rounded-xl overflow-hidden mb-xl hairline-edge glass-panel group focus-scale" tabindex="0">
+<div class="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-10"></div>
+<img alt="Neurodeck Command Center UI" class="w-full h-64 object-cover object-center group-hover:scale-105 transition-transform duration-700" src="https://lh3.googleusercontent.com/aida/AP1WRLvPkrMciPkH1uFTq1aSAM1QwRXmI3-Ja6MiVOM85rGtrJJPJz_pZm66ilxWvsCrAODE_6_zSgK0xbr4iJr_cayJvTCfDCLQ_MaikSmz8eRy7m6yHU5CQ0h2C9_GS78aD_IaVyUWE1O8EoKf9SRMFV9EiNGTi0Hoxrb6EIdWFMe05caxuUt6hKrPyocIFODriHBq5h2K1esWcS45uZUDfKZ_Vz6Nd5kg1mYIexT--BusoeVfWuMEPQpAaa_8"/>
+<div class="absolute bottom-0 left-0 p-lg z-20 w-full flex justify-between items-end">
+<div>
+<span class="px-2 py-1 bg-secondary/20 text-secondary border border-secondary/30 rounded font-code-md text-code-md mb-3 inline-block">QUICK START</span>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">Initialize Core Systems</h2>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl">Learn how to run hardware scans, ingest local models, and configure your first agent persona in under 5 minutes.</p>
+</div>
+<button class="h-hit-target px-lg bg-secondary text-on-secondary rounded-lg font-label-md text-label-md flex items-center gap-2 hover:bg-secondary-fixed transition-colors shadow-[0_0_15px_rgba(77,214,253,0.3)]">
+<span class="material-symbols-outlined">play_arrow</span>
+                    Start Guide
+                </button>
+</div>
+</div>
+<!-- Bento Grid Modules -->
+<div class="grid grid-cols-12 gap-md pb-xl">
+<!-- Architecture Overview -->
+<div class="col-span-8 bg-surface-container rounded-xl p-lg hairline-edge flex flex-col relative overflow-hidden group focus-scale" tabindex="0">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-container/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex items-center gap-3 mb-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary-container border border-outline-variant">
+<span class="material-symbols-outlined">memory</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary-container">Architecture Overview</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md flex-1">Technical deep-dive into the custom Linux kernel, VRAM management strategies for large local LLMs, and zero-latency IPC protocols.</p>
+<div class="bg-surface-container-lowest rounded-lg p-3 border border-outline-variant/50 font-code-md text-code-md text-tertiary-fixed-dim">
+<div class="text-outline-variant mb-1">// Check VRAM allocation</div>
+                    $ ndk sys-diag --gpu-mem alloc
+                </div>
+<div class="mt-md flex justify-end">
+<a class="text-secondary font-label-md text-label-md flex items-center gap-1 hover:text-secondary-fixed transition-colors" href="#">
+                        Read Docs <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Agent Protocols -->
+<div class="col-span-4 bg-surface-container rounded-xl p-lg hairline-edge flex flex-col relative overflow-hidden group focus-scale" tabindex="0">
+<div class="absolute bottom-0 right-0 w-24 h-24 bg-secondary/10 rounded-full blur-xl pointer-events-none"></div>
+<div class="flex items-center gap-3 mb-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-secondary border border-outline-variant">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Agent Protocols</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-lg flex-1">Deployment and monitoring strategies for autonomous agent teams operating in background daemons.</p>
+<div class="flex items-center gap-2 mt-auto">
+<span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_5px_#4dd6fd]"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">3 Active Protocols</span>
+</div>
+</div>
+<!-- Hermes Automation -->
+<div class="col-span-6 bg-surface-container rounded-xl p-lg hairline-edge flex flex-col group focus-scale" tabindex="0">
+<div class="flex items-center gap-3 mb-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-tertiary border border-outline-variant">
+<span class="material-symbols-outlined">route</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Hermes Automation</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Guide to the visual node flow builder and embedded Lua scripting engine for custom task automation.</p>
+<div class="flex gap-sm mt-auto">
+<span class="px-2 py-1 bg-surface-container-high border border-outline-variant rounded text-on-surface font-code-md text-[11px]">Lua 5.4</span>
+<span class="px-2 py-1 bg-surface-container-high border border-outline-variant rounded text-on-surface font-code-md text-[11px]">Node Graph</span>
+</div>
+</div>
+<!-- Security Handshake -->
+<div class="col-span-6 bg-surface-container rounded-xl p-lg hairline-edge flex flex-col group focus-scale" tabindex="0">
+<div class="flex items-center gap-3 mb-md">
+<div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-error border border-outline-variant">
+<span class="material-symbols-outlined">lock</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Security Handshake</h3>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-md">Understanding local-only data sovereignty, on-device encryption standards, and configuring private VPN tunnels.</p>
+<div class="h-2 w-full bg-surface-container-highest rounded-full overflow-hidden mt-auto">
+<div class="h-full bg-tertiary w-full"></div>
+</div>
+<span class="font-label-sm text-label-sm text-tertiary mt-2 text-right">Encrypted Status: Optimal</span>
+</div>
+</div>
+</main>
+</body></html>

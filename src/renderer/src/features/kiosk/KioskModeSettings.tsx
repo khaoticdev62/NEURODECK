@@ -42,7 +42,7 @@ export function KioskModeSettings(): React.JSX.Element {
 
   if (enabled) {
     return (
-      <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+      <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[16rem_minmax(40rem,1fr)_18rem]">
         <NdxSettingsTree>
           <p className="text-meta text-text-primary">Kiosk</p>
         </NdxSettingsTree>
@@ -65,7 +65,7 @@ export function KioskModeSettings(): React.JSX.Element {
   }
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[16rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[16rem_minmax(40rem,1fr)_18rem]">
       <NdxSettingsTree>
         <div className="space-y-2 text-meta text-text-secondary">
           <p className="text-text-primary">Kiosk</p>

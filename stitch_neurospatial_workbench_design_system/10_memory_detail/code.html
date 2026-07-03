@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK - Memory Detail View</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#1c1b22",
+                        "on-surface": "#e5e0ec",
+                        "inverse-surface": "#e5e0ec",
+                        "on-tertiary-fixed-variant": "#005142",
+                        "on-secondary-container": "#003f4e",
+                        "secondary-container": "#00b2d7",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#79f8d8",
+                        "tertiary": "#59dbbd",
+                        "surface-bright": "#3a3841",
+                        "error-container": "#93000a",
+                        "surface-tint": "#c8bfff",
+                        "on-background": "#e5e0ec",
+                        "surface-container-lowest": "#0e0d15",
+                        "on-primary-fixed": "#1a0063",
+                        "on-primary": "#2e0599",
+                        "primary": "#c8bfff",
+                        "primary-fixed": "#e5deff",
+                        "on-surface-variant": "#c9c4d6",
+                        "inverse-primary": "#5e49c8",
+                        "primary-fixed-dim": "#c8bfff",
+                        "surface-container": "#201f27",
+                        "on-secondary": "#003543",
+                        "surface": "#14121a",
+                        "on-tertiary-fixed": "#002019",
+                        "surface-container-highest": "#35343c",
+                        "surface-dim": "#14121a",
+                        "secondary": "#4dd6fd",
+                        "on-error": "#690005",
+                        "surface-container-high": "#2b2931",
+                        "on-tertiary": "#00382d",
+                        "background": "#14121a",
+                        "on-primary-container": "#28008a",
+                        "outline-variant": "#484553",
+                        "secondary-fixed-dim": "#4dd6fd",
+                        "tertiary-fixed-dim": "#59dbbd",
+                        "outline": "#928e9f",
+                        "on-secondary-fixed-variant": "#004e5f",
+                        "error": "#ffb4ab",
+                        "on-primary-fixed-variant": "#452daf",
+                        "inverse-on-surface": "#312f38",
+                        "surface-variant": "#35343c",
+                        "secondary-fixed": "#b5ebff",
+                        "tertiary-container": "#00a488",
+                        "primary-container": "#917eff",
+                        "on-tertiary-container": "#003127",
+                        "on-secondary-fixed": "#001f28"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "hit-target": "44px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "sm": "12px",
+                        "safe-margin": "40px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xs": "8px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Geist"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-lg": ["Geist"],
+                        "display": ["Geist"],
+                        "code-md": ["JetBrains Mono"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["18px", {"lineHeight": "24px", "fontWeight": "500"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "headline-lg": ["22px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "display": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "code-md": ["13px", {"lineHeight": "20px", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: theme('colors.surface-container-lowest'); color: theme('colors.on-surface'); }
+        
+        .panel-edge {
+            box-shadow: inset 0 1px 0 0 rgba(255,255,255,0.12);
+        }
+        
+        .focus-ring-active {
+            box-shadow: 0 0 0 3px theme('colors.primary'), 0 0 8px 4px rgba(200,191,255,0.4);
+            transform: scale(1.02);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-target {
+            transition: all 0.2s ease-out;
+        }
+        
+        .hover-target:hover {
+            background-color: theme('colors.surface-container-high');
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px -8px rgba(0,0,0,0.5);
+        }
+
+        .scroll-hidden::-webkit-scrollbar { display: none; }
+        .scroll-hidden { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Neural Pulse Animation CSS */
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.3; }
+            50% { transform: scale(1.1); opacity: 0.6; }
+        }
+        .neural-pulse-idle {
+            animation: breathe 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex font-body-md bg-surface-container-lowest text-on-surface selection:bg-primary/30 antialiased">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 flex items-center justify-between px-safe-margin h-hit-target border-b border-white/10 bg-surface/80 backdrop-blur-xl">
+<div class="flex items-center gap-xl">
+<span class="font-display text-display text-primary uppercase tracking-widest leading-none mt-1">NEURODECK</span>
+<nav class="hidden md:flex gap-lg h-full items-end pb-[2px]">
+<a class="text-primary font-bold border-b-2 border-primary pb-1 font-headline-md text-headline-md hover:text-primary transition-colors duration-200" href="#">Memory</a>
+<a class="text-on-surface-variant font-medium pb-[6px] font-headline-md text-headline-md hover:text-primary transition-colors duration-200" href="#">Knowledge</a>
+<a class="text-on-surface-variant font-medium pb-[6px] font-headline-md text-headline-md hover:text-primary transition-colors duration-200" href="#">Fragments</a>
+<a class="text-on-surface-variant font-medium pb-[6px] font-headline-md text-headline-md hover:text-primary transition-colors duration-200" href="#">Analysis</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<button class="font-label-md text-label-md bg-primary/10 text-primary px-4 py-2 rounded-lg hover:bg-primary/20 transition-colors border border-primary/20 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">sync</span> Sync Sources
+            </button>
+<div class="flex gap-2">
+<button class="w-hit-target h-hit-target rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors hover:text-primary scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="w-hit-target h-hit-target rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors hover:text-primary scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">account_tree</span>
+</button>
+</div>
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-surface-container-highest ml-2">
+<img alt="User profile" class="w-full h-full object-cover" data-alt="A stylized, low-poly 3D avatar of a futuristic character wearing an iridescent visor, lit by neon cyan and violet underglow, set against a completely black void background. The aesthetic is sovereign dark and cyberpunk, typical of high-end gaming user profiles." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBLsRPp28Lyv8qd-wRfdW5ZmfR2g_CPZQTYMYvBwKVuNs4XyUUhwSYB3MU0xbow0Ok_1W_L5qqbXdDsOkO1tS0vFFi-bpUcdGjoghOw_RnZtCVekp5Flsa7mYqY-ecwSq4L1qS6M7RYF_vDky8E-mjMbLGN37Ztc5zLR79CVp3wb21BBdODRef6S5Kx2sdVBwZK6J7LDhvz513hmsZr64tntAc1oZMGvU-MHkuNIn9BFTVDyaSCheZYvbwu7UmZ5QWTCY2dMDjwWj6R"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full z-40 flex flex-col pt-24 pb-8 bg-surface-container-low border-r border-white/5 w-64 shadow-xl flex-shrink-0">
+<div class="px-safe-margin mb-8">
+<div class="flex items-center gap-sm mb-2">
+<div class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary relative">
+<div class="absolute inset-0 rounded border border-primary/40 neural-pulse-idle"></div>
+<span class="material-symbols-outlined text-[16px]">memory</span>
+</div>
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface leading-tight">NEURO-CORE</h2>
+<p class="text-xs text-tertiary">V-Storage Active</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 flex flex-col gap-xs">
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm rounded-lg hover:bg-white/5 transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span> Dashboard
+            </a>
+<a class="bg-primary/10 text-primary border-l-4 border-primary px-lg py-sm flex items-center gap-sm rounded-r-lg font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]">database</span> Storage
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm rounded-lg hover:bg-white/5 transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]">inventory_2</span> Sources
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm rounded-lg hover:bg-white/5 transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]">sync_alt</span> Indexing
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm rounded-lg hover:bg-white/5 transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span> Settings
+            </a>
+</nav>
+<div class="px-4 mt-auto space-y-xs">
+<button class="w-full bg-primary/10 text-primary py-sm rounded-lg border border-primary/20 hover:bg-primary/20 transition-colors font-label-md text-label-md mb-4 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">add</span> Ingest New Data
+            </button>
+<div class="h-[1px] bg-white/5 w-full my-2"></div>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm rounded-lg hover:bg-white/5 transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[18px]">help</span> Help
+            </a>
+<a class="text-on-surface-variant hover:text-on-surface px-lg py-sm flex items-center gap-sm rounded-lg hover:bg-white/5 transition-all font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[18px]">terminal</span> Logs
+            </a>
+</div>
+</aside>
+<!-- Main Workspace -->
+<main class="ml-64 pt-20 flex-1 flex h-full overflow-hidden bg-background">
+<!-- Center Canvas: Content & Graph -->
+<div class="flex-1 flex flex-col h-full border-r border-white/5">
+<!-- Header Bar -->
+<div class="h-16 border-b border-white/5 flex items-center justify-between px-md shrink-0 bg-surface/50">
+<div class="flex items-center gap-sm">
+<button class="w-8 h-8 flex items-center justify-center rounded bg-surface-container-high hover:bg-surface-variant text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[18px]">arrow_back</span>
+</button>
+<div class="h-4 w-[1px] bg-white/10 mx-2"></div>
+<span class="text-on-surface-variant font-code-md text-code-md bg-surface-container px-2 py-1 rounded">MEM-FRAG-9021A</span>
+<span class="material-symbols-outlined text-tertiary text-[16px] ml-2">verified</span>
+</div>
+<div class="flex gap-2">
+<button class="px-3 py-1.5 rounded bg-surface-container text-on-surface hover:bg-surface-variant transition-colors border border-white/5 flex items-center gap-2 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">edit</span> Edit
+                    </button>
+<button class="px-3 py-1.5 rounded bg-surface-container text-on-surface hover:bg-surface-variant transition-colors border border-white/5 flex items-center gap-2 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">share</span> Share
+                    </button>
+</div>
+</div>
+<!-- Content Area -->
+<div class="flex-1 overflow-y-auto scroll-hidden p-safe-margin flex flex-col gap-xl">
+<!-- Raw Content Card -->
+<div class="bg-surface-container rounded-xl panel-edge p-md shadow-2xl shadow-black/40 relative group">
+<div class="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="w-8 h-8 rounded bg-surface-bright flex items-center justify-center text-on-surface hover:text-primary"><span class="material-symbols-outlined text-[16px]">content_copy</span></button>
+</div>
+<div class="flex items-center gap-2 mb-4 text-on-surface-variant border-b border-white/5 pb-2">
+<span class="material-symbols-outlined text-[18px]">description</span>
+<h3 class="font-headline-md text-headline-md">Extracted Semantic Block</h3>
+</div>
+<div class="font-body-lg text-body-lg text-on-surface leading-relaxed whitespace-pre-wrap">The core stabilization protocol relies on a three-phase synchronization loop. First, the primary datastore asserts a write-lock via the 'Sync Sources' routine. Secondary nodes acknowledge the lock within a 50ms window. Finally, vector embeddings are generated and propagated across the cluster. If any node fails to ack, the transaction reverts to the last known stable state (t-1).
+
+This mechanism ensures high-fidelity recall even when the ingestion queue is saturated by recursive learning loops.</div>
+</div>
+<!-- Neural Context Graph Placeholder -->
+<div class="bg-surface-container rounded-xl panel-edge p-md shadow-2xl flex-1 min-h-[300px] flex flex-col relative overflow-hidden">
+<div class="flex items-center justify-between mb-4 z-10 relative">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">hub</span>
+<h3 class="font-headline-md text-headline-md">Neural Context</h3>
+</div>
+<div class="flex gap-2">
+<button class="w-8 h-8 rounded bg-surface text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">zoom_in</span></button>
+<button class="w-8 h-8 rounded bg-surface text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center"><span class="material-symbols-outlined text-[16px]">zoom_out</span></button>
+</div>
+</div>
+<!-- Graph Visualization Area -->
+<div class="absolute inset-0 top-16 bg-surface-container-lowest/50 rounded-b-xl border-t border-white/5 overflow-hidden">
+<!-- Abstract Graph representation -->
+<svg class="w-full h-full opacity-60" preserveaspectratio="none" viewbox="0 0 100 100">
+<line opacity="0.5" stroke="var(--color-primary-container)" stroke-width="0.2" x1="50" x2="20" y1="50" y2="30"></line>
+<line opacity="0.5" stroke="var(--color-primary-container)" stroke-width="0.2" x1="50" x2="80" y1="50" y2="40"></line>
+<line opacity="0.5" stroke="var(--color-tertiary-container)" stroke-width="0.2" x1="50" x2="30" y1="50" y2="80"></line>
+<line opacity="0.5" stroke="var(--color-secondary-container)" stroke-width="0.2" x1="50" x2="70" y1="50" y2="70"></line>
+<circle class="neural-pulse-idle" cx="50" cy="50" fill="var(--color-primary)" r="4"></circle>
+<circle cx="20" cy="30" fill="var(--color-on-surface-variant)" r="1.5"></circle>
+<circle cx="80" cy="40" fill="var(--color-on-surface-variant)" r="2"></circle>
+<circle cx="30" cy="80" fill="var(--color-tertiary)" r="1.5"></circle>
+<circle cx="70" cy="70" fill="var(--color-secondary)" r="1"></circle>
+</svg>
+<!-- Context List Overlay (Bottom right) -->
+<div class="absolute bottom-4 right-4 bg-surface-container/80 backdrop-blur border border-white/5 rounded-lg p-2 flex flex-col gap-1 w-48">
+<div class="text-[10px] text-on-surface-variant uppercase tracking-wider mb-1 px-1">Linked Nodes</div>
+<div class="flex items-center gap-2 text-xs text-on-surface hover:bg-white/5 p-1 rounded cursor-pointer transition-colors">
+<div class="w-2 h-2 rounded-full bg-tertiary"></div> Protocol_V2
+                            </div>
+<div class="flex items-center gap-2 text-xs text-on-surface hover:bg-white/5 p-1 rounded cursor-pointer transition-colors">
+<div class="w-2 h-2 rounded-full bg-secondary"></div> Sync_Logs_Q3
+                            </div>
+<div class="flex items-center gap-2 text-xs text-on-surface-variant hover:bg-white/5 p-1 rounded cursor-pointer transition-colors">
+<div class="w-2 h-2 rounded-full bg-surface-variant"></div> Error_States (2)
+                            </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Inspector Pane -->
+<aside class="w-80 bg-surface-container-low h-full flex flex-col shrink-0 overflow-y-auto scroll-hidden border-l border-white/5 shadow-2xl relative z-20">
+<div class="h-16 border-b border-white/5 flex items-center px-md shrink-0 sticky top-0 bg-surface-container-low/90 backdrop-blur z-10">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant mr-2">info</span>
+<h3 class="font-headline-md text-headline-md text-on-surface">Metadata Inspector</h3>
+</div>
+<div class="p-md flex flex-col gap-xl">
+<!-- Action Grid -->
+<div class="grid grid-cols-2 gap-2">
+<button class="bg-surface-container hover:bg-primary/20 border border-transparent hover:border-primary/30 text-on-surface transition-all rounded-lg py-2 px-3 flex flex-col items-center justify-center gap-1 group">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-primary transition-colors">push_pin</span>
+<span class="font-label-sm text-label-sm">Pin</span>
+</button>
+<button class="bg-surface-container hover:bg-error/20 border border-transparent hover:border-error/30 text-on-surface transition-all rounded-lg py-2 px-3 flex flex-col items-center justify-center gap-1 group">
+<span class="material-symbols-outlined text-[20px] text-on-surface-variant group-hover:text-error transition-colors">delete</span>
+<span class="font-label-sm text-label-sm">Forget</span>
+</button>
+<button class="col-span-2 bg-primary-container/20 text-primary-fixed border border-primary/30 hover:bg-primary-container/40 transition-all rounded-lg py-2 px-3 flex items-center justify-center gap-2 group mt-1">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span class="font-label-sm text-label-sm font-semibold">Re-index Fragment</span>
+</button>
+</div>
+<!-- Detail List -->
+<div class="flex flex-col gap-4">
+<div class="flex flex-col gap-1 border-b border-white/5 pb-3">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Fragment ID</span>
+<span class="font-code-md text-code-md text-primary">MEM-FRAG-9021A</span>
+</div>
+<div class="flex flex-col gap-1 border-b border-white/5 pb-3">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Date Ingested</span>
+<span class="font-body-md text-body-md text-on-surface">2023-10-24 14:32:01 UTC</span>
+</div>
+<div class="flex flex-col gap-1 border-b border-white/5 pb-3">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Source Context</span>
+<a class="font-body-md text-body-md text-secondary hover:text-secondary-fixed transition-colors flex items-center gap-1" href="#">
+<span class="truncate max-w-[200px]">github.com/core/stabilization</span>
+<span class="material-symbols-outlined text-[14px]">open_in_new</span>
+</a>
+</div>
+<div class="flex flex-col gap-1 border-b border-white/5 pb-3">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Metrics</span>
+<div class="flex items-center gap-4 mt-1">
+<div class="flex flex-col">
+<span class="font-headline-lg text-headline-lg text-on-surface">84</span>
+<span class="text-[10px] text-on-surface-variant uppercase">Tokens</span>
+</div>
+<div class="w-[1px] h-6 bg-white/10"></div>
+<div class="flex flex-col">
+<span class="font-headline-lg text-headline-lg text-on-surface">0.92</span>
+<span class="text-[10px] text-on-surface-variant uppercase">Confidence</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Embedding Preview -->
+<div class="flex flex-col gap-2 mt-2">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Vector Embedding Preview</span>
+<span class="text-[10px] bg-surface-container px-1.5 py-0.5 rounded text-on-surface-variant">dim: 1536</span>
+</div>
+<div class="grid grid-cols-12 gap-[2px] bg-surface-container-highest p-[2px] rounded-md border border-white/5">
+<!-- Simulated vector embedding heat map squares -->
+<div class="aspect-square bg-primary/80 rounded-[1px]"></div>
+<div class="aspect-square bg-tertiary/40 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/20 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/60 rounded-[1px]"></div>
+<div class="aspect-square bg-secondary/90 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/10 rounded-[1px]"></div>
+<div class="aspect-square bg-tertiary/70 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/30 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/5 rounded-[1px]"></div>
+<div class="aspect-square bg-secondary/40 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/90 rounded-[1px]"></div>
+<div class="aspect-square bg-tertiary/20 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/30 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/50 rounded-[1px]"></div>
+<div class="aspect-square bg-secondary/70 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/10 rounded-[1px]"></div>
+<div class="aspect-square bg-tertiary/80 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/20 rounded-[1px]"></div>
+<div class="aspect-square bg-secondary/30 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/50 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/70 rounded-[1px]"></div>
+<div class="aspect-square bg-tertiary/40 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/20 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/90 rounded-[1px]"></div>
+<div class="aspect-square bg-secondary/50 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/10 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/40 rounded-[1px]"></div>
+<div class="aspect-square bg-tertiary/60 rounded-[1px]"></div>
+<div class="aspect-square bg-secondary/20 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/40 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/80 rounded-[1px]"></div>
+<div class="aspect-square bg-tertiary/30 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/20 rounded-[1px]"></div>
+<div class="aspect-square bg-primary/60 rounded-[1px]"></div>
+<div class="aspect-square bg-secondary/80 rounded-[1px]"></div>
+<div class="aspect-square bg-surface/10 rounded-[1px]"></div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</body></html>

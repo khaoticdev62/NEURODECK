@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>NEURODECK OS - Research Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Geist:wght@500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "on-primary-fixed-variant": "#452daf",
+                      "on-primary-container": "#28008a",
+                      "tertiary-fixed-dim": "#59dbbd",
+                      "on-secondary-container": "#003f4e",
+                      "secondary-fixed-dim": "#4dd6fd",
+                      "tertiary": "#59dbbd",
+                      "tertiary-container": "#00a488",
+                      "on-surface-variant": "#c9c4d6",
+                      "surface-container-low": "#1c1b22",
+                      "surface-bright": "#3a3841",
+                      "surface": "#14121a",
+                      "surface-container-highest": "#35343c",
+                      "surface-dim": "#14121a",
+                      "secondary": "#4dd6fd",
+                      "on-secondary": "#003543",
+                      "surface-container": "#201f27",
+                      "inverse-on-surface": "#312f38",
+                      "surface-tint": "#c8bfff",
+                      "on-tertiary": "#00382d",
+                      "error-container": "#93000a",
+                      "secondary-fixed": "#b5ebff",
+                      "outline-variant": "#484553",
+                      "on-tertiary-container": "#003127",
+                      "primary-fixed-dim": "#c8bfff",
+                      "on-tertiary-fixed-variant": "#005142",
+                      "on-background": "#e5e0ec",
+                      "surface-container-high": "#2b2931",
+                      "on-error": "#690005",
+                      "tertiary-fixed": "#79f8d8",
+                      "secondary-container": "#00b2d7",
+                      "surface-container-lowest": "#0e0d15",
+                      "on-tertiary-fixed": "#002019",
+                      "on-secondary-fixed": "#001f28",
+                      "on-secondary-fixed-variant": "#004e5f",
+                      "primary": "#c8bfff",
+                      "error": "#ffb4ab",
+                      "on-error-container": "#ffdad6",
+                      "background": "#14121a",
+                      "on-primary": "#2e0599",
+                      "inverse-primary": "#5e49c8",
+                      "outline": "#928e9f",
+                      "inverse-surface": "#e5e0ec",
+                      "on-surface": "#e5e0ec",
+                      "primary-fixed": "#e5deff",
+                      "primary-container": "#917eff",
+                      "on-primary-fixed": "#1a0063",
+                      "surface-variant": "#35343c"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "12px",
+                      "hit-target": "44px",
+                      "lg": "24px",
+                      "base": "4px",
+                      "xs": "8px",
+                      "md": "16px",
+                      "xl": "32px",
+                      "safe-margin": "40px"
+              },
+              "fontFamily": {
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Geist"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "display": [
+                              "Geist"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "code-md": [
+                              "JetBrains Mono"
+                      ]
+              },
+              "fontSize": {
+                      "body-lg": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "11px",
+                              {
+                                      "lineHeight": "14px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-md": [
+                              "18px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-lg": [
+                              "22px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display": [
+                              "28px",
+                              {
+                                      "lineHeight": "36px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-md": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "code-md": [
+                              "13px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        /* Sovereign Dark Aesthetic Utilities */
+        body { background-color: #0e0d15; color: #e5e0ec; }
+        .pane-glow { border-top: 1px solid rgba(255, 255, 255, 0.12); }
+        .focus-ring-halo { transition: all 0.2s ease; }
+        .focus-ring-halo:focus-within, .focus-ring-halo:hover {
+            box-shadow: 0 0 15px rgba(77,214,253,0.4);
+            transform: scale(1.02);
+            z-index: 10;
+        }
+        
+        /* Custom Scrollbar for technical feel */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #35343c; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #484553; }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden bg-surface-container-lowest font-body-md text-body-md text-on-surface antialiased">
+<!-- TopAppBar -->
+<header class="w-full top-0 border-b border-outline-variant bg-surface-container-low flex items-center justify-between px-lg h-hit-target z-20 shrink-0">
+<div class="flex items-center gap-xl">
+<div class="font-display text-display text-primary uppercase tracking-tighter">NEURODECK OS</div>
+<nav class="hidden md:flex items-center gap-lg">
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors px-xs py-base rounded-DEFAULT" href="#">GPT-4o</a>
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors px-xs py-base rounded-DEFAULT" href="#">Claude-3.5</a>
+<a class="text-primary font-bold border-b-2 border-primary pb-1 px-xs pt-base" href="#">Research</a>
+<a class="text-on-surface-variant font-body-md hover:bg-surface-container-highest transition-colors px-xs py-base rounded-DEFAULT" href="#">Docs</a>
+</nav>
+</div>
+<div class="flex items-center gap-md">
+<!-- Search Bar (on_left relative to trailing actions) -->
+<div class="relative hidden lg:block w-64">
+<span class="material-symbols-outlined absolute left-xs top-1/2 -translate-y-1/2 text-on-surface-variant" style="font-size: 18px;">search</span>
+<input class="w-full bg-surface-container-highest border border-outline-variant rounded-DEFAULT py-1 pl-xl pr-xs text-body-md font-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary h-8" placeholder="Query fragments..." type="text"/>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-md py-1 rounded-DEFAULT h-8 flex items-center gap-xs hover:bg-primary-fixed-dim transition-colors scale-95 active:duration-100">
+<span class="material-symbols-outlined" style="font-size: 16px;">memory</span>
+                Extract to Memory
+            </button>
+<div class="flex items-center gap-xs border-l border-outline-variant pl-md ml-xs">
+<button aria-label="refresh" class="text-on-surface-variant hover:text-on-surface transition-colors p-1 rounded-full hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" style="font-size: 20px;">refresh</span>
+</button>
+<button aria-label="shield" class="text-on-surface-variant hover:text-on-surface transition-colors p-1 rounded-full hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" style="font-size: 20px;">shield</span>
+</button>
+<button aria-label="settings" class="text-on-surface-variant hover:text-on-surface transition-colors p-1 rounded-full hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" style="font-size: 20px;">settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Layout -->
+<div class="flex flex-1 overflow-hidden relative">
+<!-- SideNavBar -->
+<nav class="h-full w-64 left-0 bg-surface-container-low border-r border-outline-variant flex flex-col py-lg shrink-0 z-10 hidden md:flex pane-glow">
+<!-- Header -->
+<div class="px-md mb-xl flex items-center gap-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-highest border border-outline-variant flex items-center justify-center shrink-0 overflow-hidden relative" data-alt="Abstract geometric representation of an AI system core, pulsing soft blue and teal lights against a dark metallic grid background. The aesthetic is highly technical, deep sovereign dark mode, conveying intelligence and data processing.">
+<div class="absolute inset-0 bg-cover bg-center opacity-50" data-alt="Abstract geometric representation of an AI system core, pulsing soft blue and teal lights against a dark metallic grid background. The aesthetic is highly technical, deep sovereign dark mode, conveying intelligence and data processing." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBmCUZ-cVmdm4giIRJXtVkjGziSXmMpdgfjqwj6-wOXhHZSiV4RXtpXOSoU-M3LSq0AJM-_gktVZO3_HJTI6Hw97eFPVA3LovN7pp5gwiAtTIDdvnH-fuO2hONVxu_pClGF9GBRucbsKvUvLE4Myu3V2DMv7gI-1aoSqiYJHX6n9W0G3qLjkiHsqs12lPkj6_m-7wiffXzPsbwjkFsqax3G2HkiJJsFb32ReCG7NwsTYXVAaMF4EypEtPLx6goNQ7O7P8EgX9gzxhRG')"></div>
+<span class="material-symbols-outlined text-secondary relative z-10">smart_toy</span>
+</div>
+<div>
+<h2 class="font-display text-headline-lg text-primary leading-tight">NEURODECK</h2>
+<p class="font-code-md text-code-md text-on-surface-variant text-[10px]">v2.4.0-stable</p>
+</div>
+</div>
+<!-- Tabs -->
+<div class="flex flex-col gap-xs px-sm flex-1">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all font-label-md text-label-md h-hit-target" href="#">
+<span class="material-symbols-outlined">terminal</span>
+                    Terminal
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all font-label-md text-label-md h-hit-target" href="#">
+<span class="material-symbols-outlined">psychology</span>
+                    Neural Pulse
+                </a>
+<a class="flex items-center gap-md bg-secondary-container text-on-secondary-container rounded-lg px-md py-xs border-l-4 border-secondary focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all font-label-md text-label-md h-hit-target" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">vitals</span>
+                    Sandbox
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all font-label-md text-label-md h-hit-target" href="#">
+<span class="material-symbols-outlined">database</span>
+                    Memory
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all font-label-md text-label-md h-hit-target" href="#">
+<span class="material-symbols-outlined">hub</span>
+                    Network
+                </a>
+</div>
+<!-- Footer Tabs -->
+<div class="mt-auto flex flex-col gap-xs px-sm border-t border-outline-variant pt-sm">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all font-label-md text-label-md h-hit-target" href="#">
+<span class="material-symbols-outlined">help</span>
+                    Help
+                </a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-xs rounded-lg hover:bg-surface-container-high hover:text-on-surface focus:scale-105 focus:shadow-[0_0_15px_rgba(77,214,253,0.4)] transition-all font-label-md text-label-md h-hit-target" href="#">
+<span class="material-symbols-outlined">power_settings_new</span>
+                    Power
+                </a>
+</div>
+</nav>
+<!-- Main Workspace (Canvas + Inspector) -->
+<main class="flex-1 flex overflow-hidden bg-background relative z-0">
+<!-- Canvas: Captured Fragments Grid -->
+<section class="flex-1 overflow-y-auto p-safe-margin pb-[60px] flex flex-col gap-lg">
+<div class="flex items-center justify-between mb-sm">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Captured Fragments</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Unprocessed extractions awaiting neural classification.</p>
+</div>
+<div class="flex gap-sm">
+<button class="bg-surface-container border border-outline-variant text-on-surface px-md py-1 rounded-DEFAULT font-label-md text-label-md flex items-center gap-xs hover:bg-surface-container-high transition-colors h-hit-target focus-ring-halo">
+<span class="material-symbols-outlined" style="font-size: 18px;">filter_list</span>
+                            Filter
+                        </button>
+</div>
+</div>
+<!-- Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-md auto-rows-min">
+<!-- Code Fragment -->
+<article class="bg-surface-container border border-outline-variant rounded-lg p-md flex flex-col gap-sm pane-glow focus-ring-halo relative group cursor-pointer h-[240px]">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-xs text-secondary bg-secondary/10 px-2 py-0.5 rounded font-code-md text-code-md text-[10px]">
+<span class="material-symbols-outlined" style="font-size: 14px;">code</span>
+<span>PYTHON</span>
+</div>
+<span class="font-code-md text-code-md text-on-surface-variant text-[10px]">98% Match</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest border border-outline-variant/50 rounded p-sm overflow-hidden relative font-code-md text-code-md text-[11px] text-tertiary-fixed-dim">
+<pre><code>def compute_attention(Q, K, V):
+    scores = torch.matmul(Q, K.transpose(-2, -1))
+    scores = scores / math.sqrt(d_k)
+    weights = F.softmax(scores, dim=-1)
+    return torch.matmul(weights, V)</code></pre>
+<div class="absolute inset-0 bg-gradient-to-t from-surface-container-lowest via-transparent to-transparent pointer-events-none"></div>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm border-t border-outline-variant/30">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant truncate w-40">github.com/pytorch/attention</span>
+<span class="font-code-md text-[9px] text-outline">10:42 AM</span>
+</div>
+<button aria-label="Commit" class="text-primary hover:text-primary-fixed transition-colors opacity-0 group-hover:opacity-100 p-1 bg-surface-container-high rounded">
+<span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Text Block Fragment -->
+<article class="bg-surface-container border border-outline-variant rounded-lg p-md flex flex-col gap-sm pane-glow focus-ring-halo relative group cursor-pointer lg:col-span-2 h-[240px]">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-xs text-tertiary bg-tertiary/10 px-2 py-0.5 rounded font-code-md text-code-md text-[10px]">
+<span class="material-symbols-outlined" style="font-size: 14px;">article</span>
+<span>RESEARCH_PAPER</span>
+</div>
+<span class="font-code-md text-code-md text-on-surface-variant text-[10px]">74% Match</span>
+</div>
+<div class="flex-1 overflow-hidden relative">
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2">Emergent Properties in Large Scale Systems</h3>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-4">
+                                The transition from localized feature detection to holistic semantic understanding occurs non-linearly as parameter counts exceed the 10B threshold. We observe that secondary attention heads begin specializing in syntactical structures previously thought to require explicit grammatical encoding...
+                            </p>
+<div class="absolute bottom-0 w-full h-8 bg-gradient-to-t from-surface-container to-transparent pointer-events-none"></div>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm border-t border-outline-variant/30">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">arxiv.org/abs/2309.12488</span>
+<span class="font-code-md text-[9px] text-outline">09:15 AM</span>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-highest px-2 py-0.5 rounded-full font-label-sm text-[10px] text-on-surface-variant border border-outline-variant/30">#semantics</span>
+<span class="bg-surface-container-highest px-2 py-0.5 rounded-full font-label-sm text-[10px] text-on-surface-variant border border-outline-variant/30">#scaling</span>
+</div>
+</div>
+</article>
+<!-- Image/Visual Fragment -->
+<article class="bg-surface-container border border-outline-variant rounded-lg p-md flex flex-col gap-sm pane-glow focus-ring-halo relative group cursor-pointer row-span-2 h-[500px]">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-xs text-primary bg-primary/10 px-2 py-0.5 rounded font-code-md text-code-md text-[10px]">
+<span class="material-symbols-outlined" style="font-size: 14px;">image</span>
+<span>VISUAL_DATA</span>
+</div>
+<span class="font-code-md text-code-md text-on-surface-variant text-[10px]">91% Match</span>
+</div>
+<div class="flex-1 rounded border border-outline-variant/50 overflow-hidden relative bg-surface-container-lowest flex items-center justify-center">
+<!-- Image Placeholder -->
+<img class="object-cover w-full h-full opacity-80 mix-blend-screen" data-alt="A highly complex, technical data visualization chart showing neural network activation patterns over time. The chart uses dark sovereign aesthetics, deep blacks, and vibrant thin neon lines in cyan and magenta to represent data spikes. The background has a subtle grid, and the overall look is professional, dense, and cinematic like a sci-fi command interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-v7O2OM104x3Vs_34DK5vxYSoZOP4zGCGhtxe8TWxMCHJdCB3d75tLTpql_3yxe2RQ1pWrRNHvdUh8xIoejQfY_YkpCMcCOh1DM6gj5qC--d5z6UKFw1It8_OCjPPqb0-IbKtjcw2HNXlEZKaiBFnlaeRXrIoptJ0Db0d6g8VfEg1jaFkZpxBWTe1mE0CGuOTNq7HrN31ITcER66kyWI3oLcUFRNQI7xkz4GpEV5_6AGZHvf-grqQbXvVRNEZNsvnslibnOF3C8eY"/>
+</div>
+<div class="mt-2">
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">Activation manifold projection (Layer 12)</p>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm border-t border-outline-variant/30">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">wandb.ai/runs/8f2k9a</span>
+<span class="font-code-md text-[9px] text-outline">Yesterday, 23:45</span>
+</div>
+</div>
+</article>
+<!-- Short Note Fragment -->
+<article class="bg-surface-container border border-outline-variant rounded-lg p-md flex flex-col gap-sm pane-glow focus-ring-halo relative group cursor-pointer h-[240px]">
+<div class="flex justify-between items-start">
+<div class="flex items-center gap-xs text-on-surface-variant bg-surface-container-highest px-2 py-0.5 rounded font-code-md text-code-md text-[10px]">
+<span class="material-symbols-outlined" style="font-size: 14px;">edit_note</span>
+<span>USER_NOTE</span>
+</div>
+</div>
+<div class="flex-1 flex items-center justify-center text-center px-4">
+<p class="font-headline-md text-headline-md text-on-surface italic text-opacity-80">
+                                "Check if the latency spike correlates with the garbage collection cycle in the secondary worker pool."
+                            </p>
+</div>
+<div class="flex justify-between items-end mt-auto pt-sm border-t border-outline-variant/30">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Manual Entry</span>
+<span class="font-code-md text-[9px] text-outline">08:30 AM</span>
+</div>
+</div>
+</article>
+</div>
+</section>
+<!-- Inspector Pane: Knowledge Graph & Actions -->
+<aside class="w-80 bg-surface-container-low border-l border-outline-variant flex flex-col shrink-0 pane-glow hidden lg:flex relative z-10">
+<div class="p-md border-b border-outline-variant flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">share</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">Knowledge Graph</h2>
+</div>
+<!-- Graph Visualization Area -->
+<div class="flex-1 relative bg-surface-container-lowest overflow-hidden flex flex-col items-center justify-center p-md">
+<!-- Minimal CSS generic graph representation to avoid complex JS dependencies in this single file demo -->
+<div class="relative w-full h-full max-h-[300px] border border-outline-variant/30 rounded-lg bg-surface-container flex items-center justify-center overflow-hidden">
+<!-- Center Node -->
+<div class="absolute w-12 h-12 bg-secondary/20 border-2 border-secondary rounded-full flex items-center justify-center z-10 animate-[pulse_3s_ease-in-out_infinite]" style="box-shadow: 0 0 20px rgba(77,214,253,0.3);">
+<span class="material-symbols-outlined text-secondary">memory</span>
+</div>
+<!-- Peripheral Nodes -->
+<div class="absolute top-8 left-8 w-8 h-8 bg-tertiary/10 border border-tertiary rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary text-[14px]">article</span>
+</div>
+<svg class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-30" style="z-index: 0;">
+<line stroke="#59dbbd" stroke-dasharray="4" stroke-width="1" x1="20%" x2="50%" y1="20%" y2="50%"></line>
+</svg>
+<div class="absolute bottom-12 right-12 w-6 h-6 bg-primary/10 border border-primary rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-[12px]">code</span>
+</div>
+<svg class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-30" style="z-index: 0;">
+<line stroke="#c8bfff" stroke-width="1" x1="80%" x2="50%" y1="80%" y2="50%"></line>
+</svg>
+<div class="absolute top-1/2 left-4 w-4 h-4 bg-outline-variant rounded-full"></div>
+<svg class="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20" style="z-index: 0;">
+<line stroke="#928e9f" stroke-width="1" x1="10%" x2="50%" y1="50%" y2="50%"></line>
+</svg>
+<!-- Scan Line Overlay -->
+<div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent via-secondary/10 to-transparent animate-[scan_4s_linear_infinite]" style="height: 200%; transform: translateY(-50%); pointer-events: none;"></div>
+</div>
+<style>
+                         @keyframes scan {
+                             0% { transform: translateY(-100%); }
+                             100% { transform: translateY(100%); }
+                         }
+                     </style>
+<div class="mt-4 text-center w-full">
+<p class="font-code-md text-[11px] text-secondary mb-1">NETWORK_TOPOLOGY: ACTIVE</p>
+<p class="font-body-md text-xs text-on-surface-variant">4 fragments selected for integration. Neural pathways aligned.</p>
+</div>
+</div>
+<!-- Action Area -->
+<div class="p-md bg-surface-container border-t border-outline-variant flex flex-col gap-sm">
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-3 rounded-DEFAULT flex items-center justify-center gap-xs hover:bg-primary-fixed-dim transition-colors h-hit-target shadow-[0_0_15px_rgba(200,191,255,0.2)] focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+                        Commit to Neural Memory
+                    </button>
+<button class="w-full bg-surface-container-highest border border-outline-variant text-on-surface font-label-md text-label-md py-2 rounded-DEFAULT hover:bg-surface-bright transition-colors h-hit-target focus:outline-none focus:ring-1 focus:ring-outline">
+                        Discard Unselected
+                    </button>
+</div>
+</aside>
+</main>
+</div>
+<!-- Footer -->
+<footer class="flex justify-between items-center px-safe-margin py-xs w-full fixed bottom-0 z-50 border-t border-outline-variant bg-surface-container-lowest h-8 shrink-0">
+<div class="font-code-md text-primary font-code-md text-code-md opacity-80 hover:opacity-100 transition-opacity cursor-default">
+            NEURODECK OS // SANDBOX_ACTIVE
+        </div>
+<div class="flex items-center gap-lg">
+<a class="text-outline font-code-md text-code-md hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Kernel</a>
+<a class="text-outline font-code-md text-code-md hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Latency: 12ms</a>
+<a class="text-outline font-code-md text-code-md hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Uptime: 99.9%</a>
+</div>
+</footer>
+</body></html>

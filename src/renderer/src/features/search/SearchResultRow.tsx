@@ -54,13 +54,20 @@ export function SearchResultRow({
       aria-selected={selected}
       onClick={() => onSelect(result)}
       className={clsx(
-        'flex min-h-[56px] w-full items-center gap-3 border px-3 py-2 text-left transition-colors',
+        'flex min-h-[56px] w-full items-center gap-3 border-y border-r border-l-4 px-3 py-2 text-left transition-colors',
         selected
-          ? 'border-[var(--ndx-workbench-border-active)] bg-[var(--ndx-workbench-row-selected-bg)] text-text-primary'
-          : 'border-transparent text-text-secondary hover:border-[var(--ndx-workbench-border)] hover:bg-[var(--ndx-workbench-panel-bg)] hover:text-text-primary'
+          ? 'border-y-[var(--ndx-workbench-border-active)] border-r-[var(--ndx-workbench-border-active)] border-l-[var(--ndx-accent)] bg-[var(--ndx-workbench-row-selected-bg)] text-text-primary'
+          : 'border-transparent text-text-secondary hover:border-y-[var(--ndx-workbench-border)] hover:border-r-[var(--ndx-workbench-border)] hover:bg-[var(--ndx-workbench-panel-bg)] hover:text-text-primary'
       )}
     >
-      <span className="flex h-8 w-9 shrink-0 items-center justify-center border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] text-meta font-semibold text-text-tertiary">
+      <span
+        className={clsx(
+          'flex h-8 w-9 shrink-0 items-center justify-center border text-meta font-semibold',
+          selected
+            ? 'border-[var(--ndx-accent)] bg-[var(--ndx-accent)]/15 text-[var(--ndx-accent)]'
+            : 'border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)] text-text-tertiary'
+        )}
+      >
         {sourceBadge(result.source)}
       </span>
       <div className="min-w-0 flex-1">

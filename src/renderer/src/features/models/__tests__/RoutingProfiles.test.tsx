@@ -1,7 +1,8 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModelRouteDecision, NdxBridge } from '@shared/contracts'
+import { renderWithProviders } from '../../../__tests__/testUtils'
 import { RoutingProfiles } from '../RoutingProfiles'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
@@ -33,7 +34,7 @@ describe('RoutingProfiles', () => {
     stubBridge({ modelProviders: { route } as never })
 
     const user = userEvent.setup()
-    render(<RoutingProfiles />)
+    renderWithProviders(<RoutingProfiles />)
 
     await user.click(screen.getByRole('button', { name: 'Preview route' }))
 
@@ -52,7 +53,7 @@ describe('RoutingProfiles', () => {
     stubBridge({ modelProviders: { route } as never })
 
     const user = userEvent.setup()
-    render(<RoutingProfiles />)
+    renderWithProviders(<RoutingProfiles />)
 
     await user.click(screen.getByRole('button', { name: /Private Workspace/ }))
     await user.click(screen.getByRole('button', { name: 'Preview route' }))
@@ -76,7 +77,7 @@ describe('RoutingProfiles', () => {
     })
 
     const user = userEvent.setup()
-    render(<RoutingProfiles />)
+    renderWithProviders(<RoutingProfiles />)
 
     await user.click(screen.getByRole('button', { name: 'Preview route' }))
 

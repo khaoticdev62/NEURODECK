@@ -77,7 +77,7 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
     return <p className="p-4 text-meta text-text-secondary">Checking audio devices...</p>
 
   return (
-    <div className="grid h-full min-w-[76rem] grid-cols-[20rem_minmax(40rem,1fr)_18rem] gap-2 overflow-auto">
+    <div className="grid h-full grid-cols-1 gap-2 overflow-auto docked:min-w-[76rem] docked:grid-cols-[20rem_minmax(40rem,1fr)_18rem]">
       <NdxToolWindow title="Audio Scope" subtitle="PipeWire pending">
         <div className="space-y-3 text-meta text-text-secondary">
           <p>Output, microphone, and headset records come from the shared device inventory.</p>
@@ -114,7 +114,7 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
 
           {report && (
             <>
-              <section className="border border-border bg-surface p-3">
+              <section className="ndx-settings-section">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-body font-semibold text-text-primary">
@@ -138,7 +138,7 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
 
               <section className="grid gap-3 lg:grid-cols-2">
                 {audioDevices.length === 0 ? (
-                  <div className="border border-border bg-surface p-3">
+                  <div className="ndx-settings-section">
                     <p className="text-body font-semibold text-text-primary">
                       No audio devices in inventory
                     </p>
@@ -152,7 +152,7 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
                 )}
               </section>
 
-              <section className="border border-border bg-surface p-3">
+              <section className="ndx-settings-section">
                 <p className="text-body font-semibold text-text-primary">Controls</p>
                 <div className="mt-2 grid gap-2 md:grid-cols-2">
                   {AUDIO_OPERATIONS.map((operation) => (
@@ -188,7 +188,7 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
 
 function AudioDeviceCard({ device }: { device: DeviceInventoryRecord }): React.JSX.Element {
   return (
-    <article className="border border-border bg-surface p-3">
+    <article className="ndx-settings-section">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-body font-semibold text-text-primary">{device.name}</p>

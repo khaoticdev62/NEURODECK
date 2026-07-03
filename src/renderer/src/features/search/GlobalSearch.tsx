@@ -121,7 +121,7 @@ export function GlobalSearch(): React.JSX.Element {
             <SearchCategories category={category} onSelect={setCategory} />
           </div>
 
-          <div className="border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)]">
+          <div className="ndx-hairline-top border border-[var(--ndx-workbench-border)] bg-[var(--ndx-workbench-panel-bg)]">
             <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-3 py-2">
               <span className="text-meta font-semibold uppercase tracking-wide text-text-tertiary">
                 Query

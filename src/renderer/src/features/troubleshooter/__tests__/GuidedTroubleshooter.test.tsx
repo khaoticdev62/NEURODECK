@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
 import { GuidedTroubleshooter } from '../GuidedTroubleshooter'
+import { TestWorkbenchStoreRenderer } from '../../../__tests__/testUtils'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
   window.ndx = partial as NdxBridge
@@ -16,7 +17,12 @@ afterEach(() => {
 describe('GuidedTroubleshooter', () => {
   it('lists every supported issue with a Run diagnostic action', () => {
     stubBridge({})
-    render(<GuidedTroubleshooter />)
+    render(
+      <>
+        <GuidedTroubleshooter />
+        <TestWorkbenchStoreRenderer />
+      </>
+    )
 
     expect(screen.getByText('No network')).toBeInTheDocument()
     expect(screen.getByText('Model/provider unavailable')).toBeInTheDocument()
@@ -37,7 +43,12 @@ describe('GuidedTroubleshooter', () => {
     stubBridge({ troubleshooter: { runCheck } as never })
     const user = userEvent.setup()
 
-    render(<GuidedTroubleshooter />)
+    render(
+      <>
+        <GuidedTroubleshooter />
+        <TestWorkbenchStoreRenderer />
+      </>
+    )
     const buttons = screen.getAllByRole('button', { name: 'Run diagnostic' })
     await user.click(buttons[0])
 
@@ -58,7 +69,12 @@ describe('GuidedTroubleshooter', () => {
     })
     const user = userEvent.setup()
 
-    render(<GuidedTroubleshooter />)
+    render(
+      <>
+        <GuidedTroubleshooter />
+        <TestWorkbenchStoreRenderer />
+      </>
+    )
     await user.click(screen.getByRole('button', { name: 'Check controller' }))
 
     expect(getGamepadsMock).toHaveBeenCalled()
