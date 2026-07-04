@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Cloud, Cpu } from 'lucide-react'
 import type { ModelProvider, ModelProviderKind } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
@@ -88,7 +89,9 @@ export function ModelControlCenter(): React.JSX.Element {
   const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
   useEffect(() => {
-    setPrimary('Provider Setup', `${providers.length} configured`, (
+    setPrimary(
+      'Provider Setup',
+      `${providers.length} configured`,
       <NdxToolWindow title="Provider Setup" subtitle={`${providers.length} configured`}>
         <p className="text-meta text-text-secondary">
           Providers are stored through the existing model service. Cloud API keys stay encrypted in
@@ -121,7 +124,7 @@ export function ModelControlCenter(): React.JSX.Element {
           </p>
         )}
       </NdxToolWindow>
-    ))
+    )
     return () => setPrimary('Command Deck', undefined, null)
   }, [providers.length, navigate, showAddForm, setPrimary])
 
@@ -295,13 +298,23 @@ function ProviderRow({
     <li ref={ref} tabIndex={-1} className="outline-none">
       <NdxFocusSurface active={isFocused} density="dense" className="p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-body font-semibold text-text-primary">{provider.name}</p>
+          <div className="flex items-center gap-2">
+            {provider.kind === 'cloud-openai-compatible' ? (
+              <Cloud aria-hidden className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+            ) : (
+              <Cpu aria-hidden className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+            )}
+            <p className="text-body font-semibold text-text-primary">{provider.name}</p>
+          </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <StatusBadge
               tone={provider.kind === 'cloud-openai-compatible' ? 'info' : 'approval'}
               label={provider.kind === 'cloud-openai-compatible' ? 'Cloud' : 'Local'}
             />
-            <StatusBadge tone={provider.enabled ? 'success' : 'neutral'} label={provider.enabled ? 'Enabled' : 'Disabled'} />
+            <StatusBadge
+              tone={provider.enabled ? 'success' : 'neutral'}
+              label={provider.enabled ? 'Enabled' : 'Disabled'}
+            />
             {provider.hasApiKey && <StatusBadge tone="neutral" label="API key set" />}
           </div>
         </div>
