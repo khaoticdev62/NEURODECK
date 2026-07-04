@@ -4,6 +4,7 @@ import { Route, Routes } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
 import { renderWithProviders } from '../../../__tests__/testUtils'
+import { resetCoreTelemetry } from '../../../state/useCoreTelemetry'
 import { BootSessionStart } from '../BootSessionStart'
 import { FirstRunWelcome } from '../FirstRunWelcome'
 import { HomeCommandCenter } from '../../home/HomeCommandCenter'
@@ -17,6 +18,7 @@ afterEach(() => {
   delete window.ndx
   delete import.meta.env.VITE_BOOT_STEP_TIMEOUT_MS
   delete import.meta.env.VITE_WORKSPACE_LOAD_TIMEOUT_MS
+  resetCoreTelemetry()
 })
 
 function renderBoot(options: { strict?: boolean } = {}): ReturnType<typeof renderWithProviders> {

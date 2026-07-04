@@ -1,14 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { AgentRun, WorkflowDefinition, WorkflowRun, Workspace } from '@shared/contracts'
+import { Cpu } from 'lucide-react'
+import type {
+  AgentRun,
+  MetricValue,
+  ModelProvider,
+  SystemMetricsSnapshot,
+  WorkflowDefinition,
+  WorkflowRun,
+  Workspace
+} from '@shared/contracts'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { formatBytes } from '../../components/primitives/formatBytes'
+import { NdxMeter, type NdxMeterTone } from '../../components/primitives/NdxMeter'
 import { TechCard } from '../../components/primitives/TechCard'
 import { NdxFocusSurface } from '../../components/workbench'
 import { NdxTvShelf, TvCategoryIcon } from '../../components/tvos'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { listAgents, listAgentRuns } from '../../services/ipc/agentClient'
+import { listModelProviders } from '../../services/ipc/modelClient'
 import { listWorkflows, listWorkflowRuns } from '../../services/ipc/workflowClient'
+import { useCoreTelemetry } from '../../state/useCoreTelemetry'
 import { useDisplaySettings } from '../../state/useDisplaySettings'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
@@ -48,6 +61,34 @@ export function HomeCommandCenter(): React.JSX.Element {
   const { workspaces, activeWorkspace, loading, error, setActive } = useWorkspaces()
   const targetWorkspace = activeWorkspace ?? workspaces[0] ?? null
   const [summary, setSummary] = useState<HomeSummary>(EMPTY_SUMMARY)
+  const [providers, setProviders] = useState<ModelProvider[]>([])
+  const [providerError, setProviderError] = useState<string | null>(null)
+
+  // Command Center's "System Health" telemetry reads the same shared,
+  // already-polling snapshot the footer's `useCoreTelemetry` maintains
+  // (one 5s IPC poll for the whole app) instead of triggering a second,
+  // independent `collectSystemMetrics()` round trip on every Home mount.
+  const telemetry = useCoreTelemetry()
+  const metrics = telemetry.snapshot
+  const metricsUnavailable = metrics === null && telemetry.kernelStatus === 'offline'
+
+  // "Active Engine" reads the real provider registry — a fetch failure is
+  // surfaced explicitly rather than silently rendering as "no provider".
+  useEffect(() => {
+    let active = true
+    void listModelProviders().then((result) => {
+      if (!active) return
+      if (result.ok) {
+        setProviders(result.data)
+        setProviderError(null)
+      } else {
+        setProviderError(result.error.userMessage)
+      }
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!targetWorkspace) {
@@ -222,20 +263,30 @@ export function HomeCommandCenter(): React.JSX.Element {
             </div>
           </TechCard>
 
-          <TechCard reduceMotion={reduceMotion} className="ndx-bento-telemetry p-3">
-            <p className="text-meta uppercase tracking-wide text-text-tertiary">Jump</p>
-            <div className="mt-2 grid gap-2">
-              <ControllerButton variant="secondary" onClick={() => navigate('/search')}>
-                Search
-              </ControllerButton>
-              <ControllerButton variant="secondary" onClick={() => navigate('/ai')}>
-                AI canvas
-              </ControllerButton>
-              <ControllerButton variant="ghost" onClick={() => navigate('/automations')}>
-                Open workflows
-              </ControllerButton>
-            </div>
-          </TechCard>
+          <div className="ndx-bento-telemetry flex flex-col gap-3">
+            <TechCard reduceMotion={reduceMotion} className="p-3">
+              <p className="text-meta uppercase tracking-wide text-text-tertiary">Jump</p>
+              <div className="mt-2 grid gap-2">
+                <ControllerButton variant="secondary" onClick={() => navigate('/search')}>
+                  Search
+                </ControllerButton>
+                <ControllerButton variant="secondary" onClick={() => navigate('/ai')}>
+                  AI canvas
+                </ControllerButton>
+                <ControllerButton variant="ghost" onClick={() => navigate('/automations')}>
+                  Open workflows
+                </ControllerButton>
+              </div>
+            </TechCard>
+
+            <SystemHealthCard
+              reduceMotion={reduceMotion}
+              metrics={metrics}
+              metricsUnavailable={metricsUnavailable}
+              providers={providers}
+              providerError={providerError}
+            />
+          </div>
         </section>
       )}
 
@@ -292,6 +343,92 @@ function Metric({ label, value }: { label: string; value: number }): React.JSX.E
         <p className="mt-1 text-title font-semibold tabular-nums text-text-primary">{value}</p>
       </div>
     </NdxFocusSurface>
+  )
+}
+
+type ByteMetric = MetricValue<{ usagePercent: number; usedBytes: number; totalBytes: number }>
+
+function MetricRow({
+  label,
+  tone,
+  metric
+}: {
+  label: string
+  tone?: NdxMeterTone
+  metric: ByteMetric | undefined
+}): React.JSX.Element {
+  if (!metric?.available || !metric.value) {
+    return <p className="text-meta text-text-tertiary">{label} unavailable</p>
+  }
+  return (
+    <NdxMeter
+      label={label}
+      tone={tone}
+      percent={metric.value.usagePercent}
+      displayValue={`${formatBytes(metric.value.usedBytes)} / ${formatBytes(metric.value.totalBytes)}`}
+    />
+  )
+}
+
+/**
+ * "Active Engine" reports how many configured providers are actually
+ * enabled rather than guessing a single one — `enabled` is a per-provider
+ * router-candidate flag (see `ModelProviderStore.setEnabled`), not a
+ * mutually-exclusive "this one is active" selection, so more than one
+ * provider can legitimately be enabled at once.
+ */
+function describeActiveEngine(providers: ModelProvider[]): string {
+  const enabled = providers.filter((provider) => provider.enabled)
+  if (enabled.length === 0) return 'No model provider enabled'
+  if (enabled.length === 1) return enabled[0].name
+  return `${enabled.length} providers enabled`
+}
+
+/**
+ * Command Center reference's "Active Engine" / "System Health" telemetry
+ * column — real data only: RAM/storage from `SystemMetricsSnapshot`
+ * (`MetricValue.available` honestly reflects a missing sensor rather than
+ * zero-filling it), and the provider registry from `listModelProviders`
+ * rather than a fabricated "Connected" claim. A failed telemetry poll or
+ * provider fetch is surfaced explicitly instead of rendering identically to
+ * a genuinely empty/unavailable state.
+ */
+function SystemHealthCard({
+  reduceMotion,
+  metrics,
+  metricsUnavailable,
+  providers,
+  providerError
+}: {
+  reduceMotion: boolean
+  metrics: SystemMetricsSnapshot | null
+  metricsUnavailable: boolean
+  providers: ModelProvider[]
+  providerError: string | null
+}): React.JSX.Element {
+  return (
+    <TechCard reduceMotion={reduceMotion} className="flex flex-col gap-3 p-3">
+      <div>
+        <p className="text-meta uppercase tracking-wide text-text-tertiary">Active engine</p>
+        <div className="mt-1 flex items-center gap-2">
+          <Cpu className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+          <p className="truncate text-body font-semibold text-text-primary">
+            {providerError ? 'Unable to load model providers' : describeActiveEngine(providers)}
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2 border-t border-[var(--ndx-workbench-border-muted)] pt-3">
+        <p className="text-meta uppercase tracking-wide text-text-tertiary">System health</p>
+        {metricsUnavailable ? (
+          <p className="text-meta text-text-tertiary">System metrics unavailable</p>
+        ) : (
+          <>
+            <MetricRow label="RAM" metric={metrics?.memory} />
+            <MetricRow label="Storage" tone="secondary" metric={metrics?.storage} />
+          </>
+        )}
+      </div>
+    </TechCard>
   )
 }
 

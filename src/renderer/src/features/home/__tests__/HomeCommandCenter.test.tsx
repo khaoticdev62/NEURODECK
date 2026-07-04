@@ -7,6 +7,7 @@ import { ToastProvider } from '../../../components/overlays/Toast'
 import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvider'
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { DisplaySettingsProvider } from '../../../state/displaySettings'
+import { resetCoreTelemetry } from '../../../state/useCoreTelemetry'
 import { WorkspaceContext, type WorkspaceContextValue } from '../../workspaces/WorkspaceContext'
 import { HomeCommandCenter } from '../HomeCommandCenter'
 
@@ -101,6 +102,16 @@ function installBridge(): void {
             }
           ]
         }))
+      },
+      // Command Center's real "Active Engine" / "System Health" telemetry.
+      modelProviders: {
+        list: vi.fn(async () => ({ ok: true, data: [] }))
+      },
+      system: {
+        collectMetrics: vi.fn(async () => ({
+          ok: false,
+          error: { userMessage: 'System metrics unavailable in test', code: 'unavailable' }
+        }))
       }
     } as unknown as NdxBridge
   })
@@ -153,6 +164,7 @@ function renderHome(workspaceValue = makeWorkspaceValue()): ReturnType<typeof re
 describe('HomeCommandCenter', () => {
   afterEach(() => {
     clearBridge()
+    resetCoreTelemetry()
   })
 
   it("renders the spec's defined empty state when no workspaces exist", () => {

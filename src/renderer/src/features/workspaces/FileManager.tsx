@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { File, Folder } from 'lucide-react'
 import type { FileEntry } from '@shared/contracts'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
@@ -77,7 +78,9 @@ export function FileManager(): React.JSX.Element {
       setPrimary('Command Deck', undefined, null)
       return
     }
-    setPrimary('Explorer', activeWorkspace.name, (
+    setPrimary(
+      'Explorer',
+      activeWorkspace.name,
       <div className="flex h-full flex-col p-3">
         <ExplorerPanel
           workspaceName={activeWorkspace.name}
@@ -103,18 +106,9 @@ export function FileManager(): React.JSX.Element {
           }
         />
       </div>
-    ))
+    )
     return () => setPrimary('Command Deck', undefined, null)
-  }, [
-    activeWorkspace,
-    relativePath,
-    entries,
-    error,
-    loading,
-    navigate,
-    openShareSheet,
-    setPrimary
-  ])
+  }, [activeWorkspace, relativePath, entries, error, loading, navigate, openShareSheet, setPrimary])
 
   if (!activeWorkspace) {
     return (
@@ -255,26 +249,15 @@ function Breadcrumbs({
 }
 
 function EntryIcon({ isDirectory }: { isDirectory: boolean }): React.JSX.Element {
+  const Icon = isDirectory ? Folder : File
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      strokeLinejoin="round"
+    <Icon
       aria-hidden
-      className={cn('size-4 shrink-0', isDirectory ? 'text-[var(--ndx-accent)]' : 'text-text-tertiary')}
-    >
-      {isDirectory ? (
-        <path d="M4 5a1 1 0 0 1 1-1h4.5l2 2H19a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z" />
-      ) : (
-        <>
-          <path d="M6 3h8l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />
-          <path d="M14 3v4h4" />
-        </>
+      className={cn(
+        'size-4 shrink-0',
+        isDirectory ? 'text-[var(--ndx-accent)]' : 'text-text-tertiary'
       )}
-    </svg>
+    />
   )
 }
 

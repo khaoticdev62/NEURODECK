@@ -291,12 +291,24 @@ function AgentCard({
       <NdxFocusSurface active={isFocused} density="comfortable" className="p-4">
         <div className="flex items-start justify-between gap-2">
           <p className="text-body font-semibold text-text-primary">{agent.name}</p>
-          <StatusBadge tone={agent.enabled ? 'success' : 'neutral'} label={agent.enabled ? 'Enabled' : 'Disabled'} />
+          <StatusBadge
+            tone={agent.enabled ? 'success' : 'neutral'}
+            label={agent.enabled ? 'Enabled' : 'Disabled'}
+          />
         </div>
         <p className="text-meta text-text-secondary">
           {agent.role} · {agent.modelProfile}
         </p>
         <p className="text-meta text-text-tertiary">{agent.goal}</p>
+        <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-meta">
+          <span className="text-text-tertiary">Context window</span>
+          <span className="text-right tabular-nums text-text-primary">
+            {agent.resourceLimits.maxTokens.toLocaleString()} tokens
+          </span>
+        </div>
+        <p className="text-meta text-text-tertiary">
+          Assigned tools: {agent.toolAllowlist.length > 0 ? agent.toolAllowlist.join(', ') : 'none'}
+        </p>
         <p className="text-meta text-text-tertiary">
           Child agents:{' '}
           {agent.childAgentPolicy.allowChildAgents

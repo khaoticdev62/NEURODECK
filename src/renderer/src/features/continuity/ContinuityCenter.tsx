@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ContinuityState } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
-import { GrowthVectorIcon } from '../../components/primitives/brandIcons'
+import { TrendingUp } from 'lucide-react'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { getContinuityState, setSafeMode } from '../../services/ipc/continuityClient'
@@ -77,7 +77,7 @@ export function ContinuityCenter(): React.JSX.Element {
           <header className="flex items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <GrowthVectorIcon className="size-6 text-[var(--ndx-accent)]" />
+                <TrendingUp className="size-6 text-[var(--ndx-accent)]" />
                 <p className="text-title font-semibold text-text-primary">Continuity and Offline</p>
               </div>
               <p className="text-meta text-text-secondary">

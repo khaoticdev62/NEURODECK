@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ConfirmationDialog } from '../../components/overlays/ConfirmationDialog'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
-import { DataSovereigntyIcon } from '../../components/primitives/brandIcons'
+import { Lock } from 'lucide-react'
 import { NdxEditorShell, NdxSettingsTree, NdxToolWindow } from '../../components/workbench'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { useAuditEntries } from '../../ai-safety/useAuditEntries'
@@ -129,7 +129,9 @@ export function PrivacyPermissions(): React.JSX.Element {
   const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
   useEffect(() => {
-    setPrimary('Privacy', undefined, (
+    setPrimary(
+      'Privacy',
+      undefined,
       <NdxSettingsTree>
         <div className="space-y-2 text-meta text-text-secondary">
           <p className="text-text-primary">Privacy</p>
@@ -139,7 +141,7 @@ export function PrivacyPermissions(): React.JSX.Element {
           <p>Lock PIN</p>
         </div>
       </NdxSettingsTree>
-    ))
+    )
     return () => setPrimary('Command Deck', undefined, null)
   }, [setPrimary])
 
@@ -164,7 +166,7 @@ export function PrivacyPermissions(): React.JSX.Element {
       <NdxEditorShell title="Permission Matrix">
         <div className="flex min-h-full min-w-0 flex-col gap-4 overflow-auto p-4">
           <div className="flex items-center gap-2">
-            <DataSovereigntyIcon className="size-6 text-[var(--ndx-accent)]" />
+            <Lock className="size-6 text-[var(--ndx-accent)]" />
             <p className="text-title font-semibold text-text-primary">Privacy and Permissions</p>
           </div>
 

@@ -20,6 +20,7 @@ import { WorkflowRunnerProvider } from '../workflows/WorkflowRunnerProvider'
  * cleanup sets a ref/flag a later run depends on.
  */
 import { afterEach } from 'vitest'
+import { resetCoreTelemetry } from '../state/useCoreTelemetry'
 import { useWorkbenchStore, resetWorkbenchStore } from '../state/useWorkbenchStore'
 
 export function TestWorkbenchStoreRenderer(): React.JSX.Element {
@@ -35,6 +36,7 @@ export function TestWorkbenchStoreRenderer(): React.JSX.Element {
 
 afterEach(() => {
   resetWorkbenchStore()
+  resetCoreTelemetry()
 })
 
 export function renderWithProviders(

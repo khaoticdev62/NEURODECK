@@ -9,7 +9,7 @@ import type {
 } from '@shared/contracts'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
-import { HermesNodeIcon } from '../../components/primitives/brandIcons'
+import { Crosshair } from 'lucide-react'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
@@ -514,7 +514,7 @@ export function ExtensionManager(): React.JSX.Element {
           <header className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <HermesNodeIcon className="size-6 text-[var(--ndx-accent)]" />
+                <Crosshair className="size-6 text-[var(--ndx-accent)]" />
                 <p className="text-title font-semibold text-text-primary">Extension Manager</p>
               </div>
               <p className="text-body text-text-secondary">

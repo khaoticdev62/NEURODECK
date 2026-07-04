@@ -23,11 +23,12 @@ import { useWorkbenchStore } from '../../state/useWorkbenchStore'
  * connecting to a local provider (e.g. Ollama at
  * `http://localhost:11434/v1`) and discovering its real models via the
  * OpenAI-compatible `/models` endpoint is the honest equivalent.
- * Downloads, Capability matrix (beyond what a provider's real response
- * reports), Resource use, and Routing profiles are deferred — Routing
- * profiles specifically need real measured resource data (battery,
- * thermal, memory pressure) from a System Metrics Service that doesn't
- * exist yet (Epic 11 §27).
+ * Downloads and a Capability matrix (beyond what a provider's real response
+ * reports) are deferred. Resource use and Routing profiles are no longer
+ * blocked on missing data — `SystemMetricsService`/`collectSystemMetrics`
+ * (Epic X9) is real and already consumed by System Dashboard/Resource
+ * Governor/Home — wiring it into per-provider routing decisions here is
+ * unbuilt UI work, not a missing-data problem.
  */
 export function ModelControlCenter(): React.JSX.Element {
   const navigate = useNavigate()

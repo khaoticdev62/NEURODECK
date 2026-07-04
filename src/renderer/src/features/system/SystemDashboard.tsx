@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { MetricValue, SystemMetricsSnapshot } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { formatBytes } from '../../components/primitives/formatBytes'
 import { NdxMeter } from '../../components/primitives/NdxMeter'
 import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
@@ -145,7 +146,7 @@ export function SystemDashboard(): React.JSX.Element {
           <div className="ndx-os-panel overflow-hidden">
             <div className="ndx-console-ruler" aria-hidden="true" />
             <div className="flex items-center justify-between gap-3 p-3">
-               <div className="min-w-0">
+              <div className="min-w-0">
                 <p className="text-meta uppercase tracking-wide text-text-tertiary">
                   System cockpit
                 </p>
@@ -385,11 +386,4 @@ function Stat({ label, value }: { label: string; value: string }): React.JSX.Ele
       {label}: <span className="text-text-primary">{value}</span>
     </p>
   )
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes <= 0) return '0 B'
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  const exponent = Math.min(Math.floor(Math.log2(bytes) / 10), units.length - 1)
-  return `${(bytes / 1024 ** exponent).toFixed(1)} ${units[exponent]}`
 }

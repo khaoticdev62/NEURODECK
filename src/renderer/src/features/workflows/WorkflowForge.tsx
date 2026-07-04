@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { ConditionOperator, WorkflowStep, WorkflowStepKind } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
-import { HermesNodeIcon } from '../../components/primitives/brandIcons'
+import { Crosshair } from 'lucide-react'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
@@ -159,7 +159,9 @@ function WorkflowForgeWorkspace({
   const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
   useEffect(() => {
-    setPrimary('Workflow Tools', `${registeredTools.length} registered`, (
+    setPrimary(
+      'Workflow Tools',
+      `${registeredTools.length} registered`,
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <select
@@ -181,7 +183,7 @@ function WorkflowForgeWorkspace({
           </ControllerButton>
         </div>
       </div>
-    ))
+    )
     return () => setPrimary('Command Deck', undefined, null)
   }, [registeredTools.length, newStepKind, setPrimary, setSteps])
 
@@ -202,7 +204,7 @@ function WorkflowForgeWorkspace({
       <NdxEditorShell title="Workflow Forge">
         <div className="flex h-full min-h-0 flex-col gap-4 p-4">
           <div className="flex items-center gap-2">
-            <HermesNodeIcon className="size-6 text-[var(--ndx-accent)]" />
+            <Crosshair className="size-6 text-[var(--ndx-accent)]" />
             <p className="text-title font-semibold text-text-primary">Workflow Forge</p>
           </div>
 

@@ -8,6 +8,7 @@ import { FocusEngineProvider } from '../../../controller/focus/FocusEngineProvid
 import { TestAdapter } from '../../../controller/testing/testAdapter'
 import { DisplayModeProvider } from '../../../state/displayMode'
 import { DisplaySettingsProvider } from '../../../state/displaySettings'
+import { resetCoreTelemetry } from '../../../state/useCoreTelemetry'
 import { KioskModeProvider } from '../../../state/kioskMode'
 import { LockProvider } from '../../../state/lockState'
 import { ShareSheetProvider } from '../../../state/shareSheet'
@@ -67,6 +68,7 @@ function stubBridge(): void {
 afterEach(() => {
   // @ts-expect-error test-only cleanup
   delete window.ndx
+  resetCoreTelemetry()
 })
 
 function renderShell(): ReturnType<typeof render> {
