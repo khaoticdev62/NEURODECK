@@ -1,20 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import type { SystemMetricsSnapshot } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
+import { formatBytes as formatBytesUnit } from '../../components/primitives/formatBytes'
+import { NdxMeter } from '../../components/primitives/NdxMeter'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { getRecoveryStorageSummary } from '../../services/ipc/recoveryClient'
+import { collectSystemMetrics } from '../../services/ipc/systemClient'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
 /**
- * ND-047 Storage and Recovery, scoped to the one section with a real
- * backing service: recovery checkpoint storage. Disk usage, model
- * storage, workspace cache, browser data, logs, and trash each need a
- * service that doesn't exist yet (Epic 9's model runtime, Epic 10's
- * browser, a real log-file inventory) — showing fabricated numbers for
- * them would violate the "no one-click magic cleanup that hides what's
- * being deleted" rule by definition, since there'd be nothing real to
- * show in the first place.
+ * ND-047 Storage and Recovery. Recovery checkpoint storage and real disk
+ * usage (`SystemMetricsService`, Epic X9 — since real, unlike when this
+ * screen was first scoped) are both real. Model storage, workspace cache,
+ * browser data, logs, and trash still need a service that doesn't exist yet
+ * (Epic 9's model runtime, Epic 10's browser, a real log-file inventory) —
+ * showing fabricated numbers for them would violate the "no one-click magic
+ * cleanup that hides what's being deleted" rule by definition, since
+ * there'd be nothing real to show in the first place.
  */
 export function StorageAndRecovery(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
@@ -23,6 +27,7 @@ export function StorageAndRecovery(): React.JSX.Element {
     null
   )
   const [error, setError] = useState<string | null>(null)
+  const [metrics, setMetrics] = useState<SystemMetricsSnapshot | null>(null)
 
   useEffect(() => {
     if (!activeWorkspace) return
@@ -40,6 +45,16 @@ export function StorageAndRecovery(): React.JSX.Element {
       active = false
     }
   }, [activeWorkspace])
+
+  useEffect(() => {
+    let active = true
+    void collectSystemMetrics().then((result) => {
+      if (active && result.ok) setMetrics(result.data)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
 
   if (!activeWorkspace) {
     return (
@@ -87,13 +102,26 @@ export function StorageAndRecovery(): React.JSX.Element {
             </ControllerButton>
           </section>
 
+          <section className="ndx-settings-section">
+            <p className="mb-2 text-meta font-semibold text-text-primary">Disk usage</p>
+            {metrics?.storage.available && metrics.storage.value ? (
+              <NdxMeter
+                label={metrics.storage.value.path}
+                percent={metrics.storage.value.usagePercent}
+                displayValue={`${formatBytesUnit(metrics.storage.value.usedBytes)} / ${formatBytesUnit(metrics.storage.value.totalBytes)}`}
+              />
+            ) : (
+              <p className="text-meta text-text-secondary">Loading…</p>
+            )}
+          </section>
+
           <section className="border border-dashed border-border bg-canvas/40 p-3">
             <p className="mb-1 text-meta font-semibold text-text-tertiary">
-              Disk usage, model storage, workspace cache, browser data, logs, and trash
+              Model storage, workspace cache, browser data, logs, and trash
             </p>
             <p className="text-meta text-text-tertiary">
-              Not real yet — each needs a service this epic doesn&apos;t own (system metrics, Epic
-              9&apos;s model runtime, Epic 10&apos;s browser, a real log-file inventory).
+              Not real yet — each needs a service this epic doesn&apos;t own (Epic 9&apos;s model
+              runtime, Epic 10&apos;s browser, a real log-file inventory).
             </p>
           </section>
         </div>

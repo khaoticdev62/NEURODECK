@@ -13,6 +13,14 @@
   --breakpoint-docked: 1920px;
   --breakpoint-docked-2k: 2560px;
 
+  /* Parallel breakpoint vocabulary (Responsive Scaling & Breakpoint Spec):
+     `core`/`spatial` alias the deck/docked values above so both naming
+     schemes are available; `workbench` is a genuinely new tier between
+     them. Existing `deck:`/`docked:`/`docked-2k:` usages are untouched. */
+  --breakpoint-core: 1280px;
+  --breakpoint-workbench: 1600px;
+  --breakpoint-spatial: 1920px;
+
   /* Surfaces and backgrounds */
   --color-canvas: #14121a;
   --color-surface: #14121a;
@@ -83,11 +91,14 @@
      Each size multiplies by --ndx-text-scale (default 1, real ND-044 override below)
      rather than hard-coding rem, since rem is always relative to the root element and
      wouldn't respond to a scale set on a nested element the way this custom-property
-     cascade does. */
-  --font-size-body: calc(1rem * var(--ndx-text-scale));
-  --font-size-meta: calc(0.875rem * var(--ndx-text-scale));
-  --font-size-title: calc(1.25rem * var(--ndx-text-scale));
-  --font-size-display: calc(1.75rem * var(--ndx-text-scale));
+     cascade does. Also multiplies by --ndx-viewport-text-scale (default 1, bumped only
+     at WORKBENCH+/SPATIAL widths below) for a small at-distance docked-viewing nudge —
+     the user's ND-044 slider stays the only user-facing control; this only shifts the
+     neutral baseline it multiplies from. */
+  --font-size-body: calc(1rem * var(--ndx-text-scale) * var(--ndx-viewport-text-scale));
+  --font-size-meta: calc(0.875rem * var(--ndx-text-scale) * var(--ndx-viewport-text-scale));
+  --font-size-title: calc(1.25rem * var(--ndx-text-scale) * var(--ndx-viewport-text-scale));
+  --font-size-display: calc(1.75rem * var(--ndx-text-scale) * var(--ndx-viewport-text-scale));
 }
 
 /* Non-Tailwind-namespace tokens: layout, motion, z-index, target sizing.
@@ -134,6 +145,11 @@
 
   /* ND-044 real text-scale override (default = no scaling) */
   --ndx-text-scale: 1;
+
+  /* Viewport-driven typography nudge (Responsive Scaling & Breakpoint Spec):
+     bumped only at WORKBENCH+/SPATIAL widths below, for at-distance docked
+     viewing. Independent of --ndx-text-scale, which stays the user's slider. */
+  --ndx-viewport-text-scale: 1;
 
   /* ND-044 theme builder: single accent indirection point. All accent-
      dependent tokens below derive from these two, so a `[data-ndx-accent]`
@@ -377,6 +393,22 @@
 
   .ndx-workbench-secondary {
     display: none;
+  }
+}
+
+/* WORKBENCH+ (Responsive Scaling & Breakpoint Spec): a small at-distance
+   typography nudge on top of the ND-044 text-scale slider, and a wider
+   Context Sidebar for deeper file paths/agent metadata. */
+@media (min-width: 1600px) {
+  :root {
+    --ndx-viewport-text-scale: 1.05;
+    --ndx-workbench-secondary-width: 300px;
+  }
+}
+
+@media (min-width: 1920px) {
+  :root {
+    --ndx-viewport-text-scale: 1.08;
   }
 }
 
@@ -978,12 +1010,14 @@
   line-height: 20px;
 }
 
-/* Stitch-style active navigation item (OS shell sidebar). */
+/* Active navigation rail item: 2px left-edge accent bar + glowing icon,
+   matching the same left-bar language `.ndx-tree-selected` already uses for
+   file-tree selection. Uses `--ndx-accent` (not a fixed hex) so it follows
+   whichever of the 5 accent presets the user has chosen. */
 .ndx-nav-active {
-  background: var(--color-primary-container);
-  color: var(--color-on-primary-container);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-controller-focus);
+  border-left: 2px solid var(--ndx-accent);
+  color: var(--color-primary);
+  filter: drop-shadow(0 0 6px rgb(var(--ndx-accent-rgb) / 0.6));
 }
 
 /* Stitch-style active tab (IDE top border highlight). */

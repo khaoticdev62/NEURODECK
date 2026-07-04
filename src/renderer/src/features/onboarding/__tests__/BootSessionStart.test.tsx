@@ -76,7 +76,24 @@ function makeBridge(options: BridgeOptions = {}): Partial<NdxBridge> {
     system: {
       collectMetrics: options.metricsFails
         ? vi.fn().mockResolvedValue({ ok: false, error: { userMessage: 'metrics error' } })
-        : vi.fn().mockResolvedValue({ ok: true, data: {} })
+        : vi.fn().mockResolvedValue({
+            ok: true,
+            data: {
+              collectedAt: 1,
+              hostPlatform: 'linux',
+              core: { pid: 1, uptimeSeconds: 1 },
+              cpu: { available: false, source: 'test' },
+              memory: { available: false, source: 'test' },
+              swap: { available: false, source: 'test' },
+              storage: { available: false, source: 'test' },
+              battery: { available: false, source: 'test' },
+              thermal: { available: false, source: 'test' },
+              fans: { available: false, source: 'test' },
+              gpu: { available: false, source: 'test' },
+              network: { available: false, source: 'test' },
+              processes: { available: false, source: 'test' }
+            }
+          })
     } as never,
     workflows: {
       list: vi.fn().mockResolvedValue({ ok: true, data: [] })

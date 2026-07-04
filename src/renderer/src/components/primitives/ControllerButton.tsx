@@ -1,9 +1,16 @@
-import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { forwardRef, type ReactNode } from 'react'
+import { motion, useReducedMotion, type HTMLMotionProps } from 'motion/react'
 import { cn } from './cn'
 
 export type ControllerButtonVariant = 'primary' | 'secondary' | 'ghost' | 'destructive'
 
-export interface ControllerButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+/**
+ * Based on `HTMLMotionProps` (Motion's own prop type) rather than React's
+ * `ButtonHTMLAttributes`, since the two disagree on `onDrag`/`onDragStart`/
+ * `onDragEnd` (native DOM event vs. Motion's pan-gesture signature) — the
+ * same base `TechCard` already uses for the equivalent reason.
+ */
+export type ControllerButtonProps = Omit<HTMLMotionProps<'button'>, 'children'> & {
   variant?: ControllerButtonVariant
   children: ReactNode
 }
@@ -22,13 +29,23 @@ const VARIANT_CLASSES: Record<ControllerButtonVariant, string> = {
  * The baseline focusable action control (mega-prompt §8.2 `ControllerButton`).
  * Ref-forwarding so callers can register it with `useFocusable` (Epic 2's
  * Spatial Focus Engine) the same way a plain DOM element would be.
+ *
+ * `whileTap` gives the handheld tactile response (Responsive Scaling &
+ * Breakpoint Spec §5) via the already-installed `motion` package, the same
+ * pattern `TechCard` already uses. Gated by `motion`'s own OS-level
+ * `useReducedMotion()` rather than the app's `useDisplaySettings()` context,
+ * since this button renders on nearly every screen (and in many tests that
+ * don't wrap a `DisplaySettingsProvider`), so a self-contained check avoids
+ * requiring every render tree to provide that context.
  */
 export const ControllerButton = forwardRef<HTMLButtonElement, ControllerButtonProps>(
   function ControllerButton({ variant = 'secondary', className, children, ...rest }, ref) {
+    const prefersReducedMotion = useReducedMotion()
     return (
-      <button
+      <motion.button
         ref={ref}
         type="button"
+        whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
         className={cn(
           'inline-flex items-center justify-center gap-2 rounded-sm px-4 text-base font-medium transition-colors',
           'min-h-[var(--ndx-target-min)] [height:var(--ndx-button-height)]',
@@ -40,7 +57,7 @@ export const ControllerButton = forwardRef<HTMLButtonElement, ControllerButtonPr
         {...rest}
       >
         {children}
-      </button>
+      </motion.button>
     )
   }
 )

@@ -64,6 +64,12 @@ describe('StorageAndRecovery', () => {
         storageSummary: vi
           .fn()
           .mockResolvedValue({ ok: true, data: { checkpointCount: 3, totalBytes: 2048 } })
+      } as never,
+      system: {
+        collectMetrics: vi.fn().mockResolvedValue({
+          ok: false,
+          error: { userMessage: 'System metrics unavailable in test', code: 'unavailable' }
+        })
       } as never
     })
 
@@ -78,6 +84,12 @@ describe('StorageAndRecovery', () => {
         storageSummary: vi
           .fn()
           .mockResolvedValue({ ok: true, data: { checkpointCount: 0, totalBytes: 0 } })
+      } as never,
+      system: {
+        collectMetrics: vi.fn().mockResolvedValue({
+          ok: false,
+          error: { userMessage: 'System metrics unavailable in test', code: 'unavailable' }
+        })
       } as never
     })
 

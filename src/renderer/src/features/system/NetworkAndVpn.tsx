@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Globe, Network, Shield, type LucideIcon } from 'lucide-react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
@@ -8,11 +9,13 @@ import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
 function NetworkSection({
   title,
+  icon: Icon,
   available,
   reason,
   children
 }: {
   title: string
+  icon: LucideIcon
   available: boolean
   reason?: string
   children: React.ReactNode
@@ -20,7 +23,10 @@ function NetworkSection({
   return (
     <section className="space-y-2 ndx-settings-section">
       <div className="flex items-center justify-between">
-        <p className="text-meta font-semibold text-text-primary">{title}</p>
+        <div className="flex items-center gap-2">
+          <Icon aria-hidden className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+          <p className="text-meta font-semibold text-text-primary">{title}</p>
+        </div>
         {!available && <span className="text-meta text-text-tertiary">Unavailable</span>}
       </div>
       {available ? (
@@ -77,7 +83,9 @@ export function NetworkAndVpn(): React.JSX.Element {
   const setSecondary = useWorkbenchStore((state) => state.setSecondary)
 
   useEffect(() => {
-    setPrimary('Network Tools', 'Diagnostics', (
+    setPrimary(
+      'Network Tools',
+      'Diagnostics',
       <NdxToolWindow title="Network Tools" subtitle="Diagnostics">
         <p className="text-meta text-text-secondary">
           Read-only diagnostics are shown. Management actions stay disabled until OS adapters exist.
@@ -90,7 +98,7 @@ export function NetworkAndVpn(): React.JSX.Element {
           </p>
         </div>
       </NdxToolWindow>
-    ))
+    )
     return () => setPrimary('Command Deck', undefined, null)
   }, [setPrimary])
 
@@ -135,6 +143,7 @@ export function NetworkAndVpn(): React.JSX.Element {
             <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               <NetworkSection
                 title="Connections"
+                icon={Network}
                 available={diagnostics.interfaces.available}
                 reason={diagnostics.interfaces.reason}
               >
@@ -160,6 +169,7 @@ export function NetworkAndVpn(): React.JSX.Element {
 
               <NetworkSection
                 title="DNS"
+                icon={Globe}
                 available={diagnostics.dns.available}
                 reason={diagnostics.dns.reason}
               >
@@ -174,6 +184,7 @@ export function NetworkAndVpn(): React.JSX.Element {
 
               <NetworkSection
                 title="Proxy"
+                icon={Shield}
                 available={diagnostics.proxy.available}
                 reason={diagnostics.proxy.reason}
               >

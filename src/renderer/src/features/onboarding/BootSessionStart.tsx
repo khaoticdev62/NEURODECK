@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import type { SystemMetricsSnapshot } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { NeuroDeckLogomark } from '../../components/primitives/brandIcons'
+import { formatBytes } from '../../components/primitives/formatBytes'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { ErrorState } from '../../components/feedback/UXState'
 import { NdxFocusSurface, NdxSpatialLockup } from '../../components/workbench'
@@ -65,6 +67,7 @@ export function BootSessionStart(): React.JSX.Element {
   ])
   const [showDetails, setShowDetails] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hardware, setHardware] = useState<SystemMetricsSnapshot | null>(null)
   const abortRef = useRef(false)
   const bootRunIdRef = useRef(0)
 
@@ -226,10 +229,16 @@ export function BootSessionStart(): React.JSX.Element {
         updateStep('controller', 'failed', controllerResult.error)
       }
 
-      // System metrics are informative only. Caught for the same reason
-      // `runStep` now is — an uncaught rejection here would otherwise abort
-      // the rest of `runBoot` (including the navigate() call below) silently.
-      void collectSystemMetrics().catch(() => undefined)
+      // System metrics are informative only — this is the real "hardware
+      // scan" data shown below, sourced from SystemMetricsService, not a
+      // fabricated pass/fail sequence. Caught for the same reason `runStep`
+      // now is — an uncaught rejection here would otherwise abort the rest
+      // of `runBoot` (including the navigate() call below) silently.
+      void collectSystemMetrics()
+        .then((result) => {
+          if (isCurrentBootRun() && result.ok) setHardware(result.data)
+        })
+        .catch(() => undefined)
 
       if (!isCurrentBootRun()) return
 
@@ -335,7 +344,7 @@ export function BootSessionStart(): React.JSX.Element {
       </div>
 
       {showDetails && (
-        <div className="ndx-os-panel max-w-md rounded-md p-4 text-left">
+        <div className="ndx-os-panel w-full max-w-md rounded-md p-4 text-left">
           <p className="text-meta font-semibold uppercase tracking-[0.18em] text-text-tertiary">
             Details
           </p>
@@ -348,6 +357,39 @@ export function BootSessionStart(): React.JSX.Element {
               ) : null
             )}
           </ul>
+
+          {hardware && (
+            <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
+              <p className="text-meta font-semibold uppercase tracking-[0.18em] text-text-tertiary">
+                Hardware map
+              </p>
+              <HardwareMetricRow
+                label="Compute unit"
+                available={hardware.cpu.available}
+                value={
+                  hardware.cpu.value
+                    ? `${hardware.cpu.value.model} · ${hardware.cpu.value.logicalCores} threads`
+                    : undefined
+                }
+              />
+              <HardwareMetricRow
+                label="Volatile memory"
+                available={hardware.memory.available}
+                value={
+                  hardware.memory.value ? formatBytes(hardware.memory.value.totalBytes) : undefined
+                }
+              />
+              <HardwareMetricRow
+                label="Primary volume"
+                available={hardware.storage.available}
+                value={
+                  hardware.storage.value
+                    ? `${hardware.storage.value.path} · ${formatBytes(hardware.storage.value.totalBytes)}`
+                    : undefined
+                }
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -367,6 +409,27 @@ export function BootSessionStart(): React.JSX.Element {
           {showDetails ? 'Hide details' : 'Show details'}
         </ControllerButton>
       </div>
+    </div>
+  )
+}
+
+function HardwareMetricRow({
+  label,
+  available,
+  value
+}: {
+  label: string
+  available: boolean
+  value: string | undefined
+}): React.JSX.Element {
+  return (
+    <div className="flex items-center justify-between gap-3 text-meta">
+      <span className="text-text-secondary">{label}</span>
+      {available && value ? (
+        <span className="truncate text-text-primary">{value}</span>
+      ) : (
+        <StatusBadge tone="neutral" label="Unavailable" />
+      )}
     </div>
   )
 }
