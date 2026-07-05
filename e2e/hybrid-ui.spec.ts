@@ -40,7 +40,10 @@ test('remaining hybrid routes render across target viewport sizes without horizo
     await window.evaluate(() => {
       window.location.hash = '/learn/lab/bundled:neurodeck-quick-start/basics/open-terminal'
     })
-    await expect(window.getByText('NeuroDeck Quick Start')).toBeVisible()
+    // Heading role, not getByText: the workbench breadcrumb also renders the
+    // curriculum id ("BUNDLED:NEURODECK QUICK START"), which trips Playwright
+    // strict mode on a plain substring match.
+    await expect(window.getByRole('heading', { name: /NeuroDeck Quick Start/ })).toBeVisible()
     await expect(window.getByText('Lab terminal')).toBeVisible()
     await expect(window.getByText('No workspace yet')).toBeVisible()
     await expectNoHorizontalOverflow(window)
