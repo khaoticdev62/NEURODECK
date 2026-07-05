@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { cn } from '../../components/primitives/cn'
+import { NavigationIcon } from '../../components/navigation/navigationIcons'
 import type { NavigationDestination } from '../../components/navigation/navigationDestinations'
 
 export interface CommandPaletteResultRowProps {
@@ -46,7 +47,10 @@ export function CommandPaletteResultRow({
           : 'border-l-transparent hover:bg-surface-raised/60'
       )}
     >
-      <span>Open {destination.label}</span>
+      <span className="flex items-center gap-2">
+        <NavigationIcon destinationId={destination.id} />
+        Open {destination.label}
+      </span>
       {subtitle && <span className="text-meta text-text-tertiary">{subtitle}</span>}
     </button>
   )

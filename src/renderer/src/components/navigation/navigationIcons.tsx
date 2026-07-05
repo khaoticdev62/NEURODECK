@@ -5,24 +5,22 @@
  * reference's icon assets (Lock, Crosshair) are byte-identical to their
  * Lucide source, confirming the reference itself was built on this icon
  * set rather than a hand-drawn one.
+ *
+ * Keyed by rail destination id, which since the category consolidation
+ * (`navigationDestinations.ts`) is either a pinned feature id (home,
+ * search) or a `NavigationCategory` id (workspace, ide, terminal, ai,
+ * browser, system) rather than a raw `FEATURE_CATALOG` id.
  */
 import {
-  Box,
   Circle,
-  FileText,
-  GraduationCap,
   Globe,
   Hammer,
   House,
   LayoutGrid,
-  MessageSquare,
-  Monitor,
-  Puzzle,
   Search,
   Settings,
   Sparkles,
   Terminal,
-  Workflow,
   type LucideIcon
 } from 'lucide-react'
 import { createIconLookup } from '../primitives/iconLookup'
@@ -30,19 +28,12 @@ import { createIconLookup } from '../primitives/iconLookup'
 const NAVIGATION_ICON_COMPONENTS: Record<string, LucideIcon> = {
   home: House,
   search: Search,
-  ai: Sparkles,
-  workspaces: LayoutGrid,
-  build: Hammer,
-  files: FileText,
+  workspace: LayoutGrid,
+  ide: Hammer,
   terminal: Terminal,
+  ai: Sparkles,
   browser: Globe,
-  automations: Workflow,
-  models: Box,
-  extensions: Puzzle,
-  learn: GraduationCap,
-  system: Settings,
-  'ai-chat': MessageSquare,
-  applications: Monitor
+  system: Settings
 }
 
 const LookupIcon = createIconLookup(NAVIGATION_ICON_COMPONENTS, Circle, 'size-5 shrink-0')

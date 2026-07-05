@@ -13,12 +13,14 @@ export interface FeatureVisibilityContext {
 
 /**
  * Epic X1 Feature Registry (supplemental spec §34) — computes real
- * visibility for a catalog of `FeatureDescriptor`s so navigation adapts
- * instead of leaving a dead route or a screen that crashes on a missing
- * capability. `NAVIGATION_DESTINATIONS` (the real, existing primary nav)
- * is the catalog's seed: every current entry has zero capability/profile/
- * extension dependencies, which is the honest truth today — no Phase A
- * screen is hardware- or profile-gated yet. The computation below is
+ * visibility for a catalog of `FeatureDescriptor`s (`FEATURE_CATALOG`) so
+ * navigation adapts instead of leaving a dead route or a screen that
+ * crashes on a missing capability. The primary nav rail's
+ * `NAVIGATION_DESTINATIONS` and the Search/Command Palette results are
+ * both derived from this same catalog rather than duplicating it; every
+ * current entry has zero capability/profile/extension dependencies, which
+ * is the honest truth today — no Phase A screen is hardware- or
+ * profile-gated yet. The computation below is
  * real and tested now so the Phase B epics that *do* introduce gated
  * features (Bluetooth Center needing `bluetooth`, Voice Assistant
  * needing `microphone`, profile-scoped screens) extend this one real

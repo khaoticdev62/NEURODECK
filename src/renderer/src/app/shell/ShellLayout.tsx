@@ -1,4 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { CategoryTabStrip } from '../../components/navigation/CategoryTabStrip'
 import { ContextPanel, type ContextPanelItem } from '../../components/navigation/ContextPanel'
 import {
   UNAVAILABLE_SYSTEM_RAIL_STATUS,
@@ -246,6 +247,7 @@ export function ShellLayout({
       bottomPanel={<NdxBottomPanel />}
       statusBar={<NdxStatusBar routeTitle={routeLabel} controllerLayer="workbench" />}
     >
+      <CategoryTabStrip />
       <Outlet />
       <CoreToolsBootstrap />
       <PowerStateBridge />

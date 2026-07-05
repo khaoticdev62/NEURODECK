@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Gamepad2, SlidersHorizontal, Vibrate } from 'lucide-react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { ErrorState } from '../../components/feedback/UXState'
@@ -134,7 +135,10 @@ export function ControllerSettings(): React.JSX.Element {
           {error && <ErrorState title="Controller settings error" description={error} />}
 
           <section className="flex flex-col gap-2 ndx-settings-section">
-            <p className="text-body font-semibold text-text-primary">Detected controller</p>
+            <div className="flex items-center gap-2">
+              <Gamepad2 aria-hidden className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+              <p className="text-body font-semibold text-text-primary">Detected controller</p>
+            </div>
             <div>
               <StatusBadge
                 tone={controllerKind === 'generic' ? 'neutral' : 'success'}
@@ -144,7 +148,10 @@ export function ControllerSettings(): React.JSX.Element {
           </section>
 
           <section className="flex flex-col gap-2 ndx-settings-section">
-            <p className="text-body font-semibold text-text-primary">Haptics</p>
+            <div className="flex items-center gap-2">
+              <Vibrate aria-hidden className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+              <p className="text-body font-semibold text-text-primary">Haptics</p>
+            </div>
             <div className="flex gap-2">
               {INTENSITY_LEVELS.map((level) => (
                 <ControllerButton
@@ -164,7 +171,10 @@ export function ControllerSettings(): React.JSX.Element {
           </section>
 
           <section className="flex flex-col gap-1 ndx-settings-section">
-            <p className="text-body font-semibold text-text-primary">Input timing (read-only)</p>
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal aria-hidden className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+              <p className="text-body font-semibold text-text-primary">Input timing (read-only)</p>
+            </div>
             <p className="text-meta text-text-secondary">Hold duration: {HOLD_THRESHOLD_MS} ms</p>
             <p className="text-meta text-text-secondary">Repeat delay: {REPEAT_DELAY_MS} ms</p>
             <p className="text-meta text-text-secondary">Repeat rate: {REPEAT_RATE_MS} ms</p>

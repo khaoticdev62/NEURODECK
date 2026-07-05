@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { ArrowDownToLine, ArrowUpFromLine } from 'lucide-react'
 import type { LanShareTransferJob } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { formatBytes } from '../../components/primitives/formatBytes'
+import { NdxMeter } from '../../components/primitives/NdxMeter'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import {
@@ -173,11 +176,25 @@ function JobCard({
       tabIndex={-1}
       className={`border p-3 ${isFocused ? 'border-border-focus' : 'border-border'} bg-surface`}
     >
-      <p className="text-body font-semibold text-text-primary">{job.displayName}</p>
+      <div className="flex items-center gap-2">
+        {job.direction === 'send' ? (
+          <ArrowUpFromLine aria-hidden className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+        ) : (
+          <ArrowDownToLine aria-hidden className="size-4 shrink-0 text-[var(--color-secondary)]" />
+        )}
+        <p className="text-body font-semibold text-text-primary">{job.displayName}</p>
+      </div>
       <p className="text-meta text-text-secondary">
         {job.direction === 'send' ? 'Sending to' : 'Receiving from'} {job.peerId} · {job.status}
-        {job.totalBytes ? ` · ${job.transferredBytes}/${job.totalBytes} bytes` : ''}
       </p>
+      {job.totalBytes ? (
+        <NdxMeter
+          className="mt-2"
+          label="Transferred"
+          percent={(job.transferredBytes / job.totalBytes) * 100}
+          displayValue={`${formatBytes(job.transferredBytes)} / ${formatBytes(job.totalBytes)}`}
+        />
+      ) : null}
       {job.errorMessage && <p className="text-meta text-status-error">{job.errorMessage}</p>}
       <div className="mt-2 flex gap-2">
         {job.status === 'waiting-for-approval' && onAccept && onReject && (

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Workspace } from '@shared/contracts'
-import { NAVIGATION_DESTINATIONS } from '../../components/navigation/navigationDestinations'
+import { FEATURE_CATALOG } from '@shared/features/featureCatalog'
 import { listBrowserTabs } from '../../services/ipc/browserClient'
 import { listFiles } from '../../services/ipc/fileClient'
 import { getGitLog, getGitStatus } from '../../services/ipc/gitClient'
@@ -152,13 +152,16 @@ export function useGlobalSearch(activeWorkspace: Workspace | null): UseGlobalSea
           : []
 
     if (sourceEnabled('route', category)) {
-      for (const dest of NAVIGATION_DESTINATIONS) {
+      // Every real destination, not just the ones grouped onto the rail's
+      // consolidated categories — a feature losing its own rail icon must
+      // not also lose its search discoverability.
+      for (const feature of FEATURE_CATALOG) {
         nextResults.push({
-          id: resultId('route', undefined, dest.id),
+          id: resultId('route', undefined, feature.id),
           source: 'route',
-          title: dest.label,
+          title: feature.name,
           subtitle: 'Navigation',
-          action: { kind: 'navigate', to: dest.path }
+          action: { kind: 'navigate', to: feature.route }
         })
       }
     }

@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { Modal } from '../../components/overlays/Modal'
-import {
-  NAVIGATION_DESTINATIONS,
-  type NavigationDestination
-} from '../../components/navigation/navigationDestinations'
+import { FEATURE_CATALOG } from '@shared/features/featureCatalog'
+import type { NavigationDestination } from '../../components/navigation/navigationDestinations'
 import { useFocusEngine } from '../../controller/focus/useFocusEngine'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { listAgents } from '../../services/ipc/agentClient'
@@ -213,8 +211,13 @@ const SETTINGS_RESULTS: PaletteDomainResult[] = [
 ]
 
 const ALL_SCREENS: PaletteDomainResult[] = [
-  ...NAVIGATION_DESTINATIONS.map((destination) => ({
-    ...destination,
+  // Every real destination, not just the ones grouped onto the rail's
+  // consolidated categories — a feature losing its own rail icon must not
+  // also lose its Command Palette discoverability.
+  ...FEATURE_CATALOG.map((feature) => ({
+    id: feature.id,
+    label: feature.name,
+    path: feature.route,
     subtitle: 'Primary destination'
   })),
   ...SECONDARY_SCREENS

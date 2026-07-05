@@ -1,6 +1,15 @@
+import { NAVIGATION_CATEGORIES } from '@shared/features/navigationCategories'
 import { NavigationRailItem } from './NavigationRailItem'
 import { NAVIGATION_DESTINATIONS } from './navigationDestinations'
 import { useFeatureVisibility } from './useFeatureVisibility'
+
+/** Category destinations check visibility via their `primaryFeatureId` since the Feature Registry only knows about real `FEATURE_CATALOG` ids, not rail category ids. Pinned destinations (home/search) check their own id directly. */
+function visibilityFeatureId(destinationId: string): string {
+  return (
+    NAVIGATION_CATEGORIES.find((category) => category.id === destinationId)?.primaryFeatureId ??
+    destinationId
+  )
+}
 
 export interface NavigationRailProps {
   /** Focus mode collapses navigation entirely (wireframe §3.3) — render nothing rather than a hidden husk. */
@@ -15,13 +24,15 @@ export interface NavigationRailProps {
  * quick-action menu exists yet) and are deferred to the epics that add one.
  *
  * Epic X1: filters against the real `FeatureRegistry` ("Do not leave dead
- * routes" — supplemental §34). Every current destination resolves
- * `visible` today (none of the 12 core screens is hardware/profile-gated
- * yet), so this has no observable effect right now — it's the real
- * mechanism Phase B's gated features (Bluetooth Center, Voice Assistant)
- * extend, not a no-op placeholder. Fails open (shows the destination) if
- * the Feature Registry hasn't responded yet, so a slow/unavailable IPC
- * round-trip never blanks primary navigation.
+ * routes" — supplemental §34), resolving grouped category destinations to
+ * their `primaryFeatureId` since the registry only knows real
+ * `FEATURE_CATALOG` ids. Every current destination resolves `visible`
+ * today (no screen is hardware/profile-gated yet), so this has no
+ * observable effect right now — it's the real mechanism Phase B's gated
+ * features (Bluetooth Center, Voice Assistant) extend, not a no-op
+ * placeholder. Fails open (shows the destination) if the Feature Registry
+ * hasn't responded yet, so a slow/unavailable IPC round-trip never blanks
+ * primary navigation.
  */
 export function NavigationRail({
   hidden = false,
@@ -31,7 +42,8 @@ export function NavigationRail({
   if (hidden) return null
 
   const destinations = NAVIGATION_DESTINATIONS.filter(
-    (destination) => featureStates.get(destination.id)?.visibility !== 'hidden'
+    (destination) =>
+      featureStates.get(visibilityFeatureId(destination.id))?.visibility !== 'hidden'
   )
 
   return (

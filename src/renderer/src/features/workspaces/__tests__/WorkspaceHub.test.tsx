@@ -6,7 +6,10 @@ import { renderWithProviders } from '../../../__tests__/testUtils'
 import { WorkspaceHub } from '../WorkspaceHub'
 
 function stubBridge(partial: Partial<NdxBridge>): void {
-  window.ndx = partial as NdxBridge
+  window.ndx = {
+    git: { status: vi.fn().mockResolvedValue({ ok: false, error: { userMessage: 'no repo' } }) },
+    ...partial
+  } as NdxBridge
 }
 
 afterEach(() => {

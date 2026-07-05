@@ -1,21 +1,43 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { GitBranch } from 'lucide-react'
+import type { GitStatus } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxSpatialLockup } from '../../components/workbench'
 import { NdxTvShelf, TvCategoryIcon } from '../../components/tvos'
 import { useFocusable } from '../../controller/focus/useFocusable'
+import { getGitStatus } from '../../services/ipc/gitClient'
 import { useWorkspaces } from './useWorkspaces'
 
 /**
  * ND-018 Workspace Hub. Real: every card is a workspace actually persisted
  * by the `WorkspaceStore` (Epic 5's real IPC layer). "Add workspace" opens
- * a genuine native folder picker. Branch/health/last-opened fields from the
- * spec's card layout wait for Git (Epic 6) and task/session state
- * (Epic 8) — only name, root path, and created date are real today.
+ * a genuine native folder picker. Branch is now real too (`getGitStatus`,
+ * Epic 6) — health/last-opened still wait for task/session state (Epic 8).
  */
 export function WorkspaceHub(): React.JSX.Element {
   const { workspaces, loading, error, addFromPicker, remove, setActive } = useWorkspaces()
   const navigate = useNavigate()
+  const [gitStatusByWorkspace, setGitStatusByWorkspace] = useState<Record<string, GitStatus>>({})
+
+  useEffect(() => {
+    let active = true
+    void Promise.all(
+      workspaces.map(async (workspace) => {
+        const result = await getGitStatus({ workspaceId: workspace.id })
+        return result.ok ? ([workspace.id, result.data] as const) : null
+      })
+    ).then((results) => {
+      if (!active) return
+      setGitStatusByWorkspace(
+        Object.fromEntries(results.filter((entry): entry is [string, GitStatus] => entry !== null))
+      )
+    })
+    return () => {
+      active = false
+    }
+  }, [workspaces])
 
   const { ref: addRef } = useFocusable<HTMLButtonElement>({
     id: 'workspace-hub:add',
@@ -62,6 +84,7 @@ export function WorkspaceHub(): React.JSX.Element {
               name={workspace.name}
               rootPath={workspace.rootPath}
               createdAt={workspace.createdAt}
+              gitStatus={gitStatusByWorkspace[workspace.id]}
               onOpen={() => {
                 setActive(workspace.id)
                 navigate('/workspaces/detail')
@@ -80,6 +103,7 @@ function WorkspaceCard({
   name,
   rootPath,
   createdAt,
+  gitStatus,
   onOpen,
   onRemove
 }: {
@@ -87,6 +111,7 @@ function WorkspaceCard({
   name: string
   rootPath: string
   createdAt: number
+  gitStatus?: GitStatus
   onOpen: () => void
   onRemove: () => void
 }): React.JSX.Element {
@@ -100,7 +125,15 @@ function WorkspaceCard({
     <div ref={ref} tabIndex={-1} className="ndx-tv-card shrink-0">
       <NdxSpatialLockup selected={isFocused}>
         <section className="flex min-h-40 flex-col">
-          <p className="text-body font-semibold text-text-primary">{name}</p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="truncate text-body font-semibold text-text-primary">{name}</p>
+            {gitStatus?.isRepository && gitStatus.branch && (
+              <span className="flex shrink-0 items-center gap-1 rounded-sm border border-border bg-surface-raised/60 px-1.5 py-0.5 text-meta text-text-secondary">
+                <GitBranch aria-hidden className="size-3 shrink-0" />
+                {gitStatus.branch}
+              </span>
+            )}
+          </div>
           <p className="break-all text-meta text-text-secondary">{rootPath}</p>
           <p className="text-meta text-text-tertiary">
             Added {new Date(createdAt).toLocaleDateString()}
