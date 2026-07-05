@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { DeviceInventoryRecord, DeviceInventoryReport } from '@shared/contracts'
+import type {
+  DeviceInventoryRecord,
+  DeviceInventoryReport,
+  MicrophonePermissionStatus
+} from '@shared/contracts'
 import { ErrorState } from '../../components/feedback/UXState'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { StatusBadge, type StatusTone } from '../../components/primitives/StatusBadge'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
+import { SpectralAnalyzerCanvas } from '../audio/SpectralAnalyzerCanvas'
+import { useMicrophoneAnalyser } from '../audio/useMicrophoneAnalyser'
 import { collectDeviceInventory } from '../../services/ipc/deviceClient'
+import { getMicrophoneStatus, setMicrophoneGranted } from '../../services/ipc/voiceClient'
 
 const AUDIO_OPERATIONS = [
   {
@@ -15,10 +22,6 @@ const AUDIO_OPERATIONS = [
   {
     label: 'Select microphone',
     reason: 'No real audio-input enumeration or routing backend is implemented yet.'
-  },
-  {
-    label: 'Test microphone',
-    reason: 'No local audio capture meter or loopback diagnostic exists yet.'
   },
   {
     label: 'Set input gain',
@@ -35,6 +38,9 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
   const [report, setReport] = useState<DeviceInventoryReport | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [micPermission, setMicPermission] = useState<MicrophonePermissionStatus | null>(null)
+  const [holdPeaks, setHoldPeaks] = useState(false)
+  const analyser = useMicrophoneAnalyser()
 
   useEffect(() => {
     let active = true
@@ -52,6 +58,23 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    let active = true
+    void getMicrophoneStatus().then((result) => {
+      if (active && result.ok) setMicPermission(result.data)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  async function handlePermissionToggle(): Promise<void> {
+    const granted = micPermission !== 'granted'
+    if (!granted) analyser.stop()
+    const result = await setMicrophoneGranted({ granted })
+    if (result.ok) setMicPermission(result.data)
+  }
 
   async function handleRefresh(): Promise<void> {
     setLoading(true)
@@ -134,6 +157,68 @@ export function AudioMicrophoneCenter(): React.JSX.Element {
                     label={microphoneCapability?.status ?? 'unknown'}
                   />
                 </div>
+              </section>
+
+              <section className="ndx-settings-section">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-body font-semibold text-text-primary">
+                      Microphone permission
+                    </p>
+                    <p className="text-meta text-text-secondary">
+                      Gates the real `getUserMedia` capture below — no capture is possible until
+                      this is granted.
+                    </p>
+                  </div>
+                  <StatusBadge
+                    tone={micPermission === 'granted' ? 'success' : 'neutral'}
+                    label={micPermission ?? 'checking'}
+                  />
+                </div>
+                <ControllerButton
+                  className="mt-2"
+                  variant={micPermission === 'granted' ? 'destructive' : 'primary'}
+                  disabled={micPermission === null}
+                  onClick={() => void handlePermissionToggle()}
+                >
+                  {micPermission === 'granted'
+                    ? 'Revoke microphone access'
+                    : 'Grant microphone access'}
+                </ControllerButton>
+              </section>
+
+              <section className="ndx-settings-section">
+                <p className="text-body font-semibold text-text-primary">Microphone test</p>
+                <p className="text-meta text-text-secondary">
+                  Real live frequency-spectrum capture (Web Audio `AnalyserNode`) — not a simulated
+                  meter.
+                </p>
+                {micPermission !== 'granted' ? (
+                  <p className="mt-2 text-meta text-text-tertiary">
+                    Grant microphone permission above to test capture.
+                  </p>
+                ) : (
+                  <div className="mt-2 flex flex-col gap-2">
+                    <SpectralAnalyzerCanvas analyser={analyser} holdPeaks={holdPeaks} />
+                    {analyser.error && (
+                      <p className="text-meta text-status-error">{analyser.error}</p>
+                    )}
+                    <div className="flex flex-wrap gap-2">
+                      <ControllerButton
+                        variant={analyser.active ? 'destructive' : 'primary'}
+                        onClick={() => void (analyser.active ? analyser.stop() : analyser.start())}
+                      >
+                        {analyser.active ? 'Stop' : 'Start calibration'}
+                      </ControllerButton>
+                      <ControllerButton
+                        variant={holdPeaks ? 'primary' : 'secondary'}
+                        onClick={() => setHoldPeaks((current) => !current)}
+                      >
+                        {holdPeaks ? 'Hold peaks: on' : 'Hold peaks: off'}
+                      </ControllerButton>
+                    </div>
+                  </div>
+                )}
               </section>
 
               <section className="grid gap-3 lg:grid-cols-2">
