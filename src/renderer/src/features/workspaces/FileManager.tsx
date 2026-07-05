@@ -11,6 +11,7 @@ import { NdxEditorShell } from '../../components/workbench'
 import { deleteFile, listFiles } from '../../services/ipc/fileClient'
 import { useShareSheet } from '../../state/useShareSheet'
 import { FilePreview } from './FilePreview'
+import { WorkspaceRequiredState } from './WorkspaceRequiredState'
 import { useWorkspaces } from './useWorkspaces'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
@@ -111,12 +112,7 @@ export function FileManager(): React.JSX.Element {
   }, [activeWorkspace, relativePath, entries, error, loading, navigate, openShareSheet, setPrimary])
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace from the Workspace Hub to browse its files."
-      />
-    )
+    return <WorkspaceRequiredState purpose="browse and manage files" />
   }
 
   function openEntry(entry: FileEntry): void {

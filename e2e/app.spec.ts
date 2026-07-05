@@ -43,17 +43,17 @@ test('boots and renders the baseline shell', async () => {
     window.location.hash = '/terminal'
   })
   await expect(window).toHaveURL(/terminal/)
-  await expect(window.getByText('No active workspace')).toBeVisible()
+  await expect(window.getByText('No workspace yet')).toBeVisible()
   await window.evaluate(() => {
     window.location.hash = '/terminal/builder'
   })
   await expect(window).toHaveURL(/terminal\/builder/)
-  await expect(window.getByText('No active workspace')).toBeVisible()
+  await expect(window.getByText('No workspace yet')).toBeVisible()
   await window.evaluate(() => {
     window.location.hash = '/browser'
   })
   await expect(window).toHaveURL(/browser/)
-  await expect(window.getByText('No active workspace')).toBeVisible()
+  await expect(window.getByText('No workspace yet')).toBeVisible()
   await window.evaluate(() => {
     window.location.hash = '/remote'
   })
@@ -70,7 +70,7 @@ test('boots and renders the baseline shell', async () => {
     window.location.hash = '/ai'
   })
   await expect(window).toHaveURL(/\/ai/)
-  await expect(window.getByText('No active workspace')).toBeVisible()
+  await expect(window.getByText('No workspace yet')).toBeVisible()
   await close()
 })
 

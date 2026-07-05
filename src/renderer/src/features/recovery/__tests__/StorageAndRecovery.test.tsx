@@ -55,7 +55,7 @@ function renderScreen(active = true): ReturnType<typeof render> {
 describe('StorageAndRecovery', () => {
   it('requires an active workspace', () => {
     renderScreen(false)
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('shows the real recovery storage summary', async () => {

@@ -11,6 +11,7 @@ import {
   listRecoveryCheckpoints,
   restoreRecoveryCheckpoint
 } from '../../services/ipc/recoveryClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
 const REVERSIBILITY_LABEL: Record<RecoveryCheckpoint['reversibility'], string> = {
@@ -37,12 +38,7 @@ export function RecoveryTimeline(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace to see its recovery history."
-      />
-    )
+    return <WorkspaceRequiredState purpose="see its recovery history" />
   }
 
   return <RecoveryTimelineWorkspace key={activeWorkspace.id} workspaceId={activeWorkspace.id} />

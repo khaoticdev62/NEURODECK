@@ -7,6 +7,7 @@ import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useAiSafety } from '../../ai-safety/useAiSafety'
 import { listWorkflows, saveWorkflow } from '../../services/ipc/workflowClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
@@ -70,9 +71,7 @@ export function WorkflowForge(): React.JSX.Element {
   const { workflowId } = useParams<{ workflowId?: string }>()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState title="No active workspace" description="Open a workspace to build a workflow." />
-    )
+    return <WorkspaceRequiredState purpose="build a workflow" />
   }
 
   return (

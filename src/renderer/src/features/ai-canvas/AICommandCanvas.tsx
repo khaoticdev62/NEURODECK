@@ -2,10 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { RoutingProfileId } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
-import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { ErrorState } from '../../components/feedback/UXState'
 import { StatusBadge } from '../../components/primitives/StatusBadge'
 import { NdxEditorShell } from '../../components/workbench'
 import { createAgent, listAgents, startAgentRun } from '../../services/ipc/agentClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { requestPlanPreview, type PlanPreview } from './planPreview'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
@@ -33,12 +34,7 @@ export function AICommandCanvas(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace to turn an intent into a plan."
-      />
-    )
+    return <WorkspaceRequiredState purpose="turn an intent into a plan" />
   }
 
   return <CommandCanvasWorkspace key={activeWorkspace.id} workspaceId={activeWorkspace.id} />

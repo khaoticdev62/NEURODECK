@@ -4,10 +4,11 @@ import type { SystemMetricsSnapshot } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { formatBytes as formatBytesUnit } from '../../components/primitives/formatBytes'
 import { NdxMeter } from '../../components/primitives/NdxMeter'
-import { EmptyState, ErrorState } from '../../components/feedback/UXState'
+import { ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { getRecoveryStorageSummary } from '../../services/ipc/recoveryClient'
 import { collectSystemMetrics } from '../../services/ipc/systemClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
 /**
@@ -57,12 +58,7 @@ export function StorageAndRecovery(): React.JSX.Element {
   }, [])
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace to see its recovery storage."
-      />
-    )
+    return <WorkspaceRequiredState purpose="see its recovery storage" />
   }
 
   return (

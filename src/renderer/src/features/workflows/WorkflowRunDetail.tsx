@@ -6,6 +6,7 @@ import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxDenseRow, NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { listWorkflowRuns } from '../../services/ipc/workflowClient'
 import { useWorkflowRunner } from '../../workflows/useWorkflowRunner'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
@@ -36,13 +37,17 @@ export function WorkflowRunDetail(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
   const { runId } = useParams<{ runId: string }>()
 
-  if (!activeWorkspace || !runId) {
+  if (!runId) {
     return (
       <EmptyState
-        title="No active workspace"
-        description="Open a workspace to view workflow runs."
+        title="Workflow run not found"
+        description="Open a run from the Workflow Library."
       />
     )
+  }
+
+  if (!activeWorkspace) {
+    return <WorkspaceRequiredState purpose="view workflow runs" />
   }
 
   return (

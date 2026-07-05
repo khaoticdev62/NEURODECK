@@ -44,7 +44,7 @@ function renderDetail(value: WorkspaceContextValue): ReturnType<typeof renderWit
 describe('WorkspaceDetail', () => {
   it('shows the "no active workspace" empty state when nothing is active', () => {
     renderDetail(makeValue())
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('shows real workspace metadata in the Overview tab', () => {

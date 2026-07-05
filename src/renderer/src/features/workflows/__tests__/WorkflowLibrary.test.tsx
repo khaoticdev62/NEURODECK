@@ -71,7 +71,7 @@ const sampleWorkflow: WorkflowDefinition = {
 describe('WorkflowLibrary', () => {
   it('requires an active workspace', () => {
     renderLibrary(false)
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('shows the real empty state when there are no workflows', async () => {

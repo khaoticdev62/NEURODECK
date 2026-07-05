@@ -13,6 +13,7 @@ import {
   terminateTerminal
 } from '../../services/ipc/terminalClient'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { CommandBuilderPanel } from './CommandBuilderPanel'
 import { RemoteModePanel } from './RemoteModePanel'
@@ -26,12 +27,7 @@ export function UniversalTerminal(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace before starting a terminal session."
-      />
-    )
+    return <WorkspaceRequiredState purpose="start a terminal session" />
   }
 
   return <WorkspaceTerminal key={activeWorkspace.id} workspace={activeWorkspace} />

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components/workbench'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { getCurriculum, getProgress, updateProgress } from '../../services/ipc/learningClient'
 import { LabTerminal } from './LabTerminal'
@@ -218,10 +219,7 @@ export function GuidedLab(): React.JSX.Element {
         <NdxEditorShell title="Lab terminal">
           <div className="flex h-full min-h-0 flex-col p-3">
             {!activeWorkspace ? (
-              <EmptyState
-                title="No active workspace"
-                description="Select or create a workspace before running this lab."
-              />
+              <WorkspaceRequiredState purpose="run this lab's terminal" />
             ) : (
               <LabTerminal
                 workspaceId={activeWorkspace.id}

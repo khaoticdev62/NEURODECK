@@ -59,7 +59,7 @@ describe('FileManager', () => {
       </ShareSheetProvider>
     )
 
-    expect(await screen.findByText('No active workspace')).toBeInTheDocument()
+    expect(await screen.findByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('lists real files and folders for the active workspace', async () => {

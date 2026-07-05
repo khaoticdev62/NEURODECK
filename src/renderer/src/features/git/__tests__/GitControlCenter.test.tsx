@@ -39,7 +39,7 @@ afterEach(() => {
 describe('GitControlCenter', () => {
   it('requires an active workspace', () => {
     renderControlCenter(workspaceValue(false))
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('loads the real Git state and previews the selected file diff', async () => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { NdxEditorShell, NdxSpatialLockup } from '../../components/workbench'
@@ -87,29 +87,44 @@ export function GuidedControllerTutorial(): React.JSX.Element {
   const [resultMessage, setResultMessage] = useState<string | null>(null)
   const actionIdRef = useRef<string | null>(null)
 
+  // Controller events arrive synchronously from the focus engine, outside
+  // React's render cycle. Handlers subscribed in effects only pick up new
+  // `lessonIndex`/`lessonState`/`detailOpen` closures on the *next* effect
+  // flush — one commit after the screen already shows the new lesson — so a
+  // press landing in that window used to hit the previous lesson's handler
+  // (swallowing the input, or worse: `back` seeing a stale `detailOpen`
+  // and stepping a lesson backwards). Mirror the live values into a ref in
+  // a layout effect (same pattern as `useFocusable`) and keep the
+  // subscriptions themselves stable.
+  const liveRef = useRef({ lessonIndex, lessonState, detailOpen })
+  useLayoutEffect(() => {
+    liveRef.current = { lessonIndex, lessonState, detailOpen }
+  }, [lessonIndex, lessonState, detailOpen])
+
   const completeLesson = useCallback(() => {
     setLessonState('completed')
     void haptics.trigger(0, 'success')
     window.setTimeout(() => {
-      const next = Math.min(lessonIndex + 1, TOTAL_LESSONS - 1)
+      const next = Math.min(liveRef.current.lessonIndex + 1, TOTAL_LESSONS - 1)
       setLessonIndex(next)
       setLessonState(next === TOTAL_LESSONS - 1 ? 'completed' : 'waiting')
       setDetailOpen(false)
       setResultMessage(null)
       actionIdRef.current = null
     }, advanceDelayMs)
-  }, [haptics, lessonIndex, advanceDelayMs])
+  }, [haptics, advanceDelayMs])
 
   const handleAction = useCallback(
     (action: ControllerAction) => {
-      if (lessonState !== 'waiting') return
-      const lesson = LESSONS[lessonIndex]
+      const { lessonIndex: index, lessonState: state, detailOpen: isDetailOpen } = liveRef.current
+      if (state !== 'waiting') return
+      const lesson = LESSONS[index]
       if (!lesson.waitingAction) return
 
       if (lesson.waitingAction === 'nav.*' && action.startsWith('nav.')) {
         completeLesson()
       } else if (lesson.waitingAction === action) {
-        if (lessonIndex === 1 && !detailOpen) {
+        if (index === 1 && !isDetailOpen) {
           setDetailOpen(true)
           setLessonState('instruction')
         } else {
@@ -117,7 +132,7 @@ export function GuidedControllerTutorial(): React.JSX.Element {
         }
       }
     },
-    [lessonIndex, lessonState, detailOpen, completeLesson]
+    [completeLesson]
   )
 
   useEffect(() => {
@@ -129,21 +144,22 @@ export function GuidedControllerTutorial(): React.JSX.Element {
 
   useEffect(() => {
     return subscribe('back', () => {
-      if (detailOpen) {
+      const { lessonIndex: index, detailOpen: isDetailOpen } = liveRef.current
+      if (isDetailOpen) {
         setDetailOpen(false)
         setLessonState('waiting')
         completeLesson()
         return
       }
-      if (lessonIndex > 0) {
-        setLessonIndex((idx) => idx - 1)
+      if (index > 0) {
+        setLessonIndex(index - 1)
         setLessonState('instruction')
         setDetailOpen(false)
       } else {
         navigate('/')
       }
     })
-  }, [subscribe, detailOpen, lessonIndex, navigate, completeLesson])
+  }, [subscribe, navigate, completeLesson])
 
   useEffect(() => {
     if (lessonIndex !== 6 || lessonState === 'completed') return

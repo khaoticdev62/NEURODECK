@@ -7,6 +7,7 @@ import { NdxEditorShell, NdxFocusSurface, NdxToolWindow } from '../../components
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { listWorkflows, removeWorkflow } from '../../services/ipc/workflowClient'
 import { useWorkflowRunner } from '../../workflows/useWorkflowRunner'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
@@ -22,12 +23,7 @@ export function WorkflowLibrary(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace to see its workflows."
-      />
-    )
+    return <WorkspaceRequiredState purpose="see its workflows" />
   }
 
   return <WorkflowLibraryWorkspace key={activeWorkspace.id} workspaceId={activeWorkspace.id} />

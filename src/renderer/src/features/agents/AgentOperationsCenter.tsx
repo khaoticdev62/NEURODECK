@@ -13,6 +13,7 @@ import {
   removeAgent,
   setAgentEnabled
 } from '../../services/ipc/agentClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
 const ROUTING_PROFILES: RoutingProfileId[] = [
@@ -38,9 +39,7 @@ export function AgentOperationsCenter(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState title="No active workspace" description="Open a workspace to see its agents." />
-    )
+    return <WorkspaceRequiredState purpose="run and monitor agents" />
   }
 
   return (

@@ -68,7 +68,7 @@ function planPayload(overrides: Partial<Record<string, unknown>> = {}): string {
 describe('AICommandCanvas', () => {
   it('shows an honest empty state with no active workspace', () => {
     renderScreen(false)
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('generates a real plan preview through the model completion bridge', async () => {

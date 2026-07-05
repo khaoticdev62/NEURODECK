@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NdxBridge } from '@shared/contracts'
 import { AiSafetyProvider } from '../../../ai-safety/AiSafetyProvider'
@@ -41,7 +42,9 @@ function renderTimeline(active = true): ReturnType<typeof render> {
       <FocusEngineProvider adapters={[new TestAdapter()]}>
         <AiSafetyProvider>
           <WorkspaceContext.Provider value={workspaceValue(active)}>
-            <RecoveryTimeline />
+            <MemoryRouter>
+              <RecoveryTimeline />
+            </MemoryRouter>
           </WorkspaceContext.Provider>
         </AiSafetyProvider>
       </FocusEngineProvider>
@@ -52,7 +55,7 @@ function renderTimeline(active = true): ReturnType<typeof render> {
 describe('RecoveryTimeline', () => {
   it('requires an active workspace', () => {
     renderTimeline(false)
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('shows the real empty state when there are no checkpoints', async () => {

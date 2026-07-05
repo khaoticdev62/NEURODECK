@@ -42,7 +42,7 @@ test('remaining hybrid routes render across target viewport sizes without horizo
     })
     await expect(window.getByText('NeuroDeck Quick Start')).toBeVisible()
     await expect(window.getByText('Lab terminal')).toBeVisible()
-    await expect(window.getByText('No active workspace')).toBeVisible()
+    await expect(window.getByText('No workspace yet')).toBeVisible()
     await expectNoHorizontalOverflow(window)
   }
 

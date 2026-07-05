@@ -3554,3 +3554,21 @@ Completed the integration of `AICommandCanvas` (ND-013), making it a reachable, 
 npm run test AICommandCanvas -> 5/5 passed
 npm run lint -> 0 errors (after removing temp JS files)
 ```
+
+## Workspace-gate removal + focus/tutorial hardening (2026-07-04)
+
+**Removed the requirement to manually open a workspace before seeing/using workspace-scoped screens.** Two mechanisms, both real:
+
+1. **`WorkspaceProvider` now persists and auto-selects the active workspace.** The selection is stored in `localStorage` (`ndx.workspaces.activeWorkspaceId`, matching the existing `ndx.commandBuilder.savedActions.` key convention) and restored on launch; when the persisted choice is missing or stale, the first registered workspace is selected. The active workspace is *derived* (`explicit selection ?? workspaces[0]`), never reconciled in an effect, so there is no render where workspaces exist but none is active. Removing the active workspace clears the persisted choice and falls back to the next remaining one. The only state with no active workspace is a genuinely empty registry.
+2. **New shared `WorkspaceRequiredState` gate** (`features/workspaces/WorkspaceRequiredState.tsx`) replaces the 16 per-screen dead-end `EmptyState("No active workspace")` blocks (Terminal, Command Builder, Git, Files, Build Studio, Browser Hub, AI Canvas, AI Chat, Agents, Workflow Library/Forge/Run Detail, Recovery Timeline, Storage & Recovery, Workspace Detail, Guided Lab terminal pane). It renders controller-focusable "Add workspace folder" (real native picker via `addFromPicker`) and "Open Workspace Hub" actions plus the provider's real load/error states — the screen stays reachable and self-service instead of telling the user to go somewhere else first.
+
+**Also fixed during the audit pass:**
+
+- **Removed 16 unconditional `[DIAG]` `console.log` calls** from `FocusRegistry.ts`, `useFocusable.ts`, and `FocusEngineProvider.tsx` — leftover debug instrumentation logging on every focusable mount/unmount/focus change in production (console spam + hot-path overhead; violates the observability rule "no debug logs shipped to production"). `FocusRegistry.instanceId` stays — `FocusDebugOverlay` (mega-prompt §10.3) still uses it.
+- **Fixed the real root cause of the known `GuidedControllerTutorial.test.tsx` flake** (previously documented in this ledger as "timing queries under full-suite load"). Controller events arrive synchronously from the focus engine, but the lesson handlers were re-subscribed in post-commit effects — so an input landing right after the new lesson's title committed hit the *previous* lesson's stale closure (swallowing the input, or worse: `back` seeing a stale `detailOpen=false` and stepping a lesson backwards instead of closing the detail). Live values are now mirrored into a ref in a layout effect (the existing `useFocusable` pattern) and the subscriptions are stable. This is a production-behavior fix, not a test accommodation; no assertion was weakened.
+
+**Test/e2e updates**: 12 unit-test assertions and 5 e2e assertions moved from the old dead-end text (`No active workspace`) to the new gate (`No workspace yet` + visible "Add workspace folder" action). `WorkspaceProvider.test.tsx` gained coverage for auto-selection, persistence across mounts, and stale-persisted-id fallback.
+
+**Honestly not built**: per-profile isolation of the persisted selection (Epic X10 profile isolation is itself deferred); "UI resume state" beyond the active-workspace id (terminal sessions/task state resume remain Epic 8 concerns).
+
+**New files**: `src/renderer/src/features/workspaces/WorkspaceRequiredState.tsx`. **Changed**: `WorkspaceProvider.tsx` (+ its test), the 16 gated screens listed above, `FocusRegistry.ts`, `useFocusable.ts`, `FocusEngineProvider.tsx`, `GuidedControllerTutorial.tsx`, `App.test.tsx`, `e2e/app.spec.ts`, `e2e/hybrid-ui.spec.ts`.

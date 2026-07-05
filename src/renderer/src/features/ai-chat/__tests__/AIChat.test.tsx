@@ -76,7 +76,7 @@ describe('AIChat', () => {
       makeWorkspaceValue({ workspaces: [], activeWorkspace: null, activeWorkspaceId: null })
     )
 
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('lists real conversations and shows an empty transcript prompt when none is selected', async () => {

@@ -1,5 +1,5 @@
-import { EmptyState } from '../../components/feedback/UXState'
 import { WorkspaceGitTab } from '../workspaces/WorkspaceGitTab'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
 /** ND-025 Git Control Center. Remote and recovery-dependent sections remain deferred. */
@@ -7,12 +7,7 @@ export function GitControlCenter(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace before using Git Control Center."
-      />
-    )
+    return <WorkspaceRequiredState purpose="use Git Control Center" />
   }
 
   return (

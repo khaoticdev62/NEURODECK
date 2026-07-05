@@ -80,11 +80,13 @@ describe('App', () => {
 
     await user.click(screen.getByRole('link', { name: /AI/i }))
 
-    // AICommandCanvas (ND-013) is real now and requires an active workspace,
-    // same as every other workspace-scoped screen — with none active here,
-    // its honest empty state is what should render, not a fabricated title.
+    // AICommandCanvas (ND-013) is workspace-scoped. With an empty workspace
+    // registry (the bridge stub returns no workspaces), the actionable
+    // WorkspaceRequiredState gate renders — offering to add a folder inline —
+    // rather than a fabricated canvas or a dead-end message.
     // The route is lazy-loaded (route-level code splitting), so the screen
     // mounts after a Suspense boundary resolves — find rather than get.
-    expect(await screen.findByText('No active workspace')).toBeInTheDocument()
+    expect(await screen.findByText('No workspace yet')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Add workspace folder' })).toBeInTheDocument()
   })
 })

@@ -36,11 +36,7 @@ export function FocusEngineProvider({
   children,
   adapters
 }: FocusEngineProviderProps): React.JSX.Element {
-  const [registry] = useState(() => {
-    const reg = new FocusRegistry()
-    console.log('[DIAG] FocusEngineProvider: creating FocusRegistry', reg.instanceId)
-    return reg
-  })
+  const [registry] = useState(() => new FocusRegistry())
   const [haptics] = useState(() => new HapticsService())
   const [controllerKind, setControllerKind] = useState<ControllerKind>('generic')
   const activeGamepadIndexRef = useRef<number | null>(null)

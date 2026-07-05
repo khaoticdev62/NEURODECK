@@ -68,7 +68,7 @@ const sampleAgent: AgentDefinition = {
 describe('AgentOperationsCenter', () => {
   it('requires an active workspace', () => {
     renderScreen(false)
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('shows the real empty state when there are no agents', async () => {

@@ -8,8 +8,31 @@ import {
 } from '../../services/ipc/workspaceClient'
 import { WorkspaceContext, type WorkspaceContextValue } from './WorkspaceContext'
 
-const ACTIVE_WORKSPACE_KEY_NONE = null
+const ACTIVE_WORKSPACE_STORAGE_KEY = 'ndx.workspaces.activeWorkspaceId'
 const WORKSPACE_LOAD_TIMEOUT_MS = 1500
+
+function readPersistedActiveWorkspaceId(): string | null {
+  try {
+    return window.localStorage.getItem(ACTIVE_WORKSPACE_STORAGE_KEY)
+  } catch {
+    // Storage access can be blocked (privacy modes, corrupted profile). The
+    // selection is best-effort UI state — losing it only costs the restored
+    // choice on next launch, so degrade to "no persisted selection".
+    return null
+  }
+}
+
+function persistActiveWorkspaceId(id: string | null): void {
+  try {
+    if (id === null) {
+      window.localStorage.removeItem(ACTIVE_WORKSPACE_STORAGE_KEY)
+    } else {
+      window.localStorage.setItem(ACTIVE_WORKSPACE_STORAGE_KEY, id)
+    }
+  } catch {
+    // Same best-effort contract as readPersistedActiveWorkspaceId above.
+  }
+}
 
 function getWorkspaceLoadTimeoutMs(): number {
   return Number(import.meta.env.VITE_WORKSPACE_LOAD_TIMEOUT_MS ?? WORKSPACE_LOAD_TIMEOUT_MS)
@@ -40,16 +63,17 @@ function listWorkspacesWithTimeout(timeoutMs: number): Promise<NdxResult<Workspa
 /**
  * Real workspace state, backed by the IPC layer Epic 5 built (no fake
  * workspace list). "Active workspace" is renderer-only UI state (which
- * workspace the shell is currently scoped to) — it is not yet persisted
- * across app restarts, since that needs the "UI resume state" piece of
- * mega-prompt §19's workspace record, deferred until something else
- * (Epic 8's task state, Epic 6's terminal sessions) needs resuming too.
+ * workspace the shell is currently scoped to). The selection is persisted
+ * to localStorage and restored on launch; when the persisted choice is
+ * missing or stale, the first registered workspace is auto-selected so
+ * workspace-scoped screens never dead-end behind a manual activation step —
+ * the only state with no active workspace is a genuinely empty registry.
  */
 export function WorkspaceProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const workspaceLoadTimeoutMs = getWorkspaceLoadTimeoutMs()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(
-    ACTIVE_WORKSPACE_KEY_NONE
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(
+    readPersistedActiveWorkspaceId
   )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -109,6 +133,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
     }
   }, [workspaceLoadTimeoutMs])
 
+  const setActive = useCallback((id: string) => {
+    persistActiveWorkspaceId(id)
+    setSelectedWorkspaceId(id)
+  }, [])
+
   const addFromPicker = useCallback(async () => {
     const picked = await pickWorkspaceFolder()
     if (!picked.ok) {
@@ -124,8 +153,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
     }
     setError(null)
     await refresh()
-    setActiveWorkspaceId(created.data.id)
-  }, [refresh])
+    setActive(created.data.id)
+  }, [refresh, setActive])
 
   const remove = useCallback(
     async (id: string) => {
@@ -134,16 +163,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
         setError(result.error.userMessage)
         return
       }
-      if (activeWorkspaceId === id) setActiveWorkspaceId(null)
+      if (selectedWorkspaceId === id) {
+        // Clear the explicit selection; the derived fallback below scopes the
+        // shell to the next remaining workspace (or none when the list empties).
+        persistActiveWorkspaceId(null)
+        setSelectedWorkspaceId(null)
+      }
       await refresh()
     },
-    [refresh, activeWorkspaceId]
+    [refresh, selectedWorkspaceId]
   )
 
-  const activeWorkspace = useMemo(
-    () => workspaces.find((workspace) => workspace.id === activeWorkspaceId) ?? null,
-    [workspaces, activeWorkspaceId]
-  )
+  // Derived, never stored: the explicit selection when it still exists,
+  // otherwise the first registered workspace. Deriving (rather than
+  // reconciling in an effect) means there is no render where workspaces
+  // exist but none is active.
+  const activeWorkspace = useMemo(() => {
+    if (workspaces.length === 0) return null
+    return workspaces.find((workspace) => workspace.id === selectedWorkspaceId) ?? workspaces[0]
+  }, [workspaces, selectedWorkspaceId])
+
+  const activeWorkspaceId = activeWorkspace?.id ?? null
 
   const value: WorkspaceContextValue = useMemo(
     () => ({
@@ -155,9 +195,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }): React.
       refresh,
       addFromPicker,
       remove,
-      setActive: setActiveWorkspaceId
+      setActive
     }),
-    [workspaces, activeWorkspaceId, activeWorkspace, loading, error, refresh, addFromPicker, remove]
+    [
+      workspaces,
+      activeWorkspaceId,
+      activeWorkspace,
+      loading,
+      error,
+      refresh,
+      addFromPicker,
+      remove,
+      setActive
+    ]
   )
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>

@@ -11,6 +11,7 @@ import {
   removeConversation,
   sendConversationMessage
 } from '../../services/ipc/conversationClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
@@ -41,9 +42,7 @@ export function AIChat(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState title="No active workspace" description="Open a workspace to start an AI chat." />
-    )
+    return <WorkspaceRequiredState purpose="start an AI chat" />
   }
 
   return <AIChatWorkspace key={activeWorkspace.id} workspaceId={activeWorkspace.id} />

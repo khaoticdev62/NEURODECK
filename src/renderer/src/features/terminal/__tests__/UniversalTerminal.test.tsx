@@ -75,7 +75,7 @@ afterEach(() => {
 describe('UniversalTerminal', () => {
   it('requires an active workspace', () => {
     renderTerminal(false)
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('creates, selects, and terminates a real terminal session', async () => {

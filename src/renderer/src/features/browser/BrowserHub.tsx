@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { Globe } from 'lucide-react'
 import type { BrowserTab } from '@shared/contracts'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
 import { EmptyState, ErrorState } from '../../components/feedback/UXState'
@@ -11,6 +12,7 @@ import {
   listBrowserTabs,
   removeBrowserTab
 } from '../../services/ipc/browserClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 
 const START_PAGE = 'https://www.google.com'
@@ -25,12 +27,7 @@ export function BrowserHub(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace to use its browser tabs."
-      />
-    )
+    return <WorkspaceRequiredState purpose="use workspace-scoped browser tabs" />
   }
 
   return <BrowserHubWorkspace key={activeWorkspace.id} workspaceId={activeWorkspace.id} />
@@ -152,7 +149,12 @@ function BrowserTabCard({
           : 'border-border'
       )}
     >
-      <p className="text-body font-semibold text-text-primary">{tab.title || tab.url}</p>
+      <div className="flex items-center gap-2">
+        <Globe aria-hidden className="size-4 shrink-0 text-[var(--ndx-accent)]" />
+        <p className="truncate text-body font-semibold text-text-primary">
+          {tab.title || tab.url}
+        </p>
+      </div>
       <p className="text-meta text-text-secondary">{tab.url}</p>
       <p className="text-meta text-text-tertiary">{tab.loading ? 'Loading…' : 'Idle'}</p>
       <div className="mt-3 flex gap-2">

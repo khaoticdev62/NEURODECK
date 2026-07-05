@@ -11,6 +11,7 @@ import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { completeModel } from '../../services/ipc/modelClient'
 import { listTerminalSessions, onTerminalExit } from '../../services/ipc/terminalClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 import {
@@ -392,12 +393,7 @@ export function CommandBuilder({
   ])
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace before building a terminal command."
-      />
-    )
+    return <WorkspaceRequiredState purpose="build a terminal command" />
   }
 
   if (loading) {

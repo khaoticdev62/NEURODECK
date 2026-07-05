@@ -14,6 +14,7 @@ import {
 import { useFocusable } from '../../controller/focus/useFocusable'
 import { getGitStatus } from '../../services/ipc/gitClient'
 import { completeModel } from '../../services/ipc/modelClient'
+import { WorkspaceRequiredState } from '../workspaces/WorkspaceRequiredState'
 import { useWorkspaces } from '../workspaces/useWorkspaces'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 import { CodeEditor } from './CodeEditor'
@@ -51,12 +52,7 @@ export function BuildStudio(): React.JSX.Element {
   const { activeWorkspace } = useWorkspaces()
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace before using Build Studio."
-      />
-    )
+    return <WorkspaceRequiredState purpose="edit code in Build Studio" />
   }
 
   return <BuildStudioWorkspace key={activeWorkspace.id} workspaceId={activeWorkspace.id} />

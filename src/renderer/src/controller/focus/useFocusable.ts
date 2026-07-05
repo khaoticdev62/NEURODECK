@@ -53,12 +53,10 @@ export function useFocusable<T extends HTMLElement>(
     (element: T | null) => {
       const { id } = optionsRef.current
       if (!element) {
-        console.log('[DIAG] useFocusable: unregistering', id, 'from registry', registry.instanceId)
         registry.unregister(id)
         return
       }
 
-      console.log('[DIAG] useFocusable: registering', id, 'to registry', registry.instanceId)
       registry.register({
         id,
         get groupId() {

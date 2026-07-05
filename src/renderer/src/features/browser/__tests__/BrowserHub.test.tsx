@@ -61,7 +61,7 @@ const sampleTab: BrowserTab = {
 describe('BrowserHub', () => {
   it('requires an active workspace', () => {
     renderHub(false)
-    expect(screen.getByText('No active workspace')).toBeInTheDocument()
+    expect(screen.getByText('No workspace yet')).toBeInTheDocument()
   })
 
   it('shows the real empty state when there are no tabs', async () => {

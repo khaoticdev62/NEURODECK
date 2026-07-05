@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { ControllerButton } from '../../components/primitives/ControllerButton'
-import { EmptyState } from '../../components/feedback/UXState'
 import { NdxEditorShell, NdxToolWindow } from '../../components/workbench'
 import { FileManager } from './FileManager'
 import { WorkspaceGitTab } from './WorkspaceGitTab'
+import { WorkspaceRequiredState } from './WorkspaceRequiredState'
 import { useWorkspaces } from './useWorkspaces'
 import { useWorkbenchStore } from '../../state/useWorkbenchStore'
 
@@ -31,12 +31,7 @@ export function WorkspaceDetail(): React.JSX.Element {
   }, [setSecondary, tab])
 
   if (!activeWorkspace) {
-    return (
-      <EmptyState
-        title="No active workspace"
-        description="Open a workspace from the Workspace Hub first."
-      />
-    )
+    return <WorkspaceRequiredState purpose="see its overview, files, and Git status" />
   }
 
   const tabs = (
