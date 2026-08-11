@@ -28,7 +28,7 @@
     "@storybook/test": "^8.6.15",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^22.19.21",
+    "@types/node": "^26.2.0",
     "@types/qrcode": "^1.5.6",
     "@vitest/coverage-v8": "^4.1.8",
     "chromatic": "^17.4.1",
